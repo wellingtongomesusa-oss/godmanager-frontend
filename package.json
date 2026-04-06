@@ -1,0 +1,49 @@
+{
+  "name": "godmanager",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3101",
+    "dev:3010": "next dev -p 3010",
+    "dev:clean": "rm -rf .next node_modules/.cache && next dev -p 3101",
+    "dev:fresh": "rm -rf .next node_modules/.cache && next dev -p 3101",
+    "dev:3042": "rm -rf .next && next dev -p 3042",
+    "dev:crm": "cd website && .venv/bin/python run_crm_manager_prop.py",
+    "dev:full": "concurrently -k -n next,crm -c blue,magenta \"npm run dev\" \"npm run dev:crm\"",
+    "dev:godmanager": "npm run dev:full",
+    "build": "next build",
+    "start": "next start -p 3101",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "next": "^14.2.0",
+    "papaparse": "^5.5.3",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18.2.0",
+    "sortablejs": "^1.15.7",
+    "tailwind-merge": "^3.5.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/sortablejs": "^1.15.9",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

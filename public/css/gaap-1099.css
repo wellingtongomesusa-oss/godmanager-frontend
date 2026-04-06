@@ -1,0 +1,114 @@
+/* GAAP + 1099 — Manager Prop design tokens */
+
+:root {
+  --gaap-navy: #1a3a5c;
+  --gaap-navy-bg: #eef3f8;
+  --gaap-amber: #c47b28;
+  --gaap-green: #2d7252;
+  --gaap-red: #b83030;
+  --gaap-border: #dce4ed;
+  --gaap-paper: #fffdf9;
+  --gaap-cream: #f4efe6;
+  --gaap-ink2: #6b5c48;
+  --gaap-ink3: #9e8e7c;
+
+  --sand: #faf7f2;
+  --cream: #f4efe6;
+  --paper: #fffdf9;
+  --border: #e2d9cc;
+  --border2: #cec3b4;
+  --ink: #1e160c;
+  --ink2: #6b5c48;
+  --ink3: #9e8e7c;
+  --amber: #c47b28;
+  --green: #2d7252;
+  --red: #b83030;
+  --blue: #22558c;
+}
+
+/* GAAP layout */
+.gaap-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--gaap-paper);
+  border: 1px solid var(--gaap-border);
+  border-radius: 10px;
+}
+.gaap-toolbar .gaap-status { font-size: 12px; color: var(--gaap-ink3); }
+.gaap-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (max-width: 1200px) {
+  .gaap-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .gaap-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.gaap-kpi-card {
+  background: var(--gaap-paper);
+  border: 1px solid var(--gaap-border);
+  border-radius: 10px;
+  padding: 12px;
+  border-bottom: 3px solid var(--gaap-navy);
+}
+.gaap-kpi-card.gaap-kpi--green { border-bottom-color: var(--gaap-green); }
+.gaap-kpi-card.gaap-kpi--amber { border-bottom-color: var(--gaap-amber); }
+.gaap-kpi-card.gaap-kpi--navy { border-bottom-color: var(--gaap-navy); }
+.gaap-kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gaap-ink3); }
+.gaap-kpi-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.05rem; margin-top: 4px; }
+.gaap-kpi-sub { font-size: 11px; color: var(--gaap-ink2); margin-top: 4px; }
+.gaap-period-header { font-size: 13px; color: var(--gaap-navy); margin-bottom: 12px; font-weight: 600; }
+
+.gaap-section { margin-bottom: 14px; border: 1px solid var(--gaap-border); border-radius: 10px; overflow: hidden; background: var(--gaap-paper); }
+.gaap-sec-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--gaap-navy); color: #fff; padding: 10px 14px; cursor: pointer;
+  font-size: 12px;
+}
+.gaap-sec-head .gaap-chev { transition: transform 0.2s; display: inline-block; }
+.gaap-sec-head.is-collapsed .gaap-chev { transform: rotate(-90deg); }
+.gaap-sec-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; opacity: 0.9; }
+.gaap-sec-title { flex: 1; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; font-size: 11px; }
+.gaap-asc-badge { background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 4px; font-size: 10px; }
+.gaap-sec-total { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.gaap-table-wrap { overflow-x: auto; }
+.gaap-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gaap-table th { text-align: left; padding: 8px 10px; background: var(--gaap-navy-bg); color: var(--gaap-navy); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.gaap-table td { padding: 8px 10px; border-bottom: 1px solid var(--gaap-border); vertical-align: middle; }
+.gaap-table tr:hover td { background: rgba(26, 58, 92, 0.04); }
+.gaap-td-amt { font-family: 'JetBrains Mono', monospace; text-align: right; }
+.gaap-subtotal-row td { background: var(--gaap-navy-bg); font-weight: 700; border-top: 2px solid var(--gaap-navy); }
+.gaap-row-edit td { background: #fffbf0; }
+.gaap-row-new td { background: #f0f8ff; }
+.gaap-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.gaap-btn-ok { color: var(--gaap-green); cursor: pointer; border: none; background: none; }
+.gaap-btn-ok.is-off { opacity: 0.35; }
+.gaap-toast {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  padding: 12px 16px; border-radius: 8px; font-size: 13px; max-width: 320px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.gaap-toast.ok { background: var(--gaap-navy); color: #fff; }
+.gaap-toast.err { background: var(--gaap-red); color: #fff; }
+
+/* 1099 wrapper */
+.ix-iframe-wrap {
+  margin-top: 12px;
+  background: var(--sand);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.ix-iframe-wrap iframe {
+  display: block; width: 100%; min-height: calc(100vh - 110px);
+  border: 0;
+  background: var(--sand);
+}
+.ix-tabbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }

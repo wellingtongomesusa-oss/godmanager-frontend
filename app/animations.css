@@ -1,0 +1,20 @@
+/* Stagger children — aplicar em listas com style={{ animationDelay }} */
+.gm-stagger-item {
+  animation: gm-fade-in 300ms ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes gm-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gm-page-enter {
+  animation: gm-fade-in 300ms ease-out forwards;
+}

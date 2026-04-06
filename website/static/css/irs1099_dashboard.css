@@ -1,0 +1,197 @@
+/**
+ * 1099 / IRS Dashboard — Manager Prop
+ * Prefixo classes: ix-*
+ */
+:root {
+  --ix-sand: #faf7f2;
+  --ix-cream: #f4efe6;
+  --ix-paper: #fffdf9;
+  --ix-border: #e2d9cc;
+  --ix-border2: #cec3b4;
+  --ix-ink: #1e160c;
+  --ix-ink2: #6b5c48;
+  --ix-ink3: #9e8e7c;
+  --ix-amber: #c47b28;
+  --ix-green: #2d7252;
+  --ix-red: #b83030;
+  --ix-blue: #22558c;
+  --ix-navy: #1a3a5c;
+}
+
+* { box-sizing: border-box; }
+body.ix-body {
+  margin: 0;
+  font-family: 'Sora', system-ui, sans-serif;
+  background: var(--ix-sand);
+  color: var(--ix-ink);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+body.in-iframe .ix-header { display: none !important; }
+
+.ix-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #141416;
+  color: #fff;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ix-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ix-amber);
+}
+.ix-brand-sub { opacity: 0.85; font-size: 12px; }
+.ix-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+.ix-tabs button {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+}
+.ix-tabs button.on {
+  background: var(--ix-amber);
+  color: #fff;
+  border-color: var(--ix-amber);
+}
+.ix-wrap { padding: 16px; max-width: 1280px; margin: 0 auto; }
+.ix-panel { display: none; }
+.ix-panel.on { display: block; }
+.ix-h2 { font-size: 1rem; font-weight: 600; margin: 0 0 12px; color: var(--ix-navy); }
+
+.ix-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.ix-kpi {
+  background: var(--ix-paper);
+  border: 1px solid var(--ix-border);
+  border-radius: 10px;
+  padding: 12px;
+  border-bottom: 3px solid var(--ix-amber);
+}
+.ix-kpi-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ix-ink3);
+}
+.ix-kpi-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-top: 4px;
+  color: var(--ix-ink);
+}
+.ix-kpi-tax-risk { color: var(--ix-red) !important; }
+.ix-kpi-tax-sem { color: var(--ix-amber) !important; }
+
+.t {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: var(--ix-paper);
+  border: 1px solid var(--ix-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.t th, .t td { padding: 8px 10px; border-bottom: 1px solid var(--ix-border); }
+.t th {
+  background: var(--ix-cream);
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ix-ink3);
+}
+.te { text-align: right; font-family: 'JetBrains Mono', monospace; }
+.t-wrap { overflow-x: auto; margin-bottom: 16px; }
+
+.pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  background: #eef3f8;
+  color: var(--ix-navy);
+}
+.chip {
+  display: inline-block;
+  padding: 4px 10px;
+  margin: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--ix-border2);
+  cursor: pointer;
+  font-size: 11px;
+  background: var(--ix-paper);
+}
+.chip.on {
+  background: var(--ix-amber);
+  color: #fff;
+  border-color: var(--ix-amber);
+}
+
+.hosp-month-pills-bar, .owner-mo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.ix-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ix-toolbar label.btn-file {
+  background: var(--ix-navy);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.ix-toolbar input[type="file"] { display: none; }
+
+.ix-modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.ix-modal-bg.on { display: flex; }
+.ix-modal {
+  background: var(--ix-paper);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 440px;
+  width: 92%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+#btnPrint1099 { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.ix-muted { color: var(--ix-ink3); font-size: 12px; }
+.ix-chart-box { max-width: 380px; margin-bottom: 16px; }

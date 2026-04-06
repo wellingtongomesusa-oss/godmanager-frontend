@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1099 / IRS — Manager Prop</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/irs1099_dashboard.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="ix-body">
+  <header class="ix-header">
+    <span class="ix-logo">99</span>
+    <span class="ix-brand-sub">1099 · IRS · Manager Prop</span>
+    <div class="ix-tabs" id="ix-inner-tabs">
+      <button type="button" data-tab="1099">1099</button>
+      <button type="button" data-tab="owners">Owners</button>
+      <button type="button" data-tab="hospitality">Hospitality</button>
+      <button type="button" data-tab="taxid">Tax ID</button>
+      <button type="button" data-tab="bills">Bills CSV</button>
+    </div>
+    <button type="button" id="btnPrint1099">Print / PDF</button>
+  </header>
+
+  <div class="ix-wrap">
+    <section class="ix-panel" id="tab-1099">
+      <h2 class="ix-h2">1099 — agregação por fornecedor (COA 1099)</h2>
+      <div class="ix-toolbar">
+        <label>Limite IRS (USD)</label>
+        <input type="number" id="inpThreshold" min="0" step="1" style="width:88px;padding:6px;border-radius:6px;border:1px solid var(--ix-border);" />
+        <label>Ano fiscal</label>
+        <input type="number" id="inpYear" min="2000" max="2100" step="1" style="width:88px;padding:6px;border-radius:6px;border:1px solid var(--ix-border);" />
+      </div>
+      <div class="ix-kpi-grid" id="k1099"></div>
+      <div class="ix-chart-box"><canvas id="chart1099" height="140"></canvas></div>
+      <div class="t-wrap">
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Vendor</th>
+              <th class="te">Total YTD</th>
+              <th>Linhas</th>
+              <th>≥ limite</th>
+              <th>Tax ID</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody1099"></tbody>
+        </table>
+      </div>
+      <p class="ix-muted">Importe Bills CSV na aba Bills (colunas incl. Category, Vendor, Amount). COA alinhado ao módulo Manager Prop.</p>
+    </section>
+
+    <section class="ix-panel" id="tab-owners">
+      <h2 class="ix-h2">Owners</h2>
+      <div class="ix-toolbar">
+        <label class="btn-file" for="ownersCsvFile">Importar CSV</label>
+        <input type="file" id="ownersCsvFile" accept=".csv,text/csv" />
+      </div>
+      <p class="ix-muted">CSV esperado: colunas Name, Email, Unit (ou name, email, unit).</p>
+      <div id="ownersHost"></div>
+    </section>
+
+    <section class="ix-panel" id="tab-hospitality">
+      <h2 class="ix-h2">Hospitality (COA)</h2>
+      <p class="ix-muted">Linhas por mês importado em Bills — categorias hospitality.</p>
+      <div class="hosp-month-pills-bar" id="hospMonthBar"></div>
+      <div id="hospTableHost"></div>
+    </section>
+
+    <section class="ix-panel" id="tab-taxid">
+      <h2 class="ix-h2">Tax ID (.xlsx)</h2>
+      <div class="ix-toolbar">
+        <label class="btn-file" for="taxXlsxFile">Importar XLSX</label>
+        <input type="file" id="taxXlsxFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+      </div>
+      <p class="ix-muted">Primeira folha: colunas Name, EIN (ou Tax ID), Type, Risk.</p>
+      <div class="t-wrap">
+        <table class="t">
+          <thead>
+            <tr><th>Nome</th><th>EIN / Tax ID</th><th>Tipo</th><th>Risco</th></tr>
+          </thead>
+          <tbody id="tbodyTax"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ix-panel" id="tab-bills">
+      <h2 class="ix-h2">Bills CSV por mês</h2>
+      <div class="ix-toolbar">
+        <label class="btn-file" for="billsFile">Importar CSV</label>
+        <input type="file" id="billsFile" accept=".csv,text/csv" />
+      </div>
+      <p class="ix-muted">Nome do ficheiro com <code>YYYY_MM</code> define o mês (ex. <code>bills_2025_01.csv</code>). Dados: <code>mp_1099_bills_by_month_v1</code>.</p>
+      <div id="billsMonthsHost"></div>
+    </section>
+  </div>
+
+  <script src="js/irs1099_dashboard.js" defer></script>
+</body>
+</html>

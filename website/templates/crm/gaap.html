@@ -1,0 +1,64 @@
+{% extends "crm/base_crm.html" %}
+{% block title %}GAAP Statement — {{ t('master_finance') }}{% endblock %}
+{% block page_title %}GAAP Statement{% endblock %}
+{% block page_subtitle %}
+  <p class="crm-dash-subtitle mb-0 mt-1">
+    US GAAP · ASC 606 / 330 / 720 / 225 · Manager Prop
+  </p>
+{% endblock %}
+
+{% block content %}
+<div id="gaap-period-header" class="gaap-period-header">Manager Prop · Period: —</div>
+
+<div class="gaap-toolbar">
+  <label class="btn btn-sm mb-0" style="background:var(--gaap-navy);color:#fff;cursor:pointer;">
+    <i class="fa-solid fa-upload me-1"></i> Upload CSV
+    <input id="gaap-csv-input" type="file" accept=".csv" hidden />
+  </label>
+  <button type="button" id="gaap-btn-process" class="btn btn-sm btn-success" disabled title="Selecione um CSV">Processar</button>
+  <span class="gaap-status" id="gaap-status">Pronto · dados em localStorage (<code>mp_gaap_data_v2</code>)</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.gaapExpandAll()">Expandir tudo</button>
+  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.gaapCollapseAll()">Recolher tudo</button>
+  <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.gaapExportCsv()">Export CSV</button>
+  <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.gaapReset()">Reset</button>
+</div>
+
+<div class="gaap-kpi-grid">
+  <div class="gaap-kpi-card gaap-kpi--green">
+    <div class="gaap-kpi-label">Total Receitas · ASC 606</div>
+    <div class="gaap-kpi-val" id="kpi-total-rev">$0.00</div>
+    <div class="gaap-kpi-sub" id="kpi-total-rev-sub">recv + income</div>
+  </div>
+  <div class="gaap-kpi-card gaap-kpi--navy">
+    <div class="gaap-kpi-label">Total Income</div>
+    <div class="gaap-kpi-val" id="kpi-income">$0.00</div>
+    <div class="gaap-kpi-sub" id="kpi-income-sub">Operating revenue</div>
+  </div>
+  <div class="gaap-kpi-card gaap-kpi--amber">
+    <div class="gaap-kpi-label">Gross Profit · ASC 330</div>
+    <div class="gaap-kpi-val" id="kpi-gross">$0.00</div>
+    <div class="gaap-kpi-sub" id="kpi-gross-sub">—</div>
+  </div>
+  <div class="gaap-kpi-card gaap-kpi--amber">
+    <div class="gaap-kpi-label">Operating Income · ASC 720/225</div>
+    <div class="gaap-kpi-val" id="kpi-op">$0.00</div>
+    <div class="gaap-kpi-sub" id="kpi-op-sub">—</div>
+  </div>
+  <div class="gaap-kpi-card gaap-kpi--green">
+    <div class="gaap-kpi-label">Net Income</div>
+    <div class="gaap-kpi-val" id="kpi-net">$0.00</div>
+    <div class="gaap-kpi-sub" id="kpi-net-sub">—</div>
+  </div>
+  <div class="gaap-kpi-card gaap-kpi--navy">
+    <div class="gaap-kpi-label">Free Cash Flow · ASC 230</div>
+    <div class="gaap-kpi-val" id="kpi-fcf">$0.00</div>
+    <div class="gaap-kpi-sub" id="kpi-fcf-sub">—</div>
+  </div>
+</div>
+
+<div id="gaap-sections-host"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/gaap_module.js') }}" defer></script>
+{% endblock %}

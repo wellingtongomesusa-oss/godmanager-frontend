@@ -1,0 +1,45 @@
+---
+description: Design system GodManager — cores, tipografia, componentes, watermark, sem emojis
+alwaysApply: true
+---
+
+# GodManager — Design system (obrigatório)
+
+## Cores (`:root`)
+
+Usar variáveis CSS existentes em `app/globals.css` / tokens Tailwind `gm-*`: `--sand`, `--cream`, `--paper`, `--border`, `--border2`, `--ink`, `--ink2`, `--ink3`, `--amber`, `--amber-bg`, `--amber-bd`, `--champ-lt`, `--sidebar-bg` (#141416), `--green` / `--green-bg`, `--red` / `--red-bg`, `--blue` / `--blue-bg`, `--slate` / `--slate-bg`. Evitar hex arbitrários fora desta paleta.
+
+## Tipografia
+
+- Títulos de página e secções: **Cormorant Garamond**, peso 600 (tamanhos: ~28px título, ~20px secção).
+- Corpo e UI: **DM Sans** (400 corpo ~13px; labels uppercase ~9–9.5px peso 600).
+- Valores monetários, KPIs, números: **JetBrains Mono** (700, 18–26px conforme contexto).
+- Botões: DM Sans 500–600, ~11.5–13px.
+- Sidebar: DM Sans 400–500, ~12–12.5px.
+- `-webkit-font-smoothing: antialiased` no layout base.
+
+## Componentes
+
+- **Cards:** `border-radius: 12px`, borda `var(--border)`, sombra em camadas suaves; hover: sombra mais forte + `translateY(-2px)`; barra de acento colorida 3px no fundo quando aplicável.
+- **Botão primário:** fundo `var(--amber)`, texto **#fff** (nunca texto escuro sobre âmbar), `border-radius: 8px`, sombra `0 2px 8px rgba(201,169,110,.25)`; hover: `var(--champ-lt)`.
+- **Botão secundário:** transparente, borda `var(--border2)`, texto `var(--ink2)`; hover: borda âmbar.
+- **Tabelas:** cabeçalho `var(--cream)`, labels 9px uppercase, `letter-spacing`, `var(--ink3)`; hover de linha: `rgba(201,169,110,.04)`; células ~10px 14px.
+- **KPI strip:** grelha horizontal, `border-radius: 10px`, células com barra inferior 3px, valor monospace, label uppercase, separadores `border-right: 1px solid var(--border)`.
+- **Pills:** `border-radius: 20px`, padding 3px 9px, ~10px; semântica: `.pg` verde, `.pa` âmbar, `.pr` vermelho, `.pb` azul.
+- **Modais:** overlay `rgba(0,0,0,.45)`; modal 12–16px radius, sombra forte.
+- **Inputs:** fundo `var(--sand)`, borda `var(--border2)`, radius ~7px; focus: borda âmbar + anel `0 0 0 3px rgba(201,169,110,.12)`.
+
+## Layout
+
+- Sidebar fixa esquerda, **240px**, fundo `#141416`; item ativo: fundo `rgba(201,169,110,.12)`, texto âmbar, borda esquerda dourada; labels de secção uppercase ~8.5px, `letter-spacing`, branco ~25% opacidade.
+- Topbar: altura **54px**, fundo `rgba(248,246,242,.95)`, `backdrop-filter: blur(16px)`.
+- Área de conteúdo: `margin-left: 240px`, `padding-top: 54px`, padding ~32px.
+- Login: fundo `#141416` + gradiente radial dourado subtil (já alinhado em `.gm-login-root`).
+
+## Watermark
+
+Em páginas da shell Next quando aplicável: texto **godmanager.com** — canto inferior direito (~13px, `rgba(201,169,110,.12)`); watermark diagonal central (~120px, `rgba(201,169,110,.03)`, rotação ~-35deg); fonte Cormorant; `pointer-events: none`.
+
+## UI
+
+- **Nunca** emojis na interface (botões, labels, menus, toasts, placeholders). Usar SVG ou badges estilizados.
