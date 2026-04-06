@@ -1,0 +1,123 @@
+# version removida (obsoleta no Docker Compose v2)
+
+services:
+  # Banco de dados principal (TimescaleDB - PostgreSQL com extensão de séries temporais)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: algo_trading_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-algo_trader}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password_change}
+      POSTGRES_DB: ${DB_NAME:-trading_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./config/timescaledb_init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-algo_trader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para cache e mensageria
+  redis:
+    image: redis:7-alpine
+    container_name: algo_trading_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Serviço principal de trading
+  trading_engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: algo_trading_engine
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DB_HOST=timescaledb
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-algo_trader}
+      - DB_PASSWORD=${DB_PASSWORD:-secure_password_change}
+      - DB_NAME=${DB_NAME:-trading_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODE=${MODE:-paper}  # paper, live
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"  # API/Dashboard
+    command: python -m src.main
+    restart: unless-stopped
+
+  # Data ingestion service
+  data_ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: algo_trading_ingestion
+    depends_on:
+      - timescaledb
+      - redis
+    environment:
+      - DB_HOST=timescaledb
+      - REDIS_HOST=redis
+      - DATA_PROVIDER=${DATA_PROVIDER:-polygon}  # polygon, iex, tradier, ib
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
+      - ALPACA_API_KEY=${ALPACA_API_KEY:-}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY:-}
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: python -m src.ingestion.main
+    restart: unless-stopped
+
+  # Monitoramento (Grafana + Prometheus - opcional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: algo_trading_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: algo_trading_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    # Removido profile para iniciar por padrão (opcional)
+    # Para desabilitar, adicione: profiles: - monitoring
+
+volumes:
+  timescaledb_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

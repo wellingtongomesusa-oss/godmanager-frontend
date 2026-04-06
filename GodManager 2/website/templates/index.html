@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Secure Website v1{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto text-center">
+        <h1 class="display-4 mb-4">This Is A Test Page: Real Name TBD</h1>
+        {% if not user %}
+            <p class="lead">Please log in to access your account.</p>
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Login</a>
+        {% else %}
+            <p class="lead">Welcome back, {{ user.username }}!</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Go to Dashboard</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Licenses - Secure Website{% endblock %}
+
+{% block content %}
+<div class="licenses-page">
+    <h2 class="licenses-title mb-4">Licenses</h2>
+
+    <!-- Gráficos -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card licenses-chart-card h-100">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Participação por Categoria</h6>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 280px;">
+                    <canvas id="donutChart" width="250" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card licenses-chart-card h-100">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Licenças por Status</h6>
+                </div>
+                <div class="card-body" style="min-height: 280px;">
+                    <canvas id="barChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="card licenses-table-card mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Ranking de Licenças</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover licenses-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th class="text-end">Validade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Business License</td>
+                            <td><span class="badge bg-success">Ativa</span></td>
+                            <td class="text-end">2025-12-31</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Professional License</td>
+                            <td><span class="badge bg-success">Ativa</span></td>
+                            <td class="text-end">2025-06-30</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Occupational License</td>
+                            <td><span class="badge bg-warning">Pendente</span></td>
+                            <td class="text-end">—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Links Úteis - 32px spacing below graphs -->
+    <div class="links-uteis-section" style="margin-top: 32px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h5 class="links-uteis-title mb-0"><i class="fas fa-link me-2"></i>Links Úteis</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLinkModal">
+                <i class="fas fa-plus me-1"></i> Adicionar Link
+            </button>
+        </div>
+
+        <div id="linksContainer" class="row g-3 links-cards-row">
+            <!-- Cards serão renderizados via JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar/Editar Link -->
+<div class="modal fade" id="addLinkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLinkModalTitle">Adicionar Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="linkForm">
+                <div class="modal-body">
+                    <input type="hidden" id="linkEditId" value="">
+                    <div class="mb-3">
+                        <label for="linkTitle" class="form-label">Título</label>
+                        <input type="text" class="form-control" id="linkTitle" placeholder="Ex: IRS – EIN Lookup" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="linkSubtitle" class="form-label">Subtítulo (opcional)</label>
+                        <input type="text" class="form-control" id="linkSubtitle" placeholder="Ex: Consulta oficial">
+                    </div>
+                    <div class="mb-3">
+                        <label for="linkUrl" class="form-label">URL</label>
+                        <input type="url" class="form-control" id="linkUrl" placeholder="https://" required>
+                        <small class="text-muted">Cole o link completo aqui</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="linkIcon" class="form-label">Ícone (classe Font Awesome)</label>
+                        <input type="text" class="form-control" id="linkIcon" placeholder="fa-solid fa-building" value="fa-regular fa-circle-question">
+                        <small class="text-muted">Ex: fa-regular fa-file-lines, fa-solid fa-building</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const warmColors = ['#0d6efd', '#198754', '#fd7e14', '#6f42c1', '#0dcaf0', '#20c997'];
+
+    // Donut Chart
+    const donutCtx = document.getElementById('donutChart');
+    if (donutCtx) {
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ativas', 'Pendentes', 'Expiradas'],
+                datasets: [{
+                    data: [65, 25, 10],
+                    backgroundColor: ['#198754', '#ffc107', '#dc3545'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'right' },
+                    tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '%' } }
+                }
+            }
+        });
+    }
+
+    // Bar Chart
+    const barCtx = document.getElementById('barChart');
+    if (barCtx) {
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Business', 'Professional', 'Occupational', 'Trade'],
+                datasets: [{
+                    label: 'Quantidade',
+                    data: [12, 8, 5, 3],
+                    backgroundColor: warmColors.slice(0, 4),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Links Úteis - Default data
+    const DEFAULT_LINKS = [
+        { id: '1', title: 'IRS – Employer Identification Number (EIN)', subtitle: 'Consulta oficial', url: 'https://www.irs.gov', icon: 'fa-regular fa-building' },
+        { id: '2', title: 'State of Florida – Sunbiz (Business Search)', subtitle: 'Busca de empresas', url: 'https://search.sunbiz.org', icon: 'fa-regular fa-building' },
+        { id: '3', title: 'Lake County – Property Appraiser', subtitle: 'Avaliação de imóveis', url: 'https://www.lakecopropappr.com', icon: 'fa-regular fa-house' },
+        { id: '4', title: 'Florida Department of Revenue', subtitle: 'Receita estadual', url: 'https://floridarevenue.com', icon: 'fa-regular fa-landmark' },
+        { id: '5', title: 'FEMA Flood Map Service', subtitle: 'Mapas de inundação', url: 'https://msc.fema.gov', icon: 'fa-regular fa-map' },
+        { id: '6', title: 'USPS Address Validation', subtitle: 'Validação de endereços', url: 'https://tools.usps.com', icon: 'fa-regular fa-envelope' }
+    ];
+
+    const STORAGE_KEY = 'licenses_useful_links';
+
+    function getLinks() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : [...DEFAULT_LINKS];
+        } catch (e) {
+            return [...DEFAULT_LINKS];
+        }
+    }
+
+    function saveLinks(links) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+        renderLinks();
+    }
+
+    function renderLinks() {
+        const links = getLinks();
+        const container = document.getElementById('linksContainer');
+        container.innerHTML = links.map(link => `
+            <div class="col-12 col-md-6 col-lg-4" data-id="${link.id}">
+                <div class="card link-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <a href="${link.url}" target="_blank" rel="noopener" class="text-decoration-none text-dark flex-grow-1 link-card-content">
+                                <div class="link-icon mb-2"><i class="fas ${link.icon || 'fa-link'} fa-lg"></i></div>
+                                <h6 class="link-title mb-1">${escapeHtml(link.title)}</h6>
+                                ${link.subtitle ? `<p class="link-subtitle text-muted small mb-0">${escapeHtml(link.subtitle)}</p>` : ''}
+                            </a>
+                            <div class="link-actions ms-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-icon" onclick="editLink('${link.id}')" title="Editar"><i class="fas fa-pen"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="removeLink('${link.id}')" title="Remover"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="link-drag-handle mt-auto pt-2 text-muted small"><i class="fas fa-grip-vertical"></i> Arrastar</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        initSortable();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function initSortable() {
+        const container = document.getElementById('linksContainer');
+        if (container && typeof Sortable !== 'undefined') {
+            new Sortable(container, {
+                animation: 150,
+                handle: '.link-drag-handle',
+                ghostClass: 'sortable-ghost',
+                onEnd: function(evt) {
+                    const links = getLinks();
+                    const [removed] = links.splice(evt.oldIndex, 1);
+                    links.splice(evt.newIndex, 0, removed);
+                    saveLinks(links);
+                }
+            });
+        }
+    }
+
+    window.editLink = function(id) {
+        const links = getLinks();
+        const link = links.find(l => l.id === id);
+        if (!link) return;
+        document.getElementById('linkEditId').value = link.id;
+        document.getElementById('linkTitle').value = link.title;
+        document.getElementById('linkSubtitle').value = link.subtitle || '';
+        document.getElementById('linkUrl').value = link.url;
+        document.getElementById('linkIcon').value = link.icon || 'fa-regular fa-circle-question';
+        document.getElementById('addLinkModalTitle').textContent = 'Editar Link';
+        new bootstrap.Modal(document.getElementById('addLinkModal')).show();
+    };
+
+    window.removeLink = function(id) {
+        if (!confirm('Remover este link?')) return;
+        const links = getLinks().filter(l => l.id !== id);
+        saveLinks(links);
+    };
+
+    document.getElementById('linkForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const editId = document.getElementById('linkEditId').value;
+        const link = {
+            id: editId || 'link_' + Date.now(),
+            title: document.getElementById('linkTitle').value.trim(),
+            subtitle: document.getElementById('linkSubtitle').value.trim(),
+            url: document.getElementById('linkUrl').value.trim(),
+            icon: document.getElementById('linkIcon').value.trim() || 'fa-regular fa-circle-question'
+        };
+        let links = getLinks();
+        if (editId) {
+            links = links.map(l => l.id === editId ? link : l);
+        } else {
+            links.push(link);
+        }
+        saveLinks(links);
+        bootstrap.Modal.getInstance(document.getElementById('addLinkModal')).hide();
+        document.getElementById('linkForm').reset();
+        document.getElementById('linkEditId').value = '';
+        document.getElementById('addLinkModalTitle').textContent = 'Adicionar Link';
+    });
+
+    document.getElementById('addLinkModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('linkForm').reset();
+        document.getElementById('linkEditId').value = '';
+        document.getElementById('addLinkModalTitle').textContent = 'Adicionar Link';
+    });
+
+    renderLinks();
+});
+</script>
+{% endblock %}

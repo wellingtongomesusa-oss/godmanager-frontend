@@ -1,0 +1,100 @@
+{% extends "crm/base_crm.html" %}
+{% block title %}Integrações — {{ t('master_finance') }}{% endblock %}
+{% block page_title %}Hub de integrações{% endblock %}
+
+{% block content %}
+<div class="border rounded p-3 mb-4 bg-white" style="border-color: var(--gaap-border, #dce4ed) !important;">
+  <div class="fw-bold mb-2" style="color: var(--gaap-navy, #1a3a5c);">QuickBooks (OAuth2 · Sandbox)</div>
+  <p class="small text-muted mb-2">Redirect: <code>/crm/integrations/quickbooks/callback</code> (mesma origem na 3101 com proxy Next).</p>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-primary" href="{{ url_for('qb_connect') }}">Conectar QuickBooks</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('qb_sync') }}" target="_blank" rel="noopener">Sync → GAAP</a>
+    <a class="btn btn-sm btn-outline-danger" href="{{ url_for('qb_disconnect') }}">Desligar</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for key, name, desc in integration_providers %}
+  <div class="col-md-6 col-lg-4">
+    <div class="border rounded p-3 h-100 bg-white" style="border-color: var(--gaap-border, #dce4ed) !important;">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="fw-bold" style="color: var(--gaap-navy, #1a3a5c);">{{ name }}</div>
+          <div class="small text-muted">{{ desc }}</div>
+        </div>
+        <span class="badge rounded-pill" style="background: var(--gaap-amber, #c47b28);">{{ key }}</span>
+      </div>
+      <div class="mt-2 d-flex flex-wrap gap-1">
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('api_integration_oauth_start', provider=key) }}">OAuth</a>
+        <span class="small text-muted align-self-center">POST webhook</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2 class="h6 mb-2" style="color: var(--gaap-navy, #1a3a5c);">Conexões registadas</h2>
+{% if connections %}
+<div class="table-responsive mb-4">
+  <table class="table table-sm align-middle gaap-table" style="background: var(--gaap-paper, #fffdf9);">
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Label</th>
+        <th>Conta externa</th>
+        <th>Estado</th>
+        <th>Último sync</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in connections %}
+      <tr>
+        <td><code>{{ c.provider }}</code></td>
+        <td>{{ c.label or '—' }}</td>
+        <td>{{ c.external_account_id or '—' }}</td>
+        <td><span class="badge bg-secondary">{{ c.status }}</span></td>
+        <td class="small">{{ c.last_sync_at or '—' }}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-sync-url="{{ url_for('api_integration_enqueue_sync', connection_id=c.id) }}"
+            onclick="fetch(this.dataset.syncUrl,{method:'POST',headers:{'Accept':'application/json'}}).then(function(r){return r.json();}).then(function(d){alert(d.ok?'Sync enfileirado (job '+d.job_id+')':JSON.stringify(d));}).catch(function(e){alert(e);});">
+            Enfileirar sync
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted small mb-4">Nenhuma conexão OAuth gravada ainda. Implemente o callback para criar linhas em <code>integration_connections</code>.</p>
+{% endif %}
+
+<h2 class="h6 mb-2" style="color: var(--gaap-navy, #1a3a5c);">Audit trail (IntegrationLog)</h2>
+<div class="table-responsive">
+  <table class="table table-sm gaap-table">
+    <thead>
+      <tr>
+        <th>Quando</th>
+        <th>Provider</th>
+        <th>Ação</th>
+        <th>Estado</th>
+        <th>Mensagem</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for L in logs %}
+      <tr>
+        <td class="small text-nowrap">{{ L.created_at }}</td>
+        <td><code>{{ L.provider }}</code></td>
+        <td>{{ L.action }}</td>
+        <td>{{ L.status }}</td>
+        <td class="small">{{ (L.message or '')[:120] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted small">Sem eventos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,770 @@
+// Prisma Schema for Godroox
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String
+  name          String?
+  phone         String?
+  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  insuranceApplications InsuranceApplication[]
+  llcOrders            LLCOrder[]
+  paymentOrders         PaymentOrder[]
+  partner               Partner?
+  sessions              Session[]
+  accounts              Account[]
+
+  // Financial Dashboard relations
+  journalEntryApprovals   JournalEntryApproval[]
+  auditTrailLogs          AuditTrailLog[]
+  controlTestResults      ControlTestResult[]
+  deficiencyRemediations  DeficiencyRemediation[]
+  financialPermissions    FinancialPermission[]
+
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  CUSTOMER
+  PARTNER
+  ADMIN
+  CONTROL_OWNER
+  INTERNAL_AUDITOR
+  EXTERNAL_AUDITOR
+  COMPLIANCE
+  CFO
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ============================================
+// INSURANCE DOMAIN
+// ============================================
+
+model InsuranceApplication {
+  id              String                  @id @default(cuid())
+  userId          String
+  status          InsuranceApplicationStatus @default(DRAFT)
+  coverageAmount  Decimal                 @db.Decimal(12, 2)
+  termLength      Int                     // Years
+  monthlyPremium  Decimal?                @db.Decimal(10, 2)
+  quoteId         String?                 @unique
+  externalPolicyId String?
+  
+  // Personal Information
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime
+  gender          String
+  address         Json                    // Full address object
+  healthInfo      Json?                   // Health questionnaire
+  
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policy          InsurancePolicy?
+
+  @@index([userId])
+  @@index([status])
+  @@map("insurance_applications")
+}
+
+enum InsuranceApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model InsurancePolicy {
+  id              String   @id @default(cuid())
+  applicationId   String   @unique
+  policyNumber    String   @unique
+  status          InsurancePolicyStatus @default(ACTIVE)
+  coverageAmount  Decimal  @db.Decimal(12, 2)
+  monthlyPremium  Decimal  @db.Decimal(10, 2)
+  startDate       DateTime
+  endDate         DateTime?
+  externalPolicyId String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  application     InsuranceApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([policyNumber])
+  @@index([status])
+  @@map("insurance_policies")
+}
+
+enum InsurancePolicyStatus {
+  ACTIVE
+  LAPSED
+  CANCELLED
+  EXPIRED
+}
+
+// ============================================
+// LLC DOMAIN
+// ============================================
+
+model LLCOrder {
+  id              String        @id @default(cuid())
+  userId          String
+  status          LLCOrderStatus @default(DRAFT)
+  
+  // Company Information
+  companyName     String
+  registeredAgent String?
+  businessAddress Json
+  mailingAddress  Json?
+  
+  // Registration Details
+  registrationNumber String?    @unique
+  filingDate      DateTime?
+  approvedDate    DateTime?
+  externalOrderId String?
+  
+  // Documents
+  documents       LLCDocument[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("llc_orders")
+}
+
+enum LLCOrderStatus {
+  DRAFT
+  SUBMITTED
+  PROCESSING
+  FILED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model LLCDocument {
+  id          String   @id @default(cuid())
+  orderId     String
+  type        String   // articles_of_organization, operating_agreement, etc.
+  fileName    String
+  fileUrl     String
+  uploadedAt  DateTime @default(now())
+
+  order       LLCOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("llc_documents")
+}
+
+// ============================================
+// PAYMENTS DOMAIN
+// ============================================
+
+model PaymentOrder {
+  id              String            @id @default(cuid())
+  userId          String
+  status          PaymentOrderStatus @default(PENDING)
+  
+  // Payment Details
+  amount          Decimal           @db.Decimal(12, 2)
+  currency        String            @default("USD")
+  exchangeRate    Decimal?          @db.Decimal(10, 6)
+  fee             Decimal           @db.Decimal(10, 2)
+  totalAmount     Decimal           @db.Decimal(12, 2)
+  
+  // Recipient
+  recipientName   String
+  recipientAccount String
+  recipientBank   String?
+  recipientAddress Json?
+  
+  // Transaction
+  transactionId   String?          @unique
+  externalOrderId String?
+  completedAt     DateTime?
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([transactionId])
+  @@map("payment_orders")
+}
+
+enum PaymentOrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================
+// PARTNERS DOMAIN
+// ============================================
+
+model Partner {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  companyName     String
+  website         String?
+  apiKey          String   @unique
+  apiKeyHash      String   // Hashed API key for verification
+  status          PartnerStatus @default(PENDING)
+  rateLimit       Int      @default(100) // Requests per hour
+  webhookUrl      String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiCalls        PartnerAPICall[]
+
+  @@index([apiKey])
+  @@index([status])
+  @@map("partners")
+}
+
+enum PartnerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+model PartnerAPICall {
+  id          String   @id @default(cuid())
+  partnerId   String
+  endpoint    String
+  method      String
+  statusCode  Int
+  responseTime Int?    // milliseconds
+  createdAt   DateTime @default(now())
+
+  partner     Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([createdAt])
+  @@map("partner_api_calls")
+}
+
+// ============================================
+// ANALYTICS EVENTS (for Data Warehouse)
+// ============================================
+
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  eventType  String   // customer_created, policy_created, llc_formed, payment_sent, etc.
+  userId      String?
+  metadata    Json     // Event-specific data
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+// ============================================
+// FINANCIAL DASHBOARD - GAAP, SOX 404, ICFR, IPO
+// ============================================
+
+// --- AP (Accounts Payable) ---
+model Vendor {
+  id            String   @id @default(cuid())
+  name          String
+  taxId         String?
+  address       Json?
+  contactEmail  String?
+  contactPhone  String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  invoices      APInvoice[]
+
+  @@index([name])
+  @@map("vendors")
+}
+
+model APInvoice {
+  id              String        @id @default(cuid())
+  vendorId        String
+  invoiceNumber   String
+  amount          Decimal       @db.Decimal(14, 2)
+  currency        String        @default("USD")
+  dueDate         DateTime
+  status          APInvoiceStatus @default(PENDING)
+  approver1Id     String?
+  approver2Id     String?
+  approvedAt1     DateTime?
+  approvedAt2     DateTime?
+  ocrData         Json?         // OCR extracted data
+  attachments     Json?         // File URLs
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  vendor          Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("ap_invoices")
+}
+
+enum APInvoiceStatus {
+  PENDING
+  APPROVAL_1
+  APPROVAL_2
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+// --- AR (Accounts Receivable) ---
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  taxId         String?
+  address       Json?
+  contactEmail  String?
+  contactPhone  String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  invoices      ARInvoice[]
+  payments      ARPayment[]
+
+  @@index([name])
+  @@map("customers")
+}
+
+model ARInvoice {
+  id              String        @id @default(cuid())
+  customerId      String
+  invoiceNumber   String
+  amount          Decimal       @db.Decimal(14, 2)
+  currency        String        @default("USD")
+  dueDate         DateTime
+  status          ARInvoiceStatus @default(OPEN)
+  amountPaid      Decimal       @db.Decimal(14, 2) @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  customer        Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  payments        ARPayment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("ar_invoices")
+}
+
+enum ARInvoiceStatus {
+  OPEN
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model ARPayment {
+  id              String   @id @default(cuid())
+  customerId      String
+  invoiceId       String?
+  amount          Decimal  @db.Decimal(14, 2)
+  currency        String   @default("USD")
+  paymentDate     DateTime
+  paymentMethod   String
+  reference       String?
+  createdAt       DateTime @default(now())
+
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoice         ARInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([invoiceId])
+  @@map("ar_payments")
+}
+
+// --- GAAP Financials ---
+model BalanceSheet {
+  id            String   @id @default(cuid())
+  periodEnd     DateTime
+  periodType    String   // MONTHLY, QUARTERLY, ANNUAL
+  data          Json     // Assets, Liabilities, Equity
+  notes         String?  @db.Text
+  status        String   @default("DRAFT")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([periodEnd])
+  @@map("balance_sheets")
+}
+
+model IncomeStatement {
+  id            String   @id @default(cuid())
+  periodEnd     DateTime
+  periodType    String
+  data          Json     // Revenue, Expenses, Net Income
+  notes         String?  @db.Text
+  status        String   @default("DRAFT")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([periodEnd])
+  @@map("income_statements")
+}
+
+model CashFlowStatement {
+  id            String   @id @default(cuid())
+  periodEnd     DateTime
+  periodType    String
+  data          Json     // Operating, Investing, Financing
+  notes         String?  @db.Text
+  status        String   @default("DRAFT")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([periodEnd])
+  @@map("cash_flow_statements")
+}
+
+// --- Journal Entries ---
+model JournalEntry {
+  id              String   @id @default(cuid())
+  entryNumber     String   @unique
+  entryDate       DateTime
+  period          String   // YYYY-MM
+  description     String   @db.Text
+  status          JournalEntryStatus @default(DRAFT)
+  totalDebit      Decimal  @db.Decimal(14, 2)
+  totalCredit     Decimal  @db.Decimal(14, 2)
+  approver1Id     String?
+  approver2Id     String?
+  approvedAt1     DateTime?
+  approvedAt2     DateTime?
+  attachments     Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lines           JournalEntryLine[]
+  approvals       JournalEntryApproval[]
+
+  @@index([entryDate])
+  @@index([period])
+  @@index([status])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id              String   @id @default(cuid())
+  journalEntryId  String
+  accountCode     String
+  accountName     String
+  debit           Decimal  @db.Decimal(14, 2) @default(0)
+  credit          Decimal  @db.Decimal(14, 2) @default(0)
+  description     String?  @db.Text
+  lineOrder       Int      @default(0)
+
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@map("journal_entry_lines")
+}
+
+model JournalEntryApproval {
+  id              String   @id @default(cuid())
+  journalEntryId  String
+  userId          String
+  approvalOrder   Int      // 1 or 2 for dual authorization
+  status          String   // APPROVED, REJECTED
+  comment         String?  @db.Text
+  approvedAt      DateTime @default(now())
+
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@map("journal_entry_approvals")
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  POSTED
+  REJECTED
+}
+
+// --- Bank Reconciliation ---
+model BankReconciliation {
+  id              String   @id @default(cuid())
+  bankAccount     String
+  periodEnd       DateTime
+  bookBalance     Decimal  @db.Decimal(14, 2)
+  bankBalance     Decimal  @db.Decimal(14, 2)
+  reconciledBalance Decimal @db.Decimal(14, 2)
+  status          String   @default("IN_PROGRESS")
+  differences     Json?    // Pending items
+  statementData   Json?    // Imported statement
+  attachments     Json?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([periodEnd])
+  @@map("bank_reconciliations")
+}
+
+// --- Month-End Close ---
+model MonthEndClose {
+  id            String   @id @default(cuid())
+  period        String   // YYYY-MM
+  status        MonthEndCloseStatus @default(NOT_STARTED)
+  checklist     Json     // Task checklist
+  timeline      Json?    // Timeline events
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tasks         MonthEndCloseTask[]
+
+  @@index([period])
+  @@map("month_end_closes")
+}
+
+model MonthEndCloseTask {
+  id              String   @id @default(cuid())
+  monthEndCloseId String
+  area            String   // AP, AR, GL, etc.
+  taskName        String
+  responsibleId   String?
+  status          String   @default("PENDING")
+  dueDate         DateTime?
+  completedAt     DateTime?
+  evidence        Json?    // Attached evidence
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  monthEndClose   MonthEndClose @relation(fields: [monthEndCloseId], references: [id], onDelete: Cascade)
+
+  @@index([monthEndCloseId])
+  @@map("month_end_close_tasks")
+}
+
+enum MonthEndCloseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PENDING_REVIEW
+  COMPLETED
+}
+
+// --- SOX 404 & ICFR ---
+model ICFRControl {
+  id              String   @id @default(cuid())
+  controlId       String   @unique
+  cosoComponent   String   // Control Environment, Risk Assessment, etc.
+  cosoObjective   String
+  cycle           String   // Revenue, Expenditure, etc.
+  risk            String   @db.Text
+  controlName     String   @db.Text
+  controlType     String   // Preventive, Detective
+  description     String   @db.Text
+  ownerId         String?
+  status          String   @default("ACTIVE")
+  evidence        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tests           ControlTestResult[]
+  deficiencies    Deficiency[]
+
+  @@index([cycle])
+  @@index([cosoComponent])
+  @@map("icfr_controls")
+}
+
+model ControlTestResult {
+  id              String   @id @default(cuid())
+  controlId       String
+  testType        String   // TOD, TOE, WALKTHROUGH
+  testDate        DateTime
+  testerId        String
+  result          String   // PASS, FAIL, N/A
+  sampleSize      Int?
+  exceptions      Int?
+  notes           String?  @db.Text
+  evidence        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  control         ICFRControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [testerId], references: [id], onDelete: Cascade)
+
+  @@index([controlId])
+  @@index([testDate])
+  @@map("control_test_results")
+}
+
+model Deficiency {
+  id              String   @id @default(cuid())
+  controlId       String?
+  title           String   @db.Text
+  description     String   @db.Text
+  severity        DeficiencySeverity
+  status          String   @default("OPEN")
+  remediationPlan String?  @db.Text
+  dueDate         DateTime?
+  completedAt     DateTime?
+  evidence        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  control         ICFRControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  remediations    DeficiencyRemediation[]
+
+  @@index([controlId])
+  @@index([severity])
+  @@index([status])
+  @@map("deficiencies")
+}
+
+model DeficiencyRemediation {
+  id              String   @id @default(cuid())
+  deficiencyId    String
+  userId          String
+  action          String
+  evidence        Json?
+  createdAt       DateTime @default(now())
+
+  deficiency      Deficiency @relation(fields: [deficiencyId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([deficiencyId])
+  @@map("deficiency_remediations")
+}
+
+enum DeficiencySeverity {
+  DEFICIENCY
+  SIGNIFICANT_DEFICIENCY
+  MATERIAL_WEAKNESS
+}
+
+// --- Audit Trail (Immutable) ---
+model AuditTrailLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  changes     Json?    // Before/After
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("audit_trail_logs")
+}
+
+// --- RBAC & Permissions ---
+model FinancialPermission {
+  id          String   @id @default(cuid())
+  userId      String
+  module      String   // GAAP, AP, AR, SOX, etc.
+  permission  String   // VIEW, EDIT, APPROVE, ADMIN
+  grantedBy   String?
+  grantedAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([module])
+  @@map("financial_permissions")
+}
+
+// --- IPO Readiness ---
+model IPOReadiness {
+  id              String   @id @default(cuid())
+  milestone       String
+  status          String   @default("PENDING")
+  dueDate         DateTime?
+  completedAt     DateTime?
+  evidence        Json?
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@map("ipo_readiness")
+}

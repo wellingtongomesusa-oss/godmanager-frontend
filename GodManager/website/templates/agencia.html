@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Agência - Secure Website{% endblock %}
+
+{% block content %}
+<div class="agencia-page">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h2 class="agencia-title mb-0">Agência</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="fas fa-upload me-1"></i> Upload CSV
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filtros globais -->
+    <div class="card agencia-filters-card mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros globais</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{{ url_for('agencia') }}" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label small">Source</label>
+                    <select name="source" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        {% for s in sources %}
+                        <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Data inicial</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Data final</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Valor mín.</label>
+                    <input type="number" step="0.01" name="value_min" class="form-control form-control-sm" placeholder="0" value="{{ filters.value_min }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Valor máx.</label>
+                    <input type="number" step="0.01" name="value_max" class="form-control form-control-sm" placeholder="" value="{{ filters.value_max }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Unit mín.</label>
+                    <input type="number" name="unit_min" class="form-control form-control-sm" placeholder="0" value="{{ filters.unit_min }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Unit máx.</label>
+                    <input type="number" name="unit_max" class="form-control form-control-sm" placeholder="" value="{{ filters.unit_max }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card agencia-kpi-card h-100">
+                <div class="card-body">
+                    <div class="small text-muted text-uppercase mb-1">Total de Agências (Source)</div>
+                    <div class="agencia-kpi-value">{{ kpis.total_agencias }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card agencia-kpi-card h-100">
+                <div class="card-body">
+                    <div class="small text-muted text-uppercase mb-1">Total Geral (Inc Tax)</div>
+                    <div class="agencia-kpi-value text-success">{{ kpis.total_geral_formatted }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card agencia-kpi-card h-100">
+                <div class="card-body">
+                    <div class="small text-muted text-uppercase mb-1">Total de Units</div>
+                    <div class="agencia-kpi-value">{{ kpis.total_units|int }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card agencia-chart-card h-100">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Participação % por Source</h6>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 280px;">
+                    <canvas id="donutChart" width="250" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card agencia-chart-card h-100">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Valores por Source (Total Inc Tax)</h6>
+                </div>
+                <div class="card-body" style="min-height: 280px;">
+                    <canvas id="barChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card agencia-table-card">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Dados detalhados</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover agencia-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th class="text-end">Total (Inc Tax)</th>
+                            <th class="text-end">Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_data %}
+                        <tr>
+                            <td>{{ row.source }}</td>
+                            <td class="text-end">{{ row.total_formatted }}</td>
+                            <td class="text-end">{{ row.unit }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">Nenhum dado. Faça upload de um CSV.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload CSV -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('agencia_upload') }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload CSV - Agência</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">O CSV deve conter as colunas: <strong>Source</strong>, <strong>Total (Inc Tax)</strong>, <strong>Unit</strong>.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Arquivo CSV</label>
+                        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Modo de importação</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" id="modeIntegrar" value="append" checked>
+                            <label class="form-check-label" for="modeIntegrar">Integrar dados ao CSV existente</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" id="modeSubstituir" value="replace">
+                            <label class="form-check-label" for="modeSubstituir">Substituir dados pelo novo CSV</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const warmColors = ['#e74c3c', '#e67e22', '#f39c12', '#d35400', '#c0392b', '#e74c3c', '#e67e22', '#f39c12', '#d35400', '#c0392b'];
+
+    // Donut
+    const donutCtx = document.getElementById('donutChart');
+    if (donutCtx) {
+        const donutData = {{ donut_data|tojson }};
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: donutData.labels,
+                datasets: [{
+                    data: donutData.values,
+                    backgroundColor: donutData.colors || warmColors.slice(0, donutData.labels.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'right' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return ctx.label + ': ' + ctx.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Bar horizontal
+    const barCtx = document.getElementById('barChart');
+    if (barCtx) {
+        const barData = {{ bar_data|tojson }};
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: barData.labels,
+                datasets: [{
+                    label: 'Total (Inc Tax)',
+                    data: barData.values,
+                    backgroundColor: warmColors.slice(0, barData.labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return 'R$ ' + ctx.parsed.x.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y: {
+                        ticks: { font: { size: 11 } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

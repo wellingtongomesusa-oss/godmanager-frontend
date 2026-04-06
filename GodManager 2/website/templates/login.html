@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Secure Website v1{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Login</h3>
+            </div>
+            <div class="card-body">
+                <!-- Login Form -->
+                <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="loginUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="loginUsername" name="username" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="loginPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="loginPassword" name="password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="needAccount" name="need_account">
+                        <label class="form-check-label" for="needAccount">I need to request an account</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+
+                <!-- Account Request Form (Hidden by default) -->
+                <div id="accountRequestForm" style="display: none;" class="mt-4 pt-4 border-top">
+                    <h5>Request Account</h5>
+                    <form method="POST" action="{{ url_for('request_account') }}">
+                        <div class="mb-3">
+                            <label for="reqUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="reqUsername" name="username" required>
+                            <div id="usernameStatus" class="form-text"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reqFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="reqFirstName" name="first_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reqLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="reqLastName" name="last_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reqEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="reqEmail" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reqPassword" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="reqPassword" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="toggleReqPassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div id="passwordStrength" class="mt-2"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reqConfirmPassword" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="reqConfirmPassword" name="confirm_password" required>
+                            <div id="passwordMatch" class="form-text"></div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Submit Request</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle account request form
+    document.getElementById('needAccount').addEventListener('change', function() {
+        const form = document.getElementById('accountRequestForm');
+        if (this.checked) {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+    });
+
+    // Username availability checking
+    let usernameTimeout;
+    document.getElementById('reqUsername').addEventListener('input', function() {
+        const username = this.value.toLowerCase();
+        const statusDiv = document.getElementById('usernameStatus');
+        
+        clearTimeout(usernameTimeout);
+        
+        if (username.length < 3) {
+            statusDiv.textContent = '';
+            return;
+        }
+        
+        usernameTimeout = setTimeout(() => {
+            fetch(`/check_username?username=${encodeURIComponent(username)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.available) {
+                        statusDiv.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Username available</span>';
+                    } else {
+                        statusDiv.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> Username already taken</span>';
+                    }
+                });
+        }, 300);
+    });
+
+    // Convert username to lowercase
+    document.getElementById('reqUsername').addEventListener('input', function() {
+        this.value = this.value.toLowerCase();
+    });
+
+    // Password strength validation
+    document.getElementById('reqPassword').addEventListener('input', function() {
+        const password = this.value;
+        const strengthDiv = document.getElementById('passwordStrength');
+        strengthDiv.innerHTML = '';
+        
+        if (password.length === 0) return;
+        
+        const requirements = {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            digit: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        };
+        
+        const allMet = Object.values(requirements).every(v => v);
+        
+        let html = '<small>';
+        html += requirements.length ? '<span class="text-success"><i class="fas fa-check"></i> 8+ characters</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> 8+ characters</span><br>';
+        html += requirements.upper ? '<span class="text-success"><i class="fas fa-check"></i> Uppercase letter</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Uppercase letter</span><br>';
+        html += requirements.lower ? '<span class="text-success"><i class="fas fa-check"></i> Lowercase letter</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Lowercase letter</span><br>';
+        html += requirements.digit ? '<span class="text-success"><i class="fas fa-check"></i> Number</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Number</span><br>';
+        html += requirements.special ? '<span class="text-success"><i class="fas fa-check"></i> Special character</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Special character</span><br>';
+        html += '</small>';
+        
+        strengthDiv.innerHTML = html;
+    });
+
+    // Password confirmation matching
+    document.getElementById('reqConfirmPassword').addEventListener('input', function() {
+        const password = document.getElementById('reqPassword').value;
+        const confirm = this.value;
+        const matchDiv = document.getElementById('passwordMatch');
+        
+        if (confirm.length === 0) {
+            matchDiv.textContent = '';
+            return;
+        }
+        
+        if (password === confirm) {
+            matchDiv.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Passwords match</span>';
+        } else {
+            matchDiv.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> Passwords do not match</span>';
+        }
+    });
+
+    // Password visibility toggles
+    document.getElementById('toggleLoginPassword').addEventListener('click', function() {
+        const input = document.getElementById('loginPassword');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    document.getElementById('toggleReqPassword').addEventListener('click', function() {
+        const input = document.getElementById('reqPassword');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+</script>
+{% endblock %}
+

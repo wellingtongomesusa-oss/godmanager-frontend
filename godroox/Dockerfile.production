@@ -1,0 +1,52 @@
+# Dockerfile para Produção - Versão Simplificada
+# Baseado na estrutura fornecida pelo usuário
+
+# Etapa 1: build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* .npmrc* ./ 2>/dev/null || true
+
+RUN npm install
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY . .
+
+RUN npm run build
+
+# Etapa 2: runtime
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Se usar Next com standalone output (descomente se next.config.js tem output: 'standalone'):
+# COPY --from=builder /app/.next/standalone ./
+# COPY --from=builder /app/.next/static ./.next/static
+# COPY --from=builder /app/public ./public
+# COPY --from=builder /app/prisma ./prisma
+# COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Se não estiver usando standalone, use:
+COPY --from=builder /app ./
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["npm", "run", "start"]

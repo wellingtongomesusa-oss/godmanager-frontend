@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sand: #f8f6f2;
+  --cream: #edeae4;
+  --paper: #ffffff;
+  --border: #e2ddd4;
+  --border2: #d4cec4;
+  --ink: #1a1a1c;
+  --ink2: #4a4540;
+  --ink3: #8a8580;
+  --amber: #c9a96e;
+  --amber-bg: #f5ead8;
+  --amber-bd: #e5e0d6;
+  --champ-lt: #dfc08a;
+  --sidebar-bg: #141416;
+  --green: #2a6e4e;
+  --green-bg: #e5f4ed;
+  --red: #b83030;
+  --red-bg: #fce8e8;
+  --blue: #22558c;
+  --blue-bg: #e4eef8;
+  --slate: #4a5568;
+  --slate-bg: #edf0f4;
+
+  --font-heading: var(--font-cormorant), Georgia, serif;
+  --font-body: var(--font-dm), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), monospace;
+
+  /* GodManager.One (manager-pro) — legado */
+  --foreground: #0f172a;
+  --background: #f8fafc;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+
+.godmanager-platform {
+  min-height: 100vh;
+  background: var(--sand);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.godmanager-platform h1,
+.godmanager-platform h2,
+.godmanager-platform h3,
+.godmanager-platform .font-heading {
+  font-family: var(--font-heading);
+}
+
+.gm-stagger-item {
+  animation: gm-page-fade 300ms ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes gm-page-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gm-page-enter {
+  animation: gm-page-fade 300ms ease-out forwards;
+}
+
+.gm-login-root {
+  min-height: 100vh;
+  background: #f5f1ea;
+  position: relative;
+}

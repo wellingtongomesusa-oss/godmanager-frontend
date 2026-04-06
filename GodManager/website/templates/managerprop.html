@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Manager PROP - Workflow Institucional{% endblock %}
+
+{% block content %}
+<div class="managerprop-page">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="managerprop-title mb-1">Manager PROP</h2>
+            <p class="text-muted small mb-0">Workflow AP · Reconciliação · Pagamentos a Owners · Auditoria · KPIs · v1.0</p>
+        </div>
+    </div>
+
+    <nav class="nav nav-pills flex-column flex-md-row mb-4 managerprop-nav">
+        <a class="nav-link" href="#workflow-mensal">1. Workflow Mensal</a>
+        <a class="nav-link" href="#workflow-ap">2. Contas a Pagar</a>
+        <a class="nav-link" href="#calendario">3. Calendário</a>
+        <a class="nav-link" href="#reconciliacao">4. Reconciliação</a>
+        <a class="nav-link" href="#raci">5. RACI</a>
+        <a class="nav-link" href="#slas">6. SLAs</a>
+        <a class="nav-link" href="#controles">7. Controles</a>
+        <a class="nav-link" href="#auditoria">8. Checklist</a>
+        <a class="nav-link" href="#kpis">9. KPIs</a>
+        <a class="nav-link" href="#plano">10. Plano 0-180</a>
+    </nav>
+
+    <!-- 1. WORKFLOW MENSAL -->
+    <section id="workflow-mensal" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-calendar-alt me-2"></i>1. Workflow Mensal – Ciclo Operacional</h4>
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white"><strong>Fase 1: Coleta</strong> (Dias 1–5)</div>
+                    <div class="card-body">
+                        <p class="small mb-1">Recebimento de invoices, extratos, receitas.</p>
+                        <p class="small mb-0"><strong>Entregável:</strong> Invoice Log</p>
+                        <p class="small mb-0"><strong>Responsável:</strong> Property Manager</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white"><strong>Fase 2: Revisão APM Help</strong> (Dias 6–8)</div>
+                    <div class="card-body">
+                        <p class="small mb-1">Categorização, reconciliação diária, Triple Tied Out.</p>
+                        <p class="small mb-0"><strong>Entregável:</strong> Reconciliation Report</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white"><strong>Fase 3: Pagamento Vendors</strong> (Dia 8)</div>
+                    <div class="card-body">
+                        <p class="small mb-1">Execução + arquivamento.</p>
+                        <p class="small mb-0"><strong>Responsáveis:</strong> APM Help + Aprovador</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white"><strong>Fase 4: Aprovação AP</strong> (Dias 11–15)</div>
+                    <div class="card-body">
+                        <p class="small mb-1">Revisão de alçadas, Owner Statements.</p>
+                        <p class="small mb-0"><strong>Responsáveis:</strong> Controller + APM Help + Aprovador</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white"><strong>Fase 5: Pagamento Owners</strong> (Dias 15–20)</div>
+                    <div class="card-body">
+                        <p class="small mb-1">Disbursement + confirmações.</p>
+                        <p class="small mb-0"><strong>Responsáveis:</strong> Accounting + APM Help</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white"><strong>Fase 6: Fechamento</strong> (Dias 21–31)</div>
+                    <div class="card-body">
+                        <p class="small mb-1">Financial Statements, KPIs, preparação do próximo ciclo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. WORKFLOW AP -->
+    <section id="workflow-ap" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-file-invoice-dollar me-2"></i>2. Workflow Contas a Pagar (AP)</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr><th>Etapa</th><th>Descrição</th><th>SLA</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>AP-01</strong></td><td>Recebimento e registro</td><td>24h</td></tr>
+                    <tr><td><strong>AP-02</strong></td><td>Validação 3-Way Match</td><td>—</td></tr>
+                    <tr><td><strong>AP-03</strong></td><td>Classificação contábil</td><td>—</td></tr>
+                    <tr><td><strong>AP-04</strong></td><td>Aprovação por alçada</td><td>—</td></tr>
+                    <tr><td><strong>AP-05</strong></td><td>Agendamento (Net 30 / Net 7)</td><td>—</td></tr>
+                    <tr><td><strong>AP-06</strong></td><td>Execução do pagamento</td><td>—</td></tr>
+                    <tr><td><strong>AP-07</strong></td><td>Reconciliação diária</td><td>—</td></tr>
+                    <tr><td><strong>AP-08</strong></td><td>Arquivamento (7 anos – Florida Statute)</td><td>—</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 3. CALENDÁRIO -->
+    <section id="calendario" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-calendar-check me-2"></i>3. Pagamento a Owners – Calendário Fixo</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr><th>Dia</th><th>Atividade</th><th>Responsável</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>5</td><td>Fechamento de coleta</td><td>Property Manager</td></tr>
+                    <tr><td>8</td><td>Pagamento Vendors + Owner Statement draft</td><td>APM Help + Aprovador</td></tr>
+                    <tr><td>10</td><td>Revisão de charges</td><td>Controller</td></tr>
+                    <tr><td>12</td><td>Aprovação final</td><td>Aprovador</td></tr>
+                    <tr><td>13</td><td>Envio Owner Statement</td><td>Accounting</td></tr>
+                    <tr><td>15</td><td>Disbursement + confirmação</td><td>Accounting + APM Help</td></tr>
+                    <tr><td>17</td><td>Resolução de disputas</td><td>APM Help</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 4. RECONCILIAÇÃO -->
+    <section id="reconciliacao" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-balance-scale me-2"></i>4. Reconciliação Bancária</h4>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card border-success h-100">
+                    <div class="card-header bg-success text-white">Daily</div>
+                    <div class="card-body small">
+                        <ul class="mb-0">
+                            <li>Conferência saldo abertura → transações → saldo fechamento</li>
+                            <li>Report diário ao Manager Financeiro</li>
+                            <li>Discrepâncias reportadas em 24h</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-warning h-100">
+                    <div class="card-header bg-warning text-dark">Weekly – Triple Tied Out</div>
+                    <div class="card-body small">
+                        <ul class="mb-0">
+                            <li>Bank Balance = AppFolio Balance = Owner Ledger</li>
+                            <li>Relatório enviado toda sexta</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-info h-100">
+                    <div class="card-header bg-info text-white">Monthly</div>
+                    <div class="card-body small">
+                        <ul class="mb-0">
+                            <li>Reconciliação completa</li>
+                            <li>Bank Reconciliation Report</li>
+                            <li>Itens em aberto identificados</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. RACI -->
+    <section id="raci" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-users-cog me-2"></i>5. Matriz RACI</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Atividade</th>
+                        <th>PM</th><th>APM Help</th><th>Controller</th><th>Aprovador</th><th>Accounting</th>
+                    </tr>
+                </thead>
+                <tbody class="small">
+                    <tr><td>Recebimento de invoice</td><td>R</td><td>I</td><td>I</td><td>—</td><td>—</td></tr>
+                    <tr><td>Aprovação por alçada</td><td>I</td><td>R</td><td>A</td><td>R</td><td>I</td></tr>
+                    <tr><td>Reconciliação diária</td><td>I</td><td>R</td><td>A</td><td>—</td><td>I</td></tr>
+                    <tr><td>Owner Statement</td><td>I</td><td>R</td><td>A</td><td>I</td><td>R</td></tr>
+                    <tr><td>Disbursement</td><td>I</td><td>R</td><td>A</td><td>I</td><td>R</td></tr>
+                    <tr><td>Atualização AppFolio</td><td>I</td><td>R</td><td>A</td><td>—</td><td>I</td></tr>
+                    <tr><td>Auditoria mensal</td><td>I</td><td>R</td><td>A</td><td>I</td><td>R</td></tr>
+                    <tr><td>Gestão de seguros</td><td>R</td><td>I</td><td>A</td><td>I</td><td>I</td></tr>
+                </tbody>
+            </table>
+            <p class="small text-muted">R=Responsible · A=Accountable · C=Consulted · I=Informed</p>
+        </div>
+    </section>
+
+    <!-- 6. SLAs -->
+    <section id="slas" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-clock me-2"></i>6. SLAs – Internos e Contratuais</h4>
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">Internos</div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <tbody class="small">
+                                <tr><td>Registro de invoice</td><td>24h</td></tr>
+                                <tr><td>Disputa Owner</td><td>48h</td></tr>
+                                <tr><td>Atualização AppFolio</td><td>24h</td></tr>
+                                <tr><td>Disbursement</td><td>Dia 15</td></tr>
+                                <tr><td>Pagamento Vendor</td><td>Net 30</td></tr>
+                                <tr><td>Renovação de leases</td><td>60 dias antes</td></tr>
+                                <tr><td>Manutenção urgente</td><td>4h</td></tr>
+                                <tr><td>Manutenção não urgente</td><td>48h</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">APM Help</div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <tbody class="small">
+                                <tr><td>Reconciliação diária</td><td>D+0</td></tr>
+                                <tr><td>Triple Tied Out</td><td>Diário/Semanal</td></tr>
+                                <tr><td>Owner Statement</td><td>Até dia 15</td></tr>
+                                <tr><td>Resposta a queries</td><td>1 dia útil</td></tr>
+                                <tr><td>Financial Statements</td><td>Até dia 15 do mês seguinte</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. CONTROLES -->
+    <section id="controles" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-shield-alt me-2"></i>7. Controles Internos</h4>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card border-success h-100">
+                    <div class="card-header bg-success text-white">Preventivos</div>
+                    <div class="card-body small">
+                        <ul class="mb-0">
+                            <li>Segregação de funções</li>
+                            <li>Limites de alçada</li>
+                            <li>Dois signatários &gt; $2.000</li>
+                            <li>PO/Work Order obrigatório</li>
+                            <li>W-9 antes do primeiro pagamento</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-warning h-100">
+                    <div class="card-header bg-warning text-dark">Detectivos</div>
+                    <div class="card-body small">
+                        <ul class="mb-0">
+                            <li>Reconciliação diária</li>
+                            <li>AP Aging semanal</li>
+                            <li>Comparativo despesas vs orçamento</li>
+                            <li>Auditoria duplicidade</li>
+                            <li>Vacância mensal</li>
+                            <li>Revisão trimestral de contratos</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-danger h-100">
+                    <div class="card-header bg-danger text-white">Corretivos</div>
+                    <div class="card-body small">
+                        <ul class="mb-0">
+                            <li>Disputa de invoice (5 dias úteis)</li>
+                            <li>Reverse payment documentado</li>
+                            <li>Fundo de reserva 2 meses</li>
+                            <li>Revisão anual de contratos</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. CHECKLIST AUDITORIA -->
+    <section id="auditoria" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-clipboard-check me-2"></i>8. Checklist de Auditoria Mensal</h4>
+        <div class="card">
+            <div class="card-body">
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Invoices registradas e categorizadas</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Reconciliação completa</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Triple Tied Out balanceado</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Disbursements executados</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Owner Statements enviados</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Leases vencendo em 60 dias</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Vacância + plano de marketing</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Seguro de Vendors atualizado</div>
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox"> Campos obrigatórios AppFolio completos</div>
+                <div class="form-check mb-0"><input class="form-check-input" type="checkbox"> KPIs revisados</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. KPIs -->
+    <section id="kpis" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-chart-line me-2"></i>9. KPIs – Monitoramento Contínuo</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr><th>KPI</th><th>Meta</th><th>Frequência</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Ocupação</td><td>≥ 95%</td><td>Mensal</td></tr>
+                    <tr><td>Coleta vs projetado</td><td>≥ 98%</td><td>Mensal</td></tr>
+                    <tr><td>Atraso Vendor</td><td>≤ 5 dias</td><td>Semanal</td></tr>
+                    <tr><td>Disbursement no prazo</td><td>100%</td><td>Mensal</td></tr>
+                    <tr><td>Discrepâncias reconciliação</td><td>0</td><td>Diária</td></tr>
+                    <tr><td>Invoices duplicadas</td><td>0</td><td>Mensal</td></tr>
+                    <tr><td>Renovação de leases</td><td>≥ 85%</td><td>Trimestral</td></tr>
+                    <tr><td>Dados completos AppFolio</td><td>100%</td><td>Mensal</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 10. PLANO 0-180 -->
+    <section id="plano" class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-road me-2"></i>10. Plano de Ação – 0 a 180 Dias</h4>
+        <div class="accordion" id="planoAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#plano30">
+                        0–30 dias
+                    </button>
+                </h2>
+                <div id="plano30" class="accordion-collapse collapse show" data-bs-parent="#planoAccordion">
+                    <div class="accordion-body">
+                        <ul>
+                            <li>Investigar unidades com rent $0</li>
+                            <li>Criar calendário fixo de disbursement</li>
+                            <li>Completar Sqft e Bedrooms</li>
+                            <li>Coletar e-mails faltantes</li>
+                            <li>Confirmar reconciliação diária</li>
+                            <li>Atualizar ACORD</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#plano90">
+                        30–90 dias
+                    </button>
+                </h2>
+                <div id="plano90" class="accordion-collapse collapse" data-bs-parent="#planoAccordion">
+                    <div class="accordion-body">
+                        <ul>
+                            <li>Implementar RACI</li>
+                            <li>Pipeline de renovação</li>
+                            <li>Publicar SLAs</li>
+                            <li>Onboarding Vendors (W-9)</li>
+                            <li>Alinhamento formal com APM Help</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#plano180">
+                        90–180 dias
+                    </button>
+                </h2>
+                <div id="plano180" class="accordion-collapse collapse" data-bs-parent="#planoAccordion">
+                    <div class="accordion-body">
+                        <ul>
+                            <li>Dashboard KPIs</li>
+                            <li>Marketing de vagas</li>
+                            <li>Revisão contratual APM Help</li>
+                            <li>Avaliar seguro E&O</li>
+                            <li>Revisar management fees</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RESUMO EXECUTIVO -->
+    <section class="managerprop-section">
+        <h4 class="section-title"><i class="fas fa-file-alt me-2"></i>Resumo Executivo</h4>
+        <div class="card border-primary">
+            <div class="card-body">
+                <p class="mb-2">O módulo Manager PROP padroniza o ciclo operacional com 6 fases mensais, 8 etapas de AP, calendário fixo de disbursement e controles preventivos, detectivos e corretivos.</p>
+                <p class="mb-2"><strong>Outputs do sistema:</strong> Workflow institucional, tabelas, checklists, SLAs, RACI, calendário, logs, KPIs, plano de ação e recomendações operacionais.</p>
+                <p class="mb-0 small text-muted">Versão 1.0 – Baseado no Estudo Operacional (Março/2026)</p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

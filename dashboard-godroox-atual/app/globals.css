@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply antialiased;
+    min-height: 100vh;
+    color: #0F172A;
+    background-color: #F8FAFC;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .heading-1 {
+    @apply text-3xl font-semibold tracking-tight text-brex-black sm:text-4xl;
+  }
+  .heading-2 {
+    @apply text-2xl font-semibold tracking-tight text-brex-black sm:text-3xl;
+  }
+  .heading-3 {
+    @apply text-xl font-semibold tracking-tight text-brex-black sm:text-2xl;
+  }
+  .body-large {
+    @apply text-base text-secondary-600;
+  }
+  .body-base {
+    @apply text-sm text-secondary-600;
+  }
+  .body-small {
+    @apply text-xs text-secondary-600;
+  }
+  /* Brex-style card: clean, elevated, professional */
+  .card-brex {
+    @apply rounded-brex-lg bg-white border border-secondary-200/80 shadow-brex transition-shadow hover:shadow-brex-md;
+  }
+  /* Table row hover */
+  .table-row-hover {
+    @apply transition-colors duration-150;
+  }
+}

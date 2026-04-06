@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance Master · Gestão imobiliária corporativa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --sand: #faf7f2;
+      --cream: #f4efe6;
+      --paper: #fffdf9;
+      --border: #e2d9cc;
+      --ink: #1e160c;
+      --ink2: #6b5c48;
+      --ink3: #9e8e7c;
+      --amber: #c47b28;
+      --amber-bg: #fef3e2;
+      --amber-bd: #e8a84a;
+      --green: #2d7252;
+      --red: #b83030;
+      --blue: #22558c;
+      --slate: #4a5568;
+      --sidebar-w: 240px;
+      --header-h: 64px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Sora', system-ui, sans-serif;
+      background: var(--sand);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    .fm-app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* HEADER */
+    .fm-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: var(--header-h);
+      background: var(--ink);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      box-shadow: 0 2px 12px rgba(30, 22, 12, 0.35);
+    }
+    .fm-header__brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .fm-header__logo {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .fm-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid var(--amber-bd);
+    }
+    .fm-header__right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 13px;
+    }
+    .fm-header__clock {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #c4b89e;
+    }
+    .fm-header__user { color: #eee; font-weight: 500; }
+    .fm-burger {
+      display: none;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.25);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+    }
+    /* BODY ROW */
+    .fm-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    /* SIDEBAR */
+    .fm-sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--ink);
+      border-right: 1px solid #3a2c1e;
+      position: sticky;
+      top: var(--header-h);
+      align-self: flex-start;
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      transition: transform 0.25s ease;
+    }
+    .fm-sidebar__nav { padding: 12px 0 32px; }
+    .fm-nav-sep {
+      padding: 14px 20px 6px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink3);
+    }
+    .fm-nav-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #c4b89e;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      position: relative;
+    }
+    .fm-nav-item:hover {
+      background: rgba(196, 123, 40, 0.08);
+      color: var(--amber);
+    }
+    .fm-nav-item.is-active {
+      background: rgba(196, 123, 40, 0.15);
+      color: var(--amber);
+      border-left: 3px solid var(--amber);
+      padding-left: 17px;
+    }
+    .fm-nav-item i {
+      width: 18px;
+      margin-right: 10px;
+      font-size: 14px;
+      color: var(--amber);
+    }
+    .fm-nav-item .fa-upload.csv-hint {
+      margin-left: auto;
+      opacity: 0;
+      font-size: 11px;
+      color: var(--ink3);
+      transition: opacity 0.15s;
+    }
+    .fm-nav-item:hover .fa-upload.csv-hint { opacity: 1; }
+    .fm-nav-sub {
+      display: none;
+      padding-left: 8px;
+    }
+    .fm-nav-sub.open { display: block; }
+    .fm-nav-sub a {
+      display: block;
+      padding: 8px 20px 8px 44px;
+      font-size: 12px;
+      color: #a89880;
+      text-decoration: none;
+    }
+    .fm-nav-sub a:hover { color: var(--amber); }
+    .fm-nav-toggle .fa-chevron-down {
+      margin-left: auto;
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    .fm-nav-toggle.open .fa-chevron-down { transform: rotate(180deg); }
+    /* MAIN */
+    .fm-main {
+      flex: 1;
+      overflow-y: auto;
+      min-width: 0;
+      padding: 0;
+    }
+    .fm-section {
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+    .fm-section.is-visible { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* Section header */
+    .fm-sec-head {
+      background: var(--cream);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 28px;
+    }
+    .fm-sec-head__row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .fm-sec-head h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .fm-sec-head p {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--ink3);
+    }
+    .fm-sec-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .fm-btn {
+      font-family: 'Sora', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--paper);
+      color: var(--ink2);
+    }
+    .fm-btn:hover { background: var(--sand); }
+    .fm-btn--amber {
+      border-color: var(--amber-bd);
+      color: var(--amber);
+      background: var(--amber-bg);
+    }
+    .fm-btn--amber:hover { filter: brightness(0.97); }
+    .fm-sec-body { padding: 24px 28px 48px; }
+    /* KPI grid */
+    .fm-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .fm-kpi {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      border-bottom: 3px solid var(--amber);
+      position: relative;
+    }
+    .fm-kpi--green { border-bottom-color: var(--green); }
+    .fm-kpi--blue { border-bottom-color: var(--blue); }
+    .fm-kpi--slate { border-bottom-color: var(--slate); }
+    .fm-kpi--red { border-bottom-color: var(--red); }
+    .fm-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: var(--ink3);
+    }
+    .fm-kpi__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .fm-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1e160c;
+      margin-top: 8px;
+    }
+    .fm-sub {
+      font-size: 11px;
+      color: var(--ink2);
+      margin-top: 4px;
+    }
+    .fm-sub--muted { color: var(--ink3); }
+    .fm-donut-wrap {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+    /* Table */
+    .fm-table-wrap {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 60vh;
+    }
+    table.fm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .fm-table thead {
+      position: sticky;
+      top: 0;
+      background: var(--cream);
+      z-index: 1;
+    }
+    .fm-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink3);
+      border-bottom: 1px solid var(--border);
+    }
+    .fm-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .fm-table tbody tr:hover { background: #fdf5e8; }
+    .fm-num {
+      font-family: 'JetBrains Mono', monospace;
+      text-align: right;
+    }
+    .fm-pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .fm-pill--green { background: rgba(45,114,82,.12); color: var(--green); border: 1px solid rgba(45,114,82,.35); }
+    .fm-pill--amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bd); }
+    .fm-pill--red { background: rgba(184,48,48,.1); color: var(--red); border: 1px solid rgba(184,48,48,.35); }
+    .fm-pill--blue { background: rgba(34,85,140,.1); color: var(--blue); border: 1px solid rgba(34,85,140,.3); }
+    .fm-pill--slate { background: #f1f5f9; color: var(--slate); border: 1px solid #cbd5e1; }
+    .fm-search {
+      margin-bottom: 12px;
+      max-width: 280px;
+    }
+    .fm-search input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .fm-pagination {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--ink2);
+    }
+    /* Modal */
+    .fm-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .fm-modal-backdrop.is-open { display: flex; }
+    .fm-modal {
+      background: var(--paper);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(30,22,12,.2);
+    }
+    .fm-modal__head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .fm-modal__body { padding: 20px; }
+    .fm-dropzone {
+      border: 2px dashed var(--amber-bd);
+      border-radius: 10px;
+      padding: 32px;
+      text-align: center;
+      background: var(--amber-bg);
+      cursor: pointer;
+      color: var(--ink2);
+      font-size: 13px;
+    }
+    .fm-dropzone.dragover { background: #fde8cc; }
+    .fm-modal__foot {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    /* Toast */
+    .fm-toast-wrap {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .fm-toast {
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+      animation: slideUp 0.25s ease;
+    }
+    .fm-toast--ok { background: var(--green); color: #fff; }
+    .fm-toast--err { background: var(--red); color: #fff; }
+    @keyframes slideUp {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .fm-placeholder {
+      padding: 24px;
+      background: var(--cream);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--ink3);
+      font-size: 13px;
+    }
+    /* News */
+    .fm-news-form { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+    .fm-news-form input, .fm-news-form textarea {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .fm-news-item {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    /* Drawer mobile */
+    @media (max-width: 1279px) {
+      .fm-burger { display: inline-flex; }
+      .fm-sidebar {
+        position: fixed;
+        left: 0;
+        top: var(--header-h);
+        z-index: 90;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 24px rgba(0,0,0,.2);
+      }
+      .fm-sidebar.is-open { transform: translateX(0); }
+      .fm-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.35);
+        z-index: 85;
+        top: var(--header-h);
+      }
+      .fm-overlay.is-open { display: block; }
+    }
+    @media (max-width: 767px) {
+      .fm-kpi-grid { grid-template-columns: 1fr; }
+      .fm-header { padding: 0 12px; }
+      .fm-sec-body, .fm-sec-head { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="fm-app">
+    <header class="fm-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button type="button" class="fm-burger" id="fmBurger" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+        <div class="fm-header__brand">
+          <span class="fm-header__logo">Finance Master</span>
+          <span class="fm-badge">Manager PRO</span>
+        </div>
+      </div>
+      <div class="fm-header__right">
+        <span class="fm-header__clock" id="fmClock"></span>
+        <span class="fm-header__user" id="fmUser">Admin</span>
+      </div>
+    </header>
+    <div class="fm-overlay" id="fmOverlay"></div>
+    <div class="fm-body">
+      <aside class="fm-sidebar" id="fmSidebar">
+        <nav class="fm-sidebar__nav">
+          <div class="fm-nav-sep">Principal</div>
+          <a class="fm-nav-item is-active" href="#home" data-section="home"><i class="fa-solid fa-house"></i>Home</a>
+          <a class="fm-nav-item" href="#news" data-section="news"><i class="fa-solid fa-newspaper"></i>News & Updates</a>
+
+          <div class="fm-nav-sep">Financeiro</div>
+          <a class="fm-nav-item" href="#raci" data-section="raci" data-csv="raci"><i class="fa-solid fa-file-invoice"></i>RACI Financeiro<i class="fa-solid fa-upload csv-hint" title="CSV"></i></a>
+          <button type="button" class="fm-nav-item fm-nav-toggle" data-expand="properties"><i class="fa-solid fa-building"></i>Properties<i class="fa-solid fa-chevron-down"></i><i class="fa-solid fa-upload csv-hint" title="CSV"></i></button>
+          <div class="fm-nav-sub" id="sub-properties">
+            <a href="#properties" data-section="properties">Ranking</a>
+            <a href="#properties" data-section="properties">Condomínios</a>
+            <a href="#properties" data-section="properties">Franchisees</a>
+          </div>
+          <button type="button" class="fm-nav-item fm-nav-toggle" data-expand="rentroll"><i class="fa-solid fa-calendar-days"></i>Rent Roll<i class="fa-solid fa-chevron-down"></i><i class="fa-solid fa-upload csv-hint"></i></button>
+          <div class="fm-nav-sub" id="sub-rentroll">
+            <a href="#rentroll" data-section="rentroll">Dashboard</a>
+            <a href="#rentroll" data-section="rentroll">Correção KPIs</a>
+            <a href="#rentroll" data-section="rentroll">Unit Directory</a>
+          </div>
+          <a class="fm-nav-item" href="#reservations" data-section="reservations" data-csv="reservations"><i class="fa-solid fa-plane-departure"></i>Reservations<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#agencies" data-section="agencies"><i class="fa-solid fa-handshake"></i>Agencies</a>
+          <a class="fm-nav-item" href="#payouts" data-section="payouts" data-csv="payouts"><i class="fa-solid fa-money-bill-wave"></i>Upcoming Payouts<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#irs" data-section="irs" data-csv="irs"><i class="fa-solid fa-file-lines"></i>1099 / IRS<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#longterm" data-section="longterm" data-csv="longterm"><i class="fa-solid fa-house-chimney"></i>Long Term<i class="fa-solid fa-upload csv-hint"></i></a>
+
+          <div class="fm-nav-sep">Operações</div>
+          <a class="fm-nav-item" href="#housekeeper" data-section="housekeeper" data-csv="housekeeper"><i class="fa-solid fa-broom"></i>Housekeeper<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#cars" data-section="cars" data-csv="cars"><i class="fa-solid fa-car"></i>Cars & Insurance<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#renovations" data-section="renovations" data-csv="renovations"><i class="fa-solid fa-hammer"></i>Renovations<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#licenses" data-section="licenses" data-csv="licenses"><i class="fa-solid fa-id-card"></i>Licenses<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#stock" data-section="stock" data-csv="stock"><i class="fa-solid fa-boxes-stacked"></i>Stock<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#divvy" data-section="divvy" data-csv="divvy"><i class="fa-solid fa-credit-card"></i>Divvy<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#cards" data-section="cards" data-csv="cards"><i class="fa-solid fa-credit-card"></i>Cards<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#monthlog" data-section="monthlog" data-csv="monthlog"><i class="fa-solid fa-calendar-check"></i>MonthLog<i class="fa-solid fa-upload csv-hint"></i></a>
+
+          <div class="fm-nav-sep">Pessoas</div>
+          <a class="fm-nav-item" href="#payroll" data-section="payroll" data-csv="payroll"><i class="fa-solid fa-users"></i>Payroll<i class="fa-solid fa-upload csv-hint"></i></a>
+          <a class="fm-nav-item" href="#dp" data-section="dp" data-csv="dp"><i class="fa-solid fa-star"></i>DP (Daily Points)<i class="fa-solid fa-upload csv-hint"></i></a>
+
+          <div class="fm-nav-sep">Relatórios</div>
+          <a class="fm-nav-item" href="#managerprop" data-section="managerprop"><i class="fa-solid fa-chart-bar"></i>Manager PROP</a>
+          <a class="fm-nav-item" href="#agencia" data-section="agencia" data-csv="agencia"><i class="fa-solid fa-upload"></i>Agência CSV<i class="fa-solid fa-upload csv-hint"></i></a>
+
+          <div class="fm-nav-sep">Sistema</div>
+          <a class="fm-nav-item" href="#auth" data-section="auth"><i class="fa-solid fa-shield-halved"></i>Auth / Admin</a>
+        </nav>
+      </aside>
+      <main class="fm-main" id="fmMain">
+        <!-- HOME -->
+        <section class="fm-section is-visible" id="section-home" data-section-panel="home">
+          <div class="fm-sec-head">
+            <div class="fm-sec-head__row">
+              <div>
+                <h1><i class="fa-solid fa-grip-vertical" style="opacity:.35;margin-right:8px;"></i>Home</h1>
+                <p>Visão executiva · KPIs com donut 80×80 · design system Finance Master</p>
+              </div>
+              <div class="fm-sec-actions">
+                <button type="button" class="fm-btn fm-btn--amber" id="btnCsvHome" style="display:none">↑ Upload CSV</button>
+                <button type="button" class="fm-btn" id="btnCsvDownHome">↓ CSV</button>
+                <button type="button" class="fm-btn" id="btnPdfHome">↓ PDF</button>
+              </div>
+            </div>
+          </div>
+          <div class="fm-sec-body">
+            <div class="fm-kpi-grid" id="homeKpiGrid"></div>
+          </div>
+        </section>
+
+        <!-- NEWS -->
+        <section class="fm-section" id="section-news" data-section-panel="news">
+          <div class="fm-sec-head">
+            <div class="fm-sec-head__row">
+              <div>
+                <h1>News & Updates</h1>
+                <p>Mensagens persistidas em localStorage · fm_news_messages</p>
+              </div>
+              <div class="fm-sec-actions">
+                <button type="button" class="fm-btn" data-pdf-target="section-news">↓ PDF</button>
+              </div>
+            </div>
+          </div>
+          <div class="fm-sec-body">
+            <div class="fm-news-form">
+              <input type="text" id="newsAuthor" placeholder="Autor" style="width:140px" />
+              <textarea id="newsText" placeholder="Mensagem (máx. 200)" maxlength="200" rows="2" style="flex:1;min-width:200px"></textarea>
+              <button type="button" class="fm-btn fm-btn--amber" id="newsAdd">Publicar</button>
+            </div>
+            <div id="newsList"></div>
+          </div>
+        </section>
+
+        <!-- LICENSES (exemplo completo) -->
+        <section class="fm-section" id="section-licenses" data-section-panel="licenses">
+          <div class="fm-sec-head">
+            <div class="fm-sec-head__row">
+              <div>
+                <h1>Licenses</h1>
+                <p>licenses.csv · KPIs, tabela, export filtrado</p>
+              </div>
+              <div class="fm-sec-actions">
+                <button type="button" class="fm-btn fm-btn--amber" data-open-csv="licenses">↑ Upload CSV</button>
+                <button type="button" class="fm-btn" data-csv-export="licenses">↓ CSV</button>
+                <button type="button" class="fm-btn" data-pdf-target="section-licenses">↓ PDF</button>
+              </div>
+            </div>
+          </div>
+          <div class="fm-sec-body" id="licensesBody">
+            <div class="fm-kpi-grid" id="licensesKpis"></div>
+            <div class="fm-search"><input type="search" id="licSearch" placeholder="Buscar tipo…" /></div>
+            <div class="fm-table-wrap">
+              <table class="fm-table" id="licTable">
+                <thead><tr><th>#</th><th>Tipo</th><th>Status</th><th class="fm-num">Validade</th></tr></thead>
+                <tbody id="licTbody"></tbody>
+              </table>
+            </div>
+            <div class="fm-pagination" id="licPag"></div>
+          </div>
+        </section>
+
+        <!-- Generic placeholders for other modules -->
+        <section class="fm-section" id="section-raci" data-section-panel="raci"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>RACI Financeiro</h1><p>RACI_FINANCEIRO.csv</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="raci">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="raci">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-raci">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder" data-module-body="raci">Carregue CSV para preencher KPIs e tabela.</div></section>
+
+        <section class="fm-section" id="section-properties" data-section-panel="properties"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Properties</h1><p>export__88_.xlsx + DataGrid.csv</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="properties">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="properties">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-properties">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder" data-module-body="properties">Módulo Properties — use Upload CSV (DataGrid / export).</div></section>
+
+        <section class="fm-section" id="section-rentroll" data-section-panel="rentroll"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Rent Roll</h1><p>Múltiplos ficheiros CSV</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="rentroll">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="rentroll">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-rentroll">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Rent Roll dashboard.</div></section>
+
+        <section class="fm-section" id="section-reservations" data-section-panel="reservations"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Reservations</h1><p>DataGrid.csv</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="reservations">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="reservations">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-reservations">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Reservations.</div></section>
+
+        <section class="fm-section" id="section-agencies" data-section-panel="agencies"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Agencies</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn" data-pdf-target="section-agencies">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Agencies.</div></section>
+
+        <section class="fm-section" id="section-payouts" data-section-panel="payouts"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Upcoming Payouts</h1><p>airbnb CSVs</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="payouts">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="payouts">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-payouts">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Payouts.</div></section>
+
+        <section class="fm-section" id="section-irs" data-section-panel="irs"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>1099 / IRS</h1><p>AllBillsPage.csv · acumula por mês</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="irs">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="irs">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-irs">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">IRS — chaves fm_irs_YYYY_MM</div></section>
+
+        <section class="fm-section" id="section-longterm" data-section-panel="longterm"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Long Term</h1><p>longterm.csv</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="longterm">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="longterm">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-longterm">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Long Term.</div></section>
+
+        <section class="fm-section" id="section-housekeeper" data-section-panel="housekeeper"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Housekeeper</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="housekeeper">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="housekeeper">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-housekeeper">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Housekeeper.</div></section>
+
+        <section class="fm-section" id="section-cars" data-section-panel="cars"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Cars & Insurance</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="cars">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="cars">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-cars">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Cars.</div></section>
+
+        <section class="fm-section" id="section-renovations" data-section-panel="renovations"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Renovations</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="renovations">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="renovations">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-renovations">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Renovations.</div></section>
+
+        <section class="fm-section" id="section-stock" data-section-panel="stock"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Stock</h1><p>stock.csv</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="stock">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="stock">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-stock">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Stock.</div></section>
+
+        <section class="fm-section" id="section-divvy" data-section-panel="divvy"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Divvy</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="divvy">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="divvy">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-divvy">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Divvy.</div></section>
+
+        <section class="fm-section" id="section-cards" data-section-panel="cards"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Cards</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="cards">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="cards">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-cards">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Cards.</div></section>
+
+        <section class="fm-section" id="section-monthlog" data-section-panel="monthlog"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>MonthLog</h1><p>fm_monthlog_YYYY_MM</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="monthlog">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="monthlog">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-monthlog">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">MonthLog.</div></section>
+
+        <section class="fm-section" id="section-payroll" data-section-panel="payroll"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Payroll</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="payroll">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="payroll">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-payroll">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Payroll.</div></section>
+
+        <section class="fm-section" id="section-dp" data-section-panel="dp"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>DP (Daily Points)</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="dp">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="dp">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-dp">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">DP.</div></section>
+
+        <section class="fm-section" id="section-managerprop" data-section-panel="managerprop"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Manager PROP</h1><p></p></div><div class="fm-sec-actions"><button type="button" class="fm-btn" data-pdf-target="section-managerprop">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Manager PROP relatório.</div></section>
+
+        <section class="fm-section" id="section-agencia" data-section-panel="agencia"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Agência CSV</h1><p>DataGrid.csv</p></div><div class="fm-sec-actions"><button type="button" class="fm-btn fm-btn--amber" data-open-csv="agencia">↑ Upload CSV</button><button type="button" class="fm-btn" data-csv-export="agencia">↓ CSV</button><button type="button" class="fm-btn" data-pdf-target="section-agencia">↓ PDF</button></div></div></div><div class="fm-sec-body fm-placeholder">Agência.</div></section>
+
+        <section class="fm-section" id="section-auth" data-section-panel="auth"><div class="fm-sec-head"><div class="fm-sec-head__row"><div><h1>Auth / Admin</h1><p>Configuração local</p></div></div></div><div class="fm-sec-body">
+          <label class="fm-label" style="display:block;margin-bottom:6px">Nome do utilizador (header)</label>
+          <input type="text" id="authUserName" style="padding:10px;border:1px solid var(--border);border-radius:8px;width:100%;max-width:320px" />
+          <button type="button" class="fm-btn fm-btn--amber" style="margin-top:12px" id="authSave">Guardar</button>
+        </div></section>
+      </main>
+    </div>
+  </div>
+
+  <!-- CSV Modal -->
+  <div class="fm-modal-backdrop" id="csvModal">
+    <div class="fm-modal" role="dialog">
+      <div class="fm-modal__head" id="csvModalTitle">Upload CSV</div>
+      <div class="fm-modal__body">
+        <div class="fm-dropzone" id="csvDropzone">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size:28px;color:var(--amber);margin-bottom:8px;display:block"></i>
+          Arraste o ficheiro ou clique para selecionar
+          <input type="file" id="csvFile" accept=".csv,text/csv" style="display:none" />
+        </div>
+        <p id="csvPreview" style="margin-top:14px;font-size:12px;color:var(--ink2)"></p>
+        <p id="csvValidate" style="margin-top:8px;font-size:12px;color:var(--red);display:none"></p>
+      </div>
+      <div class="fm-modal__foot">
+        <button type="button" class="fm-btn" id="csvCancel">Cancelar</button>
+        <button type="button" class="fm-btn fm-btn--amber" id="csvProcess" disabled>Processar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fm-toast-wrap" id="toastWrap"></div>
+
+  <script>
+(function () {
+  'use strict';
+
+  var LS = {
+    raci: 'fm_raci_data',
+    rentroll: 'fm_rentroll_data',
+    housekeeper: 'fm_housekeeper_data',
+    cars: 'fm_cars_data',
+    reservations: 'fm_reservations_data',
+    payouts: 'fm_payouts_data',
+    irs: 'fm_irs_data',
+    renovations: 'fm_renovations_data',
+    properties: 'fm_properties_data',
+    dp: 'fm_dp_data',
+    agencia: 'fm_agencia_data',
+    licenses: 'fm_licenses_data',
+    stock: 'fm_stock_data',
+    divvy: 'fm_divvy_data',
+    cards: 'fm_cards_data',
+    monthlog: 'fm_monthlog_data',
+    payroll: 'fm_payroll_data',
+    longterm: 'fm_longterm_data',
+    news: 'fm_news_messages',
+    user: 'fm_user_name'
+  };
+
+  var csvModalModule = null;
+  var csvPendingText = '';
+  var csvPendingRows = [];
+
+  function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function $all(sel, ctx) { return [].slice.call((ctx || document).querySelectorAll(sel)); }
+
+  function toast(msg, ok) {
+    var w = $('#toastWrap');
+    var t = document.createElement('div');
+    t.className = 'fm-toast ' + (ok ? 'fm-toast--ok' : 'fm-toast--err');
+    t.textContent = msg;
+    w.appendChild(t);
+    setTimeout(function () { t.remove(); }, 4000);
+  }
+
+  function parseCSV(text) {
+    var rows = [];
+    var i = 0, cur = '', row = [], inQ = false;
+    while (i < text.length) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { cur += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        cur += c; i++; continue;
+      }
+      if (c === '"') { inQ = true; i++; continue; }
+      if (c === ',') { row.push(cur); cur = ''; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; i++; continue; }
+      cur += c; i++;
+    }
+    row.push(cur);
+    if (row.length > 1 || (row.length === 1 && row[0])) rows.push(row);
+    return rows;
+  }
+
+  function rowsToObjects(header, dataRows) {
+    return dataRows.map(function (r) {
+      var o = {};
+      header.forEach(function (h, j) { o[h.trim()] = (r[j] != null ? String(r[j]).trim() : ''); });
+      return o;
+    });
+  }
+
+  function showSection(id) {
+    $all('.fm-section').forEach(function (s) { s.classList.remove('is-visible'); });
+    var el = $('#section-' + id);
+    if (el) el.classList.add('is-visible');
+    $all('.fm-nav-item').forEach(function (a) {
+      a.classList.remove('is-active');
+      if (a.getAttribute('href') === '#' + id) a.classList.add('is-active');
+    });
+    if (id === 'licenses') renderLicenses();
+    if (id === 'news') renderNews();
+    if (history.replaceState) history.replaceState(null, '', '#' + id);
+    else location.hash = id;
+  }
+
+  function navBind() {
+    $all('.fm-nav-item[href^="#"]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        var h = el.getAttribute('href');
+        if (!h || h === '#') return;
+        var id = h.slice(1);
+        if (el.getAttribute('data-csv') && (e.target.classList.contains('csv-hint') || (e.target.closest && e.target.closest('.csv-hint')))) {
+          e.preventDefault();
+          e.stopPropagation();
+          openCsvModal(el.getAttribute('data-csv'));
+          return;
+        }
+        e.preventDefault();
+        showSection(id);
+        closeDrawer();
+      });
+    });
+    $all('.fm-nav-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-expand');
+        var sub = $('#sub-' + id);
+        btn.classList.toggle('open');
+        if (sub) sub.classList.toggle('open');
+      });
+    });
+  }
+
+  function closeDrawer() {
+    $('#fmSidebar').classList.remove('is-open');
+    $('#fmOverlay').classList.remove('is-open');
+  }
+  $('#fmBurger').addEventListener('click', function () {
+    $('#fmSidebar').classList.toggle('is-open');
+    $('#fmOverlay').classList.toggle('is-open');
+  });
+  $('#fmOverlay').addEventListener('click', closeDrawer);
+
+  /* Clock */
+  function tick() {
+    var d = new Date();
+    $('#fmClock').textContent = d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  var userName = localStorage.getItem(LS.user) || 'Admin';
+  $('#fmUser').textContent = userName;
+  $('#authUserName').value = userName;
+  $('#authSave').addEventListener('click', function () {
+    var v = $('#authUserName').value.trim() || 'Admin';
+    localStorage.setItem(LS.user, v);
+    $('#fmUser').textContent = v;
+    toast('Nome atualizado', true);
+  });
+
+  /* Home KPIs + donuts */
+  var homeCharts = [];
+  function destroyHomeCharts() {
+    homeCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+    homeCharts = [];
+  }
+  function buildHomeKpis() {
+    destroyHomeCharts();
+    var grid = $('#homeKpiGrid');
+    grid.innerHTML = '';
+    var items = [
+      { label: 'Properties', value: '975', sub: 'Portfolio ref.', sub2: 'Unidades', cls: 'fm-kpi--slate', donut: [975, 200], colors: ['#1e160c', '#e2d9cc'] },
+      { label: 'Managed $', value: '$0', sub: 'Valor gerido', sub2: '', cls: 'fm-kpi--blue', donut: [1, 99], colors: ['#22558c', '#e2d9cc'] },
+      { label: 'Licenses', value: '712', sub: 'Ativas / alertas', sub2: '', cls: 'fm-kpi--green', donut: [520, 120, 72], colors: ['#2d7252', '#c47b28', '#b83030'] },
+      { label: 'Reservations', value: '4.471', sub: 'DataGrid ref.', sub2: '', cls: 'fm-kpi--green', donut: [4471, 1000], colors: ['#2d7252', '#e2d9cc'] }
+    ];
+    items.forEach(function (it, idx) {
+      var card = document.createElement('div');
+      card.className = 'fm-kpi ' + it.cls;
+      var wrapId = 'donut-home-' + idx;
+      card.innerHTML =
+        '<div class="fm-kpi__top">' +
+        '<div><div class="fm-label">' + it.label + '</div><div class="fm-value">' + it.value + '</div>' +
+        '<div class="fm-sub">' + it.sub + '</div><div class="fm-sub fm-sub--muted">' + it.sub2 + '</div></div>' +
+        '<div class="fm-donut-wrap"><canvas id="' + wrapId + '"></canvas></div></div>';
+      grid.appendChild(card);
+      var ctx = document.getElementById(wrapId);
+      if (ctx && typeof Chart !== 'undefined') {
+        var c = new Chart(ctx, {
+          type: 'doughnut',
+          data: { datasets: [{ data: it.donut, backgroundColor: it.colors, borderWidth: 0 }] },
+          options: {
+            cutout: '70%',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: true } }
+          }
+        });
+        homeCharts.push(c);
+      }
+    });
+  }
+  buildHomeKpis();
+
+  /* Licenses */
+  var licRows = [];
+  var licFiltered = [];
+  var licPage = 0;
+  var LIC_PAGE = 25;
+  var licCharts = [];
+
+  function defaultLicenseRows() {
+    return [
+      { tipo: 'Alvará municipal', status: 'ativa', validade: '2030-12-31' },
+      { tipo: 'Short-term rental', status: 'pendente', validade: '2026-04-01' },
+      { tipo: 'Pool permit', status: 'expirada', validade: '2025-11-01' },
+      { tipo: 'Business tax', status: 'ativa', validade: '2026-09-30' },
+      { tipo: 'Fire safety', status: 'ativa', validade: '2027-09-30' }
+    ];
+  }
+
+  function loadLicenses() {
+    try {
+      var raw = localStorage.getItem(LS.licenses);
+      if (raw) {
+        var j = JSON.parse(raw);
+        if (Array.isArray(j.rows)) { licRows = j.rows; return; }
+      }
+    } catch (e) {}
+    licRows = defaultLicenseRows();
+  }
+
+  function saveLicenses() {
+    localStorage.setItem(LS.licenses, JSON.stringify({ rows: licRows, at: new Date().toISOString() }));
+  }
+
+  function pillClass(st) {
+    if (st === 'ativa') return 'fm-pill fm-pill--green';
+    if (st === 'pendente') return 'fm-pill fm-pill--amber';
+    if (st === 'expirada') return 'fm-pill fm-pill--red';
+    return 'fm-pill fm-pill--slate';
+  }
+
+  function renderLicenses() {
+    loadLicenses();
+    licFiltered = licRows.slice();
+    licPage = 0;
+    drawLicTable();
+    drawLicKpis();
+  }
+
+  function drawLicKpis() {
+    licCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+    licCharts = [];
+    var a = 0, p = 0, x = 0;
+    licRows.forEach(function (r) {
+      var s = (r.status || '').toLowerCase();
+      if (s === 'ativa') a++; else if (s === 'pendente') p++; else if (s === 'expirada') x++;
+    });
+    var box = $('#licensesKpis');
+    box.innerHTML = '';
+    var mk = function (label, val, cls, data, colors) {
+      var d = document.createElement('div');
+      d.className = 'fm-kpi ' + cls;
+      var cid = 'lic-d-' + Math.random().toString(36).slice(2);
+      d.innerHTML = '<div class="fm-kpi__top"><div><div class="fm-label">' + label + '</div><div class="fm-value">' + val + '</div></div><div class="fm-donut-wrap"><canvas id="' + cid + '"></canvas></div></div>';
+      box.appendChild(d);
+      var canvas = document.getElementById(cid);
+      if (canvas && Chart) {
+        licCharts.push(new Chart(canvas, {
+          type: 'doughnut',
+          data: { datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] },
+          options: { cutout: '70%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        }));
+      }
+    };
+    mk('Ativas', String(a), 'fm-kpi--green', [Math.max(a, 1), 0], ['#2d7252', '#e2d9cc']);
+    mk('Pendentes', String(p), 'fm-kpi--amber', [Math.max(p, 1), 0], ['#c47b28', '#e2d9cc']);
+    mk('Expiradas', String(x), 'fm-kpi--red', [Math.max(x, 1), 0], ['#b83030', '#e2d9cc']);
+  }
+
+  function drawLicTable() {
+    var q = ($('#licSearch').value || '').toLowerCase();
+    licFiltered = licRows.filter(function (r) { return !q || (r.tipo || '').toLowerCase().indexOf(q) >= 0; });
+    var start = licPage * LIC_PAGE;
+    var slice = licFiltered.slice(start, start + LIC_PAGE);
+    var tb = $('#licTbody');
+    tb.innerHTML = '';
+    slice.forEach(function (r, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (start + i + 1) + '</td><td>' + escapeHtml(r.tipo) + '</td><td><span class="' + pillClass(r.status) + '">' + escapeHtml(r.status) + '</span></td><td class="fm-num">' + escapeHtml(r.validade) + '</td>';
+      tb.appendChild(tr);
+    });
+    var pag = $('#licPag');
+    var pages = Math.max(1, Math.ceil(licFiltered.length / LIC_PAGE));
+    pag.innerHTML = '<span>Página ' + (licPage + 1) + ' / ' + pages + '</span>' +
+      '<button type="button" class="fm-btn" id="licPrev">Previous</button>' +
+      '<button type="button" class="fm-btn" id="licNext">Next</button>';
+    $('#licPrev').disabled = licPage <= 0;
+    $('#licNext').disabled = licPage >= pages - 1;
+    $('#licPrev').onclick = function () { if (licPage > 0) { licPage--; drawLicTable(); } };
+    $('#licNext').onclick = function () { if (licPage < pages - 1) { licPage++; drawLicTable(); } };
+  }
+
+  var licSearchTimer;
+  $('#licSearch').addEventListener('input', function () {
+    clearTimeout(licSearchTimer);
+    licSearchTimer = setTimeout(function () { licPage = 0; drawLicTable(); }, 200);
+  });
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+
+  /* News */
+  function renderNews() {
+    var list = $('#newsList');
+    list.innerHTML = '';
+    var raw = localStorage.getItem(LS.news);
+    var msgs = [];
+    try { msgs = raw ? JSON.parse(raw) : []; } catch (e) {}
+    if (!Array.isArray(msgs)) msgs = [];
+    msgs.slice().reverse().forEach(function (m) {
+      var div = document.createElement('div');
+      div.className = 'fm-news-item';
+      div.innerHTML = '<strong>' + escapeHtml(m.author) + '</strong> <span style="color:var(--ink3);font-size:11px">' + escapeHtml(m.at) + '</span><p style="margin:8px 0 0">' + escapeHtml(m.text) + '</p>';
+      list.appendChild(div);
+    });
+  }
+  $('#newsAdd').addEventListener('click', function () {
+    var author = $('#newsAuthor').value.trim() || 'Anon';
+    var text = $('#newsText').value.trim();
+    if (!text) return;
+    var msgs = [];
+    try { msgs = JSON.parse(localStorage.getItem(LS.news) || '[]'); } catch (e) {}
+    msgs.push({ author: author, text: text, at: new Date().toLocaleString('pt-BR') });
+    localStorage.setItem(LS.news, JSON.stringify(msgs));
+    $('#newsText').value = '';
+    renderNews();
+    toast('Mensagem guardada', true);
+  });
+
+  /* CSV Modal */
+  function openCsvModal(mod) {
+    csvModalModule = mod;
+    $('#csvModalTitle').textContent = 'Upload CSV — ' + mod;
+    $('#csvPreview').textContent = '';
+    $('#csvValidate').style.display = 'none';
+    $('#csvProcess').disabled = true;
+    csvPendingText = '';
+    csvPendingRows = [];
+    $('#csvModal').classList.add('is-open');
+  }
+  function closeCsvModal() {
+    $('#csvModal').classList.remove('is-open');
+    csvModalModule = null;
+  }
+  $('#csvCancel').addEventListener('click', closeCsvModal);
+  $all('[data-open-csv]').forEach(function (b) {
+    b.addEventListener('click', function () { openCsvModal(b.getAttribute('data-open-csv')); });
+  });
+
+  var dz = $('#csvDropzone');
+  var fileInput = $('#csvFile');
+  dz.addEventListener('click', function () { fileInput.click(); });
+  dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', function () { dz.classList.remove('dragover'); });
+  dz.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      csvPendingText = reader.result;
+      var rows = parseCSV(csvPendingText);
+      $('#csvPreview').textContent = file.name + ' · ' + (file.size / 1024).toFixed(1) + ' KB · ' + rows.length + ' linhas';
+      csvPendingRows = rows;
+      $('#csvValidate').style.display = 'none';
+      if (csvModalModule === 'licenses') {
+        if (!rows.length || !rows[0].join('').toLowerCase().includes('tipo')) {
+          $('#csvValidate').textContent = 'Colunas sugeridas: tipo, status, validade';
+          $('#csvValidate').style.display = rows[0] ? 'none' : 'block';
+        }
+      }
+      $('#csvProcess').disabled = rows.length < 2;
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  $('#csvProcess').addEventListener('click', function () {
+    if (!csvModalModule || !csvPendingRows.length) return;
+    var header = csvPendingRows[0].map(function (h) { return h.trim().toLowerCase(); });
+    var objs = rowsToObjects(header, csvPendingRows.slice(1));
+    if (csvModalModule === 'licenses') {
+      licRows = objs.map(function (o) {
+        return {
+          tipo: o.tipo || o.type || o.nome || '',
+          status: (o.status || o.estado || 'pendente').toLowerCase(),
+          validade: o.validade || o.date || o.data || ''
+        };
+      }).filter(function (r) { return r.tipo; });
+      saveLicenses();
+      renderLicenses();
+      toast(licRows.length + ' linhas importadas', true);
+    } else {
+      localStorage.setItem(LS[csvModalModule] || ('fm_' + csvModalModule + '_data'), JSON.stringify({ rows: objs, at: new Date().toISOString() }));
+      toast(objs.length + ' linhas importadas', true);
+    }
+    closeCsvModal();
+  });
+
+  /* CSV export */
+  function downloadCSV(filename, rows) {
+    if (!rows.length) { toast('Sem dados para exportar', false); return; }
+    var header = Object.keys(rows[0]);
+    var lines = [header.join(',')].concat(rows.map(function (r) {
+      return header.map(function (h) {
+        var v = r[h] == null ? '' : String(r[h]).replace(/"/g, '""');
+        return v.indexOf(',') >= 0 ? '"' + v + '"' : v;
+      }).join(',');
+    }));
+    var bom = '\uFEFF';
+    var blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('CSV exportado', true);
+  }
+  $all('[data-csv-export]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var mod = b.getAttribute('data-csv-export');
+      var d = new Date();
+      var fn = mod + '_export_' + d.toISOString().slice(0, 10) + '.csv';
+      if (mod === 'licenses') {
+        loadLicenses();
+        downloadCSV(fn, licRows.map(function (r, i) { return { idx: i + 1, tipo: r.tipo, status: r.status, validade: r.validade }; }));
+      } else {
+        try {
+          var raw = localStorage.getItem(LS[mod]);
+          var j = raw ? JSON.parse(raw) : { rows: [] };
+          downloadCSV(fn, j.rows && j.rows.length ? j.rows : [{ info: 'sem_dados' }]);
+        } catch (e) { downloadCSV(fn, [{ info: 'sem_dados' }]); }
+      }
+    });
+  });
+
+  $('#btnCsvDownHome').addEventListener('click', function () {
+    var d = new Date();
+    downloadCSV('home_export_' + d.toISOString().slice(0, 10) + '.csv', [
+      { kpi: 'Properties', valor: 975 },
+      { kpi: 'Licenses', valor: 712 },
+      { kpi: 'Reservations', valor: 4471 }
+    ]);
+  });
+
+  /* PDF */
+  async function exportPdf(sectionId, title) {
+    var el = document.getElementById(sectionId);
+    if (!el || !window.html2canvas || !window.jspdf) {
+      toast('PDF: bibliotecas não carregadas', false);
+      return;
+    }
+    var modTitle = title || sectionId;
+    var canvas = await html2canvas(el.querySelector('.fm-sec-body') || el, { scale: 1.2, backgroundColor: '#faf7f2', useCORS: true });
+    var J = window.jspdf || window.jsPDF;
+    var jsPDF = (J && J.jsPDF) ? J.jsPDF : (typeof J === 'function' ? J : null);
+    if (!jsPDF) { toast('jsPDF indisponível', false); return; }
+    var isWide = canvas.width > canvas.height;
+    var doc = new jsPDF({ orientation: isWide ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var pageH = doc.internal.pageSize.getHeight();
+    var margin = 40;
+    doc.setFontSize(10);
+    doc.text('Finance Master', margin, margin);
+    doc.setFontSize(12);
+    doc.text(modTitle, margin, margin + 18);
+    doc.setFontSize(9);
+    doc.text(new Date().toLocaleString('pt-BR'), margin, margin + 34);
+    var imgW = pageW - margin * 2;
+    var imgH = (canvas.height * imgW) / canvas.width;
+    if (imgH > pageH - margin * 3) imgH = pageH - margin * 3;
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin + 44, imgW, imgH);
+    doc.setFontSize(8);
+    doc.text('Finance Master · ' + modTitle + ' · ' + new Date().toLocaleString('pt-BR'), margin, pageH - 20);
+    doc.save(modTitle.replace(/\s+/g, '_') + '_report_' + new Date().toISOString().slice(0, 10) + '.pdf');
+    toast('PDF gerado', true);
+  }
+  $all('[data-pdf-target]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('data-pdf-target');
+      var sec = $('#' + id);
+      var h = sec ? sec.querySelector('h1') : null;
+      exportPdf(id, h ? h.textContent : id);
+    });
+  });
+  $('#btnPdfHome').addEventListener('click', function () { exportPdf('section-home', 'Home'); });
+
+  /* Hash routing */
+  navBind();
+  if (location.hash && location.hash.length > 1) {
+    var hid = location.hash.slice(1);
+    if ($('#section-' + hid)) showSection(hid);
+  }
+
+  window.addEventListener('hashchange', function () {
+    var hid = (location.hash || '#home').slice(1);
+    if ($('#section-' + hid)) showSection(hid);
+  });
+})();
+  </script>
+</body>
+</html>

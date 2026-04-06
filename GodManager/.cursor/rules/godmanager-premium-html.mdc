@@ -1,0 +1,49 @@
+---
+description: GodManager_Premium.html — SPA vanilla, módulos Long Term, sidebar, GAAP, regras críticas
+globs: public/GodManager_Premium.html
+alwaysApply: false
+---
+
+# GodManager — Single-file HTML (`GodManager_Premium.html`)
+
+## Arquitetura
+
+- Um ficheiro HTML com CSS inline (`:root` + classes) e JS vanilla (sem React/Vue/Angular/jQuery).
+- **Chart.js** para gráficos; dados em **localStorage**; CSV/Excel via `<input type="file">` + parsing no cliente.
+- Roteamento: `nav('pageId')`; cada módulo é `<div class="page" id="page-{id}">`.
+
+## Módulos Long Term (core)
+
+IDs principais: `home`, `longterm`, `ltproperties`, `ltstatements`, `ltexpenses`, `ltcleanings`, `ownerportal`, `tenantportal`, `listings`, `licenses`, `1099`, `gaap`, `phonelines`, `vault`, `cars`.
+
+## Secundários (sidebar)
+
+`news`, `properties`, `renovations`, `housekeeper`, `contractors`, `payroll`, `vendors`, `powerwash`, `pool`, `piscineiros`, `bbq`, `dp`, `divvy`, `stock`, `monthlog`, `statement`.
+
+## Ocultos na sidebar (não apagar código)
+
+`reservations`, `agencies`, `upcoming` — short-term; permanecem no código, acessíveis via `nav()` mas **não** listados na sidebar. Long Term vem **logo após Home** na sidebar.
+
+## Estrutura da sidebar (ordem)
+
+Home → secção **LONG TERM** (Portfolio: Dashboard, Properties, Statements, Expenses, Cleanings, Owner Portal, Tenant Portal, Listings; Compliance: Licenses, 1099, GAAP; Operations: Phone Lines, Vault, Cars) → Communications (News) → Properties (Ranking, Renovations) → People → Services → Financial → footer (admin / logout).
+
+## Funções-chave (referência)
+
+`nav(id)`, `togG(el)`, `renderCards()`, `handleNoCost`, `handleDivvy`, `handleLicPDFs`, `ltGetRecords` / `ltSaveRecords`, `renderNCTable`, `renderDivvy`, `showToast(msg, type)`.
+
+## Fluxo de dados
+
+Upload ficheiro → FileReader + parser → `localStorage` → KPIs/tabelas dinâmicas → export CSV quando aplicável.
+
+## GAAP (`page-gaap`)
+
+Primeira classe em Compliance: KPI strip (5 colunas), tabelas ASC 606 / ASC 842 / depreciação / passivos / audit status; referências ASC 606, 842, 360, 450 + trust accounting FL.
+
+## Convenções no HTML
+
+- CSS compacto; classes curtas (`.si`, `.sg`, `.ss`, …).
+- Botões: `font-family: 'DM Sans', sans-serif`; primário âmbar + texto branco.
+- Toasts: fixos inferior-direito; success verde, error vermelho, warning âmbar.
+- Responsivo: sidebar colapsa ~768px com toggle.
+- Manter estética institucional; Long Term sempre prioritário na navegação.

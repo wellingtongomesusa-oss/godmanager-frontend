@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Tool – Create Invoices Effortlessly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --invoice-primary: #FF6F00;
+      --invoice-heading: #333333;
+      --invoice-body: #666666;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--invoice-heading);
+      background: #ffffff;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid #e5e7eb;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+    }
+    nav .wrap {
+      display: flex;
+      height: 64px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 1.125rem;
+      color: var(--invoice-heading);
+      text-decoration: none;
+    }
+    .logo:hover { opacity: 0.9; }
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--invoice-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-icon svg { color: #fff; }
+    .nav-links {
+      display: none;
+      gap: 2rem;
+    }
+    @media (min-width: 768px) {
+      .nav-links { display: flex; }
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--invoice-body);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--invoice-heading); }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-actions a {
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .nav-login {
+      padding: 8px 16px;
+      color: var(--invoice-body);
+      font-weight: 500;
+    }
+    .nav-login:hover { color: var(--invoice-heading); }
+    .nav-cta {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--invoice-primary);
+      transition: opacity 0.3s;
+    }
+    .nav-cta:hover { opacity: 0.95; }
+    .hero {
+      background: #fff;
+      padding: 4rem 0;
+      text-align: center;
+    }
+    @media (min-width: 640px) {
+      .hero { padding: 6rem 0; }
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 48px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--invoice-heading);
+    }
+    .hero p {
+      margin-top: 1rem;
+      font-size: 24px;
+      color: var(--invoice-body);
+    }
+    .features {
+      border-top: 1px solid #f3f4f6;
+      background: rgba(249,250,251,0.5);
+      padding: 4rem 0;
+    }
+    .features-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .feature-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: box-shadow 0.3s;
+    }
+    .feature-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: var(--invoice-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .feature-card h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--invoice-heading);
+    }
+    .feature-card p {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--invoice-body);
+    }
+    footer {
+      border-top: 1px solid #e5e7eb;
+      background: #fff;
+      padding: 2rem 0;
+    }
+    footer .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    @media (min-width: 640px) {
+      footer .wrap { flex-direction: row; }
+    }
+    footer p { font-size: 0.875rem; color: var(--invoice-body); }
+    footer a {
+      font-size: 0.875rem;
+      color: var(--invoice-body);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    footer a:hover { color: var(--invoice-heading); }
+    .footer-links { display: flex; align-items: center; gap: 1.5rem; }
+    .footer-links svg { width: 20px; height: 20px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <nav role="navigation" aria-label="Main navigation">
+    <div class="wrap">
+      <a href="/" class="logo" aria-label="Home - Invoice tool">
+        <span class="logo-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <path d="M10 9H8v2h2V9zm4 0h-2v2h2V9z" />
+          </svg>
+        </span>
+        <span>Invoice</span>
+      </a>
+      <div class="nav-links">
+        <a href="#products">Products</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#resources">Resources</a>
+      </div>
+      <div class="nav-actions">
+        <a href="/admin/painel" class="nav-login">Login</a>
+        <a href="/get-started" class="nav-cta">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="wrap">
+      <h1 id="hero-heading">Create Invoices Effortlessly</h1>
+      <p>Streamline billing with smart tools – no manual hassle.</p>
+    </div>
+  </section>
+
+  <section id="products" class="features" aria-labelledby="features-heading">
+    <div class="wrap">
+      <h2 id="features-heading" class="sr-only">Key features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          </div>
+          <h3>Custom Invoices</h3>
+          <p>Design professional invoices with your branding and line items.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+          </div>
+          <h3>Quick Sharing</h3>
+          <p>Send via WhatsApp, email, or download PDF in one click.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h3>Secure Payments</h3>
+          <p>Your data stays safe. Optional cloud sync for Pro users.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          </div>
+          <h3>Growth-Ready</h3>
+          <p>Scale from freelancer to small business with unlimited invoices on Pro.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer role="contentinfo">
+    <div class="wrap">
+      <p>© <span id="year"></span> Invoice Tool. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms</a>
+        <a href="#" aria-label="Twitter"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+        <a href="#" aria-label="LinkedIn"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+export const MANAGER_PRO_NAV = [
+  { href: '/manager-pro', label: 'Home', short: 'Home' },
+  { href: '/manager-pro/rent-roll', label: '01 GodManager Trust', short: 'GodManager Trust' },
+  { href: '/manager-pro/news', label: 'NEWS · Painel GodManager.One', short: 'News' },
+  { href: '/manager-pro/raci', label: '02 RACI Financeiro', short: 'RACI' },
+  { href: '/manager-pro/housekeeper', label: '03 Housekeeper', short: 'Housekeeper' },
+  { href: '/manager-pro/cars', label: '04 Cars & Insurance', short: 'Cars' },
+  { href: '/manager-pro/reservations', label: '05 Reservations & Agencies', short: 'Reservations' },
+  { href: '/manager-pro/payouts', label: '06 Upcoming Payouts', short: 'Payouts' },
+  { href: '/manager-pro/properties', label: '07–10 Properties', short: 'Properties' },
+  { href: '/manager-pro/irs1099', label: '08 1099 / IRS', short: '1099/IRS' },
+  { href: '/manager-pro/renovations', label: '09 Renovations', short: 'Renovations' },
+  { href: '/manager-pro/dp', label: '15–16 DP / DP+', short: 'DP' },
+  { href: '/manager-pro/dp-ranking', label: 'Ranking DP por unidade', short: 'DP rank' },
+  { href: '/manager-pro/licenses', label: 'Licenças empresariais', short: 'Licenses' },
+] as const;

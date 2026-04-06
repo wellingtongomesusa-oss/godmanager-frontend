@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App de Mensagens</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Tela de Login -->
+        <div id="loginScreen" class="screen active">
+            <div class="card">
+                <h1>Login</h1>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Usuário:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Entrar</button>
+                </form>
+                <div id="loginError" class="error-message"></div>
+                <div class="hint">
+                    <p>Usuários de teste:</p>
+                    <p>admin / admin123</p>
+                    <p>user / user123</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela de Mensagens -->
+        <div id="messageScreen" class="screen">
+            <div class="card">
+                <div class="header">
+                    <h1>Mensagens</h1>
+                    <button id="logoutBtn" class="btn btn-secondary">Sair</button>
+                </div>
+                
+                <div class="current-user">
+                    <p>Logado como: <strong id="currentUsername"></strong></p>
+                </div>
+
+                <form id="messageForm">
+                    <div class="form-group">
+                        <label for="message">Nova Mensagem:</label>
+                        <textarea id="message" name="message" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Criar Mensagem</button>
+                </form>
+                <div id="messageError" class="error-message"></div>
+                <div id="messageSuccess" class="success-message"></div>
+
+                <div class="messages-section">
+                    <h2>Mensagens Existentes</h2>
+                    <div id="messagesList" class="messages-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
