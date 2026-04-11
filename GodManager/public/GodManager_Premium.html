@@ -2144,7 +2144,7 @@ var gaapNextId=1;
 var gaapEdit=null;
 
 function gaapSanitizeDesc(s){
- return String(s==null?'':'').replace(/Master Vacation Homes/gi,'Manager Prop');
+ return String(s==null?'':'').replace(/Master Vacation Homes LLC/gi,'Manager Prop').replace(/Master Vacation Homes/gi,'Manager Prop');
 }
 function gaapEnsureSections(){
  GAAP_KEYS.forEach(function(k){if(!gaapState.sections[k])gaapState.sections[k]={rows:[]};});
