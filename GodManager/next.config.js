@@ -35,6 +35,7 @@ const nextConfig = {
       { source: '/api/integrations/:path*', destination: `${b}/api/integrations/:path*` },
       { source: '/api/webhooks/:path*', destination: `${b}/api/webhooks/:path*` },
       { source: '/api/quickbooks/:path*', destination: `${b}/api/quickbooks/:path*` },
+      { source: '/api/ramp/:path*', destination: `${b}/api/ramp/:path*` },
       { source: '/static/:path*', destination: `${b}/static/:path*` },
     ];
   },

@@ -17,6 +17,8 @@ from flask_session import Session
 import bcrypt
 from urllib.parse import urlparse
 import base64
+
+import requests as req
 import hashlib
 import hmac
 
@@ -2657,6 +2659,56 @@ def _register_crm_routes(app):
                 }
             )
         return jsonify({"ok": True, "connections": out})
+
+    @app.route("/api/ramp/transactions")
+    def api_ramp_transactions():
+        client_id = os.environ.get("RAMP_CLIENT_ID")
+        client_secret = os.environ.get("RAMP_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            return jsonify({"error": "Ramp credentials not configured"}), 500
+        creds = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        token_res = req.post(
+            "https://api.ramp.com/developer/v1/token",
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"grant_type": "client_credentials", "scope": "transactions:read"},
+        )
+        token = token_res.json().get("access_token")
+        params = {"page_size": 100}
+        from_date = request.args.get("from_date")
+        if from_date:
+            params["from_date"] = from_date
+        tx_res = req.get(
+            "https://api.ramp.com/developer/v1/transactions",
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+        )
+        return jsonify(tx_res.json())
+
+    @app.route("/api/ramp/cards")
+    def api_ramp_cards():
+        client_id = os.environ.get("RAMP_CLIENT_ID")
+        client_secret = os.environ.get("RAMP_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            return jsonify({"error": "Ramp credentials not configured"}), 500
+        creds = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        token_res = req.post(
+            "https://api.ramp.com/developer/v1/token",
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"grant_type": "client_credentials", "scope": "cards:read"},
+        )
+        token = token_res.json().get("access_token")
+        cr_res = req.get(
+            "https://api.ramp.com/developer/v1/cards",
+            headers={"Authorization": f"Bearer {token}"},
+            params={"page_size": 100},
+        )
+        return jsonify(cr_res.json())
 
     @app.route("/api/webhooks/<provider>", methods=["POST"])
     def api_integration_webhook(provider):

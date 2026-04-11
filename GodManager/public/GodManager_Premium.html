@@ -127,6 +127,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .bl{width:100%;padding:12px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:10px;transition:all .2s ease;box-shadow:0 2px 8px rgba(196,123,40,.25),0 6px 20px rgba(26,58,92,.12);letter-spacing:.2px}.bl:hover{background:var(--champ-lt);box-shadow:0 4px 12px rgba(196,123,40,.3),0 8px 28px rgba(26,58,92,.1)}
 .lf{font-size:10.5px;color:var(--ink3);text-align:center;margin-top:20px;letter-spacing:.2px}
 
+/* LTP — Nova Propriedade modal */
+#ltp-property-modal{align-items:center;justify-content:center;padding:20px 12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background:rgba(10,22,40,.55)!important}
+#ltp-property-modal .ltp-modal-panel{width:min(720px,95vw);max-height:min(92vh,900px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:ltpModalIn .28s ease forwards}
+@keyframes ltpModalIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+#ltp-property-modal .ltp-modal-body{overflow-y:auto;flex:1;padding:0 24px 20px}
+.ltp-sec{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.ltp-field-err{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(184,48,48,.14)!important}
+.ltp-err-msg{font-size:10px;color:var(--red);margin-top:3px;min-height:14px}
+#ltp-photo-dropzone.ltp-dz-drag{border-color:var(--amber)!important;background:var(--amber-bg)!important}
+
 /* Premium enhancements */
 table{border-collapse:collapse}
 thead tr{background:var(--cream)!important}
@@ -197,6 +207,48 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .cl-act-red{background:#b83030!important;color:#fff!important;border-color:#b83030!important}
 .cl-act-red:hover{filter:brightness(1.05)}
 .cl-act-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+/* Ramp / QuickBooks integration pages */
+.gm-ix-page .gm-ix-headrow{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.gm-ix-page .gm-ix-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.gm-ix-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+@media(max-width:1100px){.gm-ix-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.gm-ix-kpi-grid{grid-template-columns:1fr}}
+.gm-ix-kpi{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 3px rgba(26,26,28,.04),0 4px 12px rgba(26,26,28,.03);position:relative;overflow:hidden}
+.gm-ix-kpi .k-l{font-size:9px;font-weight:600;letter-spacing:.85px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.gm-ix-kpi .k-v{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ink);line-height:1.15}
+.gm-ix-kpi .k-s{font-size:11px;color:var(--ink2);margin-top:6px;line-height:1.35}
+.gm-ix-kpi .k-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)}
+.gm-ix-kpi.k2 .k-bar{background:var(--navy)}
+.gm-ix-kpi.k3 .k-bar{background:var(--green)}
+.gm-ix-kpi.k4 .k-bar{background:var(--blue)}
+.gm-ix-panel{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 3px rgba(26,26,28,.04),0 4px 12px rgba(26,26,28,.03)}
+.gm-ix-panel h3{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--navy);padding:16px 18px;border-bottom:1px solid var(--border);background:var(--cream)}
+.gm-ix-table{width:100%;border-collapse:collapse;font-size:12px}
+.gm-ix-table th{padding:11px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--border);background:var(--cream)}
+.gm-ix-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--ink2)}
+.gm-ix-table td.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)}
+.gm-ix-table tbody tr{transition:background .12s ease}
+.gm-ix-table tbody tr:hover{background:rgba(196,123,40,.05)}
+.gm-ix-note{font-size:11px;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:none}
+.gm-ix-note.on{display:block}
+.gm-ix-err{font-size:12px;color:var(--red);background:var(--red-bg);border:1px solid var(--red-bd);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:none}
+.gm-ix-err.on{display:block}
+.btn-gm-ix{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:filter .15s ease;box-shadow:0 2px 8px rgba(26,58,92,.2)}
+.btn-gm-ix:hover{filter:brightness(1.06)}
+.btn-gm-ix.sec{background:transparent;color:var(--navy);border:1px solid var(--navy);box-shadow:none}
+.btn-gm-ix-amber{background:var(--amber);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(196,123,40,.25)}
+.btn-gm-ix-amber:hover{filter:brightness(1.05)}
+.gm-sk{position:relative;overflow:hidden;background:linear-gradient(90deg,var(--cream) 25%,var(--sand) 50%,var(--cream) 75%);background-size:200% 100%;animation:gmSkSh 1.1s ease-in-out infinite;border-radius:6px;min-height:14px}
+@keyframes gmSkSh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.gm-sk-row td{padding:12px 14px!important;border-bottom:1px solid var(--border)!important}
+#ramp-tx-modal{position:fixed;inset:0;background:rgba(26,26,28,.45);z-index:6200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#ramp-tx-modal.on{display:flex}
+#ramp-tx-modal .gm-modal-inner{background:var(--paper);border:1px solid var(--border);border-radius:12px;max-width:720px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+#ramp-tx-modal .gm-modal-h{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}
+#ramp-tx-modal .gm-modal-h span{font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy)}
+#ramp-tx-modal .gm-modal-body{padding:0;overflow:auto;flex:1}
+.sb-ix-ic{display:flex;align-items:center;gap:10px}
+.sb-ix-ic svg{flex-shrink:0;opacity:.9}
 </style>
 </head>
 <body>
@@ -244,6 +296,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="sb-sec" id="wrap-nav-integrations">
  <span class="sb-sec-lbl">Integrações</span>
  <div class="ss" onclick="nav('integrations')" id="nav-integrations" style="padding-left:16px">Conectar</div>
+ <div class="ss sb-ix-ic" onclick="nav('ramp')" id="nav-ramp" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Ramp</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('quickbooks')" id="nav-quickbooks" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg><span>QuickBooks</span></div>
  </div>
  <div class="sb-sec">
  <span class="sb-sec-lbl">Communications</span>
@@ -668,6 +722,70 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
 </div>
 
+<div class="page gm-ix-page" id="page-ramp">
+ <div class="gm-ix-note" id="ramp-mock-note"></div>
+ <div class="gm-ix-err" id="ramp-conn-err"></div>
+ <div class="gm-ix-headrow ph" style="margin-bottom:20px">
+ <div>
+ <div class="pt" style="font-family:'Sora',sans-serif">Ramp — Corporate Cards</div>
+ <div class="ps">Master Vacation Homes LLC</div>
+ </div>
+ <div class="gm-ix-actions">
+ <button type="button" class="btn-gm-ix" id="ramp-btn-refresh" onclick="fetchRampData()">Atualizar Dados</button>
+ </div>
+ </div>
+ <div class="gm-ix-kpi-grid" id="ramp-kpi-wrap">
+ <div class="gm-ix-kpi k2"><div class="k-l">Total Gasto no Mês</div><div class="k-v" id="ramp-kpi-spend"><span class="gm-sk" style="display:inline-block;width:120px;height:22px"></span></div><div class="k-s">Transações liquidadas + pendentes</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">Nº de Cartões Ativos</div><div class="k-v" id="ramp-kpi-cards"><span class="gm-sk" style="display:inline-block;width:48px;height:22px"></span></div><div class="k-s">Cartões com estado ativo</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k3"><div class="k-l">Maior Gasto</div><div class="k-v" id="ramp-kpi-top" style="font-size:15px;line-height:1.25"><span class="gm-sk" style="display:inline-block;width:100%;max-width:220px;height:40px"></span></div><div class="k-s">Merchant com maior valor no período</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k4"><div class="k-l">Cashback Disponível</div><div class="k-v" id="ramp-kpi-cb"><span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span></div><div class="k-s">Estimativa acumulada</div><div class="k-bar"></div></div>
+ </div>
+ <div class="gm-ix-panel">
+ <h3>Titulares de Cartão</h3>
+ <div style="overflow-x:auto">
+ <table class="gm-ix-table" id="ramp-table-cardholders">
+ <thead><tr><th>Titular</th><th>Email</th><th>Limite Total ($)</th><th>Limite Disponível ($)</th><th>Gasto no Mês ($)</th><th>Status</th><th>Ações</th></tr></thead>
+ <tbody id="ramp-tbody-holders"></tbody>
+ </table>
+ </div>
+ </div>
+ <div class="gm-ix-panel">
+ <h3>Transações Recentes</h3>
+ <div style="overflow-x:auto">
+ <table class="gm-ix-table" id="ramp-table-tx">
+ <thead><tr><th>Data</th><th>Merchant</th><th>Titular</th><th>Categoria</th><th>Valor ($)</th><th>Status</th></tr></thead>
+ <tbody id="ramp-tbody-tx"></tbody>
+ </table>
+ </div>
+ </div>
+</div>
+
+<div class="page gm-ix-page" id="page-quickbooks">
+ <div class="gm-ix-note" id="qb-mock-note"></div>
+ <div class="gm-ix-headrow ph" style="margin-bottom:20px">
+ <div>
+ <div class="pt" style="font-family:'Sora',sans-serif">QuickBooks — Accounting</div>
+ <div class="ps" id="qb-sub-status">Verificando ligação…</div>
+ </div>
+ <div class="gm-ix-actions" id="qb-head-actions"></div>
+ </div>
+ <div class="gm-ix-kpi-grid" id="qb-kpi-wrap">
+ <div class="gm-ix-kpi k2"><div class="k-l">Total Receitas</div><div class="k-v" id="qb-kpi-rev"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">YTD</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">Total Despesas</div><div class="k-v" id="qb-kpi-exp"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">YTD</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k3"><div class="k-l">Lucro Líquido</div><div class="k-v" id="qb-kpi-net"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Receitas − despesas</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k4"><div class="k-l">Contas a Pagar</div><div class="k-v" id="qb-kpi-ap"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Em aberto</div><div class="k-bar"></div></div>
+ </div>
+ <div class="gm-ix-panel">
+ <h3>Despesas por Categoria</h3>
+ <div style="overflow-x:auto">
+ <table class="gm-ix-table" id="qb-table-cat">
+ <thead><tr><th>Categoria</th><th>Fornecedor</th><th>Data</th><th>Valor ($)</th><th>Status</th></tr></thead>
+ <tbody id="qb-tbody-cat"></tbody>
+ </table>
+ </div>
+ </div>
+</div>
+
 <div class="page" id="page-upcoming"><div class="ph"><div class="pt">Upcoming Payouts</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Upcoming Payouts</h3><p>Upload dos 2 CSVs do Airbnb.</p><div class="ur"><div class="ub"><h4>Airbnb Conta 1</h4><p>Date, Gross earnings, Listing</p></div><div class="ub"><h4>Airbnb Conta 2</h4><p>Data, Ganhos brutos, Anúncio</p></div></div><button class="bp">Process</button></div></div>
 
 <div class="page" id="page-cars"><div class="ph"><div class="pt">Cars & Insurance</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Cars & Insurance</h3><p>Upload dos 2 arquivos. Deduplicação por VIN.</p><div class="ur"><div class="ub"><h4>Veículos/Seguro 1</h4><p>Veiculo, VIN, Insurance Company, Date</p></div><div class="ub"><h4>Veículos/Seguro 2</h4><p>Mesmo formato</p></div></div><button class="bp">Process</button></div></div>
@@ -1025,6 +1143,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TENANT (INQUILINO)</label><input id="lt-f-tenant" placeholder="ex: Maria Oliveira" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-f-month" type="month" value="2026-03" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px"> BATHS</label><select id="lt-f-baths" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="">— Selecionar —</option><option value="1 Bath">1 Bath</option><option value="1.5 Baths">1.5 Baths</option><option value="2 Baths">2 Baths</option><option value="2.5 Baths">2.5 Baths</option><option value="3 Baths">3 Baths</option><option value="3.5 Baths">3.5 Baths</option><option value="4 Baths">4 Baths</option></select></div>
+ <select id="lt-f-occupancy" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0" tabindex="-1" aria-hidden="true">
+ <option value="rented" selected>Alugada</option><option value="vacant">Vaga</option><option value="inprogress">Em Andamento</option><option value="renovation">Reforma</option>
+ </select>
  </div>
 
  <!-- Section: Financials -->
@@ -1308,6 +1429,118 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
 </div>
 
+<!-- LTP — Modal Nova Propriedade (Long Term — Properties) -->
+<div id="ltp-property-modal" style="display:none;position:fixed;inset:0;z-index:9010;align-items:center;justify-content:center;overflow-y:auto;padding:20px 12px" onclick="ltpModalBackdropClick(event)">
+<div class="ltp-modal-panel" style="background:var(--paper);width:min(720px,95vw);max-height:min(92vh,900px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="ltp-modal-title">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+<div id="ltp-modal-title" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif">Nova Propriedade</div>
+<button type="button" onclick="ltpCloseNewPropertyModal()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;display:flex;font-size:18px;color:var(--ink3);line-height:1">×</button>
+</div>
+<div class="ltp-modal-body" style="padding:0 24px 20px;overflow-y:auto;flex:1">
+<div class="ltp-sec">1. Informações básicas</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div style="grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-address">Endereço completo *</label>
+<input id="ltp-f-address" aria-label="Endereço completo" placeholder="ex: 4821 Sunset Blvd, Kissimmee FL 34746" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-address" class="ltp-err-msg"></div>
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-type">Tipo de imóvel *</label>
+<select id="ltp-f-type" aria-label="Tipo de imóvel" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<option value="house">Casa</option><option value="apartment">Apartamento</option><option value="townhouse">Townhouse</option><option value="condo">Condo</option><option value="studio">Studio</option>
+</select>
+<div id="ltp-err-type" class="ltp-err-msg"></div>
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-owner">Owner *</label>
+<input id="ltp-f-owner" aria-label="Owner" placeholder="Nome do proprietário" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-owner" class="ltp-err-msg"></div>
+</div>
+<div style="grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-tenant">Tenant</label>
+<input id="ltp-f-tenant" aria-label="Tenant (opcional)" placeholder="(opcional)" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<div class="ltp-err-msg"></div>
+</div>
+</div>
+<div class="ltp-sec">2. Características do imóvel</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-bedrooms">Quartos *</label>
+<input id="ltp-f-bedrooms" type="number" min="0" step="1" value="0" aria-label="Número de quartos" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-bedrooms" class="ltp-err-msg"></div>
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-bathrooms">Banheiros *</label>
+<input id="ltp-f-bathrooms" type="number" min="0" step="0.5" value="1" aria-label="Banheiros (aceita meios)" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-bathrooms" class="ltp-err-msg"></div>
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-garage">Garagem (vagas)</label>
+<input id="ltp-f-garage" type="number" min="0" step="1" value="0" aria-label="Vagas de garagem" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-sqft">Área (sq ft)</label>
+<input id="ltp-f-sqft" type="number" min="0" step="1" placeholder="opcional" aria-label="Área em pés quadrados" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+</div>
+<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:4px">
+<input type="checkbox" id="ltp-f-pool" aria-label="Possui piscina" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">
+<label for="ltp-f-pool" style="font-size:12px;color:var(--ink2);cursor:pointer">Piscina</label>
+</div>
+</div>
+<div class="ltp-sec">3. Valores financeiros (USD)</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+<div style="grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--green);display:block;margin-bottom:4px" for="ltp-f-rent">Valor do aluguel mensal *</label>
+<input id="ltp-f-rent" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Aluguel mensal em dólares" oninput="ltpOnRentInput()" style="width:100%;padding:9px 12px;border:1px solid var(--green-bd);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-rent" class="ltp-err-msg"></div>
+</div>
+<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px">
+<input type="checkbox" id="ltp-f-deposit-toggle" onchange="ltpToggleDepositWrap()" aria-label="Possui depósito de segurança" style="width:18px;height:18px;accent-color:var(--amber);cursor:pointer">
+<label for="ltp-f-deposit-toggle" style="font-size:12px;color:var(--ink2);cursor:pointer">Possui depósito de segurança?</label>
+</div>
+<div id="ltp-deposit-wrap" style="display:none;grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px" for="ltp-f-deposit-amt">Valor do depósito (USD)</label>
+<input id="ltp-f-deposit-amt" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Valor do depósito" style="width:100%;padding:9px 12px;border:1px solid var(--amber-bd);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-deposit" class="ltp-err-msg"></div>
+</div>
+<div style="grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--blue);display:block;margin-bottom:4px" for="ltp-f-net">Net Owner (USD)</label>
+<input id="ltp-f-net" type="number" step="0.01" oninput="ltpOnNetInput()" aria-label="Valor líquido para o owner" style="width:100%;padding:9px 12px;border:1px solid var(--blue-bd);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div style="font-size:10px;color:var(--ink3);margin-top:3px">Preenchido automaticamente com o aluguel; edite para ajustar manualmente.</div>
+<div id="ltp-err-net" class="ltp-err-msg"></div>
+</div>
+</div>
+<div class="ltp-sec">4. Status</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-occ">Status da ocupação *</label>
+<select id="ltp-f-occ" aria-label="Status da ocupação" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<option value="rented">Alugada</option><option value="vacant">Vaga</option><option value="inprogress">Em Andamento</option><option value="renovation">Reforma</option>
+</select>
+<div id="ltp-err-occ" class="ltp-err-msg"></div>
+</div>
+<div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-month">Mês de referência *</label>
+<input id="ltp-f-month" type="month" aria-label="Mês de referência" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<div id="ltp-err-month" class="ltp-err-msg"></div>
+</div>
+</div>
+<div class="ltp-sec">5. Fotos do imóvel</div>
+<div id="ltp-photo-dropzone" onclick="document.getElementById('ltp-photo-input').click()" ondragover="ltpDzOver(event)" ondragleave="ltpDzLeave(event)" ondrop="ltpDzDrop(event)" style="border:2px dashed var(--border2);border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s">
+<div style="font-size:12px;font-weight:600;color:var(--ink2)">Arraste imagens ou <span style="color:var(--amber);text-decoration:underline">selecionar arquivos</span></div>
+<div style="font-size:10px;color:var(--ink3);margin-top:6px">JPG, PNG, WEBP · máx. 20 fotos · até 5 MB cada</div>
+</div>
+<input type="file" id="ltp-photo-input" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" style="display:none" aria-label="Upload de fotos da propriedade" onchange="ltpPhotoFromInput(this.files)">
+<div id="ltp-err-photos" class="ltp-err-msg" style="margin-top:6px"></div>
+<div id="ltp-photo-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border);flex-shrink:0;background:var(--paper)">
+<button type="button" onclick="ltpCloseNewPropertyModal()" style="padding:10px 20px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">Cancelar</button>
+<button type="button" onclick="ltpSaveNewProperty()" style="padding:10px 22px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar Propriedade</button>
+</div>
+</div>
+</div>
+
 <!-- 
  LONG TERM — PROPERTIES PAGE
  -->
@@ -1320,6 +1553,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="rented">Alugada</option>
  <option value="vacant">Vaga</option>
  <option value="inprogress">Em Andamento</option>
+ <option value="renovation">Reforma</option>
  </select>
  <select id="ltp-filter-month" onchange="ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todos os meses</option>
@@ -1331,7 +1565,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="2026-06">Jun 2026</option>
  </select>
  <div style="margin-left:auto;display:flex;gap:8px">
- <button onclick="ltOpenNewProperty()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
+ <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
  <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
@@ -1497,9 +1731,89 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="op-panel-credit" style="display:none">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Credit Analysis module — configure via the Credit prompt.</div>
  </div>
- <!-- Panel: Rent Advance (placeholder) -->
+ <!-- Panel: Rent Advance -->
  <div id="op-panel-advance" style="display:none">
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Rent Advance module — configure via the Advance prompt.</div>
+ <div id="op-adv-blocked" style="display:none;background:var(--red-bg);border:1px solid var(--red-bd);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:var(--red);font-weight:600"></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 12px rgba(26,26,28,.06)">
+ <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px">Resumo — Antecipação de aluguel</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+ <div><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Rent mensal NET disponível</div><div id="op-adv-net-label" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue);tabular-nums">$0,00</div></div>
+ <div><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Taxa anual</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--ink)">18% a.a.</div></div>
+ <div><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Prazo máximo</div><div style="font-size:15px;font-weight:600;color:var(--ink)">24 meses</div></div>
+ <div><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Modalidade</div><div style="font-size:11px;color:var(--ink2);line-height:1.45">Desconto a valor presente<br/><span style="color:var(--amber);font-weight:600">(juros compostos)</span></div></div>
+ </div>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:18px;box-shadow:0 2px 12px rgba(26,26,28,.06)">
+ <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:14px">Simulador de antecipação</div>
+ <div style="margin-bottom:16px">
+ <label for="op-adv-months-range" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:8px">Quantos meses deseja antecipar? <span id="op-adv-months-val" style="color:var(--amber);font-family:'JetBrains Mono',monospace">12</span></label>
+ <input type="range" id="op-adv-months-range" min="1" max="24" value="12" step="1" aria-label="Meses a antecipar" aria-valuemin="1" aria-valuemax="24" aria-valuenow="12" oninput="opAdvanceMonthsChange(this.value)" style="width:100%;height:8px;accent-color:var(--amber);cursor:pointer;border-radius:4px"/>
+ <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+ <span style="font-size:11px;color:var(--ink3)">Ou informe:</span>
+ <input type="number" id="op-adv-months-input" min="1" max="24" value="12" aria-label="Número de meses" oninput="opAdvanceMonthsInput(this.value)" style="width:72px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink)"/>
+ <span style="font-size:11px;color:var(--ink3)">meses (1–24)</span>
+ </div>
+ </div>
+ <div id="op-adv-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:12px">
+ <div style="background:var(--cream);border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Valor bruto (soma aluguéis)</div><div id="op-adv-stat-gross" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);tabular-nums">$0,00</div></div>
+ <div style="background:var(--cream);border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Taxa mensal equivalente</div><div id="op-adv-stat-im" style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--ink);tabular-nums">—</div></div>
+ <div style="background:var(--cream);border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Valor presente (recebe hoje)</div><div id="op-adv-stat-pv" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--blue);tabular-nums">$0,00</div></div>
+ <div style="background:var(--cream);border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">Desconto total (juros)</div><div id="op-adv-stat-disc" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--red);tabular-nums">$0,00</div></div>
+ <div style="background:var(--cream);border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px">% desconto efetivo</div><div id="op-adv-stat-pct" style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--ink2);tabular-nums">—</div></div>
+ </div>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:0;margin-bottom:18px;overflow:hidden;box-shadow:0 2px 12px rgba(26,26,28,.06)">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)">Tabela de amortização</div>
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:640px;font-size:11px">
+ <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mês</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Rent bruto</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Fator desconto</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor presente</th>
+ </tr></thead>
+ <tbody id="op-adv-amort-tbody"></tbody>
+ <tfoot><tr style="background:var(--sand);border-top:2px solid var(--border);font-weight:700">
+ <td colspan="2" style="padding:10px 12px;color:var(--ink)">Total</td>
+ <td id="op-adv-amort-t-gross" style="padding:10px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--green)">$0,00</td>
+ <td style="padding:10px 12px"></td>
+ <td id="op-adv-amort-t-pv" style="padding:10px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--blue)">$0,00</td>
+ </tr></tfoot>
+ </table></div>
+ </div>
+ <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px">
+ <button type="button" id="op-adv-btn-pdf" onclick="opAdvancePrintPdf()" style="padding:10px 18px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Simular em PDF</button>
+ <button type="button" id="op-adv-btn-req" onclick="opAdvanceOpenConfirm()" style="padding:10px 22px;border:none;border-radius:8px;background:var(--green);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">Solicitar Antecipação</button>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(26,26,28,.06)">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)">Histórico de antecipações</div>
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:720px;font-size:11px">
+ <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:9px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Meses</th>
+ <th style="padding:9px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor recebido</th>
+ <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Período</th>
+ <th style="padding:9px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ </tr></thead>
+ <tbody id="op-adv-history-tbody"></tbody>
+ </table></div>
+ <div id="op-adv-history-empty" style="display:none;padding:24px;text-align:center;font-size:12px;color:var(--ink3)">Nenhuma solicitação ainda.</div>
+ </div>
+ </div>
+ <!-- Modal confirmação Rent Advance -->
+ <div id="op-advance-confirm-modal" style="display:none;position:fixed;inset:0;z-index:9200;align-items:center;justify-content:center;padding:20px;background:rgba(10,22,40,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)" onclick="if(event.target===this)opAdvanceCloseConfirm()">
+ <div role="dialog" aria-modal="true" aria-labelledby="op-adv-confirm-title" style="background:var(--paper);border-radius:14px;max-width:440px;width:100%;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.25)" onclick="event.stopPropagation()">
+ <div id="op-adv-confirm-title" style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px">Confirmar antecipação</div>
+ <div id="op-adv-confirm-body" style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:16px"></div>
+ <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:18px;font-size:12px;color:var(--ink2)">
+ <input type="checkbox" id="op-adv-terms" style="margin-top:3px;width:16px;height:16px;accent-color:var(--amber)"/>
+ <span>Li e aceito os termos da antecipação de aluguel.</span>
+ </label>
+ <div style="display:flex;gap:10px;justify-content:flex-end">
+ <button type="button" onclick="opAdvanceCloseConfirm()" style="padding:9px 18px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
+ <button type="button" onclick="opAdvanceSubmitRequest()" style="padding:9px 18px;border:none;border-radius:8px;background:var(--green);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">Confirmar Antecipação</button>
+ </div>
+ </div>
  </div>
  </div>
 </div>
@@ -1590,6 +1904,21 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button id="lb-prev" onclick="event.stopPropagation();opLightboxNav(-1)" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">‹</button>
  <button id="lb-next" onclick="event.stopPropagation();opLightboxNav(1)" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">›</button>
  <div id="lb-thumbs" style="display:flex;gap:6px;margin-top:14px;padding:8px 12px;background:rgba(255,255,255,.06);border-radius:8px;max-width:90vw;overflow-x:auto"></div>
+</div>
+
+<div id="ramp-tx-modal" role="dialog" aria-modal="true" aria-labelledby="ramp-tx-modal-title" onclick="if(event.target===this)closeRampTxModal()">
+ <div class="gm-modal-inner" onclick="event.stopPropagation()">
+ <div class="gm-modal-h">
+ <span id="ramp-tx-modal-title">Transações</span>
+ <button type="button" class="cl-btn-sec" onclick="closeRampTxModal()">Fechar</button>
+ </div>
+ <div class="gm-modal-body">
+ <table class="gm-ix-table" style="margin:0">
+ <thead><tr><th>Data</th><th>Merchant</th><th>Categoria</th><th>Valor ($)</th><th>Status</th></tr></thead>
+ <tbody id="ramp-modal-tbody"></tbody>
+ </table>
+ </div>
+ </div>
 </div>
 </main>
 
@@ -2410,8 +2739,334 @@ function toggleUserStatus(clientId,userId){
  renderClientUsersPage();
 }
 
+// — Ramp / QuickBooks páginas dedicadas
+window._rampTxCache=[];
+window._rampCardsCache=[];
+function rampFmtMoney(n){
+ var x=Number(n);
+ if(!isFinite(x))x=0;
+ return '$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function rampTxAmount(tx){
+ var a=tx&&tx.amount;
+ if(a==null)return 0;
+ if(typeof a==='number')return Math.abs(a)/100;
+ if(typeof a==='object'){
+  if(a.amount!=null&&typeof a.amount==='object'&&a.amount.amount!=null)return Math.abs(Number(a.amount.amount))/100;
+  if(a.amount!=null)return Math.abs(Number(a.amount))/100;
+  if(a.value!=null)return Math.abs(Number(a.value))/100;
+ }
+ return Math.abs(Number(a))/100||0;
+}
+function rampTxMerchant(tx){
+ return (tx&&tx.merchant_name)||(tx&&tx.merchant&&tx.merchant.name)||(tx&&tx.memo)||'—';
+}
+function rampTxDate(tx){
+ var s=(tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||(tx&&tx.posted_at)||'';
+ if(!s)return '—';
+ try{var d=new Date(s);return isNaN(d.getTime())?String(s).slice(0,10):d.toLocaleDateString('en-US');}catch(e){return String(s).slice(0,10);}
+}
+function rampTxHolder(tx){
+ var u=tx&&tx.user;
+ if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||(u.email||'—');
+ return (tx&&tx.card_holder_name)||(tx&&tx.cardholder&&tx.cardholder.display_name)||'—';
+}
+function rampTxEmail(tx){
+ var u=tx&&tx.user;
+ if(u&&u.email)return u.email;
+ return (tx&&tx.cardholder&&tx.cardholder.email)||'—';
+}
+function rampTxCategory(tx){
+ return (tx&&tx.sk_category_name)||(tx&&tx.category&&tx.category.name)||(tx&&tx.accounting_category)||'—';
+}
+function rampTxState(tx){
+ var st=(tx&&tx.state)||(tx&&tx.status)||'';
+ st=String(st).toUpperCase();
+ if(st.indexOf('CLEAR')>=0||st==='SETTLED')return 'CLEARED';
+ if(st)return st;
+ return 'PENDING';
+}
+function rampExtractList(j){
+ if(!j)return[];
+ if(Array.isArray(j))return j;
+ if(Array.isArray(j.data))return j.data;
+ if(j.data&&Array.isArray(j.data.data))return j.data.data;
+ if(Array.isArray(j.transactions))return j.transactions;
+ if(Array.isArray(j.cards))return j.cards;
+ return[];
+}
+function rampCardName(c){
+ if(!c)return'—';
+ if(c.display_name)return c.display_name;
+ var u=c.user||c.cardholder;
+ if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||u.email||'—';
+ return c.cardholder_name||'—';
+}
+function rampCardEmail(c){
+ var u=c.user||c.cardholder;
+ if(u&&u.email)return u.email;
+ return c.email||'—';
+}
+function rampCardLimit(c){
+ var lim=c.limit||c.spending_limit||c.total_limit;
+ if(lim==null)return 0;
+ if(typeof lim==='number')return lim/100;
+ if(typeof lim==='object'&&lim.amount!=null)return Number(lim.amount)/100;
+ return Number(lim)/100||0;
+}
+function rampCardAvail(c){
+ var a=c.available||c.available_amount||c.remaining;
+ if(a==null)return rampCardLimit(c);
+ if(typeof a==='number')return a/100;
+ if(typeof a==='object'&&a.amount!=null)return Number(a.amount)/100;
+ return Number(a)/100||0;
+}
+function rampCardActive(c){
+ var s=String((c&&c.state)||(c&&c.status)||'').toLowerCase();
+ if(s.indexOf('active')>=0||s==='open'||s==='')return true;
+ if(s.indexOf('suspend')>=0||s.indexOf('cancel')>=0||s==='inactive')return false;
+ return true;
+}
+function rampSkeletonHoldersRows(n){
+ var h='';
+ for(var i=0;i<n;i++)h+='<tr class="gm-sk-row"><td colspan="7"><div class="gm-sk" style="height:14px;width:90%"></div></td></tr>';
+ return h;
+}
+function rampSkeletonTxRows(n){
+ var h='';
+ for(var i=0;i<n;i++)h+='<tr class="gm-sk-row"><td colspan="6"><div class="gm-sk" style="height:14px;width:95%"></div></td></tr>';
+ return h;
+}
+function rampMockTx(){
+ return[
+  {user_transaction_time:new Date().toISOString(),merchant_name:'Amazon Web Services',user:{first_name:'Alex',last_name:'Rivera',email:'alex@mvhomes.test'},sk_category_name:'Software',amount:{amount:-42050},state:'CLEARED'},
+  {user_transaction_time:new Date().toISOString(),merchant_name:'The Home Depot',user:{first_name:'Jordan',last_name:'Lee',email:'jordan@mvhomes.test'},sk_category_name:'Maintenance',amount:{amount:-18675},state:'PENDING'}
+ ];
+}
+function rampMockCards(){
+ return[
+  {display_name:'Alex Rivera',email:'alex@mvhomes.test',limit:{amount:1500000},available:{amount:980000},state:'ACTIVE'},
+  {display_name:'Jordan Lee',email:'jordan@mvhomes.test',limit:{amount:800000},available:{amount:120000},state:'ACTIVE'},
+  {display_name:'Sam Morgan',email:'sam@mvhomes.test',limit:{amount:500000},available:{amount:0},state:'INACTIVE'}
+ ];
+}
+function rampSpendForHolderEmail(txs,email){
+ var t=0;
+ txs.forEach(function(tx){
+  if(rampTxEmail(tx).toLowerCase()!==String(email).toLowerCase())return;
+  t+=rampTxAmount(tx);
+ });
+ return t;
+}
+function rampRenderFromData(txs,cards,useMock){
+ var note=document.getElementById('ramp-mock-note');
+ var errEl=document.getElementById('ramp-conn-err');
+ if(errEl){errEl.classList.remove('on');errEl.textContent='';}
+ if(note){note.classList.toggle('on',!!useMock);if(useMock)note.textContent='Dados de exemplo — conecte a API para dados reais.';}
+ var now=new Date();
+ var y=now.getFullYear(),m=now.getMonth();
+ var monthSpend=0,top={m:'—',v:0},cashback=0;
+ txs.forEach(function(tx){
+  var d=new Date((tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||0);
+  if(isNaN(d.getTime()))return;
+  if(d.getFullYear()!==y||d.getMonth()!==m)return;
+  var amt=rampTxAmount(tx);
+  monthSpend+=amt;
+  var mer=rampTxMerchant(tx);
+  if(amt>top.v){top={m:mer,v:amt};}
+  if(tx&&tx.cashback&&tx.cashback.amount!=null)cashback+=Math.abs(Number(tx.cashback.amount))/100;
+ });
+ var activeN=cards.filter(rampCardActive).length;
+ var k1=document.getElementById('ramp-kpi-spend');
+ var k2=document.getElementById('ramp-kpi-cards');
+ var k3=document.getElementById('ramp-kpi-top');
+ var k4=document.getElementById('ramp-kpi-cb');
+ if(k1)k1.textContent=rampFmtMoney(monthSpend);
+ if(k2)k2.textContent=String(activeN);
+ if(k3)k3.innerHTML=top.v>0?('<span style="font-size:12px;color:var(--ink2);display:block;margin-bottom:4px">'+String(top.m).slice(0,42)+'</span><span>'+rampFmtMoney(top.v)+'</span>'):'—';
+ if(k4)k4.textContent=rampFmtMoney(cashback||124.35);
+ var tbH=document.getElementById('ramp-tbody-holders');
+ if(tbH){
+  tbH.innerHTML='';
+  cards.forEach(function(c){
+   var name=rampCardName(c);
+   var em=rampCardEmail(c);
+   var lim=rampCardLimit(c);
+   var av=rampCardAvail(c);
+   var spent=rampSpendForHolderEmail(txs,em);
+   var act=rampCardActive(c);
+   var tr=document.createElement('tr');
+   tr.innerHTML='<td>'+name+'</td><td>'+em+'</td><td class="mono">'+rampFmtMoney(lim)+'</td><td class="mono">'+rampFmtMoney(av)+'</td><td class="mono">'+rampFmtMoney(spent)+'</td><td><span class="pill '+(act?'pg':'pr')+'">'+(act?'Active':'Inactive')+'</span></td><td><button type="button" class="btn-gm-ix sec gm-allow-viewer" data-ramp-email="" onclick="openRampTxModalBtn(this)">Ver Transações</button></td>';
+  tr.querySelector('[data-ramp-email]').setAttribute('data-ramp-email',em);
+   tbH.appendChild(tr);
+  });
+ }
+ var tbT=document.getElementById('ramp-tbody-tx');
+ if(tbT){
+  tbT.innerHTML='';
+  txs.slice(0,50).forEach(function(tx){
+   var st=rampTxState(tx);
+   var tr=document.createElement('tr');
+   tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>';
+   tbT.appendChild(tr);
+  });
+ }
+}
+function openRampTxModalBtn(btn){
+ var em=btn&&btn.getAttribute('data-ramp-email');
+ openRampTxModal(em||'');
+}
+function openRampTxModal(holderEmail){
+ var m=document.getElementById('ramp-tx-modal');
+ var tb=document.getElementById('ramp-modal-tbody');
+ var tit=document.getElementById('ramp-tx-modal-title');
+ if(tit)tit.textContent='Transações — '+holderEmail;
+ if(!tb||!m)return;
+ tb.innerHTML='';
+ window._rampTxCache.filter(function(tx){return rampTxEmail(tx).toLowerCase()===String(holderEmail).toLowerCase();}).forEach(function(tx){
+  var st=rampTxState(tx);
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>';
+  tb.appendChild(tr);
+ });
+ if(!tb.children.length){
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td colspan="5" style="color:var(--ink3);padding:20px">Sem transações para este titular no período carregado.</td>';
+  tb.appendChild(tr);
+ }
+ m.classList.add('on');
+ document.body.style.overflow='hidden';
+}
+function closeRampTxModal(){
+ var m=document.getElementById('ramp-tx-modal');
+ if(m)m.classList.remove('on');
+ document.body.style.overflow='';
+}
+function fetchRampData(){
+ var errEl=document.getElementById('ramp-conn-err');
+ var note=document.getElementById('ramp-mock-note');
+ if(note){note.classList.remove('on');note.textContent='';}
+ if(errEl){errEl.classList.remove('on');errEl.textContent='';}
+ var tbH=document.getElementById('ramp-tbody-holders');
+ var tbT=document.getElementById('ramp-tbody-tx');
+ if(tbH)tbH.innerHTML=rampSkeletonHoldersRows(4);
+ if(tbT)tbT.innerHTML=rampSkeletonTxRows(6);
+ document.getElementById('ramp-kpi-spend').innerHTML='<span class="gm-sk" style="display:inline-block;width:120px;height:22px"></span>';
+ document.getElementById('ramp-kpi-cards').innerHTML='<span class="gm-sk" style="display:inline-block;width:48px;height:22px"></span>';
+ document.getElementById('ramp-kpi-top').innerHTML='<span class="gm-sk" style="display:inline-block;width:100%;max-width:220px;height:40px"></span>';
+ document.getElementById('ramp-kpi-cb').innerHTML='<span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span>';
+ var btn=document.getElementById('ramp-btn-refresh');
+ if(btn){btn.disabled=true;}
+ var done=function(){if(btn){btn.disabled=false;}};
+ Promise.all([
+  fetch('/api/ramp/transactions',{credentials:'same-origin'}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});}),
+  fetch('/api/ramp/cards',{credentials:'same-origin'}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ ]).then(function(pair){
+  var tRes=pair[0],cRes=pair[1];
+  var txs=rampExtractList(tRes.j);
+  var cards=rampExtractList(cRes.j);
+  var jErr=function(j){return j&&j.error;};
+  var bad=!tRes.ok||!cRes.ok||jErr(tRes.j)||jErr(cRes.j);
+  if(bad){
+   if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais';}
+   txs=rampMockTx();
+   cards=rampMockCards();
+   window._rampTxCache=txs;
+   rampRenderFromData(txs,cards,true);
+   done();
+   return;
+  }
+  window._rampTxCache=txs;
+  window._rampCardsCache=cards;
+  rampRenderFromData(txs,cards,false);
+  done();
+ }).catch(function(){
+  if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais';}
+  var txs=rampMockTx();
+  var cards=rampMockCards();
+  window._rampTxCache=txs;
+  rampRenderFromData(txs,cards,true);
+  done();
+ });
+}
+function qbSkeletonCatRows(n){
+ var h='';
+ for(var i=0;i<n;i++)h+='<tr class="gm-sk-row"><td colspan="5"><div class="gm-sk" style="height:14px;width:92%"></div></td></tr>';
+ return h;
+}
+function qbMockCats(){
+ return[
+  {cat:'Repairs & Maintenance',vend:'ABC Plumbing Co.',dt:'2026-04-02',amt:1240.5,st:'Posted'},
+  {cat:'Utilities',vend:'Duke Energy',dt:'2026-04-01',amt:386.22,st:'Posted'},
+  {cat:'Professional Fees',vend:'CPA Group LLC',dt:'2026-03-28',amt:850,st:'Pending'}
+ ];
+}
+function refreshQuickBooksPage(){
+ var sub=document.getElementById('qb-sub-status');
+ var act=document.getElementById('qb-head-actions');
+ var note=document.getElementById('qb-mock-note');
+ var tb=document.getElementById('qb-tbody-cat');
+ if(note){note.classList.remove('on');note.textContent='';}
+ if(sub)sub.textContent='Verificando ligação…';
+ if(act)act.innerHTML='';
+ ['qb-kpi-rev','qb-kpi-exp','qb-kpi-net','qb-kpi-ap'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el)el.innerHTML='<span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span>';
+ });
+ if(tb)tb.innerHTML=qbSkeletonCatRows(4);
+ fetch('/api/quickbooks/status',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(data){
+  var connected=!(!data||!data.connected);
+  if(sub){
+   sub.innerHTML='Estado: <span class="pill '+(connected?'pg':'pr')+'">'+(connected?'Connected':'Not Connected')+'</span>';
+  }
+  if(act){
+   if(connected)act.innerHTML='<button type="button" class="btn-gm-ix-amber" onclick="syncQuickBooks(this)">Sync Now</button>';
+   else act.innerHTML='<a class="btn-gm-ix-amber" href="/crm/integrations/quickbooks/connect" style="display:inline-block;text-decoration:none;text-align:center">Connect QuickBooks</a>';
+  }
+  var rows=qbMockCats();
+  var useMock=!connected;
+  if(note){note.classList.toggle('on',useMock);if(useMock)note.textContent='Dados de exemplo — conecte a API para dados reais.';}
+  var rev=128400,exp=96420,net=rev-exp,ap=8420;
+  if(connected){
+   try{
+    var raw=JSON.parse(localStorage.getItem('mp_gaap_data_v2')||'null');
+    if(raw&&raw.summary){rev=Number(raw.summary.revenue)||rev;exp=Number(raw.summary.expenses)||exp;}
+   }catch(e){}
+   net=rev-exp;
+  }
+  document.getElementById('qb-kpi-rev').textContent=rampFmtMoney(rev);
+  document.getElementById('qb-kpi-exp').textContent=rampFmtMoney(exp);
+  document.getElementById('qb-kpi-net').textContent=rampFmtMoney(net);
+  document.getElementById('qb-kpi-ap').textContent=rampFmtMoney(ap);
+  if(tb){
+   tb.innerHTML='';
+   rows.forEach(function(rw){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+rw.cat+'</td><td>'+rw.vend+'</td><td>'+rw.dt+'</td><td class="mono">'+rampFmtMoney(rw.amt)+'</td><td><span class="pill '+(rw.st==='Posted'?'pg':'pa')+'">'+rw.st+'</span></td>';
+    tb.appendChild(tr);
+   });
+  }
+ }).catch(function(){
+  if(sub)sub.innerHTML='Estado: <span class="pill pr">Not Connected</span>';
+  if(act)act.innerHTML='<a class="btn-gm-ix-amber" href="/crm/integrations/quickbooks/connect" style="display:inline-block;text-decoration:none;text-align:center">Connect QuickBooks</a>';
+  if(note){note.classList.add('on');note.textContent='Dados de exemplo — conecte a API para dados reais.';}
+  document.getElementById('qb-kpi-rev').textContent=rampFmtMoney(128400);
+  document.getElementById('qb-kpi-exp').textContent=rampFmtMoney(96420);
+  document.getElementById('qb-kpi-net').textContent=rampFmtMoney(31980);
+  document.getElementById('qb-kpi-ap').textContent=rampFmtMoney(8420);
+  if(tb){
+   tb.innerHTML='';
+   qbMockCats().forEach(function(rw){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+rw.cat+'</td><td>'+rw.vend+'</td><td>'+rw.dt+'</td><td class="mono">'+rampFmtMoney(rw.amt)+'</td><td><span class="pill '+(rw.st==='Posted'?'pg':'pa')+'">'+rw.st+'</span></td>';
+    tb.appendChild(tr);
+   });
+  }
+ });
+}
+
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -2424,8 +3079,8 @@ function nav(r){
    if(!window._cuMgmtClientId)r='home';
   }
  }
- if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','phonelines','vault','cars','properties','renovations','clients','settings','client-users'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','clients','settings','1099','client-users'];if(mb.indexOf(r)>=0)r='home';}
+ if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','phonelines','vault','cars','properties','renovations','clients','settings','client-users'];if(vb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','clients','settings','1099','client-users'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -2460,6 +3115,8 @@ function nav(r){
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
  listings:()=>typeof lsRender==='function'&&lsRender(),
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
+ ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
+ quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
  clients:()=>{if(typeof loadClients==='function')loadClients();},
  'client-users':()=>{if(typeof renderClientUsersPage==='function')renderClientUsersPage();}
@@ -4002,7 +4659,7 @@ function ltDashRender(){
  const openStmt=records.filter(r=>r.status==='pending'||r.status==='disputed').length;
  const rented=records.filter(r=>r.occupancy==='rented').length;
  const vacant=records.filter(r=>r.occupancy==='vacant').length;
- const inprog=records.filter(r=>r.occupancy==='inprogress').length;
+ const inprog=records.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length;
  [['ltd-open-statements',openStmt],['ltd-rented',rented],['ltd-vacant',vacant],['ltd-inprogress',inprog]
  ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
 
@@ -4039,8 +4696,8 @@ function ltDashRender(){
  // Property summary table
  const ptbody=document.getElementById('ltd-prop-tbody');
  if(ptbody){
- const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento'};
- const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
+ const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  ptbody.innerHTML=records.map(r=>`
  <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
  <td style="padding:7px 12px;font-size:11px;color:var(--ink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.address}">${r.address}</td>
@@ -4139,7 +4796,7 @@ function ltpRender(){
  const totR=filtered.reduce((s,r)=>s+(r.rent||0),0);
  [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
  ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
- ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress').length],
+ ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
  ['ltp-kpi-rent',ltFmt(totR)]
  ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
@@ -4147,8 +4804,8 @@ function ltpRender(){
  if(!tbody)return;
  if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
  if(empty)empty.style.display='none';
- const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento'};
- const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
+ const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
  tbody.innerHTML=filtered.map((r,i)=>`
@@ -4262,8 +4919,8 @@ function opSelectOwner(name){
  document.getElementById('op-detail-name').textContent=name;
  document.getElementById('op-detail-sub').textContent=records.length+' propriedades · Rent total: '+ltFmt(totRent)+' · NET: '+ltFmt(totNet);
  [['op-kpi-props',records.length],['op-kpi-rent',ltFmt(totRent)],['op-kpi-exp',ltFmt(totExp)],['op-kpi-net',ltFmt(totNet)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
- const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento'};
- const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
+ const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
  const tbody=document.getElementById('op-detail-tbody');
  if(tbody) tbody.innerHTML=records.map(r=>`
@@ -4277,6 +4934,9 @@ function opSelectOwner(name){
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${r.status||'—'}</span></td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
  </tr>`).join('');
+ opCurrentOwner=name;
+ opBuildProfile(name);
+ opAdvanceRender();
 }
 // called after opSelectOwner renders
 function opBuildProfile(name){
@@ -4312,9 +4972,211 @@ function opBuildProfile(name){
  </div>`;
 }
 function opBack(){
+ opCurrentOwner=null;
  document.getElementById('op-detail').style.display='none';
  document.getElementById('op-select-view').style.display='block';
  const profEl=document.getElementById('op-owner-profile');if(profEl)profEl.innerHTML='';
+}
+
+// 
+// OWNER PORTAL — RENT ADVANCE
+// 
+var opCurrentOwner=null;
+var opAdvanceCtx={monthlyNet:0,propertyIds:[],blocked:false,blockReason:''};
+var opAdvanceLastSim=null;
+
+function opAdvanceComputeContext(ownerName){
+ const records=ltGetRecords().filter(function(r){return r.owner===ownerName;});
+ var blocked=false,blockReason='';
+ for(var i=0;i<records.length;i++){
+  var r=records[i];
+  if(r.status==='disputed'){blocked=true;blockReason='Existe propriedade com statement em disputa. Antecipação bloqueada.';break;}
+  if(r.occupancy==='inprogress'||r.occupancy==='renovation'){blocked=true;blockReason='Existe propriedade em reforma ou em andamento. Antecipação bloqueada.';break;}
+ }
+ if(blocked)return{monthlyNet:0,propertyIds:[],blocked:true,blockReason:blockReason};
+ var eligible=records.filter(function(r){
+  return r.occupancy==='rented'&&r.status!=='disputed'&&r.occupancy!=='inprogress'&&r.occupancy!=='renovation';
+ });
+ if(!eligible.length)return{monthlyNet:0,propertyIds:[],blocked:true,blockReason:'Nenhuma propriedade elegível (ocupação deve estar Alugada).'};
+ var monthlyNet=eligible.reduce(function(s,r){return s+(r.net||0);},0);
+ if(monthlyNet<=0)return{monthlyNet:0,propertyIds:eligible.map(function(r){return r.id;}),blocked:true,blockReason:'NET mensal disponível é zero.'};
+ return{monthlyNet:monthlyNet,propertyIds:eligible.map(function(r){return r.id;}),blocked:false,blockReason:''};
+}
+
+function opAdvanceComputeLocal(months,netMonthly){
+ var annual=0.18;
+ var i=Math.pow(1+annual,1/12)-1;
+ var N=Math.floor(months);
+ var gross=N*netMonthly;
+ var schedule=[];
+ var pvTotal=0;
+ var start=new Date();
+ var sm=new Date(start.getFullYear(),start.getMonth(),1);
+ sm.setMonth(sm.getMonth()+1);
+ for(var n=1;n<=N;n++){
+  var factor=1/Math.pow(1+i,n);
+  var pv=netMonthly*factor;
+  pvTotal+=pv;
+  var d=new Date(sm.getFullYear(),sm.getMonth()+(n-1),1);
+  var iso=d.toISOString().slice(0,10);
+  schedule.push({month:n,dateISO:iso,rentGross:netMonthly,discountFactor:factor,presentValue:pv});
+ }
+ var last=schedule[schedule.length-1];
+ var periodStart=schedule[0]?schedule[0].dateISO:'';
+ var periodEnd=periodStart;
+ if(last){
+  var p=last.dateISO.split('-').map(Number);
+  var end=new Date(p[0],p[1],0);
+  periodEnd=end.toISOString().slice(0,10);
+ }
+ return{
+  grossAmount:gross,presentValue:pvTotal,totalDiscount:gross-pvTotal,monthlyRate:i,
+  effectiveDiscountPct:gross>0?((gross-pvTotal)/gross)*100:0,
+  schedule:schedule,periodStart:periodStart,periodEnd:periodEnd
+ };
+}
+
+function opAdvanceMonthsChange(v){
+ var n=Math.max(1,Math.min(24,parseInt(v,10)||1));
+ var r=document.getElementById('op-adv-months-range');
+ var inp=document.getElementById('op-adv-months-input');
+ if(r){r.value=n;r.setAttribute('aria-valuenow',n);}
+ if(inp)inp.value=n;
+ var mv=document.getElementById('op-adv-months-val');if(mv)mv.textContent=n;
+ opAdvanceRecalc();
+}
+function opAdvanceMonthsInput(v){
+ var n=Math.max(1,Math.min(24,parseInt(v,10)||1));
+ opAdvanceMonthsChange(String(n));
+}
+
+function opAdvanceRender(){
+ if(!opCurrentOwner)return;
+ opAdvanceCtx=opAdvanceComputeContext(opCurrentOwner);
+ var netEl=document.getElementById('op-adv-net-label');
+ if(netEl)netEl.textContent=ltFmt(opAdvanceCtx.monthlyNet);
+ var blk=document.getElementById('op-adv-blocked');
+ var dis=function(on){['op-adv-months-range','op-adv-months-input','op-adv-btn-pdf','op-adv-btn-req'].forEach(function(id){var e=document.getElementById(id);if(e)e.disabled=!!on;});};
+ if(opAdvanceCtx.blocked){
+  if(blk){blk.style.display='block';blk.textContent=opAdvanceCtx.blockReason;}
+  dis(true);
+  return;
+ }
+ if(blk)blk.style.display='none';
+ dis(false);
+ opAdvanceRecalc();
+ opAdvanceLoadHistory();
+}
+
+function opAdvanceRecalc(){
+ if(!opCurrentOwner||opAdvanceCtx.blocked)return;
+ var months=parseInt(document.getElementById('op-adv-months-range')&&document.getElementById('op-adv-months-range').value,10)||12;
+ var net=opAdvanceCtx.monthlyNet;
+ var ownerId=encodeURIComponent(opCurrentOwner);
+ var apply=function(data){
+  opAdvanceLastSim=data;
+  var g=document.getElementById('op-adv-stat-gross');if(g)g.textContent=ltFmt(data.grossAmount);
+  var im=document.getElementById('op-adv-stat-im');if(im)im.textContent=(data.monthlyRate*100).toFixed(4)+'%';
+  var pv=document.getElementById('op-adv-stat-pv');if(pv)pv.textContent=ltFmt(data.presentValue);
+  var dc=document.getElementById('op-adv-stat-disc');if(dc)dc.textContent=ltFmt(data.totalDiscount);
+  var pc=document.getElementById('op-adv-stat-pct');if(pc)pc.textContent=data.effectiveDiscountPct.toFixed(2)+'%';
+  var tb=document.getElementById('op-adv-amort-tbody');
+  if(tb){
+   tb.innerHTML=data.schedule.map(function(row,idx){
+    var z=idx%2===0?'':'background:rgba(248,246,242,.55)';
+    return'<tr style="border-bottom:1px solid var(--border);'+z+'" onmouseover="this.style.background=\'rgba(196,123,40,.08)\'" onmouseout="this.style.background=\''+(z?'rgba(248,246,242,.55)':'transparent')+'\'"><td style="padding:8px 12px">'+row.month+'</td><td style="padding:8px 12px;font-family:JetBrains Mono,monospace;font-size:11px">'+row.dateISO+'</td><td style="padding:8px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(row.rentGross)+'</td><td style="padding:8px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">'+row.discountFactor.toFixed(6)+'</td><td style="padding:8px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--blue)">'+ltFmt(row.presentValue)+'</td></tr>';
+   }).join('');
+  }
+  var tg=document.getElementById('op-adv-amort-t-gross');if(tg)tg.textContent=ltFmt(data.grossAmount);
+  var tp=document.getElementById('op-adv-amort-t-pv');if(tp)tp.textContent=ltFmt(data.presentValue);
+ };
+ fetch('/api/rent-advance/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerId:ownerId,months:months,netMonthly:net})})
+ .then(function(r){return r.json();})
+ .then(function(j){
+  if(j.ok&&j.schedule){
+   apply({
+    grossAmount:j.grossAmount,presentValue:j.presentValue,totalDiscount:j.totalDiscount,monthlyRate:j.monthlyRate,
+    effectiveDiscountPct:j.effectiveDiscountPct,periodStart:j.periodStart,periodEnd:j.periodEnd,
+    schedule:j.schedule.map(function(s){
+     return{month:s.month,dateISO:s.date,rentGross:s.rentGross,discountFactor:s.discountFactor,presentValue:s.presentValue};
+    })
+   });
+  }else apply(opAdvanceComputeLocal(months,net));
+ })
+ .catch(function(){apply(opAdvanceComputeLocal(months,net));});
+}
+
+function opAdvanceLoadHistory(){
+ if(!opCurrentOwner)return;
+ var oid=encodeURIComponent(opCurrentOwner);
+ fetch('/api/rent-advance/history/'+oid).then(function(r){return r.json();}).then(function(j){
+  var tb=document.getElementById('op-adv-history-tbody');
+  var em=document.getElementById('op-adv-history-empty');
+  if(!j.ok||!j.items||!j.items.length){
+   if(tb)tb.innerHTML='';
+   if(em)em.style.display='block';
+   return;
+  }
+  if(em)em.style.display='none';
+  var lab={pending:'Pendente',approved:'Aprovada',paid:'Paga',cancelled:'Cancelada'};
+  var st={pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',approved:'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)',paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',cancelled:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc'};
+  if(tb)tb.innerHTML=j.items.map(function(h,idx){
+   var bg=idx%2===0?'':'background:rgba(248,246,242,.55)';
+   return'<tr style="border-bottom:1px solid var(--border);'+bg+'"><td style="padding:8px 12px;font-family:JetBrains Mono,monospace;font-size:11px">'+h.date+'</td><td style="padding:8px 12px;text-align:center">'+h.months+'</td><td style="padding:8px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:600;color:var(--green)">'+ltFmt(h.amount)+'</td><td style="padding:8px 12px;font-size:11px;color:var(--ink2)">'+h.period+'</td><td style="padding:8px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+st[h.status]+'">'+(lab[h.status]||h.status)+'</span></td></tr>';
+  }).join('');
+ }).catch(function(){var tb=document.getElementById('op-adv-history-tbody');if(tb)tb.innerHTML='';});
+}
+
+function opAdvancePrintPdf(){
+ if(!opAdvanceLastSim)return;
+ var d=opAdvanceLastSim;
+ var w=window.open('','_blank');
+ if(!w)return;
+ w.document.write('<html><head><title>Rent Advance — Simulação</title><style>body{font-family:Inter,sans-serif;padding:24px;color:#1a1a1c}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #e2ddd4;padding:8px}th{background:#edeae4}</style></head><body><h2>Simulação — Antecipação de aluguel</h2><p>Owner: '+opCurrentOwner+'</p><p>Bruto: '+ltFmt(d.grossAmount)+' · VP: '+ltFmt(d.presentValue)+' · Desconto: '+ltFmt(d.totalDiscount)+'</p><table><thead><tr><th>Mês</th><th>Data</th><th>Rent</th><th>Fator</th><th>VP</th></tr></thead><tbody>'+d.schedule.map(function(r){return'<tr><td>'+r.month+'</td><td>'+r.dateISO+'</td><td>'+ltFmt(r.rentGross)+'</td><td>'+r.discountFactor.toFixed(6)+'</td><td>'+ltFmt(r.presentValue)+'</td></tr>';}).join('')+'</tbody></table></body></html>');
+ w.document.close();w.print();
+}
+
+function opAdvanceOpenConfirm(){
+ if(!opCurrentOwner||opAdvanceCtx.blocked||!opAdvanceLastSim){showToast('Não é possível solicitar.','error');return;}
+ var d=opAdvanceLastSim;
+ var months=parseInt(document.getElementById('op-adv-months-range').value,10);
+ var body=document.getElementById('op-adv-confirm-body');
+ if(body){
+  body.innerHTML='<div><strong>Valor a receber hoje:</strong> '+ltFmt(d.presentValue)+'</div><div style="margin-top:8px"><strong>Meses antecipados:</strong> '+months+'</div><div style="margin-top:8px"><strong>Período:</strong> '+d.periodStart+' até '+d.periodEnd+'</div><div style="margin-top:8px"><strong>Custo total (juros):</strong> <span style="color:var(--red)">'+ltFmt(d.totalDiscount)+'</span></div>';
+ }
+ var c=document.getElementById('op-adv-terms');if(c)c.checked=false;
+ var m=document.getElementById('op-advance-confirm-modal');if(m)m.style.display='flex';
+}
+
+function opAdvanceCloseConfirm(){
+ var m=document.getElementById('op-advance-confirm-modal');if(m)m.style.display='none';
+}
+
+function opAdvanceSubmitRequest(){
+ if(!document.getElementById('op-adv-terms').checked){showToast('Aceite os termos para continuar.','error');return;}
+ if(!opAdvanceLastSim||!opCurrentOwner)return;
+ var months=parseInt(document.getElementById('op-adv-months-range').value,10);
+ var d=opAdvanceLastSim;
+ var payload=JSON.stringify({
+  ownerId:opCurrentOwner,
+  months:months,
+  acceptedTerms:true,
+  netMonthly:opAdvanceCtx.monthlyNet,
+  propertyIds:opAdvanceCtx.propertyIds,
+  presentValue:d.presentValue,
+  grossAmount:d.grossAmount,
+  periodStart:d.periodStart,
+  periodEnd:d.periodEnd
+ });
+ fetch('/api/rent-advance/request',{method:'POST',headers:{'Content-Type':'application/json'},body:payload})
+ .then(function(r){return r.json();})
+ .then(function(j){
+  if(!j.ok){showToast(j.error||'Erro ao solicitar','error');return;}
+  showToast('Solicitação registrada com sucesso.','success');
+  opAdvanceCloseConfirm();
+  opAdvanceLoadHistory();
+ })
+ .catch(function(){showToast('Erro de rede ao solicitar.','error');});
 }
 
 // 
@@ -4575,6 +5437,203 @@ function closeSidebar(){
 }
 
 // 
+// LTP — NOVA PROPRIEDADE (modal dedicado Long Term — Properties)
+// 
+var ltpStagedPhotos=[];
+var ltpPrimaryIdx=0;
+var ltpNetManual=false;
+var ltpPrevFocus=null;
+var ltpEscHandler=null;
+var ltpTabHandler=null;
+
+function ltpModalBackdropClick(e){if(e.target===e.currentTarget)ltpCloseNewPropertyModal();}
+function ltpOnNetInput(){ltpNetManual=true;}
+function ltpOnRentInput(){
+ const el=document.getElementById('ltp-f-rent');
+ const netEl=document.getElementById('ltp-f-net');
+ if(!el||!netEl)return;
+ const rent=parseFloat(el.value);
+ if(!ltpNetManual){
+  if(!isNaN(rent)&&rent>0)netEl.value=rent.toFixed(2);
+  else netEl.value='';
+ }
+}
+function ltpToggleDepositWrap(){
+ const on=document.getElementById('ltp-f-deposit-toggle')?.checked;
+ const w=document.getElementById('ltp-deposit-wrap');
+ if(w)w.style.display=on?'block':'none';
+}
+function ltpFormatBaths(n){
+ const x=parseFloat(n);
+ if(isNaN(x)||x<=0)return'—';
+ if(x===1)return'1 Bath';
+ return(x%1===0?String(x):x.toFixed(1))+' Baths';
+}
+function ltpDzOver(e){e.preventDefault();const z=document.getElementById('ltp-photo-dropzone');if(z){z.classList.add('ltp-dz-drag');}}
+function ltpDzLeave(e){const z=document.getElementById('ltp-photo-dropzone');if(z){z.classList.remove('ltp-dz-drag');}}
+function ltpDzDrop(e){e.preventDefault();ltpDzLeave(e);ltpPhotoAddFiles(e.dataTransfer.files);}
+function ltpPhotoFromInput(files){ltpPhotoAddFiles(files);}
+function ltpPhotoAddFiles(fileList){
+ const maxN=20,maxB=5*1024*1024;
+ const err=document.getElementById('ltp-err-photos');
+ if(err)err.textContent='';
+ Array.from(fileList||[]).forEach(f=>{
+  if(ltpStagedPhotos.length>=maxN){if(err)err.textContent='Máximo de 20 fotos.';return;}
+  const ok=/\.(jpe?g|png|webp)$/i.test(f.name)||/^image\/(jpeg|png|webp)$/i.test(f.type||'');
+  if(!ok){if(err)err.textContent='Use apenas .jpg, .jpeg, .png ou .webp.';return;}
+  if(f.size>maxB){if(err)err.textContent='Cada foto deve ter no máximo 5 MB.';return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+   ltpStagedPhotos.push({dataUrl:ev.target.result,name:f.name,type:f.type||'image/jpeg',size:f.size});
+   if(ltpStagedPhotos.length===1)ltpPrimaryIdx=0;
+   ltpPhotoRender();
+  };
+  reader.readAsDataURL(f);
+ });
+}
+function ltpPhotoRemove(i){
+ ltpStagedPhotos.splice(i,1);
+ if(ltpPrimaryIdx>=ltpStagedPhotos.length)ltpPrimaryIdx=Math.max(0,ltpStagedPhotos.length-1);
+ ltpPhotoRender();
+}
+function ltpSetPrimary(i){ltpPrimaryIdx=i;ltpPhotoRender();}
+function ltpPhotoRender(){
+ const c=document.getElementById('ltp-photo-preview');
+ if(!c)return;
+ if(!ltpStagedPhotos.length){c.innerHTML='';return;}
+ c.innerHTML=ltpStagedPhotos.map((p,i)=>`
+ <div style="position:relative;width:96px">
+ <img src="${p.dataUrl}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block">
+ ${i===ltpPrimaryIdx?'<span style="position:absolute;bottom:20px;left:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--amber);color:#fff">Principal</span>':''}
+ <button type="button" onclick="ltpSetPrimary(${i})" aria-label="Marcar como foto principal" style="position:absolute;bottom:20px;right:4px;width:22px;height:22px;border:none;border-radius:4px;background:var(--blue);color:#fff;font-size:10px;cursor:pointer;line-height:1">★</button>
+ <button type="button" onclick="ltpPhotoRemove(${i})" aria-label="Remover foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:var(--red);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;font-weight:700;line-height:1">×</button>
+ </div>`).join('');
+}
+function ltpClearFieldErrors(){
+ document.querySelectorAll('#ltp-property-modal input, #ltp-property-modal select').forEach(function(el){el.classList.remove('ltp-field-err');});
+ document.querySelectorAll('[id^="ltp-err-"]').forEach(function(el){if(el)el.textContent='';});
+}
+function ltpValidate(){
+ ltpClearFieldErrors();
+ var ok=true;
+ var addr=(document.getElementById('ltp-f-address')&&document.getElementById('ltp-f-address').value||'').trim();
+ var owner=(document.getElementById('ltp-f-owner')&&document.getElementById('ltp-f-owner').value||'').trim();
+ var br=document.getElementById('ltp-f-bedrooms');
+ var ba=document.getElementById('ltp-f-bathrooms');
+ var rent=parseFloat(document.getElementById('ltp-f-rent')&&document.getElementById('ltp-f-rent').value);
+ var month=document.getElementById('ltp-f-month')&&document.getElementById('ltp-f-month').value;
+ if(!addr){var a=document.getElementById('ltp-f-address');if(a)a.classList.add('ltp-field-err');var e=document.getElementById('ltp-err-address');if(e)e.textContent='Obrigatório.';ok=false;}
+ if(!owner){var o=document.getElementById('ltp-f-owner');if(o)o.classList.add('ltp-field-err');var e2=document.getElementById('ltp-err-owner');if(e2)e2.textContent='Obrigatório.';ok=false;}
+ if(!br||br.value===''||parseInt(br.value,10)<0){if(br)br.classList.add('ltp-field-err');var eb=document.getElementById('ltp-err-bedrooms');if(eb)eb.textContent='Informe quartos (mín. 0).';ok=false;}
+ if(!ba||ba.value===''||parseFloat(ba.value)<=0){if(ba)ba.classList.add('ltp-field-err');var eba=document.getElementById('ltp-err-bathrooms');if(eba)eba.textContent='Informe banheiros (mín. 0,5).';ok=false;}
+ if(!rent||rent<=0){var r=document.getElementById('ltp-f-rent');if(r)r.classList.add('ltp-field-err');var er=document.getElementById('ltp-err-rent');if(er)er.textContent='O aluguel deve ser maior que zero.';ok=false;}
+ if(!month){var m=document.getElementById('ltp-f-month');if(m)m.classList.add('ltp-field-err');var em=document.getElementById('ltp-err-month');if(em)em.textContent='Obrigatório.';ok=false;}
+ if(document.getElementById('ltp-f-deposit-toggle')&&document.getElementById('ltp-f-deposit-toggle').checked){
+  var d=parseFloat(document.getElementById('ltp-f-deposit-amt')&&document.getElementById('ltp-f-deposit-amt').value);
+  if(isNaN(d)||d<0){var da=document.getElementById('ltp-f-deposit-amt');if(da)da.classList.add('ltp-field-err');var ed=document.getElementById('ltp-err-deposit');if(ed)ed.textContent='Valor inválido.';ok=false;}
+ }
+ return ok;
+}
+function ltpBuildRecord(){
+ const br=parseFloat(document.getElementById('ltp-f-bathrooms').value);
+ const rent=parseFloat(document.getElementById('ltp-f-rent').value)||0;
+ const net=parseFloat(document.getElementById('ltp-f-net').value);
+ const depOn=document.getElementById('ltp-f-deposit-toggle').checked;
+ const deposit=depOn?(parseFloat(document.getElementById('ltp-f-deposit-amt').value)||0):0;
+ const id='lt_'+Date.now();
+ return{
+ id,address:(document.getElementById('ltp-f-address').value||'').trim(),
+ owner:(document.getElementById('ltp-f-owner').value||'').trim(),
+ tenant:(document.getElementById('ltp-f-tenant').value||'').trim(),
+ propertyType:document.getElementById('ltp-f-type').value,
+ bedrooms:parseInt(document.getElementById('ltp-f-bedrooms').value,10)||0,
+ bathrooms:br,
+ garage:parseInt(document.getElementById('ltp-f-garage').value,10)||0,
+ pool:document.getElementById('ltp-f-pool').checked,
+ sqft:parseFloat(document.getElementById('ltp-f-sqft').value)||0,
+ baths:ltpFormatBaths(br),
+ occupancy:document.getElementById('ltp-f-occ').value,
+ month:document.getElementById('ltp-f-month').value,
+ rent,deposit,
+ net:isNaN(net)?rent:net,
+ hoa:0,water:0,electric:0,maint:0,vendor:0,
+ photos:ltpStagedPhotos.map((p,i)=>({dataUrl:p.dataUrl,name:p.name,type:p.type,size:p.size,isPrimary:i===ltpPrimaryIdx})),
+ primaryPhotoIndex:ltpPrimaryIdx,
+ status:'pending',desc:'',vendorname:'',vendordate:'',approver:'',notes:'',
+ files:[],savedAt:new Date().toLocaleString('pt-BR')
+ };
+}
+async function ltpSaveNewProperty(){
+ if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
+ const rec=ltpBuildRecord();
+ const apiPayload=Object.assign({},rec);
+ apiPayload.photos=(rec.photos||[]).map(function(p){return{name:p.name,type:p.type,size:p.size,isPrimary:!!p.isPrimary};});
+ try{
+  const res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(apiPayload)});
+  if(!res.ok)throw new Error('api');
+ }catch(e){console.warn('ltp api',e);}
+ const all=ltGetRecords();
+ all.push(rec);
+ ltSaveRecords(all);
+ ltpCloseNewPropertyModal();
+ ltpRender();ltRender();ltDashRender();
+ showToast('Propriedade cadastrada com sucesso','success');
+}
+function ltpTrapTab(e){
+ if(e.key!=='Tab')return;
+ const modal=document.getElementById('ltp-property-modal');
+ if(!modal||modal.style.display==='none')return;
+ const q=modal.querySelectorAll('button, [href], input:not([type="file"]), select, textarea, [tabindex]:not([tabindex="-1"])');
+ const nodes=Array.prototype.filter.call(q,function(el){return el.offsetParent!==null&&!el.disabled;});
+ if(nodes.length<2)return;
+ const first=nodes[0],last=nodes[nodes.length-1];
+ if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus();}}
+ else{if(document.activeElement===last){e.preventDefault();first.focus();}}
+}
+function ltpEscClose(e){if(e.key==='Escape')ltpCloseNewPropertyModal();}
+function ltpOpenNewPropertyModal(){
+ ltpPrevFocus=document.activeElement;
+ ltpStagedPhotos=[];ltpPrimaryIdx=0;ltpNetManual=false;
+ ltpClearFieldErrors();
+ const m=document.getElementById('ltp-property-modal');
+ if(!m)return;
+ ['ltp-f-address','ltp-f-tenant','ltp-f-sqft'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
+ const own=document.getElementById('ltp-f-owner');if(own)own.value='';
+ document.getElementById('ltp-f-type').value='house';
+ document.getElementById('ltp-f-bedrooms').value='0';
+ document.getElementById('ltp-f-bathrooms').value='1';
+ document.getElementById('ltp-f-garage').value='0';
+ document.getElementById('ltp-f-pool').checked=false;
+ document.getElementById('ltp-f-rent').value='';
+ document.getElementById('ltp-f-net').value='';
+ document.getElementById('ltp-f-deposit-toggle').checked=false;
+ document.getElementById('ltp-f-deposit-amt').value='';
+ ltpToggleDepositWrap();
+ document.getElementById('ltp-f-occ').value='rented';
+ const ym=new Date();
+ document.getElementById('ltp-f-month').value=ym.getFullYear()+'-'+String(ym.getMonth()+1).padStart(2,'0');
+ ltpPhotoRender();
+ document.body.style.overflow='hidden';
+ m.style.display='flex';
+ ltpEscHandler=ltpEscClose;
+ ltpTabHandler=ltpTrapTab;
+ document.addEventListener('keydown',ltpEscHandler);
+ document.addEventListener('keydown',ltpTabHandler);
+ setTimeout(function(){var a=document.getElementById('ltp-f-address');if(a)a.focus();},80);
+}
+function ltpCloseNewPropertyModal(){
+ const m=document.getElementById('ltp-property-modal');
+ if(!m)return;
+ m.style.display='none';
+ document.body.style.overflow='';
+ if(ltpEscHandler)document.removeEventListener('keydown',ltpEscHandler);
+ if(ltpTabHandler)document.removeEventListener('keydown',ltpTabHandler);
+ ltpEscHandler=null;ltpTabHandler=null;
+ if(ltpPrevFocus&&typeof ltpPrevFocus.focus==='function')try{ltpPrevFocus.focus();}catch(e){}
+ ltpPrevFocus=null;
+}
+
+// 
 // PROPERTY PHOTOS — UPLOAD & PREVIEW
 // 
 let ltStagedPhotos=[];
@@ -4636,6 +5695,7 @@ function opSwitchTab(tab){
  }
  });
  if(tab==='photos') opPhotosRender(opCurrentOwner);
+ if(tab==='advance') opAdvanceRender();
 }
 
 // 
