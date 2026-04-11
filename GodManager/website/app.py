@@ -1,4 +1,5 @@
 import os
+import base64
 import csv
 import io
 import re
@@ -10,6 +11,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 import bcrypt
 from urllib.parse import urlparse
+
+import requests as req
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -135,6 +138,10 @@ class AuditLog(db.Model):
 
 def create_app():
     """Application factory."""
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     app = Flask(__name__)
     
     # Configuration
@@ -275,6 +282,33 @@ def register_routes(app):
         
         exists = User.query.filter_by(username=username).first() is not None
         return jsonify({"available": not exists})
+
+    @app.route("/api/ramp/transactions")
+    def ramp_transactions():
+        client_id = os.environ.get("RAMP_CLIENT_ID")
+        client_secret = os.environ.get("RAMP_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            return jsonify({"error": "Ramp credentials not configured"}), 500
+        creds = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        token_res = req.post(
+            "https://api.ramp.com/developer/v1/token",
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"grant_type": "client_credentials", "scope": "transactions:read"},
+        )
+        token = token_res.json().get("access_token")
+        params = {"page_size": 100}
+        from_date = request.args.get("from_date")
+        if from_date:
+            params["from_date"] = from_date
+        tx_res = req.get(
+            "https://api.ramp.com/developer/v1/transactions",
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+        )
+        return jsonify(tx_res.json())
     
     @app.route("/request_account", methods=["POST"])
     def request_account():
