@@ -97,6 +97,15 @@ export default function LoginPage() {
           <Suspense fallback={<LoginFormFallback />}>
             <LoginForm />
           </Suspense>
+          <p className="mt-8 text-center font-inter text-[11px] leading-relaxed text-slate-500">
+            <Link
+              href="/gm"
+              className="font-medium text-[#1a3a5c] underline decoration-[#1a3a5c]/30 underline-offset-2 transition hover:text-[#c9a96e] hover:decoration-[#c9a96e]/50"
+            >
+              Financial operations console
+            </Link>
+            <span className="block text-[10px] text-slate-400">Legacy full-page dashboard (HTML)</span>
+          </p>
         </div>
       </div>
     </div>

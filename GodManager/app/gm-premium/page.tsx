@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Atalho: /gm-premium → ficheiro estático em public/ */
+/** Atalho: /gm-premium → rota que serve o HTML (ver app/gm/route.ts) */
 export default function GmPremiumPage() {
-  redirect("/GodManager_Premium.html");
+  redirect("/gm");
 }
