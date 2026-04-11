@@ -363,7 +363,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px">Register new client</div>
  <form id="cl-form" onsubmit="return registerClient(event)">
  <div class="cl-row">
- <div class="cl-fg"><label>Company Name *</label><input class="fi" id="cl-co" type="text" required placeholder="Master Vacation Homes LLC"></div>
+ <div class="cl-fg"><label>Company Name *</label><input class="fi" id="cl-co" type="text" required placeholder="Manager Prop"></div>
  <div class="cl-fg"><label>Contact Name *</label><input class="fi" id="cl-contact" type="text" required placeholder="Jane Doe"></div>
  <div class="cl-fg"><label>Email *</label><input class="fi" id="cl-email" type="email" required placeholder="ops@company.com"></div>
  <div class="cl-fg"><label>Phone</label><input class="fi" id="cl-phone" type="text" placeholder="+1 …"></div>
@@ -728,7 +728,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="gm-ix-headrow ph" style="margin-bottom:20px">
  <div>
  <div class="pt" style="font-family:'Sora',sans-serif">Ramp — Corporate Cards</div>
- <div class="ps">Master Vacation Homes LLC</div>
+ <div class="ps">Manager Prop</div>
  </div>
  <div class="gm-ix-actions">
  <button type="button" class="btn-gm-ix" id="ramp-btn-refresh" onclick="fetchRampData()">Atualizar Dados</button>
@@ -2858,10 +2858,11 @@ function rampSpendForHolderEmail(txs,email){
  });
  return t;
 }
-function rampRenderFromData(txs,cards,useMock){
+function rampRenderFromData(txs,cards,useMock,opts){
+ opts=opts||{};
  var note=document.getElementById('ramp-mock-note');
  var errEl=document.getElementById('ramp-conn-err');
- if(errEl){errEl.classList.remove('on');errEl.textContent='';}
+ if(errEl&&!opts.keepError){errEl.classList.remove('on');errEl.textContent='';}
  if(note){note.classList.toggle('on',!!useMock);if(useMock)note.textContent='Dados de exemplo — conecte a API para dados reais.';}
  var now=new Date();
  var y=now.getFullYear(),m=now.getMonth();
@@ -2884,7 +2885,7 @@ function rampRenderFromData(txs,cards,useMock){
  if(k1)k1.textContent=rampFmtMoney(monthSpend);
  if(k2)k2.textContent=String(activeN);
  if(k3)k3.innerHTML=top.v>0?('<span style="font-size:12px;color:var(--ink2);display:block;margin-bottom:4px">'+String(top.m).slice(0,42)+'</span><span>'+rampFmtMoney(top.v)+'</span>'):'—';
- if(k4)k4.textContent=rampFmtMoney(cashback||124.35);
+ if(k4)k4.textContent=rampFmtMoney(useMock?(cashback||124.35):cashback);
  var tbH=document.getElementById('ramp-tbody-holders');
  if(tbH){
   tbH.innerHTML='';
@@ -2942,6 +2943,17 @@ function closeRampTxModal(){
  if(m)m.classList.remove('on');
  document.body.style.overflow='';
 }
+function rampFmtRampErr(label,res){
+ var j=res&&res.j;
+ var parts=[label];
+ if(res&&res.status)parts.push('HTTP '+res.status);
+ if(j&&j.error)parts.push(String(j.error));
+ if(j&&j.detail!=null){
+  var d=j.detail;
+  parts.push(typeof d==='string'?d:JSON.stringify(d).slice(0,400));
+ }
+ return parts.join(' — ');
+}
 function fetchRampData(){
  var errEl=document.getElementById('ramp-conn-err');
  var note=document.getElementById('ramp-mock-note');
@@ -2958,9 +2970,17 @@ function fetchRampData(){
  var btn=document.getElementById('ramp-btn-refresh');
  if(btn){btn.disabled=true;}
  var done=function(){if(btn){btn.disabled=false;}};
+ function parseRampRes(r,url){
+  return r.text().then(function(txt){
+   var j=null;
+   try{j=JSON.parse(txt);}catch(e){j={parseError:true,rawSnippet:String(txt).slice(0,400)};}
+   console.log('Ramp API response:',{url:url,ok:r.ok,status:r.status,json:j});
+   return{ok:r.ok,status:r.status,j:j};
+  });
+ }
  Promise.all([
-  fetch('/api/ramp/transactions',{credentials:'same-origin'}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});}),
-  fetch('/api/ramp/cards',{credentials:'same-origin'}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  fetch('/api/ramp/transactions',{credentials:'same-origin'}).then(function(r){return parseRampRes(r,'/api/ramp/transactions');}),
+  fetch('/api/ramp/cards',{credentials:'same-origin'}).then(function(r){return parseRampRes(r,'/api/ramp/cards');})
  ]).then(function(pair){
   var tRes=pair[0],cRes=pair[1];
   var txs=rampExtractList(tRes.j);
@@ -2968,11 +2988,13 @@ function fetchRampData(){
   var jErr=function(j){return j&&j.error;};
   var bad=!tRes.ok||!cRes.ok||jErr(tRes.j)||jErr(cRes.j);
   if(bad){
-   if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais';}
-   txs=rampMockTx();
-   cards=rampMockCards();
-   window._rampTxCache=txs;
-   rampRenderFromData(txs,cards,true);
+   var msg=[];
+   if(!tRes.ok||jErr(tRes.j))msg.push(rampFmtRampErr('Transações',tRes));
+   if(!cRes.ok||jErr(cRes.j))msg.push(rampFmtRampErr('Cartões',cRes));
+   if(errEl){errEl.classList.add('on');errEl.textContent=msg.join(' | ')||'Erro desconhecido na API Ramp.';}
+   window._rampTxCache=[];
+   window._rampCardsCache=[];
+   rampRenderFromData([],[],false,{keepError:true});
    done();
    return;
   }
@@ -2980,12 +3002,12 @@ function fetchRampData(){
   window._rampCardsCache=cards;
   rampRenderFromData(txs,cards,false);
   done();
- }).catch(function(){
-  if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais';}
-  var txs=rampMockTx();
-  var cards=rampMockCards();
-  window._rampTxCache=txs;
-  rampRenderFromData(txs,cards,true);
+ }).catch(function(e){
+  console.error('Ramp fetch error:',e);
+  if(errEl){errEl.classList.add('on');errEl.textContent='Ramp fetch error: '+(e&&e.message?e.message:String(e));}
+  window._rampTxCache=[];
+  window._rampCardsCache=[];
+  rampRenderFromData([],[],false,{keepError:true});
   done();
  });
 }
