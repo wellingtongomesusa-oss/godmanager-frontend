@@ -1,0 +1,25 @@
+{% extends "crm/base_crm.html" %}
+{% block title %}CRM — {{ t('master_finance') }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}
+  <p class="crm-dash-subtitle mb-0 mt-1">Manager Prop · atualizado {{ last_updated or '—' }}</p>
+{% endblock %}
+{% block content %}
+<div class="row g-2 mb-4">
+  {% for s in home_stat_charts %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <a href="{{ s.link or '#' }}" class="text-decoration-none d-block p-3 rounded border bg-white h-100" style="border-color:var(--gaap-border,#dce4ed)!important;">
+      <div class="small text-muted text-uppercase" style="font-size:10px;">{{ s.display_label or s.label }}</div>
+      <div class="fw-bold mt-1" style="font-family:'JetBrains Mono',monospace;">{{ s.value }}</div>
+      {% if s.link_text %}<div class="small text-primary mt-1">{{ s.link_text }}</div>{% endif %}
+    </a>
+  </div>
+  {% endfor %}
+</div>
+<div class="alert alert-light border">
+  <strong>Módulos financeiros</strong>
+  <a href="{{ url_for('crm_gaap') }}" class="btn btn-sm btn-outline-primary ms-2">GAAP Statement</a>
+  <a href="{{ url_for('crm_1099') }}" class="btn btn-sm btn-outline-primary ms-1">1099 / IRS</a>
+  <a href="{{ url_for('crm_integrations_page') }}" class="btn btn-sm btn-outline-primary ms-1">Integrações</a>
+</div>
+{% endblock %}

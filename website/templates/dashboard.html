@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Secure Website v1{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Dashboard</h2>
+        <p>Welcome, {{ user.first_name or user.username }}!</p>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Account Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                {% if user.first_name %}
+                <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                {% endif %}
+                <p><strong>Account Type:</strong> {% if user.is_admin %}Administrator{% else %}User{% endif %}</p>
+                <p><strong>Account Status:</strong> {% if user.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Inactive</span>{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

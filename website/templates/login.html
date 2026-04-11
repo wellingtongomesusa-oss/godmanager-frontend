@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Login - GodManager{% endblock %}
+
+{% block head_extra %}
+<style>
+    .gm-login-page {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+    }
+    .gm-login-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    .gm-login-card-header {
+        padding: 1.75rem 1.5rem 1.25rem;
+        text-align: center;
+    }
+    .gm-login-card-body {
+        padding: 0 1.5rem 1.75rem;
+    }
+    .gm-login-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--gm-navy);
+        color: #fff;
+        font-family: 'Sora', sans-serif;
+        font-weight: 700;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .gm-login-title {
+        font-family: 'Sora', sans-serif;
+        font-weight: 700;
+        font-size: 24px;
+        color: var(--gm-navy);
+        margin: 0;
+        line-height: 1.2;
+    }
+    .gm-login-subtitle {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        color: var(--gm-amber);
+        margin: 0.5rem 0 0;
+        font-family: 'Inter', sans-serif;
+        text-transform: uppercase;
+    }
+    .gm-login-rule {
+        border: 0;
+        height: 1px;
+        background: var(--gm-amber);
+        opacity: 0.55;
+        max-width: 200px;
+        margin: 1.25rem auto 0;
+    }
+    .gm-login-card .form-label {
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: #3d4a5c;
+        margin-bottom: 0.35rem;
+        font-family: 'Inter', sans-serif;
+    }
+    .gm-login-card .form-control {
+        border-radius: 8px;
+        border: 1px solid #d0c8be;
+        padding: 12px;
+        font-size: 0.95rem;
+        font-family: 'Inter', sans-serif;
+    }
+    .gm-login-card .form-control:focus {
+        border-color: var(--gm-navy);
+        box-shadow: 0 0 0 0.2rem rgba(26, 58, 92, 0.15);
+    }
+    .gm-login-card .input-group .form-control {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .gm-login-card .input-group .btn {
+        border-color: #d0c8be;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    .gm-btn-login {
+        width: 100%;
+        background: var(--gm-navy);
+        color: #fff !important;
+        border: none;
+        border-radius: 6px;
+        padding: 14px;
+        font-family: 'Sora', sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: background 0.2s ease;
+    }
+    .gm-btn-login:hover {
+        background: #142e4a !important;
+        color: #fff !important;
+    }
+    .gm-btn-login:focus {
+        box-shadow: 0 0 0 0.2rem rgba(26, 58, 92, 0.35);
+    }
+    .gm-account-hint {
+        margin-top: 1.25rem;
+        text-align: center;
+    }
+    .gm-account-hint .form-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+    }
+    .gm-account-hint .form-check-input {
+        border-color: #b8b0a6;
+        margin-top: 0;
+    }
+    .gm-account-hint .form-check-input:checked {
+        background-color: var(--gm-navy);
+        border-color: var(--gm-navy);
+    }
+    .gm-account-hint .form-check-label,
+    .gm-account-link {
+        font-size: 0.8125rem;
+        color: #6b6b6b;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+    .gm-remember-row {
+        margin-bottom: 1rem;
+    }
+    .gm-remember-row .form-check-label {
+        font-size: 0.875rem;
+        color: #4a5568;
+        text-decoration: none;
+    }
+    .gm-remember-row .form-check-input {
+        border-color: #b8b0a6;
+    }
+    .gm-remember-row .form-check-input:checked {
+        background-color: var(--gm-navy);
+        border-color: var(--gm-navy);
+    }
+    #accountRequestForm {
+        border-top: 1px solid #eee8df;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+    }
+    #accountRequestForm h5 {
+        font-family: 'Sora', sans-serif;
+        font-size: 1.1rem;
+        color: var(--gm-navy);
+    }
+    #accountRequestForm .btn-success {
+        background: var(--gm-success);
+        border: none;
+        border-radius: 6px;
+    }
+    #accountRequestForm .btn-success:hover {
+        background: #245a3f;
+    }
+    @media (max-width: 575.98px) {
+        .gm-login-card-header,
+        .gm-login-card-body {
+            padding-left: 1.15rem;
+            padding-right: 1.15rem;
+        }
+        .gm-login-title {
+            font-size: 22px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main_extra_class %} gm-login-bg{% endblock %}
+{% block main_container_class %}w-100 px-3 py-4 d-flex flex-grow-1 align-items-center justify-content-center{% endblock %}
+
+{% block content %}
+<div class="gm-login-page">
+    <div class="gm-login-card">
+        <div class="gm-login-card-header">
+            <div class="gm-login-icon" aria-hidden="true">G</div>
+            <h1 class="gm-login-title">GodManager</h1>
+            <p class="gm-login-subtitle">FINANCIAL OPERATIONS</p>
+            <hr class="gm-login-rule">
+        </div>
+        <div class="gm-login-card-body">
+            <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                <div class="mb-3">
+                    <label for="loginUsername" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="loginUsername" name="username" required autofocus autocomplete="username">
+                </div>
+                <div class="mb-3">
+                    <label for="loginPassword" class="form-label">Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="loginPassword" name="password" required autocomplete="current-password">
+                        <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword" aria-label="Show password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="gm-remember-row form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me" value="yes">
+                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                </div>
+                <button type="submit" class="btn gm-btn-login">Login</button>
+                <div class="gm-account-hint">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="needAccount" name="need_account">
+                        <label class="form-check-label gm-account-link" for="needAccount">I need to request an account</label>
+                    </div>
+                </div>
+            </form>
+
+            <div id="accountRequestForm" style="display: none;" class="mt-0">
+                <h5>Request Account</h5>
+                <form method="POST" action="{{ url_for('request_account') }}">
+                    <div class="mb-3">
+                        <label for="reqUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="reqUsername" name="username" required>
+                        <div id="usernameStatus" class="form-text"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reqFirstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="reqFirstName" name="first_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reqLastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="reqLastName" name="last_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reqEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="reqEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reqPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="reqPassword" name="password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="toggleReqPassword" aria-label="Show password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div id="passwordStrength" class="mt-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reqConfirmPassword" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="reqConfirmPassword" name="confirm_password" required>
+                        <div id="passwordMatch" class="form-text"></div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Submit Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('needAccount').addEventListener('change', function() {
+        const form = document.getElementById('accountRequestForm');
+        if (this.checked) {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+    });
+
+    let usernameTimeout;
+    document.getElementById('reqUsername').addEventListener('input', function() {
+        const username = this.value.toLowerCase();
+        const statusDiv = document.getElementById('usernameStatus');
+
+        clearTimeout(usernameTimeout);
+
+        if (username.length < 3) {
+            statusDiv.textContent = '';
+            return;
+        }
+
+        usernameTimeout = setTimeout(() => {
+            fetch(`/check_username?username=${encodeURIComponent(username)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.available) {
+                        statusDiv.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Username available</span>';
+                    } else {
+                        statusDiv.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> Username already taken</span>';
+                    }
+                });
+        }, 300);
+    });
+
+    document.getElementById('reqUsername').addEventListener('input', function() {
+        this.value = this.value.toLowerCase();
+    });
+
+    document.getElementById('reqPassword').addEventListener('input', function() {
+        const password = this.value;
+        const strengthDiv = document.getElementById('passwordStrength');
+        strengthDiv.innerHTML = '';
+
+        if (password.length === 0) return;
+
+        const requirements = {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            digit: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        };
+
+        const allMet = Object.values(requirements).every(v => v);
+
+        let html = '<small>';
+        html += requirements.length ? '<span class="text-success"><i class="fas fa-check"></i> 8+ characters</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> 8+ characters</span><br>';
+        html += requirements.upper ? '<span class="text-success"><i class="fas fa-check"></i> Uppercase letter</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Uppercase letter</span><br>';
+        html += requirements.lower ? '<span class="text-success"><i class="fas fa-check"></i> Lowercase letter</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Lowercase letter</span><br>';
+        html += requirements.digit ? '<span class="text-success"><i class="fas fa-check"></i> Number</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Number</span><br>';
+        html += requirements.special ? '<span class="text-success"><i class="fas fa-check"></i> Special character</span><br>' : '<span class="text-danger"><i class="fas fa-times"></i> Special character</span><br>';
+        html += '</small>';
+
+        strengthDiv.innerHTML = html;
+    });
+
+    document.getElementById('reqConfirmPassword').addEventListener('input', function() {
+        const password = document.getElementById('reqPassword').value;
+        const confirm = this.value;
+        const matchDiv = document.getElementById('passwordMatch');
+
+        if (confirm.length === 0) {
+            matchDiv.textContent = '';
+            return;
+        }
+
+        if (password === confirm) {
+            matchDiv.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Passwords match</span>';
+        } else {
+            matchDiv.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> Passwords do not match</span>';
+        }
+    });
+
+    document.getElementById('toggleLoginPassword').addEventListener('click', function() {
+        const input = document.getElementById('loginPassword');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    document.getElementById('toggleReqPassword').addEventListener('click', function() {
+        const input = document.getElementById('reqPassword');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+</script>
+{% endblock %}

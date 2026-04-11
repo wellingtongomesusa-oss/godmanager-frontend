@@ -1,0 +1,72 @@
+{% extends "crm/base_crm.html" %}
+{% block title %}1099 / IRS — {{ t('master_finance') }}{% endblock %}
+{% block page_title %}1099 / IRS{% endblock %}
+{% block page_subtitle %}
+  <p class="crm-dash-subtitle mb-0 mt-1">
+    1099 · Owners · Hospitality · Tax ID · Bills CSV
+  </p>
+{% endblock %}
+
+{% block topbar_tabs %}
+<div class="ix-tabbar ms-auto">
+  <button type="button" class="btn btn-amber btn-sm irs-tab-btn" data-tab="1099" onclick="irsTab('1099', this)">1099</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm irs-tab-btn" data-tab="owners" onclick="irsTab('owners', this)">Owners</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm irs-tab-btn" data-tab="hospitality" onclick="irsTab('hospitality', this)">Hospitality</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm irs-tab-btn" data-tab="taxid" onclick="irsTab('taxid', this)">Tax ID</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm irs-tab-btn" data-tab="bills" onclick="irsTab('bills', this)">Bills CSV</button>
+  <button type="button" class="btn btn-outline-dark btn-sm" onclick="irsPrint1099()">Export PDF</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="ix-iframe-wrap">
+  <iframe
+    id="irs1099-frame"
+    title="1099 IRS Dashboard"
+    src="{{ url_for('static', filename='irs1099_dashboard.html') }}"
+  ></iframe>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var frame = document.getElementById('irs1099-frame');
+  function irsTab(tab, btn) {
+    document.querySelectorAll('.irs-tab-btn').forEach(function (b) {
+      b.classList.remove('btn-amber');
+      b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-amber');
+    try {
+      if (frame && frame.contentWindow && typeof frame.contentWindow.switchTab === 'function') {
+        frame.contentWindow.switchTab(tab);
+      }
+    } catch (e) {}
+  }
+  window.irsTab = irsTab;
+
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'ix-1099-height' && typeof d.height === 'number' && frame) {
+      frame.style.height = Math.max(320, d.height) + 'px';
+    }
+    if (d.type === 'ix-tab-changed' && d.tab) {
+      var b = document.querySelector('.irs-tab-btn[data-tab="' + d.tab + '"]');
+      if (b) irsTab(d.tab, b);
+    }
+  });
+
+  window.irsPrint1099 = function () {
+    try {
+      var w = frame && frame.contentWindow;
+      var el = w && w.document && w.document.getElementById('btnPrint1099');
+      if (el) el.click();
+      else if (w && w.print) w.print();
+    } catch (e) {}
+  };
+})();
+</script>
+{% endblock %}

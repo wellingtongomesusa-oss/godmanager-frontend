@@ -1,0 +1,58 @@
+---
+description: Integrações externas — padrão API, serviços (Ramp, QBO, AppFolio, etc.)
+globs: public/GodManager_Premium.html,lib/**/*.{ts,tsx},app/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# GodManager — Integrações (padrão)
+
+## Arquitetura
+
+```
+UI GodManager (KPI strip + filtros + tabela)
+  → camada API (fetch + auth)
+  → APIs externas
+```
+
+## Chaves e fetch (cliente)
+
+```javascript
+const API_KEYS = JSON.parse(localStorage.getItem('gm_api_keys') || '{}');
+
+async function gmFetch(service, endpoint, options = {}) {
+  const config = API_KEYS[service];
+  if (!config) { showToast(service + ' not connected', 'error'); return null; }
+  const response = await fetch(config.baseUrl + endpoint, {
+    ...options,
+    headers: {
+      Authorization: 'Bearer ' + config.token,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  if (!response.ok) { showToast(service + ' API error: ' + response.status, 'error'); return null; }
+  return response.json();
+}
+```
+
+## Serviços (referência)
+
+| Serviço     | Uso principal |
+|------------|----------------|
+| Ramp       | Cartão corporativo, transações, orçamentos |
+| RentEngine | Pricing / revenue (secção Properties) |
+| AppFolio   | PMS — sync propriedades, inquilinos, donos, financeiro |
+| Boom       | Media / marketing, listings |
+| QuickBooks | Contabilidade, relatórios, 1099, GAAP |
+| Bill.com   | AP, aprovações, pagamentos |
+| MLS / RESO | Listings, comparáveis |
+
+## Novo módulo de integração (HTML)
+
+Template: `page-{service}` com `.ph` (título + subtítulo), barra de estado de ligação, KPI strip (~6 colunas), filtros, tabela.
+
+Secção sidebar **INTEGRATIONS** (quando existir no produto): Ramp, QuickBooks, Bill.com, AppFolio, RentEngine, Boom, MLS.
+
+## Next.js (app/)
+
+Onde existir código React/Route Handlers, manter a mesma paleta e tipografia; integrações reais exigem variáveis de ambiente e rotas API — não expor segredos no cliente.
