@@ -144,7 +144,8 @@ def register_quickbooks_routes(app):
             qb_auth = _create_qb_auth(state_token=state)
             # Scopes.ACCOUNTING == "com.intuit.quickbooks.accounting"
             auth_url = qb_auth.get_authorization_url([Scopes.ACCOUNTING], state_token=state)
-            app.logger.info("QB Auth URL: %s", auth_url)
+            print(f"[QB CONNECT] Full auth URL: {auth_url}", flush=True)
+            app.logger.warning("[QB CONNECT] Full auth URL: %s", auth_url)
             return redirect(auth_url)
         except Exception as e:
             flash(f"QuickBooks OAuth: {e}", "danger")
