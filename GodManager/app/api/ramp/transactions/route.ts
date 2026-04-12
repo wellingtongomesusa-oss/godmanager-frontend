@@ -1,78 +1,90 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+
+import { getRampApiBase, getRampToken } from '@/lib/ramp-auth';
+
+export const dynamic = 'force-dynamic';
+
+export type RampTransactionsResponse = {
+  data: unknown[];
+  has_more: boolean;
+  total_count: number;
+};
+
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return v !== null && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+}
+
+function normalizeRampTransactionsPayload(raw: unknown): RampTransactionsResponse {
+  const o = asRecord(raw);
+  if (!o) {
+    return { data: [], has_more: false, total_count: 0 };
+  }
+  const data = o.data;
+  if (Array.isArray(data)) {
+    return {
+      data,
+      has_more: typeof o.has_more === 'boolean' ? o.has_more : false,
+      total_count: typeof o.total_count === 'number' ? o.total_count : data.length,
+    };
+  }
+  if (Array.isArray(raw)) {
+    const arr = raw as unknown[];
+    return { data: arr, has_more: false, total_count: arr.length };
+  }
+  return { data: [], has_more: false, total_count: 0 };
+}
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const debug = searchParams.get('debug')
-  const fromDate = searchParams.get('from_date')
+  const { searchParams } = new URL(request.url);
+  const start = searchParams.get('start');
+  const end = searchParams.get('end');
+  const pageSize = searchParams.get('page_size') || '50';
 
-  const clientId = process.env.RAMP_CLIENT_ID || ''
-  const clientSecret = process.env.RAMP_CLIENT_SECRET || ''
-
-  // Debug mode - mostra primeiros chars das credenciais
-  if (debug === '1') {
-    return NextResponse.json({
-      hasClientId: !!clientId,
-      hasClientSecret: !!clientSecret,
-      clientIdPrefix: clientId.substring(0, 15),
-      clientSecretPrefix: clientSecret.substring(0, 15),
-    })
+  let token: string;
+  try {
+    token = await getRampToken();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 
-  if (!clientId || !clientSecret) {
-    return NextResponse.json({ error: 'Missing env vars' }, { status: 500 })
+  const base = getRampApiBase();
+  const url = new URL(`${base}/transactions`);
+  if (start) url.searchParams.set('start', start);
+  if (end) url.searchParams.set('end', end);
+  url.searchParams.set('page_size', pageSize);
+
+  let txRes: Response;
+  try {
+    txRes = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      { error: 'Ramp transactions fetch failed', detail: message },
+      { status: 502 },
+    );
   }
 
-  // Tenta com credenciais no BODY (alternativa ao Basic Auth)
-  const tokenRes = await fetch('https://api.ramp.com/developer/v1/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
-      scope: 'transactions:read',
-    }).toString(),
-  })
-
-  const tokenData = await tokenRes.json()
-
-  let accessToken: string | undefined = tokenData.access_token
-
-  if (!accessToken) {
-    // Se falhou, tenta com Basic
-    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-    const basicRes = await fetch('https://api.ramp.com/developer/v1/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials&scope=transactions:read',
-    })
-    const basicData = await basicRes.json()
-    accessToken = basicData.access_token
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          error: 'Token failed',
-          bodyAttempt: { httpStatus: tokenRes.status, detail: tokenData },
-          basicAttempt: { httpStatus: basicRes.status, detail: basicData },
-        },
-        { status: 500 },
-      )
-    }
+  const bodyText = await txRes.text();
+  let parsed: unknown;
+  try {
+    parsed = bodyText ? JSON.parse(bodyText) : {};
+  } catch {
+    return NextResponse.json(
+      { error: 'Ramp transactions: invalid JSON', detail: bodyText.slice(0, 2000) },
+      { status: 502 },
+    );
   }
 
-  const url = new URL('https://api.ramp.com/developer/v1/transactions')
-  url.searchParams.set('page_size', '100')
-  if (fromDate) url.searchParams.set('from_date', fromDate)
+  if (!txRes.ok) {
+    return NextResponse.json(
+      { error: 'Ramp API rejected transactions request', detail: parsed },
+      { status: 502 },
+    );
+  }
 
-  const txRes = await fetch(url.toString(), {
-    headers: { 'Authorization': `Bearer ${accessToken}` },
-  })
-
-  const data = await txRes.json()
-  return NextResponse.json(data)
+  const normalized = normalizeRampTransactionsPayload(parsed);
+  return NextResponse.json(normalized);
 }

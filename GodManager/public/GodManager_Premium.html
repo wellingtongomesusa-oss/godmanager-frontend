@@ -2798,11 +2798,13 @@ function rampExtractList(j){
 function rampCardName(c){
  if(!c)return'—';
  if(c.display_name)return c.display_name;
+ if(c.cardholder_name)return c.cardholder_name;
  var u=c.user||c.cardholder;
  if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||u.email||'—';
  return c.cardholder_name||'—';
 }
 function rampCardEmail(c){
+ if(c.cardholder_email)return c.cardholder_email;
  var u=c.user||c.cardholder;
  if(u&&u.email)return u.email;
  return c.email||'—';
@@ -2944,15 +2946,18 @@ function closeRampTxModal(){
  document.body.style.overflow='';
 }
 function rampFmtRampErr(label,res){
- var j=res&&res.j;
  var parts=[label];
  if(res&&res.status)parts.push('HTTP '+res.status);
- if(j&&j.error)parts.push(String(j.error));
- if(j&&j.detail!=null){
-  var d=j.detail;
-  parts.push(typeof d==='string'?d:JSON.stringify(d).slice(0,400));
- }
  return parts.join(' — ');
+}
+function rampMonthRangeUtcIso(){
+ var now=new Date();
+ var y=now.getUTCFullYear(),m=now.getUTCMonth();
+ var pad=function(n){return n<10?'0'+n:''+n;};
+ var start=y+'-'+pad(m+1)+'-01T00:00:00Z';
+ var lastDay=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+ var end=y+'-'+pad(m+1)+'-'+pad(lastDay)+'T23:59:59Z';
+ return{start:start,end:end};
 }
 function fetchRampData(){
  var errEl=document.getElementById('ramp-conn-err');
@@ -2974,12 +2979,14 @@ function fetchRampData(){
   return r.text().then(function(txt){
    var j=null;
    try{j=JSON.parse(txt);}catch(e){j={parseError:true,rawSnippet:String(txt).slice(0,400)};}
-   console.log('Ramp API response:',{url:url,ok:r.ok,status:r.status,json:j});
+   if(!r.ok){console.warn('Ramp API',url,r.status);}
    return{ok:r.ok,status:r.status,j:j};
   });
  }
+ var range=rampMonthRangeUtcIso();
+ var txUrl='/api/ramp/transactions?start='+encodeURIComponent(range.start)+'&end='+encodeURIComponent(range.end)+'&page_size=50';
  Promise.all([
-  fetch('/api/ramp/transactions',{credentials:'same-origin'}).then(function(r){return parseRampRes(r,'/api/ramp/transactions');}),
+  fetch(txUrl,{credentials:'same-origin'}).then(function(r){return parseRampRes(r,txUrl);}),
   fetch('/api/ramp/cards',{credentials:'same-origin'}).then(function(r){return parseRampRes(r,'/api/ramp/cards');})
  ]).then(function(pair){
   var tRes=pair[0],cRes=pair[1];
@@ -2988,10 +2995,11 @@ function fetchRampData(){
   var jErr=function(j){return j&&j.error;};
   var bad=!tRes.ok||!cRes.ok||jErr(tRes.j)||jErr(cRes.j);
   if(bad){
-   var msg=[];
-   if(!tRes.ok||jErr(tRes.j))msg.push(rampFmtRampErr('Transações',tRes));
-   if(!cRes.ok||jErr(cRes.j))msg.push(rampFmtRampErr('Cartões',cRes));
-   if(errEl){errEl.classList.add('on');errEl.textContent=msg.join(' | ')||'Erro desconhecido na API Ramp.';}
+   if(errEl){
+    errEl.classList.add('on');
+    errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais e RAMP_API_BASE_URL. ('+
+     [(!tRes.ok||jErr(tRes.j))?rampFmtRampErr('Transações',tRes):null,(!cRes.ok||jErr(cRes.j))?rampFmtRampErr('Cartões',cRes):null].filter(Boolean).join(' · ')+')';
+   }
    window._rampTxCache=[];
    window._rampCardsCache=[];
    rampRenderFromData([],[],false,{keepError:true});
@@ -3004,7 +3012,7 @@ function fetchRampData(){
   done();
  }).catch(function(e){
   console.error('Ramp fetch error:',e);
-  if(errEl){errEl.classList.add('on');errEl.textContent='Ramp fetch error: '+(e&&e.message?e.message:String(e));}
+  if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais e a rede.';}
   window._rampTxCache=[];
   window._rampCardsCache=[];
   rampRenderFromData([],[],false,{keepError:true});

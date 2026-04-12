@@ -35,10 +35,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  /** HTML estático em public/ — não exigir cookie aqui (evita redirecionar para /login ao abrir o URL direto). */
   const isProtected =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/admin') ||
-    pathname === '/GodManager_Premium.html';
+    pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
 
   if (!isProtected) {
     return NextResponse.next();
@@ -66,6 +65,5 @@ export const config = {
     '/dashboard',
     '/dashboard/:path*',
     '/admin/:path*',
-    '/GodManager_Premium.html',
   ],
 };

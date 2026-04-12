@@ -1,4 +1,19 @@
 import os
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+
+    # Carregar website/.env antes de qualquer os.getenv (QuickBooks, Ramp, etc.)
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+except ImportError:
+    load_dotenv = None  # type: ignore[misc, assignment]
+
+if load_dotenv and os.getenv("QB_USE_LOCAL_QB_REDIRECT", "").strip().lower() in ("1", "true", "yes"):
+    _qb_local = (os.getenv("QB_REDIRECT_URI_LOCAL") or "").strip()
+    if _qb_local:
+        os.environ["QB_REDIRECT_URI"] = _qb_local
+
 import csv
 import io
 import json

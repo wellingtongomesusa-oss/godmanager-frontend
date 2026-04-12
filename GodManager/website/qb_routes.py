@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -16,18 +17,12 @@ QB_TOKENS: Dict[str, Optional[str]] = {
     "expires_at": None,  # ISO8601 access token expiry (approx.)
 }
 
-_qb_auth_singleton = None
-
-
-def _get_qb_auth():
-    """AuthClient singleton (intuit-oauth)."""
-    global _qb_auth_singleton
+def _create_qb_auth(state_token: Optional[str] = None):
+    """Novo AuthClient por pedido (evita state_token reutilizado / stale do singleton OAuth)."""
     cid = (os.getenv("QB_CLIENT_ID") or "").strip()
     csec = (os.getenv("QB_CLIENT_SECRET") or "").strip()
     if not cid or not csec:
         return None
-    if _qb_auth_singleton is not None:
-        return _qb_auth_singleton
     from intuitlib.client import AuthClient
 
     redirect_uri = os.getenv(
@@ -39,13 +34,13 @@ def _get_qb_auth():
         env = "production"
     else:
         env = "sandbox"
-    _qb_auth_singleton = AuthClient(
+    return AuthClient(
         client_id=cid,
         client_secret=csec,
         redirect_uri=redirect_uri,
         environment=env,
+        state_token=state_token,
     )
-    return _qb_auth_singleton
 
 
 def map_to_gaap(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -136,15 +131,20 @@ def register_quickbooks_routes(app):
 
     @app.route("/crm/integrations/quickbooks/connect")
     def qb_connect():
-        qb_auth = _get_qb_auth()
-        if not qb_auth:
+        if not (os.getenv("QB_CLIENT_ID") or "").strip() or not (os.getenv("QB_CLIENT_SECRET") or "").strip():
             flash("QuickBooks: defina QB_CLIENT_ID e QB_CLIENT_SECRET no .env", "warning")
             return redirect(url_for("crm_integrations_page"))
         try:
             from intuitlib.enums import Scopes
 
-            auth_url = qb_auth.get_authorization_url([Scopes.ACCOUNTING])
-            session["qb_state"] = qb_auth.state_token
+            # CSRF: state nunca None/vazio (evita comportamento estranho no consent Intuit)
+            state = secrets.token_urlsafe(32)
+            session["qb_oauth_state"] = state
+            session["qb_state"] = state
+            qb_auth = _create_qb_auth(state_token=state)
+            # Scopes.ACCOUNTING == "com.intuit.quickbooks.accounting"
+            auth_url = qb_auth.get_authorization_url([Scopes.ACCOUNTING], state_token=state)
+            app.logger.info("QB Auth URL: %s", auth_url)
             return redirect(auth_url)
         except Exception as e:
             flash(f"QuickBooks OAuth: {e}", "danger")
@@ -152,14 +152,17 @@ def register_quickbooks_routes(app):
 
     @app.route("/crm/integrations/quickbooks/callback")
     def qb_callback():
-        qb_auth = _get_qb_auth()
+        qb_auth = _create_qb_auth()
         if not qb_auth:
             flash("QuickBooks não configurado.", "warning")
             return redirect(url_for("crm_integrations_page"))
         st = request.args.get("state")
-        if st and session.get("qb_state") and st != session.get("qb_state"):
-            flash("Estado OAuth inválido (CSRF). Tente de novo.", "danger")
+        expected = session.get("qb_oauth_state") or session.get("qb_state")
+        if not st or not expected or st != expected:
+            flash("Estado OAuth inválido ou em falta (CSRF / sessão). Tente de novo.", "danger")
             return redirect(url_for("crm_integrations_page"))
+        session.pop("qb_oauth_state", None)
+        session.pop("qb_state", None)
         err = request.args.get("error")
         if err:
             flash(f"QuickBooks: {err}", "danger")
@@ -190,7 +193,7 @@ def register_quickbooks_routes(app):
 
     @app.route("/crm/integrations/quickbooks/disconnect")
     def qb_disconnect():
-        qb_auth = _get_qb_auth()
+        qb_auth = _create_qb_auth()
         tok = QB_TOKENS.get("refresh_token") or QB_TOKENS.get("access_token")
         if qb_auth and tok:
             try:

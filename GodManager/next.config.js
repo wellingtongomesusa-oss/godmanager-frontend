@@ -26,16 +26,21 @@ const nextConfig = {
   },
   /**
    * Mesma origem na porta do Next (ex.: 3101): /crm/* e APIs do CRM Flask passam pelo proxy.
+   * Inclui QuickBooks: /crm/integrations/quickbooks/* e /api/quickbooks/* (mesmo destino CRM).
    * O servidor Flask deve estar a correr (ex.: run_crm_manager_prop.py na 5001), salvo outro CRM_BACKEND_URL.
    */
   async rewrites() {
     const b = crmBackend.replace(/\/$/, '');
+    const flaskLocal = 'http://localhost:5001';
     return [
+      {
+        source: '/crm/integrations/quickbooks/:path*',
+        destination: `${flaskLocal}/crm/integrations/quickbooks/:path*`,
+      },
+      { source: '/api/quickbooks/:path*', destination: `${flaskLocal}/api/quickbooks/:path*` },
       { source: '/crm/:path*', destination: `${b}/crm/:path*` },
       { source: '/api/integrations/:path*', destination: `${b}/api/integrations/:path*` },
       { source: '/api/webhooks/:path*', destination: `${b}/api/webhooks/:path*` },
-      { source: '/api/quickbooks/:path*', destination: `${b}/api/quickbooks/:path*` },
-      { source: '/api/ramp/:path*', destination: `${b}/api/ramp/:path*` },
       { source: '/static/:path*', destination: `${b}/static/:path*` },
     ];
   },
@@ -46,6 +51,14 @@ const nextConfig = {
   webpack: (config, { dev }) => {
     if (dev) {
       config.cache = false;
+      // Ativar com GM_DEV_POLL_WATCH=1 se aparecer EMFILE no macOS (file watchers).
+      if (process.env.GM_DEV_POLL_WATCH === '1') {
+        config.watchOptions = {
+          poll: 1000,
+          aggregateTimeout: 300,
+          ignored: ['**/node_modules/**', '**/.git/**', '**/.next/**'],
+        };
+      }
     }
     return config;
   },
