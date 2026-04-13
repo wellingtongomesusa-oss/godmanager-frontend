@@ -175,6 +175,8 @@ def create_app():
     
     # Register routes
     register_routes(app)
+    from qb_routes import qb_bp
+    app.register_blueprint(qb_bp)
     
     # Create tables
     with app.app_context():

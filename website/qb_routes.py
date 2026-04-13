@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import requests as http_requests
-from flask import flash, jsonify, redirect, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, request, session, url_for
 
 # Tokens em memória (dev); em produção usar DB ou cofre.
 QB_TOKENS: Dict[str, Optional[str]] = {
@@ -292,3 +292,11 @@ def register_quickbooks_routes(app):
         QB_TOKENS["realm_id"] = data.get("realm_id")
         QB_TOKENS["expires_at"] = (datetime.utcnow() + timedelta(seconds=3600)).isoformat()
         return jsonify({"ok": True, "realm_id": QB_TOKENS["realm_id"]})
+
+
+qb_bp = Blueprint("quickbooks", __name__)
+
+
+@qb_bp.record
+def _register_quickbooks_on_app(state):
+    register_quickbooks_routes(state.app)
