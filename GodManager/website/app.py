@@ -162,29 +162,15 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     # Redis session configuration
-    redis_url = os.getenv("REDIS_URL", "redis://:redispassword@redis:6379/0")
-    app.config["SESSION_TYPE"] = "redis"
-    app.config["SESSION_REDIS"] = redis_url
+    redis_url = os.getenv("REDIS_URI", "")
+    if redis_url:
+        app.config["SESSION_TYPE"] = "redis"
+        app.config["SESSION_REDIS"] = redis_url
+    else:
+        app.config["SESSION_TYPE"] = "filesystem"
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_PERMANENT"] = False
-    
-    # Parse Redis URL if needed for Flask-Session
-    try:
-        from redis import Redis
-        parsed = urlparse(redis_url)
-        password = parsed.password if parsed.password else None
-        app.config["SESSION_REDIS"] = Redis(
-            host=parsed.hostname or "redis",
-            port=parsed.port or 6379,
-            password=password,
-            db=int(parsed.path.strip("/")) if parsed.path else 0,
-            decode_responses=False
-        )
-    except Exception as e:
-        # Fallback to filesystem sessions if Redis unavailable
-        app.config["SESSION_TYPE"] = "filesystem"
-        app.config["SESSION_REDIS"] = None
     
     # Initialize extensions
     db.init_app(app)
