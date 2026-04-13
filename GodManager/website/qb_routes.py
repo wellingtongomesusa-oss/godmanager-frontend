@@ -280,3 +280,15 @@ def register_quickbooks_routes(app):
                 "expires_at": QB_TOKENS.get("expires_at"),
             }
         )
+
+    @app.route("/crm/integrations/quickbooks/inject-tokens", methods=["POST"])
+    def qb_inject_tokens():
+        """Sandbox / dev: injeta tokens no QB_TOKENS em memoria (ex. playground Intuit)."""
+        if os.getenv("FLASK_ENV") == "production" and os.getenv("QB_ALLOW_INJECT") != "true":
+            return jsonify({"error": "not allowed in production"}), 403
+        data = request.get_json(silent=True) or {}
+        QB_TOKENS["access_token"] = data.get("access_token")
+        QB_TOKENS["refresh_token"] = data.get("refresh_token")
+        QB_TOKENS["realm_id"] = data.get("realm_id")
+        QB_TOKENS["expires_at"] = (datetime.utcnow() + timedelta(seconds=3600)).isoformat()
+        return jsonify({"ok": True, "realm_id": QB_TOKENS["realm_id"]})
