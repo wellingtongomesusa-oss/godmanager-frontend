@@ -2181,7 +2181,7 @@ function ixApplyQbStatus(data){
  if(btnDisc)btnDisc.style.display=connected?'inline':'none';
 }
 function refreshIntegrationHub(){
- fetch('/api/quickbooks/status',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(data){
+ fetch('https://godmanager-production.up.railway.app/api/quickbooks/status',{method:'GET',mode:'cors',credentials:'omit'}).then(function(r){return r.json();}).then(function(data){
  ixApplyQbStatus(data);
  ixUpdateQbLastSync();
  }).catch(function(){
@@ -3205,7 +3205,7 @@ function refreshQuickBooksPage(){
   if(el)el.innerHTML='<span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span>';
  });
  if(tb)tb.innerHTML=qbSkeletonCatRows(4);
- fetch('/api/quickbooks/status',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(data){
+ fetch('https://godmanager-production.up.railway.app/api/quickbooks/status',{method:'GET',mode:'cors',credentials:'omit'}).then(function(r){return r.json();}).then(function(data){
   var connected=!(!data||!data.connected);
   if(sub){
    sub.innerHTML='Estado: <span class="pill '+(connected?'pg':'pr')+'">'+(connected?'Connected':'Not Connected')+'</span>';
@@ -3256,15 +3256,8 @@ function refreshQuickBooksPage(){
  });
 }
 
-// — AppFolio: upload CSV (backend /api/appfolio)
-function gmAppfolioApiBase(){
- try{
-  var h=String(window.location.hostname||'').toLowerCase();
-  if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')
-   return 'https://godmanager-production.up.railway.app';
-  return String(window.location.origin||'').replace(/\/$/,'');
- }catch(_){return 'https://godmanager-production.up.railway.app';}
-}
+// — AppFolio: upload CSV (backend Flask Railway)
+var GM_BACKEND_RAILWAY_APP='https://godmanager-production.up.railway.app';
 window.afUploadQueue=[];
 function gmAfFmtBytes(n){
  if(n==null||isNaN(n))return'0 B';
@@ -3354,8 +3347,7 @@ function gmAppfolioApplySummaryFromImported(im){
  if(grid)grid.style.display='grid';
 }
 function gmAppfolioRefreshDashboard(silent){
- var base=gmAppfolioApiBase();
- var url=base+'/api/appfolio/dashboard';
+ var url=GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard';
  fetch(url,{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
@@ -3390,7 +3382,7 @@ function gmAppfolioRefreshDashboard(silent){
    var s=localStorage.getItem('gm_appfolio_last_upload');
    if(el)el.textContent=s?'Último upload (local): '+s:'Último upload: indisponível (API offline).';
   }catch(e){if(el)el.textContent='Último upload: indisponível.';}
-  if(!silent)gmAfSetErr('Ligação à API AppFolio falhou. Em localhost o destino é godmanager-production.up.railway.app (CORS).');
+  if(!silent)gmAfSetErr('Ligação à API AppFolio falhou (godmanager-production.up.railway.app).');
  });
 }
 function gmAppfolioDoImport(){
@@ -3398,7 +3390,6 @@ function gmAppfolioDoImport(){
  if(!q.length){gmAfSetErr('Selecione pelo menos um ficheiro CSV.');return;}
  gmAfSetErr('');
  gmAfSetNote('');
- var base=gmAppfolioApiBase();
  var fd=new FormData();
  q.forEach(function(f){fd.append('files',f,f.name);});
  var wrap=document.getElementById('af-prog-wrap');
@@ -3408,7 +3399,7 @@ function gmAppfolioDoImport(){
  if(bar)bar.style.width='0%';
  if(btn)btn.disabled=true;
  var xhr=new XMLHttpRequest();
- xhr.open('POST',base+'/api/appfolio/upload');
+ xhr.open('POST',GM_BACKEND_RAILWAY_APP+'/api/appfolio/upload');
  xhr.upload.onprogress=function(ev){
   if(!bar||!ev.lengthComputable)return;
   var p=Math.round(ev.loaded/ev.total*100);
