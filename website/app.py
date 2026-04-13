@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 import bcrypt
@@ -148,7 +149,8 @@ class AuditLog(db.Model):
 def create_app():
     """Application factory."""
     app = Flask(__name__)
-    
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
     # Configuration
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
@@ -177,7 +179,9 @@ def create_app():
     register_routes(app)
     from qb_routes import qb_bp
     app.register_blueprint(qb_bp)
-    
+    from appfolio_routes import appfolio_bp
+    app.register_blueprint(appfolio_bp)
+
     # Create tables
     with app.app_context():
         db.create_all()

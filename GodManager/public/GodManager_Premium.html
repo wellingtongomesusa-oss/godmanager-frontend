@@ -58,8 +58,20 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
 .sb-logo{display:flex;align-items:center;gap:12px;padding:20px 18px 18px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .sb-badge{width:36px;height:36px;background:#0f2840;border:2px solid rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;font-family:'Sora',sans-serif}
-.sb-name{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px;font-family:'Sora',sans-serif}.sb-tagline{font-size:8.5px;color:var(--amber);margin-top:3px;letter-spacing:.85px;text-transform:uppercase;font-weight:600;font-family:'Inter',sans-serif}
+.sb-brand-mark{width:40px;height:40px;flex-shrink:0;position:relative}
+.sb-client-logo-img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12);display:none;vertical-align:top}
+.sb-client-initials{width:40px;height:40px;border-radius:50%;background:#c9a84c;border:2px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;font-family:'Sora',sans-serif;letter-spacing:-0.5px}
+.sb-brand-text{min-width:0;flex:1}
+.sb-name{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px;font-family:'Sora',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-tagline{font-size:8.5px;color:var(--amber);margin-top:3px;letter-spacing:.85px;text-transform:uppercase;font-weight:600;font-family:'Inter',sans-serif}
+.sb-client-domain{font-size:10px!important;color:#999!important;margin-top:4px;letter-spacing:.25px!important;text-transform:none!important;font-weight:400!important;font-family:'Inter',sans-serif!important}
 .sb-sec{padding:14px 0 2px}.sb-sec-lbl{font-size:8.5px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 18px 6px;display:block}
+.sb-sec-collapsible .sb-sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 18px 6px 18px;cursor:pointer;user-select:none}
+.sb-sec-collapsible .sb-sec-head .sb-sec-lbl{padding:0;margin:0;flex:1}
+.sb-sec-collapsible .sb-sec-chev{color:#666;font-size:11px;line-height:1;flex-shrink:0;width:14px;text-align:center}
+.sb-sec-collapsible .sb-sec-body{overflow:hidden;max-height:2000px;transition:max-height .2s ease}
+.sb-sec-collapsible.collapsed .sb-sec-body{max-height:0!important}
+.sb-sec-collapsible.sb-sec-headpad .sb-sec-head{padding-top:10px}
 .si{display:flex;align-items:center;gap:10px;padding:9px 16px;margin:1px 8px;border-radius:7px;font-size:12.5px;font-weight:400;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s ease;border-left:3px solid transparent}
 .si:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9)}.si.active{background:rgba(196,123,40,.18);color:#f5e6d4;border-left-color:var(--amber);font-weight:600}
 .sg{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;margin:1px 8px;border-radius:7px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s ease}
@@ -249,6 +261,20 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #ramp-tx-modal .gm-modal-body{padding:0;overflow:auto;flex:1}
 .sb-ix-ic{display:flex;align-items:center;gap:10px}
 .sb-ix-ic svg{flex-shrink:0;opacity:.9}
+/* AppFolio upload (scoped; não altera componentes existentes) */
+#page-appfolio-upload .af-drop{border:2px dashed var(--border2);border-radius:12px;padding:28px 20px;background:var(--cream);text-align:center;cursor:pointer;transition:border-color .2s ease,background .2s ease}
+#page-appfolio-upload .af-drop.af-drag{border-color:var(--amber);background:rgba(196,123,40,.06)}
+#page-appfolio-upload .af-drop-t{font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--navy);margin-bottom:6px}
+#page-appfolio-upload .af-drop-s{font-size:12px;color:var(--ink3);line-height:1.45}
+#page-appfolio-upload .af-file-list{margin-top:14px;max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--paper)}
+#page-appfolio-upload .af-file-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink2)}
+#page-appfolio-upload .af-file-row:last-child{border-bottom:none}
+#page-appfolio-upload .af-file-row .nm{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink);word-break:break-all;text-align:left;max-width:72%}
+#page-appfolio-upload .af-prog{margin-top:14px;height:8px;border-radius:4px;background:var(--border);overflow:hidden;display:none}
+#page-appfolio-upload .af-prog.on{display:block}
+#page-appfolio-upload .af-prog>i{display:block;height:100%;width:0;background:var(--amber);transition:width .12s ease}
+#page-appfolio-upload #af-summary-grid .gm-ix-kpi{padding:14px 16px}
+#page-appfolio-upload #af-summary-grid .k-v{font-size:16px}
 </style>
 </head>
 <body>
@@ -259,15 +285,25 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
 <aside class="sidebar">
  <div class="sb-logo">
- <div class="sb-badge">G</div>
- <div><div class="sb-name" id="sb-brand-name">GodManager</div><div class="sb-tagline" id="sb-brand-tag">FINANCIAL OPERATIONS</div></div>
+ <div class="sb-brand-mark" id="sb-brand-mark" aria-hidden="true">
+ <img class="sb-client-logo-img" id="sb-client-logo-img" alt="" width="40" height="40" decoding="async" />
+ <div class="sb-client-initials" id="sb-client-initials">MP</div>
+ </div>
+ <div class="sb-brand-text">
+ <div class="sb-name" id="sb-brand-name">Manager Prop LLC</div>
+ <div class="sb-tagline sb-client-domain" id="sb-brand-tag">godmanager.com</div>
+ </div>
  </div>
  <nav style="flex:1;padding-bottom:8px">
- <div class="sb-sec">
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="home">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Home</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="si active" onclick="nav('home')" id="nav-home">Home</div>
  </div>
- <div class="sb-sec">
- <span class="sb-sec-lbl">Long Term</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="longterm">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Long Term</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="sg open" onclick="togG(this)" id="ltg-group"><span>Portfolio</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
  <div class="gi exp" id="ltg-items">
  <div class="ss" onclick="nav('longterm')" id="nav-longterm">Dashboard</div>
@@ -279,13 +315,18 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('listings')" id="nav-listings">Listings</div>
  </div>
  </div>
- <div class="sb-sec" id="wrap-nav-compliance">
- <span class="sb-sec-lbl" style="padding-top:10px">Compliance</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible sb-sec-headpad" data-sb-sec="compliance" id="wrap-nav-compliance">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Compliance</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="ss" onclick="nav('licenses')" id="nav-licenses" style="padding-left:16px">Licenses</div>
  <div class="ss" onclick="nav('1099')" id="nav-1099" style="padding-left:16px">1099 / IRS</div>
  <div class="ss" onclick="nav('gaap')" id="nav-gaap" style="padding-left:16px">GAAP</div>
  </div>
- <div class="sb-sec" id="wrap-nav-operations">
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="operations" id="wrap-nav-operations">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Operations</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="sg open" onclick="togG(this)"><span>Operations</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
  <div class="gi exp">
  <div class="ss" onclick="nav('phonelines')" id="nav-phonelines">Phone Lines</div>
@@ -293,33 +334,45 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('cars')" id="nav-cars">Cars & Insurance</div>
  </div>
  </div>
- <div class="sb-sec" id="wrap-nav-integrations">
- <span class="sb-sec-lbl">Integrações</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="integrations" id="wrap-nav-integrations">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Integrações</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="ss" onclick="nav('integrations')" id="nav-integrations" style="padding-left:16px">Conectar</div>
  <div class="ss sb-ix-ic" onclick="nav('ramp')" id="nav-ramp" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Ramp</span></div>
  <div class="ss sb-ix-ic" onclick="nav('quickbooks')" id="nav-quickbooks" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg><span>QuickBooks</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('appfolio-upload')" id="nav-appfolio-upload" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>AppFolio Upload</span></div>
  </div>
- <div class="sb-sec">
- <span class="sb-sec-lbl">Communications</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="communications">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Communications</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="ss" onclick="nav('news')" id="nav-news" style="padding-left:16px">News</div>
  </div>
- <div class="sb-sec" id="wrap-nav-props-rank">
- <span class="sb-sec-lbl">Properties</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="properties" id="wrap-nav-props-rank">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Properties</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="sg open" onclick="togG(this)"><span>Properties</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
  <div class="gi exp">
  <div class="ss" onclick="nav('properties')" id="nav-properties">Ranking Properties</div>
  <div class="ss" onclick="nav('renovations')" id="nav-renovations">Renovations</div>
  </div>
  </div>
- <div class="sb-sec" id="sb-gm-admin-section" style="display:none">
- <span class="sb-sec-lbl">Admin</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="admin" id="sb-gm-admin-section" style="display:none">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Admin</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px">Clients</div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px">Settings</div>
  </div>
- <div class="sb-sec" id="sb-mycompany-section" style="display:none">
- <span class="sb-sec-lbl">My company</span>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="mycompany" id="sb-mycompany-section" style="display:none">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">My company</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
  <div class="ss" onclick="nav('client-users')" id="nav-client-users" style="padding-left:16px">Users</div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-co" style="padding-left:16px">Settings</div>
+ </div>
  </div>
  </nav>
  <div class="sb-ft">
@@ -783,6 +836,48 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <tbody id="qb-tbody-cat"></tbody>
  </table>
  </div>
+</div>
+</div>
+
+<div class="page gm-ix-page" id="page-appfolio-upload">
+ <div class="gm-ix-err" id="af-err"></div>
+ <div class="gm-ix-note" id="af-note"></div>
+ <div class="gm-ix-headrow ph" style="margin-bottom:20px">
+ <div>
+ <div class="pt" style="font-family:'Sora',sans-serif">AppFolio — Importar Dados</div>
+ <div class="ps" id="af-subtitle">Envie os CSVs exportados do AppFolio para atualizar o dashboard</div>
+ </div>
+ <div class="gm-ix-actions">
+ <button type="button" class="btn-gm-ix" id="af-btn-refresh-dash" onclick="gmAppfolioRefreshDashboard()">Atualizar Dashboard</button>
+ </div>
+ </div>
+ <div class="gm-ix-panel">
+ <h3>CSV AppFolio</h3>
+ <div style="padding:18px 18px 20px">
+ <div id="af-dropzone" class="af-drop" role="button" tabindex="0" aria-label="Área de upload">
+ <div class="af-drop-t">Arraste ficheiros CSV para aqui</div>
+ <div class="af-drop-s">Ou use o botão para selecionar vários ficheiros de uma vez (property_directory, tenant_directory, …)</div>
+ </div>
+ <input type="file" id="af-file-input" multiple accept=".csv,text/csv" style="display:none" />
+ <div id="af-file-list" class="af-file-list" style="display:none"></div>
+ <div class="af-prog" id="af-prog-wrap"><i id="af-prog-bar"></i></div>
+ <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center">
+ <button type="button" class="btn-gm-ix sec" id="af-btn-pick" onclick="document.getElementById('af-file-input').click()">Selecionar Arquivos</button>
+ <button type="button" class="btn-gm-ix-amber" id="af-btn-import" onclick="gmAppfolioDoImport()" disabled>Importar</button>
+ </div>
+ <p id="af-last-upload" style="margin-top:16px;font-size:11px;color:var(--ink3)"></p>
+ </div>
+ </div>
+ <div class="gm-ix-kpi-grid" id="af-summary-grid" style="display:none;margin-top:4px">
+ <div class="gm-ix-kpi k2"><div class="k-l">Propriedades</div><div class="k-v" id="af-sum-prop">—</div><div class="k-s">property_directory</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">Tenants</div><div class="k-v" id="af-sum-ten">—</div><div class="k-s">linhas no CSV</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k3"><div class="k-l">Owners</div><div class="k-v" id="af-sum-own">—</div><div class="k-s">owner_directory</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k4"><div class="k-l">Vendors</div><div class="k-v" id="af-sum-ven">—</div><div class="k-s">vendor_directory</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k2"><div class="k-l">Bills</div><div class="k-v" id="af-sum-bill">—</div><div class="k-s">bill_detail (sem grupos)</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">Income</div><div class="k-v" id="af-sum-inc">—</div><div class="k-s">income_register</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k3"><div class="k-l">Unpaid</div><div class="k-v" id="af-sum-unp">—</div><div class="k-s">saldos em aberto</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k4"><div class="k-l">Leases ativos</div><div class="k-v" id="af-sum-lease">—</div><div class="k-s">após import</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k2"><div class="k-l">1099 owners</div><div class="k-v" id="af-sum-1099">—</div><div class="k-s">com valor &gt; 0</div><div class="k-bar"></div></div>
  </div>
 </div>
 
@@ -2416,34 +2511,100 @@ function accessPillCls(l){var u=String(l||'').toUpperCase();if(u==='ADMIN')retur
 function planPillCls(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'cl-pill-pl-starter';if(v==='enterprise')return 'cl-pill-pl-ent';return 'cl-pill-pl-pro';}
 function planLabel(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'Starter';if(v==='enterprise')return 'Enterprise';return 'Professional';}
 function planLabelDisp(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'STARTER';if(v==='enterprise')return 'ENTERPRISE';return 'PROFESSIONAL';}
+const clientConfig={company_name:'Manager Prop LLC',logo_url:''};
+function gmClientInitials(name){
+ var s=String(name||'').trim();
+ if(!s)return'GM';
+ var parts=s.split(/\s+/).filter(Boolean);
+ if(parts.length===1)return parts[0].slice(0,2).toUpperCase();
+ return (String(parts[0][0]||'')+String(parts[1][0]||'')).toUpperCase()||'GM';
+}
+function renderSidebarClientBrand(client){
+ var c=(client!==undefined)?client:getActiveClient();
+ var name=(c&&(c.company||c.companyName))||clientConfig.company_name;
+ var logo=String((c&&(c.logoUrl||c.client_logo_url))||clientConfig.logo_url||'').trim();
+ var nameEl=document.getElementById('sb-brand-name');
+ var tagEl=document.getElementById('sb-brand-tag');
+ var img=document.getElementById('sb-client-logo-img');
+ var ini=document.getElementById('sb-client-initials');
+ if(nameEl)nameEl.textContent=name;
+ if(tagEl){
+  tagEl.textContent='godmanager.com';
+  tagEl.className='sb-tagline sb-client-domain';
+  tagEl.removeAttribute('style');
+ }
+ if(!img||!ini)return;
+ img.onload=null;
+ img.onerror=null;
+ img.onload=function(){ini.style.display='none';img.style.display='block';};
+ img.onerror=function(){img.style.display='none';img.removeAttribute('src');ini.style.display='flex';ini.textContent=gmClientInitials(name);};
+ if(logo){
+  ini.style.display='flex';
+  ini.textContent=gmClientInitials(name);
+  img.style.display='none';
+  if(/^https?:\/\//i.test(logo))try{img.crossOrigin='anonymous';}catch(e){}
+  img.src=logo;
+  if(img.complete){if(img.naturalWidth>0){ini.style.display='none';img.style.display='block';}else{ini.style.display='flex';img.style.display='none';}}
+ }else{
+  img.style.display='none';
+  img.removeAttribute('src');
+  img.removeAttribute('crossorigin');
+  ini.style.display='flex';
+  ini.textContent=gmClientInitials(name);
+ }
+}
+var SB_SEC_STATE_KEY='sidebar_sections_state';
+function sbLoadSecState(){try{return JSON.parse(localStorage.getItem(SB_SEC_STATE_KEY)||'{}');}catch(e){return{}}}
+function sbSaveSecState(o){try{localStorage.setItem(SB_SEC_STATE_KEY,JSON.stringify(o));}catch(e){}}
+function sbApplySecState(){
+ var st=sbLoadSecState();
+ document.querySelectorAll('.sb-sec-collapsible').forEach(function(sec){
+  var id=sec.getAttribute('data-sb-sec');
+  if(!id)return;
+  var collapsed=st[id]===true;
+  sec.classList.toggle('collapsed',collapsed);
+  var h=sec.querySelector('.sb-sec-head');
+  if(h)h.setAttribute('aria-expanded',collapsed?'false':'true');
+  var cv=sec.querySelector('.sb-sec-chev');
+  if(cv)cv.textContent=collapsed?'▸':'▾';
+ });
+}
+function sbToggleSec(sec){
+ if(!sec)return;
+ var id=sec.getAttribute('data-sb-sec');
+ if(!id)return;
+ var st=sbLoadSecState();
+ var collapsed=!sec.classList.contains('collapsed');
+ st[id]=collapsed;
+ sbSaveSecState(st);
+ sec.classList.toggle('collapsed',collapsed);
+ var h=sec.querySelector('.sb-sec-head');
+ if(h)h.setAttribute('aria-expanded',collapsed?'false':'true');
+ var cv=sec.querySelector('.sb-sec-chev');
+ if(cv)cv.textContent=collapsed?'▸':'▾';
+}
+function sbInitSectionCollapse(){
+ if(window._sbSecCollapseWired)return;
+ window._sbSecCollapseWired=1;
+ sbApplySecState();
+ document.querySelectorAll('.sb-sec-collapsible .sb-sec-head').forEach(function(head){
+  head.addEventListener('click',function(ev){
+   ev.preventDefault();
+   sbToggleSec(head.closest('.sb-sec-collapsible'));
+  });
+  head.addEventListener('keydown',function(ev){
+   if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();sbToggleSec(head.closest('.sb-sec-collapsible'));}
+  });
+ });
+}
 function updateBranding(client){
  var c;
  if(arguments.length===0)c=getActiveClient();
  else c=client?normalizeClient(client):null;
- var nameEl=document.getElementById('sb-brand-name');
- var tagEl=document.getElementById('sb-brand-tag');
  var bcEl=document.getElementById('bc-brand');
  var exitBtn=document.getElementById('btn-exit-client');
+ renderSidebarClientBrand(c);
  var cn=c&&(c.company||c.companyName);
- if(nameEl&&tagEl){
-  if(cn){
-   nameEl.textContent=cn;
-   tagEl.textContent='godmanager.com';
-   tagEl.classList.add('client-wl');
-   tagEl.style.fontSize='9px';
-   tagEl.style.color='rgba(255,255,255,.35)';
-   tagEl.style.textTransform='none';
-   tagEl.style.letterSpacing='0.3px';
-   tagEl.style.fontWeight='400';
-   tagEl.style.marginTop='4px';
-   tagEl.style.fontStyle='italic';
-  }else{
-   nameEl.textContent='GodManager';
-   tagEl.textContent='FINANCIAL OPERATIONS';
-   tagEl.classList.remove('client-wl');
-   tagEl.removeAttribute('style');
-  }
- }
  if(bcEl)bcEl.textContent=cn?cn:'GodManager';
  if(exitBtn)exitBtn.style.display=c?'inline-flex':'none';
  document.body.classList.toggle('gm-client-active',!!cn);
@@ -3095,8 +3256,202 @@ function refreshQuickBooksPage(){
  });
 }
 
+// — AppFolio: upload CSV (backend /api/appfolio)
+function gmAppfolioApiBase(){
+ try{
+  var h=String(window.location.hostname||'').toLowerCase();
+  if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')
+   return 'https://godmanager-production.up.railway.app';
+  return String(window.location.origin||'').replace(/\/$/,'');
+ }catch(_){return 'https://godmanager-production.up.railway.app';}
+}
+window.afUploadQueue=[];
+function gmAfFmtBytes(n){
+ if(n==null||isNaN(n))return'0 B';
+ var u=['B','KB','MB','GB'],i=0,x=Number(n);
+ while(x>=1024&&i<u.length-1){x/=1024;i++;}
+ return (i?x.toFixed(i>1?1:0):x)+' '+u[i];
+}
+function gmAfSetErr(msg){
+ var e=document.getElementById('af-err');
+ if(!e)return;
+ if(msg){e.textContent=msg;e.classList.add('on');}else{e.textContent='';e.classList.remove('on');}
+}
+function gmAfSetNote(msg){
+ var n=document.getElementById('af-note');
+ if(!n)return;
+ if(msg){n.textContent=msg;n.classList.add('on');}else{n.textContent='';n.classList.remove('on');}
+}
+function gmAfRenderFileList(){
+ var q=window.afUploadQueue||[];
+ var wrap=document.getElementById('af-file-list');
+ var imp=document.getElementById('af-btn-import');
+ if(!wrap)return;
+ wrap.innerHTML='';
+ if(!q.length){wrap.style.display='none';if(imp)imp.disabled=true;return;}
+ wrap.style.display='block';
+ if(imp)imp.disabled=false;
+ q.forEach(function(f,idx){
+  var row=document.createElement('div');
+  row.className='af-file-row';
+  row.innerHTML='<span class="nm"></span><span class="sz"></span>';
+  row.querySelector('.nm').textContent=f.name;
+  row.querySelector('.sz').textContent=gmAfFmtBytes(f.size);
+  wrap.appendChild(row);
+ });
+}
+function gmAfMergeFiles(files){
+ var q=window.afUploadQueue.slice();
+ var seen={};
+ q.forEach(function(f){seen[f.name+'_'+f.size]=1;});
+ Array.prototype.forEach.call(files||[],function(f){
+  if(!f||!f.name)return;
+  var k=f.name+'_'+f.size;
+  if(seen[k])return;
+  seen[k]=1;
+  q.push(f);
+ });
+ window.afUploadQueue=q;
+ gmAfRenderFileList();
+}
+function gmAppfolioWireDropzoneOnce(){
+ if(window._afDropWired)return;
+ window._afDropWired=1;
+ var dz=document.getElementById('af-dropzone');
+ var fi=document.getElementById('af-file-input');
+ if(!dz||!fi)return;
+ dz.addEventListener('click',function(){fi.click();});
+ dz.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' ')fi.click();});
+ fi.addEventListener('change',function(){gmAfMergeFiles(fi.files);fi.value='';});
+ ['dragenter','dragover'].forEach(function(ev){
+  dz.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();dz.classList.add('af-drag');});
+ });
+ ['dragleave','drop'].forEach(function(ev){
+  dz.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();dz.classList.remove('af-drag');});
+ });
+ dz.addEventListener('drop',function(e){
+  var dt=e.dataTransfer;
+  if(!dt||!dt.files)return;
+  gmAfMergeFiles(dt.files);
+ });
+}
+function gmAppfolioPageInit(){
+ gmAppfolioWireDropzoneOnce();
+ gmAfSetErr('');
+ gmAfSetNote('');
+ gmAppfolioRefreshDashboard(true);
+}
+function gmAppfolioApplySummaryFromImported(im){
+ if(!im)return;
+ var map=[['af-sum-prop','properties'],['af-sum-ten','tenants'],['af-sum-own','owners'],['af-sum-ven','vendors'],['af-sum-bill','bills'],['af-sum-inc','income'],['af-sum-unp','unpaid'],['af-sum-lease','leases_active'],['af-sum-1099','owners_1099']];
+ map.forEach(function(pair){
+  var el=document.getElementById(pair[0]);
+  if(!el)return;
+  var v=im[pair[1]];
+  el.textContent=v!=null?String(v):'—';
+ });
+ var grid=document.getElementById('af-summary-grid');
+ if(grid)grid.style.display='grid';
+}
+function gmAppfolioRefreshDashboard(silent){
+ var base=gmAppfolioApiBase();
+ var url=base+'/api/appfolio/dashboard';
+ fetch(url,{method:'GET',mode:'cors',credentials:'omit'})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  var lu=o.j&&o.j.last_upload;
+  var el=document.getElementById('af-last-upload');
+  if(el){
+   if(lu)el.textContent='Último upload (servidor): '+lu;
+   else el.textContent='Último upload: ainda sem dados no servidor.';
+  }
+  try{if(lu)localStorage.setItem('gm_appfolio_last_upload',lu);}catch(e){}
+  if(!silent){
+   if(o.ok)gmAfSetNote('Dashboard atualizado a partir da API.');
+   else gmAfSetNote('Não foi possível ler o dashboard.');
+   setTimeout(function(){gmAfSetNote('');},4500);
+  }
+  if(o.ok&&o.j){
+   var im=null;
+   try{im=JSON.parse(localStorage.getItem('gm_appfolio_import_summary')||'null');}catch(e){im=null;}
+   if(!im)im={};
+   im.properties=o.j.total_properties;
+   im.tenants=o.j.total_tenants;
+   im.owners=o.j.total_owners;
+   im.vendors=o.j.total_vendors;
+   im.leases_active=o.j.occupied_units;
+   if(o.j.owners_1099_positive!=null)im.owners_1099=o.j.owners_1099_positive;
+   gmAppfolioApplySummaryFromImported(im);
+  }
+ })
+ .catch(function(){
+  var el=document.getElementById('af-last-upload');
+  try{
+   var s=localStorage.getItem('gm_appfolio_last_upload');
+   if(el)el.textContent=s?'Último upload (local): '+s:'Último upload: indisponível (API offline).';
+  }catch(e){if(el)el.textContent='Último upload: indisponível.';}
+  if(!silent)gmAfSetErr('Ligação à API AppFolio falhou. Em localhost o destino é godmanager-production.up.railway.app (CORS).');
+ });
+}
+function gmAppfolioDoImport(){
+ var q=window.afUploadQueue||[];
+ if(!q.length){gmAfSetErr('Selecione pelo menos um ficheiro CSV.');return;}
+ gmAfSetErr('');
+ gmAfSetNote('');
+ var base=gmAppfolioApiBase();
+ var fd=new FormData();
+ q.forEach(function(f){fd.append('files',f,f.name);});
+ var wrap=document.getElementById('af-prog-wrap');
+ var bar=document.getElementById('af-prog-bar');
+ var btn=document.getElementById('af-btn-import');
+ if(wrap){wrap.classList.add('on');}
+ if(bar)bar.style.width='0%';
+ if(btn)btn.disabled=true;
+ var xhr=new XMLHttpRequest();
+ xhr.open('POST',base+'/api/appfolio/upload');
+ xhr.upload.onprogress=function(ev){
+  if(!bar||!ev.lengthComputable)return;
+  var p=Math.round(ev.loaded/ev.total*100);
+  bar.style.width=p+'%';
+ };
+ xhr.onreadystatechange=function(){
+  if(xhr.readyState!==4)return;
+  if(btn)btn.disabled=false;
+  if(wrap)wrap.classList.remove('on');
+  if(bar)bar.style.width='0%';
+   if(xhr.status>=200&&xhr.status<300){
+   try{
+    var data=JSON.parse(xhr.responseText||'{}');
+    if(data.last_upload){
+     var el=document.getElementById('af-last-upload');
+     if(el)el.textContent='Último upload (servidor): '+data.last_upload;
+     try{localStorage.setItem('gm_appfolio_last_upload',data.last_upload);}catch(e){}
+    }
+    if(data.imported){
+     try{localStorage.setItem('gm_appfolio_import_summary',JSON.stringify(data.imported));}catch(e){}
+     gmAppfolioApplySummaryFromImported(data.imported);
+    }
+    gmAfSetNote('Importação concluída.');
+    setTimeout(function(){gmAfSetNote('');},5000);
+    window.afUploadQueue=[];
+    gmAfRenderFileList();
+    gmAppfolioRefreshDashboard(true);
+   }catch(e){
+    gmAfSetErr('Resposta inválida do servidor.');
+   }
+  }else{
+   gmAfSetErr('Upload falhou (HTTP '+xhr.status+').');
+  }
+ };
+ xhr.onerror=function(){if(btn)btn.disabled=false;if(wrap)wrap.classList.remove('on');gmAfSetErr('Erro de rede no upload.');};
+ xhr.send(fd);
+}
+window.gmAppfolioPageInit=gmAppfolioPageInit;
+window.gmAppfolioRefreshDashboard=gmAppfolioRefreshDashboard;
+window.gmAppfolioDoImport=gmAppfolioDoImport;
+
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -3109,8 +3464,8 @@ function nav(r){
    if(!window._cuMgmtClientId)r='home';
   }
  }
- if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','phonelines','vault','cars','properties','renovations','clients','settings','client-users'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','clients','settings','1099','client-users'];if(mb.indexOf(r)>=0)r='home';}
+ if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users'];if(vb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -3147,6 +3502,7 @@ function nav(r){
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
+ 'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
  clients:()=>{if(typeof loadClients==='function')loadClients();},
  'client-users':()=>{if(typeof renderClientUsersPage==='function')renderClientUsersPage();}
@@ -5917,6 +6273,8 @@ window.loginAsClient=loginAsClient;
 window.exitClientView=exitClientView;
 window.applyPermissions=applyPermissions;
 window.updateBranding=updateBranding;
+window.renderSidebarClientBrand=renderSidebarClientBrand;
+window.clientConfig=clientConfig;
 window.openUsers=openUsers;
 window.openUserManagement=openUserManagement;
 window.closeUsersModal=closeUsersModal;
@@ -5935,6 +6293,7 @@ window.normalizeClient=normalizeClient;
 window.addEventListener('DOMContentLoaded',()=>{
  updateBranding();
  applyPermissions();
+ sbInitSectionCollapse();
  updateLastSavedBar();
  renderMsgs();
  renderNormas();
