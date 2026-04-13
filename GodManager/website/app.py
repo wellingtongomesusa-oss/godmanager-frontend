@@ -147,10 +147,6 @@ class AuditLog(db.Model):
 
 def create_app():
     """Application factory."""
-    from dotenv import load_dotenv
-
-    load_dotenv()
-
     app = Flask(__name__)
     
     # Configuration
@@ -548,8 +544,6 @@ def register_routes(app):
         return redirect(url_for("admin_users"))
 
 
-app = create_app()
-
 if __name__ == "__main__":
+    app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
-
