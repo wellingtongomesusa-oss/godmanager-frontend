@@ -1,4 +1,14 @@
 import os
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+except ImportError:
+    pass
+
+import base64
 import csv
 import io
 import re
@@ -10,6 +20,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 import bcrypt
 from urllib.parse import urlparse
+
+import requests as req
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -146,29 +158,16 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     # Redis session configuration
-    redis_url = os.getenv("REDIS_URL", "redis://:redispassword@redis:6379/0")
-    app.config["SESSION_TYPE"] = "redis"
-    app.config["SESSION_REDIS"] = redis_url
+    redis_url = os.getenv("REDIS_URI", "")
+    if redis_url:
+        app.config["SESSION_TYPE"] = "redis"
+        app.config["SESSION_REDIS"] = redis_url
+    else:
+        app.config["SESSION_TYPE"] = "filesystem"
+        app.config["SESSION_REDIS"] = None
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_PERMANENT"] = False
-    
-    # Parse Redis URL if needed for Flask-Session
-    try:
-        from redis import Redis
-        parsed = urlparse(redis_url)
-        password = parsed.password if parsed.password else None
-        app.config["SESSION_REDIS"] = Redis(
-            host=parsed.hostname or "redis",
-            port=parsed.port or 6379,
-            password=password,
-            db=int(parsed.path.strip("/")) if parsed.path else 0,
-            decode_responses=False
-        )
-    except Exception as e:
-        # Fallback to filesystem sessions if Redis unavailable
-        app.config["SESSION_TYPE"] = "filesystem"
-        app.config["SESSION_REDIS"] = None
     
     # Initialize extensions
     db.init_app(app)
@@ -275,6 +274,56 @@ def register_routes(app):
         
         exists = User.query.filter_by(username=username).first() is not None
         return jsonify({"available": not exists})
+
+    @app.route("/api/ramp/transactions")
+    def ramp_transactions():
+        client_id = os.environ.get("RAMP_CLIENT_ID")
+        client_secret = os.environ.get("RAMP_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            return jsonify({"error": "Ramp credentials not configured"}), 500
+        creds = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        token_res = req.post(
+            "https://api.ramp.com/developer/v1/token",
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"grant_type": "client_credentials", "scope": "transactions:read"},
+        )
+        token = token_res.json().get("access_token")
+        params = {"page_size": 100}
+        from_date = request.args.get("from_date")
+        if from_date:
+            params["from_date"] = from_date
+        tx_res = req.get(
+            "https://api.ramp.com/developer/v1/transactions",
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+        )
+        return jsonify(tx_res.json())
+
+    @app.route("/api/ramp/cards")
+    def ramp_cards():
+        client_id = os.environ.get("RAMP_CLIENT_ID")
+        client_secret = os.environ.get("RAMP_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            return jsonify({"error": "Ramp credentials not configured"}), 500
+        creds = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        token_res = req.post(
+            "https://api.ramp.com/developer/v1/token",
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"grant_type": "client_credentials", "scope": "cards:read"},
+        )
+        token = token_res.json().get("access_token")
+        cr_res = req.get(
+            "https://api.ramp.com/developer/v1/cards",
+            headers={"Authorization": f"Bearer {token}"},
+            params={"page_size": 100},
+        )
+        return jsonify(cr_res.json())
     
     @app.route("/request_account", methods=["POST"])
     def request_account():
@@ -496,8 +545,6 @@ def register_routes(app):
         return redirect(url_for("admin_users"))
 
 
-app = create_app()
-
 if __name__ == "__main__":
+    app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
-
