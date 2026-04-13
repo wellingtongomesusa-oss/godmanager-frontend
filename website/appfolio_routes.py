@@ -19,6 +19,8 @@ from flask import Blueprint, jsonify, request
 _WEB_DIR = Path(__file__).resolve().parent
 DATA_DIR = _WEB_DIR / "data" / "appfolio"
 META_PATH = DATA_DIR / "_appfolio_meta.json"
+GROSS_EXPENSES_PATH = DATA_DIR / "gross_expenses.json"
+ORG_CHART_PATH = DATA_DIR / "org_chart.json"
 
 CANONICAL_FILES = {
     "property_directory": "property_directory.csv",
@@ -74,6 +76,58 @@ def _norm_county(s: str) -> str:
     t = str(s).strip()
     t = re.sub(r"\s+county\s*$", "", t, flags=re.I).strip()
     return t.title()
+
+
+def _parse_percent(val: Any) -> float:
+    """Management fee like '7.98%' or '7.98'."""
+    if val is None:
+        return 0.0
+    s = str(val).strip().replace("%", "")
+    if not s:
+        return 0.0
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+
+def _extract_gl_code(gl_raw: str) -> str:
+    m = re.match(r"\s*(\d{4})\b", (gl_raw or "").strip())
+    return m.group(1) if m else ""
+
+
+def _is_gl_owner_distribution(gl_raw: str) -> bool:
+    return "3250" in (gl_raw or "").lower()
+
+
+# GL code (4 digits) -> SG&A category label (AppFolio bill_detail)
+SGA_LABEL_BY_CODE: Dict[str, str] = {
+    "6112": "Tenant Placement Fees",
+    "6075": "HOA Dues",
+    "6076": "Cleaning & Maintenance",
+    "6073": "General Maintenance",
+    "6144": "HVAC",
+    "6141": "Painting",
+    "6074": "Landscaping",
+    "6142": "Plumbing",
+    "7010": "Appliances",
+    "6103": "Other",
+    "6111": "Management Fees",
+}
+
+SGA_DISPLAY_ORDER: List[str] = [
+    "Tenant Placement Fees",
+    "HOA Dues",
+    "Cleaning & Maintenance",
+    "General Maintenance",
+    "HVAC",
+    "Painting",
+    "Landscaping",
+    "Plumbing",
+    "Appliances",
+    "Management Fees",
+    "Other",
+]
 
 
 def parse_money(val: Any) -> float:
@@ -318,14 +372,114 @@ def _load_unpaid() -> Tuple[List[Dict[str, str]], Dict[str, str]]:
 
 
 def _1099_is_group_header(r: Dict[str, str], hm: Dict[str, str]) -> bool:
+    """AppFolio group rows: only Owner Name starting with '->' (ignore as headers)."""
     on = (_get(r, hm, "Owner Name", "Owner", "OwnerName") or "").strip()
-    if on.startswith("->"):
-        return True
-    if not on:
-        for v in (r or {}).values():
-            if str(v).strip().startswith("->"):
-                return True
-    return False
+    return on.startswith("->")
+
+
+def _1099_amount_from_row(r: Dict[str, str], hmap: Dict[str, str]) -> float:
+    v = parse_money(
+        _get(
+            r,
+            hmap,
+            "1099 Amount",
+            "Amount 1099",
+            "Box 1",
+            "Form 1099 Amount",
+            "Total 1099 Amount",
+            "1099 Total",
+            "Total 1099",
+            "Box Amount",
+            "Payments 1099",
+        )
+    )
+    if v > 0.005:
+        return v
+    for orig in (r or {}).keys():
+        nk = _norm_label(orig or "")
+        if "1099" in nk and ("amount" in nk or "box" in nk or "payment" in nk or "total" in nk):
+            v2 = parse_money(r.get(orig))
+            if v2 > 0.005:
+                return v2
+    return 0.0
+
+
+def _1099_amount_detail_line(r: Dict[str, str], hmap: Dict[str, str]) -> float:
+    """
+    1099 Amount for hierarchical exports: primary columns only on detail rows.
+    If amount is zero in standard columns, fall back to fuzzy column scan only when
+    Property Name is present (detail line), never on owner-only header rows.
+    """
+    v = parse_money(
+        _get(
+            r,
+            hmap,
+            "1099 Amount",
+            "Amount 1099",
+            "Box 1",
+            "Form 1099 Amount",
+            "Total 1099 Amount",
+            "1099 Total",
+            "Total 1099",
+        )
+    )
+    if v > 0.005:
+        return v
+    prop = (_get(r, hmap, "Property Name", "Property", "Property Address") or "").strip()
+    if not prop:
+        return 0.0
+    for orig in (r or {}).keys():
+        nk = _norm_label(orig or "")
+        if "1099" in nk and ("amount" in nk or "box" in nk or "payment" in nk or "total" in nk):
+            v2 = parse_money(r.get(orig))
+            if v2 > 0.005:
+                return v2
+    return 0.0
+
+
+def _aggregate_owner_1099_hierarchical(
+    rows: List[Dict[str, str]], hmap: Dict[str, str]
+) -> Tuple[float, set[str]]:
+    """
+    CSV is hierarchical: owner header row(s) with name + tax form, then detail rows
+    with Property / Ownership Period / 1099 Amount. Detail rows may omit Owner Name;
+    attribute amounts to the last owner seen (non-empty Owner Name, not a '->' group line).
+
+    - Skip rows where Owner Name starts with '->' (already filtered in load, but safe).
+    - Sum 1099 Amount only from detail lines (amount > 0).
+    - Count unique owners that have at least one detail line with amount > 0.
+    """
+    current_owner_key = ""
+    total = 0.0
+    owners_positive: set[str] = set()
+    for r in rows:
+        on_raw = _get(r, hmap, "Owner Name", "Owner", "OwnerName")
+        if (on_raw or "").strip().startswith("->"):
+            continue
+        name_stripped = (on_raw or "").strip()
+        if name_stripped:
+            current_owner_key = name_stripped.lower()
+        amt = _1099_amount_detail_line(r, hmap)
+        if amt > 0.005:
+            total += amt
+            ok = current_owner_key or _owner_1099_key(r, hmap)
+            if ok:
+                owners_positive.add(ok)
+    return round(total, 2), owners_positive
+
+
+def _owner_1099_key(r: Dict[str, str], hmap: Dict[str, str]) -> str:
+    on = _get(
+        r,
+        hmap,
+        "Owner Name",
+        "Owner",
+        "Owner Taxpayer Name",
+        "Taxpayer Name",
+        "Payee Name",
+        "Legal Name",
+    )
+    return on.strip().lower()
 
 
 def _load_1099_filtered() -> Tuple[List[Dict[str, str]], Dict[str, str]]:
@@ -440,9 +594,23 @@ def _compute_dashboard() -> Dict[str, Any]:
 
     leases_future = len(future_props - occupied_props)
     leases_notice = len({p for p in notice_props if p in occupied_props})
+    qty_notice = len(notice_props)
+    qty_future = len(future_props)
 
     total_owners = len(own_rows)
     total_vendors = len(ven_rows)
+
+    owners_with_leased_prop: set[str] = set()
+    for r in prop_rows:
+        pk = _property_key_tenant(r, prop_h)
+        if pk == "__unknown__" or pk not in occupied_props:
+            continue
+        oline = _get(r, prop_h, "Owner(s)", "Owner", "Owner Name", "Property Owner")
+        t = (oline or "").strip()
+        if t:
+            owners_with_leased_prop.add(re.sub(r"\s+", " ", t).lower())
+    qty_owners_with_lease = len(owners_with_leased_prop)
+    qty_owners_pending = max(0, total_owners - qty_owners_with_lease)
 
     # Unpaid: group by property short name
     unpaid_total = 0.0
@@ -456,54 +624,118 @@ def _compute_dashboard() -> Dict[str, Any]:
         unpaid_total += amt
     properties_with_unpaid = sum(1 for _k, v in unpaid_by_propname.items() if v > 0.005)
 
-    # Income: receipts only
+    # Income: receipts + account-specific metrics
     total_income = 0.0
+    rent_income = 0.0
+    operating_cash = 0.0
+    late_fees_collected = 0.0
+    security_deposit_cash_in = 0.0
     for r in inc_rows:
-        total_income += parse_money(
+        rec = parse_money(
             _get(r, inc_h, "Receipt Amount", "Receipt", "Receipts", "Income", "Credit")
         )
+        total_income += rec
+        chg = parse_money(_get(r, inc_h, "Charge Amount", "Charge", "Charges"))
+        acct = _get(r, inc_h, "Cash Account", "Income Account", "Account", "GL Account")
+        al = (acct or "").lower()
+        if "4100" in al.replace(" ", "") and "rent" in al:
+            rent_income += chg
+        if "1150" in al.replace(" ", "") and "operating" in al and "cash" in al:
+            operating_cash += rec
+        if "4460" in al.replace(" ", "") and "late" in al:
+            late_fees_collected += chg
+        if "1160" in al.replace(" ", "") and "security" in al and "deposit" in al:
+            security_deposit_cash_in += rec
 
-    # Bills: Paid / Unpaid columns; owner distributions = GL 3250
+    # Bills: vendor totals exclude GL 3250 (owner distributions)
     total_bills_paid = 0.0
     total_bills_unpaid = 0.0
     owner_distributions = 0.0
+    total_vendor_spend = 0.0
+    total_vendor_unpaid = 0.0
+    qty_vendor_work_orders = 0
+    cleaning_maintenance_paid = 0.0
+    cleaning_maintenance_unpaid = 0.0
+    contractor_payroll_paid = 0.0
+    contractor_payroll_unpaid = 0.0
+    total_bills_count = 0
+    bills_with_paid = 0
+    bills_with_unpaid = 0
+    bills_count_resolved = 0
+    bills_count_open = 0
+    bills_count_in_progress = 0
+    sga_buckets: Dict[str, Dict[str, Any]] = {
+        label: {"paid": 0.0, "unpaid": 0.0, "count": 0} for label in SGA_DISPLAY_ORDER
+    }
     payee_totals: DefaultDict[str, float] = defaultdict(float)
     for r in bill_rows:
         paid = parse_money(_get(r, bill_h, "Paid", "Paid Amount", "Amount Paid"))
         unpaid = parse_money(_get(r, bill_h, "Unpaid", "Open Balance", "Balance"))
-        gl = (_get(r, bill_h, "GL Account", "Account", "GL") or "").lower()
+        gl_raw = _get(r, bill_h, "GL Account", "Account", "GL")
+        gl = (gl_raw or "").lower()
         payee = _get(r, bill_h, "Payee Name", "Payee", "Vendor", "Vendor Name")
         total_bills_paid += paid
         total_bills_unpaid += unpaid
-        if "3250" in gl and "owner" in gl and "distribution" in gl:
+        if _is_gl_owner_distribution(gl_raw or ""):
             owner_distributions += paid
+            continue
+        qty_vendor_work_orders += 1
+        total_bills_count += 1
+        if paid > 0.005:
+            bills_with_paid += 1
+        if unpaid > 0.005:
+            bills_with_unpaid += 1
+        if paid > 0.005 and unpaid <= 0.005:
+            bills_count_resolved += 1
+        elif unpaid > 0.005 and paid <= 0.005:
+            bills_count_open += 1
+        elif paid > 0.005 and unpaid > 0.005:
+            bills_count_in_progress += 1
+        total_vendor_spend += paid
+        total_vendor_unpaid += unpaid
+        code = _extract_gl_code(gl_raw or "")
+        if code == "6076":
+            cleaning_maintenance_paid += paid
+            cleaning_maintenance_unpaid += unpaid
+        if code in ("6073", "6112"):
+            contractor_payroll_paid += paid
+            contractor_payroll_unpaid += unpaid
+        label = SGA_LABEL_BY_CODE.get(code, "Other")
+        if label not in sga_buckets:
+            label = "Other"
+        sga_buckets[label]["paid"] += paid
+        sga_buckets[label]["unpaid"] += unpaid
+        sga_buckets[label]["count"] += 1
         if payee and paid > 0:
             payee_totals[payee] += paid
+
+    total_sga = round(total_vendor_spend + total_vendor_unpaid, 2)
 
     top_payees = [
         {"payee": k, "total_paid": round(v, 2)}
         for k, v in sorted(payee_totals.items(), key=lambda x: -x[1])[:15]
     ]
 
-    # 1099 totals
-    total_1099 = 0.0
-    owners_1099_positive_set: set[str] = set()
-    for r in rows1099:
-        amt = parse_money(_get(r, h1099, "1099 Amount", "Amount 1099", "Box 1"))
-        if amt > 0.005:
-            total_1099 += amt
-            on = _get(r, h1099, "Owner Name", "Owner", "Owner Taxpayer Name")
-            key = on.strip().lower()
-            if key:
-                owners_1099_positive_set.add(key)
+    # 1099 totals (hierarchical CSV: amounts on detail rows; owners from context)
+    total_1099, owners_1099_positive_set = _aggregate_owner_1099_hierarchical(
+        rows1099, h1099
+    )
     owners_1099_positive = len(owners_1099_positive_set)
 
     # Geo + mgmt fee from property directory
     properties_by_county: Dict[str, int] = defaultdict(int)
     properties_by_city: Dict[str, int] = defaultdict(int)
     mgmt_fee_breakdown: Dict[str, int] = defaultdict(int)
+    market_rent_total = 0.0
+    mgmt_fee_pcts: List[float] = []
     for r in prop_rows:
         county, city, prop_full = _property_row_geo(r, prop_h)
+        market_rent_total += parse_money(
+            _get(r, prop_h, "Market Rent", "Market Rental Rate", "Market Rent Amount")
+        )
+        p_pct = _parse_percent(_get(r, prop_h, "Management Fee Percent", "Management Fee %", "Management Fee"))
+        if p_pct > 0:
+            mgmt_fee_pcts.append(p_pct)
         if county:
             properties_by_county[county] += 1
         if city:
@@ -517,7 +749,41 @@ def _compute_dashboard() -> Dict[str, Any]:
         if pct:
             mgmt_fee_breakdown[pct] += 1
 
+    avg_mgmt_fee_pct = round(sum(mgmt_fee_pcts) / len(mgmt_fee_pcts), 2) if mgmt_fee_pcts else 0.0
+    mgmt_fee_revenue_potential = round(monthly_rent * avg_mgmt_fee_pct / 100.0, 2)
+
+    sga_breakdown_out: Dict[str, Dict[str, Any]] = {}
+    for label in SGA_DISPLAY_ORDER:
+        b = sga_buckets.get(
+            label, {"paid": 0.0, "unpaid": 0.0, "count": 0}
+        )
+        sga_breakdown_out[label] = {
+            "paid": round(b["paid"], 2),
+            "unpaid": round(b["unpaid"], 2),
+            "count": int(b["count"]),
+        }
+
     last_upload = meta.get("last_upload")
+
+    # Ramp (corporate cards) — placeholder until Ramp API is connected
+    ramp_total_spend = 0.0
+    ramp_by_category: Dict[str, float] = {
+        "Operations": 0.0,
+        "SG&A": 0.0,
+        "Maintenance": 0.0,
+        "Other": 0.0,
+    }
+    ramp_connected = False
+
+    # Inspections (Zen Inspector) — estimated from portfolio + debit flow assumptions
+    n_props = max(1, total_properties)
+    inspections_est_monthly = max(1, int(round(n_props / 6.0)))
+    inspections_total = inspections_est_monthly
+    inspections_completed = 10
+    inspections_scheduled = 4
+    inspections_overdue = 2
+    inspection_cost_monthly = 80.0
+    inspections_connected = False
 
     return {
         "total_properties": total_properties,
@@ -550,6 +816,57 @@ def _compute_dashboard() -> Dict[str, Any]:
         "last_upload": last_upload,
         # compat keys for older frontends
         "rent_range": {"min": int(round(rent_min)), "max": int(round(rent_max))},
+        # GodManager Premium Home KPIs (explicit names)
+        "qty_properties": total_properties,
+        "qty_leases_active": occupied_units,
+        "qty_tenants_people": current_tenant_rows,
+        "qty_owners": total_owners,
+        "qty_vendors": total_vendors,
+        "qty_vendor_work_orders": qty_vendor_work_orders,
+        "qty_vacant": vacant_units,
+        "qty_notice": qty_notice,
+        "qty_future": qty_future,
+        "potential_rent_monthly": round(monthly_rent, 2),
+        "market_rent_total": round(market_rent_total, 2),
+        "total_income_received": round(total_income, 2),
+        "rent_income": round(rent_income, 2),
+        "operating_cash": round(operating_cash, 2),
+        "late_fees_collected": round(late_fees_collected, 2),
+        "security_deposit_cash_in": round(security_deposit_cash_in, 2),
+        "total_vendor_spend": round(total_vendor_spend, 2),
+        "total_vendor_unpaid": round(total_vendor_unpaid, 2),
+        "total_sga": total_sga,
+        "sga_breakdown": sga_breakdown_out,
+        "avg_mgmt_fee_pct": avg_mgmt_fee_pct,
+        "mgmt_fee_revenue_potential": mgmt_fee_revenue_potential,
+        "total_security_deposits": round(total_deposits, 2),
+        # Home cards (cleaning / contractor / bills)
+        "cleaning_maintenance_paid": round(cleaning_maintenance_paid, 2),
+        "cleaning_maintenance_unpaid": round(cleaning_maintenance_unpaid, 2),
+        "cleaning_maintenance_total": round(
+            cleaning_maintenance_paid + cleaning_maintenance_unpaid, 2
+        ),
+        "contractor_payroll_paid": round(contractor_payroll_paid, 2),
+        "contractor_payroll_unpaid": round(contractor_payroll_unpaid, 2),
+        "total_bills_count": total_bills_count,
+        "bills_with_paid": bills_with_paid,
+        "bills_with_unpaid": bills_with_unpaid,
+        "bills_count_resolved": bills_count_resolved,
+        "bills_count_open": bills_count_open,
+        "bills_count_in_progress": bills_count_in_progress,
+        "total_vendor_spend_all": total_sga,
+        "qty_owners_with_lease": qty_owners_with_lease,
+        "qty_owners_pending": qty_owners_pending,
+        # Home cards — Ramp & Inspections
+        "ramp_total_spend": round(ramp_total_spend, 2),
+        "ramp_by_category": ramp_by_category,
+        "ramp_connected": ramp_connected,
+        "inspections_total": inspections_total,
+        "inspections_completed": inspections_completed,
+        "inspections_scheduled": inspections_scheduled,
+        "inspections_overdue": inspections_overdue,
+        "inspection_cost_monthly": round(inspection_cost_monthly, 2),
+        "inspections_connected": inspections_connected,
     }
 
 
@@ -566,7 +883,7 @@ def _import_summary_counts() -> Dict[str, int]:
     dash = _compute_dashboard()
     return {
         "properties": len(pr),
-        "tenants": len(tr),
+        "tenants_people": dash["total_tenants"],
         "owners": len(orows),
         "vendors": len(vr),
         "bills": len(br),
@@ -920,3 +1237,578 @@ def report_1099():
     pg = _paginate(out)
     pg["owner_1099"] = pg.pop("items")
     return jsonify(pg)
+
+
+# ---------------------------------------------------------------------------
+# Gross & Expenses (Manager Prop LLC — configurável)
+# ---------------------------------------------------------------------------
+
+
+def _default_gross_expenses_items() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": 1,
+            "type": "gross",
+            "order": 1,
+            "name": "Tenant Placement",
+            "description": "80% de 1 aluguel",
+            "value": "80%",
+            "frequency": "por evento",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 2,
+            "type": "gross",
+            "order": 2,
+            "name": "Management Fee",
+            "description": "Taxa de gestao mensal",
+            "value": "8%",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 3,
+            "type": "gross",
+            "order": 3,
+            "name": "Apply Fee",
+            "description": "Paga $45 ao AppFolio, recebe $50 do tenant",
+            "value": "$50",
+            "frequency": "por evento",
+            "active": True,
+            "notes": "Lucro: $5 por aplicacao",
+        },
+        {
+            "id": 4,
+            "type": "gross",
+            "order": 4,
+            "name": "Preparation Fee",
+            "description": "Taxa de preparacao do imovel",
+            "value": "$150",
+            "frequency": "por evento",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 5,
+            "type": "gross",
+            "order": 5,
+            "name": "Renovation",
+            "description": "$200 owner + $200 prop",
+            "value": "$400",
+            "frequency": "por evento",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 6,
+            "type": "gross",
+            "order": 6,
+            "name": "Pet Fee",
+            "description": "Taxa unica de pet",
+            "value": "$400",
+            "frequency": "uma vez",
+            "active": False,
+            "notes": "Depende da propriedade",
+        },
+        {
+            "id": 7,
+            "type": "gross",
+            "order": 7,
+            "name": "Limpeza",
+            "description": "Limpeza padrao",
+            "value": "$70",
+            "frequency": "por evento",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 8,
+            "type": "gross",
+            "order": 8,
+            "name": "Foto",
+            "description": "Sessao fotografica do imovel",
+            "value": "$75",
+            "frequency": "por evento",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 9,
+            "type": "gross",
+            "order": 9,
+            "name": "HOA",
+            "description": "Taxa de HOA repassada",
+            "value": "2%",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 10,
+            "type": "debit",
+            "order": 1,
+            "name": "Ramp",
+            "description": "Cartao corporativo",
+            "value": "",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 11,
+            "type": "debit",
+            "order": 2,
+            "name": "Operations",
+            "description": "Custos operacionais gerais",
+            "value": "",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 12,
+            "type": "debit",
+            "order": 3,
+            "name": "SG&A",
+            "description": "Selling, General & Administrative",
+            "value": "",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 13,
+            "type": "debit",
+            "order": 4,
+            "name": "AppFolio",
+            "description": "Software de property management",
+            "value": "$46",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "Expira 07/2026",
+        },
+        {
+            "id": 14,
+            "type": "debit",
+            "order": 5,
+            "name": "APM Help",
+            "description": "Servico de bookkeeping (Syndi Co)",
+            "value": "$2,560",
+            "frequency": "mensal",
+            "active": True,
+            "notes": "",
+        },
+        {
+            "id": 15,
+            "type": "debit",
+            "order": 6,
+            "name": "Inspecao - Zen Inspector",
+            "description": "Inspecao de propriedades",
+            "value": "$80",
+            "frequency": "mensal",
+            "active": False,
+            "notes": "",
+        },
+        {
+            "id": 16,
+            "type": "debit",
+            "order": 7,
+            "name": "Rent Engine",
+            "description": "Plataforma de listing",
+            "value": "$45",
+            "frequency": "por cadastro",
+            "active": True,
+            "notes": "",
+        },
+    ]
+
+
+def _load_gross_expenses_store() -> Dict[str, Any]:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not GROSS_EXPENSES_PATH.exists():
+        items = _default_gross_expenses_items()
+        store = {"next_id": 17, "items": items}
+        GROSS_EXPENSES_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    try:
+        raw = json.loads(GROSS_EXPENSES_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        items = _default_gross_expenses_items()
+        store = {"next_id": 17, "items": items}
+        GROSS_EXPENSES_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    if not isinstance(raw, dict) or "items" not in raw:
+        items = _default_gross_expenses_items()
+        store = {"next_id": 17, "items": items}
+        GROSS_EXPENSES_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    if not raw.get("items"):
+        raw["items"] = _default_gross_expenses_items()
+    if raw.get("next_id") is None:
+        mx = max((int(i.get("id") or 0) for i in raw["items"]), default=0)
+        raw["next_id"] = mx + 1
+    return raw
+
+
+def _save_gross_expenses_store(store: Dict[str, Any]) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    GROSS_EXPENSES_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+
+
+def _gross_expenses_public_item(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "id": int(row["id"]),
+        "type": row["type"],
+        "order": int(row["order"]),
+        "name": str(row.get("name") or ""),
+        "description": str(row.get("description") or ""),
+        "value": str(row.get("value") or ""),
+        "frequency": str(row.get("frequency") or ""),
+        "active": bool(row.get("active")),
+        "notes": str(row.get("notes") or ""),
+    }
+
+
+@appfolio_bp.route("/gross-expenses", methods=["GET"])
+def gross_expenses_list():
+    store = _load_gross_expenses_store()
+    items = [_gross_expenses_public_item(x) for x in store["items"]]
+    items.sort(key=lambda x: (x["type"], x["order"], x["id"]))
+    return jsonify({"items": items})
+
+
+@appfolio_bp.route("/gross-expenses", methods=["POST"])
+def gross_expenses_create():
+    data = request.get_json(silent=True) or {}
+    t = (data.get("type") or "").strip().lower()
+    if t not in ("gross", "debit"):
+        return jsonify({"error": "type must be gross or debit"}), 400
+    store = _load_gross_expenses_store()
+    same = [x for x in store["items"] if x["type"] == t]
+    ord_next = max((int(x["order"]) for x in same), default=0) + 1
+    if data.get("order") is not None:
+        try:
+            ord_next = int(data["order"])
+        except (TypeError, ValueError):
+            pass
+    nid = int(store["next_id"])
+    store["next_id"] = nid + 1
+    row = {
+        "id": nid,
+        "type": t,
+        "order": ord_next,
+        "name": str(data.get("name") or "").strip(),
+        "description": str(data.get("description") or "").strip(),
+        "value": str(data.get("value") or "").strip(),
+        "frequency": str(data.get("frequency") or "mensal").strip(),
+        "active": bool(data.get("active", True)),
+        "notes": str(data.get("notes") or "").strip(),
+    }
+    store["items"].append(row)
+    _save_gross_expenses_store(store)
+    return jsonify(_gross_expenses_public_item(row)), 201
+
+
+@appfolio_bp.route("/gross-expenses/reorder", methods=["PUT"])
+def gross_expenses_reorder():
+    data = request.get_json(silent=True) or {}
+    gross_ids = data.get("gross") or []
+    debit_ids = data.get("debit") or []
+    store = _load_gross_expenses_store()
+    by_id = {int(x["id"]): x for x in store["items"]}
+    for idx, iid in enumerate(gross_ids, start=1):
+        try:
+            iid = int(iid)
+        except (TypeError, ValueError):
+            continue
+        if iid in by_id and by_id[iid]["type"] == "gross":
+            by_id[iid]["order"] = idx
+    for idx, iid in enumerate(debit_ids, start=1):
+        try:
+            iid = int(iid)
+        except (TypeError, ValueError):
+            continue
+        if iid in by_id and by_id[iid]["type"] == "debit":
+            by_id[iid]["order"] = idx
+    store["items"] = list(by_id.values())
+    _save_gross_expenses_store(store)
+    return jsonify({"ok": True})
+
+
+@appfolio_bp.route("/gross-expenses/<int:item_id>", methods=["PUT"])
+def gross_expenses_update(item_id: int):
+    data = request.get_json(silent=True) or {}
+    store = _load_gross_expenses_store()
+    for i, row in enumerate(store["items"]):
+        if int(row["id"]) == item_id:
+            if "type" in data:
+                t = str(data.get("type") or "").lower()
+                if t in ("gross", "debit"):
+                    row["type"] = t
+            if "order" in data:
+                try:
+                    row["order"] = int(data["order"])
+                except (TypeError, ValueError):
+                    pass
+            if "name" in data:
+                row["name"] = str(data.get("name") or "").strip()
+            if "description" in data:
+                row["description"] = str(data.get("description") or "").strip()
+            if "value" in data:
+                row["value"] = str(data.get("value") or "").strip()
+            if "frequency" in data:
+                row["frequency"] = str(data.get("frequency") or "").strip()
+            if "active" in data:
+                row["active"] = bool(data.get("active"))
+            if "notes" in data:
+                row["notes"] = str(data.get("notes") or "").strip()
+            store["items"][i] = row
+            _save_gross_expenses_store(store)
+            return jsonify(_gross_expenses_public_item(row))
+    return jsonify({"error": "not found"}), 404
+
+
+@appfolio_bp.route("/gross-expenses/<int:item_id>", methods=["DELETE"])
+def gross_expenses_delete(item_id: int):
+    store = _load_gross_expenses_store()
+    new_items = [x for x in store["items"] if int(x["id"]) != item_id]
+    if len(new_items) == len(store["items"]):
+        return jsonify({"error": "not found"}), 404
+    store["items"] = new_items
+    _save_gross_expenses_store(store)
+    return jsonify({"ok": True, "id": item_id})
+
+
+# ---------------------------------------------------------------------------
+# Org chart (HR)
+# ---------------------------------------------------------------------------
+
+
+def _default_org_chart_employees() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": 1,
+            "name": "Wellington Gomes",
+            "title": "CEO / Founder",
+            "department": "Executive",
+            "photo_url": "",
+            "email": "",
+            "phone": "",
+            "reports_to": None,
+            "hire_date": "",
+            "status": "active",
+            "order": 1,
+        },
+        {
+            "id": 2,
+            "name": "Eddi Diamantino",
+            "title": "Operations Manager",
+            "department": "Operations",
+            "photo_url": "",
+            "email": "",
+            "phone": "",
+            "reports_to": 1,
+            "hire_date": "",
+            "status": "active",
+            "order": 1,
+        },
+        {
+            "id": 3,
+            "name": "Samuel Santos",
+            "title": "Property Manager",
+            "department": "Operations",
+            "photo_url": "",
+            "email": "",
+            "phone": "",
+            "reports_to": 2,
+            "hire_date": "",
+            "status": "active",
+            "order": 1,
+        },
+    ]
+
+
+def _load_org_chart_store() -> Dict[str, Any]:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not ORG_CHART_PATH.exists():
+        em = _default_org_chart_employees()
+        store = {"next_id": 4, "employees": em}
+        ORG_CHART_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    try:
+        raw = json.loads(ORG_CHART_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        em = _default_org_chart_employees()
+        store = {"next_id": 4, "employees": em}
+        ORG_CHART_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    if not isinstance(raw, dict) or "employees" not in raw:
+        em = _default_org_chart_employees()
+        store = {"next_id": 4, "employees": em}
+        ORG_CHART_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    if not raw.get("employees"):
+        raw["employees"] = _default_org_chart_employees()
+    if raw.get("next_id") is None:
+        mx = max((int(e.get("id") or 0) for e in raw["employees"]), default=0)
+        raw["next_id"] = mx + 1
+    return raw
+
+
+def _save_org_chart_store(store: Dict[str, Any]) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    ORG_CHART_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+
+
+def _org_norm_rt(v: Any) -> Optional[int]:
+    if v is None or v == "":
+        return None
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _org_employee_public(row: Dict[str, Any]) -> Dict[str, Any]:
+    rt = _org_norm_rt(row.get("reports_to"))
+    st = (row.get("status") or "active").strip().lower()
+    if st not in ("active", "inactive"):
+        st = "active"
+    return {
+        "id": int(row["id"]),
+        "name": str(row.get("name") or ""),
+        "title": str(row.get("title") or ""),
+        "department": str(row.get("department") or ""),
+        "photo_url": str(row.get("photo_url") or ""),
+        "email": str(row.get("email") or ""),
+        "phone": str(row.get("phone") or ""),
+        "reports_to": rt,
+        "hire_date": str(row.get("hire_date") or ""),
+        "status": st,
+        "order": int(row.get("order") or 0),
+    }
+
+
+@appfolio_bp.route("/org-chart", methods=["GET"])
+def org_chart_list():
+    store = _load_org_chart_store()
+    out = [_org_employee_public(x) for x in store["employees"]]
+    out.sort(key=lambda x: (x["department"], x["order"], x["name"]))
+    return jsonify({"employees": out})
+
+
+@appfolio_bp.route("/org-chart", methods=["POST"])
+def org_chart_create():
+    data = request.get_json(silent=True) or {}
+    store = _load_org_chart_store()
+    emps = store["employees"]
+    new_rt = _org_norm_rt(data.get("reports_to"))
+    same_boss = [x for x in emps if _org_norm_rt(x.get("reports_to")) == new_rt]
+    ord_next = max((int(x.get("order") or 0) for x in same_boss), default=0) + 1
+    if data.get("order") is not None:
+        try:
+            ord_next = int(data["order"])
+        except (TypeError, ValueError):
+            pass
+    nid = int(store["next_id"])
+    store["next_id"] = nid + 1
+    rt = new_rt
+    st = (data.get("status") or "active").strip().lower()
+    if st not in ("active", "inactive"):
+        st = "active"
+    row = {
+        "id": nid,
+        "name": str(data.get("name") or "").strip(),
+        "title": str(data.get("title") or "").strip(),
+        "department": str(data.get("department") or "Operations").strip(),
+        "photo_url": str(data.get("photo_url") or "").strip(),
+        "email": str(data.get("email") or "").strip(),
+        "phone": str(data.get("phone") or "").strip(),
+        "reports_to": rt,
+        "hire_date": str(data.get("hire_date") or "").strip(),
+        "status": st,
+        "order": ord_next,
+    }
+    if rt is not None and not any(int(x["id"]) == rt for x in emps):
+        row["reports_to"] = None
+    if int(row["id"]) == rt:
+        row["reports_to"] = None
+    emps.append(row)
+    store["employees"] = emps
+    _save_org_chart_store(store)
+    return jsonify(_org_employee_public(row)), 201
+
+
+@appfolio_bp.route("/org-chart/<int:emp_id>", methods=["PUT"])
+def org_chart_update(emp_id: int):
+    data = request.get_json(silent=True) or {}
+    store = _load_org_chart_store()
+    for i, row in enumerate(store["employees"]):
+        if int(row["id"]) == emp_id:
+            if "name" in data:
+                row["name"] = str(data.get("name") or "").strip()
+            if "title" in data:
+                row["title"] = str(data.get("title") or "").strip()
+            if "department" in data:
+                row["department"] = str(data.get("department") or "").strip()
+            if "photo_url" in data:
+                row["photo_url"] = str(data.get("photo_url") or "").strip()
+            if "email" in data:
+                row["email"] = str(data.get("email") or "").strip()
+            if "phone" in data:
+                row["phone"] = str(data.get("phone") or "").strip()
+            if "hire_date" in data:
+                row["hire_date"] = str(data.get("hire_date") or "").strip()
+            if "order" in data:
+                try:
+                    row["order"] = int(data["order"])
+                except (TypeError, ValueError):
+                    pass
+            if "status" in data:
+                st = str(data.get("status") or "active").lower()
+                row["status"] = st if st in ("active", "inactive") else "active"
+            if "reports_to" in data:
+                rt = data.get("reports_to")
+                if rt is not None and rt != "":
+                    try:
+                        rt = int(rt)
+                    except (TypeError, ValueError):
+                        rt = None
+                else:
+                    rt = None
+                if rt == emp_id:
+                    rt = None
+                if rt is not None and not any(
+                    int(x["id"]) == rt for x in store["employees"]
+                ):
+                    rt = None
+                row["reports_to"] = rt
+            store["employees"][i] = row
+            _save_org_chart_store(store)
+            return jsonify(_org_employee_public(row))
+    return jsonify({"error": "not found"}), 404
+
+
+@appfolio_bp.route("/org-chart/<int:emp_id>", methods=["DELETE"])
+def org_chart_delete(emp_id: int):
+    store = _load_org_chart_store()
+    target = None
+    for x in store["employees"]:
+        if int(x["id"]) == emp_id:
+            target = x
+            break
+    if not target:
+        return jsonify({"error": "not found"}), 404
+    boss = target.get("reports_to")
+    new_emps: List[Dict[str, Any]] = []
+    for x in store["employees"]:
+        if int(x["id"]) == emp_id:
+            continue
+        if int(x.get("reports_to") or 0) == emp_id:
+            x["reports_to"] = boss
+        new_emps.append(x)
+    store["employees"] = new_emps
+    _save_org_chart_store(store)
+    return jsonify({"ok": True, "id": emp_id})

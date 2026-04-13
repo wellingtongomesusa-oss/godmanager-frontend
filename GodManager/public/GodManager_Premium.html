@@ -121,6 +121,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .pg{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}.pa{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-bd)}.pr{background:var(--red-bg);color:var(--red);border-color:var(--red-bd)}.pb{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-bd)}.ps2{background:var(--slate-bg);color:var(--slate);border-color:#c8d0dc}
 .cf{display:flex;align-items:center;justify-content:flex-end;padding:8px 0 14px;margin-top:auto}
 .ck{font-size:11px;font-weight:500;color:var(--amber);cursor:pointer;transition:opacity .12s}.ck:hover{opacity:.7}
+.card-static{cursor:default}
+.ck-disabled{opacity:.42;pointer-events:none;cursor:default;color:rgba(201,169,110,.55)!important}.ck-disabled:hover{opacity:.42}
 .cbar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 10px 10px}
 .bg{background:var(--green)}.ba{background:var(--amber)}.bb{background:var(--blue)}.br{background:var(--red)}.bi{background:var(--ink2)}
 .mw{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:48px 40px;text-align:center}
@@ -275,6 +277,140 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #page-appfolio-upload .af-prog>i{display:block;height:100%;width:0;background:var(--amber);transition:width .12s ease}
 #page-appfolio-upload #af-summary-grid .gm-ix-kpi{padding:14px 16px}
 #page-appfolio-upload #af-summary-grid .k-v{font-size:16px}
+/* Gross & Expenses — tema escuro / champagne (escopo isolado) */
+#page-gross-expenses{background:var(--sand);min-height:calc(100vh - 54px)}
+#page-gross-expenses .ge-wrap{max-width:1400px;margin:0 auto}
+#page-gross-expenses .ge-ph{margin-bottom:20px}
+#page-gross-expenses .ge-pt{font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+#page-gross-expenses .ge-ps{font-size:12px;color:var(--ink3);margin-top:6px;max-width:720px;line-height:1.5}
+#page-gross-expenses .ge-sum{display:flex;flex-wrap:wrap;gap:16px 28px;margin-bottom:22px;font-size:12px;color:rgba(248,246,242,.75);font-family:'DM Sans',sans-serif}
+#page-gross-expenses .ge-sum b{color:var(--amber);font-weight:600}
+#page-gross-expenses .ge-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:1024px){#page-gross-expenses .ge-grid{grid-template-columns:1fr}}
+#page-gross-expenses .ge-panel{border-radius:12px;padding:18px 16px 22px;border:1px solid rgba(201,169,110,.22);box-shadow:0 8px 28px rgba(0,0,0,.12)}
+#page-gross-expenses .ge-panel-gross{background:linear-gradient(165deg,#141416 0%,#1a1f1c 50%,#141416 100%);border-color:rgba(45,114,82,.35)}
+#page-gross-expenses .ge-panel-debit{background:linear-gradient(165deg,#141416 0%,#221a1a 50%,#141416 100%);border-color:rgba(184,48,48,.35)}
+#page-gross-expenses .ge-panel-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(201,169,110,.12)}
+#page-gross-expenses .ge-panel-t{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:rgba(248,246,242,.95)}
+#page-gross-expenses .ge-flow{display:flex;flex-direction:column;align-items:center;gap:0;min-height:120px}
+#page-gross-expenses .ge-card{width:100%;max-width:420px;background:rgba(26,26,28,.92);border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:12px 14px;position:relative;cursor:grab;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+#page-gross-expenses .ge-card:active{cursor:grabbing}
+#page-gross-expenses .ge-card.ge-drag{opacity:.65}
+#page-gross-expenses .ge-ord{position:absolute;top:10px;left:10px;width:22px;height:22px;border-radius:6px;background:rgba(201,169,110,.18);color:var(--amber);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+#page-gross-expenses .ge-card-top{display:flex;justify-content:flex-end;align-items:flex-start;gap:6px;margin-bottom:4px;padding-left:32px}
+#page-gross-expenses .ge-btn-ico{background:transparent;border:1px solid rgba(201,169,110,.25);color:rgba(248,246,242,.75);border-radius:6px;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;font-size:14px}
+#page-gross-expenses .ge-btn-ico:hover{border-color:var(--amber);color:var(--amber)}
+#page-gross-expenses .ge-nm{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:rgba(248,246,242,.96);margin-bottom:4px;padding-right:8px}
+#page-gross-expenses .ge-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--amber);margin-bottom:6px}
+#page-gross-expenses .ge-desc{font-size:11px;color:rgba(248,246,242,.55);line-height:1.45;margin-bottom:8px}
+#page-gross-expenses .ge-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#page-gross-expenses .ge-freq{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:rgba(248,246,242,.45);border:1px solid rgba(201,169,110,.2);padding:2px 8px;border-radius:999px}
+#page-gross-expenses .ge-yes{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(45,114,82,.25);color:#8fd4b0;border:1px solid rgba(45,114,82,.45)}
+#page-gross-expenses .ge-no{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(184,48,48,.22);color:#f0a8a8;border:1px solid rgba(184,48,48,.45)}
+#page-gross-expenses .ge-arr{color:rgba(201,169,110,.35);font-size:20px;line-height:1;padding:4px 0;font-family:'JetBrains Mono',monospace}
+#page-gross-expenses .ge-add{width:100%;margin-top:12px;padding:10px 14px;border-radius:8px;border:1px dashed rgba(201,169,110,.35);background:transparent;color:var(--amber);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+#page-gross-expenses .ge-add:hover{border-color:var(--amber);background:rgba(201,169,110,.06)}
+#page-gross-expenses #ge-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:7000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+#page-gross-expenses #ge-modal-bg.on{display:flex}
+#page-gross-expenses .ge-modal-inner{background:#1a1a1c;border:1px solid rgba(201,169,110,.25);border-radius:12px;max-width:460px;width:100%;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+#page-gross-expenses .ge-modal-inner h3{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:rgba(248,246,242,.95);margin-bottom:14px}
+#page-gross-expenses .ge-fg{margin-bottom:12px}
+#page-gross-expenses .ge-fg label{display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.55px;color:rgba(248,246,242,.45);margin-bottom:5px}
+#page-gross-expenses .ge-fg input,#page-gross-expenses .ge-fg select,#page-gross-expenses .ge-fg textarea{width:100%;padding:9px 11px;border-radius:7px;border:1px solid rgba(201,169,110,.2);background:#141416;color:rgba(248,246,242,.92);font-size:13px;font-family:'Inter',sans-serif}
+#page-gross-expenses .ge-fg textarea{min-height:72px;resize:vertical}
+#page-gross-expenses .ge-fg input:focus,#page-gross-expenses .ge-fg select:focus,#page-gross-expenses .ge-fg textarea:focus{outline:none;border-color:rgba(201,169,110,.45);box-shadow:0 0 0 3px rgba(201,169,110,.1)}
+#page-gross-expenses .ge-tog{display:flex;align-items:center;gap:10px;margin-top:4px}
+#page-gross-expenses .ge-tog input{width:auto}
+#page-gross-expenses .ge-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+#page-gross-expenses .ge-btn-prim{background:var(--amber);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(196,123,40,.25)}
+#page-gross-expenses .ge-btn-prim:hover{filter:brightness(1.05)}
+#page-gross-expenses .ge-btn-sec{background:transparent;color:rgba(248,246,242,.75);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 16px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+#page-gross-expenses .ge-ud{display:flex;flex-direction:column;gap:2px;margin-right:4px}
+#page-gross-expenses .ge-ud button{padding:0 4px;line-height:1;font-size:10px;height:14px;border:none;background:rgba(201,169,110,.12);color:var(--amber);cursor:pointer;border-radius:3px}
+#page-gross-expenses .ge-ud button:hover{background:rgba(201,169,110,.22)}
+#page-org-chart{background:var(--sand);min-height:calc(100vh - 54px)}
+#page-org-chart .oc-wrap{max-width:1480px;margin:0 auto;padding:32px}
+#page-org-chart .oc-ph{margin-bottom:18px}
+#page-org-chart .oc-pt{font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+#page-org-chart .oc-ps{font-size:12px;color:var(--ink3);margin-top:6px;max-width:720px;line-height:1.5}
+#page-org-chart .oc-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:20px}
+#page-org-chart .oc-filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+#page-org-chart .oc-filters label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.55px;color:rgba(248,246,242,.45);display:block;margin-bottom:4px}
+#page-org-chart .oc-filters input,#page-org-chart .oc-filters select{padding:8px 10px;border-radius:7px;border:1px solid rgba(201,169,110,.2);background:#141416;color:rgba(248,246,242,.92);font-size:12px;font-family:'Inter',sans-serif;min-width:160px}
+#page-org-chart .oc-filters input:focus,#page-org-chart .oc-filters select:focus{outline:none;border-color:rgba(201,169,110,.45);box-shadow:0 0 0 3px rgba(201,169,110,.1)}
+#page-org-chart .oc-tog{display:flex;align-items:center;gap:8px;padding-top:18px}
+#page-org-chart .oc-tog span{font-size:11px;color:rgba(248,246,242,.65)}
+#page-org-chart .oc-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#page-org-chart .oc-btn-prim{background:var(--amber);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(196,123,40,.25)}
+#page-org-chart .oc-btn-prim:hover{filter:brightness(1.05)}
+#page-org-chart .oc-btn-sec{background:transparent;color:rgba(248,246,242,.8);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+#page-org-chart .oc-btn-sec:hover{border-color:var(--amber);color:var(--amber)}
+#page-org-chart .oc-chart-ul{padding-top:20px;position:relative;display:flex;flex-wrap:wrap;justify-content:center;margin:0;list-style:none;gap:8px 12px}
+#page-org-chart .oc-chart-ul ul{padding-top:20px;position:relative;display:flex;flex-wrap:wrap;justify-content:center;margin:0;list-style:none;gap:8px 12px}
+#page-org-chart .oc-chart-ul>li{position:relative;text-align:center;list-style:none;padding:20px 8px 0 8px}
+#page-org-chart .oc-chart-ul li::before,#page-org-chart .oc-chart-ul li::after{content:'';position:absolute;top:0;right:50%;border-top:1px solid rgba(201,169,110,.38);width:50%;height:12px}
+#page-org-chart .oc-chart-ul li::after{right:auto;left:50%;border-left:1px solid rgba(201,169,110,.38)}
+#page-org-chart .oc-chart-ul li:only-of-type::after,#page-org-chart .oc-chart-ul li:only-of-type::before{display:none}
+#page-org-chart .oc-chart-ul li:first-of-type::before,#page-org-chart .oc-chart-ul li:last-of-type::after{border:0 none}
+#page-org-chart .oc-chart-ul li:last-of-type::before{border-right:1px solid rgba(201,169,110,.38);border-radius:0 8px 0 0}
+#page-org-chart .oc-chart-ul li:first-of-type::after{border-radius:8px 0 0 0}
+#page-org-chart .oc-chart-ul ul>li::before,#page-org-chart .oc-chart-ul ul>li::after{top:-8px}
+#page-org-chart .oc-card-w{display:inline-block;vertical-align:top}
+#page-org-chart .oc-card{width:min(260px,92vw);background:rgba(26,26,28,.94);border:1px solid rgba(201,169,110,.22);border-radius:12px;padding:12px 12px 12px 14px;text-align:left;position:relative;box-shadow:0 4px 18px rgba(0,0,0,.2);transition:transform .15s ease,box-shadow .15s ease;cursor:pointer}
+#page-org-chart .oc-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.28)}
+#page-org-chart .oc-card-top{display:flex;align-items:flex-start;gap:10px}
+#page-org-chart .oc-av{width:60px;height:60px;border-radius:50%;flex-shrink:0;object-fit:cover;border:2px solid rgba(201,169,110,.35)}
+#page-org-chart .oc-av-ph{width:60px;height:60px;border-radius:50%;flex-shrink:0;background:linear-gradient(145deg,rgba(201,169,110,.35),rgba(201,169,110,.12));border:2px solid rgba(201,169,110,.45);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--amber)}
+#page-org-chart .oc-card-main{flex:1;min-width:0}
+#page-org-chart .oc-nm{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:rgba(248,246,242,.96);line-height:1.25;margin-bottom:3px;padding-right:52px}
+#page-org-chart .oc-tl{font-size:11px;color:rgba(248,246,242,.55);line-height:1.35;margin-bottom:8px}
+#page-org-chart .oc-meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#page-org-chart .oc-dept{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:999px;border:1px solid rgba(201,169,110,.25);color:rgba(248,246,242,.75)}
+#page-org-chart .oc-dept-exec{border-color:rgba(201,169,110,.45);color:var(--amber)}
+#page-org-chart .oc-dept-ops{border-color:rgba(45,114,82,.45);color:#8fd4b0}
+#page-org-chart .oc-dept-fin{border-color:rgba(90,140,200,.45);color:#9ec5ff}
+#page-org-chart .oc-dept-hr{border-color:rgba(200,140,200,.45);color:#e8c0e8}
+#page-org-chart .oc-dept-maint{border-color:rgba(200,160,90,.45);color:#e8c896}
+#page-org-chart .oc-dept-clean{border-color:rgba(140,180,200,.45);color:#c8e0f0}
+#page-org-chart .oc-dept-adm{border-color:rgba(248,246,242,.25);color:rgba(248,246,242,.7)}
+#page-org-chart .oc-st{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#page-org-chart .oc-st-a{background:#2d7252;box-shadow:0 0 0 2px rgba(45,114,82,.35)}
+#page-org-chart .oc-st-i{background:rgba(248,246,242,.25);box-shadow:0 0 0 2px rgba(248,246,242,.08)}
+#page-org-chart .oc-card-ico{position:absolute;top:10px;right:8px;display:flex;gap:4px}
+#page-org-chart .oc-btn-ico{background:transparent;border:1px solid rgba(201,169,110,.25);color:rgba(248,246,242,.75);border-radius:6px;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+#page-org-chart .oc-btn-ico:hover{border-color:var(--amber);color:var(--amber)}
+#page-org-chart .oc-table-wrap{overflow:auto;border-radius:12px;border:1px solid rgba(201,169,110,.2);background:rgba(20,20,22,.6)}
+#page-org-chart .oc-table{width:100%;border-collapse:collapse;font-size:12px}
+#page-org-chart .oc-table th{text-align:left;padding:10px 12px;background:rgba(201,169,110,.08);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.55px;color:rgba(248,246,242,.55);border-bottom:1px solid rgba(201,169,110,.15)}
+#page-org-chart .oc-table td{padding:10px 12px;border-bottom:1px solid rgba(201,169,110,.08);color:rgba(248,246,242,.85)}
+#page-org-chart .oc-table tr:hover td{background:rgba(201,169,110,.04)}
+#page-org-chart #oc-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:7000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+#page-org-chart #oc-modal-bg.on{display:flex}
+#page-org-chart .oc-modal-inner{background:#1a1a1c;border:1px solid rgba(201,169,110,.25);border-radius:12px;max-width:480px;width:100%;max-height:90vh;overflow:auto;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+#page-org-chart .oc-modal-inner h3{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:rgba(248,246,242,.95);margin-bottom:14px}
+#page-org-chart .oc-fg{margin-bottom:12px}
+#page-org-chart .oc-fg label{display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.55px;color:rgba(248,246,242,.45);margin-bottom:5px}
+#page-org-chart .oc-fg input,#page-org-chart .oc-fg select,#page-org-chart .oc-fg textarea{width:100%;padding:9px 11px;border-radius:7px;border:1px solid rgba(201,169,110,.2);background:#141416;color:rgba(248,246,242,.92);font-size:13px;font-family:'Inter',sans-serif}
+#page-org-chart .oc-fg input:focus,#page-org-chart .oc-fg select:focus,#page-org-chart .oc-fg textarea:focus{outline:none;border-color:rgba(201,169,110,.45);box-shadow:0 0 0 3px rgba(201,169,110,.1)}
+#page-org-chart .oc-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+#page-org-chart .oc-btn-prim.oc-muted{opacity:.5;pointer-events:none}
+#page-org-chart #oc-panel-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:6900;display:none}
+#page-org-chart.oc-panel-open #oc-panel-bg{display:block}
+#page-org-chart #oc-panel-drawer{position:fixed;top:0;right:0;width:min(400px,100%);height:100%;background:#141416;border-left:1px solid rgba(201,169,110,.22);z-index:6950;box-shadow:-12px 0 40px rgba(0,0,0,.4);transform:translateX(100%);transition:transform .22s ease;padding:24px 20px;overflow:auto}
+#page-org-chart.oc-panel-open #oc-panel-drawer{transform:translateX(0)}
+#page-org-chart .oc-panel-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+#page-org-chart .oc-panel-h h3{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:rgba(248,246,242,.95);margin:0}
+#page-org-chart .oc-panel-close{background:transparent;border:1px solid rgba(201,169,110,.3);color:rgba(248,246,242,.8);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;line-height:1}
+#page-org-chart .oc-panel-close:hover{border-color:var(--amber);color:var(--amber)}
+#page-org-chart .oc-panel-dl{margin:0;padding:0;list-style:none}
+#page-org-chart .oc-panel-dl li{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(201,169,110,.1);font-size:13px;color:rgba(248,246,242,.85)}
+#page-org-chart .oc-panel-dl span:first-child{min-width:108px;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:rgba(248,246,242,.45)}
+@media(max-width:768px){
+ #page-org-chart .oc-chart-ul,#page-org-chart .oc-chart-ul ul{display:block;padding-top:0;text-align:left}
+ #page-org-chart .oc-chart-ul li::before,#page-org-chart .oc-chart-ul li::after{display:none!important;border:none!important}
+ #page-org-chart .oc-chart-ul li{padding:0 0 0 0;margin:0 0 12px 16px;border-left:2px solid rgba(201,169,110,.28);padding-left:14px}
+ #page-org-chart .oc-chart-ul ul{margin-left:0;padding-left:0}
+}
 </style>
 </head>
 <body>
@@ -332,6 +468,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('phonelines')" id="nav-phonelines">Phone Lines</div>
  <div class="ss" onclick="nav('vault')" id="nav-vault">Vault</div>
  <div class="ss" onclick="nav('cars')" id="nav-cars">Cars & Insurance</div>
+ <div class="ss" onclick="nav('inspections')" id="nav-inspections">Inspections</div>
  </div>
  </div>
  </div>
@@ -364,6 +501,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">Admin</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px">Clients</div>
+ <div class="ss" onclick="nav('gross-expenses')" id="nav-gross-expenses" style="padding-left:16px">Gross &amp; Expenses</div>
+ <div class="sg open" onclick="togG(this)" id="sb-hr-group"><span>HR</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+ <div class="gi exp" id="sb-hr-items">
+ <div class="ss" onclick="nav('org-chart')" id="nav-org-chart" style="padding-left:16px">Organograma</div>
+ </div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px">Settings</div>
  </div>
  </div>
@@ -447,6 +589,147 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
 <!-- placeholder: client-users route uses modal only -->
 <div class="page" id="page-client-users" style="display:none!important" aria-hidden="true"></div>
+
+<div class="page" id="page-gross-expenses">
+ <div class="ge-wrap" style="padding:32px">
+  <div class="ge-ph ge-ph-top">
+   <div class="ge-pt">Gross &amp; Expenses</div>
+   <div class="ge-ps">Demonstrativo de receitas e despesas — Manager Prop LLC</div>
+  </div>
+  <div class="ge-sum" id="ge-summary-line">
+   <span>Total de receitas configuradas: <b id="ge-n-gross">0</b> itens</span>
+   <span>Total de despesas configuradas: <b id="ge-n-debit">0</b> itens</span>
+  </div>
+  <div class="ge-grid">
+   <div class="ge-panel ge-panel-gross">
+    <div class="ge-panel-h">
+     <span class="ge-panel-t">Gross (Receitas)</span>
+    </div>
+    <div class="ge-flow" id="ge-flow-gross" data-type="gross"></div>
+    <button type="button" class="ge-add" id="ge-btn-add-gross">+ Adicionar Receita</button>
+   </div>
+   <div class="ge-panel ge-panel-debit">
+    <div class="ge-panel-h">
+     <span class="ge-panel-t">Debit (Despesas)</span>
+    </div>
+    <div class="ge-flow" id="ge-flow-debit" data-type="debit"></div>
+    <button type="button" class="ge-add" id="ge-btn-add-debit">+ Adicionar Despesa</button>
+   </div>
+  </div>
+ </div>
+ <div id="ge-modal-bg" onclick="if(event.target===this)geCloseModal()" aria-hidden="true">
+  <div class="ge-modal-inner" onclick="event.stopPropagation()" role="dialog" aria-labelledby="ge-modal-title">
+   <h3 id="ge-modal-title">Item</h3>
+   <input type="hidden" id="ge-f-id" value="">
+   <input type="hidden" id="ge-f-type" value="gross">
+   <div class="ge-fg"><label for="ge-f-name">Nome</label><input id="ge-f-name" type="text" autocomplete="off"></div>
+   <div class="ge-fg"><label for="ge-f-value">Valor</label><input id="ge-f-value" type="text" placeholder="$150, 8%, 80% 1 aluguel"></div>
+   <div class="ge-fg"><label for="ge-f-desc">Descricao</label><textarea id="ge-f-desc"></textarea></div>
+   <div class="ge-fg"><label for="ge-f-freq">Frequencia</label>
+    <select id="ge-f-freq">
+     <option value="mensal">mensal</option>
+     <option value="por evento">por evento</option>
+     <option value="uma vez">uma vez</option>
+     <option value="por cadastro">por cadastro</option>
+     <option value="anual">anual</option>
+    </select>
+   </div>
+   <div class="ge-fg"><label>Ativo</label><div class="ge-tog"><input type="checkbox" id="ge-f-active" checked><span id="ge-f-active-lbl" style="font-size:12px;color:rgba(248,246,242,.65)">YES</span></div></div>
+   <div class="ge-fg"><label for="ge-f-notes">Notas</label><textarea id="ge-f-notes" style="min-height:56px"></textarea></div>
+   <div class="ge-modal-actions">
+    <button type="button" class="ge-btn-sec" onclick="geCloseModal()">Cancelar</button>
+    <button type="button" class="ge-btn-prim" onclick="geSaveModal()">Guardar</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<div class="page" id="page-org-chart">
+ <div class="oc-wrap">
+  <div class="oc-ph">
+   <div class="oc-pt">Organograma</div>
+   <div class="oc-ps">Estrutura organizacional - Manager Prop LLC</div>
+  </div>
+  <div class="oc-toolbar">
+   <div class="oc-filters">
+    <div>
+     <label for="oc-filter-dept">Departamento</label>
+     <select id="oc-filter-dept" aria-label="Filtrar departamento">
+      <option value="">Todos</option>
+      <option value="Executive">Executive</option>
+      <option value="Operations">Operations</option>
+      <option value="Finance">Finance</option>
+      <option value="HR">HR</option>
+      <option value="Maintenance">Maintenance</option>
+      <option value="Cleaning">Cleaning</option>
+      <option value="Admin">Admin</option>
+     </select>
+    </div>
+    <div>
+     <label for="oc-filter-q">Buscar</label>
+     <input type="search" id="oc-filter-q" placeholder="Nome" autocomplete="off" aria-label="Buscar por nome">
+    </div>
+    <div class="oc-tog">
+     <input type="checkbox" id="oc-filter-active" checked aria-label="Apenas ativos">
+     <span>Apenas ativos</span>
+    </div>
+   </div>
+   <div class="oc-actions">
+    <button type="button" class="oc-btn-sec" id="oc-btn-view-toggle" aria-pressed="true">Vista lista</button>
+    <button type="button" class="oc-btn-prim" id="oc-btn-add">+ Adicionar Funcionario</button>
+   </div>
+  </div>
+  <div id="oc-view-tree">
+   <div id="oc-tree-host"></div>
+  </div>
+  <div id="oc-view-table" style="display:none">
+   <div class="oc-table-wrap">
+    <table class="oc-table" id="oc-table">
+     <thead><tr><th>Name</th><th>Title</th><th>Department</th><th>Reports To</th><th>Status</th><th>Actions</th></tr></thead>
+     <tbody id="oc-tbody"></tbody>
+    </table>
+   </div>
+  </div>
+ </div>
+ <div id="oc-modal-bg" onclick="if(event.target===this)ocCloseModal()" aria-hidden="true">
+  <div class="oc-modal-inner" onclick="event.stopPropagation()" role="dialog" aria-labelledby="oc-modal-title">
+   <h3 id="oc-modal-title">Funcionario</h3>
+   <input type="hidden" id="oc-f-id" value="">
+   <div class="oc-fg"><label for="oc-f-name">Nome completo</label><input id="oc-f-name" type="text" autocomplete="name"></div>
+   <div class="oc-fg"><label for="oc-f-title">Cargo</label><input id="oc-f-title" type="text" autocomplete="organization-title"></div>
+   <div class="oc-fg"><label for="oc-f-dept">Departamento</label>
+    <select id="oc-f-dept">
+     <option value="Executive">Executive</option>
+     <option value="Operations">Operations</option>
+     <option value="Finance">Finance</option>
+     <option value="HR">HR</option>
+     <option value="Maintenance">Maintenance</option>
+     <option value="Cleaning">Cleaning</option>
+     <option value="Admin">Admin</option>
+    </select>
+   </div>
+   <div class="oc-fg"><label for="oc-f-photo-url">URL da foto (opcional)</label><input id="oc-f-photo-url" type="url" placeholder="https://..." autocomplete="off"></div>
+   <div class="oc-fg"><label for="oc-f-photo-file">Ou enviar imagem</label><input id="oc-f-photo-file" type="file" accept="image/*"></div>
+   <div class="oc-fg"><label for="oc-f-email">Email</label><input id="oc-f-email" type="email" autocomplete="email"></div>
+   <div class="oc-fg"><label for="oc-f-phone">Telefone</label><input id="oc-f-phone" type="tel" autocomplete="tel"></div>
+   <div class="oc-fg"><label for="oc-f-reports">Reporta a</label><select id="oc-f-reports"><option value="">Nenhum (top level)</option></select></div>
+   <div class="oc-fg"><label for="oc-f-hire">Data de contratacao</label><input id="oc-f-hire" type="date"></div>
+   <div class="oc-fg"><label>Status</label><div class="oc-tog"><input type="checkbox" id="oc-f-status" checked><span id="oc-f-status-lbl">Active</span></div></div>
+   <div class="oc-modal-actions">
+    <button type="button" class="oc-btn-sec" onclick="ocCloseModal()">Cancelar</button>
+    <button type="button" class="oc-btn-prim" id="oc-btn-save" onclick="ocSaveModal()">Guardar</button>
+   </div>
+  </div>
+ </div>
+ <div id="oc-panel-bg" onclick="ocClosePanel()" aria-hidden="true"></div>
+ <div id="oc-panel-drawer" role="dialog" aria-modal="true" aria-labelledby="oc-panel-title">
+  <div class="oc-panel-h">
+   <h3 id="oc-panel-title">Detalhes</h3>
+   <button type="button" class="oc-panel-close" onclick="ocClosePanel()" aria-label="Fechar">&times;</button>
+  </div>
+  <div id="oc-panel-body"></div>
+ </div>
+</div>
 
 <!-- USER MANAGEMENT MODAL (per client) -->
 <div id="users-modal-bg" onclick="if(event.target===this)closeUsersModal()">
@@ -870,7 +1153,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div class="gm-ix-kpi-grid" id="af-summary-grid" style="display:none;margin-top:4px">
  <div class="gm-ix-kpi k2"><div class="k-l">Propriedades</div><div class="k-v" id="af-sum-prop">—</div><div class="k-s">property_directory</div><div class="k-bar"></div></div>
- <div class="gm-ix-kpi"><div class="k-l">Tenants</div><div class="k-v" id="af-sum-ten">—</div><div class="k-s">linhas no CSV</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">Tenants</div><div class="k-v" id="af-sum-ten">—</div><div class="k-s" id="af-sum-ten-sub">pessoas no total</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k3"><div class="k-l">Owners</div><div class="k-v" id="af-sum-own">—</div><div class="k-s">owner_directory</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k4"><div class="k-l">Vendors</div><div class="k-v" id="af-sum-ven">—</div><div class="k-s">vendor_directory</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k2"><div class="k-l">Bills</div><div class="k-v" id="af-sum-bill">—</div><div class="k-s">bill_detail (sem grupos)</div><div class="k-bar"></div></div>
@@ -1463,6 +1746,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div class="page" id="page-stock"><div class="ph"><div class="pt">Stock</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Stock</h3><p>Controle de inventário e estoque.</p></div></div>
 <div class="page" id="page-phonelines"><div class="ph"><div class="pt">Phone Lines</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Phone Lines</h3><p>Upload do CSV da fatura AT&T.</p><div class="ur"><div class="ub"><h4>ATT Bill CSV</h4><p>#, Numero, Nome/Usuario, Grupo, Total</p></div></div><button class="bp">Process</button></div></div>
 <div class="page" id="page-vault"><div class="ph"><div class="pt">Vault</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Vault</h3><p>Documentos e informações sensíveis.</p></div></div>
+<div class="page" id="page-inspections"><div class="ph"><div class="pt">Inspections</div><div class="ps">Property inspections — Zen Inspector (detalhamento por propriedade em breve).</div></div><div class="mw"><p style="font-size:13px;color:var(--ink3);max-width:560px;line-height:1.55">Esta secção mostrará inspecções por imóvel quando a integração Zen Inspector estiver disponível. Os totais estimados continuam visíveis no cartão INSPECTIONS na Home.</p></div></div>
 
 
 <!-- 
@@ -2027,24 +2311,27 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div id="gm-save-toast" class="gm-save-toast" role="status" aria-live="polite"></div>
 
 <script>
-// CARDS DATA 
+var GM_BACKEND_RAILWAY_APP='https://godmanager-production.up.railway.app';
+
 const CARDS=[
- {id:'total-houses',label:'TOTAL HOUSES',badge:'HSE',barClass:'bb bg',value:'—',sub1:'All properties in portfolio',sub2:'',cd:[60,25,15],cc:['#2a6e4e','#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Vacant',c:'pa'},{t:'Maintenance',c:'pr'}],r:'ltproperties',empty:false,lastUpdated:null},
- {id:'total-rented',label:'TOTAL RENTED',badge:'RNT',barClass:'bb bg',value:'—',sub1:'Currently leased units',sub2:'',cd:[80,20],cc:['#2a6e4e','#b83030'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Vacant',c:'pr'}],r:'longterm',empty:false,lastUpdated:null},
- {id:'total-owners',label:'TOTAL OWNERS',badge:'OWN',barClass:'bb ba',value:'—',sub1:'Unique property owners',sub2:'',cd:[70,30],cc:['#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Pending',c:'pa'}],r:'ownerportal',empty:false,lastUpdated:null},
- {id:'vacant-houses',label:'VACANT HOUSES',badge:'VAC',barClass:'bb br',value:'0',sub1:'Currently unoccupied units',sub2:'Ready to lease',cd:[50,30,20],cc:['#b83030','#c9a96e','#4a5568'],ctr:'0',pills:[{t:'Market Ready',c:'pa'},{t:'Needs Repair',c:'pr'},{t:'Listed',c:'pb'}],r:'ltproperties',empty:false,lastUpdated:null},
- {id:'in-progress',label:'IN PROGRESS',badge:'WIP',barClass:'bb ba',value:'0',sub1:'Move-in / renovation / onboarding',sub2:'Houses not yet available',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'0',pills:[{t:'Move-in',c:'pa'},{t:'Renovation',c:'pb'},{t:'Onboarding',c:'pg'}],r:'renovations',empty:false,lastUpdated:null},
- {id:'move-out',label:'TENANT / OWNER MOVE-OUT',badge:'OUT',barClass:'bb br',value:'0',sub1:'Upcoming departures',sub2:'Tenants and owners leaving',cd:[60,40],cc:['#b83030','#c9a96e'],ctr:'0',pills:[{t:'Tenant Notice',c:'pr'},{t:'Owner Notice',c:'pa'}],r:'longterm',empty:false,lastUpdated:null},
- {id:'security-deposits',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb bg',value:'$0.00',sub1:'Total deposits held in trust',sub2:'',cd:[100],cc:['#2a6e4e'],ctr:'$0',pills:[{t:'Trust Account',c:'pg'}],r:'ltstatements',empty:false,lastUpdated:null},
- {id:'rent-receivable',label:'RENT RECEIVABLE',badge:'RCV',barClass:'bb ba',value:'$0.00',sub1:'Active rents due this month',sub2:'',cd:[65,25,10],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'$0',pills:[{t:'Collected',c:'pg'},{t:'Pending',c:'pa'},{t:'Late',c:'pr'}],r:'ltstatements',empty:false,lastUpdated:null},
- {id:'rent-potential',label:'RENT POTENTIAL',badge:'POT',barClass:'bb bb',value:'$0.00',sub1:'Maximum possible rent revenue',sub2:'If 100% occupied',cd:[80,20],cc:['#22558c','#4a5568'],ctr:'$0',pills:[{t:'Realized',c:'pb'},{t:'Unrealized',c:'pa'}],r:'longterm',empty:false,lastUpdated:null},
- {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'0%',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'0%',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:false,lastUpdated:null},
- {id:'cleaning-spend',label:'CLEANING SPEND',badge:'CLN',barClass:'bb ba',value:'$0.00',sub1:'Total spent with cleaners',sub2:'Current period',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'$0',pills:[{t:'Turnover',c:'pa'},{t:'Deep Clean',c:'pb'},{t:'Routine',c:'pg'}],r:'ltcleanings',empty:false,lastUpdated:null},
- {id:'vendor-spend',label:'VENDOR SPEND',badge:'VND',barClass:'bb br',value:'$0.00',sub1:'Total spent with vendors',sub2:'Current period',cd:[50,50],cc:['#b83030','#c9a96e'],ctr:'$0',pills:[{t:'Paid',c:'pr'},{t:'Pending',c:'pa'}],r:'vendors',empty:false,lastUpdated:null},
- {id:'contractor-payroll',label:'CONTRACTOR & PAYROLL',badge:'PAY',barClass:'bb br',value:'$0.00',sub1:'Contractors + payroll total',sub2:'Current period',cd:[60,40],cc:['#b83030','#22558c'],ctr:'$0',pills:[{t:'Contractors',c:'pr'},{t:'Payroll',c:'pb'}],r:'contractors',empty:false,lastUpdated:null},
- {id:'software-services',label:'SOFTWARE & SERVICES',badge:'SFT',barClass:'bb bb',value:'$0.00',sub1:'SaaS, subscriptions, services',sub2:'Monthly recurring',cd:[45,30,25],cc:['#22558c','#c9a96e','#4a5568'],ctr:'$0',pills:[{t:'SaaS',c:'pb'},{t:'Services',c:'pa'},{t:'Other',c:'pg'}],r:'ltexpenses',empty:false,lastUpdated:null},
- {id:'maintenance-tickets',label:'MAINTENANCE TICKETS',badge:'MNT',barClass:'bb ba',value:'0',sub1:'Total maintenance requests',sub2:'Master managed properties',cd:[40,35,25],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'0',pills:[{t:'Resolved',c:'pg'},{t:'In Progress',c:'pa'},{t:'Open',c:'pr'}],r:'longterm',empty:false,lastUpdated:null},
- {id:'invoices-received',label:'INVOICES RECEIVED & PAID',badge:'INV',barClass:'bb bg',value:'0',sub1:'Total invoices processed',sub2:'Received and paid',cd:[70,30],cc:['#2a6e4e','#c9a96e'],ctr:'0',pills:[{t:'Paid',c:'pg'},{t:'Pending',c:'pa'}],r:'1099',empty:false,lastUpdated:null}
+ {id:'total-houses',label:'TOTAL HOUSES',badge:'HSE',barClass:'bb bg',value:'—',sub1:'All properties in portfolio',sub2:'',cd:[60,25,15],cc:['#2a6e4e','#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Vacant',c:'pa'},{t:'Maintenance',c:'pr'}],r:'ltproperties',empty:true,labels:[]},
+ {id:'total-rented',label:'TOTAL RENTED',badge:'RNT',barClass:'bb bg',value:'—',sub1:'Currently leased units',sub2:'',cd:[80,20],cc:['#2a6e4e','#b83030'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Vacant',c:'pr'}],r:'longterm',empty:true,labels:[]},
+ {id:'total-owners',label:'TOTAL OWNERS',badge:'OWN',barClass:'bb ba',value:'—',sub1:'Unique property owners',sub2:'',cd:[70,30],cc:['#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Pending',c:'pa'}],r:'ownerportal',empty:true,labels:[]},
+ {id:'vacant-houses',label:'VACANT HOUSES',badge:'VAC',barClass:'bb br',value:'—',sub1:'Currently unoccupied units',sub2:'Ready to lease',cd:[50,30,20],cc:['#b83030','#c9a96e','#4a5568'],ctr:'—',pills:[{t:'Market Ready',c:'pa'},{t:'Needs Repair',c:'pr'},{t:'Listed',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
+ {id:'in-progress',label:'IN PROGRESS',badge:'WIP',barClass:'bb ba',value:'—',sub1:'Move-in / renovation / onboarding',sub2:'Houses not yet available',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Move-in',c:'pa'},{t:'Renovation',c:'pb'},{t:'Onboarding',c:'pg'}],r:'renovations',empty:true,labels:[]},
+ {id:'move-out',label:'TENANT / OWNER MOVE-OUT',badge:'OUT',barClass:'bb br',value:'—',sub1:'Upcoming departures',sub2:'Tenants and owners leaving',cd:[60,40],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Tenant Notice',c:'pr'},{t:'Owner Notice',c:'pa'}],r:'longterm',empty:true,labels:[]},
+ {id:'security-deposits',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb bg',value:'—',sub1:'Total deposits held in trust',sub2:'',cd:[100],cc:['#2a6e4e'],ctr:'—',pills:[{t:'Trust Account',c:'pg'}],r:'ltstatements',empty:true,labels:[]},
+ {id:'rent-receivable',label:'RENT RECEIVABLE',badge:'RCV',barClass:'bb ba',value:'—',sub1:'Active rents due this month',sub2:'',cd:[65,25,10],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Collected',c:'pg'},{t:'Pending',c:'pa'},{t:'Late',c:'pr'}],r:'ltstatements',empty:true,labels:[]},
+ {id:'rent-potential',label:'RENT POTENTIAL',badge:'POT',barClass:'bb bb',value:'—',sub1:'Maximum possible rent revenue',sub2:'If 100% occupied',cd:[80,20],cc:['#22558c','#4a5568'],ctr:'—',pills:[{t:'Realized',c:'pb'},{t:'Unrealized',c:'pa'}],r:'longterm',empty:true,labels:[]},
+ {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'—',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:true,labels:[]},
+ {id:'cleaning-spend',label:'CLEANING SPEND',badge:'CLN',barClass:'bb ba',value:'—',sub1:'Total spent with cleaners',sub2:'Current period',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Turnover',c:'pa'},{t:'Deep Clean',c:'pb'},{t:'Routine',c:'pg'}],r:'ltcleanings',empty:true,labels:[]},
+ {id:'vendor-spend',label:'VENDOR SPEND',badge:'VND',barClass:'bb br',value:'—',sub1:'Total spent with vendors',sub2:'Current period',cd:[50,50],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Paid',c:'pr'},{t:'Pending',c:'pa'}],r:'vendors',empty:true,labels:[]},
+ {id:'contractor-payroll',label:'CONTRACTOR & PAYROLL',badge:'PAY',barClass:'bb br',value:'—',sub1:'Contractors + payroll total',sub2:'Current period',cd:[60,40],cc:['#b83030','#22558c'],ctr:'—',pills:[{t:'Contractors',c:'pr'},{t:'Payroll',c:'pb'}],r:'contractors',empty:true,labels:[]},
+ {id:'software-services',label:'SOFTWARE & SERVICES',badge:'SFT',barClass:'bb bb',value:'—',sub1:'SaaS, subscriptions, services',sub2:'Monthly recurring',cd:[45,30,25],cc:['#22558c','#c9a96e','#4a5568'],ctr:'—',pills:[{t:'SaaS',c:'pb'},{t:'Services',c:'pa'},{t:'Other',c:'pg'}],r:'ltexpenses',empty:true,labels:[]},
+ {id:'maintenance-tickets',label:'MAINTENANCE TICKETS',badge:'MNT',barClass:'bb ba',value:'—',sub1:'Total maintenance requests',sub2:'Master managed properties',cd:[40,35,25],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Resolved',c:'pg'},{t:'In Progress',c:'pa'},{t:'Open',c:'pr'}],r:'longterm',empty:true,labels:[]},
+ {id:'invoices-received',label:'INVOICES RECEIVED & PAID',badge:'INV',barClass:'bb bg',value:'—',sub1:'Total invoices processed',sub2:'Received and paid',cd:[70,30],cc:['#2a6e4e','#c9a96e'],ctr:'—',pills:[{t:'Paid',c:'pg'},{t:'Pending',c:'pa'}],r:'1099',empty:true,labels:[]},
+ {id:'ramp-spend',label:'RAMP',badge:'RMP',barClass:'bb bb',value:'$0.00',sub1:'Connect Ramp to see data',sub2:'Corporate card spend / Current period',cd:[1,1,1,1],cc:['#2a6e4e','#22558c','#c9a96e','#4a5568'],ctr:'$0',pills:[{t:'Operations',c:'pg'},{t:'SG&A',c:'pb'},{t:'Maintenance',c:'pa'}],r:'ramp',empty:false,labels:['Operations','SG&A','Maintenance','Other']},
+ {id:'inspections',label:'INSPECTIONS',badge:'INS',barClass:'bb br',value:'16',sub1:'Property inspections / Zen Inspector',sub2:'Estimated monthly / $80 per inspection',cd:[10,4,2],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'16',pills:[{t:'Completed',c:'pg'},{t:'Scheduled',c:'pa'},{t:'Overdue',c:'pr'}],r:'',empty:false,labels:['Completed','Scheduled','Overdue'],noNav:true}
 ];
 
 const CI={};
@@ -2083,6 +2370,226 @@ function showSaveToast(msg){
  t.classList.add('show');
  setTimeout(function(){t.classList.remove('show');},2800);
 }
+function gmHomeNum(v,fb){
+ if(v==null||v==='') return fb!=null?fb:NaN;
+ var n=Number(v);
+ return isNaN(n)?(fb!=null?fb:NaN):n;
+}
+function gmHomeMoney(n){
+ if(n==null||typeof n!=='number'||isNaN(n)) return '--';
+ return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function gmHomeMoneyCtr(n){
+ if(n==null||typeof n!=='number'||isNaN(n)) return '—';
+ var s=n>=1e6?(n/1e6).toFixed(2)+'M':(n>=1e3?(n/1e3).toFixed(1)+'k':n.toFixed(0));
+ return '$'+s;
+}
+function applyHomeDashboardFromApi(d){
+ CARDS.forEach(function(c){
+  if(!d){
+   if(c.id==='ramp-spend'){
+    c.value='$0.00';c.sub1='Connect Ramp to see data';c.sub2='Corporate card spend / Current period';c.cd=[1,1,1,1];c.cc=['#2a6e4e','#22558c','#c9a96e','#4a5568'];c.ctr='$0';c.empty=false;
+    return;
+   }
+   if(c.id==='inspections'){
+    c.value='16';c.sub1='Property inspections / Zen Inspector';c.sub2='Estimated monthly / $80 per inspection';c.cd=[10,4,2];c.cc=['#2a6e4e','#c9a96e','#b83030'];c.ctr='16';c.empty=false;
+    if(c.pills&&c.pills[0]){c.pills[0].t='Completed (10)';c.pills[1].t='Scheduled (4)';c.pills[2].t='Overdue (2)';}
+    return;
+   }
+   c.value='—';c.sub1='No data yet';c.sub2='';c.ctr='—';c.cd=[1];c.cc=['#e2ddd4'];c.empty=true;
+   return;
+  }
+  c.empty=false;
+ });
+ if(!d)return;
+ var qp=gmHomeNum(d.qty_properties,d.total_properties);
+ var ql=gmHomeNum(d.qty_leases_active,d.occupied_units);
+ var qv=gmHomeNum(d.qty_vacant,d.vacant_units);
+ var qo=gmHomeNum(d.qty_owners,d.total_owners);
+ var qf=gmHomeNum(d.qty_future,0);
+ var qnot=gmHomeNum(d.qty_notice,0);
+ var pr=gmHomeNum(d.potential_rent_monthly,d.monthly_rent);
+ var mkt=gmHomeNum(d.market_rent_total,NaN);
+ var occ=gmHomeNum(d.occupancy_rate,NaN);
+ var oc=gmHomeNum(d.operating_cash,0);
+ var ub=gmHomeNum(d.unpaid_balance,0);
+ var tsd=gmHomeNum(d.total_security_deposits,d.total_deposits);
+ var tvp=gmHomeNum(d.total_vendor_spend,0);
+ var tvu=gmHomeNum(d.total_vendor_unpaid,0);
+ var tva=gmHomeNum(d.total_vendor_spend_all,NaN);
+ if(isNaN(tva)) tva=tvp+tvu;
+ var cln=gmHomeNum(d.cleaning_maintenance_total,NaN);
+ if(isNaN(cln)) cln=gmHomeNum(d.cleaning_maintenance_paid,0)+gmHomeNum(d.cleaning_maintenance_unpaid,0);
+ var cpr=gmHomeNum(d.contractor_payroll_paid,0);
+ var qwo=gmHomeNum(d.qty_vendor_work_orders,0);
+ var tbc=gmHomeNum(d.total_bills_count,0);
+ var bwp=gmHomeNum(d.bills_with_paid,0);
+ var bwu=gmHomeNum(d.bills_with_unpaid,0);
+ var bcr=gmHomeNum(d.bills_count_resolved,0);
+ var bci=gmHomeNum(d.bills_count_in_progress,0);
+ var bco=gmHomeNum(d.bills_count_open,0);
+ var owl=gmHomeNum(d.qty_owners_with_lease,0);
+ var owp=Math.max(0,qo-owl);
+ var maint=Math.max(0,qp-ql-qv);
+ if(maint<0.5) maint=0.01;
+ CARDS.forEach(function(c){
+  switch(c.id){
+  case 'total-houses':
+   c.value=String(Math.round(qp));
+   c.cd=[Math.max(0.01,ql),Math.max(0.01,qv),maint];
+   c.ctr=String(Math.round(qp));
+   break;
+  case 'total-rented':
+   c.value=String(Math.round(ql));
+   c.cd=[Math.max(0.01,ql),Math.max(0.01,qv)];
+   c.ctr=String(Math.round(ql));
+   break;
+  case 'total-owners':
+   c.value=String(Math.round(qo));
+   c.cd=[Math.max(0.01,owl),Math.max(0.01,owp)];
+   c.ctr=String(Math.round(qo));
+   break;
+  case 'vacant-houses':
+   c.value=String(Math.round(qv));
+   c.cd=[Math.max(0.01,qv),Math.max(0.01,Math.max(1,qp-qv))];
+   c.ctr=String(Math.round(qv));
+   break;
+  case 'in-progress':
+   c.value=String(Math.round(qf));
+   c.cd=[Math.max(0.01,qf),1];
+   c.ctr=String(Math.round(qf));
+   if(c.pills&&c.pills[0]) c.pills[0].t='Move-in ('+Math.round(qf)+')';
+   if(c.pills&&c.pills[1]) c.pills[1].t='Renovation (0)';
+   if(c.pills&&c.pills[2]) c.pills[2].t='Onboarding (0)';
+   break;
+  case 'move-out':
+   c.value=String(Math.round(qnot));
+   c.cd=[Math.max(0.01,qnot),1];
+   c.ctr=String(Math.round(qnot));
+   if(c.pills&&c.pills[0]) c.pills[0].t='Tenant Notice ('+Math.round(qnot)+')';
+   if(c.pills&&c.pills[1]) c.pills[1].t='Owner Notice (0)';
+   break;
+  case 'security-deposits':
+   c.value=gmHomeMoney(tsd);
+   c.cd=[Math.max(0.01,tsd)];
+   c.ctr=gmHomeMoneyCtr(tsd);
+   break;
+  case 'rent-receivable':
+   c.value=gmHomeMoney(pr);
+   var pend=Math.max(0,pr-oc);
+   c.cd=[Math.max(0.01,oc),Math.max(0.01,pend),Math.max(0.01,ub)];
+   c.ctr=gmHomeMoneyCtr(pr);
+   break;
+  case 'rent-potential':
+   c.value=isNaN(mkt)?'—':gmHomeMoney(mkt);
+   var unr=isNaN(mkt)||isNaN(pr)?0:Math.max(0,mkt-pr);
+   c.cd=isNaN(mkt)||isNaN(pr)?[1,1]:[Math.max(0.01,pr),Math.max(0.01,unr)];
+   c.ctr=isNaN(mkt)?'—':gmHomeMoneyCtr(mkt);
+   break;
+  case 'occupancy-index':
+   c.value=isNaN(occ)?'—':(occ.toFixed(1)+'%');
+   c.cd=[Math.max(0.01,ql),Math.max(0.01,qv)];
+   c.ctr=isNaN(occ)?'—':(occ.toFixed(1)+'%');
+   break;
+  case 'cleaning-spend':
+   c.value=gmHomeMoney(cln);
+   c.cd=[Math.max(0.01,cln),1,1];
+   c.ctr=gmHomeMoneyCtr(cln);
+   break;
+  case 'vendor-spend':
+   c.value=gmHomeMoney(tva);
+   c.cd=[Math.max(0.01,tvp),Math.max(0.01,tvu)];
+   c.ctr=gmHomeMoneyCtr(tva);
+   break;
+  case 'contractor-payroll':
+   c.value=gmHomeMoney(cpr);
+   c.cd=[Math.max(0.01,cpr),1];
+   c.ctr=gmHomeMoneyCtr(cpr);
+   break;
+  case 'software-services':
+   c.value='$0.00';
+   c.cd=[1,1,1];
+   c.ctr='$0';
+   break;
+  case 'maintenance-tickets':
+   c.value=String(Math.round(qwo));
+   c.cd=[Math.max(0.01,bcr),Math.max(0.01,bci),Math.max(0.01,bco)];
+   c.ctr=String(Math.round(qwo));
+   break;
+  case 'invoices-received':
+   c.value=String(Math.round(tbc));
+   c.cd=[Math.max(0.01,bwp),Math.max(0.01,bwu)];
+   c.ctr=String(Math.round(tbc));
+   break;
+  case 'ramp-spend':{
+   var rampConn=!!d.ramp_connected;
+   var rampTot=gmHomeNum(d.ramp_total_spend,0);
+   var rbc=d.ramp_by_category&&typeof d.ramp_by_category==='object'?d.ramp_by_category:{};
+   var rOp=gmHomeNum(rbc['Operations'],0);
+   var rSga=gmHomeNum(rbc['SG&A'],0);
+   var rMt=gmHomeNum(rbc['Maintenance'],0);
+   var rOt=gmHomeNum(rbc['Other'],0);
+   if(!rampConn){
+    c.value='$0.00';
+    c.sub1='Connect Ramp to see data';
+    c.sub2='Corporate card spend / Current period';
+    c.cd=[1,1,1,1];
+    c.cc=['#2a6e4e','#22558c','#c9a96e','#4a5568'];
+    c.ctr='$0';
+    if(c.pills&&c.pills[0]){c.pills[0].t='Operations';c.pills[1].t='SG&A';c.pills[2].t='Maintenance';}
+   }else{
+    c.value=gmHomeMoney(rampTot);
+    c.sub1='Corporate card spend / Current period';
+    c.sub2='';
+    var rsum=rOp+rSga+rMt+rOt;
+    if(rsum<0.01)rsum=1;
+    c.cd=[Math.max(0.01,rOp),Math.max(0.01,rSga),Math.max(0.01,rMt),Math.max(0.01,rOt)];
+    c.cc=['#2a6e4e','#22558c','#c9a96e','#4a5568'];
+    c.ctr=gmHomeMoneyCtr(rampTot);
+    if(c.pills&&c.pills[0]){c.pills[0].t='Operations';c.pills[1].t='SG&A';c.pills[2].t='Maintenance';}
+   }
+   break;
+  }
+  case 'inspections':{
+   var insTot=gmHomeNum(d.inspections_total,16);
+   var insC=gmHomeNum(d.inspections_completed,10);
+   var insS=gmHomeNum(d.inspections_scheduled,4);
+   var insO=gmHomeNum(d.inspections_overdue,2);
+   var insCost=gmHomeNum(d.inspection_cost_monthly,80);
+   c.value=String(Math.round(insTot));
+   c.sub1='Property inspections / Zen Inspector';
+   c.sub2='Estimated monthly / $'+insCost.toFixed(0)+' per inspection';
+   c.cd=[Math.max(0.01,insC),Math.max(0.01,insS),Math.max(0.01,insO)];
+   c.cc=['#2a6e4e','#c9a96e','#b83030'];
+   c.ctr=String(Math.round(insTot));
+   if(c.pills&&c.pills[0]){
+    c.pills[0].t='Completed ('+Math.round(insC)+')';
+    c.pills[1].t='Scheduled ('+Math.round(insS)+')';
+    c.pills[2].t='Overdue ('+Math.round(insO)+')';
+   }
+   break;
+  }
+  default:break;
+  }
+ });
+}
+function loadHomeDashboardFromApi(){
+ renderCards();
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j){applyHomeDashboardFromApi(null);renderCards();return;}
+  applyHomeDashboardFromApi(o.j);
+  renderCards();
+  try{
+   var now=new Date().toISOString();
+   var ts=getCardTimestamps();
+   CARDS.forEach(function(c){ts[c.id]=now;});
+   setCardTimestamps(ts);
+  }catch(e){}
+ })
+ .catch(function(){applyHomeDashboardFromApi(null);renderCards();});
+}
 function saveAllData(){
  var now=new Date().toISOString();
  try{localStorage.setItem('gm_last_saved',now);}catch(e){}
@@ -2101,24 +2608,30 @@ function saveAllData(){
  setCardTimestamps(ts);
  CARDS.forEach(function(c){c.lastUpdated=now;});
  updateLastSavedBar();
- renderCards();
+ loadHomeDashboardFromApi();
  showSaveToast('All changes saved successfully');
 }
 
 function renderCards(){
  const g=document.getElementById('home-cards');
+ if(!g)return;
  g.innerHTML='';
  CARDS.forEach((c,i)=>{
  const isEmpty=c.empty;
  const el=document.createElement('div');
- el.className='card'+(isEmpty?' empty':'');
+ el.className='card'+(isEmpty?' empty':'')+(c.noNav?' card-static':'');
  el.style.animationDelay=(i*.03)+'s';
- el.onclick=()=>nav(c.r);
+ if(c.noNav){
+  el.onclick=function(ev){if(ev.target.closest&&ev.target.closest('.ck')){ev.preventDefault();}};
+ }else{
+  el.onclick=()=>nav(c.r);
+ }
  const isAlert=c.sub2&&c.sub2.startsWith('alert:');
  const s2=isAlert?`<div class="ca"> ${c.sub2.replace('alert: ','')}</div>`:(c.sub2?`<div class="cs2">${c.sub2}</div>`:'');
  const csz=c.ctr.length>6?'9px':'11px';
  const pillsHtml=c.pills.length?`<div class="cd"></div><div class="cp">${c.pills.map(p=>`<span class="pill ${p.c}">${p.t}</span>`).join('')}</div>`:'<div style="height:8px"></div>';
  const updLine=formatCardUpdatedLine(c.id);
+ const ckCls=c.noNav?'ck ck-disabled':'ck';
  el.innerHTML=`
  <div class="ct"><div class="cl">${c.label}</div><div class="cb">${c.badge}</div></div>
  <div class="cv2">${c.value}</div>
@@ -2129,7 +2642,7 @@ function renderCards(){
  </div>
  ${pillsHtml}
  ${updLine}
- <div class="cf"><a class="ck">Ver detalhes →</a></div>
+ <div class="cf"><a class="${ckCls}" ${c.noNav?'href="#" aria-disabled="true"':''}>Ver detalhes →</a></div>
  <div class="cbar ${c.barClass}"></div>`;
  g.appendChild(el);
  });
@@ -3257,7 +3770,6 @@ function refreshQuickBooksPage(){
 }
 
 // — AppFolio: upload CSV (backend Flask Railway)
-var GM_BACKEND_RAILWAY_APP='https://godmanager-production.up.railway.app';
 window.afUploadQueue=[];
 function gmAfFmtBytes(n){
  if(n==null||isNaN(n))return'0 B';
@@ -3336,13 +3848,22 @@ function gmAppfolioPageInit(){
 }
 function gmAppfolioApplySummaryFromImported(im){
  if(!im)return;
- var map=[['af-sum-prop','properties'],['af-sum-ten','tenants'],['af-sum-own','owners'],['af-sum-ven','vendors'],['af-sum-bill','bills'],['af-sum-inc','income'],['af-sum-unp','unpaid'],['af-sum-lease','leases_active'],['af-sum-1099','owners_1099']];
+ var map=[['af-sum-prop','properties'],['af-sum-own','owners'],['af-sum-ven','vendors'],['af-sum-bill','bills'],['af-sum-inc','income'],['af-sum-unp','unpaid'],['af-sum-lease','leases_active'],['af-sum-1099','owners_1099']];
  map.forEach(function(pair){
   var el=document.getElementById(pair[0]);
   if(!el)return;
   var v=im[pair[1]];
   el.textContent=v!=null?String(v):'—';
  });
+ var ten=document.getElementById('af-sum-ten');
+ var tenSub=document.getElementById('af-sum-ten-sub');
+ var tp=im.tenants_people!=null?im.tenants_people:im.tenants;
+ if(ten){
+  ten.textContent=im.leases_active!=null?String(im.leases_active):'—';
+ }
+ if(tenSub){
+  tenSub.textContent=tp!=null?String(tp)+' pessoas no total':'—';
+ }
  var grid=document.getElementById('af-summary-grid');
  if(grid)grid.style.display='grid';
 }
@@ -3368,7 +3889,7 @@ function gmAppfolioRefreshDashboard(silent){
    try{im=JSON.parse(localStorage.getItem('gm_appfolio_import_summary')||'null');}catch(e){im=null;}
    if(!im)im={};
    im.properties=o.j.total_properties;
-   im.tenants=o.j.total_tenants;
+   im.tenants_people=o.j.total_tenants;
    im.owners=o.j.total_owners;
    im.vendors=o.j.total_vendors;
    im.leases_active=o.j.occupied_units;
@@ -3441,8 +3962,481 @@ window.gmAppfolioPageInit=gmAppfolioPageInit;
 window.gmAppfolioRefreshDashboard=gmAppfolioRefreshDashboard;
 window.gmAppfolioDoImport=gmAppfolioDoImport;
 
+// Gross & Expenses (AppFolio API)
+var _geItems=[];
+function geApiBase(){return GM_BACKEND_RAILWAY_APP+'/api/appfolio/gross-expenses';}
+function geEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function geLoadPage(){
+ fetch(geApiBase(),{method:'GET',mode:'cors',credentials:'omit'})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||!Array.isArray(o.j.items)){_geItems=[];geRender();return;}
+  _geItems=o.j.items.slice();
+  geRender();
+ })
+ .catch(function(){_geItems=[];geRender();});
+}
+function geSorted(typ){
+ return _geItems.filter(function(x){return x.type===typ;}).sort(function(a,b){return (a.order-b.order)||(a.id-b.id);});
+}
+function geRender(){
+ var ng=_geItems.filter(function(x){return x.type==='gross';}).length;
+ var nd=_geItems.filter(function(x){return x.type==='debit';}).length;
+ var eg=document.getElementById('ge-n-gross');if(eg)eg.textContent=String(ng);
+ var ed=document.getElementById('ge-n-debit');if(ed)ed.textContent=String(nd);
+ var fg=document.getElementById('ge-flow-gross');
+ var fd=document.getElementById('ge-flow-debit');
+ if(fg)fg.innerHTML=geFlowHtml('gross');
+ if(fd)fd.innerHTML=geFlowHtml('debit');
+}
+function geFlowHtml(typ){
+ var arr=geSorted(typ);
+ var h='';
+ for(var i=0;i<arr.length;i++){
+  var it=arr[i];
+  var num=i+1;
+  var act=!!it.active;
+  h+='<div class="ge-card" draggable="true" data-id="'+it.id+'" data-type="'+typ+'" ondragstart="geDragStart(event)" ondragover="geDragOver(event)" ondrop="geDrop(event)" ondragend="geDragEnd(event)">';
+  h+='<div class="ge-ord">'+num+'</div>';
+  h+='<div class="ge-card-top"><span class="ge-ud"><button type="button" title="Up" onclick="event.stopPropagation();geMove('+it.id+',-1)">\u25B2</button><button type="button" title="Down" onclick="event.stopPropagation();geMove('+it.id+',1)">\u25BC</button></span>';
+  h+='<button type="button" class="ge-btn-ico" title="Editar" onclick="event.stopPropagation();geOpenEdit('+it.id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>';
+  h+='<button type="button" class="ge-btn-ico" title="Excluir" onclick="event.stopPropagation();geDelete('+it.id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></div>';
+  h+='<div class="ge-nm">'+geEsc(it.name)+'</div>';
+  h+='<div class="ge-val">'+(it.value?geEsc(it.value):'\u2014')+'</div>';
+  h+='<div class="ge-desc">'+geEsc(it.description||'')+'</div>';
+  h+='<div class="ge-meta"><span class="ge-freq">'+geEsc(it.frequency||'')+'</span>';
+  h+=act?'<span class="ge-yes">YES</span>':'<span class="ge-no">NO</span>';
+  h+='</div></div>';
+  if(i<arr.length-1) h+='<div class="ge-arr" aria-hidden="true">\u2193</div>';
+ }
+ return h||'<div style="font-size:12px;color:rgba(248,246,242,.4);padding:12px">Sem itens.</div>';
+}
+var _geDragId=null;
+function geDragStart(ev){
+ var c=ev.target.closest('.ge-card'); if(!c)return;
+ _geDragId=parseInt(c.getAttribute('data-id'),10);
+ ev.dataTransfer.setData('text/plain',String(_geDragId));
+ ev.dataTransfer.effectAllowed='move';
+ c.classList.add('ge-drag');
+}
+function geDragOver(ev){ev.preventDefault();ev.dataTransfer.dropEffect='move';}
+function geDrop(ev){
+ ev.preventDefault();
+ var tgt=ev.target.closest('.ge-card'); if(!tgt||_geDragId==null)return;
+ var dropId=parseInt(tgt.getAttribute('data-id'),10);
+ if(dropId===_geDragId)return;
+ var dragEl=document.querySelector('#ge-flow-gross .ge-card[data-id="'+_geDragId+'"], #ge-flow-debit .ge-card[data-id="'+_geDragId+'"]');
+ if(!dragEl||dragEl.getAttribute('data-type')!==tgt.getAttribute('data-type'))return;
+ var typ=tgt.getAttribute('data-type');
+ var flow=document.getElementById(typ==='gross'?'ge-flow-gross':'ge-flow-debit');
+ var cards=[].slice.call(flow.querySelectorAll('.ge-card'));
+ var order=cards.map(function(x){return parseInt(x.getAttribute('data-id'),10);});
+ var fi=order.indexOf(_geDragId),ti=order.indexOf(dropId);
+ if(fi<0||ti<0)return;
+ var el=order.slice();
+ el.splice(fi,1);
+ var ti2=el.indexOf(dropId);
+ el.splice(ti2,0,_geDragId);
+ if(typ==='gross') gePutReorder(el,null); else gePutReorder(null,el);
+}
+function geDragEnd(ev){var x=document.querySelectorAll('.ge-card.ge-drag');for(var i=0;i<x.length;i++)x[i].classList.remove('ge-drag');_geDragId=null;}
+function gePutReorder(grossIds,debitIds){
+ var g=grossIds||geSorted('gross').map(function(x){return x.id;});
+ var d=debitIds||geSorted('debit').map(function(x){return x.id;});
+ fetch(geApiBase()+'/reorder',{method:'PUT',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({gross:g,debit:d})})
+ .then(function(){geLoadPage();});
+}
+function geMove(id,dir){
+ var item=_geItems.filter(function(x){return x.id===id;})[0]; if(!item)return;
+ var typ=item.type;
+ var arr=geSorted(typ);
+ var ix=-1; for(var i=0;i<arr.length;i++){if(arr[i].id===id){ix=i;break;}}
+ var jx=ix+dir; if(ix<0||jx<0||jx>=arr.length)return;
+ var ids=arr.map(function(x){return x.id;});
+ var tmp=ids[ix];ids[ix]=ids[jx];ids[jx]=tmp;
+ if(typ==='gross') gePutReorder(ids,null); else gePutReorder(null,ids);
+}
+function geOpenCreate(typ){
+ document.getElementById('ge-modal-title').textContent=typ==='gross'?'Nova receita':'Nova despesa';
+ document.getElementById('ge-f-id').value='';
+ document.getElementById('ge-f-type').value=typ;
+ document.getElementById('ge-f-name').value='';
+ document.getElementById('ge-f-value').value='';
+ document.getElementById('ge-f-desc').value='';
+ document.getElementById('ge-f-freq').value='mensal';
+ document.getElementById('ge-f-active').checked=true;
+ geSyncActiveLbl();
+ document.getElementById('ge-f-notes').value='';
+ document.getElementById('ge-modal-bg').classList.add('on');
+ document.getElementById('ge-modal-bg').setAttribute('aria-hidden','false');
+}
+function geOpenEdit(id){
+ var it=_geItems.filter(function(x){return x.id===id;})[0]; if(!it)return;
+ document.getElementById('ge-modal-title').textContent='Editar';
+ document.getElementById('ge-f-id').value=String(it.id);
+ document.getElementById('ge-f-type').value=it.type;
+ document.getElementById('ge-f-name').value=it.name||'';
+ document.getElementById('ge-f-value').value=it.value||'';
+ document.getElementById('ge-f-desc').value=it.description||'';
+ document.getElementById('ge-f-freq').value=it.frequency||'mensal';
+ document.getElementById('ge-f-active').checked=!!it.active;
+ geSyncActiveLbl();
+ document.getElementById('ge-f-notes').value=it.notes||'';
+ document.getElementById('ge-modal-bg').classList.add('on');
+ document.getElementById('ge-modal-bg').setAttribute('aria-hidden','false');
+}
+function geSyncActiveLbl(){
+ var c=document.getElementById('ge-f-active').checked;
+ var l=document.getElementById('ge-f-active-lbl'); if(l)l.textContent=c?'YES':'NO';
+}
+function geCloseModal(){
+ var m=document.getElementById('ge-modal-bg'); if(m){m.classList.remove('on');m.setAttribute('aria-hidden','true');}
+}
+function geSaveModal(){
+ var idStr=document.getElementById('ge-f-id').value.trim();
+ var typ=document.getElementById('ge-f-type').value||'gross';
+ var body={
+  name:document.getElementById('ge-f-name').value.trim(),
+  value:document.getElementById('ge-f-value').value.trim(),
+  description:document.getElementById('ge-f-desc').value.trim(),
+  frequency:document.getElementById('ge-f-freq').value,
+  active:document.getElementById('ge-f-active').checked,
+  notes:document.getElementById('ge-f-notes').value.trim()
+ };
+ if(!body.name){alert('Nome e obrigatorio.');return;}
+ var url=geApiBase();
+ var method='POST';
+ if(idStr){
+  url+='/'+encodeURIComponent(idStr);
+  method='PUT';
+ }else{
+  body.type=typ;
+ }
+ fetch(url,{method:method,mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j,s:r.status};});})
+ .then(function(o){
+  if(!o.ok){alert('Erro ao guardar ('+o.s+').');return;}
+  geCloseModal();
+  geLoadPage();
+ })
+ .catch(function(){alert('Erro de rede.');});
+}
+function geDelete(id){
+ if(!confirm('Excluir este item?'))return;
+ fetch(geApiBase()+'/'+encodeURIComponent(id),{method:'DELETE',mode:'cors',credentials:'omit'})
+ .then(function(r){
+  if(!r.ok){alert('Erro ao excluir.');return;}
+  geLoadPage();
+ })
+ .catch(function(){alert('Erro de rede.');});
+}
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='ge-f-active')geSyncActiveLbl();});
+function geWirePageOnce(){
+ if(window._geWired)return;
+ window._geWired=1;
+ var bg=document.getElementById('ge-btn-add-gross'); if(bg)bg.addEventListener('click',function(){geOpenCreate('gross');});
+ var bd=document.getElementById('ge-btn-add-debit'); if(bd)bd.addEventListener('click',function(){geOpenCreate('debit');});
+}
+
+var _ocItems=[];
+var _ocView='tree';
+function ocApiBase(){return GM_BACKEND_RAILWAY_APP+'/api/appfolio/org-chart';}
+function ocEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ocDeptClass(d){
+ var k=String(d||'').toLowerCase();
+ if(k==='executive')return 'oc-dept-exec';
+ if(k==='operations')return 'oc-dept-ops';
+ if(k==='finance')return 'oc-dept-fin';
+ if(k==='hr')return 'oc-dept-hr';
+ if(k==='maintenance')return 'oc-dept-maint';
+ if(k==='cleaning')return 'oc-dept-clean';
+ if(k==='admin')return 'oc-dept-adm';
+ return '';
+}
+function ocInitials(name){
+ var p=String(name||'').trim().split(/\s+/).filter(Boolean);
+ if(!p.length)return '?';
+ if(p.length===1)return p[0].charAt(0).toUpperCase();
+ return (p[0].charAt(0)+p[p.length-1].charAt(0)).toUpperCase();
+}
+function ocNameById(id){
+ if(id==null||id==='')return '';
+ var x=_ocItems.filter(function(e){return e.id===id;})[0];
+ return x?x.name:'';
+}
+function ocBuildTree(flat){
+ var map={};
+ flat.forEach(function(e){map[e.id]=Object.assign({},e,{children:[]});});
+ var roots=[];
+ flat.forEach(function(e){
+  var n=map[e.id];
+  var p=e.reports_to;
+  if(p!=null&&p!==''&&map[p])map[p].children.push(n);
+  else roots.push(n);
+ });
+ function sortCh(n){
+  n.children.sort(function(a,b){return (a.order-b.order)||((a.name||'')>(b.name||'')?1:-1);});
+  n.children.forEach(sortCh);
+ }
+ roots.forEach(sortCh);
+ roots.sort(function(a,b){return (a.order-b.order)||((a.name||'')>(b.name||'')?1:-1);});
+ return roots;
+}
+function ocFilterList(list){
+ var dept=(document.getElementById('oc-filter-dept')&&document.getElementById('oc-filter-dept').value)||'';
+ var q=(document.getElementById('oc-filter-q')&&document.getElementById('oc-filter-q').value||'').toLowerCase().trim();
+ var activeOnly=document.getElementById('oc-filter-active')&&document.getElementById('oc-filter-active').checked;
+ return list.filter(function(e){
+  if(activeOnly&&e.status!=='active')return false;
+  if(dept&&e.department!==dept)return false;
+  if(q&&(e.name||'').toLowerCase().indexOf(q)<0)return false;
+  return true;
+ });
+}
+function ocBuildTreeFiltered(list){
+ var ids={};
+ list.forEach(function(e){ids[e.id]=1;});
+ var adj=list.map(function(e){
+  var rt=e.reports_to;
+  if(rt!=null&&rt!==''&&!ids[rt])return Object.assign({},e,{reports_to:null});
+  return e;
+ });
+ return ocBuildTree(adj);
+}
+function ocCardHtml(n){
+ var img=n.photo_url?'<img class="oc-av" src="'+ocEsc(n.photo_url)+'" alt="">':'<div class="oc-av-ph">'+ocEsc(ocInitials(n.name))+'</div>';
+ var st=n.status==='active'?'oc-st-a':'oc-st-i';
+ var dc=ocDeptClass(n.department);
+ var dept=n.department?'<span class="oc-dept '+dc+'">'+ocEsc(n.department)+'</span>':'';
+ return '<div class="oc-card" data-id="'+n.id+'" onclick="ocCardClick(event,'+n.id+')">'+
+  '<div class="oc-card-ico">'+
+   '<button type="button" class="oc-btn-ico" title="Editar" onclick="ocEdit(event,'+n.id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>'+
+   '<button type="button" class="oc-btn-ico" title="Excluir" onclick="ocDelete(event,'+n.id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>'+
+  '</div>'+
+  '<div class="oc-card-top">'+
+   img+
+   '<div class="oc-card-main">'+
+    '<div class="oc-nm">'+ocEsc(n.name||'')+'</div>'+
+    '<div class="oc-tl">'+ocEsc(n.title||'')+'</div>'+
+    '<div class="oc-meta-row">'+dept+'<span class="oc-st '+st+'" title="'+(n.status==='active'?'Ativo':'Inativo')+'" aria-hidden="true"></span></div>'+
+   '</div>'+
+  '</div>'+
+ '</div>';
+}
+function ocRenderUl(nodes){
+ if(!nodes||!nodes.length)return '';
+ var h='<ul class="oc-chart-ul">';
+ nodes.forEach(function(n){
+  h+='<li><div class="oc-card-w">'+ocCardHtml(n)+'</div>';
+  if(n.children&&n.children.length)h+=ocRenderUl(n.children);
+  h+='</li>';
+ });
+ h+='</ul>';
+ return h;
+}
+function ocSetView(mode){
+ _ocView=mode||'tree';
+ var vt=document.getElementById('oc-view-tree');
+ var tb=document.getElementById('oc-view-table');
+ var btn=document.getElementById('oc-btn-view-toggle');
+ if(vt)vt.style.display=_ocView==='tree'?'block':'none';
+ if(tb)tb.style.display=_ocView==='table'?'block':'none';
+ if(btn){
+  btn.textContent=_ocView==='tree'?'Vista lista':'Vista organograma';
+  btn.setAttribute('aria-pressed',_ocView==='table'?'true':'false');
+ }
+ ocRender();
+}
+function ocRender(){
+ var filtered=ocFilterList(_ocItems.slice());
+ var tree=ocBuildTreeFiltered(filtered);
+ var host=document.getElementById('oc-tree-host');
+ if(host)host.innerHTML=ocRenderUl(tree)||'<div style="font-size:12px;color:rgba(248,246,242,.45);padding:16px">Sem resultados.</div>';
+ var tbody=document.getElementById('oc-tbody');
+ if(tbody){
+  var rows='';
+  filtered.sort(function(a,b){return (a.department||'').localeCompare(b.department||'')||(a.name||'').localeCompare(b.name||'');});
+  for(var i=0;i<filtered.length;i++){
+   var r=filtered[i];
+   rows+='<tr><td>'+ocEsc(r.name)+'</td><td>'+ocEsc(r.title)+'</td><td>'+ocEsc(r.department)+'</td><td>'+ocEsc(ocNameById(r.reports_to)||'\u2014')+'</td><td>'+ocEsc(r.status)+'</td><td>'+
+    '<button type="button" class="oc-btn-ico" title="Editar" onclick="ocEdit(event,'+r.id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button> '+
+    '<button type="button" class="oc-btn-ico" title="Excluir" onclick="ocDelete(event,'+r.id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></td></tr>';
+  }
+  tbody.innerHTML=rows||'<tr><td colspan="6" style="color:rgba(248,246,242,.45)">Sem resultados.</td></tr>';
+ }
+}
+function ocLoadPage(){
+ fetch(ocApiBase(),{method:'GET',mode:'cors',credentials:'omit'})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||!Array.isArray(o.j.employees)){_ocItems=[];ocRender();return;}
+  _ocItems=o.j.employees.slice();
+  ocRender();
+ })
+ .catch(function(){_ocItems=[];ocRender();});
+}
+function ocCardClick(ev,id){
+ if(ev.target.closest&&ev.target.closest('.oc-btn-ico'))return;
+ ocOpenDetail(id);
+}
+function ocOpenDetail(id){
+ var e=_ocItems.filter(function(x){return x.id===id;})[0];
+ if(!e)return;
+ var pg=document.getElementById('page-org-chart');
+ var t=document.getElementById('oc-panel-title');
+ var b=document.getElementById('oc-panel-body');
+ if(t)t.textContent=e.name||'Detalhes';
+ if(b){
+  b.innerHTML='<ul class="oc-panel-dl">'+
+   '<li><span>Email</span><span>'+(e.email?'<a href="mailto:'+ocEsc(e.email)+'" style="color:var(--amber)">'+ocEsc(e.email)+'</a>':'\u2014')+'</span></li>'+
+   '<li><span>Telefone</span><span>'+ocEsc(e.phone||'\u2014')+'</span></li>'+
+   '<li><span>Contratacao</span><span>'+ocEsc(e.hire_date||'\u2014')+'</span></li>'+
+   '<li><span>Cargo</span><span>'+ocEsc(e.title||'\u2014')+'</span></li>'+
+   '<li><span>Departamento</span><span>'+ocEsc(e.department||'\u2014')+'</span></li>'+
+   '<li><span>Reporta a</span><span>'+ocEsc(ocNameById(e.reports_to)||'\u2014')+'</span></li>'+
+   '<li><span>Status</span><span>'+ocEsc(e.status)+'</span></li>'+
+  '</ul>';
+ }
+ if(pg)pg.classList.add('oc-panel-open');
+}
+function ocClosePanel(){
+ var pg=document.getElementById('page-org-chart');
+ if(pg)pg.classList.remove('oc-panel-open');
+}
+function ocPopulateReports(excludeId){
+ var sel=document.getElementById('oc-f-reports');
+ if(!sel)return;
+ var cur=sel.value;
+ sel.innerHTML='<option value="">Nenhum (top level)</option>';
+ _ocItems.forEach(function(e){
+  if(excludeId!=null&&e.id===excludeId)return;
+  var o=document.createElement('option');
+  o.value=String(e.id);
+  o.textContent=e.name||('#'+e.id);
+  sel.appendChild(o);
+ });
+ sel.value=cur;
+}
+function ocOpenCreate(){
+ document.getElementById('oc-modal-title').textContent='Novo funcionario';
+ document.getElementById('oc-f-id').value='';
+ document.getElementById('oc-f-name').value='';
+ document.getElementById('oc-f-title').value='';
+ document.getElementById('oc-f-dept').value='Operations';
+ document.getElementById('oc-f-photo-url').value='';
+ var pf=document.getElementById('oc-f-photo-file');if(pf)pf.value='';
+ document.getElementById('oc-f-email').value='';
+ document.getElementById('oc-f-phone').value='';
+ document.getElementById('oc-f-hire').value='';
+ document.getElementById('oc-f-status').checked=true;
+ ocSyncStatusLbl();
+ ocPopulateReports(null);
+ var rpt=document.getElementById('oc-f-reports');if(rpt)rpt.value='';
+ var m=document.getElementById('oc-modal-bg');
+ if(m){m.classList.add('on');m.setAttribute('aria-hidden','false');}
+}
+function ocEdit(ev,id){
+ if(ev)ev.stopPropagation();
+ var e=_ocItems.filter(function(x){return x.id===id;})[0];
+ if(!e)return;
+ document.getElementById('oc-modal-title').textContent='Editar';
+ document.getElementById('oc-f-id').value=String(e.id);
+ document.getElementById('oc-f-name').value=e.name||'';
+ document.getElementById('oc-f-title').value=e.title||'';
+ document.getElementById('oc-f-dept').value=e.department||'Operations';
+ document.getElementById('oc-f-photo-url').value=e.photo_url||'';
+ var pf=document.getElementById('oc-f-photo-file');if(pf)pf.value='';
+ document.getElementById('oc-f-email').value=e.email||'';
+ document.getElementById('oc-f-phone').value=e.phone||'';
+ document.getElementById('oc-f-hire').value=e.hire_date||'';
+ document.getElementById('oc-f-status').checked=e.status==='active';
+ ocSyncStatusLbl();
+ ocPopulateReports(e.id);
+ var rt=e.reports_to;
+ document.getElementById('oc-f-reports').value=rt==null||rt===''?'':String(rt);
+ var m=document.getElementById('oc-modal-bg');
+ if(m){m.classList.add('on');m.setAttribute('aria-hidden','false');}
+}
+function ocSyncStatusLbl(){
+ var c=document.getElementById('oc-f-status').checked;
+ var l=document.getElementById('oc-f-status-lbl');if(l)l.textContent=c?'Active':'Inactive';
+}
+function ocCloseModal(){
+ var m=document.getElementById('oc-modal-bg');if(m){m.classList.remove('on');m.setAttribute('aria-hidden','true');}
+}
+function ocSaveModal(){
+ var idStr=document.getElementById('oc-f-id').value.trim();
+ var body={
+  name:document.getElementById('oc-f-name').value.trim(),
+  title:document.getElementById('oc-f-title').value.trim(),
+  department:document.getElementById('oc-f-dept').value,
+  email:document.getElementById('oc-f-email').value.trim(),
+  phone:document.getElementById('oc-f-phone').value.trim(),
+  hire_date:document.getElementById('oc-f-hire').value.trim(),
+  status:document.getElementById('oc-f-status').checked?'active':'inactive'
+ };
+ var ru=document.getElementById('oc-f-photo-url').value.trim();
+ var rtSel=document.getElementById('oc-f-reports').value;
+ body.reports_to=rtSel===''||rtSel===null?null:parseInt(rtSel,10);
+ if(!body.name){alert('Nome e obrigatorio.');return;}
+ function doSave(photoUrl){
+  body.photo_url=photoUrl||'';
+  var url=ocApiBase();
+  var method='POST';
+  if(idStr){url+='/'+encodeURIComponent(idStr);method='PUT';}
+  fetch(url,{method:method,mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j,s:r.status};});})
+  .then(function(o){
+   if(!o.ok){alert('Erro ao guardar ('+o.s+').');return;}
+   ocCloseModal();
+   ocLoadPage();
+  })
+  .catch(function(){alert('Erro de rede.');});
+ }
+ var fi=document.getElementById('oc-f-photo-file');
+ if(fi&&fi.files&&fi.files[0]){
+  var fr=new FileReader();
+  fr.onload=function(){
+   doSave(String(fr.result||ru||''));
+  };
+  fr.onerror=function(){doSave(ru);};
+  fr.readAsDataURL(fi.files[0]);
+ }else{
+  doSave(ru);
+ }
+}
+function ocDelete(ev,id){
+ if(ev)ev.stopPropagation();
+ if(!confirm('Excluir este funcionario?'))return;
+ fetch(ocApiBase()+'/'+encodeURIComponent(id),{method:'DELETE',mode:'cors',credentials:'omit'})
+ .then(function(r){
+  if(!r.ok){alert('Erro ao excluir.');return;}
+  ocClosePanel();
+  ocLoadPage();
+ })
+ .catch(function(){alert('Erro de rede.');});
+}
+function ocWirePageOnce(){
+ if(window._ocWired)return;
+ window._ocWired=1;
+ var b=document.getElementById('oc-btn-add');if(b)b.addEventListener('click',function(){ocOpenCreate();});
+ var tv=document.getElementById('oc-btn-view-toggle');if(tv)tv.addEventListener('click',function(){ocSetView(_ocView==='tree'?'table':'tree');});
+ var fd=document.getElementById('oc-filter-dept');if(fd)fd.addEventListener('change',function(){ocRender();});
+ var fq=document.getElementById('oc-filter-q');if(fq){fq.addEventListener('input',function(){ocRender();});fq.addEventListener('change',function(){ocRender();});}
+ var fa=document.getElementById('oc-filter-active');if(fa)fa.addEventListener('change',function(){ocRender();});
+ var st=document.getElementById('oc-f-status');if(st)st.addEventListener('change',function(){ocSyncStatusLbl();});
+}
+window.ocLoadPage=ocLoadPage;
+window.ocWirePageOnce=ocWirePageOnce;
+window.ocEdit=ocEdit;
+window.ocDelete=ocDelete;
+window.ocCardClick=ocCardClick;
+window.ocCloseModal=ocCloseModal;
+window.ocSaveModal=ocSaveModal;
+window.ocClosePanel=ocClosePanel;
+
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -3455,8 +4449,10 @@ function nav(r){
    if(!window._cuMgmtClientId)r='home';
   }
  }
- if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users'];if(mb.indexOf(r)>=0)r='home';}
+ if(r==='gross-expenses'&&lvl!=='ADMIN')r='home';
+ if(r==='org-chart'&&lvl!=='ADMIN')r='home';
+ if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart'];if(vb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -3482,6 +4478,7 @@ function nav(r){
  window.scrollTo(0,0);
  // render hooks
  const renders={
+ home:()=>{if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();},
  longterm:()=>typeof ltDashRender==='function'&&ltDashRender(),
  ltproperties:()=>typeof ltpRender==='function'&&ltpRender(),
  ltstatements:()=>typeof ltRender==='function'&&ltRender(),
@@ -3496,7 +4493,9 @@ function nav(r){
  'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
  clients:()=>{if(typeof loadClients==='function')loadClients();},
- 'client-users':()=>{if(typeof renderClientUsersPage==='function')renderClientUsersPage();}
+ 'client-users':()=>{if(typeof renderClientUsersPage==='function')renderClientUsersPage();},
+ 'gross-expenses':()=>{if(typeof geWirePageOnce==='function')geWirePageOnce();if(typeof geLoadPage==='function')geLoadPage();},
+ 'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();}
  };
  if(renders[r]) setTimeout(renders[r],30);
 }
@@ -6301,7 +7300,6 @@ window.addEventListener('DOMContentLoaded',()=>{
  // show home after brief splash
  setTimeout(()=>{
  document.getElementById('ls').style.display='none';
- renderCards();
  updateLastSavedBar();
  let h=window.location.hash.replace('#','');
  if(h && h.toLowerCase()==='integrations') h='integrations';
