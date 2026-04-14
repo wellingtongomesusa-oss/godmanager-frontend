@@ -283,8 +283,8 @@ def register_routes(app):
         exists = User.query.filter_by(username=username).first() is not None
         return jsonify({"available": not exists})
 
-    @app.route("/api/ramp/transactions")
-    def ramp_transactions():
+    @app.route("/api/ramp-legacy/transactions")
+    def ramp_transactions_legacy():
         client_id = os.environ.get("RAMP_CLIENT_ID")
         client_secret = os.environ.get("RAMP_CLIENT_SECRET")
         if not client_id or not client_secret:
@@ -310,8 +310,8 @@ def register_routes(app):
         )
         return jsonify(tx_res.json())
 
-    @app.route("/api/ramp/cards")
-    def ramp_cards():
+    @app.route("/api/ramp-legacy/cards")
+    def ramp_cards_legacy():
         client_id = os.environ.get("RAMP_CLIENT_ID")
         client_secret = os.environ.get("RAMP_CLIENT_SECRET")
         if not client_id or not client_secret:

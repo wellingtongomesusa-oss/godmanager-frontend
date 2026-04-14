@@ -152,6 +152,34 @@ def _ramp_get(path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Optio
     return (resp.json() if resp.content else {}), None, 200
 
 
+def _default_date_range() -> Tuple[str, str]:
+    now = datetime.now(timezone.utc)
+    frm = now - timedelta(days=30)
+    return frm.isoformat(), now.isoformat()
+
+
+def _collect_transactions(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Optional[str], int]:
+    all_rows: List[Dict[str, Any]] = []
+    page_params = dict(params)
+    max_pages = int(request.args.get("max_pages") or 25)
+    pages = 0
+    while pages < max_pages:
+        payload, err, code = _ramp_get("transactions", page_params)
+        if err:
+            return [], err, code
+        rows = _extract_list(payload)
+        all_rows.extend(rows)
+        pages += 1
+        next_cursor = None
+        if isinstance(payload, dict):
+            page_info = payload.get("page") if isinstance(payload.get("page"), dict) else {}
+            next_cursor = page_info.get("next") or payload.get("next_start") or payload.get("next")
+        if not next_cursor:
+            break
+        page_params["start"] = str(next_cursor)
+    return all_rows, None, 200
+
+
 def _extract_list(payload: Any) -> List[Dict[str, Any]]:
     if isinstance(payload, list):
         return [x for x in payload if isinstance(x, dict)]
@@ -248,16 +276,20 @@ def ramp_diag_env():
 @ramp_bp.get("/transactions")
 def ramp_transactions():
     params: Dict[str, Any] = {}
-    for q in ("from_date", "to_date", "start", "page_size"):
+    for q in ("from_date", "to_date", "start", "page_size", "user_id", "merchant"):
         val = request.args.get(q)
         if val:
             params[q] = val
+    if "from_date" not in params or "to_date" not in params:
+        dfrom, dto = _default_date_range()
+        params.setdefault("from_date", dfrom)
+        params.setdefault("to_date", dto)
+    params.setdefault("page_size", request.args.get("page_size", "500"))
 
-    payload, err, code = _ramp_get("transactions", params)
+    rows, err, code = _collect_transactions(params)
     if err:
         return jsonify({"error": err, "transactions": []}), code
 
-    rows = _extract_list(payload)
     txs = [
         {
             "id": tx.get("id"),
@@ -265,7 +297,9 @@ def ramp_transactions():
             "merchant_name": _tx_merchant(tx),
             "category": _tx_category(tx),
             "card_holder": _tx_holder(tx),
+            "user_id": (tx.get("user") or {}).get("id") if isinstance(tx.get("user"), dict) else tx.get("user_id"),
             "card_last4": str((tx.get("card") or {}).get("last_four") or tx.get("card_last_four") or ""),
+            "card_id": str((tx.get("card") or {}).get("id") or tx.get("card_id") or ""),
             "date": _tx_date(tx),
             "receipt_status": _tx_receipt_status(tx),
             "status": str(tx.get("state") or tx.get("status") or "PENDING").upper(),
@@ -276,58 +310,89 @@ def ramp_transactions():
     return jsonify(
         {
             "transactions": txs,
-            "start": payload.get("start") if isinstance(payload, dict) else None,
-            "next_start": payload.get("next_start") if isinstance(payload, dict) else None,
-            "has_more": bool((payload or {}).get("has_more")) if isinstance(payload, dict) else False,
+            "count": len(txs),
+            "filters": {"from_date": params.get("from_date"), "to_date": params.get("to_date"), "user_id": params.get("user_id"), "merchant": params.get("merchant")},
         }
     )
 
 
-@ramp_bp.get("/transactions/summary")
-def ramp_transactions_summary():
-    params: Dict[str, Any] = {}
-    for q in ("from_date", "to_date", "start", "page_size"):
-        val = request.args.get(q)
-        if val:
-            params[q] = val
-    if "page_size" not in params:
-        params["page_size"] = "500"
-
-    payload, err, code = _ramp_get("transactions", params)
+def _build_summary_response(params: Dict[str, Any]):
+    rows, err, code = _collect_transactions(params)
     if err:
         return jsonify({"error": err, "summary": {}}), code
 
-    rows = _extract_list(payload)
-    by_merchant: Dict[str, float] = {}
+    by_merchant: Dict[str, Dict[str, Any]] = {}
     by_category: Dict[str, float] = {}
-    by_user: Dict[str, float] = {}
+    by_user: Dict[str, Dict[str, Any]] = {}
     by_month: Dict[str, float] = {}
     total_spent = 0.0
 
     for tx in rows:
-        amount = _tx_amount(tx)
+        amount = abs(_tx_amount(tx))
         total_spent += amount
         merchant = _tx_merchant(tx)
         category = _tx_category(tx)
         holder = _tx_holder(tx)
         month = _tx_month(tx)
-        by_merchant[merchant] = by_merchant.get(merchant, 0.0) + amount
+        if merchant not in by_merchant:
+            by_merchant[merchant] = {"name": merchant, "total": 0.0, "count": 0}
+        by_merchant[merchant]["total"] += amount
+        by_merchant[merchant]["count"] += 1
         by_category[category] = by_category.get(category, 0.0) + amount
-        by_user[holder] = by_user.get(holder, 0.0) + amount
+        if holder not in by_user:
+            by_user[holder] = {"name": holder, "total": 0.0, "count": 0}
+        by_user[holder]["total"] += amount
+        by_user[holder]["count"] += 1
         by_month[month] = by_month.get(month, 0.0) + amount
+
+    by_cat_arr = [{"name": k, "total": v} for k, v in sorted(by_category.items(), key=lambda x: x[1], reverse=True)]
+    by_mon_arr = [{"month": k, "total": v} for k, v in sorted(by_month.items(), key=lambda x: x[0])]
+    by_user_arr = sorted(by_user.values(), key=lambda x: x["total"], reverse=True)
+    by_mer_arr = sorted(by_merchant.values(), key=lambda x: x["total"], reverse=True)
 
     return jsonify(
         {
             "summary": {
                 "total_spent": total_spent,
+                "transaction_count": len(rows),
                 "count": len(rows),
-                "by_merchant": by_merchant,
-                "by_category": by_category,
-                "by_user": by_user,
-                "by_month": by_month,
+                "by_user": by_user_arr,
+                "by_merchant": by_mer_arr,
+                "by_category": by_cat_arr,
+                "by_month": by_mon_arr,
             }
         }
-    )
+    ), 200
+
+
+@ramp_bp.get("/transactions/summary")
+def ramp_transactions_summary():
+    params: Dict[str, Any] = {}
+    for q in ("from_date", "to_date", "start", "page_size", "user_id", "merchant"):
+        val = request.args.get(q)
+        if val:
+            params[q] = val
+    if "from_date" not in params or "to_date" not in params:
+        dfrom, dto = _default_date_range()
+        params.setdefault("from_date", dfrom)
+        params.setdefault("to_date", dto)
+    params.setdefault("page_size", request.args.get("page_size", "500"))
+    return _build_summary_response(params)
+
+
+@ramp_bp.get("/summary")
+def ramp_summary():
+    params: Dict[str, Any] = {}
+    for q in ("from_date", "to_date", "start", "page_size", "user_id", "merchant"):
+        val = request.args.get(q)
+        if val:
+            params[q] = val
+    if "from_date" not in params or "to_date" not in params:
+        dfrom, dto = _default_date_range()
+        params.setdefault("from_date", dfrom)
+        params.setdefault("to_date", dto)
+    params.setdefault("page_size", request.args.get("page_size", "500"))
+    return _build_summary_response(params)
 
 
 @ramp_bp.get("/cards")
