@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import threading
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -30,6 +31,21 @@ def _ramp_scope() -> str:
         "RAMP_SCOPE",
         "cards:read users:read departments:read vendors:read statements:read reimbursements:read transactions:read",
     ).strip() or "read"
+
+
+def _masked_info(name: str) -> Dict[str, Any]:
+    val = os.getenv(name, "")
+    has = bool(val)
+    v = val.strip()
+    digest = hashlib.sha256(v.encode("utf-8")).hexdigest()[:12] if v else ""
+    return {
+        "name": name,
+        "present": has,
+        "length": len(v),
+        "prefix": v[:8] if v else "",
+        "suffix": v[-6:] if v else "",
+        "sha256_12": digest,
+    }
 
 
 def _token_is_valid() -> bool:
@@ -211,6 +227,22 @@ def _tx_receipt_status(tx: Dict[str, Any]) -> str:
 def ramp_status():
     token, err = _fetch_token()
     return jsonify({"connected": bool(token and not err), "error": err})
+
+
+@ramp_bp.get("/diag-env")
+def ramp_diag_env():
+    """Safe diagnostic for runtime env (no raw secrets)."""
+    return jsonify(
+        {
+            "service_time_utc": datetime.now(timezone.utc).isoformat(),
+            "vars": {
+                "RAMP_CLIENT_ID": _masked_info("RAMP_CLIENT_ID"),
+                "RAMP_CLIENT_SECRET": _masked_info("RAMP_CLIENT_SECRET"),
+                "RAMP_API_BASE_URL": _masked_info("RAMP_API_BASE_URL"),
+                "RAMP_SCOPE": _masked_info("RAMP_SCOPE"),
+            },
+        }
+    )
 
 
 @ramp_bp.get("/transactions")
