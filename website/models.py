@@ -60,3 +60,14 @@ class SiteConfig(db.Model):
     value = db.Column(db.Text)
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
 
+
+class AppData(db.Model):
+    """Key-value JSON blobs (full AppFolio shapes, vendors, etc.) for cross-device sync."""
+
+    __tablename__ = "app_data"
+
+    id = db.Column(db.Integer, primary_key=True)
+    data_key = db.Column(db.String(100), unique=True, nullable=False)
+    data_value = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+

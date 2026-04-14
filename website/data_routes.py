@@ -2,12 +2,99 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, jsonify, request
 
 from app import db
-from models import Expense, Property, SiteConfig
+from models import AppData, Expense, Property, SiteConfig
+
+_APPDATA_EXTRA_KEYS = frozenset(
+    {"appfolio_vendors", "manual_properties", "manual_expenses", "site_config", "gm_vendors"}
+)
+
+# Single JSON object: mirrors former browser localStorage (cross-device).
+_CLIENT_KV_ROW_KEY = "gm_client_kv"
+
+
+def _load_client_kv() -> Dict[str, Any]:
+    row = _appdata_row(_CLIENT_KV_ROW_KEY)
+    if not row:
+        return {}
+    try:
+        v = json.loads(row.data_value or "{}")
+    except Exception:
+        return {}
+    return v if isinstance(v, dict) else {}
+
+
+def _persist_client_kv(data: Dict[str, Any]) -> None:
+    _persist_appdata(_CLIENT_KV_ROW_KEY, data)
+
+
+def _merge_client_kv(updates: Optional[dict]) -> None:
+    if not isinstance(updates, dict):
+        return
+    base = _load_client_kv()
+    for k, v in updates.items():
+        ks = str(k) if k is not None else ""
+        if not ks or len(ks) > 200:
+            continue
+        if v is None:
+            base.pop(ks, None)
+        else:
+            base[ks] = v
+    _persist_client_kv(base)
+
+
+def _appdata_key_ok(key: str) -> bool:
+    if not key or len(key) > 100:
+        return False
+    if not (key[0].isalpha() or key[0] == "_"):
+        return False
+    for ch in key[1:]:
+        if ch.isalnum() or ch == "_":
+            continue
+        return False
+    return True
+
+
+def _persist_appdata(key: str, value: Any) -> None:
+    if not _appdata_key_ok(key):
+        return
+    val_str = value if isinstance(value, str) else json.dumps(value)
+    rec = AppData.query.filter_by(data_key=key).first()
+    if rec:
+        rec.data_value = val_str
+    else:
+        db.session.add(AppData(data_key=key, data_value=val_str))
+
+
+def _appdata_row(key: str) -> Optional[AppData]:
+    return AppData.query.filter_by(data_key=key).first()
+
+
+def _appdata_json_list(key: str) -> Optional[List[Any]]:
+    row = _appdata_row(key)
+    if not row:
+        return None
+    try:
+        parsed = json.loads(row.data_value or "null")
+    except Exception:
+        return None
+    if isinstance(parsed, list):
+        return parsed
+    return None
+
+
+def _appdata_json_value(key: str) -> Any:
+    row = _appdata_row(key)
+    if not row:
+        return None
+    try:
+        return json.loads(row.data_value or "null")
+    except Exception:
+        return row.data_value
 
 data_bp = Blueprint("data", __name__, url_prefix="/api/data")
 
@@ -149,6 +236,8 @@ def import_properties():
     for row in rows:
         if isinstance(row, dict):
             _upsert_property(row)
+    if isinstance(rows, list):
+        _persist_appdata("appfolio_properties", rows)
     db.session.commit()
     return jsonify({"ok": True, "count": len(rows)})
 
@@ -188,6 +277,8 @@ def import_expenses():
     for row in rows:
         if isinstance(row, dict):
             _upsert_expense(row)
+    if isinstance(rows, list):
+        _persist_appdata("appfolio_expenses", rows)
     db.session.commit()
     return jsonify({"ok": True, "count": len(rows)})
 
@@ -246,19 +337,66 @@ def load_config():
     return jsonify({"config": out})
 
 
+@data_bp.post("/save")
+def save_appdata_kv():
+    payload = request.get_json(silent=True) or {}
+    key = _s(payload.get("key"))
+    if not key or not _appdata_key_ok(key):
+        return jsonify({"error": "invalid key", "success": False}), 400
+    value = payload.get("value")
+    _persist_appdata(key, value)
+    db.session.commit()
+    return jsonify({"success": True, "ok": True})
+
+
+@data_bp.get("/load/<key>")
+def load_appdata_kv(key: str):
+    k = _s(key)
+    if not k or not _appdata_key_ok(k):
+        return jsonify({"key": k or key, "value": None, "success": False}), 400
+    row = _appdata_row(k)
+    if not row:
+        return jsonify({"key": k, "value": None, "success": True})
+    try:
+        val: Any = json.loads(row.data_value or "null")
+    except Exception:
+        val = row.data_value
+    return jsonify({"key": k, "value": val, "success": True})
+
+
+@data_bp.post("/client-kv-merge")
+def client_kv_merge():
+    """Merge a partial dict into the shared client_kv blob (debounced UI saves)."""
+    payload = request.get_json(silent=True) or {}
+    kv = payload.get("client_kv")
+    if not isinstance(kv, dict):
+        return jsonify({"ok": False, "error": "client_kv object required"}), 400
+    _merge_client_kv(kv)
+    db.session.commit()
+    return jsonify({"ok": True, "success": True})
+
+
 @data_bp.post("/save-all")
 def save_all():
     payload = request.get_json(silent=True) or {}
-    properties = payload.get("properties") or []
-    expenses = payload.get("expenses") or []
+    properties = payload.get("properties")
+    expenses = payload.get("expenses")
     config = payload.get("config") or {}
 
-    for row in properties:
-        if isinstance(row, dict):
-            _upsert_property(row)
-    for row in expenses:
-        if isinstance(row, dict):
-            _upsert_expense(row)
+    prop_count = 0
+    exp_count = 0
+    if isinstance(properties, list):
+        prop_count = len(properties)
+        for row in properties:
+            if isinstance(row, dict):
+                _upsert_property(row)
+        _persist_appdata("appfolio_properties", properties)
+    if isinstance(expenses, list):
+        exp_count = len(expenses)
+        for row in expenses:
+            if isinstance(row, dict):
+                _upsert_expense(row)
+        _persist_appdata("appfolio_expenses", expenses)
     if isinstance(config, dict):
         for k, v in config.items():
             key = _s(k)
@@ -267,8 +405,51 @@ def save_all():
             cfg = SiteConfig.query.filter_by(key=key).first() or SiteConfig(key=key)
             cfg.value = json.dumps(v) if not isinstance(v, str) else v
             db.session.add(cfg)
+
+    appdata = payload.get("appdata")
+    if isinstance(appdata, dict):
+        for k, v in appdata.items():
+            ks = _s(k)
+            if _appdata_key_ok(ks):
+                _persist_appdata(ks, v)
+
+    for ek in _APPDATA_EXTRA_KEYS:
+        if ek in payload:
+            _persist_appdata(ek, payload.get(ek))
+
+    if isinstance(payload.get("client_kv"), dict):
+        _merge_client_kv(payload["client_kv"])
+
     db.session.commit()
-    return jsonify({"ok": True, "saved": {"properties": len(properties), "expenses": len(expenses), "config": len(config) if isinstance(config, dict) else 0}})
+
+    keys_saved: List[str] = []
+    if isinstance(properties, list):
+        keys_saved.append("properties")
+    if isinstance(expenses, list):
+        keys_saved.append("expenses")
+    if "config" in payload:
+        keys_saved.append("config")
+    if isinstance(appdata, dict):
+        keys_saved.extend([_s(k) for k in appdata if _appdata_key_ok(_s(k))])
+    keys_saved.extend([k for k in _APPDATA_EXTRA_KEYS if k in payload])
+    if isinstance(payload.get("client_kv"), dict):
+        keys_saved.append("client_kv")
+
+    return jsonify(
+        {
+            "ok": True,
+            "success": True,
+            "saved": {
+                "properties": prop_count,
+                "expenses": exp_count,
+                "config": len(config) if isinstance(config, dict) else 0,
+            },
+            "keys_saved": keys_saved,
+        }
+    )
+
+
+_RESERVED_LOAD_KEYS = frozenset({"properties", "expenses", "config"})
 
 
 @data_bp.get("/load-all")
@@ -276,11 +457,38 @@ def load_all():
     props = Property.query.order_by(Property.updated_at.desc(), Property.id.desc()).all()
     exps = Expense.query.order_by(Expense.updated_at.desc(), Expense.id.desc()).all()
     cfg_rows = SiteConfig.query.order_by(SiteConfig.key.asc()).all()
-    cfg = {}
+    cfg: Dict[str, Any] = {}
     for r in cfg_rows:
         try:
             cfg[r.key] = json.loads(r.value or "")
         except Exception:
             cfg[r.key] = r.value
-    return jsonify({"properties": [_serialize_property(p) for p in props], "expenses": [_serialize_expense(e) for e in exps], "config": cfg})
+
+    base_props = [_serialize_property(p) for p in props]
+    base_exps = [_serialize_expense(e) for e in exps]
+
+    rich_p = _appdata_json_list("appfolio_properties")
+    props_out: List[Any] = rich_p if rich_p is not None else base_props
+
+    rich_e = _appdata_json_list("appfolio_expenses")
+    exps_out: List[Any] = rich_e if rich_e is not None else base_exps
+
+    out: Dict[str, Any] = {
+        "properties": props_out,
+        "expenses": exps_out,
+        "config": cfg,
+        "client_kv": _load_client_kv(),
+    }
+
+    for row in AppData.query.order_by(AppData.data_key.asc()).all():
+        if row.data_key in ("appfolio_properties", "appfolio_expenses", _CLIENT_KV_ROW_KEY):
+            continue
+        if row.data_key in _RESERVED_LOAD_KEYS:
+            continue
+        try:
+            out[row.data_key] = json.loads(row.data_value or "null")
+        except Exception:
+            out[row.data_key] = row.data_value
+
+    return jsonify(out)
 
