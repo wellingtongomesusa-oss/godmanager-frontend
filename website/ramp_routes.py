@@ -5,6 +5,7 @@ import os
 import threading
 import hashlib
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -337,15 +338,99 @@ def _tx_category(tx: Dict[str, Any]) -> str:
     return str(category)
 
 
-def _tx_holder(tx: Dict[str, Any]) -> str:
+def _ramp_user_display_name(u: Dict[str, Any]) -> str:
+    fn = str(u.get("first_name") or "").strip()
+    ln = str(u.get("last_name") or "").strip()
+    full = f"{fn} {ln}".strip()
+    if full:
+        return full
+    email = str(u.get("email") or "").strip()
+    if email:
+        return email
+    return "Unknown"
+
+
+def _users_list_to_name_map(users: List[Dict[str, Any]]) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for u in users:
+        if not isinstance(u, dict):
+            continue
+        uid = u.get("id")
+        if uid is None:
+            continue
+        out[str(uid)] = _ramp_user_display_name(u)
+    return out
+
+
+def _tx_user_ids_candidates(tx: Dict[str, Any]) -> List[str]:
+    seen: set = set()
+    out: List[str] = []
+    u = tx.get("user")
+    if isinstance(u, dict) and u.get("id") is not None:
+        s = str(u["id"])
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    if tx.get("user_id") is not None:
+        s = str(tx["user_id"])
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    card = tx.get("card") or {}
+    if isinstance(card, dict):
+        for k in ("user_id", "cardholder_id", "cardholder_user_id"):
+            v = card.get(k)
+            if v is not None and str(v).strip():
+                s = str(v).strip()
+                if s not in seen:
+                    seen.add(s)
+                    out.append(s)
+    return out
+
+
+def _primary_user_id(tx: Dict[str, Any]) -> Optional[str]:
+    ids = _tx_user_ids_candidates(tx)
+    return ids[0] if ids else None
+
+
+def _ramp_fetch_users_name_map() -> Tuple[Dict[str, str], Optional[str]]:
+    rows, err, _ = _ramp_collect_all_pages("users", {"page_size": _RAMP_PAGE_SIZE_DEFAULT})
+    if err:
+        return {}, err
+    return _users_list_to_name_map(rows), None
+
+
+def _user_department_label(u: Dict[str, Any]) -> str:
+    dep = u.get("department")
+    if isinstance(dep, dict):
+        return str(dep.get("name") or dep.get("id") or "").strip()
+    if dep is not None:
+        return str(dep).strip()
+    return ""
+
+
+def _tx_holder(tx: Dict[str, Any], user_map: Optional[Dict[str, str]] = None) -> str:
     user = tx.get("user") or {}
-    if isinstance(user, dict):
-        full = " ".join(x for x in [str(user.get("first_name") or "").strip(), str(user.get("last_name") or "").strip()] if x).strip()
-        if full:
-            return full
+    if isinstance(user, dict) and user.get("id") is not None:
+        name = _ramp_user_display_name(user)
+        if name != "Unknown":
+            return name
         if user.get("email"):
             return str(user["email"])
-    return str(tx.get("card_holder_name") or ((tx.get("cardholder") or {}).get("display_name")) or "Unknown")
+    ch = tx.get("cardholder") or {}
+    if isinstance(ch, dict):
+        dn = str(ch.get("display_name") or "").strip()
+        if dn:
+            return dn
+    legacy = str(tx.get("card_holder_name") or "").strip()
+    if legacy and legacy.lower() != "unknown":
+        return legacy
+    if user_map:
+        for uid in _tx_user_ids_candidates(tx):
+            nm = user_map.get(uid)
+            if nm and nm != "Unknown":
+                return nm
+    return "Unknown"
 
 
 def _tx_receipt_status(tx: Dict[str, Any]) -> str:
@@ -401,23 +486,29 @@ def ramp_transactions():
         return jsonify({"error": err, "transactions": []}), code
     logger.info("Ramp transactions total count: %s", len(rows))
 
-    txs = [
-        {
-            "id": tx.get("id"),
-            "amount": _tx_amount(tx),
-            "merchant_name": _tx_merchant(tx),
-            "category": _tx_category(tx),
-            "card_holder": _tx_holder(tx),
-            "user_id": (tx.get("user") or {}).get("id") if isinstance(tx.get("user"), dict) else tx.get("user_id"),
-            "card_last4": str((tx.get("card") or {}).get("last_four") or tx.get("card_last_four") or ""),
-            "card_id": str((tx.get("card") or {}).get("id") or tx.get("card_id") or ""),
-            "date": _tx_date(tx),
-            "receipt_status": _tx_receipt_status(tx),
-            "status": str(tx.get("state") or tx.get("status") or "PENDING").upper(),
-            "raw": tx,
-        }
-        for tx in rows
-    ]
+    user_map, _ = _ramp_fetch_users_name_map()
+
+    txs = []
+    for tx in rows:
+        holder = _tx_holder(tx, user_map)
+        uid = _primary_user_id(tx)
+        txs.append(
+            {
+                "id": tx.get("id"),
+                "amount": _tx_amount(tx),
+                "merchant_name": _tx_merchant(tx),
+                "category": _tx_category(tx),
+                "card_holder": holder,
+                "card_holder_name": holder,
+                "user_id": uid,
+                "card_last4": str((tx.get("card") or {}).get("last_four") or tx.get("card_last_four") or ""),
+                "card_id": str((tx.get("card") or {}).get("id") or tx.get("card_id") or ""),
+                "date": _tx_date(tx),
+                "receipt_status": _tx_receipt_status(tx),
+                "status": str(tx.get("state") or tx.get("status") or "PENDING").upper(),
+                "raw": tx,
+            }
+        )
     return jsonify(
         {
             "transactions": txs,
@@ -433,6 +524,8 @@ def _build_summary_response(params: Dict[str, Any]):
     if err:
         return jsonify({"error": err, "summary": {}}), code
 
+    user_map, _ = _ramp_fetch_users_name_map()
+
     by_merchant: Dict[str, Dict[str, Any]] = {}
     by_category: Dict[str, float] = {}
     by_user: Dict[str, Dict[str, Any]] = {}
@@ -444,7 +537,7 @@ def _build_summary_response(params: Dict[str, Any]):
         total_spent += amount
         merchant = _tx_merchant(tx)
         category = _tx_category(tx)
-        holder = _tx_holder(tx)
+        holder = _tx_holder(tx, user_map)
         month = _tx_month(tx)
         if merchant not in by_merchant:
             by_merchant[merchant] = {"name": merchant, "total": 0.0, "count": 0}
@@ -591,6 +684,71 @@ def ramp_users():
         for u in users
     ]
     return jsonify({"users": data})
+
+
+@ramp_bp.get("/cardholders")
+def ramp_cardholders():
+    """Users merged with transaction spend for filters and analytics."""
+    params: Dict[str, Any] = {}
+    for q in ("from_date", "to_date", "start", "page_size", "user_id", "merchant"):
+        val = request.args.get(q)
+        if val:
+            params[q] = val
+    if "from_date" not in params or "to_date" not in params:
+        dfrom, dto = _default_date_range()
+        params.setdefault("from_date", dfrom)
+        params.setdefault("to_date", dto)
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size") or request.args.get("page_size"))
+
+    users, u_err, u_code = _ramp_collect_all_pages("users", {"page_size": _RAMP_PAGE_SIZE_DEFAULT})
+    if u_err:
+        return jsonify({"error": u_err, "cardholders": []}), u_code
+
+    tx_params = {k: v for k, v in params.items() if k not in ("user_id", "merchant")}
+    tx_rows, tx_err, tx_code = _collect_transactions(tx_params)
+    if tx_err:
+        return jsonify({"error": tx_err, "cardholders": []}), tx_code
+
+    user_map = _users_list_to_name_map(users)
+    users_by_id: Dict[str, Dict[str, Any]] = {}
+    for u in users:
+        if isinstance(u, dict) and u.get("id") is not None:
+            users_by_id[str(u["id"])] = u
+
+    agg: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"total_spent": 0.0, "transaction_count": 0, "last": ""})
+    for tx in tx_rows:
+        uid = _primary_user_id(tx)
+        if not uid:
+            continue
+        amt = abs(_tx_amount(tx))
+        agg[uid]["total_spent"] += amt
+        agg[uid]["transaction_count"] += 1
+        d = _tx_date(tx)
+        if d and (not agg[uid]["last"] or d > agg[uid]["last"]):
+            agg[uid]["last"] = d
+
+    all_ids = set(users_by_id.keys()) | set(agg.keys())
+    out: List[Dict[str, Any]] = []
+    for uid_str in sorted(all_ids, key=lambda k: (-agg[k]["total_spent"], user_map.get(k, "Unknown"))):
+        u = users_by_id.get(uid_str, {})
+        dep = _user_department_label(u) if u else ""
+        email = str(u.get("email") or "").strip() if u else ""
+        name = user_map.get(uid_str) or "Unknown"
+        if name == "Unknown" and u:
+            name = _ramp_user_display_name(u)
+        a = agg[uid_str]
+        out.append(
+            {
+                "id": uid_str,
+                "name": name,
+                "email": email or "—",
+                "department": dep or "—",
+                "total_spent": round(a["total_spent"], 2),
+                "transaction_count": int(a["transaction_count"]),
+                "last_transaction_date": a["last"] or "",
+            }
+        )
+    return jsonify({"cardholders": out, "count": len(out)})
 
 
 @ramp_bp.get("/departments")

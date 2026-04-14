@@ -2781,7 +2781,7 @@ function rampTxDate(tx){
 function rampTxHolder(tx){
  var u=tx&&tx.user;
  if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||(u.email||'—');
- return (tx&&tx.card_holder_name)||(tx&&tx.cardholder&&tx.cardholder.display_name)||'—';
+ return (tx&&tx.card_holder_name)||(tx&&tx.card_holder)||(tx&&tx.cardholder&&tx.cardholder.display_name)||'—';
 }
 function rampTxEmail(tx){
  var u=tx&&tx.user;
