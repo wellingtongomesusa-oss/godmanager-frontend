@@ -278,6 +278,32 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #page-appfolio-upload .af-prog>i{display:block;height:100%;width:0;background:var(--amber);transition:width .12s ease}
 #page-appfolio-upload #af-summary-grid .gm-ix-kpi{padding:14px 16px}
 #page-appfolio-upload #af-summary-grid .k-v{font-size:16px}
+/* Cadastro AppFolio (propriedades) */
+#page-cadastro-appfolio .afp-wrap{background:#1a1a2e;border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:18px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+#page-cadastro-appfolio .afp-drop{border:2px dashed rgba(212,175,55,.35);border-radius:12px;padding:28px 20px;background:rgba(212,175,55,.05);text-align:center;cursor:pointer;transition:border-color .18s ease,background .18s ease}
+#page-cadastro-appfolio .afp-drop.drag{border-color:var(--amber);background:rgba(212,175,55,.1)}
+#page-cadastro-appfolio .afp-filters{display:flex;gap:8px;flex-wrap:wrap}
+#page-cadastro-appfolio .afp-filter-btn{padding:7px 10px;border-radius:999px;border:1px solid rgba(212,175,55,.3);background:rgba(255,255,255,.02);color:#e9d2a4;font-size:11px;font-weight:600;cursor:pointer}
+#page-cadastro-appfolio .afp-filter-btn.active{background:rgba(212,175,55,.16);border-color:var(--amber);color:#f6deb0}
+#page-cadastro-appfolio .afp-search{padding:8px 11px;border:1px solid rgba(212,175,55,.3);border-radius:8px;background:rgba(0,0,0,.18);color:#f5e6d4;min-width:260px;outline:none}
+#page-cadastro-appfolio .afp-search:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
+#page-cadastro-appfolio .afp-table-wrap{margin-top:14px;border:1px solid rgba(212,175,55,.2);border-radius:10px;overflow:auto;background:rgba(0,0,0,.15)}
+#page-cadastro-appfolio .afp-table{width:100%;border-collapse:collapse;min-width:1120px}
+#page-cadastro-appfolio .afp-table th{padding:10px 10px;font-size:9px;letter-spacing:.8px;text-transform:uppercase;text-align:left;color:rgba(248,246,242,.7);background:rgba(212,175,55,.09);border-bottom:1px solid rgba(212,175,55,.2);cursor:pointer;user-select:none}
+#page-cadastro-appfolio .afp-table td{padding:10px;border-bottom:1px solid rgba(212,175,55,.14);font-size:12px;color:#f3ebdd}
+#page-cadastro-appfolio .afp-table tr:hover{background:rgba(212,175,55,.05)}
+#page-cadastro-appfolio .afp-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid transparent}
+#page-cadastro-appfolio .afp-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}
+#page-cadastro-appfolio .afp-modal{display:none;position:fixed;inset:0;z-index:9300;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:18px}
+#page-cadastro-appfolio .afp-modal-card{width:min(920px,96vw);max-height:88vh;overflow:auto;background:#1a1a2e;border:1px solid rgba(212,175,55,.25);border-radius:14px;box-shadow:0 25px 60px rgba(0,0,0,.45)}
+#page-cadastro-appfolio .afp-sect{padding:14px 18px;border-bottom:1px solid rgba(212,175,55,.12)}
+#page-cadastro-appfolio .afp-sect h4{margin:0 0 10px;font-family:'Cormorant Garamond',serif;font-size:22px;color:#f4d8a6}
+#page-cadastro-appfolio .afp-kv{display:grid;grid-template-columns:220px 1fr;gap:8px;margin-bottom:7px}
+#page-cadastro-appfolio .afp-kv b{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:rgba(248,246,242,.58)}
+#page-cadastro-appfolio .afp-kv span{font-size:12px;color:#f3ebdd}
+#ls-appfolio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1100px){#ls-appfolio-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){#ls-appfolio-grid{grid-template-columns:1fr}}
 /* Gross & Expenses — tema escuro / champagne (escopo isolado) */
 #page-gross-expenses{background:var(--sand);min-height:calc(100vh - 54px)}
 #page-gross-expenses .ge-wrap{max-width:1400px;margin:0 auto}
@@ -452,6 +478,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('tenants')" id="nav-tenants">Tenants</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties">Ranking Properties</div>
  <div class="ss" onclick="nav('renovations')" id="nav-renovations">Renovations</div>
+<div class="ss" onclick="nav('cadastro-appfolio')" id="nav-cadastro-appfolio">Cadastro AppFolio</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="expenses">
@@ -1267,6 +1294,77 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="gm-ix-kpi k3"><div class="k-l">Unpaid</div><div class="k-v" id="af-sum-unp">—</div><div class="k-s">saldos em aberto</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k4"><div class="k-l">Leases ativos</div><div class="k-v" id="af-sum-lease">—</div><div class="k-s">após import</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k2"><div class="k-l">1099 owners</div><div class="k-v" id="af-sum-1099">—</div><div class="k-s">com valor &gt; 0</div><div class="k-bar"></div></div>
+ </div>
+</div>
+
+<div class="page" id="page-cadastro-appfolio">
+ <div class="ph">
+  <div class="pt">Cadastro AppFolio</div>
+  <div class="ps">Upload do property_directory CSV com cadastro, consulta e status de gestão</div>
+ </div>
+ <div class="afp-wrap">
+  <div id="afp-dropzone" class="afp-drop" role="button" tabindex="0" aria-label="Upload CSV AppFolio">
+   <div style="font-size:16px;font-weight:700;color:#f4d8a6;margin-bottom:6px">Arraste o CSV property_directory aqui</div>
+   <div style="font-size:12px;color:rgba(248,246,242,.68)">Formato AppFolio com 15 colunas · upload frontend</div>
+  </div>
+  <input type="file" id="afp-file-input" accept=".csv,text/csv" style="display:none"/>
+  <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+   <button type="button" class="btn-gm-ix-amber" id="afp-upload-btn">Upload CSV</button>
+   <span id="afp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
+  </div>
+ </div>
+ <div class="gm-ix-kpi-grid" id="afp-summary-grid" style="margin-top:18px;display:none">
+  <div class="gm-ix-kpi k2"><div class="k-l">Total Properties</div><div class="k-v" id="afp-sum-total">0</div><div class="k-s">itens importados</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi"><div class="k-l">Managed</div><div class="k-v" id="afp-sum-managed">0</div><div class="k-s">com comissão</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k3"><div class="k-l">Not Managed</div><div class="k-v" id="afp-sum-not-managed">0</div><div class="k-s">sem comissão</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k4"><div class="k-l">Rented</div><div class="k-v" id="afp-sum-rented">0</div><div class="k-s">market rent &gt; 0</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k2"><div class="k-l">Available</div><div class="k-v" id="afp-sum-available">0</div><div class="k-s">market rent vazio/0</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi"><div class="k-l">Total Market Rent</div><div class="k-v" id="afp-sum-rent">$0.00</div><div class="k-s">soma geral</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k3"><div class="k-l">Avg Management Fee</div><div class="k-v" id="afp-sum-mgmt-avg">0.00%</div><div class="k-s">média de comissão</div><div class="k-bar"></div></div>
+ </div>
+ <div class="afp-wrap" style="margin-top:18px">
+  <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+   <div class="afp-filters" id="afp-filter-buttons">
+    <button type="button" class="afp-filter-btn active" data-filter="all">All</button>
+    <button type="button" class="afp-filter-btn" data-filter="managed">Managed</button>
+    <button type="button" class="afp-filter-btn" data-filter="not-managed">Not Managed</button>
+    <button type="button" class="afp-filter-btn" data-filter="rented">Rented</button>
+    <button type="button" class="afp-filter-btn" data-filter="available">Available</button>
+   </div>
+   <input id="afp-search" class="afp-search" placeholder="Buscar por endereço ou owner..." />
+  </div>
+  <div class="afp-table-wrap">
+   <table class="afp-table">
+    <thead>
+     <tr>
+      <th data-sort="idx">#</th><th data-sort="address">Address</th><th data-sort="city">City</th><th data-sort="state">State</th><th data-sort="zip">ZIP</th>
+      <th data-sort="marketRent">Market Rent</th><th data-sort="sqft">Sqft</th><th data-sort="mgmtPercent">Mgmt Fee %</th><th data-sort="ownerName">Owner</th><th>Status</th><th>Actions</th>
+     </tr>
+    </thead>
+    <tbody id="afp-table-body"></tbody>
+   </table>
+  </div>
+  <div class="afp-pagination">
+   <button type="button" class="btn-gm-ix sec" id="afp-prev-page">Prev</button>
+   <span id="afp-page-info" style="font-size:11px;color:rgba(248,246,242,.7)">Page 1/1</span>
+   <button type="button" class="btn-gm-ix sec" id="afp-next-page">Next</button>
+  </div>
+ </div>
+ <div id="afp-modal" class="afp-modal" onclick="if(event.target===this)afpCloseModal()">
+  <div class="afp-modal-card">
+   <div class="afp-sect" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <div>
+     <div style="font-family:'Cormorant Garamond',serif;font-size:30px;color:#f4d8a6;line-height:1.05">Property Details</div>
+     <div id="afp-modal-title" style="font-size:12px;color:rgba(248,246,242,.65)">—</div>
+    </div>
+    <button class="btn-gm-ix sec" type="button" onclick="afpCloseModal()">Close</button>
+   </div>
+   <div class="afp-sect"><h4>Property Info</h4><div id="afp-modal-property-info"></div></div>
+   <div class="afp-sect"><h4>Financial</h4><div id="afp-modal-financial"></div></div>
+   <div class="afp-sect"><h4>Owner</h4><div id="afp-modal-owner"></div></div>
+   <div class="afp-sect"><h4>Compliance</h4><div id="afp-modal-compliance"></div></div>
+   <div class="afp-sect"><h4>Raw CSV Fields</h4><div id="afp-modal-raw"></div></div>
+  </div>
  </div>
 </div>
 
@@ -2487,6 +2585,16 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div id="ls-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px"></div>
  <div id="ls-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:13px">No listings found matching your criteria.</div>
+<div style="margin-top:24px;background:#1a1a2e;border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:16px">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+  <div>
+   <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:#f4d8a6;line-height:1.05">AppFolio Properties</div>
+   <div style="font-size:11px;color:rgba(248,246,242,.62)">Propriedades cadastradas via CSV do AppFolio</div>
+  </div>
+ </div>
+ <div id="ls-appfolio-grid"></div>
+ <div id="ls-appfolio-empty" style="display:none;padding:20px 0 8px;text-align:center;font-size:12px;color:rgba(248,246,242,.65)">Nenhuma propriedade importada do AppFolio.</div>
+</div>
 </div>
 
 <!-- Listing Detail Modal -->
@@ -4681,7 +4789,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations','cadastro-appfolio':'Cadastro AppFolio',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -4733,6 +4841,7 @@ function nav(r){
  ownerportal:()=>typeof opRender==='function'&&opRender(),
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
  listings:()=>typeof lsRender==='function'&&lsRender(),
+ 'cadastro-appfolio':()=>typeof afpInitPage==='function'&&afpInitPage(),
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
@@ -4818,7 +4927,8 @@ function renderMsgs(){
  </div>
  <div style="font-size:12px;color:var(--ink2);line-height:1.5">${m.text}</div>
  <div style="font-size:10px;color:var(--ink3);margin-top:4px"> ${m.reads||0} ${m.reads===1?'leitura':'leituras'}</div>
- </div>`).join('');
+</div>`).join('');
+ afpRenderListingsInOwnerPortal();
 }
 
 // NORMAS PDFs 
@@ -7123,6 +7233,237 @@ function lsRender(){
 
 
 
+
+// 
+// APPFOLIO CSV — CADASTRO PROPERTIES
+// 
+const AFP_COLUMNS=['Property','Market Rent','Units','Sqft','Management Flat Fee','Management Fee Percent','Minimum Fee','Maximum Fee','Waive Fees When Vacant','Reserve','Home Warranty Expiration','Insurance Expiration','Tax Year End','Owner(s) - Phone Numbers','Description'];
+window.appfolioData=Array.isArray(window.appfolioData)?window.appfolioData:[];
+window.appfolioState=window.appfolioState||{filter:'all',search:'',sortBy:'idx',sortDir:'asc',page:1,pageSize:20,ready:false};
+function afpNum(v){if(v==null)return 0;const n=parseFloat(String(v).replace(/\$/g,'').replace(/,/g,'').replace('%','').trim());return isNaN(n)?0:n;}
+function afpMoney(v){return '$'+(afpNum(v)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function afpEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function afpStatusBadges(item){
+ const rentCls=item.isAvailable?'pg':'pb';
+ const rentTxt=item.isAvailable?'Available':'Rented';
+ const mgCls=item.isManaged?'pa':'ps2';
+ const mgTxt=item.isManaged?'Managed':'Not Managed';
+ return '<span class="afp-pill '+rentCls+'">'+rentTxt+'</span> <span class="afp-pill '+mgCls+'" style="margin-left:4px">'+mgTxt+'</span>';
+}
+function afpSplitOwner(raw){
+ const s=String(raw||'').trim();
+ if(!s)return {ownerName:'',ownerPhone:''};
+ const m=s.match(/(\+?1?[\s.\-]?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/);
+ const phone=m?m[1].trim():'';
+ let name=s;
+ if(phone)name=s.replace(phone,'');
+ name=name.replace(/[\(\)\-\|]/g,' ').replace(/\s{2,}/g,' ').replace(/^\s+|\s+$/g,'');
+ return {ownerName:name,ownerPhone:phone};
+}
+function afpParseProperty(raw){
+ const src=String(raw||'').trim();
+ const part=src.includes(' - ')?src.split(' - ').slice(1).join(' - ').trim():src;
+ const m=part.match(/^(.*)\s+([^,]+),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?$/i);
+ if(m)return {address:m[1].trim(),city:m[2].trim(),state:m[3].toUpperCase(),zip:(m[4]||'').trim(),label:part};
+ const half=part.split(',');
+ const stateZip=(half[1]||'').trim().split(/\s+/);
+ return {address:(half[0]||part).trim(),city:'',state:(stateZip[0]||'').toUpperCase(),zip:(stateZip[1]||''),label:part};
+}
+function afpParseCsvText(text){
+ const rows=[];let row=[];let cell='';let q=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(ch==='"'){
+   if(q&&text[i+1]==='"'){cell+='"';i++;}else q=!q;
+  }else if(ch===','&&!q){row.push(cell);cell='';}
+  else if((ch==='\n'||ch==='\r')&&!q){
+   if(ch==='\r'&&text[i+1]==='\n')i++;
+   row.push(cell);rows.push(row);row=[];cell='';
+  }else cell+=ch;
+ }
+ if(cell!==''||row.length){row.push(cell);rows.push(row);}
+ return rows.map(r=>r.map(c=>String(c||'').trim()));
+}
+function afpNormalizeRows(rows){
+ if(!rows.length)return [];
+ const first=rows[0].map(function(x){return String(x||'').toLowerCase();});
+ const hasHeader=first.indexOf('property')>=0&&first.indexOf('market rent')>=0;
+ const dataRows=hasHeader?rows.slice(1):rows;
+ const out=[];
+ dataRows.forEach(function(r,idx){
+  if(!r||!r.length)return;
+  const clean=r.slice(0,15);while(clean.length<15)clean.push('');
+  if(!clean[0])return;
+  const raw={};AFP_COLUMNS.forEach(function(c,i){raw[c]=clean[i]||'';});
+  const pp=afpParseProperty(raw['Property']);
+  const owner=afpSplitOwner(raw['Owner(s) - Phone Numbers']);
+  const marketRent=afpNum(raw['Market Rent']);
+  const mgmtPercent=afpNum(raw['Management Fee Percent']);
+  out.push({
+   idx:idx+1,id:'afp_'+Date.now()+'_'+idx,
+   property:raw['Property'],address:pp.address,city:pp.city,state:pp.state,zip:pp.zip,
+   marketRent:marketRent,units:afpNum(raw['Units']),sqft:afpNum(raw['Sqft']),
+   managementFlatFee:afpNum(raw['Management Flat Fee']),mgmtPercent:mgmtPercent,minimumFee:afpNum(raw['Minimum Fee']),maximumFee:afpNum(raw['Maximum Fee']),
+   waiveFeesWhenVacant:raw['Waive Fees When Vacant'],reserve:afpNum(raw['Reserve']),homeWarrantyExpiration:raw['Home Warranty Expiration'],
+   insuranceExpiration:raw['Insurance Expiration'],taxYearEnd:raw['Tax Year End'],ownerRaw:raw['Owner(s) - Phone Numbers'],ownerName:owner.ownerName,ownerPhone:owner.ownerPhone,description:raw['Description'],
+   isAvailable:!(marketRent>0),isManaged:mgmtPercent>0,raw:raw
+  });
+ });
+ return out;
+}
+function afpStoreData(list){
+ window.appfolioData=Array.isArray(list)?list:[];
+ try{localStorage.setItem('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}
+}
+function afpLoadStoredData(){
+ if(window.appfolioData&&window.appfolioData.length)return;
+ try{
+  const raw=localStorage.getItem('appfolio_properties');
+  if(!raw)return;
+  const parsed=JSON.parse(raw);
+  if(Array.isArray(parsed))window.appfolioData=parsed;
+ }catch(e){}
+}
+function afpUploadFile(file){
+ const reader=new FileReader();
+ reader.onload=function(){
+  try{
+   const rows=afpParseCsvText(String(reader.result||''));
+   const normalized=afpNormalizeRows(rows);
+   afpStoreData(normalized);
+   window.appfolioState.page=1;
+   afpRenderAll();
+   showToast('CSV importado com sucesso: '+normalized.length+' propriedades.','success');
+  }catch(err){showToast('Erro ao processar CSV.','error');}
+ };
+ reader.onerror=function(){showToast('Não foi possível ler o arquivo.','error');};
+ reader.readAsText(file);
+}
+function afpSortFiltered(data){
+ const st=window.appfolioState;const dir=st.sortDir==='asc'?1:-1;const key=st.sortBy;
+ return data.slice().sort(function(a,b){
+  const av=a[key],bv=b[key];
+  if(typeof av==='number'||typeof bv==='number')return ((Number(av)||0)-(Number(bv)||0))*dir;
+  return String(av||'').localeCompare(String(bv||''),undefined,{numeric:true,sensitivity:'base'})*dir;
+ });
+}
+function afpFilterData(){
+ const st=window.appfolioState;
+ let list=(window.appfolioData||[]).slice();
+ if(st.filter==='managed')list=list.filter(function(x){return x.isManaged;});
+ if(st.filter==='not-managed')list=list.filter(function(x){return !x.isManaged;});
+ if(st.filter==='rented')list=list.filter(function(x){return !x.isAvailable;});
+ if(st.filter==='available')list=list.filter(function(x){return x.isAvailable;});
+ const q=String(st.search||'').toLowerCase().trim();
+ if(q)list=list.filter(function(x){return (x.address+' '+x.city+' '+x.ownerName).toLowerCase().indexOf(q)>=0;});
+ return afpSortFiltered(list);
+}
+function afpRenderSummary(){
+ const list=window.appfolioData||[];
+ const managed=list.filter(function(x){return x.isManaged;}).length;
+ const notManaged=list.length-managed;
+ const rented=list.filter(function(x){return !x.isAvailable;}).length;
+ const available=list.length-rented;
+ const totalRent=list.reduce(function(s,x){return s+(x.marketRent||0);},0);
+ const avgMgmt=list.length?list.reduce(function(s,x){return s+(x.mgmtPercent||0);},0)/list.length:0;
+ const sumGrid=document.getElementById('afp-summary-grid');
+ if(sumGrid)sumGrid.style.display=list.length?'grid':'none';
+ [['afp-sum-total',list.length],['afp-sum-managed',managed],['afp-sum-not-managed',notManaged],['afp-sum-rented',rented],['afp-sum-available',available]].forEach(function(pair){
+  var el=document.getElementById(pair[0]);if(el)el.textContent=String(pair[1]);
+ });
+ var rentEl=document.getElementById('afp-sum-rent');if(rentEl)rentEl.textContent=afpMoney(totalRent);
+ var mgEl=document.getElementById('afp-sum-mgmt-avg');if(mgEl)mgEl.textContent=avgMgmt.toFixed(2)+'%';
+ const meta=document.getElementById('afp-upload-meta');
+ if(meta)meta.textContent=list.length?('Último dataset: '+list.length+' propriedades carregadas'):'Nenhum CSV carregado';
+}
+function afpRenderTable(){
+ const body=document.getElementById('afp-table-body');if(!body)return;
+ const list=afpFilterData();
+ const st=window.appfolioState;const totalPages=Math.max(1,Math.ceil(list.length/st.pageSize));
+ if(st.page>totalPages)st.page=totalPages;
+ const start=(st.page-1)*st.pageSize;
+ const pageItems=list.slice(start,start+st.pageSize);
+ if(!pageItems.length){body.innerHTML='<tr><td colspan="11" style="text-align:center;color:rgba(248,246,242,.6);padding:22px">Sem resultados para os filtros atuais.</td></tr>';}
+ else body.innerHTML=pageItems.map(function(x,i){
+  return '<tr><td>'+(start+i+1)+'</td><td>'+afpEsc(x.address)+'</td><td>'+afpEsc(x.city)+'</td><td>'+afpEsc(x.state)+'</td><td>'+afpEsc(x.zip)+'</td><td>'+afpMoney(x.marketRent)+'</td><td>'+Math.round(x.sqft||0).toLocaleString('en-US')+'</td><td>'+(x.mgmtPercent||0).toFixed(2)+'%</td><td>'+afpEsc(x.ownerName||'—')+'</td><td>'+afpStatusBadges(x)+'</td><td><button type="button" class="btn-gm-ix sec" style="padding:5px 11px;font-size:11px" onclick="afpOpenModal(\''+afpEsc(x.id)+'\')">View</button></td></tr>';
+ }).join('');
+ const pg=document.getElementById('afp-page-info');if(pg)pg.textContent='Page '+st.page+' / '+totalPages+' ('+list.length+' itens)';
+ const prev=document.getElementById('afp-prev-page');if(prev)prev.disabled=st.page<=1;
+ const next=document.getElementById('afp-next-page');if(next)next.disabled=st.page>=totalPages;
+}
+function afpRenderFilterButtons(){
+ const st=window.appfolioState;
+ document.querySelectorAll('#afp-filter-buttons .afp-filter-btn').forEach(function(btn){
+  btn.classList.toggle('active',btn.dataset.filter===st.filter);
+ });
+}
+function afpKv(label,value){return '<div class="afp-kv"><b>'+afpEsc(label)+'</b><span>'+afpEsc(value||'—')+'</span></div>';}
+function afpOpenModal(id){
+ const item=(window.appfolioData||[]).find(function(x){return x.id===id;});
+ if(!item)return;
+ const modal=document.getElementById('afp-modal');if(!modal)return;
+ const mt=document.getElementById('afp-modal-title');if(mt)mt.textContent=item.address+', '+item.city+' '+item.state+' '+item.zip;
+ const pi=document.getElementById('afp-modal-property-info');
+ const fn=document.getElementById('afp-modal-financial');
+ const ow=document.getElementById('afp-modal-owner');
+ const cp=document.getElementById('afp-modal-compliance');
+ const rw=document.getElementById('afp-modal-raw');
+ if(pi)pi.innerHTML=afpKv('Address',item.address)+afpKv('City/State/ZIP',item.city+', '+item.state+' '+item.zip)+afpKv('Sqft',Math.round(item.sqft||0).toLocaleString('en-US'))+afpKv('Units',String(item.units||0))+afpKv('Description',item.description||'—')+afpKv('Status',((item.isAvailable?'Available':'Rented')+' | '+(item.isManaged?'Managed':'Not Managed')));
+ if(fn)fn.innerHTML=afpKv('Market Rent',afpMoney(item.marketRent))+afpKv('Mgmt Fee %',(item.mgmtPercent||0).toFixed(2)+'%')+afpKv('Flat Fee',afpMoney(item.managementFlatFee))+afpKv('Minimum Fee',afpMoney(item.minimumFee))+afpKv('Maximum Fee',afpMoney(item.maximumFee))+afpKv('Reserve',afpMoney(item.reserve))+afpKv('Waive Fees When Vacant',item.waiveFeesWhenVacant||'—');
+ if(ow)ow.innerHTML=afpKv('Owner Name',item.ownerName||'—')+afpKv('Phone',item.ownerPhone||'—')+afpKv('Owner Raw',item.ownerRaw||'—');
+ if(cp)cp.innerHTML=afpKv('Insurance Exp',item.insuranceExpiration||'—')+afpKv('Home Warranty Exp',item.homeWarrantyExpiration||'—')+afpKv('Tax Year End',item.taxYearEnd||'—');
+ if(rw)rw.innerHTML=AFP_COLUMNS.map(function(k){return afpKv(k,item.raw&&item.raw[k]?item.raw[k]:'—');}).join('');
+ modal.style.display='flex';
+}
+function afpCloseModal(){var m=document.getElementById('afp-modal');if(m)m.style.display='none';}
+function afpRenderListingsInOwnerPortal(){
+ afpLoadStoredData();
+ const grid=document.getElementById('ls-appfolio-grid');
+ const empty=document.getElementById('ls-appfolio-empty');
+ if(!grid||!empty)return;
+ const list=(window.appfolioData||[]);
+ if(!list.length){grid.innerHTML='';empty.style.display='block';return;}
+ empty.style.display='none';
+ grid.innerHTML=list.map(function(x){
+  return '<div style="background:rgba(0,0,0,.2);border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.18)"><div style="font-size:13px;font-weight:700;color:#f4d8a6;line-height:1.4;min-height:36px">'+afpEsc(x.address||x.property)+'</div><div style="font-size:11px;color:rgba(248,246,242,.62);margin-top:3px">'+afpEsc((x.city||'')+' '+(x.state||'')+' '+(x.zip||''))+'</div><div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:6px"><div style="font-family:JetBrains Mono,monospace;font-size:16px;font-weight:700;color:#f2ddb7">'+afpMoney(x.marketRent)+'</div><div style="font-size:11px;color:rgba(248,246,242,.7)">'+Math.round(x.sqft||0).toLocaleString('en-US')+' sqft</div></div><div style="margin-top:9px">'+afpStatusBadges(x)+'</div></div>';
+ }).join('');
+}
+function afpRenderAll(){afpRenderSummary();afpRenderFilterButtons();afpRenderTable();afpRenderListingsInOwnerPortal();}
+function afpInitPage(){
+ afpLoadStoredData();
+ if(window.appfolioState.ready){afpRenderAll();return;}
+ window.appfolioState.ready=true;
+ const pickBtn=document.getElementById('afp-upload-btn');
+ const fileInput=document.getElementById('afp-file-input');
+ const drop=document.getElementById('afp-dropzone');
+ const search=document.getElementById('afp-search');
+ if(pickBtn&&fileInput)pickBtn.addEventListener('click',function(){fileInput.click();});
+ if(fileInput)fileInput.addEventListener('change',function(ev){if(ev.target.files&&ev.target.files[0])afpUploadFile(ev.target.files[0]);ev.target.value='';});
+ if(drop){
+  drop.addEventListener('click',function(){if(fileInput)fileInput.click();});
+  drop.addEventListener('dragover',function(ev){ev.preventDefault();drop.classList.add('drag');});
+  drop.addEventListener('dragleave',function(){drop.classList.remove('drag');});
+  drop.addEventListener('drop',function(ev){ev.preventDefault();drop.classList.remove('drag');var f=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];if(f)afpUploadFile(f);});
+ }
+ if(search)search.addEventListener('input',function(ev){window.appfolioState.search=ev.target.value||'';window.appfolioState.page=1;afpRenderTable();});
+ document.querySelectorAll('#afp-filter-buttons .afp-filter-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){window.appfolioState.filter=btn.dataset.filter||'all';window.appfolioState.page=1;afpRenderFilterButtons();afpRenderTable();});
+ });
+ document.querySelectorAll('#page-cadastro-appfolio .afp-table th[data-sort]').forEach(function(th){
+  th.addEventListener('click',function(){
+   var key=th.getAttribute('data-sort');
+   if(window.appfolioState.sortBy===key)window.appfolioState.sortDir=window.appfolioState.sortDir==='asc'?'desc':'asc';
+   else {window.appfolioState.sortBy=key;window.appfolioState.sortDir='asc';}
+   afpRenderTable();
+  });
+ });
+ const prev=document.getElementById('afp-prev-page');if(prev)prev.addEventListener('click',function(){if(window.appfolioState.page>1){window.appfolioState.page--;afpRenderTable();}});
+ const next=document.getElementById('afp-next-page');if(next)next.addEventListener('click',function(){
+  const total=Math.max(1,Math.ceil(afpFilterData().length/window.appfolioState.pageSize));
+  if(window.appfolioState.page<total){window.appfolioState.page++;afpRenderTable();}
+ });
+ afpRenderAll();
+}
 
 // 
 // INPUT MASKS — TAX ID, PHONE, ROUTING
