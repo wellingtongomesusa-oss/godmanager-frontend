@@ -3216,7 +3216,10 @@ function saveAllData(){
  btns.forEach(function(b){b.disabled=true; if(b.classList.contains('btn-save-bottom'))b.textContent='Saving...';});
  var props=(window.appfolioData||[]).concat(ltGetRecords().map(function(r){return {address:r.address||'',ownerName:r.owner||'',marketRent:Number(r.rent)||0,sqft:Number(r.sqft)||0,source:'manual'};}));
  var exps=(window.appfolioExpenseData||[]).concat(ltExpGetRecords().map(function(r){return {property:r.property||'',payee:r.payee||'',billDate:r.billDate||'',amount:Number(r.amount)||0,expenseAccount:r.expenseAccount||'',source:'manual'};}));
- var cfg={gm_card_timestamps:getCardTimestamps(),gm_last_saved:now};
+ var cfg={gm_card_timestamps:getCardTimestamps(),gm_last_saved:now,mp_longterm_v1:ltGetRecords(),mp_lt_expenses_v1:ltExpGetRecords(),mp_lt_cleanings_v1:ltClnGetRecords(),mp_lt_maintenance_v1:tpMaintGet()};
+ try{var ga=localStorage.getItem('mp_gaap_data_v2');if(ga)cfg.mp_gaap_data_v2=JSON.parse(ga);}catch(e){}
+ try{var gl=localStorage.getItem('gm_clients');if(gl)cfg.gm_clients=JSON.parse(gl);}catch(e2){}
+ try{var gac=localStorage.getItem('gm_active_client');if(gac)cfg.gm_active_client=JSON.parse(gac);}catch(e3){}
  fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg})})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
@@ -8820,6 +8823,18 @@ window.addEventListener('DOMContentLoaded',()=>{
  setTimeout(function(){if(typeof gmBootstrapServerData==='function')gmBootstrapServerData();},650);
 });
 
+function gmApplyWorkspaceConfigFromServer(cfg){
+ if(!cfg||typeof cfg!=='object')return;
+ var keys=['mp_longterm_v1','mp_lt_expenses_v1','mp_lt_cleanings_v1','mp_lt_maintenance_v1','mp_gaap_data_v2','gm_clients','gm_active_client'];
+ keys.forEach(function(k){
+  if(!(k in cfg)||cfg[k]===undefined||cfg[k]===null)return;
+  var v=cfg[k];
+  try{
+   if(typeof v==='string'){localStorage.setItem(k,v);return;}
+   localStorage.setItem(k,JSON.stringify(v));
+  }catch(e){}
+ });
+}
 async function gmBootstrapServerData(){
  var note=document.getElementById('gm-last-saved-bar');
  if(note)note.textContent='Carregando dados...';
@@ -8835,9 +8850,16 @@ async function gmBootstrapServerData(){
   var cfg=j.config&&typeof j.config==='object'?j.config:{};
   if(cfg.gm_last_saved){try{localStorage.setItem('gm_last_saved',String(cfg.gm_last_saved));}catch(e){}}
   if(cfg.gm_card_timestamps&&typeof cfg.gm_card_timestamps==='object'){setCardTimestamps(cfg.gm_card_timestamps);}
+  gmApplyWorkspaceConfigFromServer(cfg);
+  if(typeof loadClients==='function')loadClients();
+  if(typeof updateBranding==='function')updateBranding();
+  if(typeof applyPermissions==='function')applyPermissions();
   if(typeof afpRenderAll==='function')afpRenderAll();
   if(typeof ltpRender==='function')ltpRender();
   if(typeof ltExpRender==='function')ltExpRender();
+  if(typeof ltRender==='function')ltRender();
+  if(typeof ltClnPageRender==='function')ltClnPageRender();
+  if(typeof ltDashRender==='function')ltDashRender();
   if(typeof afvRender==='function')afvRender();
   if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
   updateLastSavedBar();
@@ -8851,8 +8873,16 @@ async function gmMigrateLocalToServerOnce(){
  var props=[];var exps=[];var cfg={};
  try{props=JSON.parse(localStorage.getItem('appfolio_properties')||'[]');}catch(e){props=[];}
  try{exps=JSON.parse(localStorage.getItem('appfolio_expenses')||'[]');}catch(e){exps=[];}
+ var lt=[],ltex=[];
+ try{lt=JSON.parse(localStorage.getItem('mp_longterm_v1')||'[]');}catch(e2){lt=[];}
+ try{ltex=JSON.parse(localStorage.getItem('mp_lt_expenses_v1')||'[]');}catch(e3){ltex=[];}
  try{cfg.gm_last_saved=localStorage.getItem('gm_last_saved')||'';}catch(e){}
- if(!props.length&&!exps.length)return;
+ if(!props.length&&!exps.length&&(!Array.isArray(lt)||!lt.length)&&(!Array.isArray(ltex)||!ltex.length))return;
+ if(Array.isArray(lt)&&lt.length)cfg.mp_longterm_v1=lt;
+ if(Array.isArray(ltex)&&ltex.length)cfg.mp_lt_expenses_v1=ltex;
+ try{var cl=localStorage.getItem('mp_lt_cleanings_v1');if(cl){var cj=JSON.parse(cl);if(Array.isArray(cj)&&cj.length)cfg.mp_lt_cleanings_v1=cj;}}catch(e4){}
+ try{var tm=localStorage.getItem('mp_lt_maintenance_v1');if(tm){var tj=JSON.parse(tm);if(Array.isArray(tj)&&tj.length)cfg.mp_lt_maintenance_v1=tj;}}catch(e5){}
+ try{var ga=localStorage.getItem('mp_gaap_data_v2');if(ga)cfg.mp_gaap_data_v2=JSON.parse(ga);}catch(e6){}
  try{
   var r=await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg})});
   var j=await r.json();
