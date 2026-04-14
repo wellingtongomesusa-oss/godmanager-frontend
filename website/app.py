@@ -181,6 +181,8 @@ def create_app():
     app.register_blueprint(qb_bp)
     from appfolio_routes import appfolio_bp
     app.register_blueprint(appfolio_bp)
+    from ramp_routes import ramp_bp
+    app.register_blueprint(ramp_bp)
 
     # Create tables
     with app.app_context():

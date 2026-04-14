@@ -1205,33 +1205,62 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="gm-ix-headrow ph" style="margin-bottom:20px">
  <div>
  <div class="pt" style="font-family:'Sora',sans-serif">Ramp — Corporate Cards</div>
- <div class="ps">Manager Prop</div>
+ <div class="ps">Manager Prop · dados financeiros em tempo real via backend Flask</div>
  </div>
  <div class="gm-ix-actions">
- <button type="button" class="btn-gm-ix" id="ramp-btn-refresh" onclick="fetchRampData()">Atualizar Dados</button>
+ <button type="button" class="btn-gm-ix sec" id="ramp-btn-connect" onclick="fetchRampData()">Connect Ramp</button>
+ <button type="button" class="btn-gm-ix" id="ramp-btn-refresh" onclick="fetchRampData()">Refresh Data</button>
+ </div>
+ </div>
+ <div class="gm-ix-panel" style="margin-bottom:14px">
+ <h3>Status de Conexão</h3>
+ <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+ <div style="font-size:12px;color:var(--ink2)">Estado atual: <span id="ramp-status-pill" class="pill pr">Disconnected</span></div>
+ <div id="ramp-status-sub" style="font-size:11px;color:var(--ink3)">Aguardando conexão...</div>
  </div>
  </div>
  <div class="gm-ix-kpi-grid" id="ramp-kpi-wrap">
- <div class="gm-ix-kpi k2"><div class="k-l">Total Gasto no Mês</div><div class="k-v" id="ramp-kpi-spend"><span class="gm-sk" style="display:inline-block;width:120px;height:22px"></span></div><div class="k-s">Transações liquidadas + pendentes</div><div class="k-bar"></div></div>
- <div class="gm-ix-kpi"><div class="k-l">Nº de Cartões Ativos</div><div class="k-v" id="ramp-kpi-cards"><span class="gm-sk" style="display:inline-block;width:48px;height:22px"></span></div><div class="k-s">Cartões com estado ativo</div><div class="k-bar"></div></div>
- <div class="gm-ix-kpi k3"><div class="k-l">Maior Gasto</div><div class="k-v" id="ramp-kpi-top" style="font-size:15px;line-height:1.25"><span class="gm-sk" style="display:inline-block;width:100%;max-width:220px;height:40px"></span></div><div class="k-s">Merchant com maior valor no período</div><div class="k-bar"></div></div>
- <div class="gm-ix-kpi k4"><div class="k-l">Cashback Disponível</div><div class="k-v" id="ramp-kpi-cb"><span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span></div><div class="k-s">Estimativa acumulada</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k2"><div class="k-l">TOTAL SPENT</div><div class="k-v" id="ramp-kpi-spend">$0.00</div><div class="k-s">Período selecionado</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">TRANSACTIONS</div><div class="k-v" id="ramp-kpi-transactions">0</div><div class="k-s">Total no período</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k3"><div class="k-l">ACTIVE CARDS</div><div class="k-v" id="ramp-kpi-cards">0</div><div class="k-s">State ACTIVE</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k4"><div class="k-l">TEAM MEMBERS</div><div class="k-v" id="ramp-kpi-users">0</div><div class="k-s">Usuários ativos</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k2"><div class="k-l">CASHBACK EARNED</div><div class="k-v" id="ramp-kpi-cb">$0.00</div><div class="k-s">Estimado em 1.5%</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">PENDING REIMBURSEMENTS</div><div class="k-v" id="ramp-kpi-reimb">$0.00</div><div class="k-s">Reembolsos pendentes</div><div class="k-bar"></div></div>
  </div>
  <div class="gm-ix-panel">
- <h3>Titulares de Cartão</h3>
- <div style="overflow-x:auto">
- <table class="gm-ix-table" id="ramp-table-cardholders">
- <thead><tr><th>Titular</th><th>Email</th><th>Limite Total ($)</th><th>Limite Disponível ($)</th><th>Gasto no Mês ($)</th><th>Status</th><th>Ações</th></tr></thead>
- <tbody id="ramp-tbody-holders"></tbody>
- </table>
+ <h3>Analytics</h3>
+ <div style="padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+ <div style="background:var(--sand);border:1px solid var(--border);border-radius:8px;padding:10px"><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Gastos por mês (6M)</div><canvas id="ramp-chart-monthly" height="150"></canvas></div>
+ <div style="background:var(--sand);border:1px solid var(--border);border-radius:8px;padding:10px"><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Gastos por categoria</div><canvas id="ramp-chart-category" height="150"></canvas></div>
+ <div style="background:var(--sand);border:1px solid var(--border);border-radius:8px;padding:10px"><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Top 10 merchants</div><canvas id="ramp-chart-merchants" height="150"></canvas></div>
  </div>
  </div>
  <div class="gm-ix-panel">
- <h3>Transações Recentes</h3>
+ <h3>Transações</h3>
+ <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+ <input id="ramp-search-merchant" placeholder="Buscar merchant..." style="padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px;min-width:220px" oninput="rampRenderTables()">
+ <input id="ramp-filter-month" type="month" style="padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px" onchange="rampRenderTables()">
+ <select id="ramp-filter-category" style="padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px" onchange="rampRenderTables()"><option value="">Todas categorias</option></select>
+ <select id="ramp-filter-user" style="padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px" onchange="rampRenderTables()"><option value="">Todos usuários</option></select>
+ </div>
  <div style="overflow-x:auto">
  <table class="gm-ix-table" id="ramp-table-tx">
- <thead><tr><th>Data</th><th>Merchant</th><th>Titular</th><th>Categoria</th><th>Valor ($)</th><th>Status</th></tr></thead>
+ <thead><tr><th>#</th><th>Date</th><th>Merchant</th><th>Category</th><th>Card Holder</th><th>Card</th><th>Amount</th><th>Receipt</th><th>Status</th></tr></thead>
  <tbody id="ramp-tbody-tx"></tbody>
+ </table>
+ </div>
+ <div style="padding:10px 14px;display:flex;justify-content:flex-end;align-items:center;gap:8px">
+ <button type="button" class="btn-gm-ix sec" onclick="rampChangeTxPage(-1)">Prev</button>
+ <span id="ramp-tx-page" style="font-size:11px;color:var(--ink3)">Page 1/1</span>
+ <button type="button" class="btn-gm-ix sec" onclick="rampChangeTxPage(1)">Next</button>
+ </div>
+ </div>
+ <div class="gm-ix-panel">
+ <h3>Cards</h3>
+ <div style="overflow-x:auto">
+ <table class="gm-ix-table" id="ramp-table-cardholders">
+ <thead><tr><th>#</th><th>Card Name</th><th>Holder</th><th>Type</th><th>State</th><th>Spend Limit</th><th>Current Spend</th><th>Actions</th></tr></thead>
+ <tbody id="ramp-tbody-holders"></tbody>
  </table>
  </div>
  </div>
@@ -3073,9 +3102,10 @@ function applyHomeDashboardFromApi(d){
    c.ctr=String(Math.round(tbc));
    break;
   case 'ramp-spend':{
-   var rampConn=!!d.ramp_connected;
-   var rampTot=gmHomeNum(d.ramp_total_spend,0);
-   var rbc=d.ramp_by_category&&typeof d.ramp_by_category==='object'?d.ramp_by_category:{};
+  var snap=window._rampHomeSnapshot||null;
+  var rampConn=snap?!!snap.connected:!!d.ramp_connected;
+  var rampTot=snap?gmHomeNum(snap.total,0):gmHomeNum(d.ramp_total_spend,0);
+  var rbc=snap?(snap.byCategory||{}):(d.ramp_by_category&&typeof d.ramp_by_category==='object'?d.ramp_by_category:{});
    var rOp=gmHomeNum(rbc['Operations'],0);
    var rSga=gmHomeNum(rbc['SG&A'],0);
    var rMt=gmHomeNum(rbc['Maintenance'],0);
@@ -3091,7 +3121,7 @@ function applyHomeDashboardFromApi(d){
    }else{
     c.value=gmHomeMoney(rampTot);
     c.sub1='Corporate card spend / Current period';
-    c.sub2='';
+   c.sub2=snap?(String(Math.round(gmHomeNum(snap.count,0)))+' transações'):'';
     var rsum=rOp+rSga+rMt+rOt;
     if(rsum<0.01)rsum=1;
     c.cd=[Math.max(0.01,rOp),Math.max(0.01,rSga),Math.max(0.01,rMt),Math.max(0.01,rOt)];
@@ -3967,282 +3997,177 @@ function toggleUserStatus(clientId,userId){
 // — Ramp / QuickBooks páginas dedicadas
 window._rampTxCache=[];
 window._rampCardsCache=[];
+window._rampUsersCache=[];
+window._rampReimbCache=[];
+window._rampState={txPage:1,txPageSize:20,connected:false,charts:{}};
 function rampFmtMoney(n){
- var x=Number(n);
- if(!isFinite(x))x=0;
- return '$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+ var x=Number(n);if(!isFinite(x))x=0;
+ var sign=x<0?'-':'';
+ return sign+'$'+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-function rampTxAmount(tx){
- var a=tx&&tx.amount;
- if(a==null)return 0;
- if(typeof a==='number')return Math.abs(a)/100;
- if(typeof a==='object'){
-  if(a.amount!=null&&typeof a.amount==='object'&&a.amount.amount!=null)return Math.abs(Number(a.amount.amount))/100;
-  if(a.amount!=null)return Math.abs(Number(a.amount))/100;
-  if(a.value!=null)return Math.abs(Number(a.value))/100;
- }
- return Math.abs(Number(a))/100||0;
+function rampTxAmount(tx){var v=Number(tx&&tx.amount);return isFinite(v)?v:0;}
+function rampTxMerchant(tx){return String((tx&&tx.merchant_name)||'—');}
+function rampTxDate(tx){return String((tx&&tx.date)||'—');}
+function rampTxHolder(tx){return String((tx&&tx.card_holder)||'—');}
+function rampTxCategory(tx){return String((tx&&tx.category)||'—');}
+function rampTxState(tx){return String((tx&&tx.status)||'PENDING').toUpperCase();}
+function rampCardState(c){return String((c&&c.state)||'').toUpperCase();}
+function rampCardLimit(c){var lim=c&&(c.spend_limit||c.spend_limit_amount||c.limit||c.spending_limit||0);if(typeof lim==='object'&&lim&&lim.amount!=null)lim=lim.amount;return (Number(lim)||0)/100;}
+function rampCardCurrentSpend(c){var cur=c&&(c.current_spend||0);if(typeof cur==='object'&&cur&&cur.amount!=null)cur=cur.amount;return (Number(cur)||0)/100;}
+function rampChartDestroy(key){if(window._rampState.charts[key]){window._rampState.charts[key].destroy();window._rampState.charts[key]=null;}}
+function rampSetConnected(connected,msg){
+ window._rampState.connected=!!connected;
+ var pill=document.getElementById('ramp-status-pill');
+ var sub=document.getElementById('ramp-status-sub');
+ var btnConn=document.getElementById('ramp-btn-connect');
+ var btnRef=document.getElementById('ramp-btn-refresh');
+ if(pill){pill.className='pill '+(connected?'pg':'pr');pill.textContent=connected?'Connected':'Disconnected';}
+ if(sub)sub.textContent=msg||'';
+ if(btnConn)btnConn.style.display=connected?'none':'inline-flex';
+ if(btnRef)btnRef.style.display=connected?'inline-flex':'none';
 }
-function rampTxMerchant(tx){
- return (tx&&tx.merchant_name)||(tx&&tx.merchant&&tx.merchant.name)||(tx&&tx.memo)||'—';
+function rampUpdateHomeCard(totalSpent,txCount,byCategory){
+ window._rampHomeSnapshot={connected:true,total:totalSpent,count:txCount,byCategory:byCategory||{}};
+ if(typeof CARDS==='undefined'||typeof renderCards!=='function')return;
+ var c=(CARDS||[]).find(function(x){return x.id==='ramp-spend';});
+ if(!c)return;
+ var op=Number((byCategory||{})['Operations']||0),sga=Number((byCategory||{})['SG&A']||0),maint=Number((byCategory||{})['Maintenance']||0);
+ var other=Math.max(0,totalSpent-op-sga-maint);
+ c.empty=false;c.value=rampFmtMoney(totalSpent);c.ctr=rampFmtMoney(totalSpent);c.sub1='Corporate card spend / Current period';c.sub2=txCount+' transações';
+ c.cd=[Math.max(0.01,op),Math.max(0.01,sga),Math.max(0.01,maint),Math.max(0.01,other)];
+ c.cc=['#2a6e4e','#22558c','#c9a96e','#4a5568'];
+ renderCards();
 }
-function rampTxDate(tx){
- var s=(tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||(tx&&tx.posted_at)||'';
- if(!s)return '—';
- try{var d=new Date(s);return isNaN(d.getTime())?String(s).slice(0,10):d.toLocaleDateString('en-US');}catch(e){return String(s).slice(0,10);}
+function rampHydrateFilters(rows){
+ var catSel=document.getElementById('ramp-filter-category');
+ var userSel=document.getElementById('ramp-filter-user');
+ if(!catSel||!userSel)return;
+ var cats={},users={};
+ rows.forEach(function(tx){cats[rampTxCategory(tx)]=1;users[rampTxHolder(tx)]=1;});
+ var catVal=catSel.value,userVal=userSel.value;
+ catSel.innerHTML='<option value="">Todas categorias</option>'+Object.keys(cats).sort().map(function(c){return '<option value="'+afpEsc(c)+'">'+afpEsc(c)+'</option>';}).join('');
+ userSel.innerHTML='<option value="">Todos usuários</option>'+Object.keys(users).sort().map(function(u){return '<option value="'+afpEsc(u)+'">'+afpEsc(u)+'</option>';}).join('');
+ catSel.value=catVal;userSel.value=userVal;
 }
-function rampTxHolder(tx){
- var u=tx&&tx.user;
- if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||(u.email||'—');
- return (tx&&tx.card_holder_name)||(tx&&tx.cardholder&&tx.cardholder.display_name)||'—';
-}
-function rampTxEmail(tx){
- var u=tx&&tx.user;
- if(u&&u.email)return u.email;
- return (tx&&tx.cardholder&&tx.cardholder.email)||'—';
-}
-function rampTxCategory(tx){
- return (tx&&tx.sk_category_name)||(tx&&tx.category&&tx.category.name)||(tx&&tx.accounting_category)||'—';
-}
-function rampTxState(tx){
- var st=(tx&&tx.state)||(tx&&tx.status)||'';
- st=String(st).toUpperCase();
- if(st.indexOf('CLEAR')>=0||st==='SETTLED')return 'CLEARED';
- if(st)return st;
- return 'PENDING';
-}
-function rampExtractList(j){
- if(!j)return[];
- if(Array.isArray(j))return j;
- if(Array.isArray(j.data))return j.data;
- if(j.data&&Array.isArray(j.data.data))return j.data.data;
- if(Array.isArray(j.transactions))return j.transactions;
- if(Array.isArray(j.cards))return j.cards;
- return[];
-}
-function rampCardName(c){
- if(!c)return'—';
- if(c.display_name)return c.display_name;
- if(c.cardholder_name)return c.cardholder_name;
- var u=c.user||c.cardholder;
- if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||u.email||'—';
- return c.cardholder_name||'—';
-}
-function rampCardEmail(c){
- if(c.cardholder_email)return c.cardholder_email;
- var u=c.user||c.cardholder;
- if(u&&u.email)return u.email;
- return c.email||'—';
-}
-function rampCardLimit(c){
- var lim=c.limit||c.spending_limit||c.total_limit;
- if(lim==null)return 0;
- if(typeof lim==='number')return lim/100;
- if(typeof lim==='object'&&lim.amount!=null)return Number(lim.amount)/100;
- return Number(lim)/100||0;
-}
-function rampCardAvail(c){
- var a=c.available||c.available_amount||c.remaining;
- if(a==null)return rampCardLimit(c);
- if(typeof a==='number')return a/100;
- if(typeof a==='object'&&a.amount!=null)return Number(a.amount)/100;
- return Number(a)/100||0;
-}
-function rampCardActive(c){
- var s=String((c&&c.state)||(c&&c.status)||'').toLowerCase();
- if(s.indexOf('active')>=0||s==='open'||s==='')return true;
- if(s.indexOf('suspend')>=0||s.indexOf('cancel')>=0||s==='inactive')return false;
- return true;
-}
-function rampSkeletonHoldersRows(n){
- var h='';
- for(var i=0;i<n;i++)h+='<tr class="gm-sk-row"><td colspan="7"><div class="gm-sk" style="height:14px;width:90%"></div></td></tr>';
- return h;
-}
-function rampSkeletonTxRows(n){
- var h='';
- for(var i=0;i<n;i++)h+='<tr class="gm-sk-row"><td colspan="6"><div class="gm-sk" style="height:14px;width:95%"></div></td></tr>';
- return h;
-}
-function rampMockTx(){
- return[
-  {user_transaction_time:new Date().toISOString(),merchant_name:'Amazon Web Services',user:{first_name:'Alex',last_name:'Rivera',email:'alex@mvhomes.test'},sk_category_name:'Software',amount:{amount:-42050},state:'CLEARED'},
-  {user_transaction_time:new Date().toISOString(),merchant_name:'The Home Depot',user:{first_name:'Jordan',last_name:'Lee',email:'jordan@mvhomes.test'},sk_category_name:'Maintenance',amount:{amount:-18675},state:'PENDING'}
- ];
-}
-function rampMockCards(){
- return[
-  {display_name:'Alex Rivera',email:'alex@mvhomes.test',limit:{amount:1500000},available:{amount:980000},state:'ACTIVE'},
-  {display_name:'Jordan Lee',email:'jordan@mvhomes.test',limit:{amount:800000},available:{amount:120000},state:'ACTIVE'},
-  {display_name:'Sam Morgan',email:'sam@mvhomes.test',limit:{amount:500000},available:{amount:0},state:'INACTIVE'}
- ];
-}
-function rampSpendForHolderEmail(txs,email){
- var t=0;
- txs.forEach(function(tx){
-  if(rampTxEmail(tx).toLowerCase()!==String(email).toLowerCase())return;
-  t+=rampTxAmount(tx);
+function rampFilteredTx(){
+ var q=((document.getElementById('ramp-search-merchant')||{}).value||'').toLowerCase();
+ var m=((document.getElementById('ramp-filter-month')||{}).value||'');
+ var cat=((document.getElementById('ramp-filter-category')||{}).value||'');
+ var usr=((document.getElementById('ramp-filter-user')||{}).value||'');
+ return (window._rampTxCache||[]).filter(function(tx){
+  if(q&&rampTxMerchant(tx).toLowerCase().indexOf(q)<0)return false;
+  if(m&&String(rampTxDate(tx)).slice(0,7)!==m)return false;
+  if(cat&&rampTxCategory(tx)!==cat)return false;
+  if(usr&&rampTxHolder(tx)!==usr)return false;
+  return true;
  });
- return t;
 }
-function rampRenderFromData(txs,cards,useMock,opts){
- opts=opts||{};
- var note=document.getElementById('ramp-mock-note');
+function rampChangeTxPage(delta){
+ window._rampState.txPage=Math.max(1,window._rampState.txPage+delta);
+ rampRenderTables();
+}
+function rampRenderCharts(rows){
+ if(typeof Chart==='undefined')return;
+ var byMonth={},byCat={},byMer={};
+ rows.forEach(function(tx){
+  var amt=rampTxAmount(tx),month=String(rampTxDate(tx)).slice(0,7)||'unknown',cat=rampTxCategory(tx),mer=rampTxMerchant(tx);
+  byMonth[month]=(byMonth[month]||0)+amt;byCat[cat]=(byCat[cat]||0)+amt;byMer[mer]=(byMer[mer]||0)+amt;
+ });
+ var months=Object.keys(byMonth).sort().slice(-6);
+ var monthVals=months.map(function(k){return byMonth[k];});
+ var cats=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).slice(0,6);
+ var catVals=cats.map(function(k){return byCat[k];});
+ var mers=Object.keys(byMer).sort(function(a,b){return byMer[b]-byMer[a];}).slice(0,10);
+ var merVals=mers.map(function(k){return byMer[k];});
+ rampChartDestroy('monthly');rampChartDestroy('category');rampChartDestroy('merchant');
+ var cm=document.getElementById('ramp-chart-monthly'),cc=document.getElementById('ramp-chart-category'),ct=document.getElementById('ramp-chart-merchants');
+ if(cm)window._rampState.charts.monthly=new Chart(cm.getContext('2d'),{type:'bar',data:{labels:months,datasets:[{data:monthVals,backgroundColor:'rgba(42,110,78,.7)',borderColor:'#2a6e4e',borderWidth:1}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6f6455'}},x:{ticks:{color:'#6f6455'}}}}});
+ if(cc)window._rampState.charts.category=new Chart(cc.getContext('2d'),{type:'doughnut',data:{labels:cats,datasets:[{data:catVals,backgroundColor:['#2a6e4e','#22558c','#c9a96e','#6b5c48','#4a5568','#b83030']}]},options:{plugins:{legend:{position:'bottom'}}}});
+ if(ct)window._rampState.charts.merchant=new Chart(ct.getContext('2d'),{type:'bar',data:{labels:mers,datasets:[{data:merVals,backgroundColor:'rgba(201,169,110,.55)',borderColor:'#c9a96e',borderWidth:1}]},options:{plugins:{legend:{display:false}},indexAxis:'y',scales:{y:{ticks:{color:'#6f6455'}},x:{ticks:{color:'#6f6455'}}}}});
+}
+function rampRenderTables(){
+ var txs=rampFilteredTx();
+ var pageSize=window._rampState.txPageSize||20;
+ var totalPages=Math.max(1,Math.ceil(txs.length/pageSize));
+ if(window._rampState.txPage>totalPages)window._rampState.txPage=totalPages;
+ var start=(window._rampState.txPage-1)*pageSize;
+ var pageRows=txs.slice(start,start+pageSize);
+ var txBody=document.getElementById('ramp-tbody-tx');
+ if(txBody){
+  txBody.innerHTML=pageRows.length?pageRows.map(function(tx,i){
+   var amt=rampTxAmount(tx),rc=String((tx&&tx.receipt_status)||'Missing'),st=rampTxState(tx),last4=String((tx&&tx.card_last4)||'').trim();
+   return '<tr><td>'+(start+i+1)+'</td><td>'+afpEsc(rampTxDate(tx))+'</td><td>'+afpEsc(rampTxMerchant(tx))+'</td><td>'+afpEsc(rampTxCategory(tx))+'</td><td>'+afpEsc(rampTxHolder(tx))+'</td><td>'+afpEsc(last4?('****'+last4):'—')+'</td><td class="mono" style="color:'+(amt<0?'var(--red)':'var(--green)')+'">'+rampFmtMoney(amt)+'</td><td><span class="pill '+(rc==='Uploaded'?'pg':'pr')+'">'+afpEsc(rc)+'</span></td><td><span class="pill '+(st==='CLEARED'||st==='SETTLED'?'pg':'pa')+'">'+afpEsc(st)+'</span></td></tr>';
+  }).join(''):'<tr><td colspan="9" style="padding:16px;color:var(--ink3);text-align:center">Sem transações para os filtros atuais.</td></tr>';
+ }
+ var pageEl=document.getElementById('ramp-tx-page');if(pageEl)pageEl.textContent='Page '+window._rampState.txPage+' / '+totalPages+' ('+txs.length+')';
+ var cardBody=document.getElementById('ramp-tbody-holders');
+ if(cardBody){
+  cardBody.innerHTML=(window._rampCardsCache||[]).map(function(c,i){
+   var st=rampCardState(c),holder=String((c&&c.holder)||'—'),name=String((c&&c.display_name)||'—');
+   var stCls=st==='ACTIVE'?'pg':(st==='SUSPENDED'?'pa':'pr');
+   return '<tr><td>'+(i+1)+'</td><td>'+afpEsc(name)+'</td><td>'+afpEsc(holder)+'</td><td>'+afpEsc(String((c&&c.type)||'—'))+'</td><td><span class="pill '+stCls+'">'+afpEsc(st||'—')+'</span></td><td class="mono">'+rampFmtMoney(rampCardLimit(c))+'</td><td class="mono">'+rampFmtMoney(rampCardCurrentSpend(c))+'</td><td><button type="button" class="btn-gm-ix sec" style="padding:4px 8px;font-size:10px" onclick="showToast(\'Ação de card via API não habilitada nesta versão.\')">Detalhes</button></td></tr>';
+  }).join('');
+  if(!window._rampCardsCache.length)cardBody.innerHTML='<tr><td colspan="8" style="padding:16px;color:var(--ink3);text-align:center">Nenhum card retornado.</td></tr>';
+ }
+}
+function fetchRampData(){
  var errEl=document.getElementById('ramp-conn-err');
- if(errEl&&!opts.keepError){errEl.classList.remove('on');errEl.textContent='';}
- if(note){note.classList.toggle('on',!!useMock);if(useMock)note.textContent='Dados de exemplo — conecte a API para dados reais.';}
- var now=new Date();
- var y=now.getFullYear(),m=now.getMonth();
- var monthSpend=0,top={m:'—',v:0},cashback=0;
- txs.forEach(function(tx){
-  var d=new Date((tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||0);
-  if(isNaN(d.getTime()))return;
-  if(d.getFullYear()!==y||d.getMonth()!==m)return;
-  var amt=rampTxAmount(tx);
-  monthSpend+=amt;
-  var mer=rampTxMerchant(tx);
-  if(amt>top.v){top={m:mer,v:amt};}
-  if(tx&&tx.cashback&&tx.cashback.amount!=null)cashback+=Math.abs(Number(tx.cashback.amount))/100;
- });
- var activeN=cards.filter(rampCardActive).length;
- var k1=document.getElementById('ramp-kpi-spend');
- var k2=document.getElementById('ramp-kpi-cards');
- var k3=document.getElementById('ramp-kpi-top');
- var k4=document.getElementById('ramp-kpi-cb');
- if(k1)k1.textContent=rampFmtMoney(monthSpend);
- if(k2)k2.textContent=String(activeN);
- if(k3)k3.innerHTML=top.v>0?('<span style="font-size:12px;color:var(--ink2);display:block;margin-bottom:4px">'+String(top.m).slice(0,42)+'</span><span>'+rampFmtMoney(top.v)+'</span>'):'—';
- if(k4)k4.textContent=rampFmtMoney(useMock?(cashback||124.35):cashback);
- var tbH=document.getElementById('ramp-tbody-holders');
- if(tbH){
-  tbH.innerHTML='';
-  cards.forEach(function(c){
-   var name=rampCardName(c);
-   var em=rampCardEmail(c);
-   var lim=rampCardLimit(c);
-   var av=rampCardAvail(c);
-   var spent=rampSpendForHolderEmail(txs,em);
-   var act=rampCardActive(c);
-   var tr=document.createElement('tr');
-   tr.innerHTML='<td>'+name+'</td><td>'+em+'</td><td class="mono">'+rampFmtMoney(lim)+'</td><td class="mono">'+rampFmtMoney(av)+'</td><td class="mono">'+rampFmtMoney(spent)+'</td><td><span class="pill '+(act?'pg':'pr')+'">'+(act?'Active':'Inactive')+'</span></td><td><button type="button" class="btn-gm-ix sec gm-allow-viewer" data-ramp-email="" onclick="openRampTxModalBtn(this)">Ver Transações</button></td>';
-  tr.querySelector('[data-ramp-email]').setAttribute('data-ramp-email',em);
-   tbH.appendChild(tr);
-  });
- }
- var tbT=document.getElementById('ramp-tbody-tx');
- if(tbT){
-  tbT.innerHTML='';
-  txs.slice(0,50).forEach(function(tx){
-   var st=rampTxState(tx);
-   var tr=document.createElement('tr');
-   tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>';
-   tbT.appendChild(tr);
-  });
- }
-}
-function openRampTxModalBtn(btn){
- var em=btn&&btn.getAttribute('data-ramp-email');
- openRampTxModal(em||'');
-}
-function openRampTxModal(holderEmail){
- var m=document.getElementById('ramp-tx-modal');
- var tb=document.getElementById('ramp-modal-tbody');
- var tit=document.getElementById('ramp-tx-modal-title');
- if(tit)tit.textContent='Transações — '+holderEmail;
- if(!tb||!m)return;
- tb.innerHTML='';
- window._rampTxCache.filter(function(tx){return rampTxEmail(tx).toLowerCase()===String(holderEmail).toLowerCase();}).forEach(function(tx){
-  var st=rampTxState(tx);
-  var tr=document.createElement('tr');
-  tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>';
-  tb.appendChild(tr);
- });
- if(!tb.children.length){
-  var tr=document.createElement('tr');
-  tr.innerHTML='<td colspan="5" style="color:var(--ink3);padding:20px">Sem transações para este titular no período carregado.</td>';
-  tb.appendChild(tr);
- }
- m.classList.add('on');
- document.body.style.overflow='hidden';
+ if(errEl){errEl.classList.remove('on');errEl.textContent='';}
+ rampSetConnected(false,'Verificando conexão...');
+ var btn=document.getElementById('ramp-btn-refresh');if(btn)btn.disabled=true;
+ function parse(r){return r.json().catch(function(){return{};}).then(function(j){return{ok:r.ok,status:r.status,j:j};});}
+ Promise.all([
+  fetch('/api/ramp/status',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/transactions?page_size=500',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/transactions/summary?page_size=500',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/cards?page_size=300',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/users?page_size=300',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/reimbursements?page_size=300',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/departments?page_size=200',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/vendors?page_size=300',{credentials:'same-origin'}).then(parse),
+  fetch('/api/ramp/statements?page_size=200',{credentials:'same-origin'}).then(parse)
+ ]).then(function(res){
+  var st=res[0],tx=res[1],sum=res[2],cards=res[3],users=res[4],reim=res[5];
+  if(!st.ok||!st.j||st.j.connected!==true){
+   rampSetConnected(false,(st.j&&st.j.error)||'Ramp desconectado.');
+   if(errEl){errEl.classList.add('on');errEl.textContent=(st.j&&st.j.error)||'Não foi possível autenticar na Ramp API.';}
+   window._rampTxCache=[];window._rampCardsCache=[];window._rampUsersCache=[];window._rampReimbCache=[];
+   rampRenderTables();rampRenderCharts([]);
+   return;
+  }
+  rampSetConnected(true,'Conectado via backend Flask (/api/ramp/*).');
+  window._rampTxCache=Array.isArray(tx.j&&tx.j.transactions)?tx.j.transactions:[];
+  window._rampCardsCache=Array.isArray(cards.j&&cards.j.cards)?cards.j.cards:[];
+  window._rampUsersCache=Array.isArray(users.j&&users.j.users)?users.j.users:[];
+  window._rampReimbCache=Array.isArray(reim.j&&reim.j.reimbursements)?reim.j.reimbursements:[];
+  rampHydrateFilters(window._rampTxCache);
+  window._rampState.txPage=1;
+  var totalSpent=(sum.j&&sum.j.summary&&Number(sum.j.summary.total_spent))||0;
+  var txCount=window._rampTxCache.length;
+  var activeCards=window._rampCardsCache.filter(function(c){return rampCardState(c)==='ACTIVE';}).length;
+  var activeUsers=window._rampUsersCache.filter(function(u){return String((u&&u.status)||'').toUpperCase()==='ACTIVE';}).length;
+  var cashback=totalSpent*0.015;
+  var pendingReimb=(window._rampReimbCache||[]).filter(function(r){return String((r&&r.status)||'').toUpperCase().indexOf('PEND')>=0;}).reduce(function(s,r){var a=Number((r&&r.amount)||0);return s+(isFinite(a)?a/100:0);},0);
+  var byCategory=(sum.j&&sum.j.summary&&sum.j.summary.by_category)||{};
+  var k1=document.getElementById('ramp-kpi-spend'),k2=document.getElementById('ramp-kpi-transactions'),k3=document.getElementById('ramp-kpi-cards'),k4=document.getElementById('ramp-kpi-users'),k5=document.getElementById('ramp-kpi-cb'),k6=document.getElementById('ramp-kpi-reimb');
+  if(k1)k1.textContent=rampFmtMoney(totalSpent);
+  if(k2)k2.textContent=String(txCount);
+  if(k3)k3.textContent=String(activeCards);
+  if(k4)k4.textContent=String(activeUsers);
+  if(k5)k5.textContent=rampFmtMoney(cashback);
+  if(k6)k6.textContent=rampFmtMoney(pendingReimb);
+  rampRenderTables();
+  rampRenderCharts(window._rampTxCache);
+  rampUpdateHomeCard(totalSpent,txCount,byCategory);
+ }).catch(function(err){
+  if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao carregar dados da Ramp: '+String(err&&err.message||err);}
+  rampSetConnected(false,'Falha de rede.');
+ }).finally(function(){if(btn)btn.disabled=false;});
 }
 function closeRampTxModal(){
  var m=document.getElementById('ramp-tx-modal');
  if(m)m.classList.remove('on');
  document.body.style.overflow='';
-}
-function rampFmtRampErr(label,res){
- var parts=[label];
- if(res&&res.status)parts.push('HTTP '+res.status);
- return parts.join(' — ');
-}
-function rampMonthRangeUtcIso(){
- var now=new Date();
- var y=now.getUTCFullYear(),m=now.getUTCMonth();
- var pad=function(n){return n<10?'0'+n:''+n;};
- var start=y+'-'+pad(m+1)+'-01T00:00:00Z';
- var lastDay=new Date(Date.UTC(y,m+1,0)).getUTCDate();
- var end=y+'-'+pad(m+1)+'-'+pad(lastDay)+'T23:59:59Z';
- return{start:start,end:end};
-}
-function fetchRampData(){
- var errEl=document.getElementById('ramp-conn-err');
- var note=document.getElementById('ramp-mock-note');
- if(note){note.classList.remove('on');note.textContent='';}
- if(errEl){errEl.classList.remove('on');errEl.textContent='';}
- var tbH=document.getElementById('ramp-tbody-holders');
- var tbT=document.getElementById('ramp-tbody-tx');
- if(tbH)tbH.innerHTML=rampSkeletonHoldersRows(4);
- if(tbT)tbT.innerHTML=rampSkeletonTxRows(6);
- document.getElementById('ramp-kpi-spend').innerHTML='<span class="gm-sk" style="display:inline-block;width:120px;height:22px"></span>';
- document.getElementById('ramp-kpi-cards').innerHTML='<span class="gm-sk" style="display:inline-block;width:48px;height:22px"></span>';
- document.getElementById('ramp-kpi-top').innerHTML='<span class="gm-sk" style="display:inline-block;width:100%;max-width:220px;height:40px"></span>';
- document.getElementById('ramp-kpi-cb').innerHTML='<span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span>';
- var btn=document.getElementById('ramp-btn-refresh');
- if(btn){btn.disabled=true;}
- var done=function(){if(btn){btn.disabled=false;}};
- function parseRampRes(r,url){
-  return r.text().then(function(txt){
-   var j=null;
-   try{j=JSON.parse(txt);}catch(e){j={parseError:true,rawSnippet:String(txt).slice(0,400)};}
-   if(!r.ok){console.warn('Ramp API',url,r.status);}
-   return{ok:r.ok,status:r.status,j:j};
-  });
- }
- var range=rampMonthRangeUtcIso();
- var txUrl='/api/ramp/transactions?start='+encodeURIComponent(range.start)+'&end='+encodeURIComponent(range.end)+'&page_size=50';
- Promise.all([
-  fetch(txUrl,{credentials:'same-origin'}).then(function(r){return parseRampRes(r,txUrl);}),
-  fetch('/api/ramp/cards',{credentials:'same-origin'}).then(function(r){return parseRampRes(r,'/api/ramp/cards');})
- ]).then(function(pair){
-  var tRes=pair[0],cRes=pair[1];
-  var txs=rampExtractList(tRes.j);
-  var cards=rampExtractList(cRes.j);
-  var jErr=function(j){return j&&j.error;};
-  var bad=!tRes.ok||!cRes.ok||jErr(tRes.j)||jErr(cRes.j);
-  if(bad){
-   if(errEl){
-    errEl.classList.add('on');
-    errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais e RAMP_API_BASE_URL. ('+
-     [(!tRes.ok||jErr(tRes.j))?rampFmtRampErr('Transações',tRes):null,(!cRes.ok||jErr(cRes.j))?rampFmtRampErr('Cartões',cRes):null].filter(Boolean).join(' · ')+')';
-   }
-   window._rampTxCache=[];
-   window._rampCardsCache=[];
-   rampRenderFromData([],[],false,{keepError:true});
-   done();
-   return;
-  }
-  window._rampTxCache=txs;
-  window._rampCardsCache=cards;
-  rampRenderFromData(txs,cards,false);
-  done();
- }).catch(function(e){
-  console.error('Ramp fetch error:',e);
-  if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao conectar com Ramp — verifique as credenciais e a rede.';}
-  window._rampTxCache=[];
-  window._rampCardsCache=[];
-  rampRenderFromData([],[],false,{keepError:true});
-  done();
- });
 }
 function qbSkeletonCatRows(n){
  var h='';

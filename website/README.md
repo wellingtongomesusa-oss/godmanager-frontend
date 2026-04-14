@@ -148,6 +148,9 @@ DATABASE_URL=postgresql://user:your-secure-database-password@db:5432/secure_webs
 REDIS_URL=redis://:your-secure-redis-password@redis:6379/0
 SECRET_KEY=your-super-secret-key-change-this-in-production
 FLASK_ENV=production
+RAMP_CLIENT_ID=your-ramp-client-id
+RAMP_CLIENT_SECRET=your-ramp-client-secret
+RAMP_API_BASE_URL=https://api.ramp.com/developer/v1
 ```
 
 **Security Note:** Never commit `.env` files to version control. Use strong, unique passwords in production.
