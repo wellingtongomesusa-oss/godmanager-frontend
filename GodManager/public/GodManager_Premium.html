@@ -7001,25 +7001,56 @@ function ltpDeleteProperty(id){
  ltpRender();ltRender();ltDashRender();
  showToast('Propriedade removida com sucesso.');
 }
+function ltpCleanOwnerName(raw){
+ var s=String(raw||'').trim();
+ if(!s)return '—';
+ s=s.replace(/\s*-\s*(Mobile|Office)\s*:.*$/i,'');
+ s=s.replace(/\s+(Mobile|Office)\s*:.*$/i,'');
+ s=s.replace(/\(?\+?1?[\s.\-]?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}.*/,'');
+ s=s.replace(/\s{2,}/g,' ').trim();
+ return s||'—';
+}
+function ltpDeleteAppfolioProperty(appfolioId){
+ if(!confirm('Remover esta propriedade AppFolio da listagem local?'))return;
+ afpLoadStoredData();
+ window.appfolioData=(window.appfolioData||[]).filter(function(p){return String(p.id||'')!==String(appfolioId||'');});
+ try{localStorage.setItem('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}
+ ltpRender();afpRenderAll();showToast('Propriedade AppFolio removida com sucesso.');
+}
 function ltpGetAppfolioFallbackRecords(){
- var list=afpGetActiveData();
+ var list=afpFilterPropertyRows(afpGetActiveData()).filter(function(p){
+  var prop=String((p&&((p.Property)||p.property||((p.raw||{})['Property'])||''))||'').trim().toLowerCase();
+  var addr=String((p&&p.address)||'').trim().toLowerCase();
+  if(!prop&&!addr)return false;
+  if(prop==='total'||addr==='total')return false;
+  if(prop.indexOf('manager prop - admin')>=0||addr.indexOf('manager prop - admin')>=0)return false;
+  return true;
+ });
  if(!list.length)return [];
  return list.map(function(p,idx){
   var rent=Number(p.marketRent)||0;
+  var mgmtPct=Number(p.mgmtPercent)||0;
+  var netOwner=mgmtPct>0?(rent-(rent*(mgmtPct/100))):0;
+  var cityStateZip=[p.city,p.state,p.zip].filter(Boolean).join(' ');
+  var bathsInfo=(Number(p.sqft)||0)>0?(Math.round(p.sqft).toLocaleString('en-US')+' sqft'):'--';
+  var st='disputed';
+  if(mgmtPct>0&&rent>0)st='approved';
+  else if(mgmtPct>0&&rent<=0)st='pending';
   return {
    id:'afp_lt_'+idx,
    appfolioId:String(p.id||''),
    isAppfolio:true,
    address:String(p.address||p.property||''),
-   owner:String(p.ownerName||'—'),
+   addressSub:String((cityStateZip||'--')+' · '+bathsInfo),
+   owner:ltpCleanOwnerName(p.ownerName||p.ownerRaw||'—'),
    tenant:'',
-   baths:'',
+   baths:'--',
    occupancy:rent>0?'rented':'vacant',
    rent:rent,
    deposit:null,
-   net:null,
+   net:netOwner,
    month:'',
-   status:(Number(p.mgmtPercent)||0)>0?'managed':'not-managed'
+   status:st
   };
  });
 }
@@ -7027,7 +7058,13 @@ function ltpGetAppfolioFallbackRecords(){
 function ltpRender(){
  const records=ltGetRecords();
  const appfolioFallback=ltpGetAppfolioFallbackRecords();
- const sourceRecords=(records.length===0&&appfolioFallback.length>0)?appfolioFallback:records;
+ const sourceRecords=[...records,...appfolioFallback].filter(function(r){
+  if(!r.isAppfolio)return true;
+  var addr=String(r.address||'').trim().toLowerCase();
+  if(!addr||addr==='total')return false;
+  if(addr.indexOf('manager prop - admin')>=0)return false;
+  return true;
+ }).sort(function(a,b){return String(a.address||'').localeCompare(String(b.address||''));});
  const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
  const fOcc=(document.getElementById('ltp-filter-occ')?.value)||'';
  const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
@@ -7051,13 +7088,13 @@ function ltpRender(){
  if(empty)empty.style.display='none';
  const occLabel={rented:'Rented',vacant:'Available',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
- const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa',managed:'Managed','not-managed':'Not Managed'};
- const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',managed:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)','not-managed':'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc'};
+ const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
+ const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
  tbody.innerHTML=filtered.map((r,i)=>`
  <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="${r.isAppfolio&&r.appfolioId?"afpOpenModal('"+r.appfolioId+"')":"ltOpenDetail('"+r.id+"')"}">
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
- <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.baths||'—'}</div></td>
- <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${r.owner}</td>
+<td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.isAppfolio?(r.addressSub||'--'):(r.baths||'—')}</div></td>
+<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${ltpCleanOwnerName(r.owner)}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${r.baths||'—'}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
@@ -7068,7 +7105,7 @@ function ltpRender(){
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${stLabel[r.status]||'—'}</span></td>
  <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
  <div style="display:flex;gap:4px;justify-content:center">
- ${r.isAppfolio?`<button onclick="afpOpenModal('${r.appfolioId}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">View</button>`:`<button onclick="ltOpenDetail('${r.id}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="ltOpenEdit('${r.id}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="ltpDeleteProperty('${r.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>`}
+${r.isAppfolio?`<button onclick="afpOpenModal('${r.appfolioId}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="afpOpenModal('${r.appfolioId}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="ltpDeleteAppfolioProperty('${r.appfolioId}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>`:`<button onclick="ltOpenDetail('${r.id}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="ltOpenEdit('${r.id}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="ltpDeleteProperty('${r.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>`}
  </div>
  </td>
  </tr>`).join('');
