@@ -279,19 +279,21 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #page-appfolio-upload #af-summary-grid .gm-ix-kpi{padding:14px 16px}
 #page-appfolio-upload #af-summary-grid .k-v{font-size:16px}
 /* Cadastro AppFolio (propriedades) */
-#page-cadastro-appfolio .afp-wrap{background:#1a1a2e;border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:18px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+#page-cadastro-appfolio .afp-wrap{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 2px 12px rgba(30,22,12,.06)}
 #page-cadastro-appfolio .afp-drop{border:2px dashed rgba(212,175,55,.35);border-radius:12px;padding:28px 20px;background:rgba(212,175,55,.05);text-align:center;cursor:pointer;transition:border-color .18s ease,background .18s ease}
 #page-cadastro-appfolio .afp-drop.drag{border-color:var(--amber);background:rgba(212,175,55,.1)}
 #page-cadastro-appfolio .afp-filters{display:flex;gap:8px;flex-wrap:wrap}
 #page-cadastro-appfolio .afp-filter-btn{padding:7px 10px;border-radius:999px;border:1px solid rgba(212,175,55,.3);background:rgba(255,255,255,.02);color:#e9d2a4;font-size:11px;font-weight:600;cursor:pointer}
 #page-cadastro-appfolio .afp-filter-btn.active{background:rgba(212,175,55,.16);border-color:var(--amber);color:#f6deb0}
-#page-cadastro-appfolio .afp-search{padding:8px 11px;border:1px solid rgba(212,175,55,.3);border-radius:8px;background:rgba(0,0,0,.18);color:#f5e6d4;min-width:260px;outline:none}
+#page-cadastro-appfolio .afp-search{padding:8px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);min-width:260px;outline:none}
 #page-cadastro-appfolio .afp-search:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
-#page-cadastro-appfolio .afp-table-wrap{margin-top:14px;border:1px solid rgba(212,175,55,.2);border-radius:10px;overflow:auto;background:rgba(0,0,0,.15)}
+#page-cadastro-appfolio .afp-table-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:auto;background:var(--paper)}
 #page-cadastro-appfolio .afp-table{width:100%;border-collapse:collapse;min-width:1120px}
-#page-cadastro-appfolio .afp-table th{padding:10px 10px;font-size:9px;letter-spacing:.8px;text-transform:uppercase;text-align:left;color:rgba(248,246,242,.7);background:rgba(212,175,55,.09);border-bottom:1px solid rgba(212,175,55,.2);cursor:pointer;user-select:none}
-#page-cadastro-appfolio .afp-table td{padding:10px;border-bottom:1px solid rgba(212,175,55,.14);font-size:12px;color:#f3ebdd}
-#page-cadastro-appfolio .afp-table tr:hover{background:rgba(212,175,55,.05)}
+#page-cadastro-appfolio .afp-table th{padding:10px 12px;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-align:left;color:var(--ink3);background:var(--cream);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+#page-cadastro-appfolio .afp-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--ink2)}
+#page-cadastro-appfolio .afp-table tbody tr:nth-child(odd){background:var(--paper)}
+#page-cadastro-appfolio .afp-table tbody tr:nth-child(even){background:var(--sand)}
+#page-cadastro-appfolio .afp-table tbody tr:hover{background:var(--cream)}
 #page-cadastro-appfolio .afp-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid transparent}
 #page-cadastro-appfolio .afp-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}
 #page-cadastro-appfolio .afp-modal{display:none;position:fixed;inset:0;z-index:9300;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:18px}
@@ -1332,8 +1334,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <table class="afp-table">
     <thead>
      <tr>
-      <th data-sort="idx">#</th><th data-sort="address">Address</th><th data-sort="city">City</th><th data-sort="state">State</th><th data-sort="zip">ZIP</th>
-      <th data-sort="marketRent">Market Rent</th><th data-sort="sqft">Sqft</th><th data-sort="mgmtPercent">Mgmt Fee %</th><th data-sort="ownerName">Owner</th><th>Status</th><th>Actions</th>
+     <th data-sort="idx">#</th><th data-sort="address">ENDEREÇO</th><th data-sort="ownerName">OWNER</th><th>TENANT</th><th>BATHS</th>
+     <th data-sort="marketRent">OCUPAÇÃO</th><th data-sort="marketRent">RENT</th><th>DEPOSIT</th><th data-sort="mgmtPercent">NET OWNER</th><th>MÊS</th><th>STATUS</th><th>AÇÕES</th>
      </tr>
     </thead>
     <tbody id="afp-table-body"></tbody>
@@ -7955,9 +7957,23 @@ function afpRenderTable(){
  if(st.page>totalPages)st.page=totalPages;
  const start=(st.page-1)*st.pageSize;
  const pageItems=list.slice(start,start+st.pageSize);
- if(!pageItems.length){body.innerHTML='<tr><td colspan="11" style="text-align:center;color:rgba(248,246,242,.6);padding:22px">Sem resultados para os filtros atuais.</td></tr>';}
+ if(!pageItems.length){body.innerHTML='<tr><td colspan="12" style="text-align:center;color:rgba(248,246,242,.6);padding:22px">Sem resultados para os filtros atuais.</td></tr>';}
  else body.innerHTML=pageItems.map(function(x,i){
-  return '<tr><td>'+(start+i+1)+'</td><td>'+afpEsc(x.address)+'</td><td>'+afpEsc(x.city)+'</td><td>'+afpEsc(x.state)+'</td><td>'+afpEsc(x.zip)+'</td><td>'+afpMoney(x.marketRent)+'</td><td>'+Math.round(x.sqft||0).toLocaleString('en-US')+'</td><td>'+(x.mgmtPercent||0).toFixed(2)+'%</td><td>'+afpEsc(x.ownerName||'—')+'</td><td>'+afpStatusBadges(x)+'</td><td><button type="button" class="btn-gm-ix sec" style="padding:5px 11px;font-size:11px" onclick="afpOpenModal(\''+afpEsc(x.id)+'\')">View</button></td></tr>';
+  var rent=Number(x.marketRent)||0;
+  var mgmt=Number(x.mgmtPercent)||0;
+  var net=mgmt>0?(rent-(rent*(mgmt/100))):0;
+  var occLabel=rent>0?'Rented':'Available';
+  var occStyle=rent>0?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc';
+  var stName=(mgmt>0?(rent>0?'Aprovado':'Pendente'):'Disputa');
+  var stStyle=(mgmt>0?(rent>0?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'):'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)');
+  var owner=ltpCleanOwnerName(x.ownerName||x.ownerRaw||'—');
+  var fullAddress=String(x.address||x.property||((x.raw||{})['Property'])||'').trim();
+  var addressMain=fullAddress||'—';
+  if(addressMain.indexOf(',')>=0)addressMain=addressMain.split(',')[0].trim()||addressMain;
+  var cityStateZip=((x.city||'')+' '+(x.state||'')+' '+(x.zip||'')).trim();
+  if(!cityStateZip&&fullAddress.indexOf(',')>=0)cityStateZip=fullAddress.split(',').slice(1).join(',').trim();
+  var addrSub=(cityStateZip||'—')+' · '+Math.round(x.sqft||0).toLocaleString('en-US')+' sqft';
+  return '<tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'" onclick="afpOpenModal(\''+afpEsc(x.id)+'\')"><td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(start+i+1)+'</td><td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+afpEsc(addressMain)+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+afpEsc(addrSub)+'</div></td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+afpEsc(owner)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">--</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">--</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+occStyle+'">'+occLabel+'</span></td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+afpMoney(rent)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">--</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+((net>=0)?'var(--blue)':'var(--red)')+'">'+afpMoney(net)+'</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">--</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+stStyle+'">'+stName+'</span></td><td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()"><div style="display:flex;gap:4px;justify-content:center"><button onclick="afpOpenModal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="afpOpenModal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="afpDeletePropertyLocal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button></div></td></tr>';
  }).join('');
  const pg=document.getElementById('afp-page-info');if(pg)pg.textContent='Page '+st.page+' / '+totalPages+' ('+list.length+' itens)';
  const prev=document.getElementById('afp-prev-page');if(prev)prev.disabled=st.page<=1;
@@ -7968,6 +7984,15 @@ function afpRenderFilterButtons(){
  document.querySelectorAll('#afp-filter-buttons .afp-filter-btn').forEach(function(btn){
   btn.classList.toggle('active',btn.dataset.filter===st.filter);
  });
+}
+function afpDeletePropertyLocal(id){
+ if(!confirm('Excluir esta propriedade AppFolio da base local?'))return;
+ afpLoadStoredData();
+ window.appfolioData=(window.appfolioData||[]).filter(function(x){return String(x.id||'')!==String(id||'');});
+ try{localStorage.setItem('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}
+ afpRenderAll();
+ if(typeof ltpRender==='function')ltpRender();
+ showToast('Propriedade removida com sucesso.');
 }
 function afpKv(label,value){return '<div class="afp-kv"><b>'+afpEsc(label)+'</b><span>'+afpEsc(value||'—')+'</span></div>';}
 function afpOpenModal(id){
