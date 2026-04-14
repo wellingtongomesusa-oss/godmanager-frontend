@@ -24,6 +24,14 @@ def _ramp_creds() -> Tuple[str, str]:
     return (os.getenv("RAMP_CLIENT_ID", "").strip(), os.getenv("RAMP_CLIENT_SECRET", "").strip())
 
 
+def _ramp_scope() -> str:
+    # Ramp client_credentials requires scope; allow override via env.
+    return os.getenv(
+        "RAMP_SCOPE",
+        "cards:read users:read departments:read vendors:read statements:read reimbursements:read transactions:read",
+    ).strip() or "read"
+
+
 def _token_is_valid() -> bool:
     value = _TOKEN_CACHE.get("value")
     expires_at = _TOKEN_CACHE.get("expires_at")
@@ -42,20 +50,54 @@ def _fetch_token() -> Tuple[Optional[str], Optional[str]]:
             return str(_TOKEN_CACHE["value"]), None
 
         url = f"{_ramp_base_url()}/token"
-        payload = {"grant_type": "client_credentials"}
-        try:
-            resp = requests.post(
-                url,
-                data=payload,
-                auth=(client_id, client_secret),
-                timeout=_DEFAULT_TIMEOUT,
-            )
-        except requests.RequestException as exc:
-            return None, f"Falha de rede ao obter token Ramp: {exc}"
+        payload = {"grant_type": "client_credentials", "scope": _ramp_scope()}
 
+        attempts: List[Tuple[str, Dict[str, str], Dict[str, str], Optional[Tuple[str, str]]]] = [
+            # Attempt 1: OAuth basic auth + grant_type
+            (
+                "basic_auth",
+                payload,
+                {"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
+                (client_id, client_secret),
+            ),
+            # Attempt 2: Credentials in request form (some providers expect this form)
+            (
+                "form_credentials",
+                {
+                    "grant_type": "client_credentials",
+                    "scope": _ramp_scope(),
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                },
+                {"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
+                None,
+            ),
+        ]
+
+        resp = None
+        last_error = ""
+        for mode, data, headers, auth in attempts:
+            try:
+                resp = requests.post(url, data=data, headers=headers, auth=auth, timeout=_DEFAULT_TIMEOUT)
+            except requests.RequestException as exc:
+                last_error = f"{mode}: {exc}"
+                continue
+
+            if resp.ok:
+                break
+            snippet = (resp.text or "")[:220]
+            last_error = f"{mode} HTTP {resp.status_code}: {snippet}"
+
+        if resp is None:
+            return None, f"Falha de rede ao obter token Ramp: {last_error}"
         if not resp.ok:
-            snippet = (resp.text or "")[:280]
-            return None, f"Ramp token falhou (HTTP {resp.status_code}): {snippet}"
+            cid_len = len(client_id or "")
+            sec_len = len(client_secret or "")
+            return None, (
+                "Ramp token falhou após tentativas OAuth. "
+                f"client_id_len={cid_len}, client_secret_len={sec_len}. "
+                f"Detalhe: {last_error}"
+            )
 
         body = resp.json() if resp.content else {}
         token = body.get("access_token")
