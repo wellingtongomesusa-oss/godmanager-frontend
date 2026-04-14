@@ -25,6 +25,78 @@ REF_TRACK_STATUSES = frozenset({"pending", "submitted", "approved", "rejected"})
 FORM_TYPES = frozenset({"owner", "tenant"})
 
 
+def _checklist_for_type(ftype: str) -> List[Dict[str, Any]]:
+    """Document keys must match upload-doc `doc_key` and submit payload `documents`."""
+    ftype = (ftype or "").strip().lower()
+    if ftype == "owner":
+        return [
+            {
+                "key": "gov_id",
+                "labels": {
+                    "en": "Government-issued photo ID",
+                    "pt": "Documento de identidade com foto",
+                    "es": "Identificación oficial con foto",
+                },
+            },
+            {
+                "key": "w9",
+                "labels": {"en": "W-9 (tax)", "pt": "W-9 (fiscal)", "es": "W-9 (impuestos)"},
+            },
+            {
+                "key": "deed",
+                "labels": {
+                    "en": "Property deed or management agreement",
+                    "pt": "Escritura ou contrato de gestão",
+                    "es": "Escritura o acuerdo de administración",
+                },
+            },
+            {
+                "key": "insurance",
+                "labels": {
+                    "en": "Insurance certificate (if applicable)",
+                    "pt": "Certificado de seguro (se aplicável)",
+                    "es": "Certificado de seguro (si aplica)",
+                },
+            },
+        ]
+    if ftype == "tenant":
+        return [
+            {
+                "key": "gov_id",
+                "labels": {
+                    "en": "Government-issued photo ID",
+                    "pt": "Documento de identidade com foto",
+                    "es": "Identificación oficial con foto",
+                },
+            },
+            {
+                "key": "income",
+                "labels": {
+                    "en": "Proof of income (2 recent pay stubs)",
+                    "pt": "Comprovante de renda (2 holerites)",
+                    "es": "Comprobante de ingresos (2 recientes)",
+                },
+            },
+            {
+                "key": "lease",
+                "labels": {
+                    "en": "Signed lease draft (if provided)",
+                    "pt": "Minuta de contrato assinada (se fornecida)",
+                    "es": "Borrador de contrato firmado (si aplica)",
+                },
+            },
+            {
+                "key": "other",
+                "labels": {
+                    "en": "Other supporting documents",
+                    "pt": "Outros documentos de suporte",
+                    "es": "Otros documentos de respaldo",
+                },
+            },
+        ]
+    return []
+
+
 def _to_mmddyyyy(s: str) -> str:
     s = (s or "").strip()
     if not s:
@@ -318,6 +390,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
             st = str(r.get("status") or "pending")
             pref = str(r.get("ref") or "")
             if st == "pending":
+                ft = str(r.get("type") or "")
                 return jsonify(
                     {
                         "valid": True,
@@ -325,6 +398,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
                         "type": r.get("type"),
                         "recipient_name": r.get("recipient_name") or "",
                         "status": "pending",
+                        "checklist": _checklist_for_type(ft),
                     }
                 )
             msg = "This form has already been submitted."
@@ -340,6 +414,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
             )
         inv = _find_invite(token)
         if inv:
+            ft = str(inv.get("form_type") or "")
             return jsonify(
                 {
                     "valid": True,
@@ -348,6 +423,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
                     "type": inv.get("form_type"),
                     "recipient_name": str(inv.get("recipient_name") or "").strip(),
                     "status": "pending",
+                    "checklist": _checklist_for_type(ft),
                 }
             )
         store = _load_forms_store()

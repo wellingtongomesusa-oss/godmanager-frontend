@@ -17,6 +17,17 @@ function parseAuthCookie(value: string | undefined): { exp: number; role: string
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /** Public external forms (GodManager/public) — no login */
+  if (
+    pathname === '/form-owner.html' ||
+    pathname === '/form-tenant.html' ||
+    pathname.startsWith('/form-owner') ||
+    pathname.startsWith('/form-tenant')
+  ) {
+    return NextResponse.next();
+  }
+
   const raw = request.cookies.get(AUTH_COOKIE)?.value;
   const session = parseAuthCookie(raw);
   const authed = session && Date.now() <= session.exp;
@@ -67,5 +78,9 @@ export const config = {
     '/dashboard/:path*',
     '/admin/:path*',
     '/GodManager_Premium.html',
+    '/form-owner.html',
+    '/form-tenant.html',
+    '/form-owner/:path*',
+    '/form-tenant/:path*',
   ],
 };
