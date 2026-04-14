@@ -4116,16 +4116,18 @@ function fetchRampData(){
  rampSetConnected(false,'Verificando conexão...');
  var btn=document.getElementById('ramp-btn-refresh');if(btn)btn.disabled=true;
  function parse(r){return r.json().catch(function(){return{};}).then(function(j){return{ok:r.ok,status:r.status,j:j};});}
+ var rampBase=String(typeof GM_BACKEND_RAILWAY_APP!=='undefined'&&GM_BACKEND_RAILWAY_APP?GM_BACKEND_RAILWAY_APP:'').replace(/\/$/,'');
+ var rampFetchOpts={method:'GET',mode:'cors',credentials:'omit'};
  Promise.all([
-  fetch('/api/ramp/status',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/transactions?page_size=500',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/transactions/summary?page_size=500',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/cards?page_size=300',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/users?page_size=300',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/reimbursements?page_size=300',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/departments?page_size=200',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/vendors?page_size=300',{credentials:'same-origin'}).then(parse),
-  fetch('/api/ramp/statements?page_size=200',{credentials:'same-origin'}).then(parse)
+  fetch(rampBase+'/api/ramp/status',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/transactions?page_size=500',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/transactions/summary?page_size=500',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/cards?page_size=300',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/users?page_size=300',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/reimbursements?page_size=300',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/departments?page_size=200',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/vendors?page_size=300',rampFetchOpts).then(parse),
+  fetch(rampBase+'/api/ramp/statements?page_size=200',rampFetchOpts).then(parse)
  ]).then(function(res){
   var st=res[0],tx=res[1],sum=res[2],cards=res[3],users=res[4],reim=res[5];
   if(!st.ok||!st.j||st.j.connected!==true){
