@@ -7293,7 +7293,11 @@ function afpNormalizeRows(rows){
  dataRows.forEach(function(r,idx){
   if(!r||!r.length)return;
   const clean=r.slice(0,15);while(clean.length<15)clean.push('');
-  if(!clean[0])return;
+  const propertyRaw=String(clean[0]||'');
+  const propertyTrim=propertyRaw.trim();
+  if(!propertyTrim)return;
+  if(propertyTrim==='Total')return;
+  if(propertyRaw.indexOf('Manager Prop - Admin')>=0)return;
   const raw={};AFP_COLUMNS.forEach(function(c,i){raw[c]=clean[i]||'';});
   const pp=afpParseProperty(raw['Property']);
   const owner=afpSplitOwner(raw['Owner(s) - Phone Numbers']);
