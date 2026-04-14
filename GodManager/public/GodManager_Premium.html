@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='16' fill='%231a3a5c'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='%23ffffff' font-family='system-ui' font-size='18' font-weight='700'%3EG%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="gm-i18n.js"></script>
 <script src="gm_vendors.js"></script>
 <style>
@@ -681,6 +682,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
     <label style="font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:4px" for="gm-fr-f-status" data-i18n="forms_filter_status">Status</label>
     <select id="gm-fr-f-status" onchange="gmFrLoad()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px;font-family:'Inter',sans-serif">
      <option value="" data-i18n="forms_all_statuses">All statuses</option>
+     <option value="pending" data-i18n="forms_status_pending">Pending</option>
      <option value="submitted" data-i18n="forms_status_submitted">Submitted</option>
      <option value="under_review" data-i18n="forms_status_under_review">Under review</option>
      <option value="approved" data-i18n="forms_status_approved">Approved</option>
@@ -696,12 +698,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <table style="width:100%;border-collapse:collapse">
     <thead>
      <tr style="background:var(--cream)">
-      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_date">Date</th>
-      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_name">Name</th>
+      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_ref">REF</th>
+      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_sent_to">Sent to</th>
       <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_type">Type</th>
-      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_email">Email</th>
-      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_docs">Documents</th>
       <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_status">Status</th>
+      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_sent_at">Sent at</th>
+      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_submitted_at">Submitted at</th>
+      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_docs">Documents</th>
       <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="forms_col_actions">Actions</th>
      </tr>
     </thead>
@@ -973,6 +976,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </select>
  <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
  <button type="button" onclick="gmTenOpenDiscountReport()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="tenants_discount_report">Discount Report</button>
+ <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap" data-i18n="send_tenant_form">Send Tenant Form</button>
  <button type="button" onclick="gmTenOpenModal(null)" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="tenants_new">+ New Tenant</button>
  </div>
  </div>
@@ -2019,23 +2023,52 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 </div>
 
 <div id="gm-form-share-modal" style="display:none;position:fixed;inset:0;z-index:9020;background:rgba(0,0,0,.45);flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)" onclick="if(event.target===this)gmShareFormClose()">
- <div style="background:var(--paper);border-radius:12px;max-width:440px;width:100%;padding:22px 22px 18px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,.28);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="gm-share-title">
-  <div id="gm-share-title" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif" data-i18n="forms_share_link_title">Share external form</div>
-  <div style="margin:14px auto;text-align:center;position:relative;display:inline-block;left:50%;transform:translateX(-50%)">
-   <div id="gm-share-qr-wrap" style="position:relative;display:inline-block;width:200px;height:200px">
-    <div id="gm-share-qr" style="width:200px;height:200px;display:inline-block"></div>
+ <div style="background:var(--paper);border-radius:12px;max-width:480px;width:100%;padding:22px 22px 18px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,.28);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="gm-share-title">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">
+   <div id="gm-share-title" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif;flex:1;min-width:0" data-i18n="forms_share_link_title">Share external form</div>
+   <button type="button" onclick="gmShareFormClose()" style="width:32px;height:32px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;font-size:18px;color:var(--ink3);line-height:1;flex-shrink:0" aria-label="Close">×</button>
+  </div>
+  <div id="gm-share-step1">
+   <label for="gm-share-rec-name" style="display:block;font-size:10px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="recipient_name">Recipient Name</label>
+   <input type="text" id="gm-share-rec-name" autocomplete="name" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box;margin-bottom:12px"/>
+   <label for="gm-share-rec-email" style="display:block;font-size:10px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="recipient_email">Recipient Email</label>
+   <input type="email" id="gm-share-rec-email" autocomplete="email" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box;margin-bottom:12px"/>
+   <label for="gm-share-rec-wa" style="display:block;font-size:10px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="recipient_whatsapp">Recipient WhatsApp</label>
+   <input type="text" id="gm-share-rec-wa" autocomplete="tel" placeholder="+1 407 555 1234" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box;margin-bottom:14px"/>
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <button type="button" onclick="gmShareFormDoPreview()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="preview_form">Preview Form</button>
+    <button type="button" onclick="gmShareFormGenerateLink()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="generate_link">Generate Link</button>
    </div>
   </div>
-  <input type="text" id="gm-share-url" readonly style="width:100%;padding:9px 11px;font-size:11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'JetBrains Mono',monospace;margin-bottom:10px;box-sizing:border-box">
-  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px">
-   <button type="button" onclick="gmShareFormCopy()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)" data-i18n="copy_link">Copy Link</button>
-   <button type="button" onclick="gmShareFormEmail()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="send_email">Send via Email</button>
-   <button type="button" onclick="gmShareFormWhatsApp()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="send_whatsapp">Send via WhatsApp</button>
-   <button type="button" onclick="gmShareFormDownloadQr()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="download_qr">Download QR Code</button>
+  <div id="gm-share-step3" style="display:none;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+   <div id="gm-share-ref-line" style="display:none;font-size:12px;font-weight:600;color:var(--ink);margin-bottom:10px;font-family:'JetBrains Mono',monospace"><span data-i18n="form_reference_label">Reference</span>: <span id="gm-share-ref-val"></span></div>
+   <div style="font-size:10px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px" data-i18n="personalized_link">Personalized Link</div>
+   <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:14px;flex-wrap:wrap">
+    <input type="text" id="gm-share-url" readonly style="flex:1;min-width:0;padding:9px 11px;font-size:11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'JetBrains Mono',monospace;box-sizing:border-box"/>
+    <button type="button" id="gm-share-copy-btn" onclick="gmShareFormCopy()" style="flex-shrink:0;padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25);white-space:nowrap" data-i18n="copy_link">Copy Link</button>
+   </div>
+   <div style="margin:4px auto 14px;text-align:center;position:relative;display:inline-block;left:50%;transform:translateX(-50%)">
+    <div id="gm-share-qr-wrap" style="position:relative;display:inline-block;width:200px;height:200px">
+     <div id="gm-share-qr" style="width:200px;height:200px;display:inline-block"></div>
+    </div>
+   </div>
+   <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+    <button type="button" onclick="gmShareFormWhatsApp()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="send_whatsapp">Send via WhatsApp</button>
+    <button type="button" onclick="gmShareFormEmail()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="send_email">Send via Email</button>
+    <button type="button" onclick="gmShareFormDownloadQr()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" data-i18n="download_qr">Download QR Code</button>
+   </div>
   </div>
-  <div style="display:flex;justify-content:flex-end;margin-top:8px">
+  <div style="display:flex;justify-content:flex-end;margin-top:14px">
    <button type="button" onclick="gmShareFormClose()" style="padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);cursor:pointer;font-size:12px;font-family:'Inter',sans-serif" data-i18n="close">Close</button>
   </div>
+ </div>
+</div>
+<div id="gm-form-preview-overlay" style="display:none;position:fixed;inset:0;z-index:9035;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:min(24px,4vw);flex-direction:column" onclick="if(event.target===this)gmSharePreviewClose()">
+ <div style="width:min(1200px,80vw);height:min(88vh,820px);background:var(--paper);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,.45)" onclick="event.stopPropagation()">
+  <div style="display:flex;align-items:center;justify-content:flex-end;padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);flex-shrink:0">
+   <button type="button" onclick="gmSharePreviewClose()" style="padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);cursor:pointer;font-size:12px;font-family:'Inter',sans-serif" data-i18n="close_preview">Close Preview</button>
+  </div>
+  <iframe id="gm-form-preview-if" title="Form preview" style="flex:1;width:100%;min-height:0;border:none;background:var(--sand)"></iframe>
  </div>
 </div>
 
@@ -2397,9 +2430,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
  </select>
- <div style="margin-left:auto;display:flex;gap:8px">
+ <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
  <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
+ <button type="button" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap" data-i18n="send_owner_form">Send Owner Form</button>
+ <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap" data-i18n="send_tenant_form">Send Tenant Form</button>
  </div>
  </div>
  <div style="display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
@@ -8472,15 +8507,20 @@ window.gmTenLoadPage=gmTenLoadPage;window.gmTenSetPage=gmTenSetPage;window.gmTen
 })();
 
 (function(){
-window._gmShareState={token:null,url:null,formType:null};
+window._gmShareState={token:null,url:null,formType:null,mode:null,recipientName:'',recipientEmail:'',recipientPhone:''};
 window._gmFrCurrentId=null;
 window._gmFrLoadTimer=null;
 function gmFormsApiBase(){return(String(typeof GM_BACKEND_RAILWAY_APP!=='undefined'?GM_BACKEND_RAILWAY_APP:'').replace(/\/$/,''))+'/api/appfolio';}
 function gmFormPublicPageBase(){return'https://www.godmanager.us';}
+function gmFillTpl(str,o){
+ o=o||{};
+ return String(str==null?'':str).replace(/\{name\}/g,String(o.name==null?'':o.name)).replace(/\{link\}/g,String(o.link==null?'':o.link));
+}
 function gmFormSharePublicUrl(formType,token){
  var path=formType==='owner'?'/form-owner.html':'/form-tenant.html';
- var api=(typeof GM_BACKEND_RAILWAY_APP!=='undefined'&&GM_BACKEND_RAILWAY_APP)?String(GM_BACKEND_RAILWAY_APP).replace(/\/$/,''):'';
- return gmFormPublicPageBase()+path+'?token='+encodeURIComponent(token)+(api?'&api='+encodeURIComponent(api):'');
+ var api=(typeof GM_BACKEND_RAILWAY_APP!=='undefined'&&GM_BACKEND_RAILWAY_APP)?String(GM_BACKEND_RAILWAY_APP).replace(/\/$/,''):'');
+ var q='token='+encodeURIComponent(token||'');
+ return gmFormPublicPageBase()+path+'?'+q+(api?'&api='+encodeURIComponent(api):'');
 }
 function gmFrEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
 function gmFrT(k){return(typeof window.t==='function'?window.t(k):k);}
@@ -8517,38 +8557,176 @@ function gmPaintQrIn(el,url,size){
  new QRCode(el,opts);
  setTimeout(function(){gmQrDrawGmLogo(el);},90);
 }
+function gmShareFormApplyStepVisibility(){
+ var s1=document.getElementById('gm-share-step1');
+ var s3=document.getElementById('gm-share-step3');
+ var st=window._gmShareState;
+ if(!st)return;
+ if(!s1||!s3)return;
+ if(st.mode==='invite'){
+  s1.style.display='none';
+  s3.style.display='block';
+ }else if(st.mode==='wizard'){
+  s1.style.display='block';
+  s3.style.display=st.url?'block':'none';
+ }
+}
+function gmShareFormApplyTitle(){
+ var tit=document.getElementById('gm-share-title');
+ if(!tit||!window._gmShareState)return;
+ var st=window._gmShareState;
+ if(st.mode==='wizard'){
+  tit.removeAttribute('data-i18n');
+  var w=st.formType;
+  tit.textContent=gmFrT(w==='owner'?'share_reg_title_owner':'share_reg_title_tenant');
+ }else if(st.mode==='invite'){
+  tit.setAttribute('data-i18n','forms_share_link_title');
+ }
+}
+function gmShareFormPaintQrDeferred(){
+ gmEnsureQrLib(function(){
+  var el=document.getElementById('gm-share-qr');
+  var st=window._gmShareState;
+  if(el){
+   if(st&&st.url)gmPaintQrIn(el,st.url,200);
+   else el.innerHTML='';
+  }
+  if(typeof applyTranslations==='function')applyTranslations();
+  gmShareFormApplyTitle();
+ });
+}
 function gmShareFormShowUi(){
  var m=document.getElementById('gm-form-share-modal');
  var inp=document.getElementById('gm-share-url');
  if(inp&&window._gmShareState)inp.value=window._gmShareState.url||'';
+ gmShareFormApplyTitle();
+ gmShareFormApplyStepVisibility();
  if(m){m.style.display='flex';m.style.flexDirection='column';document.body.style.overflow='hidden';}
- gmEnsureQrLib(function(){
-  var el=document.getElementById('gm-share-qr');
-  if(el&&window._gmShareState&&window._gmShareState.url)gmPaintQrIn(el,window._gmShareState.url,200);
-  if(typeof applyTranslations==='function')applyTranslations();
- });
+ gmShareFormPaintQrDeferred();
 }
+window.gmShareFormOpenWizard=function(formType){
+ gmSharePreviewClose();
+ var rl=document.getElementById('gm-share-ref-line');if(rl)rl.style.display='none';
+ window._gmShareState={token:null,url:null,formType:(formType==='owner'?'owner':'tenant'),mode:'wizard',recipientName:'',recipientEmail:'',recipientPhone:'',formRef:''};
+ var n=document.getElementById('gm-share-rec-name');if(n)n.value='';
+ var e=document.getElementById('gm-share-rec-email');if(e)e.value='';
+ var w=document.getElementById('gm-share-rec-wa');if(w)w.value='';
+ var el=document.getElementById('gm-share-qr');if(el)el.innerHTML='';
+ var inp=document.getElementById('gm-share-url');if(inp)inp.value='';
+ gmShareFormApplyTitle();
+ gmShareFormApplyStepVisibility();
+ var m=document.getElementById('gm-form-share-modal');
+ if(m){m.style.display='flex';m.style.flexDirection='column';document.body.style.overflow='hidden';}
+ if(typeof applyTranslations==='function')applyTranslations();
+ gmShareFormApplyTitle();
+};
+window.gmSharePreviewClose=function(){
+ var ov=document.getElementById('gm-form-preview-overlay');
+ var ifr=document.getElementById('gm-form-preview-if');
+ if(ov)ov.style.display='none';
+ if(ifr)ifr.src='about:blank';
+};
+window.gmShareFormDoPreview=function(){
+ var nm=document.getElementById('gm-share-rec-name');
+ var name=(nm&&nm.value||'').trim();
+ if(!name){if(typeof showToast==='function')showToast(gmFrT('error'),'error');return;}
+ var ft=(window._gmShareState&&window._gmShareState.formType)||'owner';
+ var path=ft==='owner'?'form-owner.html':'form-tenant.html';
+ var lang=(typeof window.getGmLang==='function'&&window.getGmLang())||'en';
+ if(lang!=='en'&&lang!=='pt'&&lang!=='es')lang='en';
+ var api=(typeof GM_BACKEND_RAILWAY_APP!=='undefined'&&GM_BACKEND_RAILWAY_APP)?String(GM_BACKEND_RAILWAY_APP).replace(/\/$/,''):'';
+ var u;
+ try{u=new URL(path,window.location.href);}catch(e1){try{u=new URL('https://www.godmanager.us/'+path);}catch(e2){return;}}
+ u.searchParams.set('preview','1');
+ u.searchParams.set('name',name);
+ u.searchParams.set('lang',lang);
+ if(api)u.searchParams.set('api',api);
+ var ov=document.getElementById('gm-form-preview-overlay');
+ var ifr=document.getElementById('gm-form-preview-if');
+ if(ifr)ifr.src=u.toString();
+ if(ov){ov.style.display='flex';ov.style.flexDirection='column';ov.style.alignItems='center';ov.style.justifyContent='center';}
+};
+window.gmShareFormGenerateLink=function(){
+ var nm=document.getElementById('gm-share-rec-name');
+ var em=document.getElementById('gm-share-rec-email');
+ var wa=document.getElementById('gm-share-rec-wa');
+ var name=(nm&&nm.value||'').trim();
+ if(!name){if(typeof showToast==='function')showToast(gmFrT('error'),'error');return;}
+ var ft=(window._gmShareState&&window._gmShareState.formType)||'owner';
+ var body={
+  type:ft,
+  recipient_name:name,
+  recipient_email:(em&&em.value||'').trim(),
+  recipient_phone:(wa&&wa.value||'').trim()
+ };
+ fetch(gmFormsApiBase()+'/form/generate-ref',{method:'POST',headers:{'Content-Type':'application/json'},mode:'cors',credentials:'omit',body:JSON.stringify(body)})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||!o.j.token){if(typeof showToast==='function')showToast(gmFrT('forms_err_invite'),'error');return;}
+  var url=gmFormSharePublicUrl(ft,o.j.token);
+  var refVal=o.j.ref||'';
+  window._gmShareState={
+   token:o.j.token,
+   url:url,
+   formType:ft,
+   mode:'wizard',
+   recipientName:name,
+   recipientEmail:(em&&em.value||'').trim(),
+   recipientPhone:(wa&&wa.value||'').trim(),
+   formRef:refVal
+  };
+  var inp=document.getElementById('gm-share-url');if(inp)inp.value=url;
+  var rl=document.getElementById('gm-share-ref-line');
+  var rv=document.getElementById('gm-share-ref-val');
+  if(rl&&rv&&refVal){rv.textContent=refVal;rl.style.display='block';}
+  else if(rl)rl.style.display='none';
+  gmShareFormApplyStepVisibility();
+  gmShareFormPaintQrDeferred();
+ }).catch(function(){if(typeof showToast==='function')showToast(gmFrT('forms_err_invite'),'error');});
+};
 window.gmShareFormClose=function(){
+ clearTimeout(window._gmShareCopyT);
+ gmSharePreviewClose();
+ var btn=document.getElementById('gm-share-copy-btn');
+ if(btn)btn.textContent=(typeof window.t==='function'?window.t('copy_link'):'Copy Link');
  var m=document.getElementById('gm-form-share-modal');
  if(m)m.style.display='none';
  document.body.style.overflow='';
  var el=document.getElementById('gm-share-qr');if(el)el.innerHTML='';
+ window._gmShareState={token:null,url:null,formType:null,mode:null,recipientName:'',recipientEmail:'',recipientPhone:''};
 };
+window.gmNormalizeWaDigits=function(s){return String(s||'').replace(/\D/g,'');};
 window.gmShareFormCopy=function(){
  var inp=document.getElementById('gm-share-url');
+ var btn=document.getElementById('gm-share-copy-btn');
  if(!inp||!inp.value)return;
  inp.select();inp.setSelectionRange(0,99999);
- try{document.execCommand('copy');if(typeof showToast==='function')showToast('OK','success');}catch(e){if(navigator.clipboard)navigator.clipboard.writeText(inp.value).then(function(){if(typeof showToast==='function')showToast('OK','success');});}
+ var restore=function(){if(btn)btn.textContent=(typeof window.t==='function'?window.t('copy_link'):'Copy Link');};
+ var cpLab=(typeof window.t==='function'?window.t('copied'):'Copied!');
+ var done=function(){
+  if(btn){btn.textContent=cpLab;clearTimeout(window._gmShareCopyT);window._gmShareCopyT=setTimeout(restore,2000);}
+  if(typeof showToast==='function')showToast('OK','success');
+ };
+ try{if(document.execCommand('copy')){done();return;}}catch(e2){}
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(inp.value).then(done).catch(function(){if(typeof showToast==='function')showToast(gmFrT('error'),'error');});}
+ else{if(typeof showToast==='function')showToast(gmFrT('error'),'error');}
 };
 window.gmShareFormEmail=function(){
  var u=window._gmShareState&&window._gmShareState.url;if(!u)return;
- var sub=encodeURIComponent('GodManager — form');
- var body=encodeURIComponent(u);
- window.open('mailto:?subject='+sub+'&body='+body,'_blank');
+ var name=(window._gmShareState&&window._gmShareState.recipientName)||'';
+ var sub=encodeURIComponent(gmFrT('email_subject'));
+ var bodyRaw=gmFillTpl(gmFrT('email_body'),{name:name,link:u});
+ var mail=(((window._gmShareState&&window._gmShareState.recipientEmail)||'').trim());
+ var href='mailto:'+(mail?mail:'')+'?subject='+sub+'&body='+encodeURIComponent(bodyRaw);
+ window.open(href,'_blank');
 };
 window.gmShareFormWhatsApp=function(){
  var u=window._gmShareState&&window._gmShareState.url;if(!u)return;
- window.open('https://wa.me/?text='+encodeURIComponent(u),'_blank');
+ var name=(window._gmShareState&&window._gmShareState.recipientName)||'';
+ var msg=gmFillTpl(gmFrT('whatsapp_message'),{name:name,link:u});
+ var ph=window.gmNormalizeWaDigits((window._gmShareState&&window._gmShareState.recipientPhone)||'');
+ if(ph)window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
+ else window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 };
 window.gmShareFormDownloadQr=function(){
  var u=window._gmShareState&&window._gmShareState.url;if(!u)return;
@@ -8567,13 +8745,34 @@ window.gmShareFormDownloadQr=function(){
 };
 window.gmOpenShareFormInvite=function(formType,meta){
  meta=meta||{};
- var body={form_type:formType,property_address:String(meta.property_address||''),property_id:String(meta.property_id||''),agreed_rent:meta.agreed_rent,lease_start:String(meta.lease_start||''),lease_end:String(meta.lease_end||''),email:String(meta.email||'')};
- fetch(gmFormsApiBase()+'/form/invite',{method:'POST',headers:{'Content-Type':'application/json'},mode:'cors',credentials:'omit',body:JSON.stringify(body)})
+ var rn=String(meta.recipient_name||'').trim();
+ if(!rn)rn='Owner';
+ var body={
+  type:formType,
+  recipient_name:rn,
+  recipient_email:String(meta.recipient_email||'').trim(),
+  recipient_phone:String(meta.recipient_phone||'').trim()
+ };
+ fetch(gmFormsApiBase()+'/form/generate-ref',{method:'POST',headers:{'Content-Type':'application/json'},mode:'cors',credentials:'omit',body:JSON.stringify(body)})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
   if(!o.ok||!o.j||!o.j.token){if(typeof showToast==='function')showToast(gmFrT('forms_err_invite'),'error');return;}
   var url=gmFormSharePublicUrl(formType,o.j.token);
-  window._gmShareState={token:o.j.token,url:url,formType:formType};
+  var refVal=o.j.ref||'';
+  window._gmShareState={
+   token:o.j.token,
+   url:url,
+   formType:formType,
+   mode:'invite',
+   recipientName:rn,
+   recipientEmail:String(meta.recipient_email||'').trim(),
+   recipientPhone:String(meta.recipient_phone||'').trim(),
+   formRef:refVal
+  };
+  var rl=document.getElementById('gm-share-ref-line');
+  var rv=document.getElementById('gm-share-ref-val');
+  if(rl&&rv&&refVal){rv.textContent=refVal;rl.style.display='block';}
+  else if(rl)rl.style.display='none';
   gmShareFormShowUi();
  }).catch(function(){if(typeof showToast==='function')showToast(gmFrT('forms_err_invite'),'error');});
 };
@@ -8590,6 +8789,9 @@ window.gmTenOpenShareTenant=function(id){
 };
 function gmFrStatusBadge(st){
  var s=String(st||'').toLowerCase();
+ if(s==='pending'){
+  return '<span style="font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600;background:var(--slate-bg);color:var(--slate);text-transform:capitalize">'+gmFrEsc(gmFrT('forms_status_pending'))+'</span>';
+ }
  var map={submitted:'pa',under_review:'pa',approved:'pg',rejected:'pr'};
  var cls=map[s]||'pb';
  var k='forms_status_'+s.replace(/-/g,'_');
@@ -8604,7 +8806,7 @@ window.gmFrLoad=function(){
  var tp=document.getElementById('gm-fr-f-type');if(tp&&tp.value)qs.set('type',tp.value);
  var st=document.getElementById('gm-fr-f-status');if(st&&st.value)qs.set('status',st.value);
  var sq=document.getElementById('gm-fr-search');if(sq&&sq.value.trim())qs.set('search',sq.value.trim());
- if(tb)tb.innerHTML='<tr><td colspan="7" style="padding:16px;font-size:12px;color:var(--ink3)">'+gmFrEsc(gmFrT('forms_loading'))+'</td></tr>';
+ if(tb)tb.innerHTML='<tr><td colspan="8" style="padding:16px;font-size:12px;color:var(--ink3)">'+gmFrEsc(gmFrT('forms_loading'))+'</td></tr>';
  fetch(gmFormsApiBase()+'/forms?'+qs.toString(),{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json();})
  .then(function(d){
@@ -8616,13 +8818,19 @@ window.gmFrLoad=function(){
   rows.forEach(function(f){
    var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';
    var typ=f.type==='tenant'?gmFrT('forms_type_tenant'):gmFrT('forms_type_owner');
-   tr.innerHTML='<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+gmFrEsc(f.submitted_at||'')+'</td>'+
-   '<td style="padding:9px 12px;font-weight:600;color:var(--ink)">'+gmFrEsc(f.name||'')+'</td>'+
+   var refDisp=gmFrEsc(f.ref||'—');
+   var sentAt=gmFrEsc(f.sent_at||'');
+   var subAt=f.submitted_at?gmFrEsc(f.submitted_at):'—';
+   var docCell=f.pending_row?'—':(String(f.documents_done||0)+' / '+String(f.documents_total||0));
+   var viewBtn=f.id&&!f.pending_row?'<button type="button" onclick="gmFrView('+Number(f.id)+')" style="padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--ink2)">'+gmFrEsc(gmFrT('forms_action_view'))+'</button>':'<span style="font-size:11px;color:var(--ink3)">—</span>';
+   tr.innerHTML='<td style="padding:9px 12px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink)">'+refDisp+'</td>'+
+   '<td style="padding:9px 12px;font-weight:600;color:var(--ink);font-size:11px">'+gmFrEsc(f.name||'')+'</td>'+
    '<td style="padding:9px 12px;font-size:11px">'+gmFrEsc(typ)+'</td>'+
-   '<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+gmFrEsc(f.email||'')+'</td>'+
-   '<td style="padding:9px 12px;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px">'+String(f.documents_done||0)+' / '+String(f.documents_total||0)+'</td>'+
    '<td style="padding:9px 12px;text-align:center">'+gmFrStatusBadge(f.status)+'</td>'+
-   '<td style="padding:9px 12px;text-align:center;white-space:nowrap"><button type="button" onclick="gmFrView('+Number(f.id)+')" style="padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--ink2)">'+gmFrEsc(gmFrT('forms_action_view'))+'</button></td>';
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+sentAt+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+subAt+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px">'+docCell+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;white-space:nowrap">'+viewBtn+'</td>';
    tb.appendChild(tr);
   });
  }).catch(function(){if(tb)tb.innerHTML='';if(typeof showToast==='function')showToast(gmFrT('forms_err_load'),'error');if(em)em.style.display='block';});

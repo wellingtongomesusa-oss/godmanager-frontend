@@ -18,6 +18,18 @@ function parseAuthCookie(value: string | undefined): { exp: number; role: string
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  /** Formulários públicos (HTML em public/) — nunca exigir login. */
+  if (
+    pathname === '/form-owner.html' ||
+    pathname === '/form-tenant.html' ||
+    pathname === '/form-owner' ||
+    pathname === '/form-tenant' ||
+    pathname.startsWith('/form-owner/') ||
+    pathname.startsWith('/form-tenant/')
+  ) {
+    return NextResponse.next();
+  }
+
   /**
    * Consola Premium em public/: quando o dev server perde watchers (ex.: EMFILE no macOS),
    * o App Router pode deixar de registar rotas e devolver 404 em tudo excepto ficheiros estáticos.
@@ -79,6 +91,12 @@ export const config = {
     '/gm/',
     '/gm-premium',
     '/gm-premium/',
+    '/form-owner',
+    '/form-owner.html',
+    '/form-owner/:path*',
+    '/form-tenant',
+    '/form-tenant.html',
+    '/form-tenant/:path*',
     '/login',
     '/login/:path*',
     '/register',

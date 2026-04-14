@@ -18,8 +18,10 @@ FORMS_STORE_PATH = _WEB_DIR / "data" / "external_forms.json"
 OWNER_REGISTRY_PATH = _WEB_DIR / "data" / "owner_registry.json"
 FORM_UPLOADS_DIR = _WEB_DIR / "data" / "form_uploads"
 INVITES_PATH = _WEB_DIR / "data" / "form_invites.json"
+FORM_REFS_PATH = _WEB_DIR / "data" / "form_refs.json"
 
-STATUSES = frozenset({"submitted", "under_review", "approved", "rejected"})
+STATUSES = frozenset({"submitted", "under_review", "approved", "rejected", "pending"})
+REF_TRACK_STATUSES = frozenset({"pending", "submitted", "approved", "rejected"})
 FORM_TYPES = frozenset({"owner", "tenant"})
 
 
@@ -96,6 +98,107 @@ def _find_invite(token: str) -> Optional[Dict[str, Any]]:
         if str(inv.get("token")) == token:
             return inv
     return None
+
+
+def _load_form_refs() -> Dict[str, Any]:
+    d = _load_json(FORM_REFS_PATH, {"refs": [], "sequences": {}})
+    if "refs" not in d:
+        d["refs"] = []
+    if "sequences" not in d:
+        d["sequences"] = {}
+    return d
+
+
+def _save_form_refs(data: Dict[str, Any]) -> None:
+    _save_json(FORM_REFS_PATH, data)
+
+
+def _find_ref_by_token(token: str) -> Optional[Dict[str, Any]]:
+    token = (token or "").strip()
+    if not token:
+        return None
+    for r in _load_form_refs().get("refs") or []:
+        if str(r.get("token")) == token:
+            return r
+    return None
+
+
+def _find_ref_by_form_id(form_id: int) -> Optional[Tuple[int, Dict[str, Any]]]:
+    for i, r in enumerate(_load_form_refs().get("refs") or []):
+        if int(r.get("form_id") or 0) == int(form_id):
+            return i, r
+    return None
+
+
+def _sync_ref_status_for_form(form_id: int, new_status: str) -> None:
+    found = _find_ref_by_form_id(form_id)
+    if not found:
+        return
+    idx, _row = found
+    data = _load_form_refs()
+    refs = data.get("refs") or []
+    if idx >= len(refs):
+        return
+    st = (new_status or "").strip().lower()
+    if st == "under_review":
+        st = "submitted"
+    if st not in REF_TRACK_STATUSES:
+        return
+    refs[idx]["status"] = st
+    if st in ("approved", "rejected"):
+        refs[idx]["reviewed_at"] = _iso_now()
+        refs[idx]["reviewed_by"] = refs[idx].get("reviewed_by") or "Admin"
+    data["refs"] = refs
+    _save_form_refs(data)
+
+
+def _create_form_ref_row(
+    ftype: str,
+    token: str,
+    recipient_name: str,
+    recipient_email: str,
+    recipient_phone: str,
+    created_by: str,
+) -> Dict[str, Any]:
+    data = _load_form_refs()
+    year = datetime.now(timezone.utc).year
+    yk = str(year)
+    seq = data.setdefault("sequences", {})
+    key = f"{yk}:{ftype}"
+    n = int(seq.get(key, 0)) + 1
+    seq[key] = n
+    prefix = "OWN" if ftype == "owner" else "TNT"
+    ref = f"{prefix}-{yk}-{n:04d}"
+    row: Dict[str, Any] = {
+        "ref": ref,
+        "token": token,
+        "type": ftype,
+        "recipient_name": recipient_name,
+        "recipient_email": recipient_email,
+        "recipient_phone": recipient_phone,
+        "created_at": _iso_now(),
+        "created_by": (created_by or "").strip() or "Admin",
+        "status": "pending",
+        "submitted_at": None,
+        "form_id": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+    }
+    data.setdefault("refs", []).append(row)
+    data["sequences"] = seq
+    _save_form_refs(data)
+    return row
+
+
+def _mark_ref_submitted(token: str, form_id: int) -> None:
+    data = _load_form_refs()
+    for i, r in enumerate(data.get("refs") or []):
+        if str(r.get("token")) == (token or "").strip():
+            data["refs"][i]["status"] = "submitted"
+            data["refs"][i]["submitted_at"] = _iso_now()
+            data["refs"][i]["form_id"] = int(form_id)
+            _save_form_refs(data)
+            return
 
 
 def _token_dir(token: str) -> Path:
@@ -176,6 +279,95 @@ def _pdf_for_form(form: Dict[str, Any]) -> bytes:
 
 
 def register_external_form_routes(bp: Blueprint) -> None:
+    @bp.route("/form/generate-ref", methods=["POST"])
+    def form_generate_ref():
+        data = request.get_json(silent=True) or {}
+        ftype = str(data.get("type") or data.get("form_type") or "").strip().lower()
+        if ftype not in FORM_TYPES:
+            return jsonify({"error": "type must be owner or tenant"}), 400
+        name = str(data.get("recipient_name") or "").strip()
+        if not name:
+            return jsonify({"error": "recipient_name required"}), 400
+        token = secrets.token_hex(12)
+        row = _create_form_ref_row(
+            ftype,
+            token,
+            name,
+            str(data.get("recipient_email") or "").strip(),
+            str(data.get("recipient_phone") or "").strip(),
+            str(data.get("created_by") or "").strip(),
+        )
+        return jsonify(
+            {
+                "ref": row["ref"],
+                "token": token,
+                "created_at": row["created_at"],
+                "type": row["type"],
+                "recipient_name": row["recipient_name"],
+                "status": row["status"],
+            }
+        )
+
+    @bp.route("/form/verify/<token>", methods=["GET"])
+    def form_verify_token(token: str):
+        token = (token or "").strip()
+        if not token:
+            return jsonify({"valid": False})
+        r = _find_ref_by_token(token)
+        if r:
+            st = str(r.get("status") or "pending")
+            pref = str(r.get("ref") or "")
+            if st == "pending":
+                return jsonify(
+                    {
+                        "valid": True,
+                        "ref": pref,
+                        "type": r.get("type"),
+                        "recipient_name": r.get("recipient_name") or "",
+                        "status": "pending",
+                    }
+                )
+            msg = "This form has already been submitted."
+            if pref:
+                msg = f"This form has already been submitted. Reference: {pref}"
+            return jsonify(
+                {
+                    "valid": True,
+                    "status": st,
+                    "ref": pref or None,
+                    "message": msg,
+                }
+            )
+        inv = _find_invite(token)
+        if inv:
+            return jsonify(
+                {
+                    "valid": True,
+                    "legacy_invite": True,
+                    "ref": None,
+                    "type": inv.get("form_type"),
+                    "recipient_name": str(inv.get("recipient_name") or "").strip(),
+                    "status": "pending",
+                }
+            )
+        store = _load_forms_store()
+        for f in store.get("forms") or []:
+            if str(f.get("invite_token")) == token:
+                p = f.get("payload") or {}
+                ref = str(p.get("ref") or "").strip()
+                msg = "This form has already been submitted."
+                if ref:
+                    msg = f"This form has already been submitted. Reference: {ref}"
+                return jsonify(
+                    {
+                        "valid": True,
+                        "status": str(f.get("status") or "submitted"),
+                        "ref": ref or None,
+                        "message": msg,
+                    }
+                )
+        return jsonify({"valid": False})
+
     @bp.route("/form/invite", methods=["POST"])
     def form_invite():
         data = request.get_json(silent=True) or {}
@@ -193,6 +385,9 @@ def register_external_form_routes(bp: Blueprint) -> None:
             "lease_start": str(data.get("lease_start") or "").strip(),
             "lease_end": str(data.get("lease_end") or "").strip(),
             "email": str(data.get("email") or "").strip(),
+            "recipient_name": str(data.get("recipient_name") or "").strip(),
+            "recipient_email": str(data.get("recipient_email") or "").strip(),
+            "recipient_phone": str(data.get("recipient_phone") or "").strip(),
         }
         st = _load_invites()
         st["invites"].append(inv)
@@ -256,6 +451,18 @@ def register_external_form_routes(bp: Blueprint) -> None:
         share = secrets.token_urlsafe(16)
         inv = _find_invite(token)
         invite_meta = {k: v for k, v in (inv or {}).items() if k != "token"}
+        ref_row = _find_ref_by_token(token)
+        if ref_row and str(ref_row.get("status") or "") != "pending":
+            return jsonify({"error": "form already submitted", "ref": ref_row.get("ref")}), 400
+        ref_in = str(data.get("ref") or "").strip()
+        if ref_row:
+            if ref_in and ref_in != str(ref_row.get("ref") or ""):
+                return jsonify({"error": "ref mismatch"}), 400
+            if not ref_in:
+                ref_in = str(ref_row.get("ref") or "")
+        payload = {k: v for k, v in data.items() if k not in ("documents",)}
+        if ref_in:
+            payload["ref"] = ref_in
         row = {
             "id": fid,
             "share_token": share,
@@ -263,14 +470,16 @@ def register_external_form_routes(bp: Blueprint) -> None:
             "type": "owner",
             "status": "submitted",
             "submitted_at": _iso_now(),
-            "payload": {k: v for k, v in data.items() if k not in ("documents",)},
+            "payload": payload,
             "documents": data.get("documents") or {},
             "invite_meta": invite_meta,
         }
         store["forms"].append(row)
         store["next_id"] = fid + 1
         _save_forms_store(store)
-        return jsonify({"ok": True, "id": fid, "share_token": share, "status": row["status"]})
+        if ref_row:
+            _mark_ref_submitted(token, fid)
+        return jsonify({"ok": True, "id": fid, "share_token": share, "status": row["status"], "ref": ref_in or None})
 
     @bp.route("/form/tenant", methods=["POST"])
     def form_submit_tenant():
@@ -283,6 +492,18 @@ def register_external_form_routes(bp: Blueprint) -> None:
         share = secrets.token_urlsafe(16)
         inv = _find_invite(token)
         invite_meta = {k: v for k, v in (inv or {}).items() if k != "token"}
+        ref_row = _find_ref_by_token(token)
+        if ref_row and str(ref_row.get("status") or "") != "pending":
+            return jsonify({"error": "form already submitted", "ref": ref_row.get("ref")}), 400
+        ref_in = str(data.get("ref") or "").strip()
+        if ref_row:
+            if ref_in and ref_in != str(ref_row.get("ref") or ""):
+                return jsonify({"error": "ref mismatch"}), 400
+            if not ref_in:
+                ref_in = str(ref_row.get("ref") or "")
+        payload = {k: v for k, v in data.items() if k not in ("documents",)}
+        if ref_in:
+            payload["ref"] = ref_in
         row = {
             "id": fid,
             "share_token": share,
@@ -290,14 +511,16 @@ def register_external_form_routes(bp: Blueprint) -> None:
             "type": "tenant",
             "status": "submitted",
             "submitted_at": _iso_now(),
-            "payload": {k: v for k, v in data.items() if k not in ("documents",)},
+            "payload": payload,
             "documents": data.get("documents") or {},
             "invite_meta": invite_meta,
         }
         store["forms"].append(row)
         store["next_id"] = fid + 1
         _save_forms_store(store)
-        return jsonify({"ok": True, "id": fid, "share_token": share, "status": row["status"]})
+        if ref_row:
+            _mark_ref_submitted(token, fid)
+        return jsonify({"ok": True, "id": fid, "share_token": share, "status": row["status"], "ref": ref_in or None})
 
     @bp.route("/form/status/<token>", methods=["GET"])
     def form_status(token: str):
@@ -337,15 +560,76 @@ def register_external_form_routes(bp: Blueprint) -> None:
         qst = (request.args.get("status") or "").strip().lower()
         qsearch = (request.args.get("search") or "").strip().lower()
         rows: List[Dict[str, Any]] = []
+
+        def status_match(row_st: str, want: str) -> bool:
+            rs = (row_st or "").lower()
+            if not want:
+                return True
+            if want == "under_review":
+                return rs in ("under_review", "submitted")
+            if want == "submitted":
+                return rs in ("submitted", "under_review")
+            return rs == want
+
+        for r in _load_form_refs().get("refs") or []:
+            if qtype and str(r.get("type")) != qtype:
+                continue
+            form_id = r.get("form_id")
+            disp_status = str(r.get("status") or "pending")
+            if form_id:
+                for f in store.get("forms") or []:
+                    if int(f.get("id") or 0) == int(form_id):
+                        disp_status = str(f.get("status") or disp_status)
+                        break
+            if qst and not status_match(disp_status, qst):
+                continue
+            nm = str(r.get("recipient_name") or "")
+            em = str(r.get("recipient_email") or "")
+            ref_s = str(r.get("ref") or "")
+            blob = f"{nm} {em} {ref_s}".lower()
+            if qsearch and qsearch not in blob:
+                continue
+            docs_done = 0
+            exp = 8 if r.get("type") == "owner" else 10
+            if form_id:
+                for f in store.get("forms") or []:
+                    if int(f.get("id") or 0) == int(form_id):
+                        docs = f.get("documents") or {}
+                        docs_done = sum(
+                            1 for _k, v in docs.items() if isinstance(v, dict) and v.get("filename")
+                        )
+                        break
+            rows.append(
+                {
+                    "id": int(form_id) if form_id else None,
+                    "ref": ref_s,
+                    "sent_at": r.get("created_at"),
+                    "submitted_at": r.get("submitted_at"),
+                    "type": r.get("type"),
+                    "name": nm or "—",
+                    "email": em or "—",
+                    "documents_done": min(docs_done, exp),
+                    "documents_total": exp,
+                    "status": disp_status,
+                    "share_token": None,
+                    "pending_row": not bool(form_id),
+                }
+            )
+
+        linked_ids = {int(r.get("form_id") or 0) for r in _load_form_refs().get("refs") or [] if r.get("form_id")}
         for f in store.get("forms") or []:
+            fid = int(f.get("id") or 0)
+            if fid in linked_ids:
+                continue
             if qtype and str(f.get("type")) != qtype:
                 continue
-            if qst and str(f.get("status")) != qst:
+            disp_status = str(f.get("status") or "")
+            if qst and not status_match(disp_status, qst):
                 continue
             p = f.get("payload") or {}
-            blob = json.dumps(p).lower()
             name = str(p.get("full_name") or (p.get("first_name", "") + " " + p.get("last_name", ""))).strip()
             em = str(p.get("email") or "")
+            blob = json.dumps(p).lower()
             if qsearch and qsearch not in blob and qsearch not in name.lower() and qsearch not in em.lower():
                 continue
             docs = f.get("documents") or {}
@@ -353,7 +637,9 @@ def register_external_form_routes(bp: Blueprint) -> None:
             exp = 8 if f.get("type") == "owner" else 10
             rows.append(
                 {
-                    "id": f.get("id"),
+                    "id": fid,
+                    "ref": str(p.get("ref") or "").strip() or "—",
+                    "sent_at": f.get("submitted_at"),
                     "submitted_at": f.get("submitted_at"),
                     "type": f.get("type"),
                     "name": name or "—",
@@ -362,9 +648,14 @@ def register_external_form_routes(bp: Blueprint) -> None:
                     "documents_total": exp,
                     "status": f.get("status"),
                     "share_token": f.get("share_token"),
+                    "pending_row": False,
                 }
             )
-        rows.sort(key=lambda x: -int(x.get("id") or 0))
+
+        def sort_key(x: Dict[str, Any]) -> str:
+            return str(x.get("sent_at") or x.get("submitted_at") or "")
+
+        rows.sort(key=sort_key, reverse=True)
         return jsonify({"forms": rows})
 
     @bp.route("/forms/<int:form_id>", methods=["GET"])
@@ -387,6 +678,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
                 f["status"] = st
                 store["forms"][i] = f
                 _save_forms_store(store)
+                _sync_ref_status_for_form(form_id, st)
                 return jsonify({"ok": True, "id": form_id, "status": st})
         return jsonify({"error": "not found"}), 404
 
@@ -532,6 +824,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
                 store["forms"][i] = form
                 break
         _save_forms_store(store)
+        _sync_ref_status_for_form(form_id, str(form.get("status") or ""))
         return jsonify({"ok": True, "id": form_id, "status": form.get("status")})
 
     @bp.route("/forms/<int:form_id>/reject", methods=["POST"])
@@ -542,6 +835,7 @@ def register_external_form_routes(bp: Blueprint) -> None:
                 f["status"] = "rejected"
                 store["forms"][i] = f
                 _save_forms_store(store)
+                _sync_ref_status_for_form(form_id, "rejected")
                 return jsonify({"ok": True, "id": form_id, "status": "rejected"})
         return jsonify({"error": "not found"}), 404
 

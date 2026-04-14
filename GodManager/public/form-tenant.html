@@ -37,8 +37,11 @@ h1{font-size:1.35rem;font-weight:700;margin:0 0 6px;color:var(--amber2)}
 <body>
 <div class="top"><div class="logo">GodManager</div><div class="lang"><button type="button" class="on" data-lang="en">EN</button><button type="button" data-lang="pt">PT</button><button type="button" data-lang="es">ES</button></div></div>
 <div class="wrap">
+<div id="gate-fail" class="sec" style="display:none;text-align:center;padding:28px 20px;margin-bottom:16px;border:1px solid var(--border)"><p id="gate-msg" style="font-size:14px;line-height:1.55;color:var(--ink)"></p></div>
+<div id="gate-ok">
 <h1 id="h1">GodManager — Tenant Application</h1>
 <p class="sub" id="sub">Please complete all required fields and upload the requested documents.</p>
+<p id="ref-banner" style="display:none;font-size:12px;font-weight:600;color:var(--amber2);margin-bottom:6px;font-family:'JetBrains Mono',monospace"></p>
 <div id="msg"></div>
 <form id="f"><input type="hidden" id="token"/>
 <div class="sec"><h2 id="t1">1. Personal</h2><div class="grid">
@@ -89,12 +92,26 @@ h1{font-size:1.35rem;font-weight:700;margin:0 0 6px;color:var(--amber2)}
 <div class="grid"><div><label class="lbl" id="ls">Digital signature</label><input class="inp" name="signature_name" required/></div><div><label class="lbl" id="ld">Date</label><input class="inp" id="sdt" readonly/></div></div>
 </div>
 <div style="text-align:center;margin-top:16px"><button type="submit" class="btn" id="bsub">Submit Application</button></div>
-</form></div>
+</form>
+</div>
+</div>
 <script>
 (function(){
-var STR={en:{h1:'GodManager — Tenant Application',sub:'Please complete all required fields and upload the requested documents.',t1:'1. Personal information',t2:'2. Employment & income',t3:'3. Rental history',t4:'4. Banking',t5:'5. Pets & vehicles',t6:'7. Authorization',doc:'Documents',dsub:'Upload all required documents. Green means complete!',prog:'documents uploaded',miss:'MISSING',up:'UPLOADED',cf:'Choose file',dd:'or drag & drop',vw:'View',rp:'Replace',rm:'Remove',sub:'Submit Application',allGreen:'All documents uploaded!',succ:'Thank you! Your form has been submitted successfully.',addref:'+ Add reference',addpet:'+ Add pet',addveh:'+ Vehicle',lhp:'Has pets?',nv:'Number of vehicles'},
-pt:{h1:'GodManager — Aplicacao do Inquilino',sub:'Preencha os campos obrigatorios e envie os documentos.',t1:'1. Dados pessoais',t2:'2. Emprego e renda',t3:'3. Historico de aluguel',t4:'4. Banco',t5:'5. Pets e veiculos',t6:'7. Autorizacao',doc:'Documentos',dsub:'Envie todos os documentos. Verde = completo.',prog:'documentos',miss:'PENDENTE',up:'ENVIADO',cf:'Arquivo',dd:'ou arraste',vw:'Ver',rp:'Substituir',rm:'Remover',sub:'Enviar aplicacao',allGreen:'Tudo enviado!',succ:'Obrigado! Enviado com sucesso.',addref:'+ Referencia',addpet:'+ Pet',addveh:'+ Veiculo',lhp:'Tem pets?',nv:'Numero de veiculos'},
-es:{h1:'GodManager — Solicitud del Inquilino',sub:'Complete los campos y suba los documentos.',t1:'1. Informacion personal',t2:'2. Empleo e ingresos',t3:'3. Historial de alquiler',t4:'4. Banco',t5:'5. Mascotas y vehiculos',t6:'7. Autorizacion',doc:'Documentos',dsub:'Suba todos los documentos.',prog:'documentos',miss:'PENDIENTE',up:'SUBIDO',cf:'Archivo',dd:'o arrastre',vw:'Ver',rp:'Reemplazar',rm:'Eliminar',sub:'Enviar solicitud',allGreen:'Listo!',succ:'Gracias! Enviado.',addref:'+ Referencia',addpet:'+ Mascota',addveh:'+ Vehiculo',lhp:'Mascotas?',nv:'Vehiculos'}};
+var STR={en:{h1:'GodManager — Tenant Application',sub:'Please complete all required fields and upload the requested documents.',t1:'1. Personal information',t2:'2. Employment & income',t3:'3. Rental history',t4:'4. Banking',t5:'5. Pets & vehicles',t6:'7. Authorization',doc:'Documents',dsub:'Upload all required documents. Green means complete!',prog:'documents uploaded',miss:'MISSING',up:'UPLOADED',cf:'Choose file',dd:'or drag & drop',vw:'View',rp:'Replace',rm:'Remove',sub:'Submit Application',allGreen:'All documents uploaded!',succ:'Thank you! Your form has been submitted successfully.',addref:'+ Add reference',addpet:'+ Add pet',addveh:'+ Vehicle',lhp:'Has pets?',nv:'Number of vehicles',welcomeName:'Welcome, {name}',welcomeGeneric:'Welcome',docNamed:'Documents — {name}',previewBanner:'PREVIEW MODE — This is how the form will appear to the recipient',invalidLink:'Invalid or expired link. Please contact your property manager.',alreadySubmitted:'This form has already been submitted.',refBanner:'Reference:'},
+pt:{h1:'GodManager — Aplicacao do Inquilino',sub:'Preencha os campos obrigatorios e envie os documentos.',t1:'1. Dados pessoais',t2:'2. Emprego e renda',t3:'3. Historico de aluguel',t4:'4. Banco',t5:'5. Pets e veiculos',t6:'7. Autorizacao',doc:'Documentos',dsub:'Envie todos os documentos. Verde = completo!',prog:'documentos',miss:'PENDENTE',up:'ENVIADO',cf:'Arquivo',dd:'ou arraste',vw:'Ver',rp:'Substituir',rm:'Remover',sub:'Enviar aplicacao',allGreen:'Tudo enviado!',succ:'Obrigado! Enviado com sucesso.',addref:'+ Referencia',addpet:'+ Pet',addveh:'+ Veiculo',lhp:'Tem pets?',nv:'Numero de veiculos',welcomeName:'Bem-vindo, {name}',welcomeGeneric:'Bem-vindo',docNamed:'Documentos — {name}',previewBanner:'MODO PREVIEW — Assim o formulario vai aparecer para o destinatario',invalidLink:'Link invalido ou expirado. Contacte o gestor.',alreadySubmitted:'Este formulario ja foi enviado.',refBanner:'Referencia:'},
+es:{h1:'GodManager — Solicitud del Inquilino',sub:'Complete los campos y suba los documentos.',t1:'1. Informacion personal',t2:'2. Empleo e ingresos',t3:'3. Historial de alquiler',t4:'4. Banco',t5:'5. Mascotas y vehiculos',t6:'7. Autorizacion',doc:'Documentos',dsub:'Suba todos los documentos.',prog:'documentos',miss:'PENDIENTE',up:'SUBIDO',cf:'Archivo',dd:'o arrastre',vw:'Ver',rp:'Reemplazar',rm:'Eliminar',sub:'Enviar solicitud',allGreen:'Listo!',succ:'Gracias! Enviado.',addref:'+ Referencia',addpet:'+ Mascota',addveh:'+ Vehiculo',lhp:'Mascotas?',nv:'Vehiculos',welcomeName:'Bienvenido, {name}',welcomeGeneric:'Bienvenido',docNamed:'Documentos — {name}',previewBanner:'MODO VISTA PREVIA — Asi aparecera el formulario para el destinatario',invalidLink:'Enlace invalido o expirado. Contacte a su administrador.',alreadySubmitted:'Este formulario ya fue enviado.',refBanner:'Referencia:'}};
+var UQ=new URLSearchParams(location.search);
+var PREVIEW=UQ.get('preview')==='1';
+var greetName=(UQ.get('name')||'').trim();
+var urlLang=(UQ.get('lang')||'').trim();
+function tplStr(s,o){o=o||{};return String(s||'').replace(/\{name\}/g,String(o.name!=null?o.name:''));}
+function parseFirstLast(full){
+ full=String(full||'').replace(/\s+/g,' ').trim();
+ if(!full)return{first:'',last:''};
+ var i=full.lastIndexOf(' ');
+ if(i<=0)return{first:full,last:''};
+ return{first:full.slice(0,i).trim(),last:full.slice(i+1).trim()};
+}
 var DOCS=[
 {id:'id_front',en:'Government ID (front)',es:'ID (frente)',pt:'ID (frente)',de:'Photo ID front'},
 {id:'id_back',en:'Government ID (back)',es:'ID (reverso)',pt:'ID (verso)',de:'Photo ID back'},
@@ -107,13 +124,34 @@ var DOCS=[
 {id:'renters_insurance',en:'Renters insurance',es:'Seguro inquilino',pt:'Seguro',de:'Proof'},
 {id:'vehicle_registration',en:'Vehicle registration',es:'Vehiculo',pt:'Veiculo',de:'If applicable'}
 ];
-var LANG='en',API=(function(){var p=new URLSearchParams(location.search).get('api');return(p?p.replace(/\/$/,''):location.origin);})(),token=(new URLSearchParams(location.search).get('token')||'').trim(),docsState={};
+var startLang=['en','pt','es'].indexOf(urlLang)>=0?urlLang:'en';
+var LANG=startLang;
+var API=(function(){var p=new URLSearchParams(location.search).get('api');return(p?p.replace(/\/$/,''):location.origin);})();
+var token=(new URLSearchParams(location.search).get('token')||'').trim();
+var _formRef='';
+var docsState={};
 function T(k){return STR[LANG][k]||STR.en[k]||k;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function fmt(n){if(!n)return'0 B';return n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';}
+function applyTenantHead(){
+ var h=document.getElementById('h1');
+ var sub=document.getElementById('sub');
+ sub.textContent=T('sub');
+ if(greetName){
+  h.textContent=tplStr(T('welcomeName'),{name:greetName});
+  var p=parseFirstLast(greetName);
+  var f1=document.querySelector('[name=first_name]');if(f1)f1.value=p.first;
+  var l1=document.querySelector('[name=last_name]');if(l1)l1.value=p.last;
+  document.getElementById('doct').textContent=tplStr(T('docNamed'),{name:greetName});
+ }else{
+  h.textContent=T('welcomeGeneric');
+  document.getElementById('doct').textContent=T('doc');
+ }
+}
 function setLang(l){
 LANG=l;document.querySelectorAll('.lang button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-lang')===l);});
-['h1','sub','t1','t2','t3','t4','t5','t6','doct','dsub','bsub','addref','addpet','addveh','lhp','nv'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var k={h1:'h1',sub:'sub',t1:'t1',t2:'t2',t3:'t3',t4:'t4',t5:'t5',t6:'t6',doct:'doc',dsub:'dsub',bsub:'sub',addref:'addref',addpet:'addpet',addveh:'addveh',lhp:'lhp',nv:'nv'}[id];if(k)el.textContent=T(k);});
+applyTenantHead();
+['t1','t2','t3','t4','t5','t6','dsub','bsub','addref','addpet','addveh','lhp','nv'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var k={t1:'t1',t2:'t2',t3:'t3',t4:'t4',t5:'t5',t6:'t6',dsub:'dsub',bsub:'sub',addref:'addref',addpet:'addpet',addveh:'addveh',lhp:'lhp',nv:'nv'}[id];if(k)el.textContent=T(k);});
 document.getElementById('lc1').textContent=LANG==='pt'?'Autorizo verificacao de credito e antecedentes':LANG==='es'?'Autorizo verificacion de credito':'I authorize background and credit check';
 document.getElementById('lc2').textContent=LANG==='pt'?'Confirmo que as informacoes estao corretas':LANG==='es'?'Confirmo que la informacion es correcta':'I confirm all information is accurate';
 document.getElementById('ls').textContent=LANG==='pt'?'Assinatura digital':LANG==='es'?'Firma digital':'Digital signature';
@@ -145,8 +183,10 @@ B[2].onclick=function(){delete docsState[d.id];renderDocs();};
 var pct=Math.round(100*n/DOCS.length),b=document.getElementById('pb');
 b.style.width=pct+'%';b.style.background=pct<=33?'#b83030':pct<=66?'#c9a96e':'#2d7252';
 document.getElementById('ptxt').textContent=n+' / '+DOCS.length+' '+T('prog')+(n===DOCS.length?' — '+T('allGreen'):'');
+if(PREVIEW)document.querySelectorAll('#cards .dz,#cards input[type=file]').forEach(function(el){el.style.pointerEvents='none';});
 }
 function up(docKey,file,card){
+if(PREVIEW)return;
 var fd=new FormData(),tk=document.getElementById('token').value||token;
 fd.append('token',tk);fd.append('doc_key',docKey);fd.append('file',file);
 api('/api/appfolio/form/upload-doc',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){
@@ -170,10 +210,65 @@ if(this.checked&&!document.getElementById('petbox').children.length)addPet();
 document.getElementById('addref').onclick=addRef;
 document.getElementById('addpet').onclick=addPet;
 document.getElementById('addveh').onclick=addVeh;
+function initPreviewTenant(){
+ docsState={};
+ var ban=document.createElement('div');
+ ban.textContent=T('previewBanner');
+ ban.style.cssText='background:#22558c;color:#fff;text-align:center;padding:11px 16px;font-size:12px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.15)';
+ document.body.insertBefore(ban,document.body.firstChild);
+ var f=document.getElementById('f');
+ if(f){
+  f.onsubmit=function(ev){ev.preventDefault();return false;};
+  f.querySelectorAll('input,select,textarea,button').forEach(function(el){
+   if(el.type==='hidden')return;
+   if(el.id==='bsub'){el.style.display='none';return;}
+   el.readOnly=true;el.disabled=true;
+  });
+ }
+ document.querySelectorAll('#addref,#addpet,#addveh').forEach(function(b){if(b)b.style.display='none';});
+ renderDocs();
+}
+function showGate(msg){
+var gf=document.getElementById('gate-fail');
+var gk=document.getElementById('gate-ok');
+if(gk)gk.style.display='none';
+if(gf){gf.style.display='block';document.getElementById('gate-msg').textContent=msg;}
+}
+function wireCommon(){
 document.querySelectorAll('.lang button').forEach(function(b){b.onclick=function(){setLang(b.getAttribute('data-lang'));};});
 document.getElementById('sdt').value=new Date().toISOString().slice(0,10);
+}
+function afterVerifySuccess(d){
+if(d&&d.recipient_name)greetName=d.recipient_name;
+_formRef=(d&&d.ref)?String(d.ref).trim():'';
+var rb=document.getElementById('ref-banner');
+if(rb){
+if(_formRef){rb.textContent=T('refBanner')+' '+_formRef;rb.style.display='block';}
+else{rb.style.display='none';}
+}
 if(token)document.getElementById('token').value=token;
-addRef();setLang('en');
+addRef();setLang(startLang);
+}
+function boot(){
+wireCommon();
+if(PREVIEW){
+addRef();setLang(startLang);
+initPreviewTenant();
+if(token)document.getElementById('token').value=token;
+return;
+}
+if(!token){
+addRef();setLang(startLang);
+return;
+}
+api('/api/appfolio/form/verify/'+encodeURIComponent(token),{method:'GET'}).then(function(r){return r.json();}).then(function(d){
+if(!d||!d.valid){showGate(T('invalidLink'));return;}
+if(d.legacy_invite){afterVerifySuccess(d);return;}
+if(d.status&&d.status!=='pending'){showGate(d.message||T('alreadySubmitted'));return;}
+afterVerifySuccess(d);
+}).catch(function(){showGate(T('invalidLink'));});
+}
+boot();
 function gv(n){var el=document.querySelector('[name="'+n+'"]');return el?String(el.value).trim():'';}
 document.getElementById('f').onsubmit=function(ev){
 ev.preventDefault();var tk=document.getElementById('token').value;if(!tk){msg('Upload a document first to start session.','err');return;}
@@ -185,7 +280,7 @@ document.querySelectorAll('#petbox > div').forEach(function(r){pets.push({type:(
 }
 var vehs=[];document.querySelectorAll('#vehbox > div').forEach(function(r){vehs.push({make:(r.querySelector('.vm')||{}).value,model:(r.querySelector('.vl')||{}).value,year:(r.querySelector('.vy')||{}).value,plate:(r.querySelector('.vp')||{}).value});});
 var payload={
-token:tk,first_name:gv('first_name'),last_name:gv('last_name'),email:gv('email'),phone:gv('phone'),
+token:tk,ref:_formRef,first_name:gv('first_name'),last_name:gv('last_name'),email:gv('email'),phone:gv('phone'),
 secondary_phone:gv('secondary_phone'),date_of_birth:gv('date_of_birth'),ssn_last4:gv('ssn_last4'),drivers_license:gv('drivers_license'),
 current_address:gv('current_address'),time_at_address:gv('time_at_address'),reason_for_moving:gv('reason_for_moving'),
 property_applying_for:gv('property_applying_for'),emergency_contact_name:gv('emergency_contact_name'),emergency_contact_phone:gv('emergency_contact_phone'),
