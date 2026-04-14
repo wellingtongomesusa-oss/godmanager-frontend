@@ -1306,30 +1306,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div class="page" id="page-cadastro-appfolio">
  <div class="ph">
   <div class="pt">Cadastro AppFolio</div>
-  <div class="ps">Upload do property_directory CSV com cadastro, consulta e status de gestão</div>
+  <div class="ps">Cadastro, consulta e status de gestão a partir dos dados importados em Integrations > AppFolio Upload</div>
  </div>
- <div class="afp-wrap">
-  <div id="afp-dropzone" class="afp-drop" role="button" tabindex="0" aria-label="Upload CSV AppFolio">
-   <div style="font-size:16px;font-weight:700;color:#f4d8a6;margin-bottom:6px">Arraste o CSV property_directory aqui</div>
-   <div style="font-size:12px;color:rgba(248,246,242,.68)">Formato AppFolio com 15 colunas · upload frontend</div>
-  </div>
-  <input type="file" id="afp-file-input" accept=".csv,text/csv" style="display:none"/>
-  <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-   <button type="button" class="btn-gm-ix-amber" id="afp-upload-btn">Upload CSV</button>
-   <span id="afp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
-  </div>
- </div>
-<div class="afp-wrap" style="margin-top:14px">
- <div id="afp-exp-dropzone" class="afp-drop" role="button" tabindex="0" aria-label="Upload CSV Expense Register">
-  <div style="font-size:16px;font-weight:700;color:#f4d8a6;margin-bottom:6px">Arraste o CSV expense_register aqui</div>
-  <div style="font-size:12px;color:rgba(248,246,242,.68)">Formato AppFolio com 11 colunas - despesas e receitas</div>
- </div>
- <input type="file" id="afp-exp-file-input" accept=".csv,text/csv" style="display:none"/>
- <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-  <button type="button" class="btn-gm-ix-amber" id="afp-exp-upload-btn">Upload Expense CSV</button>
-  <span id="afp-exp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
- </div>
-</div>
  <div class="gm-ix-kpi-grid" id="afp-summary-grid" style="margin-top:18px;display:none">
   <div class="gm-ix-kpi k2"><div class="k-l">Total Properties</div><div class="k-v" id="afp-sum-total">0</div><div class="k-s">itens importados</div><div class="k-bar"></div></div>
   <div class="gm-ix-kpi"><div class="k-l">Managed</div><div class="k-v" id="afp-sum-managed">0</div><div class="k-s">com comissão</div><div class="k-bar"></div></div>
@@ -1365,26 +1343,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <button type="button" class="btn-gm-ix sec" id="afp-prev-page">Prev</button>
    <span id="afp-page-info" style="font-size:11px;color:rgba(248,246,242,.7)">Page 1/1</span>
    <button type="button" class="btn-gm-ix sec" id="afp-next-page">Next</button>
-  </div>
- </div>
- <div class="afp-wrap" style="margin-top:18px">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-   <div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#f4d8a6;line-height:1.05">Expense Summary</div>
-    <div style="font-size:11px;color:rgba(248,246,242,.62)">Resumo por conta (Mar/Apr 2026) e linhas de destaque</div>
-   </div>
-   <div class="afp-filters" id="afx-filter-buttons">
-    <button type="button" class="afp-filter-btn active" data-filter="all">All</button>
-    <button type="button" class="afp-filter-btn" data-filter="revenue">Revenue (Manager Prop)</button>
-    <button type="button" class="afp-filter-btn" data-filter="owner">Owner Distribution</button>
-    <button type="button" class="afp-filter-btn" data-filter="expenses">Expenses</button>
-   </div>
-  </div>
-  <div class="afx-table-wrap">
-   <table class="afx-table">
-    <thead><tr><th>Account Code</th><th>Description</th><th>Mar 2026</th><th>Apr 2026</th><th>Total</th></tr></thead>
-    <tbody id="afx-summary-body"></tbody>
-   </table>
   </div>
  </div>
  <div id="afp-modal" class="afp-modal" onclick="if(event.target===this)afpCloseModal()">
@@ -1690,17 +1648,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
 <div class="page" id="page-ltexpenses">
  <div class="ph"><div class="pt">Long Term — Expenses</div><div class="ps">Registro e gestao de despesas por propriedade</div></div>
- <div class="afp-wrap" style="margin-bottom:14px">
-  <div id="lt-exp-dropzone" class="afp-drop" role="button" tabindex="0" aria-label="Upload CSV Expense Register">
-   <div style="font-size:16px;font-weight:700;color:#f4d8a6;margin-bottom:6px">Arraste o CSV expense_register aqui</div>
-   <div style="font-size:12px;color:rgba(248,246,242,.68)">Formato AppFolio com 11 colunas - despesas e receitas</div>
-  </div>
-  <input type="file" id="lt-exp-file-input" accept=".csv,text/csv" style="display:none"/>
-  <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-   <button type="button" class="btn-gm-ix-amber" id="lt-exp-upload-btn">Upload Expense CSV</button>
-   <span id="lt-exp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
-  </div>
- </div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
  <select id="lt-exp-filter-month" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todos os meses</option>
@@ -4481,6 +4428,11 @@ function gmAppfolioDoImport(){
  if(!q.length){gmAfSetErr('Selecione pelo menos um ficheiro CSV.');return;}
  gmAfSetErr('');
  gmAfSetNote('');
+ try{
+  q.forEach(function(f){
+   if(f&&/\.csv$/i.test(String(f.name||''))&&typeof afpUploadFile==='function')afpUploadFile(f);
+  });
+ }catch(e){}
  var fd=new FormData();
  q.forEach(function(f){fd.append('files',f,f.name);});
  var wrap=document.getElementById('af-prog-wrap');
