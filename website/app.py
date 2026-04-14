@@ -390,7 +390,12 @@ def register_routes(app):
     def dashboard():
         user = current_user()
         return render_template("dashboard.html", user=user)
-    
+
+    @app.route("/crm/integrations")
+    def crm_integrations_page():
+        """Hub QuickBooks (OAuth). Usado por `qb_routes` após connect/callback quando a shell é `app:create_app()`."""
+        return render_template("crm/qb_hub.html")
+
     @app.route("/admin")
     @admin_required
     def admin():
