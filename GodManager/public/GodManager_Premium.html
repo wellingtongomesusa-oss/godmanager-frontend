@@ -301,6 +301,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #page-cadastro-appfolio .afp-kv{display:grid;grid-template-columns:220px 1fr;gap:8px;margin-bottom:7px}
 #page-cadastro-appfolio .afp-kv b{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:rgba(248,246,242,.58)}
 #page-cadastro-appfolio .afp-kv span{font-size:12px;color:#f3ebdd}
+#page-cadastro-appfolio .afx-table-wrap{margin-top:10px;border:1px solid rgba(212,175,55,.2);border-radius:10px;overflow:auto;background:rgba(0,0,0,.15)}
+#page-cadastro-appfolio .afx-table{width:100%;border-collapse:collapse;min-width:760px}
+#page-cadastro-appfolio .afx-table th{padding:10px;font-size:9px;letter-spacing:.8px;text-transform:uppercase;text-align:left;color:rgba(248,246,242,.7);background:rgba(212,175,55,.09);border-bottom:1px solid rgba(212,175,55,.2)}
+#page-cadastro-appfolio .afx-table td{padding:10px;border-bottom:1px solid rgba(212,175,55,.14);font-size:12px;color:#f3ebdd}
+#page-cadastro-appfolio .afx-table tr.highlight td{background:rgba(212,175,55,.08);font-weight:600}
 #ls-appfolio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 @media(max-width:1100px){#ls-appfolio-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){#ls-appfolio-grid{grid-template-columns:1fr}}
@@ -487,6 +492,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('ltexpenses')" id="nav-ltexpenses">Expenses</div>
  <div class="ss" onclick="nav('ltcleanings')" id="nav-ltcleanings">Cleanings</div>
  <div class="ss" onclick="nav('vendors')" id="nav-vendors">Vendors</div>
+<div class="ss" onclick="nav('appfolio-vendors')" id="nav-appfolio-vendors">AppFolio Vendors</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
@@ -1313,6 +1319,17 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <span id="afp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
   </div>
  </div>
+<div class="afp-wrap" style="margin-top:14px">
+ <div id="afp-exp-dropzone" class="afp-drop" role="button" tabindex="0" aria-label="Upload CSV Expense Register">
+  <div style="font-size:16px;font-weight:700;color:#f4d8a6;margin-bottom:6px">Arraste o CSV expense_register aqui</div>
+  <div style="font-size:12px;color:rgba(248,246,242,.68)">Formato AppFolio com 11 colunas - despesas e receitas</div>
+ </div>
+ <input type="file" id="afp-exp-file-input" accept=".csv,text/csv" style="display:none"/>
+ <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <button type="button" class="btn-gm-ix-amber" id="afp-exp-upload-btn">Upload Expense CSV</button>
+  <span id="afp-exp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
+ </div>
+</div>
  <div class="gm-ix-kpi-grid" id="afp-summary-grid" style="margin-top:18px;display:none">
   <div class="gm-ix-kpi k2"><div class="k-l">Total Properties</div><div class="k-v" id="afp-sum-total">0</div><div class="k-s">itens importados</div><div class="k-bar"></div></div>
   <div class="gm-ix-kpi"><div class="k-l">Managed</div><div class="k-v" id="afp-sum-managed">0</div><div class="k-s">com comissão</div><div class="k-bar"></div></div>
@@ -1348,6 +1365,26 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <button type="button" class="btn-gm-ix sec" id="afp-prev-page">Prev</button>
    <span id="afp-page-info" style="font-size:11px;color:rgba(248,246,242,.7)">Page 1/1</span>
    <button type="button" class="btn-gm-ix sec" id="afp-next-page">Next</button>
+  </div>
+ </div>
+ <div class="afp-wrap" style="margin-top:18px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+   <div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#f4d8a6;line-height:1.05">Expense Summary</div>
+    <div style="font-size:11px;color:rgba(248,246,242,.62)">Resumo por conta (Mar/Apr 2026) e linhas de destaque</div>
+   </div>
+   <div class="afp-filters" id="afx-filter-buttons">
+    <button type="button" class="afp-filter-btn active" data-filter="all">All</button>
+    <button type="button" class="afp-filter-btn" data-filter="revenue">Revenue (Manager Prop)</button>
+    <button type="button" class="afp-filter-btn" data-filter="owner">Owner Distribution</button>
+    <button type="button" class="afp-filter-btn" data-filter="expenses">Expenses</button>
+   </div>
+  </div>
+  <div class="afx-table-wrap">
+   <table class="afx-table">
+    <thead><tr><th>Account Code</th><th>Description</th><th>Mar 2026</th><th>Apr 2026</th><th>Total</th></tr></thead>
+    <tbody id="afx-summary-body"></tbody>
+   </table>
   </div>
  </div>
  <div id="afp-modal" class="afp-modal" onclick="if(event.target===this)afpCloseModal()">
@@ -1653,6 +1690,17 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
 <div class="page" id="page-ltexpenses">
  <div class="ph"><div class="pt">Long Term — Expenses</div><div class="ps">Registro e gestao de despesas por propriedade</div></div>
+ <div class="afp-wrap" style="margin-bottom:14px">
+  <div id="lt-exp-dropzone" class="afp-drop" role="button" tabindex="0" aria-label="Upload CSV Expense Register">
+   <div style="font-size:16px;font-weight:700;color:#f4d8a6;margin-bottom:6px">Arraste o CSV expense_register aqui</div>
+   <div style="font-size:12px;color:rgba(248,246,242,.68)">Formato AppFolio com 11 colunas - despesas e receitas</div>
+  </div>
+  <input type="file" id="lt-exp-file-input" accept=".csv,text/csv" style="display:none"/>
+  <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+   <button type="button" class="btn-gm-ix-amber" id="lt-exp-upload-btn">Upload Expense CSV</button>
+   <span id="lt-exp-upload-meta" style="font-size:11px;color:rgba(248,246,242,.62)"></span>
+  </div>
+ </div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
  <select id="lt-exp-filter-month" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todos os meses</option>
@@ -1665,11 +1713,17 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </select>
  <select id="lt-exp-filter-cat" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todas as categorias</option>
- <option value="HOA">HOA</option>
- <option value="Água">Água</option>
- <option value="Luz / Electric">Luz / Electric</option>
- <option value="Manutenção">Manutenção</option>
- <option value="Vendor">Vendor</option>
+ <option value="owner_dist">Owner Distribution (3250)</option>
+ <option value="mgmt_fees">Management Fees (6111)</option>
+ <option value="lease_fees">Lease Fees (6112)</option>
+ <option value="late_fees">Late Fees (4460)</option>
+ <option value="hoa">HOA (6075)</option>
+ <option value="maintenance">Maintenance (6073)</option>
+ <option value="master_payments">Master Payments (6073 com $80/$120/$150)</option>
+ <option value="cleaning">Cleaning (6076)</option>
+ <option value="hvac">HVAC (6144)</option>
+ <option value="landscaping">Landscaping (6074)</option>
+ <option value="other_ops">Other (6103, 6141, 6142, 7010)</option>
  </select>
  <input id="lt-exp-search" oninput="ltExpRender()" placeholder="Buscar por propriedade ou descrição..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:280px">
  <div style="margin-left:auto;display:flex;gap:8px">
@@ -1677,13 +1731,15 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(6,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DESPESAS</div><div id="lt-exp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">todas as categorias</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">HOA</div><div id="lt-exp-kpi-hoa" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">taxas de condomínio</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ÁGUA</div><div id="lt-exp-kpi-water" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#2980b9">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">consumo hídrico</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#6baed6"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">LUZ</div><div id="lt-exp-kpi-luz" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">energia elétrica</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MANUT + VENDOR</div><div id="lt-exp-kpi-mv" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">serviços e fornecedores</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
- <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">APPROVED</div><div id="lt-exp-kpi-approved" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#b83030">0 of 0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">fully approved</div><div style="margin-top:7px;height:4px;background:rgba(180,48,48,.12);border-radius:999px;overflow:hidden"><div id="lt-exp-kpi-approved-bar" style="width:0%;height:100%;background:#2d7252"></div></div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#2d7252"></div></div>
+ <div style="display:grid;grid-template-columns:repeat(8,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DESPESAS</div><div id="lt-exp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">HOA</div><div id="lt-exp-kpi-hoa" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MGMT FEES</div><div id="lt-exp-kpi-mgmt" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">LEASE FEES</div><div id="lt-exp-kpi-lease" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MANUT + VENDOR</div><div id="lt-exp-kpi-mv" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">OWNER DIST</div><div id="lt-exp-kpi-owner-dist" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MASTER PAYMENTS</div><div id="lt-exp-kpi-master" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#6d4aac">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#6d4aac"></div></div>
+ <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">APPROVED</div><div id="lt-exp-kpi-approved" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#b83030">0 of 0</div><div style="margin-top:7px;height:4px;background:rgba(180,48,48,.12);border-radius:999px;overflow:hidden"><div id="lt-exp-kpi-approved-bar" style="width:0%;height:100%;background:#2d7252"></div></div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#2d7252"></div></div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -1695,6 +1751,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Categoria</th>
+<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Expense Account</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Descrição</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Valor</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mês</th>
@@ -1706,6 +1763,54 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </table></div>
  <div id="lt-exp-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma despesa cadastrada. Clique em + Nova Despesa para começar.</div>
  <div id="lt-exp-appr-pop" onclick="event.stopPropagation()" style="display:none;position:fixed;z-index:9005;max-width:300px;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:11px;color:var(--ink2);line-height:1.45"></div>
+ </div>
+</div>
+
+<div class="page" id="page-appfolio-vendors">
+ <div class="ph"><div class="pt">AppFolio Vendors</div><div class="ps">Vendors extraídos do expense_register (Payee Name)</div></div>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+  <div style="background:var(--paper);border:1px solid var(--green-bd);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL RECEBIDO</div><div id="afv-in-total-received" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green);margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Revenue Manager Prop</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL PAGO</div><div id="afv-out-total-paid" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red);margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Total disbursements</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid #2d7252;border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">OWNER DISTRIBUTIONS</div><div id="afv-out-owner-dist" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#2d7252;margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Paid to property owners</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:#2d7252"></div></div>
+  <div style="background:var(--paper);border:1px solid rgba(109,74,172,.45);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MASTER PAYMENTS</div><div id="afv-out-master" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#6d4aac;margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Paid to Master Vacation Homes</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:#6d4aac"></div></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+  <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGMT FEES (6111)</div><div id="afv-in-6111" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--amber);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Recebimento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">LEASE FEES (6112)</div><div id="afv-in-6112" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--amber);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Recebimento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">LATE FEES (4460)</div><div id="afv-in-4460" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--amber);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Recebimento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">HOA MARKUP (6075 x 10%)</div><div id="afv-in-6075-markup" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--amber);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Recebimento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">HOA BRUTO (6075)</div><div id="afv-out-6075" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--blue);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">CLEANING (6076)</div><div id="afv-out-6076" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">HVAC (6144)</div><div id="afv-out-6144" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MAINTENANCE (6073)</div><div id="afv-out-6073" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">LANDSCAPING (6074)</div><div id="afv-out-6074" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PAINTING (6141)</div><div id="afv-out-6141" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PLUMBING (6142)</div><div id="afv-out-6142" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">APPLIANCES (7010)</div><div id="afv-out-7010" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">OTHER (6103)</div><div id="afv-out-6103" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);margin-top:4px">$0</div><div style="font-size:10px;color:var(--ink3)">Pagamento</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL VENDORS</div><div id="afv-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOP VENDOR</div><div id="afv-kpi-top" style="font-size:12px;font-weight:700;color:var(--ink);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL PAID</div><div id="afv-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green);margin-top:6px">$0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">AppFolio Vendors</div>
+  <div style="overflow:auto">
+   <table style="width:100%;border-collapse:collapse;min-width:980px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vendor Name</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Total Transactions</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Total Amount</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Categories</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Last Transaction</th>
+    </tr></thead>
+    <tbody id="afv-tbody"></tbody>
+   </table>
+  </div>
  </div>
 </div>
 
@@ -2677,6 +2782,10 @@ const CARDS=[
  {id:'rent-receivable',label:'RENT RECEIVABLE',badge:'RCV',barClass:'bb ba',value:'—',sub1:'Active rents due this month',sub2:'',cd:[65,25,10],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Collected',c:'pg'},{t:'Pending',c:'pa'},{t:'Late',c:'pr'}],r:'ltstatements',empty:true,labels:[]},
  {id:'rent-potential',label:'RENT POTENTIAL',badge:'POT',barClass:'bb bb',value:'—',sub1:'Maximum possible rent revenue',sub2:'If 100% occupied',cd:[80,20],cc:['#22558c','#4a5568'],ctr:'—',pills:[{t:'Realized',c:'pb'},{t:'Unrealized',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'—',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:true,labels:[]},
+ {id:'owner-trust',label:'OWNER TRUST',badge:'OTR',barClass:'bb bg',value:'—',sub1:'Rent collected for owners',sub2:'',cd:[60,40],cc:['#2a6e4e','#4a5568'],ctr:'—',pills:[{t:'Distributed',c:'pg'},{t:'Retained',c:'pa'}],r:'cadastro-appfolio',empty:true,labels:[]},
+ {id:'operating-account',label:'OPERATING ACCOUNT',badge:'OPS',barClass:'bb bb',value:'—',sub1:'Operational expenses paid',sub2:'',cd:[1,1,1,1,1,1],cc:['#22558c','#2a6e4e','#c9a96e','#4a5568','#8aa6c1','#b83030'],ctr:'—',pills:[{t:'Mgmt',c:'pb'},{t:'Placement',c:'pg'},{t:'HOA',c:'pa'}],r:'cadastro-appfolio',empty:true,labels:['Mgmt Fees','Placement','HOA','Cleaning','HVAC','Other']},
+ {id:'security-deposits-cash',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb ba',value:'—',sub1:'Held in escrow',sub2:'',cd:[100],cc:['#c9a96e'],ctr:'—',pills:[{t:'Escrow',c:'pa'}],r:'cadastro-appfolio',empty:true,labels:[]},
+ {id:'manager-prop-revenue',label:'MANAGER PROP REVENUE',badge:'REV',barClass:'bb ba',value:'—',sub1:'Gross revenue this period',sub2:'',cd:[1,1,1,1],cc:['#c9a96e','#2a6e4e','#22558c','#4a5568'],ctr:'—',pills:[{t:'Mgmt Fees',c:'pa'},{t:'Lease Fees',c:'pg'},{t:'Late Fees',c:'pb'}],r:'cadastro-appfolio',empty:true,labels:['Mgmt','Lease','Late','HOA 10%']},
  {id:'cleaning-spend',label:'CLEANING SPEND',badge:'CLN',barClass:'bb ba',value:'—',sub1:'Total spent with cleaners',sub2:'Current period',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Turnover',c:'pa'},{t:'Deep Clean',c:'pb'},{t:'Routine',c:'pg'}],r:'ltcleanings',empty:true,labels:[]},
  {id:'vendor-spend',label:'VENDOR SPEND',badge:'VND',barClass:'bb br',value:'—',sub1:'Total spent with vendors',sub2:'Current period',cd:[50,50],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Paid',c:'pr'},{t:'Pending',c:'pa'}],r:'vendors',empty:true,labels:[]},
  {id:'contractor-payroll',label:'CONTRACTOR & PAYROLL',badge:'PAY',barClass:'bb br',value:'—',sub1:'Contractors + payroll total',sub2:'Current period',cd:[60,40],cc:['#b83030','#22558c'],ctr:'—',pills:[{t:'Contractors',c:'pr'},{t:'Payroll',c:'pb'}],r:'contractors',empty:true,labels:[]},
@@ -2748,13 +2857,19 @@ function afpGetActiveData(){
 }
 function applyHomeDashboardFromAppfolio(){
  var list=afpGetActiveData();
- if(!list.length)return false;
+ var expMetrics=afxCalcMetrics();
+ if(!list.length&&!(window.appfolioExpenseData||[]).length)return false;
  var total=list.length;
  var rented=list.filter(function(x){return Number(x.marketRent||0)>0;}).length;
  var vacant=total-rented;
  var ownersSet=new Set(list.map(function(x){return String(x.ownerName||'').trim();}).filter(Boolean));
  var owners=ownersSet.size;
  var marketTotal=list.reduce(function(s,x){return s+(Number(x.marketRent)||0);},0);
+ var ownerTrust=expMetrics.ownerTrust||0;
+ var retained=Math.max(0,marketTotal-ownerTrust);
+ var op=expMetrics.operatingByCode||{};
+ var opMgmt=op['6111']||0,opLease=op['6112']||0,opHoa=op['6075']||0,opCln=op['6076']||0,opHvac=op['6144']||0;
+ var opOther=Math.max(0,(expMetrics.operatingTotal||0)-opMgmt-opLease-opHoa-opCln-opHvac);
  CARDS.forEach(function(c){
   switch(c.id){
   case 'total-houses':
@@ -2783,6 +2898,26 @@ function applyHomeDashboardFromAppfolio(){
   case 'rent-potential':
    c.empty=false;c.value=gmHomeMoney(marketTotal);c.ctr=gmHomeMoneyCtr(marketTotal);
    c.cd=[Math.max(0.01,marketTotal),0.01];
+   break;
+  case 'owner-trust':
+   c.empty=false;c.value=gmHomeMoney(ownerTrust);c.ctr=gmHomeMoneyCtr(ownerTrust);c.sub1='Rent collected for owners';c.sub2='From Owner Distribution (3250)';
+   c.cd=[Math.max(0.01,ownerTrust),Math.max(0.01,retained)];
+   if(c.pills&&c.pills[0])c.pills[0].t='Distributed '+gmHomeMoney(ownerTrust);
+   if(c.pills&&c.pills[1])c.pills[1].t='Retained '+gmHomeMoney(retained);
+   break;
+  case 'operating-account':
+   c.empty=false;c.value=gmHomeMoney(expMetrics.operatingTotal||0);c.ctr=gmHomeMoneyCtr(expMetrics.operatingTotal||0);c.sub1='Operational expenses paid';
+   c.sub2='Mgmt '+gmHomeMoney(opMgmt)+' | Placement '+gmHomeMoney(opLease)+' | HOA '+gmHomeMoney(opHoa)+' | Cleaning '+gmHomeMoney(opCln)+' | HVAC '+gmHomeMoney(opHvac)+' | Other '+gmHomeMoney(opOther);
+   c.cd=[Math.max(0.01,opMgmt),Math.max(0.01,opLease),Math.max(0.01,opHoa),Math.max(0.01,opCln),Math.max(0.01,opHvac),Math.max(0.01,opOther)];
+   break;
+  case 'security-deposits-cash':
+   c.empty=false;c.value=gmHomeMoney(expMetrics.securityDeposits||0);c.ctr=gmHomeMoneyCtr(expMetrics.securityDeposits||0);c.sub1='Held in escrow';
+   c.cd=[Math.max(0.01,expMetrics.securityDeposits||0)];
+   break;
+  case 'manager-prop-revenue':
+   c.empty=false;c.value=gmHomeMoney(expMetrics.managerRevenue||0);c.ctr=gmHomeMoneyCtr(expMetrics.managerRevenue||0);c.sub1='Gross revenue this period';
+   c.sub2='Mgmt '+gmHomeMoney(expMetrics.mgmt||0)+' | Lease '+gmHomeMoney(expMetrics.lease||0)+' | Late '+gmHomeMoney(expMetrics.late||0)+' | HOA 10% '+gmHomeMoney(expMetrics.hoaMarkup||0);
+   c.cd=[Math.max(0.01,expMetrics.mgmt||0),Math.max(0.01,expMetrics.lease||0),Math.max(0.01,expMetrics.late||0),Math.max(0.01,expMetrics.hoaMarkup||0)];
    break;
   default:break;
   }
@@ -2835,6 +2970,14 @@ function applyHomeDashboardFromApi(d){
  var bcr=gmHomeNum(d.bills_count_resolved,0);
  var bci=gmHomeNum(d.bills_count_in_progress,0);
  var bco=gmHomeNum(d.bills_count_open,0);
+ var appfolioList=afpGetActiveData();
+ var appfolioMarket=appfolioList.reduce(function(s,x){return s+(Number(x.marketRent)||0);},0);
+ var expMetrics=afxCalcMetrics();
+ var ownerTrust=expMetrics.ownerTrust||0;
+ var retained=Math.max(0,(appfolioMarket||pr||0)-ownerTrust);
+ var op=expMetrics.operatingByCode||{};
+ var opMgmt=op['6111']||0,opLease=op['6112']||0,opHoa=op['6075']||0,opCln=op['6076']||0,opHvac=op['6144']||0;
+ var opOther=Math.max(0,(expMetrics.operatingTotal||0)-opMgmt-opLease-opHoa-opCln-opHvac);
  var owl=gmHomeNum(d.qty_owners_with_lease,0);
  var owp=Math.max(0,qo-owl);
  var maint=Math.max(0,qp-ql-qv);
@@ -2897,6 +3040,26 @@ function applyHomeDashboardFromApi(d){
    c.value=isNaN(occ)?'—':(occ.toFixed(1)+'%');
    c.cd=[Math.max(0.01,ql),Math.max(0.01,qv)];
    c.ctr=isNaN(occ)?'—':(occ.toFixed(1)+'%');
+   break;
+  case 'owner-trust':
+   c.empty=false;c.value=gmHomeMoney(ownerTrust);c.ctr=gmHomeMoneyCtr(ownerTrust);c.sub1='Rent collected for owners';c.sub2='From Owner Distribution (3250)';
+   c.cd=[Math.max(0.01,ownerTrust),Math.max(0.01,retained)];
+   if(c.pills&&c.pills[0])c.pills[0].t='Distributed '+gmHomeMoney(ownerTrust);
+   if(c.pills&&c.pills[1])c.pills[1].t='Retained '+gmHomeMoney(retained);
+   break;
+  case 'operating-account':
+   c.empty=false;c.value=gmHomeMoney(expMetrics.operatingTotal||0);c.ctr=gmHomeMoneyCtr(expMetrics.operatingTotal||0);c.sub1='Operational expenses paid';
+   c.sub2='Mgmt '+gmHomeMoney(opMgmt)+' | Placement '+gmHomeMoney(opLease)+' | HOA '+gmHomeMoney(opHoa)+' | Cleaning '+gmHomeMoney(opCln)+' | HVAC '+gmHomeMoney(opHvac)+' | Other '+gmHomeMoney(opOther);
+   c.cd=[Math.max(0.01,opMgmt),Math.max(0.01,opLease),Math.max(0.01,opHoa),Math.max(0.01,opCln),Math.max(0.01,opHvac),Math.max(0.01,opOther)];
+   break;
+  case 'security-deposits-cash':
+   c.empty=false;c.value=gmHomeMoney(expMetrics.securityDeposits||0);c.ctr=gmHomeMoneyCtr(expMetrics.securityDeposits||0);c.sub1='Held in escrow';
+   c.cd=[Math.max(0.01,expMetrics.securityDeposits||0)];
+   break;
+  case 'manager-prop-revenue':
+   c.empty=false;c.value=gmHomeMoney(expMetrics.managerRevenue||0);c.ctr=gmHomeMoneyCtr(expMetrics.managerRevenue||0);c.sub1='Gross revenue this period';
+   c.sub2='Mgmt '+gmHomeMoney(expMetrics.mgmt||0)+' | Lease '+gmHomeMoney(expMetrics.lease||0)+' | Late '+gmHomeMoney(expMetrics.late||0)+' | HOA 10% '+gmHomeMoney(expMetrics.hoaMarkup||0);
+   c.cd=[Math.max(0.01,expMetrics.mgmt||0),Math.max(0.01,expMetrics.lease||0),Math.max(0.01,expMetrics.late||0),Math.max(0.01,expMetrics.hoaMarkup||0)];
    break;
   case 'cleaning-spend':
    c.value=gmHomeMoney(cln);
@@ -4843,7 +5006,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations','cadastro-appfolio':'Cadastro AppFolio',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations','cadastro-appfolio':'Cadastro AppFolio',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','appfolio-vendors':'AppFolio Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -4890,11 +5053,12 @@ function nav(r){
  ltproperties:()=>typeof ltpRender==='function'&&ltpRender(),
  tenants:()=>typeof tnRender==='function'&&tnRender(),
  ltstatements:()=>typeof ltRender==='function'&&ltRender(),
- ltexpenses:()=>typeof ltExpRender==='function'&&ltExpRender(),
+ ltexpenses:()=>{if(typeof ltExpInitUpload==='function')ltExpInitUpload();if(typeof ltExpRender==='function')ltExpRender();},
  ltcleanings:()=>typeof ltClnPageRender==='function'&&ltClnPageRender(),
  ownerportal:()=>typeof opRender==='function'&&opRender(),
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
  listings:()=>typeof lsRender==='function'&&lsRender(),
+ 'appfolio-vendors':()=>typeof afvRender==='function'&&afvRender(),
  'cadastro-appfolio':()=>typeof afpInitPage==='function'&&afpInitPage(),
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
@@ -6237,6 +6401,7 @@ function ltSwitchTab(tab){
 // 
 const LT_EXP_KEY='mp_lt_expenses_v1';
 let ltExpEditingId=null;
+let ltExpEditingImportedId=null;
 const LT_EXP_APPROVALS_KEY='gm_expense_approvals';
 const LT_EXP_APPROVAL_LOGS_KEY='gm_approval_logs';
 const LT_EXP_I18N={en:{approval_col:'APPROVAL',invoice_step:'Invoice',appfolio_step:'AppFolio',approved_step:'Approved',approval_history:'Approval History',step_1_name:'Invoice Received',step_2_name:'Registered in AppFolio',step_3_name:'Final Approval',pending:'Pending',undo_confirm:'Undo this approval step? All subsequent steps will also be undone.',undo_btn:'Undo',complete_previous:'Complete the previous step first',fully_approved:'fully approved',undone_by:'Undone by',by:'By',at:'at'},pt:{approval_col:'APROVACAO',invoice_step:'Invoice',appfolio_step:'AppFolio',approved_step:'Aprovado',approval_history:'Historico de Aprovacao',step_1_name:'Invoice Recebida',step_2_name:'Cadastrado no AppFolio',step_3_name:'Aprovacao Final',pending:'Pendente',undo_confirm:'Desfazer esta aprovacao? Todas as etapas posteriores tambem serao desfeitas.',undo_btn:'Desfazer',complete_previous:'Complete a etapa anterior primeiro',fully_approved:'totalmente aprovados',undone_by:'Desfeito por',by:'Por',at:'as'},es:{approval_col:'APROBACION',invoice_step:'Factura',appfolio_step:'AppFolio',approved_step:'Aprobado',approval_history:'Historial de Aprobacion',step_1_name:'Factura Recibida',step_2_name:'Registrado en AppFolio',step_3_name:'Aprobacion Final',pending:'Pendiente',undo_confirm:'Deshacer esta aprobacion? Todos los pasos posteriores tambien seran deshechos.',undo_btn:'Deshacer',complete_previous:'Complete el paso anterior primero',fully_approved:'totalmente aprobados',undone_by:'Deshecho por',by:'Por',at:'a las'}};
@@ -6271,6 +6436,90 @@ function ltExpGetRecords(){
  }catch(e){return [];}
 }
 function ltExpSaveRecords(arr){localStorage.setItem(LT_EXP_KEY,JSON.stringify(arr));}
+function ltExpExtractCode(raw){
+ const s=String(raw||'').trim();
+ const m=s.match(/^(\d{4})/);
+ return m?m[1]:'';
+}
+function ltExpAccountMeta(r){
+ const code=ltExpExtractCode(r.expenseAccount);
+ const amount=Number(r.value!=null?r.value:r.amount)||0;
+ const isMaster=(code==='6073'&&[80,120,150].indexOf(amount)>=0);
+ if(code==='6111')return {code:code,name:'Management Fees',catKey:'mgmt_fees',catLabel:'Management Fee',badge:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
+ if(code==='6112')return {code:code,name:'Tenant Placement Fees',catKey:'lease_fees',catLabel:'Lease Fee',badge:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
+ if(code==='4460')return {code:code,name:'Late Fee',catKey:'late_fees',catLabel:'Late Fee',badge:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
+ if(code==='6075')return {code:code,name:'HOA Dues',catKey:'hoa',catLabel:'HOA',badge:'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)'};
+ if(code==='3250')return {code:code,name:'Owner Distribution',catKey:'owner_dist',catLabel:'Owner Distribution',badge:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)'};
+ if(code==='6073'&&isMaster)return {code:code,name:'General Maintenance Labor',catKey:'master_payments',catLabel:'Master Payment',badge:'background:rgba(109,74,172,.15);color:#6d4aac;border:1px solid rgba(109,74,172,.4)'};
+ if(code==='6073')return {code:code,name:'General Maintenance Labor',catKey:'maintenance',catLabel:'Maintenance',badge:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ if(code==='6074')return {code:code,name:'Landscaping',catKey:'landscaping',catLabel:'Landscaping',badge:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ if(code==='6076')return {code:code,name:'Cleaning and Maintenance Other',catKey:'cleaning',catLabel:'Cleaning',badge:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ if(code==='6144')return {code:code,name:'HVAC',catKey:'hvac',catLabel:'HVAC',badge:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ if(['6103','6141','6142','7010'].indexOf(code)>=0)return {code:code,name:(AFX_DESC[code]||'Other'),catKey:'other_ops',catLabel:'Other',badge:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ return {code:code,name:(AFX_DESC[code]||'—'),catKey:'',catLabel:(r.category||'Other'),badge:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc'};
+}
+function ltExpMonthFromDate(billDate){
+ var s=String(billDate||'').trim();
+ if(/^\d{4}-\d{2}/.test(s))return s.slice(0,7);
+ if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){var p=s.split('/');return p[2]+'-'+String(p[0]).padStart(2,'0');}
+ return '';
+}
+function ltExpStatusFromPayment(raw){
+ var s=String(raw||'').toLowerCase().trim();
+ if(!s)return 'unpaid';
+ if(s.indexOf('paid')>=0)return 'paid';
+ if(s.indexOf('unpaid')>=0)return 'unpaid';
+ return 'unpaid';
+}
+function ltExpGetImportedRows(){
+ try{
+  afxLoadStoredData();
+  var ap=ltExpLoadApprovalState();
+  var ex=Array.isArray(window.appfolioExpenseData)?window.appfolioExpenseData:[];
+  return ex.filter(function(r){
+   var prop=String(r.property||'').trim();
+   if(!prop)return false;
+   if(prop.indexOf('Manager Prop - Admin')>=0)return false;
+   return ltExpExtractCode(r.expenseAccount)!=='';
+  }).map(function(r){
+   var meta=ltExpAccountMeta(r);
+   var m=r.ym||ltExpMonthFromDate(r.billDate);
+   var rid='imp_'+String(r.id||Date.now());
+   var step=(ap[rid]&&typeof ap[rid].step==='number')?Math.max(0,Math.min(3,ap[rid].step)):0;
+   return {
+    id:rid,imported:true,rawImportId:String(r.id||''),propAddress:String(r.property||'—'),
+    category:meta.catLabel,expenseAccount:meta.code,expenseAccountName:meta.name,expenseCategoryKey:meta.catKey,
+    desc:String(r.description||'').trim()||String(r.reference||'').trim()||'—',
+    value:Number(r.amount)||0,month:m,status:ltExpStatusFromPayment(r.paymentStatus),payeeName:String(r.payee||''),billDate:String(r.billDate||''),cashAccount:String(r.cashAccount||''),
+    approvalInvoice:step>=1,approvalAppfolio:step>=2,approvalApproved:step>=3
+   };
+  });
+ }catch(e){return [];}
+}
+function ltExpDeleteImported(id){
+ var rec=(ltExpGetImportedRows().find(function(x){return x.id===id;})||null);
+ if(!rec)return;
+ if(!confirm('Remover esta despesa importada?'))return;
+ afxLoadStoredData();
+ window.appfolioExpenseData=(window.appfolioExpenseData||[]).filter(function(r){return 'imp_'+String(r.id||'')!==id;});
+ try{localStorage.setItem('appfolio_expenses',JSON.stringify(window.appfolioExpenseData));}catch(e){}
+ ltExpRender();
+}
+function ltExpInitUpload(){
+ if(window._ltExpUploadWired)return;
+ window._ltExpUploadWired=1;
+ var pick=document.getElementById('lt-exp-upload-btn');
+ var fi=document.getElementById('lt-exp-file-input');
+ var dz=document.getElementById('lt-exp-dropzone');
+ if(pick&&fi)pick.addEventListener('click',function(){fi.click();});
+ if(fi)fi.addEventListener('change',function(ev){if(ev.target.files&&ev.target.files[0])afpUploadFile(ev.target.files[0]);ev.target.value='';});
+ if(dz){
+  dz.addEventListener('click',function(){if(fi)fi.click();});
+  dz.addEventListener('dragover',function(ev){ev.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
+  dz.addEventListener('drop',function(ev){ev.preventDefault();dz.classList.remove('drag');var f=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];if(f)afpUploadFile(f);});
+ }
+}
 function ltExpCurrentUser(){const u=document.querySelector('.sb-un-n');return u&&u.textContent?u.textContent.trim():'Admin User';}
 function ltExpApprovalCell(r){
  const step=ltExpStepFromRecord(r);
@@ -6279,7 +6528,7 @@ function ltExpApprovalCell(r){
  return `<td style="padding:9px 8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap">${mk(1,ltExpT('invoice_step'))}${mk(2,ltExpT('appfolio_step'))}${mk(3,ltExpT('approved_step'))}<button type="button" onclick="ltExpApprovalInfo(event,'${r.id}')" style="width:20px;height:20px;border-radius:50%;border:1px solid #ccc;background:transparent;color:#888;font-size:11px;font-weight:700;cursor:pointer;line-height:1;padding:0">i</button></div></td>`;
 }
 function ltExpApprovalToggle(id,step,btn){
- const arr=ltExpGetRecords();
+ const arr=[...ltExpGetRecords(),...ltExpGetImportedRows()];
  const i=arr.findIndex(x=>x.id===id); if(i<0)return;
  const r=arr[i];
  const cur=ltExpStepFromRecord(r);
@@ -6299,11 +6548,16 @@ function ltExpApprovalToggle(id,step,btn){
  }
  ltExpApplyStep(r,next);
  const ap=ltExpLoadApprovalState(); ap[r.id]={step:next,updated_at:new Date().toISOString()}; ltExpSaveApprovalState(ap);
- arr[i]=r; ltExpSaveRecords(arr); ltExpRender();
+ if(!r.imported){
+  const manual=ltExpGetRecords();
+  const mi=manual.findIndex(x=>x.id===id);
+  if(mi>=0){manual[mi]=r;ltExpSaveRecords(manual);}
+ }
+ ltExpRender();
 }
 function ltExpApprovalInfo(ev,id){
  ev.stopPropagation();
- const r=ltExpGetRecords().find(x=>x.id===id); if(!r)return;
+ const r=[...ltExpGetRecords(),...ltExpGetImportedRows()].find(x=>x.id===id); if(!r)return;
  const pop=document.getElementById('lt-exp-appr-pop'); if(!pop)return;
  const logs=ltExpLoadLogs().filter(x=>String(x.expense_id)===String(id));
  const byStep=s=>logs.filter(x=>x.step===s);
@@ -6324,7 +6578,7 @@ function ltPopulatePropertyDropdowns(){
 }
 
 function ltOpenNewExpense(){
- ltExpEditingId=null; ltPopulatePropertyDropdowns();
+ ltExpEditingId=null; ltExpEditingImportedId=null; ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Nova Despesa';
  ['lt-nexp-desc','lt-nexp-docnum'].forEach(id=>document.getElementById(id).value='');
  ['lt-nexp-due','lt-nexp-paid','lt-nexp-value'].forEach(id=>document.getElementById(id).value='');
@@ -6353,6 +6607,22 @@ function ltOpenEditExpense(id){
  document.getElementById('lt-nexp-link').checked=!!r.linkToStatement;
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
+function ltOpenEditExpenseImported(id){
+ const r=ltExpGetImportedRows().find(x=>x.id===id); if(!r) return;
+ ltExpEditingImportedId=id; ltExpEditingId=null; ltPopulatePropertyDropdowns();
+ document.getElementById('lt-newexp-title').textContent='Editar Despesa (AppFolio)';
+ document.getElementById('lt-nexp-prop').value='';
+ document.getElementById('lt-nexp-cat').value=r.category||'HOA';
+ document.getElementById('lt-nexp-month').value=r.month||'2026-03';
+ document.getElementById('lt-nexp-value').value=r.value||'';
+ document.getElementById('lt-nexp-desc').value=r.desc||'';
+ document.getElementById('lt-nexp-docnum').value='';
+ document.getElementById('lt-nexp-due').value='';
+ document.getElementById('lt-nexp-paid').value='';
+ document.getElementById('lt-nexp-status').value=r.status||'unpaid';
+ document.getElementById('lt-nexp-link').checked=false;
+ document.getElementById('lt-newexp-modal').style.display='flex';
+}
 
 function ltSaveExpense(){
  const propEl=document.getElementById('lt-nexp-prop');
@@ -6373,6 +6643,24 @@ function ltSaveExpense(){
  linkToStatement:document.getElementById('lt-nexp-link').checked,
  savedAt:new Date().toLocaleString('pt-BR')
  };
+ if(ltExpEditingImportedId){
+  afxLoadStoredData();
+  const list=window.appfolioExpenseData||[];
+  const impId=String(ltExpEditingImportedId).replace(/^imp_/,'');
+  const i=list.findIndex(x=>String(x.id||'')===impId);
+  if(i>-1){
+   list[i].amount=value;
+   list[i].description=exp.desc;
+   list[i].paymentStatus=(exp.status==='paid'?'Paid':'Unpaid');
+   list[i].ym=month;
+   window.appfolioExpenseData=list;
+   try{localStorage.setItem('appfolio_expenses',JSON.stringify(list));}catch(e){}
+  }
+  ltExpEditingImportedId=null;
+  ltCloseNewExpense(); ltExpRender(); ltDashRender();
+  showToast('Despesa AppFolio atualizada com sucesso.');
+  return;
+ }
  const arr=ltExpGetRecords();
  if(ltExpEditingId){const i=arr.findIndex(x=>x.id===ltExpEditingId);if(i>-1)arr[i]=exp;else arr.push(exp);}
  else arr.push(exp);
@@ -6401,23 +6689,29 @@ function ltExpDelete(id){
 }
 
 function ltExpRender(){
- const records=ltExpGetRecords();
+ const records=[...ltExpGetRecords(),...ltExpGetImportedRows()];
  const fMonth=(document.getElementById('lt-exp-filter-month')?.value)||'';
  const fCat=(document.getElementById('lt-exp-filter-cat')?.value)||'';
  const fSearch=((document.getElementById('lt-exp-search')?.value)||'').toLowerCase();
  const filtered=records.filter(r=>{
  if(fMonth&&r.month!==fMonth)return false;
- if(fCat&&r.category!==fCat)return false;
- if(fSearch&&!(r.propAddress+r.desc).toLowerCase().includes(fSearch))return false;
+ const meta=ltExpAccountMeta(r);
+ const key=r.expenseCategoryKey||meta.catKey;
+ if(fCat&&key!==fCat)return false;
+ if(fSearch&&!(String(r.propAddress||'')+String(r.desc||'')+String(r.payeeName||'')+String(r.expenseAccount||'')).toLowerCase().includes(fSearch))return false;
  return true;
  });
- const tot=filtered.reduce((s,r)=>s+(r.value||0),0);
- const hoa=filtered.filter(r=>r.category==='HOA').reduce((s,r)=>s+(r.value||0),0);
- const water=filtered.filter(r=>r.category==='Água').reduce((s,r)=>s+(r.value||0),0);
- const luz=filtered.filter(r=>r.category==='Luz / Electric').reduce((s,r)=>s+(r.value||0),0);
- const mv=filtered.filter(r=>r.category==='Manutenção'||r.category==='Vendor').reduce((s,r)=>s+(r.value||0),0);
+ const byKey=function(key){return filtered.filter(function(r){var m=ltExpAccountMeta(r);return (r.expenseCategoryKey||m.catKey)===key;}).reduce(function(s,r){return s+(Number(r.value)||0);},0);};
+ const mgmt=byKey('mgmt_fees');
+ const lease=byKey('lease_fees');
+ const hoa=byKey('hoa');
+ const ownerDist=byKey('owner_dist');
+ const totalExp=filtered.filter(r=>ltExpExtractCode(r.expenseAccount)!=='3250').reduce((s,r)=>s+(Number(r.value)||0),0);
+ const mv=filtered.filter(r=>['6073','6074','6076','6103','6141','6142','6144','7010'].indexOf(ltExpExtractCode(r.expenseAccount))>=0).reduce((s,r)=>s+(Number(r.value)||0),0);
+ const master=byKey('master_payments');
  const approved=filtered.filter(r=>r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved).length;
- [['lt-exp-kpi-total',ltFmt(tot)],['lt-exp-kpi-hoa',ltFmt(hoa)],['lt-exp-kpi-water',ltFmt(water)],['lt-exp-kpi-luz',ltFmt(luz)],['lt-exp-kpi-mv',ltFmt(mv)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ [['lt-exp-kpi-total',ltFmt(totalExp)],['lt-exp-kpi-hoa',ltFmt(hoa)],['lt-exp-kpi-mgmt',ltFmt(mgmt)],['lt-exp-kpi-lease',ltFmt(lease)],['lt-exp-kpi-mv',ltFmt(mv)],['lt-exp-kpi-owner-dist',ltFmt(ownerDist)],['lt-exp-kpi-master',ltFmt(master)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ const upMeta=document.getElementById('lt-exp-upload-meta');if(upMeta)upMeta.textContent=(window.appfolioExpenseData||[]).length?('CSV importado: '+window.appfolioExpenseData.length+' linhas'): 'Sem CSV importado';
  const kpiApproved=document.getElementById('lt-exp-kpi-approved'); 
  if(kpiApproved){
   kpiApproved.textContent=approved+' of '+filtered.length;
@@ -6437,24 +6731,94 @@ function ltExpRender(){
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:9px 12px;font-size:12px;color:var(--ink)">${r.propAddress||'—'}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2);font-weight:500">${r.category}</td>
+ <td style="padding:9px 12px;font-size:11px;color:var(--ink2)"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;${ltExpAccountMeta(r).badge}">${(r.expenseAccount||'—')+(r.expenseAccount?' - ':'')+(ltExpAccountMeta(r).name||'—')}</span></td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc||'—'}</td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--red)">${ltFmt(r.value)}</td>
- <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
+ <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${String(r.month||'').match(/^\d{4}-\d{2}$/)?(String(r.month).slice(5,7)+'/'+String(r.month).slice(0,4)):ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;${sStyle[r.status]||''}">${sLabel[r.status]||r.status}</span></td>
  ${ltExpApprovalCell(r)}
  <td style="padding:9px 10px;text-align:center"><div style="display:flex;gap:5px;justify-content:center">
- <button onclick="ltOpenEditExpense('${r.id}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
- <button onclick="ltExpDelete('${r.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
+ <button onclick="${r.imported?"ltOpenEditExpenseImported('"+r.id+"')":"ltOpenEditExpense('"+r.id+"')"}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
+ <button onclick="${r.imported?"ltExpDeleteImported('"+r.id+"')":"ltExpDelete('"+r.id+"')"}" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  </div></td>
  </tr>`).join('');
 }
 
 function ltExpExportCSV(){
- const records=ltExpGetRecords(); if(!records.length){alert('Nenhum registro.');return;}
- const headers=['Propriedade','Categoria','Descricao','Valor','Mes','Status','Approval'];
- const rows=records.map(r=>[(r.propAddress),(r.category),(r.desc),(r.value),ltFmtMonth(r.month),(r.status),((r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved)?'Approved':'Pending')].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`));
+ const records=[...ltExpGetRecords(),...ltExpGetImportedRows()]; if(!records.length){alert('Nenhum registro.');return;}
+ const headers=['Propriedade','Categoria','Expense Account','Descricao','Valor','Mes','Status','Approval'];
+ const rows=records.map(r=>[(r.propAddress),(r.category),((r.expenseAccount||'')+' - '+(ltExpAccountMeta(r).name||'')),(r.desc),(r.value),ltFmtMonth(r.month),(r.status),((r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved)?'Approved':'Pending')].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`));
  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='LT_Despesas.csv'; a.click();
+}
+
+function afvRender(){
+ afxLoadStoredData();
+ const allRows=(window.appfolioExpenseData||[]).filter(function(r){
+  const prop=String(r.property||'').trim();
+  if(!prop)return false;
+  if(prop.indexOf('Manager Prop - Admin')>=0)return false;
+  return ltExpExtractCode(r.expenseAccount)!=='';
+ });
+ const rows=allRows.filter(r=>String(r.payee||'').trim()!=='');
+ const sumCode=function(code){
+  return allRows.filter(function(r){return ltExpExtractCode(r.expenseAccount)===code;}).reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ };
+ const mgmt=sumCode('6111');
+ const lease=sumCode('6112');
+ const late=sumCode('4460');
+ const hoaGross=sumCode('6075');
+ const hoaMarkup=hoaGross*0.10;
+ const ownerDist=sumCode('3250');
+ const c6073=sumCode('6073');
+ const c6074=sumCode('6074');
+ const c6076=sumCode('6076');
+ const c6103=sumCode('6103');
+ const c6141=sumCode('6141');
+ const c6142=sumCode('6142');
+ const c6144=sumCode('6144');
+ const c7010=sumCode('7010');
+ const master=allRows.filter(function(r){return ltExpExtractCode(r.expenseAccount)==='6073'&&[80,120,150].indexOf(Number(r.amount)||0)>=0;}).reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ const totalReceived=mgmt+lease+late+hoaMarkup;
+ const totalPaid=ownerDist+c6073+c6074+c6076+c6103+c6141+c6142+c6144+c7010+hoaGross;
+ const map={};
+ rows.forEach(function(r){
+  const name=String(r.payee||'').trim();
+  if(!map[name])map[name]={name:name,count:0,total:0,cats:new Set(),last:''};
+  map[name].count+=1;
+  map[name].total+=(Number(r.amount)||0);
+  if(r.expenseAccount)map[name].cats.add(String(r.expenseAccount));
+  if(r.billDate&&(!map[name].last||String(r.billDate)>map[name].last))map[name].last=String(r.billDate);
+ });
+ const list=Object.values(map).sort((a,b)=>b.total-a.total);
+ const vendorsTotalPaid=list.reduce((s,x)=>s+x.total,0);
+ const top=list[0];
+ const setText=function(id,v){const el=document.getElementById(id);if(el)el.textContent=v;};
+ setText('afv-in-total-received',ltFmt(totalReceived));
+ setText('afv-out-total-paid',ltFmt(totalPaid));
+ setText('afv-out-owner-dist',ltFmt(ownerDist));
+ setText('afv-out-master',ltFmt(master));
+ setText('afv-in-6111',ltFmt(mgmt));
+ setText('afv-in-6112',ltFmt(lease));
+ setText('afv-in-4460',ltFmt(late));
+ setText('afv-in-6075-markup',ltFmt(hoaMarkup));
+ setText('afv-out-6075',ltFmt(hoaGross));
+ setText('afv-out-6076',ltFmt(c6076));
+ setText('afv-out-6144',ltFmt(c6144));
+ setText('afv-out-6073',ltFmt(c6073));
+ setText('afv-out-6074',ltFmt(c6074));
+ setText('afv-out-6141',ltFmt(c6141));
+ setText('afv-out-6142',ltFmt(c6142));
+ setText('afv-out-7010',ltFmt(c7010));
+ setText('afv-out-6103',ltFmt(c6103));
+ setText('afv-kpi-total',String(list.length));
+ setText('afv-kpi-top',top?(top.name+' · '+ltFmt(top.total)):'—');
+ setText('afv-kpi-paid',ltFmt(vendorsTotalPaid));
+ const tb=document.getElementById('afv-tbody'); if(!tb)return;
+ tb.innerHTML=list.map(function(v,i){
+  const cats=Array.from(v.cats).sort().join(', ');
+  return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td><td style="padding:9px 12px;font-size:12px;color:var(--ink)">${v.name}</td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink2)">${v.count}</td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--red)">${ltFmt(v.total)}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${cats||'—'}</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${v.last||'—'}</td></tr>`;
+ }).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;font-size:12px;color:var(--ink3)">Sem vendors no expense_register importado.</td></tr>';
 }
 
 // 
@@ -7314,8 +7678,11 @@ function lsRender(){
 // APPFOLIO CSV — CADASTRO PROPERTIES
 // 
 const AFP_COLUMNS=['Property','Market Rent','Units','Sqft','Management Flat Fee','Management Fee Percent','Minimum Fee','Maximum Fee','Waive Fees When Vacant','Reserve','Home Warranty Expiration','Insurance Expiration','Tax Year End','Owner(s) - Phone Numbers','Description'];
+const AFX_COLUMNS=['Property','Unit','Payee Name','Bill Date','Check Date','Expense Account','Cash Account','Amount','Unpaid/Paid','Reference/Check #','Description'];
+const AFX_DESC={'6111':'Management Fees','6112':'Tenant Placement Fees','4460':'Late Fee','6075':'HOA Dues','6073':'General Maintenance Labor','6074':'Landscaping','6076':'Cleaning and Maintenance Other','6103':'Other','6141':'Painting','6142':'Plumbing','6144':'HVAC','7010':'Appliances','3250':'Owner Distribution'};
 window.appfolioData=Array.isArray(window.appfolioData)?window.appfolioData:[];
-window.appfolioState=window.appfolioState||{filter:'all',search:'',sortBy:'idx',sortDir:'asc',page:1,pageSize:20,ready:false};
+window.appfolioExpenseData=Array.isArray(window.appfolioExpenseData)?window.appfolioExpenseData:[];
+window.appfolioState=window.appfolioState||{filter:'all',search:'',sortBy:'idx',sortDir:'asc',page:1,pageSize:20,ready:false,expenseFilter:'all'};
 function afpNum(v){if(v==null)return 0;const n=parseFloat(String(v).replace(/\$/g,'').replace(/,/g,'').replace('%','').trim());return isNaN(n)?0:n;}
 function afpMoney(v){return '$'+(afpNum(v)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function afpEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -7360,6 +7727,13 @@ function afpParseCsvText(text){
  if(cell!==''||row.length){row.push(cell);rows.push(row);}
  return rows.map(r=>r.map(c=>String(c||'').trim()));
 }
+function afpDetectCsvType(rows){
+ if(!rows||!rows.length)return 'unknown';
+ var hdr=rows[0].map(function(x){return String(x||'').toLowerCase().trim();});
+ if(hdr.indexOf('expense account')>=0)return 'expense';
+ if(hdr.indexOf('market rent')>=0&&hdr.indexOf('property')>=0)return 'property';
+ return 'unknown';
+}
 function afpNormalizeRows(rows){
  if(!rows.length)return [];
  const first=rows[0].map(function(x){return String(x||'').toLowerCase();});
@@ -7391,9 +7765,47 @@ function afpNormalizeRows(rows){
  });
  return out;
 }
+function afxNormalizeRows(rows){
+ if(!rows.length)return [];
+ var hasHeader=rows[0].map(function(x){return String(x||'').toLowerCase();}).indexOf('expense account')>=0;
+ var dataRows=hasHeader?rows.slice(1):rows;
+ var out=[];
+ dataRows.forEach(function(r,idx){
+  if(!r||!r.length)return;
+  var clean=r.slice(0,11);while(clean.length<11)clean.push('');
+  var raw={};AFX_COLUMNS.forEach(function(c,i){raw[c]=clean[i]||'';});
+ var acc=String(raw['Expense Account']||'').trim();
+ var accCode=ltExpExtractCode(acc);
+  var amount=afpNum(raw['Amount']);
+ var prop=String(raw['Property']||'').trim();
+ if(!prop)return;
+ if(prop.indexOf('Manager Prop - Admin')>=0)return;
+ if(!accCode)return;
+  var bill=String(raw['Bill Date']||'').trim();
+  var ym='';
+  if(/^\d{4}-\d{2}/.test(bill))ym=bill.slice(0,7);
+  else if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(bill)){var p=bill.split('/');ym=p[2]+'-'+String(p[0]).padStart(2,'0');}
+  out.push({
+   id:'afx_'+Date.now()+'_'+idx,
+  property:prop,
+   unit:String(raw['Unit']||'').trim(),
+   payee:String(raw['Payee Name']||'').trim(),
+   billDate:bill,checkDate:String(raw['Check Date']||'').trim(),
+  expenseAccount:accCode,cashAccount:String(raw['Cash Account']||'').trim(),
+   amount:amount,paymentStatus:String(raw['Unpaid/Paid']||'').trim(),
+   reference:String(raw['Reference/Check #']||'').trim(),description:String(raw['Description']||'').trim(),
+   ym:ym,raw:raw
+  });
+ });
+ return out;
+}
 function afpStoreData(list){
  window.appfolioData=Array.isArray(list)?list:[];
  try{localStorage.setItem('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}
+}
+function afxStoreData(list){
+ window.appfolioExpenseData=Array.isArray(list)?list:[];
+ try{localStorage.setItem('appfolio_expenses',JSON.stringify(window.appfolioExpenseData));}catch(e){}
 }
 function afpLoadStoredData(){
  if(window.appfolioData&&window.appfolioData.length)return;
@@ -7404,16 +7816,35 @@ function afpLoadStoredData(){
   if(Array.isArray(parsed))window.appfolioData=parsed;
  }catch(e){}
 }
+function afxLoadStoredData(){
+ if(window.appfolioExpenseData&&window.appfolioExpenseData.length)return;
+ try{
+  var raw=localStorage.getItem('appfolio_expenses');
+  if(!raw)return;
+  var parsed=JSON.parse(raw);
+  if(Array.isArray(parsed))window.appfolioExpenseData=parsed;
+ }catch(e){}
+}
 function afpUploadFile(file){
  const reader=new FileReader();
  reader.onload=function(){
   try{
    const rows=afpParseCsvText(String(reader.result||''));
-   const normalized=afpNormalizeRows(rows);
-   afpStoreData(normalized);
-   window.appfolioState.page=1;
-   afpRenderAll();
-   showToast('CSV importado com sucesso: '+normalized.length+' propriedades.','success');
+   const type=afpDetectCsvType(rows);
+   if(type==='expense'){
+    const normalizedExp=afxNormalizeRows(rows);
+    afxStoreData(normalizedExp);
+    afpRenderAll();
+   if(typeof ltExpRender==='function')ltExpRender();
+   if(typeof afvRender==='function')afvRender();
+    showToast('Expense CSV importado: '+normalizedExp.length+' linhas.','success');
+   }else{
+    const normalized=afpNormalizeRows(rows);
+    afpStoreData(normalized);
+    window.appfolioState.page=1;
+    afpRenderAll();
+    showToast('CSV importado com sucesso: '+normalized.length+' propriedades.','success');
+   }
   }catch(err){showToast('Erro ao processar CSV.','error');}
  };
  reader.onerror=function(){showToast('Não foi possível ler o arquivo.','error');};
@@ -7438,6 +7869,43 @@ function afpFilterData(){
  if(q)list=list.filter(function(x){return (x.address+' '+x.city+' '+x.ownerName).toLowerCase().indexOf(q)>=0;});
  return afpSortFiltered(list);
 }
+function afxCalcMetrics(){
+ afxLoadStoredData();
+ var ex=window.appfolioExpenseData||[];
+ var byCode={};var total=0;
+ function addCode(code,val,month){
+  if(!byCode[code])byCode[code]={total:0,mar:0,apr:0};
+  byCode[code].total+=val;
+  if(month==='2026-03')byCode[code].mar+=val;
+  if(month==='2026-04')byCode[code].apr+=val;
+ }
+ ex.forEach(function(r){
+ var code=ltExpExtractCode(r.expenseAccount);
+  var val=Number(r.amount)||0;
+  if(!code)return;
+  addCode(code,val,r.ym||'');
+  total+=val;
+ });
+ var mgmt=(byCode['6111']&&byCode['6111'].total)||0;
+ var lease=(byCode['6112']&&byCode['6112'].total)||0;
+ var late=(byCode['4460']&&byCode['4460'].total)||0;
+ var hoa=(byCode['6075']&&byCode['6075'].total)||0;
+ var hoaMarkup=hoa*0.10;
+ var managerRevenue=mgmt+lease+late+hoaMarkup;
+ var ownerTrust=(byCode['3250']&&byCode['3250'].total)||0;
+ var secDep=ex.filter(function(r){return String(r.cashAccount||'').trim()==='1160';}).reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ var operatingRows=ex.filter(function(r){return String(r.cashAccount||'').trim()==='1150';});
+ var operatingTotal=operatingRows.reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ var opByCode={};
+ operatingRows.forEach(function(r){var c=String(r.expenseAccount||'').trim();opByCode[c]=(opByCode[c]||0)+(Number(r.amount)||0);});
+ var masterPayment=ex.filter(function(r){
+  var code=ltExpExtractCode(r.expenseAccount);
+  var payee=String(r.payee||'').toLowerCase();
+  var amount=Number(r.amount)||0;
+  return code==='6073'&&payee.indexOf('manager prop')>=0&&[80,120,150].indexOf(amount)>=0;
+ }).reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ return {byCode:byCode,total:total,managerRevenue:managerRevenue,ownerTrust:ownerTrust,securityDeposits:secDep,operatingTotal:operatingTotal,operatingByCode:opByCode,masterPayment:masterPayment,mgmt:mgmt,lease:lease,late:late,hoaMarkup:hoaMarkup};
+}
 function afpRenderSummary(){
  const list=window.appfolioData||[];
  const managed=list.filter(function(x){return x.isManaged;}).length;
@@ -7455,6 +7923,8 @@ function afpRenderSummary(){
  var mgEl=document.getElementById('afp-sum-mgmt-avg');if(mgEl)mgEl.textContent=avgMgmt.toFixed(2)+'%';
  const meta=document.getElementById('afp-upload-meta');
  if(meta)meta.textContent=list.length?('Último dataset: '+list.length+' propriedades carregadas'):'Nenhum CSV carregado';
+ const expMeta=document.getElementById('afp-exp-upload-meta');
+ if(expMeta)expMeta.textContent=(window.appfolioExpenseData||[]).length?('Expense rows: '+window.appfolioExpenseData.length):'Nenhum expense CSV carregado';
 }
 function afpRenderTable(){
  const body=document.getElementById('afp-table-body');if(!body)return;
@@ -7508,14 +7978,31 @@ function afpRenderListingsInOwnerPortal(){
   return '<div style="background:rgba(0,0,0,.2);border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.18)"><div style="font-size:13px;font-weight:700;color:#f4d8a6;line-height:1.4;min-height:36px">'+afpEsc(x.address||x.property)+'</div><div style="font-size:11px;color:rgba(248,246,242,.62);margin-top:3px">'+afpEsc((x.city||'')+' '+(x.state||'')+' '+(x.zip||''))+'</div><div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:6px"><div style="font-family:JetBrains Mono,monospace;font-size:16px;font-weight:700;color:#f2ddb7">'+afpMoney(x.marketRent)+'</div><div style="font-size:11px;color:rgba(248,246,242,.7)">'+Math.round(x.sqft||0).toLocaleString('en-US')+' sqft</div></div><div style="margin-top:9px">'+afpStatusBadges(x)+'</div></div>';
  }).join('');
 }
-function afpRenderAll(){afpRenderSummary();afpRenderFilterButtons();afpRenderTable();afpRenderListingsInOwnerPortal();}
+function afxRenderSummaryTable(){
+ var body=document.getElementById('afx-summary-body');if(!body)return;
+ var m=afxCalcMetrics();var f=window.appfolioState.expenseFilter||'all';
+ var rows=Object.keys(m.byCode).sort().map(function(code){return {code:code,desc:AFX_DESC[code]||('Account '+code),mar:m.byCode[code].mar||0,apr:m.byCode[code].apr||0,total:m.byCode[code].total||0};});
+ if(f==='revenue')rows=rows.filter(function(r){return ['6111','6112','4460','6075'].indexOf(r.code)>=0;});
+ if(f==='owner')rows=rows.filter(function(r){return r.code==='3250';});
+ if(f==='expenses')rows=rows.filter(function(r){return ['6111','6112','4460','3250'].indexOf(r.code)<0;});
+ var html=rows.map(function(r){return '<tr><td>'+afpEsc(r.code)+'</td><td>'+afpEsc(r.desc)+'</td><td>'+afpMoney(r.mar)+'</td><td>'+afpMoney(r.apr)+'</td><td>'+afpMoney(r.total)+'</td></tr>';}).join('');
+ var revRow='<tr class="highlight"><td>REV</td><td>Manager Prop Revenue (6111+6112+4460+HOA 10%)</td><td>—</td><td>—</td><td>'+afpMoney(m.managerRevenue)+'</td></tr>';
+ var masterRow='<tr class="highlight"><td>6073*</td><td>Pagamentos a Master (6073 valores 80/120/150)</td><td>—</td><td>—</td><td>'+afpMoney(m.masterPayment)+'</td></tr>';
+ var totalRow='<tr class="highlight"><td>TOTAL</td><td>Total geral</td><td>—</td><td>—</td><td>'+afpMoney(m.total)+'</td></tr>';
+ body.innerHTML=(html||'<tr><td colspan="5" style="text-align:center;color:rgba(248,246,242,.6)">Sem dados de expense CSV.</td></tr>')+revRow+masterRow+totalRow;
+}
+function afpRenderAll(){afpRenderSummary();afpRenderFilterButtons();afpRenderTable();afxRenderSummaryTable();afpRenderListingsInOwnerPortal();}
 function afpInitPage(){
  afpLoadStoredData();
+ afxLoadStoredData();
  if(window.appfolioState.ready){afpRenderAll();return;}
  window.appfolioState.ready=true;
  const pickBtn=document.getElementById('afp-upload-btn');
  const fileInput=document.getElementById('afp-file-input');
  const drop=document.getElementById('afp-dropzone');
+ const expPickBtn=document.getElementById('afp-exp-upload-btn');
+ const expFileInput=document.getElementById('afp-exp-file-input');
+ const expDrop=document.getElementById('afp-exp-dropzone');
  const search=document.getElementById('afp-search');
  if(pickBtn&&fileInput)pickBtn.addEventListener('click',function(){fileInput.click();});
  if(fileInput)fileInput.addEventListener('change',function(ev){if(ev.target.files&&ev.target.files[0])afpUploadFile(ev.target.files[0]);ev.target.value='';});
@@ -7524,6 +8011,14 @@ function afpInitPage(){
   drop.addEventListener('dragover',function(ev){ev.preventDefault();drop.classList.add('drag');});
   drop.addEventListener('dragleave',function(){drop.classList.remove('drag');});
   drop.addEventListener('drop',function(ev){ev.preventDefault();drop.classList.remove('drag');var f=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];if(f)afpUploadFile(f);});
+ }
+ if(expPickBtn&&expFileInput)expPickBtn.addEventListener('click',function(){expFileInput.click();});
+ if(expFileInput)expFileInput.addEventListener('change',function(ev){if(ev.target.files&&ev.target.files[0])afpUploadFile(ev.target.files[0]);ev.target.value='';});
+ if(expDrop){
+  expDrop.addEventListener('click',function(){if(expFileInput)expFileInput.click();});
+  expDrop.addEventListener('dragover',function(ev){ev.preventDefault();expDrop.classList.add('drag');});
+  expDrop.addEventListener('dragleave',function(){expDrop.classList.remove('drag');});
+  expDrop.addEventListener('drop',function(ev){ev.preventDefault();expDrop.classList.remove('drag');var f=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];if(f)afpUploadFile(f);});
  }
  if(search)search.addEventListener('input',function(ev){window.appfolioState.search=ev.target.value||'';window.appfolioState.page=1;afpRenderTable();});
  document.querySelectorAll('#afp-filter-buttons .afp-filter-btn').forEach(function(btn){
@@ -7541,6 +8036,13 @@ function afpInitPage(){
  const next=document.getElementById('afp-next-page');if(next)next.addEventListener('click',function(){
   const total=Math.max(1,Math.ceil(afpFilterData().length/window.appfolioState.pageSize));
   if(window.appfolioState.page<total){window.appfolioState.page++;afpRenderTable();}
+ });
+ document.querySelectorAll('#afx-filter-buttons .afp-filter-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+   window.appfolioState.expenseFilter=btn.dataset.filter||'all';
+   document.querySelectorAll('#afx-filter-buttons .afp-filter-btn').forEach(function(b){b.classList.toggle('active',b===btn);});
+   afxRenderSummaryTable();
+  });
  });
  afpRenderAll();
 }
