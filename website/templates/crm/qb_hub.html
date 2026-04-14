@@ -25,7 +25,8 @@
   {% endwith %}
   <div class="border rounded p-3 mb-4 bg-white">
     <div class="fw-bold mb-2" style="color: #1a3a5c;">QuickBooks</div>
-    <p class="small text-muted mb-2">Redirect de callback: <code>/crm/integrations/quickbooks/callback</code> (deve coincidir com o valor de <code>QB_REDIRECT_URI</code> no Intuit Developer e no Railway).</p>
+    <p class="small text-muted mb-2">Redirect de callback efectivo (deve estar igual no Intuit Developer → Redirect URIs):</p>
+    <p class="small mb-2"><code id="qb-ru">{{ qb_redirect_uri or '— (defina QB_REDIRECT_URI ou QB_PUBLIC_BASE_URL)' }}</code></p>
     <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-sm btn-primary" href="{{ url_for('qb_connect') }}">Conectar QuickBooks</a>
       <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('qb_sync') }}" target="_blank" rel="noopener">Sync (JSON)</a>

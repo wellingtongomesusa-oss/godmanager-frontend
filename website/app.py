@@ -167,7 +167,19 @@ def create_app():
     else:
         app.config["SESSION_TYPE"] = "filesystem"
         app.config["SESSION_REDIS"] = None
-    app.config["SESSION_COOKIE_SECURE"] = True
+    # Em http://localhost o cookie Secure não é gravado — OAuth QuickBooks falha o state.
+    # Railway/HTTPS: SESSION_COOKIE_SECURE=true (ou omitir com FLASK_ENV=production).
+    def _env_bool(name: str, default: bool) -> bool:
+        raw = (os.getenv(name) or "").strip().lower()
+        if raw in ("0", "false", "no", "off"):
+            return False
+        if raw in ("1", "true", "yes", "on"):
+            return True
+        return default
+
+    _flask_env = (os.getenv("FLASK_ENV") or "").strip().lower()
+    _secure_default = _flask_env not in ("development", "debug", "dev")
+    app.config["SESSION_COOKIE_SECURE"] = _env_bool("SESSION_COOKIE_SECURE", _secure_default)
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_PERMANENT"] = False
     
@@ -394,7 +406,13 @@ def register_routes(app):
     @app.route("/crm/integrations")
     def crm_integrations_page():
         """Hub QuickBooks (OAuth). Usado por `qb_routes` após connect/callback quando a shell é `app:create_app()`."""
-        return render_template("crm/qb_hub.html")
+        from qb_routes import _qb_redirect_uri
+
+        try:
+            qb_redirect_uri = _qb_redirect_uri()
+        except Exception:
+            qb_redirect_uri = ""
+        return render_template("crm/qb_hub.html", qb_redirect_uri=qb_redirect_uri)
 
     @app.route("/admin")
     @admin_required

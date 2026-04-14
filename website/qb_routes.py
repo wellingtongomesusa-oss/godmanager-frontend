@@ -17,6 +17,20 @@ QB_TOKENS: Dict[str, Optional[str]] = {
     "expires_at": None,  # ISO8601 access token expiry (approx.)
 }
 
+_DEFAULT_QB_CALLBACK = "/crm/integrations/quickbooks/callback"
+
+
+def _qb_redirect_uri() -> str:
+    """Intuit redirect URI must match portal + token exchange exactly."""
+    explicit = (os.getenv("QB_REDIRECT_URI") or "").strip()
+    if explicit:
+        return explicit
+    base = (os.getenv("QB_PUBLIC_BASE_URL") or os.getenv("PUBLIC_APP_URL") or "").strip().rstrip("/")
+    if base:
+        return base + _DEFAULT_QB_CALLBACK
+    return "http://localhost:3101" + _DEFAULT_QB_CALLBACK
+
+
 def _create_qb_auth(state_token: Optional[str] = None):
     """Novo AuthClient por pedido (evita state_token reutilizado / stale do singleton OAuth)."""
     cid = (os.getenv("QB_CLIENT_ID") or "").strip()
@@ -25,10 +39,7 @@ def _create_qb_auth(state_token: Optional[str] = None):
         return None
     from intuitlib.client import AuthClient
 
-    redirect_uri = os.getenv(
-        "QB_REDIRECT_URI",
-        "http://localhost:3101/crm/integrations/quickbooks/callback",
-    ).strip()
+    redirect_uri = _qb_redirect_uri()
     env = (os.getenv("QB_ENVIRONMENT") or "sandbox").strip().lower()
     if env in ("prod", "production"):
         env = "production"
