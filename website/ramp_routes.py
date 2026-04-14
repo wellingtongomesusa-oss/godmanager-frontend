@@ -19,6 +19,20 @@ _TOKEN_LOCK = threading.Lock()
 _TOKEN_CACHE: Dict[str, Any] = {"value": None, "expires_at": None}
 _DEFAULT_TIMEOUT = 25
 _RAMP_LAST_DEBUG: Dict[str, Any] = {}
+_RAMP_PAGE_SIZE_MAX = 100
+_RAMP_PAGE_SIZE_DEFAULT = "100"
+
+
+def _clamp_ramp_page_size(raw: Optional[Any]) -> str:
+    """Ramp API requires page_size between 2 and 100."""
+    if raw is None or str(raw).strip() == "":
+        return _RAMP_PAGE_SIZE_DEFAULT
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return _RAMP_PAGE_SIZE_DEFAULT
+    n = max(2, min(_RAMP_PAGE_SIZE_MAX, n))
+    return str(n)
 
 
 def _ramp_base_url() -> str:
@@ -172,6 +186,75 @@ def _ramp_get(path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Optio
     return (resp.json() if resp.content else {}), None, 200
 
 
+def _ramp_get_absolute(full_url: str) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
+    """GET a full URL returned by Ramp pagination (e.g. page.next); do not pass query params."""
+    token, token_err = _fetch_token()
+    if token_err:
+        return None, token_err, 503
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    logger.info("Ramp API call (absolute): %s", full_url)
+    logger.info("Ramp API params: {}")
+    try:
+        resp = requests.get(full_url, headers=headers, timeout=_DEFAULT_TIMEOUT)
+    except requests.RequestException as exc:
+        return None, f"Erro de rede na API Ramp: {exc}", 502
+    body_text = resp.text or ""
+    logger.info("Ramp API status: %s", resp.status_code)
+    logger.info("Ramp API body size: %s", len(body_text))
+    logger.info("Ramp API body preview: %s", body_text[:500])
+    if not body_text.strip():
+        logger.info("EMPTY RESPONSE")
+    _RAMP_LAST_DEBUG["last_call"] = {
+        "url": resp.url,
+        "path": "(absolute)",
+        "params": {},
+        "status": resp.status_code,
+        "body_size": len(body_text),
+        "body_preview": body_text[:500],
+    }
+    if not resp.ok:
+        snippet = body_text[:300]
+        return None, f"Ramp retornou HTTP {resp.status_code}: {snippet}", resp.status_code
+    return (resp.json() if resp.content else {}), None, 200
+
+
+def _next_page_token(payload: Any) -> Optional[str]:
+    if not isinstance(payload, dict):
+        return None
+    page_info = payload.get("page") if isinstance(payload.get("page"), dict) else {}
+    return page_info.get("next") or payload.get("next_start") or payload.get("next")
+
+
+def _ramp_collect_all_pages(path: str, initial_params: Optional[Dict[str, Any]] = None) -> Tuple[List[Dict[str, Any]], Optional[str], int]:
+    """Fetch all pages for a list endpoint; page_size capped at 100; follows page.next URL or start cursor."""
+    all_rows: List[Dict[str, Any]] = []
+    params: Dict[str, Any] = dict(initial_params or {})
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size"))
+    max_pages = int(request.args.get("max_pages") or 50)
+    pages = 0
+    next_url: Optional[str] = None
+    while pages < max_pages:
+        if next_url:
+            payload, err, code = _ramp_get_absolute(next_url)
+            next_url = None
+        else:
+            payload, err, code = _ramp_get(path, params)
+        if err:
+            return [], err, code
+        rows = _extract_list(payload)
+        logger.info("Ramp %s page %s count: %s", path, pages + 1, len(rows))
+        all_rows.extend(rows)
+        pages += 1
+        nxt = _next_page_token(payload)
+        if not nxt:
+            break
+        if str(nxt).startswith("http://") or str(nxt).startswith("https://"):
+            next_url = str(nxt)
+        else:
+            params["start"] = str(nxt)
+    return all_rows, None, 200
+
+
 def _default_date_range() -> Tuple[str, str]:
     now = datetime.now(timezone.utc)
     frm = now - timedelta(days=90)
@@ -181,23 +264,29 @@ def _default_date_range() -> Tuple[str, str]:
 def _collect_transactions(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Optional[str], int]:
     all_rows: List[Dict[str, Any]] = []
     page_params = dict(params)
-    max_pages = int(request.args.get("max_pages") or 25)
+    page_params["page_size"] = _clamp_ramp_page_size(page_params.get("page_size"))
+    max_pages = int(request.args.get("max_pages") or 50)
     pages = 0
+    next_url: Optional[str] = None
     while pages < max_pages:
-        payload, err, code = _ramp_get("transactions", page_params)
+        if next_url:
+            payload, err, code = _ramp_get_absolute(next_url)
+            next_url = None
+        else:
+            payload, err, code = _ramp_get("transactions", page_params)
         if err:
             return [], err, code
         rows = _extract_list(payload)
         logger.info("Ramp transactions page %s count: %s", pages + 1, len(rows))
         all_rows.extend(rows)
         pages += 1
-        next_cursor = None
-        if isinstance(payload, dict):
-            page_info = payload.get("page") if isinstance(payload.get("page"), dict) else {}
-            next_cursor = page_info.get("next") or payload.get("next_start") or payload.get("next")
-        if not next_cursor:
+        nxt = _next_page_token(payload)
+        if not nxt:
             break
-        page_params["start"] = str(next_cursor)
+        if str(nxt).startswith("http://") or str(nxt).startswith("https://"):
+            next_url = str(nxt)
+        else:
+            page_params["start"] = str(nxt)
     return all_rows, None, 200
 
 
@@ -305,7 +394,7 @@ def ramp_transactions():
         dfrom, dto = _default_date_range()
         params.setdefault("from_date", dfrom)
         params.setdefault("to_date", dto)
-    params.setdefault("page_size", request.args.get("page_size", "500"))
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size") or request.args.get("page_size"))
 
     rows, err, code = _collect_transactions(params)
     if err:
@@ -399,7 +488,7 @@ def ramp_transactions_summary():
         dfrom, dto = _default_date_range()
         params.setdefault("from_date", dfrom)
         params.setdefault("to_date", dto)
-    params.setdefault("page_size", request.args.get("page_size", "500"))
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size") or request.args.get("page_size"))
     return _build_summary_response(params)
 
 
@@ -414,7 +503,7 @@ def ramp_summary():
         dfrom, dto = _default_date_range()
         params.setdefault("from_date", dfrom)
         params.setdefault("to_date", dto)
-    params.setdefault("page_size", request.args.get("page_size", "500"))
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size") or request.args.get("page_size"))
     return _build_summary_response(params)
 
 
@@ -429,12 +518,16 @@ def ramp_debug_data():
         dfrom, dto = _default_date_range()
         params.setdefault("from_date", dfrom)
         params.setdefault("to_date", dto)
-    params.setdefault("page_size", "500")
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size"))
 
     token, token_err = _fetch_token()
     tx_rows, tx_err, tx_code = _collect_transactions(params) if token and not token_err else ([], token_err or "token_error", 503)
-    cards_payload, cards_err, _ = _ramp_get("cards", {"page_size": "100"}) if token and not token_err else ({}, "token_error", 503)
-    users_payload, users_err, _ = _ramp_get("users", {"page_size": "100"}) if token and not token_err else ({}, "token_error", 503)
+    cards_rows, cards_err, _ = (
+        _ramp_collect_all_pages("cards", {"page_size": _RAMP_PAGE_SIZE_DEFAULT}) if token and not token_err else ([], "token_error", 503)
+    )
+    users_rows, users_err, _ = (
+        _ramp_collect_all_pages("users", {"page_size": _RAMP_PAGE_SIZE_DEFAULT}) if token and not token_err else ([], "token_error", 503)
+    )
 
     last = _RAMP_LAST_DEBUG.get("last_call", {})
     return jsonify(
@@ -446,8 +539,8 @@ def ramp_debug_data():
             "transactions_status": tx_code,
             "transactions_count": len(tx_rows),
             "transactions_raw_preview": str(tx_rows[:2])[:300],
-            "cards_count": len(_extract_list(cards_payload)) if not cards_err else 0,
-            "users_count": len(_extract_list(users_payload)) if not users_err else 0,
+            "cards_count": len(cards_rows) if not cards_err else 0,
+            "users_count": len(users_rows) if not users_err else 0,
             "last_debug": last,
         }
     )
@@ -455,10 +548,9 @@ def ramp_debug_data():
 
 @ramp_bp.get("/cards")
 def ramp_cards():
-    payload, err, code = _ramp_get("cards", {"page_size": request.args.get("page_size", "300")})
+    cards, err, code = _ramp_collect_all_pages("cards", {"page_size": request.args.get("page_size", _RAMP_PAGE_SIZE_DEFAULT)})
     if err:
         return jsonify({"error": err, "cards": []}), code
-    cards = _extract_list(payload)
     data = []
     for c in cards:
         user = c.get("user") or c.get("cardholder") or {}
@@ -482,10 +574,9 @@ def ramp_cards():
 
 @ramp_bp.get("/users")
 def ramp_users():
-    payload, err, code = _ramp_get("users", {"page_size": request.args.get("page_size", "300")})
+    users, err, code = _ramp_collect_all_pages("users", {"page_size": request.args.get("page_size", _RAMP_PAGE_SIZE_DEFAULT)})
     if err:
         return jsonify({"error": err, "users": []}), code
-    users = _extract_list(payload)
     data = [
         {
             "id": u.get("id"),
@@ -504,18 +595,18 @@ def ramp_users():
 
 @ramp_bp.get("/departments")
 def ramp_departments():
-    payload, err, code = _ramp_get("departments", {"page_size": request.args.get("page_size", "200")})
+    depts, err, code = _ramp_collect_all_pages("departments", {"page_size": request.args.get("page_size", _RAMP_PAGE_SIZE_DEFAULT)})
     if err:
         return jsonify({"error": err, "departments": []}), code
-    return jsonify({"departments": _extract_list(payload)})
+    return jsonify({"departments": depts})
 
 
 @ramp_bp.get("/vendors")
 def ramp_vendors():
-    payload, err, code = _ramp_get("vendors", {"page_size": request.args.get("page_size", "300")})
+    vendors, err, code = _ramp_collect_all_pages("vendors", {"page_size": request.args.get("page_size", _RAMP_PAGE_SIZE_DEFAULT)})
     if err:
         return jsonify({"error": err, "vendors": []}), code
-    return jsonify({"vendors": _extract_list(payload)})
+    return jsonify({"vendors": vendors})
 
 
 @ramp_bp.get("/statements")
@@ -525,10 +616,11 @@ def ramp_statements():
         val = request.args.get(q)
         if val:
             params[q] = val
-    payload, err, code = _ramp_get("statements", params)
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size") or request.args.get("page_size"))
+    stmts, err, code = _ramp_collect_all_pages("statements", params)
     if err:
         return jsonify({"error": err, "statements": []}), code
-    return jsonify({"statements": _extract_list(payload)})
+    return jsonify({"statements": stmts})
 
 
 @ramp_bp.get("/reimbursements")
@@ -538,7 +630,8 @@ def ramp_reimbursements():
         val = request.args.get(q)
         if val:
             params[q] = val
-    payload, err, code = _ramp_get("reimbursements", params)
+    params["page_size"] = _clamp_ramp_page_size(params.get("page_size") or request.args.get("page_size"))
+    reim, err, code = _ramp_collect_all_pages("reimbursements", params)
     if err:
         return jsonify({"error": err, "reimbursements": []}), code
-    return jsonify({"reimbursements": _extract_list(payload)})
+    return jsonify({"reimbursements": reim})
