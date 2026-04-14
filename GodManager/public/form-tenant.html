@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GodManager — Tenant Application</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#141416;--paper:#faf8f5;--border:#e8e4dc;--ink:#1a1a1c;--ink2:#4a4a4e;--ink3:#7a7a82;--amber:#c9a96e;--amber2:#e8d4a8;--red:#b83030;--green:#2d7252;}
+*{box-sizing:border-box}body{margin:0;font-family:'DM Sans',sans-serif;background:var(--bg);color:rgba(248,246,242,.92);min-height:100vh;-webkit-font-smoothing:antialiased}
+.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(201,169,110,.22)}
+.logo{font-family:Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--amber2)}
+.lang button{padding:6px 12px;margin-left:6px;border-radius:6px;border:1px solid rgba(201,169,110,.35);background:rgba(255,255,255,.06);color:rgba(248,246,242,.85);font-size:12px;cursor:pointer;font-family:inherit}
+.lang button.on{background:rgba(201,169,110,.18);color:var(--amber2)}
+.wrap{max-width:920px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.35rem;font-weight:700;margin:0 0 6px;color:var(--amber2)}
+.sub{font-size:13px;color:rgba(248,246,242,.55);margin-bottom:18px}
+.sec{background:var(--paper);color:var(--ink);border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid var(--border)}
+.sec h2{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.lbl{font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px}
+.inp,.sel,.tx{width:100%;padding:8px 10px;border:1px solid #d8d4cc;border-radius:7px;font-size:13px;font-family:inherit;background:#fbfaf7}
+.tx{min-height:64px}.row2{grid-column:1/-1}
+.btn{padding:11px 22px;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;background:var(--amber);color:#fff}
+.btn-sec{background:transparent;color:var(--ink2);border:1px solid #d8d4cc;margin:6px 6px 6px 0;padding:7px 12px;font-size:12px;border-radius:6px;cursor:pointer;font-family:inherit}
+.prog{height:8px;border-radius:6px;background:#e8e4dc;overflow:hidden;margin:8px 0}
+.prog>div{height:100%;width:0%;transition:width .35s,background .35s}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:10px}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;border-left:3px solid var(--red);transition:transform .2s}
+.card.ok{border-left-color:var(--green)}.card.pulse{animation:p .55s ease}@keyframes p{40%{transform:scale(1.02)}}
+.dz{border:2px dashed #d0ccc4;border-radius:8px;padding:10px;text-align:center;font-size:11px;color:var(--ink3);cursor:pointer}
+.st{font-size:9px;font-weight:700;margin-top:6px}.st.m{color:var(--red)}.st.u{color:var(--green)}
+#msg{margin:12px 0;padding:12px;border-radius:10px;display:none;font-size:13px}#msg.ok{display:block;background:rgba(45,114,82,.12);border:1px solid rgba(45,114,82,.35);color:var(--green)}#msg.err{display:block;background:rgba(184,48,48,.1);border:1px solid rgba(184,48,48,.35);color:var(--red)}
+.toggle{display:flex;align-items:center;gap:10px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="top"><div class="logo">GodManager</div><div class="lang"><button type="button" class="on" data-lang="en">EN</button><button type="button" data-lang="pt">PT</button><button type="button" data-lang="es">ES</button></div></div>
+<div class="wrap">
+<h1 id="h1">GodManager — Tenant Application</h1>
+<p class="sub" id="sub">Please complete all required fields and upload the requested documents.</p>
+<div id="msg"></div>
+<form id="f"><input type="hidden" id="token"/>
+<div class="sec"><h2 id="t1">1. Personal</h2><div class="grid">
+<div><label class="lbl"><span id="a1">First name</span> *</label><input class="inp" name="first_name" required/></div>
+<div><label class="lbl"><span id="a2">Last name</span> *</label><input class="inp" name="last_name" required/></div>
+<div><label class="lbl">Email *</label><input class="inp" type="email" name="email" required/></div>
+<div><label class="lbl">Phone *</label><input class="inp" name="phone" required/></div>
+<div><label class="lbl" id="a3">Secondary phone</label><input class="inp" name="secondary_phone"/></div>
+<div><label class="lbl"><span id="a4">Date of birth</span> *</label><input class="inp" type="date" name="date_of_birth" required/></div>
+<div><label class="lbl"><span id="a5">SSN last 4</span> *</label><input class="inp" name="ssn_last4" maxlength="4" pattern="[0-9]{4}" required/></div>
+<div><label class="lbl"><span id="a6">Driver license #</span> *</label><input class="inp" name="drivers_license" required/></div>
+<div class="row2"><label class="lbl"><span id="a7">Current address</span> *</label><input class="inp" name="current_address" required/></div>
+<div><label class="lbl" id="a8">Time at address</label><input class="inp" name="time_at_address"/></div>
+<div><label class="lbl" id="a9">Reason for moving</label><input class="inp" name="reason_for_moving"/></div>
+<div><label class="lbl"><span id="a10">Property applying for</span> *</label><input class="inp" name="property_applying_for" required placeholder="Full property address"/></div>
+<div><label class="lbl"><span id="a11">Emergency contact</span> *</label><input class="inp" name="emergency_contact_name" required/></div>
+<div><label class="lbl"><span id="a12">Emergency phone</span> *</label><input class="inp" name="emergency_contact_phone" required/></div>
+<div><label class="lbl" id="a13">Preferred language</label><select class="sel" name="preferred_lang"><option value="en">English</option><option value="pt">Portuguese</option><option value="es">Spanish</option></select></div>
+</div></div>
+<div class="sec"><h2 id="t2">2. Employment</h2><div class="grid">
+<div class="row2"><label class="lbl" id="b1">Employment status</label><select class="sel" name="employment_status"><option value="employed">Employed</option><option value="self">Self-employed</option><option value="retired">Retired</option><option value="student">Student</option><option value="unemployed">Unemployed</option></select></div>
+<div><label class="lbl" id="b2">Employer</label><input class="inp" name="employer_name"/></div>
+<div><label class="lbl" id="b3">Employer phone</label><input class="inp" name="employer_phone"/></div>
+<div><label class="lbl" id="b4">Job title</label><input class="inp" name="job_title"/></div>
+<div><label class="lbl"><span id="b5">Monthly income</span> *</label><input class="inp" type="number" step="0.01" name="monthly_income" required/></div>
+<div><label class="lbl" id="b6">Additional income source</label><input class="inp" name="additional_income_source"/></div>
+<div><label class="lbl" id="b7">Additional income amount</label><input class="inp" type="number" step="0.01" name="additional_income_amount"/></div>
+</div></div>
+<div class="sec"><h2 id="t3">3. Rental history</h2><div id="refs"></div><button type="button" class="btn-sec" id="addref">+ Reference</button></div>
+<div class="sec"><h2 id="t4">4. Banking</h2><div class="grid">
+<div><label class="lbl">Bank name</label><input class="inp" name="bank_name"/></div>
+<div><label class="lbl">Routing (9)</label><input class="inp" name="routing_number" maxlength="9"/></div>
+<div><label class="lbl">Account number</label><input class="inp" name="account_number"/></div>
+<div><label class="lbl">Account type</label><select class="sel" name="account_type"><option value="checking">Checking</option><option value="savings">Savings</option></select></div>
+</div></div>
+<div class="sec"><h2 id="t5">5. Pets & vehicles</h2>
+<div class="toggle"><input type="checkbox" id="haspet"/><label for="haspet" id="lhp">Has pets?</label></div>
+<div id="petbox" style="display:none"></div><button type="button" class="btn-sec" id="addpet" style="display:none">+ Pet</button>
+<div style="margin-top:10px"><label class="lbl" id="nv">Number of vehicles</label><input class="inp" type="number" min="0" name="vehicle_count" value="0" id="vc"/></div>
+<div id="vehbox"></div><button type="button" class="btn-sec" id="addveh">+ Vehicle</button>
+</div>
+<div class="sec" id="dzsec"><h2 id="doct">Documents</h2><p style="font-size:12px;color:var(--ink3);margin:0 0 8px" id="dsub">Upload all required documents. Green means complete!</p>
+<div class="prog"><div id="pb"></div></div><div style="font-size:11px;font-weight:600;color:var(--ink2)" id="ptxt">0 / 10</div>
+<div class="cards" id="cards"></div></div>
+<div class="sec"><h2 id="t6">6. Authorization</h2>
+<div class="toggle"><input type="checkbox" id="c1" required/><label for="c1" id="lc1">I authorize background and credit check</label></div>
+<div class="toggle"><input type="checkbox" id="c2" required/><label for="c2" id="lc2">I confirm all information is accurate</label></div>
+<div class="grid"><div><label class="lbl" id="ls">Digital signature</label><input class="inp" name="signature_name" required/></div><div><label class="lbl" id="ld">Date</label><input class="inp" id="sdt" readonly/></div></div>
+</div>
+<div style="text-align:center;margin-top:16px"><button type="submit" class="btn" id="bsub">Submit Application</button></div>
+</form></div>
+<script>
+(function(){
+var STR={en:{h1:'GodManager — Tenant Application',sub:'Please complete all required fields and upload the requested documents.',t1:'1. Personal information',t2:'2. Employment & income',t3:'3. Rental history',t4:'4. Banking',t5:'5. Pets & vehicles',t6:'7. Authorization',doc:'Documents',dsub:'Upload all required documents. Green means complete!',prog:'documents uploaded',miss:'MISSING',up:'UPLOADED',cf:'Choose file',dd:'or drag & drop',vw:'View',rp:'Replace',rm:'Remove',sub:'Submit Application',allGreen:'All documents uploaded!',succ:'Thank you! Your form has been submitted successfully.',addref:'+ Add reference',addpet:'+ Add pet',addveh:'+ Vehicle',lhp:'Has pets?',nv:'Number of vehicles'},
+pt:{h1:'GodManager — Aplicacao do Inquilino',sub:'Preencha os campos obrigatorios e envie os documentos.',t1:'1. Dados pessoais',t2:'2. Emprego e renda',t3:'3. Historico de aluguel',t4:'4. Banco',t5:'5. Pets e veiculos',t6:'7. Autorizacao',doc:'Documentos',dsub:'Envie todos os documentos. Verde = completo.',prog:'documentos',miss:'PENDENTE',up:'ENVIADO',cf:'Arquivo',dd:'ou arraste',vw:'Ver',rp:'Substituir',rm:'Remover',sub:'Enviar aplicacao',allGreen:'Tudo enviado!',succ:'Obrigado! Enviado com sucesso.',addref:'+ Referencia',addpet:'+ Pet',addveh:'+ Veiculo',lhp:'Tem pets?',nv:'Numero de veiculos'},
+es:{h1:'GodManager — Solicitud del Inquilino',sub:'Complete los campos y suba los documentos.',t1:'1. Informacion personal',t2:'2. Empleo e ingresos',t3:'3. Historial de alquiler',t4:'4. Banco',t5:'5. Mascotas y vehiculos',t6:'7. Autorizacion',doc:'Documentos',dsub:'Suba todos los documentos.',prog:'documentos',miss:'PENDIENTE',up:'SUBIDO',cf:'Archivo',dd:'o arrastre',vw:'Ver',rp:'Reemplazar',rm:'Eliminar',sub:'Enviar solicitud',allGreen:'Listo!',succ:'Gracias! Enviado.',addref:'+ Referencia',addpet:'+ Mascota',addveh:'+ Vehiculo',lhp:'Mascotas?',nv:'Vehiculos'}};
+var DOCS=[
+{id:'id_front',en:'Government ID (front)',es:'ID (frente)',pt:'ID (frente)',de:'Photo ID front'},
+{id:'id_back',en:'Government ID (back)',es:'ID (reverso)',pt:'ID (verso)',de:'Photo ID back'},
+{id:'proof_income',en:'Proof of income',es:'Ingresos',pt:'Renda',de:'Pay stubs last 2 months'},
+{id:'bank_statements',en:'Bank statements',es:'Bancos',pt:'Extratos',de:'Last 2 months'},
+{id:'employment_letter',en:'Employment letter',es:'Carta empleo',pt:'Carta emprego',de:'From employer'},
+{id:'credit_boom',en:'Credit report (Boom)',es:'Credito Boom',pt:'Credito Boom',de:'Boom report'},
+{id:'landlord_reference',en:'Landlord reference',es:'Referencia',pt:'Referencia',de:'Previous landlord'},
+{id:'pet_docs',en:'Pet documentation',es:'Mascotas',pt:'Pets',de:'Vaccination if applicable'},
+{id:'renters_insurance',en:'Renters insurance',es:'Seguro inquilino',pt:'Seguro',de:'Proof'},
+{id:'vehicle_registration',en:'Vehicle registration',es:'Vehiculo',pt:'Veiculo',de:'If applicable'}
+];
+var LANG='en',API=(function(){var p=new URLSearchParams(location.search).get('api');return(p?p.replace(/\/$/,''):location.origin);})(),token=(new URLSearchParams(location.search).get('token')||'').trim(),docsState={};
+function T(k){return STR[LANG][k]||STR.en[k]||k;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function fmt(n){if(!n)return'0 B';return n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';}
+function setLang(l){
+LANG=l;document.querySelectorAll('.lang button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-lang')===l);});
+['h1','sub','t1','t2','t3','t4','t5','t6','doct','dsub','bsub','addref','addpet','addveh','lhp','nv'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var k={h1:'h1',sub:'sub',t1:'t1',t2:'t2',t3:'t3',t4:'t4',t5:'t5',t6:'t6',doct:'doc',dsub:'dsub',bsub:'sub',addref:'addref',addpet:'addpet',addveh:'addveh',lhp:'lhp',nv:'nv'}[id];if(k)el.textContent=T(k);});
+document.getElementById('lc1').textContent=LANG==='pt'?'Autorizo verificacao de credito e antecedentes':LANG==='es'?'Autorizo verificacion de credito':'I authorize background and credit check';
+document.getElementById('lc2').textContent=LANG==='pt'?'Confirmo que as informacoes estao corretas':LANG==='es'?'Confirmo que la informacion es correcta':'I confirm all information is accurate';
+document.getElementById('ls').textContent=LANG==='pt'?'Assinatura digital':LANG==='es'?'Firma digital':'Digital signature';
+document.getElementById('ld').textContent=LANG==='pt'?'Data':LANG==='es'?'Fecha':'Date';
+renderDocs();
+}
+function api(p,o){return fetch(API+p,Object.assign({mode:'cors'},o||{}));}
+function renderDocs(){
+var g=document.getElementById('cards');g.innerHTML='';var n=0;
+DOCS.forEach(function(d){
+var st=docsState[d.id]||{},ok=!!st.filename;if(ok)n++;
+var ic=ok?'<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#2d7252" fill="none" stroke-width="2"/><path d="M7 12l3 3 7-7" stroke="#2d7252" fill="none" stroke-width="2"/></svg>':
+'<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#b83030" fill="none" stroke-width="2"/><path d="M9 9l6 6M15 9l-6 6" stroke="#b83030" stroke-width="2"/></svg>';
+var c=document.createElement('div');c.className='card '+(ok?'ok':'');c.id='c-'+d.id;
+var title=d[LANG]||d.en;
+c.innerHTML='<div style="margin-bottom:6px">'+ic+'</div><strong style="font-size:13px">'+esc(title)+'</strong><p style="font-size:11px;color:var(--ink3);margin:6px 0">'+esc(d.de)+'</p>'+
+(ok?('<div style="font-size:11px">'+esc(st.filename)+' ('+fmt(st.size)+')</div><button type="button" class="btn-sec v">'+T('vw')+'</button><button type="button" class="btn-sec r">'+T('rp')+'</button><button type="button" class="btn-sec m">'+T('rm')+'</button><div class="st u">'+T('up')+'</div>'):
+('<div class="dz">'+T('cf')+' · '+T('dd')+'</div><input type="file" style="display:none" class="fi" accept=".pdf,.png,.jpg,.jpeg"/><div class="st m">'+T('miss')+'</div>'));
+g.appendChild(c);
+var fi=c.querySelector('.fi'),dz=c.querySelector('.dz');
+if(fi){fi.onchange=function(){if(fi.files[0])up(d.id,fi.files[0],c);};dz.onclick=function(){fi.click();};
+['dragover','dragleave','drop'].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.style.borderColor=ev==='dragover'?'var(--amber)':'#d0ccc4';if(ev==='drop'&&e.dataTransfer.files[0])up(d.id,e.dataTransfer.files[0],c);});});}
+var B=c.querySelectorAll('.btn-sec');if(ok&&B.length){
+B[0].onclick=function(){var tk=document.getElementById('token').value||token,fn=(st.stored_rel||'').split('/').pop();if(tk&&fn)window.open(API+'/api/appfolio/form/file/'+encodeURIComponent(tk)+'/'+encodeURIComponent(fn),'_blank');};
+B[1].onclick=function(){var i=document.createElement('input');i.type='file';i.onchange=function(){if(i.files[0])up(d.id,i.files[0],c);};i.click();};
+B[2].onclick=function(){delete docsState[d.id];renderDocs();};
+}
+});
+var pct=Math.round(100*n/DOCS.length),b=document.getElementById('pb');
+b.style.width=pct+'%';b.style.background=pct<=33?'#b83030':pct<=66?'#c9a96e':'#2d7252';
+document.getElementById('ptxt').textContent=n+' / '+DOCS.length+' '+T('prog')+(n===DOCS.length?' — '+T('allGreen'):'');
+}
+function up(docKey,file,card){
+var fd=new FormData(),tk=document.getElementById('token').value||token;
+fd.append('token',tk);fd.append('doc_key',docKey);fd.append('file',file);
+api('/api/appfolio/form/upload-doc',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){
+if(j.token){document.getElementById('token').value=j.token;token=j.token;history.replaceState(null,'','?token='+encodeURIComponent(token)+(new URLSearchParams(location.search).get('api')?'&api='+encodeURIComponent(new URLSearchParams(location.search).get('api')):''));}
+docsState[docKey]={filename:j.filename,size:j.size,stored_rel:j.stored_rel};
+card.classList.add('pulse');setTimeout(renderDocs,60);
+}).catch(function(){msg('Upload failed','err');});
+}
+function msg(t,k){var m=document.getElementById('msg');m.textContent=t;m.className=k;m.style.display='block';}
+function addRef(){var w=document.getElementById('refs'),d=document.createElement('div');d.style.cssText='margin-bottom:10px;padding:10px;border:1px solid var(--border);border-radius:8px';
+d.innerHTML='<div class="grid"><div><label class="lbl">Landlord name</label><input class="inp ln"/></div><div><label class="lbl">Phone</label><input class="inp lp"/></div><div class="row2"><label class="lbl">Address</label><input class="inp la"/></div><div><label class="lbl">Rent</label><input class="inp lr" type="number" step="0.01"/></div><div><label class="lbl">Reason leaving</label><input class="inp lx"/></div></div>';w.appendChild(d);}
+function addPet(){var w=document.getElementById('petbox'),d=document.createElement('div');d.className='grid';d.style.marginBottom='8px';
+d.innerHTML='<div><label class="lbl">Type</label><input class="inp pt"/></div><div><label class="lbl">Breed</label><input class="inp pb"/></div><div><label class="lbl">Weight</label><input class="inp pw"/></div><div><label class="lbl">Name</label><input class="inp pn"/></div>';w.appendChild(d);}
+function addVeh(){var w=document.getElementById('vehbox'),d=document.createElement('div');d.className='grid';d.style.marginBottom='8px';
+d.innerHTML='<div><label class="lbl">Make</label><input class="inp vm"/></div><div><label class="lbl">Model</label><input class="inp vl"/></div><div><label class="lbl">Year</label><input class="inp vy"/></div><div><label class="lbl">Plate</label><input class="inp vp"/></div>';w.appendChild(d);}
+document.getElementById('haspet').onchange=function(){
+document.getElementById('petbox').style.display=this.checked?'block':'none';
+document.getElementById('addpet').style.display=this.checked?'inline-block':'none';
+if(this.checked&&!document.getElementById('petbox').children.length)addPet();
+};
+document.getElementById('addref').onclick=addRef;
+document.getElementById('addpet').onclick=addPet;
+document.getElementById('addveh').onclick=addVeh;
+document.querySelectorAll('.lang button').forEach(function(b){b.onclick=function(){setLang(b.getAttribute('data-lang'));};});
+document.getElementById('sdt').value=new Date().toISOString().slice(0,10);
+if(token)document.getElementById('token').value=token;
+addRef();setLang('en');
+function gv(n){var el=document.querySelector('[name="'+n+'"]');return el?String(el.value).trim():'';}
+document.getElementById('f').onsubmit=function(ev){
+ev.preventDefault();var tk=document.getElementById('token').value;if(!tk){msg('Upload a document first to start session.','err');return;}
+var refs=[].map.call(document.querySelectorAll('#refs > div'),function(r){
+return{landlord:(r.querySelector('.ln')||{}).value,phone:(r.querySelector('.lp')||{}).value,address:(r.querySelector('.la')||{}).value,rent:(r.querySelector('.lr')||{}).value,reason:(r.querySelector('.lx')||{}).value};
+});
+var pets=[];if(document.getElementById('haspet').checked){
+document.querySelectorAll('#petbox > div').forEach(function(r){pets.push({type:(r.querySelector('.pt')||{}).value,breed:(r.querySelector('.pb')||{}).value,weight:(r.querySelector('.pw')||{}).value,name:(r.querySelector('.pn')||{}).value});});
+}
+var vehs=[];document.querySelectorAll('#vehbox > div').forEach(function(r){vehs.push({make:(r.querySelector('.vm')||{}).value,model:(r.querySelector('.vl')||{}).value,year:(r.querySelector('.vy')||{}).value,plate:(r.querySelector('.vp')||{}).value});});
+var payload={
+token:tk,first_name:gv('first_name'),last_name:gv('last_name'),email:gv('email'),phone:gv('phone'),
+secondary_phone:gv('secondary_phone'),date_of_birth:gv('date_of_birth'),ssn_last4:gv('ssn_last4'),drivers_license:gv('drivers_license'),
+current_address:gv('current_address'),time_at_address:gv('time_at_address'),reason_for_moving:gv('reason_for_moving'),
+property_applying_for:gv('property_applying_for'),emergency_contact_name:gv('emergency_contact_name'),emergency_contact_phone:gv('emergency_contact_phone'),
+preferred_lang:gv('preferred_lang'),employment_status:gv('employment_status'),employer_name:gv('employer_name'),employer_phone:gv('employer_phone'),
+job_title:gv('job_title'),monthly_income:gv('monthly_income'),additional_income_source:gv('additional_income_source'),additional_income_amount:gv('additional_income_amount'),
+bank_name:gv('bank_name'),routing_number:gv('routing_number'),account_number:gv('account_number'),account_type:gv('account_type'),
+rental_references:refs,pets:pets,vehicles:vehs,has_pets:document.getElementById('haspet').checked,vehicle_count:gv('vehicle_count'),
+signature_name:gv('signature_name'),signature_date:document.getElementById('sdt').value,documents:docsState
+};
+api('/api/appfolio/form/tenant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});}).then(function(o){
+if(!o.ok||!o.j||!o.j.ok)throw new Error((o.j&&o.j.error)||'fail');
+msg(T('succ'),'ok');
+}).catch(function(e){msg((e&&e.message)||'Error','err');});
+};
+})();
+</script>
+</body>
+</html>

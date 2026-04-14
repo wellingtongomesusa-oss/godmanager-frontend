@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GodManager — Owner Registration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#141416;--paper:#faf8f5;--cream:#f4f1eb;--border:#e8e4dc;--ink:#1a1a1c;--ink2:#4a4a4e;--ink3:#7a7a82;--amber:#c9a96e;--amber2:#e8d4a8;--red:#b83030;--green:#2d7252;}
+*{box-sizing:border-box}
+body{margin:0;font-family:'DM Sans',sans-serif;background:var(--bg);color:rgba(248,246,242,.92);min-height:100vh;-webkit-font-smoothing:antialiased}
+.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(201,169,110,.22)}
+.logo{font-family:Georgia,serif;font-size:1.25rem;font-weight:600;letter-spacing:.02em;color:var(--amber2)}
+.lang{display:flex;gap:8px}
+.lang button{padding:6px 12px;border-radius:6px;border:1px solid rgba(201,169,110,.35);background:rgba(255,255,255,.06);color:rgba(248,246,242,.85);font-size:12px;cursor:pointer;font-family:inherit}
+.lang button.on{background:rgba(201,169,110,.18);color:var(--amber2);border-color:var(--amber)}
+.wrap{max-width:920px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.35rem;font-weight:700;margin:0 0 6px;color:var(--amber2)}
+.sub{font-size:13px;color:rgba(248,246,242,.55);margin-bottom:22px;line-height:1.45}
+.sec{background:var(--paper);color:var(--ink);border-radius:12px;padding:18px 18px 4px;margin-bottom:16px;border:1px solid var(--border);box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.sec h2{font-size:11px;font-weight:700;letter-spacing:.85px;text-transform:uppercase;color:var(--ink3);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.lbl{display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px}
+.inp,.sel,.tx{width:100%;padding:9px 11px;border:1px solid #d8d4cc;border-radius:7px;font-size:13px;font-family:inherit;background:#fbfaf7;color:var(--ink)}
+.tx{min-height:72px;resize:vertical}
+.row2{grid-column:1/-1}
+.btn{padding:11px 22px;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;background:var(--amber);color:#fff;box-shadow:0 2px 10px rgba(201,169,110,.3)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-sec{background:transparent;color:var(--ink2);border:1px solid #d8d4cc}
+.doc-head{margin:8px 0 12px}
+.doc-head h3{margin:0;font-size:15px;font-weight:700;color:var(--ink)}
+.doc-head p{margin:4px 0 0;font-size:12px;color:var(--ink3)}
+.prog{height:8px;border-radius:6px;background:#e8e4dc;overflow:hidden;margin:10px 0 6px}
+.prog>div{height:100%;width:0%;transition:width .35s ease,background .35s}
+.prog-txt{font-size:11px;font-weight:600;color:var(--ink2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;transition:box-shadow .25s ease,transform .2s ease,border-color .3s}
+.card.miss{border-left:3px solid var(--red)}
+.card.ok{border-left:3px solid var(--green)}
+.card.pulse{animation:gmPulse .6s ease}
+@keyframes gmPulse{0%{transform:scale(1)}40%{transform:scale(1.02)}100%{transform:scale(1)}}
+.card .ic{font-size:28px;line-height:1;margin-bottom:8px}
+.card h4{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--ink)}
+.card p{margin:0 0 10px;font-size:11px;color:var(--ink3);line-height:1.4}
+.st{font-size:9px;font-weight:700;letter-spacing:.5px;margin-top:8px}
+.st.m{color:var(--red)}
+.st.u{color:var(--green)}
+.dz{border:2px dashed #d0ccc4;border-radius:8px;padding:12px;text-align:center;font-size:11px;color:var(--ink3);cursor:pointer}
+.dz.drag{border-color:var(--amber);background:var(--cream)}
+.okbox{display:flex;align-items:flex-start;gap:8px;margin:14px 0;font-size:12px;color:var(--ink2)}
+#msg{margin:16px 0;padding:14px;border-radius:10px;display:none;font-size:13px}
+#msg.ok{display:block;background:rgba(45,114,82,.12);border:1px solid rgba(45,114,82,.35);color:var(--green)}
+#msg.err{display:block;background:rgba(184,48,48,.1);border:1px solid rgba(184,48,48,.35);color:var(--red)}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="logo">GodManager</div>
+<div class="lang">
+<button type="button" class="on" data-lang="en">EN</button>
+<button type="button" data-lang="pt">PT</button>
+<button type="button" data-lang="es">ES</button>
+</div>
+</div>
+<div class="wrap">
+<h1 id="h-title">GodManager — Owner Registration</h1>
+<p class="sub" id="h-sub">Please complete all required fields and upload the requested documents.</p>
+<div id="msg"></div>
+<form id="f">
+<input type="hidden" id="token" name="token"/>
+<div class="sec"><h2 id="s1t">1. Owner information</h2>
+<div class="grid">
+<div><label class="lbl"><span id="l-fn">Full Name</span> *</label><input class="inp" name="full_name" required/></div>
+<div><label class="lbl" id="l-co">Company / LLC</label><input class="inp" name="company_llc"/></div>
+<div><label class="lbl"><span id="l-em">Email</span> *</label><input class="inp" type="email" name="email" required/></div>
+<div><label class="lbl"><span id="l-ph">Phone</span> *</label><input class="inp" name="phone" required/></div>
+<div><label class="lbl" id="l-ph2">Secondary phone</label><input class="inp" name="secondary_phone"/></div>
+<div class="row2"><label class="lbl" id="l-addr">Address</label><input class="inp" name="address_line" placeholder="Street, City, State ZIP"/></div>
+<div><label class="lbl" id="l-lang">Preferred language</label><select class="sel" name="preferred_lang"><option value="en">English</option><option value="pt">Portuguese</option><option value="es">Spanish</option></select></div>
+<div><label class="lbl" id="l-tax">Tax ID / EIN</label><input class="inp" name="tax_id"/></div>
+<div class="row2"><label class="lbl" id="l-pay">Payment type</label><select class="sel" name="payment_type"><option value="echeck">eCheck</option><option value="check">Check</option><option value="wire">Wire Transfer</option></select></div>
+</div></div>
+<div class="sec"><h2 id="s2t">2. Banking</h2>
+<div class="grid">
+<div><label class="lbl"><span id="l-bn">Bank name</span> *</label><input class="inp" name="bank_name" required/></div>
+<div><label class="lbl"><span id="l-rt">Routing (9 digits)</span> *</label><input class="inp" name="routing_number" pattern="[0-9]{9}" maxlength="9" required/></div>
+<div><label class="lbl"><span id="l-ac">Account number</span> *</label><input class="inp" name="account_number" required/></div>
+<div><label class="lbl" id="l-at">Account type</label><select class="sel" name="account_type"><option value="checking">Checking</option><option value="savings">Savings</option></select></div>
+</div></div>
+<div class="sec"><h2 id="s3t">3. Property</h2>
+<div id="props"></div>
+<button type="button" class="btn-sec" id="btn-addp" style="margin-bottom:14px">+ Add property</button>
+<div class="grid">
+<div><label class="lbl" id="l-ownp">Ownership %</label><input class="inp" type="number" name="ownership_pct" value="100" min="0" max="100" step="0.01"/></div>
+<div><label class="lbl" id="l-mfee">Management fee %</label><input class="inp" type="number" name="mgmt_fee_pct" step="0.01"/></div>
+<div><label class="lbl" id="l-res">Reserve ($)</label><input class="inp" type="number" name="reserve_amount" step="0.01"/></div>
+<div><label class="lbl" id="l-mlim">Maintenance limit ($)</label><input class="inp" type="number" name="maintenance_limit" step="0.01"/></div>
+<div class="row2"><label class="lbl" id="l-inst">Special instructions</label><textarea class="tx" name="special_instructions"></textarea></div>
+</div></div>
+<div class="sec" id="doc-sec">
+<div class="doc-head">
+<h3 id="doc-title">Documents</h3>
+<p id="doc-sub">Upload all required documents. Green means complete!</p>
+<div class="prog"><div id="prog-bar"></div></div>
+<div class="prog-txt" id="prog-txt">0 / 8</div>
+</div>
+<div class="cards" id="cards"></div>
+<div class="row2" style="padding-bottom:14px">
+<div class="okbox"><input type="checkbox" id="acc" required/><label for="acc" id="l-acc">I confirm all information is accurate</label></div>
+<div class="grid">
+<div><label class="lbl" id="l-sig">Digital signature (full name)</label><input class="inp" name="signature_name" required/></div>
+<div><label class="lbl" id="l-sdt">Date</label><input class="inp" name="signature_date" id="sigdt" readonly/></div>
+</div>
+</div>
+</div>
+<div style="text-align:center"><button type="submit" class="btn" id="btn-sub">Submit Registration</button></div>
+</form>
+</div>
+<script>
+(function(){
+var STR={
+en:{h1:'GodManager — Owner Registration',sub:'Please complete all required fields and upload the requested documents.',s1:'1. Owner information',s2:'2. Banking',s3:'3. Property',doc:'Documents',docSub:'Upload all required documents. Green means complete!',prog:'documents uploaded',miss:'MISSING',up:'UPLOADED',cf:'Choose file',dd:'or drag & drop',vw:'View',rp:'Replace',rm:'Remove',sub:'Submit Registration',acc:'I confirm all information is accurate',sig:'Digital signature (full name)',dt:'Date',addp:'+ Add property',allGreen:'All documents uploaded! You\'re all set.',succ:'Thank you! Your form has been submitted successfully.'},
+pt:{h1:'GodManager — Cadastro do Proprietario',sub:'Por favor preencha todos os campos obrigatorios e envie os documentos solicitados.',s1:'1. Informacoes do proprietario',s2:'2. Dados bancarios',s3:'3. Propriedade',doc:'Documentos',docSub:'Envie todos os documentos obrigatorios. Verde = completo!',prog:'documentos enviados',miss:'PENDENTE',up:'ENVIADO',cf:'Escolher arquivo',dd:'ou arraste e solte',vw:'Ver',rp:'Substituir',rm:'Remover',sub:'Enviar Cadastro',acc:'Confirmo que todas as informacoes estao corretas',sig:'Assinatura digital (nome completo)',dt:'Data',addp:'+ Adicionar propriedade',allGreen:'Todos os documentos enviados! Tudo pronto.',succ:'Obrigado! Seu formulario foi enviado com sucesso.'},
+es:{h1:'GodManager — Registro del Propietario',sub:'Por favor complete todos los campos obligatorios y suba los documentos solicitados.',s1:'1. Informacion del propietario',s2:'2. Datos bancarios',s3:'3. Propiedad',doc:'Documentos',docSub:'Suba todos los documentos requeridos. Verde = completo.',prog:'documentos subidos',miss:'PENDIENTE',up:'SUBIDO',cf:'Elegir archivo',dd:'o arrastre y suelte',vw:'Ver',rp:'Reemplazar',rm:'Eliminar',sub:'Enviar Registro',acc:'Confirmo que toda la informacion es correcta',sig:'Firma digital (nombre completo)',dt:'Fecha',addp:'+ Agregar propiedad',allGreen:'Todos los documentos subidos! Listo.',succ:'Gracias! Su formulario ha sido enviado exitosamente.'}
+};
+var DOCS=[
+{id:'id_front',t:{en:'Government ID (front)',pt:'Documento de identidade (frente)',es:'ID oficial (frente)'},d:{en:'Upload a valid government-issued photo ID (front)',pt:'Envie a frente do documento com foto',es:'Suba el frente de su ID con foto'}},
+{id:'id_back',t:{en:'Government ID (back)',pt:'Documento de identidade (verso)',es:'ID oficial (reverso)'},d:{en:'Upload the back of your ID',pt:'Envie o verso do documento',es:'Suba el reverso de su ID'}},
+{id:'w9',t:{en:'W-9 Form',pt:'Formulario W-9',es:'Formulario W-9'},d:{en:'Upload signed W-9 form',pt:'Envie o W-9 assinado',es:'Suba el W-9 firmado'}},
+{id:'deed',t:{en:'Property deed / title',pt:'Escritura / titulo',es:'Escritura / titulo'},d:{en:'Upload property deed or title',pt:'Envie escritura ou titulo',es:'Suba escritura o titulo'}},
+{id:'insurance',t:{en:'Insurance certificate',pt:'Certificado de seguro',es:'Certificado de seguro'},d:{en:'Upload property insurance certificate',pt:'Envie o certificado de seguro do imovel',es:'Suba certificado de seguro de la propiedad'}},
+{id:'hoa',t:{en:'HOA documents',pt:'Documentos da HOA',es:'Documentos HOA'},d:{en:'Upload HOA rules/contacts if applicable',pt:'Regulamento/contatos da HOA se aplicavel',es:'Normas/contactos HOA si aplica'}},
+{id:'voided_check',t:{en:'Voided check',pt:'Cheque anulado',es:'Cheque anulado'},d:{en:'Upload a voided check for payment setup',pt:'Cheque anulado para cadastro de pagamento',es:'Cheque anulado para pagos'}},
+{id:'mgmt_agreement',t:{en:'Management agreement',pt:'Contrato de gestao',es:'Contrato de administracion'},d:{en:'Upload signed management agreement',pt:'Contrato de gestao assinado',es:'Contrato firmado'}}
+];
+var LANG='en';
+var API=(function(){var p=new URLSearchParams(location.search).get('api');if(p)return p.replace(/\/$/,'');return location.origin;})();
+var token=(new URLSearchParams(location.search).get('token')||'').trim();
+var docsState={};
+function T(k){return (STR[LANG]&&STR[LANG][k])||STR.en[k]||k;}
+function setLang(l){
+LANG=l;document.querySelectorAll('.lang button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-lang')===l);});
+document.getElementById('h-title').textContent=T('h1');
+document.getElementById('h-sub').textContent=T('sub');
+document.getElementById('s1t').textContent=T('s1');
+document.getElementById('s2t').textContent=T('s2');
+document.getElementById('s3t').textContent=T('s3');
+document.getElementById('doc-title').textContent=T('doc');
+document.getElementById('doc-sub').textContent=T('docSub');
+document.getElementById('btn-sub').textContent=T('sub');
+document.getElementById('l-acc').textContent=T('acc');
+document.getElementById('l-sig').textContent=T('sig');
+document.getElementById('l-sdt').textContent=T('dt');
+document.getElementById('btn-addp').textContent=T('addp');
+renderCards();
+}
+function api(path,opts){return fetch(API+path,Object.assign({mode:'cors'},opts||{}));}
+function renderCards(){
+var g=document.getElementById('cards');g.innerHTML='';
+var nOk=0;
+DOCS.forEach(function(d){
+var st=docsState[d.id]||{};
+var ok=!!(st.filename);
+if(ok)nOk++;
+var card=document.createElement('div');
+card.className='card '+(ok?'ok':'miss');
+card.id='card-'+d.id;
+var icSvg=ok?'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="#2d7252" stroke-width="2"/><path d="M7 12l3 3 7-7" stroke="#2d7252" stroke-width="2" fill="none"/></svg>':
+'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="#b83030" stroke-width="2"/><path d="M9 9l6 6M15 9l-6 6" stroke="#b83030" stroke-width="2"/></svg>';
+card.innerHTML='<div class="ic">'+icSvg+'</div><h4>'+d.t[LANG]+'</h4><p>'+d.d[LANG]+'</p>'+
+(ok?('<div style="font-size:11px;color:#4a4a4e;margin-bottom:8px">'+esc(st.filename)+' ('+fmtSize(st.size)+')</div>'+
+'<button type="button" class="btn-sec" style="margin-right:6px;padding:6px 10px;font-size:11px">'+T('vw')+'</button>'+
+'<button type="button" class="btn-sec" style="margin-right:6px;padding:6px 10px;font-size:11px">'+T('rp')+'</button>'+
+'<button type="button" class="btn-sec" style="padding:6px 10px;font-size:11px">'+T('rm')+'</button>')+
+'<div class="st u">'+T('up')+'</div>':
+('<div class="dz" tabindex="0">'+T('cf')+' · '+T('dd')+'</div><input type="file" class="fi" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp"/>'+
+'<div class="st m">'+T('miss')+'</div>'));
+g.appendChild(card);
+var dz=card.querySelector('.dz');
+var fi=card.querySelector('.fi');
+if(fi){
+fi.addEventListener('change',function(){if(fi.files[0])uploadDoc(d.id,fi.files[0],card);});
+dz.addEventListener('click',function(){fi.click();});
+['dragover','dragleave','drop'].forEach(function(ev){
+dz.addEventListener(ev,function(e){e.preventDefault();if(ev==='dragover'){dz.classList.add('drag');}else{dz.classList.remove('drag');}if(ev==='drop'&&e.dataTransfer.files[0])uploadDoc(d.id,e.dataTransfer.files[0],card);});
+});
+}
+var btns=card.querySelectorAll('button');
+if(ok&&btns.length>=3){
+btns[0].onclick=function(){var tk=document.getElementById('token').value||token;var fn=(st.stored_rel||'').split('/').pop();if(!tk||!fn)return;window.open(API+'/api/appfolio/form/file/'+encodeURIComponent(tk)+'/'+encodeURIComponent(fn),'_blank');};
+btns[1].onclick=function(){var i=document.createElement('input');i.type='file';i.onchange=function(){if(i.files[0])uploadDoc(d.id,i.files[0],card);};i.click();};
+btns[2].onclick=function(){delete docsState[d.id];renderCards();};
+}
+});
+var pct=Math.round(100*nOk/DOCS.length);
+var bar=document.getElementById('prog-bar');
+bar.style.width=pct+'%';
+bar.style.background=pct<=33?'#b83030':pct<=66?'#c9a96e':'#2d7252';
+document.getElementById('prog-txt').textContent=nOk+' / '+DOCS.length+' '+T('prog');
+if(nOk===DOCS.length)document.getElementById('prog-txt').textContent+=' — '+T('allGreen');
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function fmtSize(n){if(!n)return'0 B';if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
+function uploadDoc(docKey,file,cardEl){
+var fd=new FormData();
+var tk=document.getElementById('token').value||token;
+fd.append('token',tk);
+fd.append('doc_key',docKey);
+fd.append('file',file);
+api('/api/appfolio/form/upload-doc',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(j){
+if(!j.ok&&j.error)throw new Error(j.error);
+if(j.token){document.getElementById('token').value=j.token;if(!token){token=j.token;history.replaceState(null,'','?token='+encodeURIComponent(token)+(new URLSearchParams(location.search).get('api')?'&api='+encodeURIComponent(new URLSearchParams(location.search).get('api')):''));}}
+docsState[docKey]={filename:j.filename,size:j.size,stored_rel:j.stored_rel,stored_name:(j.stored_rel||'').split('/').pop()};
+cardEl.classList.add('pulse');
+setTimeout(function(){renderCards();},80);
+}).catch(function(e){showMsg((e&&e.message)||'Upload failed','err');});
+}
+function showMsg(t,kind){var m=document.getElementById('msg');m.textContent=t;m.className=kind==='ok'?'ok':'err';m.style.display='block';}
+function addPropRow(){
+var w=document.getElementById('props');
+var d=document.createElement('div');
+d.style.cssText='margin-bottom:12px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fff';
+d.innerHTML='<label class="lbl">Property address *</label><input class="inp pa" required placeholder="Full address"/>';
+w.appendChild(d);
+}
+document.querySelectorAll('.lang button').forEach(function(b){b.onclick=function(){setLang(b.getAttribute('data-lang'));};});
+document.getElementById('btn-addp').onclick=addPropRow;
+document.getElementById('sigdt').value=new Date().toISOString().slice(0,10);
+addPropRow();
+setLang('en');
+if(token)document.getElementById('token').value=token;
+api('/api/appfolio/form/status/'+encodeURIComponent(token||'_'),{method:'GET'}).then(function(r){return r.json();}).catch(function(){return{};}).then(function(j){if(j&&j.invite&&j.form_type&&j.form_type!=='owner'){}});
+document.getElementById('f').onsubmit=function(ev){
+ev.preventDefault();
+var tk=document.getElementById('token').value;
+if(!tk){showMsg('Complete at least one document upload to obtain a session token.','err');return;}
+var props=[].map.call(document.querySelectorAll('.pa'),function(i){return(i.value||'').trim();}).filter(Boolean);
+var payload={
+token:tk,full_name:document.querySelector('[name=full_name]').value.trim(),company_llc:document.querySelector('[name=company_llc]').value.trim(),
+email:document.querySelector('[name=email]').value.trim(),phone:document.querySelector('[name=phone]').value.trim(),
+secondary_phone:document.querySelector('[name=secondary_phone]').value.trim(),address_line:document.querySelector('[name=address_line]').value.trim(),
+preferred_lang:document.querySelector('[name=preferred_lang]').value,tax_id:document.querySelector('[name=tax_id]').value.trim(),
+payment_type:document.querySelector('[name=payment_type]').value,bank_name:document.querySelector('[name=bank_name]').value.trim(),
+routing_number:document.querySelector('[name=routing_number]').value.trim(),account_number:document.querySelector('[name=account_number]').value.trim(),
+account_type:document.querySelector('[name=account_type]').value,ownership_pct:document.querySelector('[name=ownership_pct]').value,
+mgmt_fee_pct:document.querySelector('[name=mgmt_fee_pct]').value,reserve_amount:document.querySelector('[name=reserve_amount]').value,
+maintenance_limit:document.querySelector('[name=maintenance_limit]').value,special_instructions:document.querySelector('[name=special_instructions]').value.trim(),
+signature_name:document.querySelector('[name=signature_name]').value.trim(),signature_date:document.getElementById('sigdt').value,
+properties:props,documents:docsState
+};
+api('/api/appfolio/form/owner',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});}).then(function(o){
+if(!o.ok||!o.j||!o.j.ok)throw new Error((o.j&&o.j.error)||'Submit failed');
+showMsg(T('succ'),'ok');
+document.getElementById('f').reset();docsState={};document.getElementById('sigdt').value=new Date().toISOString().slice(0,10);
+document.getElementById('props').innerHTML='';addPropRow();renderCards();
+}).catch(function(e){showMsg((e&&e.message)||'Error','err');});
+};
+})();
+</script>
+</body>
+</html>

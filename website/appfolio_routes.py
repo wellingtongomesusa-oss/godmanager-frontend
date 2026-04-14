@@ -1,16 +1,22 @@
 """AppFolio CSV import + JSON APIs for GodManager Premium dashboard."""
 from __future__ import annotations
 
+import base64
 import csv
 import hashlib
 import json
+import os
 import re
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Tuple
 
-from flask import Blueprint, jsonify, request
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from flask import Blueprint, jsonify, request, send_file
+from werkzeug.utils import secure_filename
 
 # ---------------------------------------------------------------------------
 # Paths & constants
@@ -21,6 +27,16 @@ DATA_DIR = _WEB_DIR / "data" / "appfolio"
 META_PATH = DATA_DIR / "_appfolio_meta.json"
 GROSS_EXPENSES_PATH = DATA_DIR / "gross_expenses.json"
 ORG_CHART_PATH = DATA_DIR / "org_chart.json"
+TENANTS_REGISTRY_PATH = _WEB_DIR / "data" / "tenants.json"
+TENANT_DOCS_DIR = _WEB_DIR / "data" / "tenant_docs"
+APPROVAL_LOGS_PATH = _WEB_DIR / "data" / "approval_logs.json"
+LT_EXP_APPROVAL_STATE_PATH = _WEB_DIR / "data" / "lt_expense_approval_state.json"
+
+_LT_EXP_STEP_NAMES: Dict[int, str] = {
+    1: "Invoice Received",
+    2: "Registered in AppFolio",
+    3: "Approved",
+}
 
 CANONICAL_FILES = {
     "property_directory": "property_directory.csv",
@@ -521,6 +537,293 @@ def _property_row_geo(
 # ---------------------------------------------------------------------------
 
 
+def _parse_date_any(val: Any) -> Optional[datetime]:
+    """Parse common AppFolio / ISO date strings to naive datetime (date part)."""
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s:
+        return None
+    candidates = [s.split("T", 1)[0], s.split(" ", 1)[0], s[:10]]
+    seen: set[str] = set()
+    for cand in candidates:
+        cand = cand.strip()
+        if not cand or cand in seen:
+            continue
+        seen.add(cand)
+        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
+            try:
+                return datetime.strptime(cand[:10], fmt)
+            except ValueError:
+                continue
+    return _parse_date_mmddyyyy(s)
+
+
+def _push_dash_alert(
+    out: List[Dict[str, Any]],
+    *,
+    severity: str,
+    category: str,
+    title: str,
+    detail: str,
+    link: str,
+) -> None:
+    if len(out) >= 120:
+        return
+    out.append(
+        {
+            "severity": severity,
+            "category": category,
+            "title": (title or "")[:180],
+            "detail": (detail or "")[:400],
+            "link": link or "#longterm",
+            "created_at": _iso_now() + "Z",
+        }
+    )
+
+
+def _build_dashboard_alerts(
+    *,
+    now: datetime,
+    prop_rows: List[Dict[str, str]],
+    prop_h: Dict[str, str],
+    ten_rows: List[Dict[str, str]],
+    ten_h: Dict[str, str],
+    own_rows: List[Dict[str, str]],
+    own_h: Dict[str, str],
+    ven_rows: List[Dict[str, str]],
+    ven_h: Dict[str, str],
+    bill_rows: List[Dict[str, str]],
+    bill_h: Dict[str, str],
+    up_rows: List[Dict[str, str]],
+    up_h: Dict[str, str],
+    occupied_props: Any,
+) -> List[Dict[str, Any]]:
+    alerts: List[Dict[str, Any]] = []
+    occ: set[str] = set(occupied_props) if isinstance(occupied_props, set) else set()
+
+    # --- Properties: vacant (no current tenant on property) ---
+    vacant_keys_set: set[str] = set()
+    for r in prop_rows:
+        pk = _property_key_tenant(r, prop_h)
+        if pk and pk != "__unknown__" and pk not in occ:
+            vacant_keys_set.add(pk)
+    for pk in list(vacant_keys_set)[:40]:
+        label = pk[:80] + ("…" if len(pk) > 80 else "")
+        _push_dash_alert(
+            alerts,
+            severity="warning",
+            category="property",
+            title="Vacant property",
+            detail=label,
+            link="#ltproperties",
+        )
+
+    # --- Property: management agreement ending (60d) ---
+    for r in prop_rows:
+        end_raw = _get(
+            r,
+            prop_h,
+            "Management Agreement End",
+            "Management End Date",
+            "Agreement End Date",
+            "Contract End Date",
+        )
+        end_d = _parse_date_any(end_raw)
+        if end_d and (end_d - now).days <= 60 and (end_d - now).days >= 0:
+            pname = _get(r, prop_h, "Property", "Property Name", "Property Address") or "Property"
+            _push_dash_alert(
+                alerts,
+                severity="info",
+                category="property",
+                title="Management agreement expiring",
+                detail=f"{pname} — ends {end_raw}",
+                link="#ltproperties",
+            )
+
+    # --- Tenants: unpaid balance (unpaid_balances CSV) ---
+    for r in up_rows:
+        amt = parse_money(
+            _get(r, up_h, "Total Unpaid Balance", "Total Unpaid", "Unpaid Balance", "Balance", "Total")
+        )
+        if amt <= 0.005:
+            continue
+        tenant = _get(r, up_h, "Tenant", "Tenant Name", "Name")
+        prop = _get(r, up_h, "Property", "Property Name", "Unit")
+        detail = f"{tenant or '—'} @ {prop or '—'} — ${amt:,.2f}"
+        _push_dash_alert(
+            alerts,
+            severity="urgent",
+            category="tenant",
+            title="Unpaid balance",
+            detail=detail,
+            link="#tenants",
+        )
+
+    # --- Tenants: lease end / notice / future ---
+    for r in ten_rows:
+        status = _tenant_status(_get(r, ten_h, "Status", "Lease Status"))
+        lease_end_raw = _get(
+            r,
+            ten_h,
+            "Lease End",
+            "Lease End Date",
+            "End Date",
+            "Move-Out Date",
+            "Move Out Date",
+        )
+        lease_end = _parse_date_any(lease_end_raw)
+        tname = _get(r, ten_h, "Tenant", "Tenant Name", "Name") or "Tenant"
+        prop = _get(r, ten_h, "Property", "Property Name") or ""
+
+        if status == "CURRENT" and lease_end and lease_end.date() < now.date():
+            _push_dash_alert(
+                alerts,
+                severity="urgent",
+                category="tenant",
+                title="Lease expired (still Current)",
+                detail=f"{tname} — {prop}",
+                link="#tenants",
+            )
+        elif lease_end:
+            days = (lease_end.date() - now.date()).days
+            if 0 <= days <= 30:
+                _push_dash_alert(
+                    alerts,
+                    severity="warning",
+                    category="tenant",
+                    title="Lease expiring",
+                    detail=f"{tname} — {lease_end_raw} ({days}d)",
+                    link="#tenants",
+                )
+        if status == "NOTICE":
+            _push_dash_alert(
+                alerts,
+                severity="warning",
+                category="tenant",
+                title="Tenant on Notice",
+                detail=f"{tname} — {prop}",
+                link="#tenants",
+            )
+        if status == "FUTURE":
+            move_in = _get(r, ten_h, "Move-In Date", "Move In Date", "Start Date", "Lease Start")
+            _push_dash_alert(
+                alerts,
+                severity="info",
+                category="tenant",
+                title="Future tenant (scheduled move-in)",
+                detail=f"{tname} — {move_in or prop}",
+                link="#tenants",
+            )
+
+    # --- Owners ---
+    for r in own_rows:
+        nm = _get(r, own_h, "Owner Name", "Owner", "Name", "Legal Name") or "Owner"
+        hold = (_get(r, own_h, "Hold Payments", "Hold Owner Payments", "Hold Disbursements") or "").strip().lower()
+        if hold in ("yes", "y", "true", "1", "on"):
+            _push_dash_alert(
+                alerts,
+                severity="urgent",
+                category="owner",
+                title="Owner payments on hold",
+                detail=nm,
+                link="#ownerportal",
+            )
+        last_pay_raw = _get(
+            r,
+            own_h,
+            "Last Payment Date",
+            "Last Distribution Date",
+            "Last Owner Distribution",
+            "Last Payment",
+        )
+        last_pay = _parse_date_any(last_pay_raw)
+        if last_pay:
+            days_since = (now.date() - last_pay.date()).days
+            if days_since > 60:
+                _push_dash_alert(
+                    alerts,
+                    severity="warning",
+                    category="owner",
+                    title="No owner payment in 60+ days",
+                    detail=f"{nm} — last {last_pay_raw}",
+                    link="#ownerportal",
+                )
+            elif 0 <= days_since <= 14:
+                _push_dash_alert(
+                    alerts,
+                    severity="info",
+                    category="owner",
+                    title="Owner payment processed",
+                    detail=f"{nm} — {last_pay_raw}",
+                    link="#ownerportal",
+                )
+
+    # --- Vendors: insurance / contract expirations ---
+    for r in ven_rows:
+        vname = _get(r, ven_h, "Vendor Name", "Vendor", "Name", "Payee") or "Vendor"
+        for label, keys, link in (
+            ("Liability insurance", ("Liability Insurance Expiration", "Liability Insurance End"), "#vendors"),
+            ("Workers comp", ("Workers Compensation Expiration", "Workers Comp Expiration"), "#vendors"),
+            ("Vendor contract", ("Contract End Date", "Agreement End Date"), "#vendors"),
+        ):
+            raw = _get(r, ven_h, *keys)
+            exp = _parse_date_any(raw)
+            if not exp:
+                continue
+            if exp.date() < now.date():
+                _push_dash_alert(
+                    alerts,
+                    severity="urgent",
+                    category="vendor",
+                    title=f"{label} expired",
+                    detail=f"{vname} — was {raw}",
+                    link=link,
+                )
+            elif 0 <= (exp.date() - now.date()).days <= 30:
+                _push_dash_alert(
+                    alerts,
+                    severity="warning",
+                    category="vendor",
+                    title=f"{label} expiring",
+                    detail=f"{vname} — {raw}",
+                    link=link,
+                )
+
+    # --- Bills ---
+    for r in bill_rows:
+        unpaid = parse_money(_get(r, bill_h, "Unpaid", "Open Balance", "Balance"))
+        if unpaid <= 0.005:
+            continue
+        due_raw = _get(r, bill_h, "Due Date", "Due", "Bill Date", "Date")
+        due = _parse_date_any(due_raw)
+        ref = _get(r, bill_h, "Reference", "Bill Number", "Memo") or "Bill"
+        payee = _get(r, bill_h, "Payee Name", "Payee", "Vendor") or ""
+        detail = f"{payee} — ${unpaid:,.2f} — due {due_raw}"
+        if due and due.date() < now.date():
+            _push_dash_alert(
+                alerts,
+                severity="urgent",
+                category="bill",
+                title="Overdue bill (unpaid)",
+                detail=detail,
+                link="#ltexpenses",
+            )
+        elif due:
+            dd = (due.date() - now.date()).days
+            if 0 <= dd <= 15:
+                _push_dash_alert(
+                    alerts,
+                    severity="warning",
+                    category="bill",
+                    title="Bill due soon (unpaid)",
+                    detail=detail + f" ({dd}d)",
+                    link="#ltexpenses",
+                )
+
+    return alerts
+
+
 def _compute_dashboard() -> Dict[str, Any]:
     meta = _load_meta()
     prop_rows, prop_h = _load_properties()
@@ -785,6 +1088,24 @@ def _compute_dashboard() -> Dict[str, Any]:
     inspection_cost_monthly = 80.0
     inspections_connected = False
 
+    now_alerts = datetime.now(timezone.utc).replace(tzinfo=None)
+    alerts_out = _build_dashboard_alerts(
+        now=now_alerts,
+        prop_rows=prop_rows,
+        prop_h=prop_h,
+        ten_rows=ten_rows,
+        ten_h=ten_h,
+        own_rows=own_rows,
+        own_h=own_h,
+        ven_rows=ven_rows,
+        ven_h=ven_h,
+        bill_rows=bill_rows,
+        bill_h=bill_h,
+        up_rows=up_rows,
+        up_h=up_h,
+        occupied_props=occupied_props,
+    )
+
     return {
         "total_properties": total_properties,
         "occupied_units": occupied_units,
@@ -867,6 +1188,7 @@ def _compute_dashboard() -> Dict[str, Any]:
         "inspections_overdue": inspections_overdue,
         "inspection_cost_monthly": round(inspection_cost_monthly, 2),
         "inspections_connected": inspections_connected,
+        "alerts": alerts_out,
     }
 
 
@@ -976,8 +1298,11 @@ def properties_list():
         )
         if search_q and search_q not in blob:
             continue
+        _prop_key_src = f"{pname}|{prop_full}|{county}|{city}"
+        _prop_stable_id = hashlib.sha256(_prop_key_src.encode("utf-8")).hexdigest()[:20]
         out.append(
             {
+                "id": _prop_stable_id,
                 "property": prop_full or pname,
                 "property_name": pname,
                 "address": _get(r, h, "Property Street Address 1", "Address", "Street"),
@@ -1812,3 +2137,803 @@ def org_chart_delete(emp_id: int):
     store["employees"] = new_emps
     _save_org_chart_store(store)
     return jsonify({"ok": True, "id": emp_id})
+
+
+# ---------------------------------------------------------------------------
+# Tenant registry (Premium — JSON store + filesystem documents)
+# ---------------------------------------------------------------------------
+
+_TENANT_FERNET: Optional[Fernet] = None
+
+TENANT_DOC_TYPES = frozenset(
+    {
+        "boom_report",
+        "id_front",
+        "id_back",
+        "pay_stub",
+        "bank_statement",
+        "lease_agreement",
+        "other",
+    }
+)
+
+TENANT_STATUSES = frozenset({"applicant", "approved", "active", "notice", "past"})
+TENANT_TYPES = frozenset({"financially_responsible", "occupant", "guarantor"})
+ACCOUNT_TYPES = frozenset({"checking", "savings"})
+CREDIT_SOURCES = frozenset({"Boom", "Experian", "TransUnion", "Equifax", "Other"})
+BG_STATUSES = frozenset({"pending", "approved", "denied", "conditional"})
+
+
+def _fernet_tenant() -> Fernet:
+    global _TENANT_FERNET
+    if _TENANT_FERNET is not None:
+        return _TENANT_FERNET
+    raw_key = os.environ.get("GM_TENANT_FERNET_KEY")
+    if raw_key:
+        _TENANT_FERNET = Fernet(raw_key.strip().encode("ascii"))
+        return _TENANT_FERNET
+    salt = b"gm-tenant-kdf-v1"
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=390000,
+    )
+    secret = (os.environ.get("GM_TENANT_SECRET") or "godmanager-dev-tenant-secret").encode("utf-8")
+    key = base64.urlsafe_b64encode(kdf.derive(secret))
+    _TENANT_FERNET = Fernet(key)
+    return _TENANT_FERNET
+
+
+def _tenant_encrypt(plain: str) -> str:
+    s = (plain or "").strip()
+    if not s:
+        return ""
+    tok = _fernet_tenant().encrypt(s.encode("utf-8"))
+    return tok.decode("ascii")
+
+
+def _tenant_decrypt(token: str) -> str:
+    t = (token or "").strip()
+    if not t:
+        return ""
+    try:
+        return _fernet_tenant().decrypt(t.encode("ascii")).decode("utf-8")
+    except Exception:
+        return ""
+
+
+def _digits_only(s: str) -> str:
+    return re.sub(r"\D", "", s or "")
+
+
+def _mask_last4(plain: str) -> str:
+    d = _digits_only(plain)
+    if len(d) >= 4:
+        return "****" + d[-4:]
+    if d:
+        return "****" + d
+    return ""
+
+
+def _is_masked_placeholder(val: Any) -> bool:
+    s = str(val or "").strip()
+    return s.startswith("****") and len(s) >= 6
+
+
+def _finance_discount(asking: float, agreed: float) -> Tuple[float, float]:
+    asking = float(asking or 0.0)
+    agreed = float(agreed or 0.0)
+    diff = asking - agreed
+    if asking > 0.005:
+        pct = round(100.0 * diff / asking, 2)
+    else:
+        pct = 0.0
+    return round(diff, 2), pct
+
+
+def _load_tenant_registry_store() -> Dict[str, Any]:
+    TENANTS_REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not TENANTS_REGISTRY_PATH.exists():
+        store = {"next_tenant_id": 1, "next_doc_id": 1, "tenants": []}
+        TENANTS_REGISTRY_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    try:
+        raw = json.loads(TENANTS_REGISTRY_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        store = {"next_tenant_id": 1, "next_doc_id": 1, "tenants": []}
+        TENANTS_REGISTRY_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    if not isinstance(raw, dict) or "tenants" not in raw:
+        store = {"next_tenant_id": 1, "next_doc_id": 1, "tenants": []}
+        TENANTS_REGISTRY_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        return store
+    if raw.get("next_tenant_id") is None:
+        mx = max((int(t.get("id") or 0) for t in raw["tenants"]), default=0)
+        raw["next_tenant_id"] = mx + 1
+    if raw.get("next_doc_id") is None:
+        mx_d = 0
+        for t in raw["tenants"]:
+            for d in t.get("documents") or []:
+                mx_d = max(mx_d, int(d.get("id") or 0))
+        raw["next_doc_id"] = mx_d + 1
+    return raw
+
+
+def _save_tenant_registry_store(store: Dict[str, Any]) -> None:
+    TENANTS_REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    TENANTS_REGISTRY_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+
+
+def _tenant_internal_defaults() -> Dict[str, Any]:
+    return {
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "phone": "",
+        "phone_secondary": "",
+        "date_of_birth": "",
+        "ssn_last4_enc": "",
+        "drivers_license": "",
+        "emergency_contact_name": "",
+        "emergency_contact_phone": "",
+        "current_address": "",
+        "employer_name": "",
+        "employer_phone": "",
+        "monthly_income": 0.0,
+        "notes": "",
+        "bank_name": "",
+        "routing_number_enc": "",
+        "account_number_enc": "",
+        "account_type": "checking",
+        "property_id": "",
+        "property_address": "",
+        "unit": "",
+        "lease_start": "",
+        "lease_end": "",
+        "move_in_date": "",
+        "asking_rent": 0.0,
+        "agreed_rent": 0.0,
+        "discount_amount": 0.0,
+        "discount_percent": 0.0,
+        "security_deposit": 0.0,
+        "pet_deposit": 0.0,
+        "pet_fee": 0.0,
+        "monthly_pet_rent": 0.0,
+        "credit_score": None,
+        "credit_source": "",
+        "credit_report_date": "",
+        "background_check_status": "pending",
+        "documents": [],
+        "status": "applicant",
+        "tenant_type": "financially_responsible",
+    }
+
+
+def _tenant_public(row: Dict[str, Any]) -> Dict[str, Any]:
+    """API shape: masked sensitive fields, documents with download URL path."""
+    tid = int(row["id"])
+    ssn_plain = _tenant_decrypt(str(row.get("ssn_last4_enc") or ""))
+    rt_plain = _tenant_decrypt(str(row.get("routing_number_enc") or ""))
+    ac_plain = _tenant_decrypt(str(row.get("account_number_enc") or ""))
+    docs_out: List[Dict[str, Any]] = []
+    for d in row.get("documents") or []:
+        did = int(d.get("id") or 0)
+        docs_out.append(
+            {
+                "id": did,
+                "filename": str(d.get("filename") or ""),
+                "type": str(d.get("type") or "other"),
+                "uploaded_at": str(d.get("uploaded_at") or ""),
+                "url": f"/api/appfolio/tenants/{tid}/documents/{did}/file",
+            }
+        )
+    disc_amt, disc_pct = _finance_discount(
+        float(row.get("asking_rent") or 0.0), float(row.get("agreed_rent") or 0.0)
+    )
+    return {
+        "id": tid,
+        "created_at": str(row.get("created_at") or ""),
+        "updated_at": str(row.get("updated_at") or ""),
+        "first_name": str(row.get("first_name") or ""),
+        "last_name": str(row.get("last_name") or ""),
+        "email": str(row.get("email") or ""),
+        "phone": str(row.get("phone") or ""),
+        "phone_secondary": str(row.get("phone_secondary") or ""),
+        "date_of_birth": str(row.get("date_of_birth") or ""),
+        "ssn_last4": _mask_last4(ssn_plain) if ssn_plain else "",
+        "drivers_license": str(row.get("drivers_license") or ""),
+        "emergency_contact_name": str(row.get("emergency_contact_name") or ""),
+        "emergency_contact_phone": str(row.get("emergency_contact_phone") or ""),
+        "current_address": str(row.get("current_address") or ""),
+        "employer_name": str(row.get("employer_name") or ""),
+        "employer_phone": str(row.get("employer_phone") or ""),
+        "monthly_income": float(row.get("monthly_income") or 0.0),
+        "notes": str(row.get("notes") or ""),
+        "bank_name": str(row.get("bank_name") or ""),
+        "routing_number": _mask_last4(rt_plain) if rt_plain else "",
+        "account_number": _mask_last4(ac_plain) if ac_plain else "",
+        "account_type": str(row.get("account_type") or "checking"),
+        "property_id": str(row.get("property_id") or ""),
+        "property_address": str(row.get("property_address") or ""),
+        "unit": str(row.get("unit") or ""),
+        "lease_start": str(row.get("lease_start") or ""),
+        "lease_end": str(row.get("lease_end") or ""),
+        "move_in_date": str(row.get("move_in_date") or ""),
+        "asking_rent": float(row.get("asking_rent") or 0.0),
+        "agreed_rent": float(row.get("agreed_rent") or 0.0),
+        "discount_amount": disc_amt,
+        "discount_percent": disc_pct,
+        "security_deposit": float(row.get("security_deposit") or 0.0),
+        "pet_deposit": float(row.get("pet_deposit") or 0.0),
+        "pet_fee": float(row.get("pet_fee") or 0.0),
+        "monthly_pet_rent": float(row.get("monthly_pet_rent") or 0.0),
+        "credit_score": row.get("credit_score"),
+        "credit_source": str(row.get("credit_source") or ""),
+        "credit_report_date": str(row.get("credit_report_date") or ""),
+        "background_check_status": str(row.get("background_check_status") or "pending"),
+        "documents": docs_out,
+        "status": str(row.get("status") or "applicant"),
+        "tenant_type": str(row.get("tenant_type") or "financially_responsible"),
+    }
+
+
+def _apply_tenant_payload(row: Dict[str, Any], data: Dict[str, Any], partial: bool) -> Optional[str]:
+    """Mutates row (internal). Returns error message or None."""
+    d = data or {}
+    if not partial:
+        for k in ("first_name", "last_name", "email"):
+            if not str(d.get(k) or "").strip():
+                return f"missing {k}"
+
+    def _sf(key: str, dest_key: Optional[str] = None) -> None:
+        dk = dest_key or key
+        if key in d:
+            row[dk] = str(d.get(key) or "").strip()
+
+    for key in (
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "phone_secondary",
+        "date_of_birth",
+        "drivers_license",
+        "emergency_contact_name",
+        "emergency_contact_phone",
+        "current_address",
+        "employer_name",
+        "employer_phone",
+        "notes",
+        "bank_name",
+        "property_id",
+        "property_address",
+        "unit",
+        "lease_start",
+        "lease_end",
+        "move_in_date",
+        "credit_source",
+        "credit_report_date",
+    ):
+        if key in d:
+            _sf(key)
+
+    if "ssn_last4" in d:
+        v = str(d.get("ssn_last4") or "").strip()
+        if not v:
+            row["ssn_last4_enc"] = ""
+        elif not _is_masked_placeholder(v):
+            d4 = _digits_only(v)[:4]
+            row["ssn_last4_enc"] = _tenant_encrypt(d4) if d4 else ""
+
+    if "routing_number" in d:
+        v = str(d.get("routing_number") or "").strip()
+        if not v:
+            row["routing_number_enc"] = ""
+        elif not _is_masked_placeholder(v):
+            r9 = _digits_only(v)[:9]
+            row["routing_number_enc"] = _tenant_encrypt(r9) if r9 else ""
+
+    if "account_number" in d:
+        v = str(d.get("account_number") or "").strip()
+        if not v:
+            row["account_number_enc"] = ""
+        elif not _is_masked_placeholder(v):
+            ac = _digits_only(v)
+            row["account_number_enc"] = _tenant_encrypt(ac) if ac else ""
+
+    if "account_type" in d:
+        at = str(d.get("account_type") or "").strip().lower()
+        row["account_type"] = at if at in ACCOUNT_TYPES else "checking"
+
+    if "tenant_type" in d:
+        tt = str(d.get("tenant_type") or "").strip().lower()
+        row["tenant_type"] = tt if tt in TENANT_TYPES else "financially_responsible"
+
+    if "status" in d:
+        st = str(d.get("status") or "").strip().lower()
+        row["status"] = st if st in TENANT_STATUSES else "applicant"
+
+    if "background_check_status" in d:
+        bg = str(d.get("background_check_status") or "").strip().lower()
+        row["background_check_status"] = bg if bg in BG_STATUSES else "pending"
+
+    if "credit_source" in d:
+        cs = str(d.get("credit_source") or "").strip()
+        row["credit_source"] = cs if cs in CREDIT_SOURCES else "Other"
+
+    if "credit_score" in d:
+        csq = d.get("credit_score")
+        if csq is None or csq == "":
+            row["credit_score"] = None
+        else:
+            try:
+                row["credit_score"] = int(csq)
+            except (TypeError, ValueError):
+                row["credit_score"] = None
+
+    num_keys = (
+        "monthly_income",
+        "asking_rent",
+        "agreed_rent",
+        "security_deposit",
+        "pet_deposit",
+        "pet_fee",
+        "monthly_pet_rent",
+    )
+    for nk in num_keys:
+        if nk in d:
+            try:
+                row[nk] = float(d.get(nk) or 0.0)
+            except (TypeError, ValueError):
+                row[nk] = 0.0
+
+    da, dp = _finance_discount(float(row.get("asking_rent") or 0.0), float(row.get("agreed_rent") or 0.0))
+    row["discount_amount"] = da
+    row["discount_percent"] = dp
+
+    if not partial:
+        if not str(row.get("lease_start") or "").strip():
+            return "missing lease_start"
+        if not str(row.get("lease_end") or "").strip():
+            return "missing lease_end"
+        if not str(row.get("property_id") or "").strip():
+            return "missing property_id"
+        try:
+            if float(row.get("agreed_rent") or 0.0) <= 0.0:
+                return "agreed_rent required"
+        except (TypeError, ValueError):
+            return "agreed_rent required"
+
+    return None
+
+
+@appfolio_bp.route("/tenants/register", methods=["POST"])
+def tenant_registry_register():
+    data = request.get_json(silent=True) or {}
+    store = _load_tenant_registry_store()
+    nid = int(store["next_tenant_id"])
+    store["next_tenant_id"] = nid + 1
+    now = _iso_now()
+    row: Dict[str, Any] = {"id": nid, "created_at": now, "updated_at": now}
+    row.update(_tenant_internal_defaults())
+    err = _apply_tenant_payload(row, data, partial=False)
+    if err:
+        store["next_tenant_id"] = nid
+        return jsonify({"error": err}), 400
+    store["tenants"].append(row)
+    _save_tenant_registry_store(store)
+    return jsonify(_tenant_public(row)), 201
+
+
+@appfolio_bp.route("/tenants/list", methods=["GET"])
+def tenant_registry_list():
+    store = _load_tenant_registry_store()
+    status_q = (request.args.get("status") or "").strip().lower()
+    prop_q = (request.args.get("property_id") or "").strip()
+    search_q = (request.args.get("search") or "").strip().lower()
+    items = [_tenant_public(t) for t in store["tenants"]]
+    filtered: List[Dict[str, Any]] = []
+    for it in items:
+        if status_q and (it.get("status") or "").lower() != status_q:
+            continue
+        if prop_q and str(it.get("property_id") or "") != prop_q:
+            continue
+        blob = f"{it.get('first_name','')} {it.get('last_name','')} {it.get('email','')}".lower()
+        if search_q and search_q not in blob:
+            continue
+        filtered.append(it)
+    filtered.sort(key=lambda x: (-int(x["id"])))
+    pg = _paginate(filtered)
+    pg["tenants"] = pg.pop("items")
+    return jsonify(pg)
+
+
+@appfolio_bp.route("/tenants/discount-report", methods=["GET"])
+def tenant_registry_discount_report():
+    store = _load_tenant_registry_store()
+    prop_q = (request.args.get("property_id") or "").strip()
+    range_q = (request.args.get("discount_range") or "").strip()
+    rows: List[Dict[str, Any]] = []
+    for t in store["tenants"]:
+        pub = _tenant_public(t)
+        if float(pub.get("discount_amount") or 0.0) <= 0.005:
+            continue
+        if prop_q and str(pub.get("property_id") or "") != prop_q:
+            continue
+        pct = float(pub.get("discount_percent") or 0.0)
+        if range_q == "0-5":
+            if not (0 <= pct < 5):
+                continue
+        elif range_q == "5-10":
+            if not (5 <= pct < 10):
+                continue
+        elif range_q == "10+":
+            if pct < 10:
+                continue
+        rows.append(pub)
+    rows.sort(key=lambda x: -float(x.get("discount_amount") or 0.0))
+    with_discount = len(rows)
+    total_monthly = sum(float(x.get("discount_amount") or 0.0) for x in rows)
+    pcts = [float(x.get("discount_percent") or 0.0) for x in rows if float(x.get("asking_rent") or 0) > 0.005]
+    avg_pct = round(sum(pcts) / len(pcts), 2) if pcts else 0.0
+    annual = round(total_monthly * 12.0, 2)
+    return jsonify(
+        {
+            "summary": {
+                "total_tenants_with_discount": with_discount,
+                "total_monthly_discount": round(total_monthly, 2),
+                "average_discount_percent": avg_pct,
+                "annual_impact": annual,
+            },
+            "rows": rows,
+        }
+    )
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>", methods=["GET"])
+def tenant_registry_get(tenant_id: int):
+    store = _load_tenant_registry_store()
+    for t in store["tenants"]:
+        if int(t["id"]) == tenant_id:
+            return jsonify(_tenant_public(t))
+    return jsonify({"error": "not found"}), 404
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>", methods=["PUT"])
+def tenant_registry_put(tenant_id: int):
+    data = request.get_json(silent=True) or {}
+    store = _load_tenant_registry_store()
+    for i, t in enumerate(store["tenants"]):
+        if int(t["id"]) == tenant_id:
+            err = _apply_tenant_payload(t, data, partial=True)
+            if err:
+                return jsonify({"error": err}), 400
+            t["updated_at"] = _iso_now()
+            store["tenants"][i] = t
+            _save_tenant_registry_store(store)
+            return jsonify(_tenant_public(t))
+    return jsonify({"error": "not found"}), 404
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>", methods=["DELETE"])
+def tenant_registry_delete(tenant_id: int):
+    store = _load_tenant_registry_store()
+    new_list: List[Dict[str, Any]] = []
+    removed: Optional[Dict[str, Any]] = None
+    for t in store["tenants"]:
+        if int(t["id"]) == tenant_id:
+            removed = t
+            continue
+        new_list.append(t)
+    if removed is None:
+        return jsonify({"error": "not found"}), 404
+    for d in removed.get("documents") or []:
+        rel = str(d.get("stored_relpath") or "")
+        if rel:
+            p = TENANT_DOCS_DIR / rel
+            try:
+                if p.is_file():
+                    p.unlink()
+            except OSError:
+                pass
+    store["tenants"] = new_list
+    _save_tenant_registry_store(store)
+    return jsonify({"ok": True, "id": tenant_id})
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>/documents", methods=["GET"])
+def tenant_registry_docs_list(tenant_id: int):
+    store = _load_tenant_registry_store()
+    for t in store["tenants"]:
+        if int(t["id"]) == tenant_id:
+            return jsonify({"documents": _tenant_public(t)["documents"]})
+    return jsonify({"error": "not found"}), 404
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>/documents", methods=["POST"])
+def tenant_registry_docs_upload(tenant_id: int):
+    if "file" not in request.files:
+        return jsonify({"error": "file required"}), 400
+    f = request.files["file"]
+    if not f or not f.filename:
+        return jsonify({"error": "empty file"}), 400
+    doc_type = (request.form.get("type") or "other").strip()
+    if doc_type not in TENANT_DOC_TYPES:
+        doc_type = "other"
+    store = _load_tenant_registry_store()
+    target: Optional[Dict[str, Any]] = None
+    for t in store["tenants"]:
+        if int(t["id"]) == tenant_id:
+            target = t
+            break
+    if not target:
+        return jsonify({"error": "not found"}), 404
+    did = int(store["next_doc_id"])
+    store["next_doc_id"] = did + 1
+    safe_fn = secure_filename(f.filename) or "upload"
+    subdir = Path(str(tenant_id))
+    TENANT_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    (TENANT_DOCS_DIR / subdir).mkdir(parents=True, exist_ok=True)
+    rel = str(subdir / f"{did}_{safe_fn}")
+    dest = TENANT_DOCS_DIR / rel
+    f.save(str(dest))
+    entry = {
+        "id": did,
+        "filename": safe_fn,
+        "type": doc_type,
+        "uploaded_at": _iso_now(),
+        "stored_relpath": rel,
+    }
+    if "documents" not in target or not isinstance(target["documents"], list):
+        target["documents"] = []
+    target["documents"].append(entry)
+    target["updated_at"] = _iso_now()
+    _save_tenant_registry_store(store)
+    pub = _tenant_public(target)
+    doc_pub = next((x for x in pub["documents"] if int(x["id"]) == did), None)
+    return jsonify(doc_pub or entry), 201
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>/documents/<int:doc_id>", methods=["DELETE"])
+def tenant_registry_doc_delete(tenant_id: int, doc_id: int):
+    store = _load_tenant_registry_store()
+    for ti, t in enumerate(store["tenants"]):
+        if int(t["id"]) != tenant_id:
+            continue
+        docs = list(t.get("documents") or [])
+        new_docs: List[Dict[str, Any]] = []
+        hit = False
+        for d in docs:
+            if int(d.get("id") or 0) == doc_id:
+                hit = True
+                rel = str(d.get("stored_relpath") or "")
+                if rel:
+                    p = TENANT_DOCS_DIR / rel
+                    try:
+                        if p.is_file():
+                            p.unlink()
+                    except OSError:
+                        pass
+                continue
+            new_docs.append(d)
+        if not hit:
+            return jsonify({"error": "not found"}), 404
+        t["documents"] = new_docs
+        t["updated_at"] = _iso_now()
+        store["tenants"][ti] = t
+        _save_tenant_registry_store(store)
+        return jsonify({"ok": True, "id": doc_id})
+    return jsonify({"error": "not found"}), 404
+
+
+@appfolio_bp.route("/tenants/<int:tenant_id>/documents/<int:doc_id>/file", methods=["GET"])
+def tenant_registry_doc_file(tenant_id: int, doc_id: int):
+    store = _load_tenant_registry_store()
+    for t in store["tenants"]:
+        if int(t["id"]) != tenant_id:
+            continue
+        for d in t.get("documents") or []:
+            if int(d.get("id") or 0) != doc_id:
+                continue
+            rel = str(d.get("stored_relpath") or "")
+            if not rel:
+                return jsonify({"error": "missing file"}), 404
+            p = TENANT_DOCS_DIR / rel
+            if not p.is_file():
+                return jsonify({"error": "file missing"}), 404
+            return send_file(
+                str(p),
+                as_attachment=True,
+                download_name=str(d.get("filename") or p.name),
+            )
+    return jsonify({"error": "not found"}), 404
+
+
+# ---------------------------------------------------------------------------
+# Long Term — expense approval + audit logs (JSON files in website/data/)
+# ---------------------------------------------------------------------------
+
+
+def _load_approval_logs() -> List[Dict[str, Any]]:
+    APPROVAL_LOGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not APPROVAL_LOGS_PATH.exists():
+        APPROVAL_LOGS_PATH.write_text("[]", encoding="utf-8")
+        return []
+    try:
+        raw = json.loads(APPROVAL_LOGS_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    return raw if isinstance(raw, list) else []
+
+
+def _save_approval_logs(logs: List[Dict[str, Any]]) -> None:
+    APPROVAL_LOGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    APPROVAL_LOGS_PATH.write_text(json.dumps(logs, indent=2), encoding="utf-8")
+
+
+def _load_lt_exp_approval_state() -> Dict[str, int]:
+    LT_EXP_APPROVAL_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not LT_EXP_APPROVAL_STATE_PATH.exists():
+        LT_EXP_APPROVAL_STATE_PATH.write_text("{}", encoding="utf-8")
+        return {}
+    try:
+        raw = json.loads(LT_EXP_APPROVAL_STATE_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    out: Dict[str, int] = {}
+    for k, v in raw.items():
+        try:
+            out[str(k)] = max(0, min(3, int(v)))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _save_lt_exp_approval_state(state: Dict[str, int]) -> None:
+    LT_EXP_APPROVAL_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    LT_EXP_APPROVAL_STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def _append_expense_audit_log(
+    *,
+    expense_id: str,
+    action: str,
+    step_name: str,
+    performed_by: str,
+    ip_address: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> Dict[str, Any]:
+    logs = _load_approval_logs()
+    nid = max((int(x.get("id") or 0) for x in logs), default=0) + 1
+    entry: Dict[str, Any] = {
+        "id": nid,
+        "expense_id": expense_id,
+        "action": action,
+        "step_name": step_name,
+        "performed_by": (performed_by or "Unknown")[:200],
+        "performed_at": _iso_now() + "Z",
+    }
+    if ip_address:
+        entry["ip_address"] = str(ip_address)[:80]
+    if notes:
+        entry["notes"] = str(notes)[:500]
+    logs.append(entry)
+    _save_approval_logs(logs)
+    return entry
+
+
+@appfolio_bp.route("/expenses/<path:expense_id>/approve", methods=["PUT"])
+def lt_expense_approve(expense_id: str):
+    expense_id = str(expense_id).strip() or "unknown"
+    body = request.get_json(silent=True) or {}
+    try:
+        step = int(body.get("step"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "step required (1, 2, or 3)"}), 400
+    if step not in (1, 2, 3):
+        return jsonify({"ok": False, "error": "invalid step"}), 400
+
+    state = _load_lt_exp_approval_state()
+    if expense_id in state:
+        cur = max(0, min(3, int(state.get(expense_id) or 0)))
+    else:
+        ic_raw = body.get("if_current")
+        if ic_raw is None:
+            ic_raw = body.get("ifCurrent")
+        if ic_raw is not None:
+            try:
+                cur = max(0, min(3, int(ic_raw)))
+            except (TypeError, ValueError):
+                cur = 0
+        else:
+            cur = 0
+
+    if step != cur + 1:
+        return jsonify({"ok": False, "error": "out of sequence", "approval_step": cur}), 409
+
+    state[expense_id] = step
+    _save_lt_exp_approval_state(state)
+    performed_by = str(body.get("performed_by") or request.headers.get("X-GM-User") or "Unknown").strip()
+    log = _append_expense_audit_log(
+        expense_id=expense_id,
+        action=f"approve_step_{step}",
+        step_name=_LT_EXP_STEP_NAMES.get(step, str(step)),
+        performed_by=performed_by,
+        ip_address=request.remote_addr,
+        notes=body.get("notes"),
+    )
+    return jsonify({"ok": True, "expense_id": expense_id, "approval_step": step, "log": log})
+
+
+@appfolio_bp.route("/expenses/<path:expense_id>/unapprove", methods=["PUT"])
+def lt_expense_unapprove(expense_id: str):
+    expense_id = str(expense_id).strip() or "unknown"
+    body = request.get_json(silent=True) or {}
+    try:
+        step = int(body.get("step"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "step required (1, 2, or 3)"}), 400
+    if step not in (1, 2, 3):
+        return jsonify({"ok": False, "error": "invalid step"}), 400
+
+    state = _load_lt_exp_approval_state()
+    if expense_id in state:
+        cur = max(0, min(3, int(state.get(expense_id) or 0)))
+    else:
+        ic_raw = body.get("if_current")
+        if ic_raw is None:
+            ic_raw = body.get("ifCurrent")
+        if ic_raw is not None:
+            try:
+                cur = max(0, min(3, int(ic_raw)))
+            except (TypeError, ValueError):
+                cur = 0
+        else:
+            cur = 0
+
+    if cur < step:
+        return jsonify({"ok": False, "error": "cannot unapprove incomplete step", "approval_step": cur}), 409
+
+    new_s = step - 1
+    state[expense_id] = new_s
+    _save_lt_exp_approval_state(state)
+    performed_by = str(body.get("performed_by") or request.headers.get("X-GM-User") or "Unknown").strip()
+    log = _append_expense_audit_log(
+        expense_id=expense_id,
+        action=f"unapprove_step_{step}",
+        step_name=_LT_EXP_STEP_NAMES.get(step, str(step)),
+        performed_by=performed_by,
+        ip_address=request.remote_addr,
+        notes=body.get("notes"),
+    )
+    return jsonify({"ok": True, "expense_id": expense_id, "approval_step": new_s, "log": log})
+
+
+@appfolio_bp.route("/expenses/<path:expense_id>/logs", methods=["GET"])
+def lt_expense_logs(expense_id: str):
+    expense_id = str(expense_id).strip() or "unknown"
+    logs = _load_approval_logs()
+    rows = [x for x in logs if str(x.get("expense_id") or "") == expense_id]
+    rows.sort(key=lambda x: str(x.get("performed_at") or ""))
+    return jsonify({"logs": rows})
+
+
+@appfolio_bp.route("/expenses/<path:expense_id>/approval", methods=["GET"])
+def lt_expense_approval_get(expense_id: str):
+    """Optional: read server-side approval_step for an expense id."""
+    expense_id = str(expense_id).strip() or "unknown"
+    state = _load_lt_exp_approval_state()
+    return jsonify({"expense_id": expense_id, "approval_step": int(state.get(expense_id, 0) or 0)})
+
+
+# External owner/tenant forms (public HTML + JSON API)
+from external_forms import register_external_form_routes
+
+register_external_form_routes(appfolio_bp)
+
+from vendor_registry import register_vendor_routes
+
+register_vendor_routes(appfolio_bp)

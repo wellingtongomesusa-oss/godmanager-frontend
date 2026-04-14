@@ -17,6 +17,23 @@ function parseAuthCookie(value: string | undefined): { exp: number; role: string
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /**
+   * Consola Premium em public/: quando o dev server perde watchers (ex.: EMFILE no macOS),
+   * o App Router pode deixar de registar rotas e devolver 404 em tudo excepto ficheiros estáticos.
+   * O rewrite para o .html garante /gm e /gm-premium mesmo nesse estado.
+   */
+  if (
+    pathname === '/gm' ||
+    pathname === '/gm/' ||
+    pathname === '/gm-premium' ||
+    pathname === '/gm-premium/'
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/GodManager_Premium.html';
+    return NextResponse.rewrite(url);
+  }
+
   const raw = request.cookies.get(AUTH_COOKIE)?.value;
   const session = parseAuthCookie(raw);
   const authed = session && Date.now() <= session.exp;
@@ -58,6 +75,10 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/gm',
+    '/gm/',
+    '/gm-premium',
+    '/gm-premium/',
     '/login',
     '/login/:path*',
     '/register',
