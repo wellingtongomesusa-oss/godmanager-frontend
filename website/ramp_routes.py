@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import threading
 import hashlib
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -11,10 +12,13 @@ import requests
 from flask import Blueprint, jsonify, request
 
 ramp_bp = Blueprint("ramp", __name__, url_prefix="/api/ramp")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("ramp")
 
 _TOKEN_LOCK = threading.Lock()
 _TOKEN_CACHE: Dict[str, Any] = {"value": None, "expires_at": None}
 _DEFAULT_TIMEOUT = 25
+_RAMP_LAST_DEBUG: Dict[str, Any] = {}
 
 
 def _ramp_base_url() -> str:
@@ -29,7 +33,7 @@ def _ramp_scope() -> str:
     # Ramp client_credentials requires scope; allow override via env.
     return os.getenv(
         "RAMP_SCOPE",
-        "cards:read users:read departments:read vendors:read statements:read reimbursements:read transactions:read",
+        "transactions:read cards:read users:read departments:read vendors:read statements:read reimbursements:read",
     ).strip() or "read"
 
 
@@ -140,13 +144,29 @@ def _ramp_get(path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Optio
 
     url = f"{_ramp_base_url()}/{path.lstrip('/')}"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    logger.info("Ramp API call: %s", url)
+    logger.info("Ramp API params: %s", params or {})
     try:
         resp = requests.get(url, headers=headers, params=params or {}, timeout=_DEFAULT_TIMEOUT)
     except requests.RequestException as exc:
         return None, f"Erro de rede na API Ramp: {exc}", 502
+    body_text = resp.text or ""
+    logger.info("Ramp API status: %s", resp.status_code)
+    logger.info("Ramp API body size: %s", len(body_text))
+    logger.info("Ramp API body preview: %s", body_text[:500])
+    if not body_text.strip():
+        logger.info("EMPTY RESPONSE")
+    _RAMP_LAST_DEBUG["last_call"] = {
+        "url": resp.url,
+        "path": path,
+        "params": params or {},
+        "status": resp.status_code,
+        "body_size": len(body_text),
+        "body_preview": body_text[:500],
+    }
 
     if not resp.ok:
-        snippet = (resp.text or "")[:300]
+        snippet = body_text[:300]
         return None, f"Ramp retornou HTTP {resp.status_code}: {snippet}", resp.status_code
 
     return (resp.json() if resp.content else {}), None, 200
@@ -154,7 +174,7 @@ def _ramp_get(path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Optio
 
 def _default_date_range() -> Tuple[str, str]:
     now = datetime.now(timezone.utc)
-    frm = now - timedelta(days=30)
+    frm = now - timedelta(days=90)
     return frm.isoformat(), now.isoformat()
 
 
@@ -168,6 +188,7 @@ def _collect_transactions(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any]],
         if err:
             return [], err, code
         rows = _extract_list(payload)
+        logger.info("Ramp transactions page %s count: %s", pages + 1, len(rows))
         all_rows.extend(rows)
         pages += 1
         next_cursor = None
@@ -289,6 +310,7 @@ def ramp_transactions():
     rows, err, code = _collect_transactions(params)
     if err:
         return jsonify({"error": err, "transactions": []}), code
+    logger.info("Ramp transactions total count: %s", len(rows))
 
     txs = [
         {
@@ -311,6 +333,7 @@ def ramp_transactions():
         {
             "transactions": txs,
             "count": len(txs),
+            "raw_preview": str(rows[:2])[:500],
             "filters": {"from_date": params.get("from_date"), "to_date": params.get("to_date"), "user_id": params.get("user_id"), "merchant": params.get("merchant")},
         }
     )
@@ -393,6 +416,41 @@ def ramp_summary():
         params.setdefault("to_date", dto)
     params.setdefault("page_size", request.args.get("page_size", "500"))
     return _build_summary_response(params)
+
+
+@ramp_bp.get("/debug-data")
+def ramp_debug_data():
+    params: Dict[str, Any] = {}
+    for q in ("from_date", "to_date", "user_id", "merchant"):
+        val = request.args.get(q)
+        if val:
+            params[q] = val
+    if "from_date" not in params or "to_date" not in params:
+        dfrom, dto = _default_date_range()
+        params.setdefault("from_date", dfrom)
+        params.setdefault("to_date", dto)
+    params.setdefault("page_size", "500")
+
+    token, token_err = _fetch_token()
+    tx_rows, tx_err, tx_code = _collect_transactions(params) if token and not token_err else ([], token_err or "token_error", 503)
+    cards_payload, cards_err, _ = _ramp_get("cards", {"page_size": "100"}) if token and not token_err else ({}, "token_error", 503)
+    users_payload, users_err, _ = _ramp_get("users", {"page_size": "100"}) if token and not token_err else ({}, "token_error", 503)
+
+    last = _RAMP_LAST_DEBUG.get("last_call", {})
+    return jsonify(
+        {
+            "token_status": "valid" if token and not token_err else "invalid",
+            "token_error": token_err,
+            "token_scopes": _ramp_scope(),
+            "transactions_url": last.get("url"),
+            "transactions_status": tx_code,
+            "transactions_count": len(tx_rows),
+            "transactions_raw_preview": str(tx_rows[:2])[:300],
+            "cards_count": len(_extract_list(cards_payload)) if not cards_err else 0,
+            "users_count": len(_extract_list(users_payload)) if not users_err else 0,
+            "last_debug": last,
+        }
+    )
 
 
 @ramp_bp.get("/cards")

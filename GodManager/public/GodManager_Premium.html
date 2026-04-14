@@ -1225,7 +1225,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div>
  <div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Período</div>
  <select id="ramp-filter-period" onchange="rampHandlePeriodChange()" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px">
- <option value="last30" selected>Últimos 30 dias</option><option value="last7">Últimos 7 dias</option><option value="thisMonth">Este mês</option><option value="prevMonth">Mês passado</option><option value="last90">Últimos 90 dias</option><option value="thisYear">Este ano</option><option value="custom">Custom</option>
+ <option value="last7">Últimos 7 dias</option><option value="last30">Últimos 30 dias</option><option value="thisMonth">Este mês</option><option value="prevMonth">Mês passado</option><option value="last90" selected>Últimos 90 dias</option><option value="thisYear">Este ano</option><option value="custom">Custom</option>
  </select>
  </div>
  <div><div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Pessoa</div><select id="ramp-filter-user" multiple style="width:100%;min-height:74px;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:11px"></select></div>
@@ -3212,24 +3212,21 @@ function loadHomeDashboardFromApi(){
 }
 function saveAllData(){
  var now=new Date().toISOString();
- try{localStorage.setItem('gm_last_saved',now);}catch(e){}
- var bundle={};
- var i,k;
- for(i=0;i<localStorage.length;i++){
-  k=localStorage.key(i);
-  if(!k)continue;
-  if(k.indexOf('gm_')===0||k.indexOf('mp_')===0){
-   try{bundle[k]=localStorage.getItem(k);}catch(err){}
-  }
- }
- try{localStorage.setItem('gm_save_bundle',JSON.stringify(bundle));}catch(e){}
- var ts=getCardTimestamps();
- CARDS.forEach(function(c){ts[c.id]=now;});
- setCardTimestamps(ts);
- CARDS.forEach(function(c){c.lastUpdated=now;});
- updateLastSavedBar();
- loadHomeDashboardFromApi();
- showSaveToast('All changes saved successfully');
+ var btns=document.querySelectorAll('.btn-save-top,.btn-save-bottom');
+ btns.forEach(function(b){b.disabled=true; if(b.classList.contains('btn-save-bottom'))b.textContent='Saving...';});
+ var props=(window.appfolioData||[]).concat(ltGetRecords().map(function(r){return {address:r.address||'',ownerName:r.owner||'',marketRent:Number(r.rent)||0,sqft:Number(r.sqft)||0,source:'manual'};}));
+ var exps=(window.appfolioExpenseData||[]).concat(ltExpGetRecords().map(function(r){return {property:r.property||'',payee:r.payee||'',billDate:r.billDate||'',amount:Number(r.amount)||0,expenseAccount:r.expenseAccount||'',source:'manual'};}));
+ var cfg={gm_card_timestamps:getCardTimestamps(),gm_last_saved:now};
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg})})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||o.j.error)throw new Error((o.j&&o.j.error)||'Erro ao salvar');
+  try{localStorage.setItem('gm_last_saved',now);}catch(e){}
+  var ts=getCardTimestamps();CARDS.forEach(function(c){ts[c.id]=now;});setCardTimestamps(ts);CARDS.forEach(function(c){c.lastUpdated=now;});
+  updateLastSavedBar();loadHomeDashboardFromApi();showSaveToast('Dados salvos com sucesso');
+ })
+ .catch(function(err){showToast('Erro ao salvar: '+String(err&&err.message||err),'error');})
+ .finally(function(){btns.forEach(function(b){b.disabled=false; if(b.classList.contains('btn-save-bottom'))b.textContent='Save All Changes';});});
 }
 
 function renderCards(){
@@ -4065,6 +4062,16 @@ function rampSetConnected(connected,msg){
  if(btnConn)btnConn.style.display=connected?'none':'inline-flex';
  if(btnRef)btnRef.style.display=connected?'inline-flex':'none';
 }
+function rampSetLoadingState(on,msg){
+ var note=document.getElementById('ramp-mock-note');
+ if(note){note.classList.toggle('on',!!on);note.textContent=on?(msg||'Carregando dados do Ramp...'):'';}
+ [['ramp-kpi-spend','Carregando...'],['ramp-kpi-transactions','...'],['ramp-kpi-cards','...'],['ramp-kpi-users','...'],['ramp-kpi-cb','Carregando...'],['ramp-kpi-reimb','Carregando...'],['ramp-kpi-avg','Carregando...'],['ramp-kpi-top-spender','Carregando...']].forEach(function(p){
+  var el=document.getElementById(p[0]);if(el&&on)el.textContent=p[1];
+ });
+ var txBody=document.getElementById('ramp-tbody-tx');if(txBody&&on)txBody.innerHTML='<tr><td colspan="9" style="padding:16px;color:var(--ink3);text-align:center">Carregando transações...</td></tr>';
+ var hBody=document.getElementById('ramp-tbody-holder-spend');if(hBody&&on)hBody.innerHTML='<tr><td colspan="8" style="padding:16px;color:var(--ink3);text-align:center">Carregando dados por pessoa...</td></tr>';
+ var mBody=document.getElementById('ramp-tbody-merchant-spend');if(mBody&&on)mBody.innerHTML='<tr><td colspan="7" style="padding:16px;color:var(--ink3);text-align:center">Carregando dados por merchant...</td></tr>';
+}
 function rampUpdateHomeCard(totalSpent,txCount,byCategory){
  window._rampHomeSnapshot={connected:true,total:totalSpent,count:txCount,byCategory:byCategory||{}};
  if(typeof CARDS==='undefined'||typeof renderCards!=='function')return;
@@ -4140,7 +4147,7 @@ function rampClearFilters(){
   var el=document.getElementById(id);if(!el)return;Array.from(el.options).forEach(function(o){o.selected=false;});
  });
  var s=document.getElementById('ramp-search-merchant');if(s)s.value='';
- var p=document.getElementById('ramp-filter-period');if(p)p.value='last30';
+ var p=document.getElementById('ramp-filter-period');if(p)p.value='last90';
  var df=document.getElementById('ramp-date-from');if(df)df.value='';
  var dt=document.getElementById('ramp-date-to');if(dt)dt.value='';
  rampHandlePeriodChange();
@@ -4273,6 +4280,7 @@ function rampExportCsv(){
 function fetchRampData(){
  var errEl=document.getElementById('ramp-conn-err');
  if(errEl){errEl.classList.remove('on');errEl.textContent='';}
+ rampSetLoadingState(true,'Carregando dados do Ramp...');
  rampSetConnected(false,'Verificando conexão...');
  var btn=document.getElementById('ramp-btn-refresh');if(btn)btn.disabled=true;
  function parse(r){return r.json().catch(function(){return{};}).then(function(j){return{ok:r.ok,status:r.status,j:j};});}
@@ -4299,7 +4307,8 @@ function fetchRampData(){
  if(customWrap)customWrap.style.display=period==='custom'?'grid':'none';
  var range=rampGetRangeFromPeriod();
  var q='?page_size=500&from_date='+encodeURIComponent(range.from_date)+'&to_date='+encodeURIComponent(range.to_date);
- Promise.all([
+ var timeoutPromise=new Promise(function(_,reject){setTimeout(function(){reject(new Error('Timeout - tente novamente'));},10000);});
+ Promise.race([Promise.all([
   fetch(rampBase+'/api/ramp/status',rampFetchOpts).then(parse),
   fetch(rampBase+'/api/ramp/transactions'+q,rampFetchOpts).then(parse),
   fetch(rampBase+'/api/ramp/transactions/summary'+q,rampFetchOpts).then(parse),
@@ -4309,7 +4318,7 @@ function fetchRampData(){
   fetch(rampBase+'/api/ramp/departments?page_size=200',rampFetchOpts).then(parse),
   fetch(rampBase+'/api/ramp/vendors?page_size=300',rampFetchOpts).then(parse),
   fetch(rampBase+'/api/ramp/statements?page_size=200',rampFetchOpts).then(parse)
- ]).then(function(res){
+ ]),timeoutPromise]).then(function(res){
   console.log('[RAMP] status',res[0]);console.log('[RAMP] transactions',res[1]);console.log('[RAMP] summary',res[2]);console.log('[RAMP] cards',res[3]);console.log('[RAMP] users',res[4]);console.log('[RAMP] departments',res[6]);console.log('[RAMP] vendors',res[7]);
   var st=res[0],tx=res[1],sum=res[2],cards=res[3],users=res[4],reim=res[5];
   if(!st.ok||!st.j||st.j.connected!==true){
@@ -4326,11 +4335,12 @@ function fetchRampData(){
   window._rampReimbCache=listFromRampResponse(reim.j,'reimbursements');
   rampHydrateFilters(window._rampTxCache);
   window._rampState.txPage=1;
+  if(!window._rampTxCache.length&&errEl){errEl.classList.add('on');errEl.textContent='Nenhum dado encontrado no período.';}
   rampRenderTables();
  }).catch(function(err){
   if(errEl){errEl.classList.add('on');errEl.textContent='Erro ao carregar dados da Ramp: '+String(err&&err.message||err);}
   rampSetConnected(false,'Falha de rede.');
- }).finally(function(){if(btn)btn.disabled=false;});
+ }).finally(function(){if(btn)btn.disabled=false;rampSetLoadingState(false,'');});
 }
 function closeRampTxModal(){
  var m=document.getElementById('ramp-tx-modal');
@@ -7919,10 +7929,16 @@ function afxNormalizeRows(rows){
 function afpStoreData(list){
  window.appfolioData=afpFilterPropertyRows(Array.isArray(list)?list:[]);
  try{localStorage.setItem('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}
+ try{
+  fetch(GM_BACKEND_RAILWAY_APP+'/api/data/properties/import',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.appfolioData||[])});
+ }catch(e){}
 }
 function afxStoreData(list){
  window.appfolioExpenseData=Array.isArray(list)?list:[];
  try{localStorage.setItem('appfolio_expenses',JSON.stringify(window.appfolioExpenseData));}catch(e){}
+ try{
+  fetch(GM_BACKEND_RAILWAY_APP+'/api/data/expenses/import',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.appfolioExpenseData||[])});
+ }catch(e){}
 }
 function afpLoadStoredData(){
  if(window.appfolioData&&window.appfolioData.length)return;
@@ -8801,7 +8817,53 @@ window.addEventListener('DOMContentLoaded',()=>{
  if(h && h.toLowerCase()==='integrations') h='integrations';
  if(h) nav(h); else nav('home');
  },400);
+ setTimeout(function(){if(typeof gmBootstrapServerData==='function')gmBootstrapServerData();},650);
 });
+
+async function gmBootstrapServerData(){
+ var note=document.getElementById('gm-last-saved-bar');
+ if(note)note.textContent='Carregando dados...';
+ try{
+  await gmMigrateLocalToServerOnce();
+  var r=await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/load-all',{method:'GET',mode:'cors',credentials:'omit'});
+  var j=await r.json();
+  if(!r.ok||!j)throw new Error((j&&j.error)||'Falha ao carregar');
+  var props=Array.isArray(j.properties)?j.properties:[];
+  var exps=Array.isArray(j.expenses)?j.expenses:[];
+  if(props.length){window.appfolioData=afpFilterPropertyRows(props);try{localStorage.setItem('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}}
+  if(exps.length){window.appfolioExpenseData=exps;try{localStorage.setItem('appfolio_expenses',JSON.stringify(exps));}catch(e){}}
+  var cfg=j.config&&typeof j.config==='object'?j.config:{};
+  if(cfg.gm_last_saved){try{localStorage.setItem('gm_last_saved',String(cfg.gm_last_saved));}catch(e){}}
+  if(cfg.gm_card_timestamps&&typeof cfg.gm_card_timestamps==='object'){setCardTimestamps(cfg.gm_card_timestamps);}
+  if(typeof afpRenderAll==='function')afpRenderAll();
+  if(typeof ltpRender==='function')ltpRender();
+  if(typeof ltExpRender==='function')ltExpRender();
+  if(typeof afvRender==='function')afvRender();
+  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
+  updateLastSavedBar();
+ }catch(err){
+  updateLastSavedBar();
+ }
+}
+async function gmMigrateLocalToServerOnce(){
+ var key='gm_server_migrated_v1';
+ try{if(localStorage.getItem(key)==='1')return;}catch(e){}
+ var props=[];var exps=[];var cfg={};
+ try{props=JSON.parse(localStorage.getItem('appfolio_properties')||'[]');}catch(e){props=[];}
+ try{exps=JSON.parse(localStorage.getItem('appfolio_expenses')||'[]');}catch(e){exps=[];}
+ try{cfg.gm_last_saved=localStorage.getItem('gm_last_saved')||'';}catch(e){}
+ if(!props.length&&!exps.length)return;
+ try{
+  var r=await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg})});
+  var j=await r.json();
+  if(!r.ok||j.error)throw new Error(j.error||'migration fail');
+  showToast('Seus dados foram migrados para o servidor','success');
+  var keep={'gm_auth_token_v1':1,'gm_active_client':1,'gm_clients':1};
+  var toRemove=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(!k)continue;if(keep[k])continue;if(k.indexOf('appfolio_')===0||k.indexOf('mp_')===0||k==='gm_last_saved'||k==='gm_card_timestamps')toRemove.push(k);}
+  toRemove.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+  try{localStorage.setItem(key,'1');}catch(e){}
+ }catch(e){}
+}
 </script>
 </body>
 </html>

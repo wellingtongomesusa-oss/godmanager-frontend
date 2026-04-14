@@ -153,10 +153,10 @@ def create_app():
 
     # Configuration
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-        "DATABASE_URL",
-        "postgresql://user:password@db:5432/secure_website"
-    )
+    db_url = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/secure_website")
+    if db_url.startswith("postgres://"):
+        db_url = "postgresql://" + db_url[len("postgres://"):]
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     # Redis session configuration
@@ -183,6 +183,9 @@ def create_app():
     app.register_blueprint(appfolio_bp)
     from ramp_routes import ramp_bp
     app.register_blueprint(ramp_bp)
+    from data_routes import data_bp
+    app.register_blueprint(data_bp)
+    import models  # noqa: F401 - ensure persistence models are registered
 
     # Create tables
     with app.app_context():
