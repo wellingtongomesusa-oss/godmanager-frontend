@@ -71,3 +71,37 @@ class AppData(db.Model):
     data_value = db.Column(db.Text, nullable=False)
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
+
+class ClientAccount(db.Model):
+    __tablename__ = "gm_client_accounts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_name = db.Column(db.String(200), nullable=False)
+    contact_name = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    phone = db.Column(db.String(50))
+    plan = db.Column(db.String(50), default="professional")
+    access_level = db.Column(db.String(50), default="VIEWER")
+    status = db.Column(db.String(20), default="active")
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+
+class ClientUser(db.Model):
+    __tablename__ = "gm_client_users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey("gm_client_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_name = db.Column(db.String(200), nullable=False)
+    contact_name = db.Column(db.String(200))
+    email = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    phone = db.Column(db.String(50))
+    plan = db.Column(db.String(50), default="professional")
+    access_level = db.Column(db.String(50), default="VIEWER")
+    password_hash = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(20), default="active")
+    is_owner = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    last_login = db.Column(db.DateTime)
+

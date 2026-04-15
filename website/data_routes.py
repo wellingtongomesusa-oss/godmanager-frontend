@@ -5,9 +5,8 @@ import json
 from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, jsonify, request
-
 from app import db
-from models import AppData, Expense, Property, SiteConfig
+from models import AppData, ClientAccount, ClientUser, Expense, Property, SiteConfig
 
 _APPDATA_EXTRA_KEYS = frozenset(
     {
@@ -19,6 +18,7 @@ _APPDATA_EXTRA_KEYS = frozenset(
         "owner_payments",
         "owner_payment_logs",
         "owner_payment_history",
+        "ramp_expenses",
     }
 )
 

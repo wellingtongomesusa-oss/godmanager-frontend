@@ -617,6 +617,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="MANAGER">MANAGER</option>
  <option value="VIEWER">VIEWER</option>
  </select></div>
+ <div class="cl-fg"><label>Password *</label><div style="display:flex;gap:6px;align-items:center"><input class="fi" id="cl-pass" type="password" required minlength="6" placeholder="Criar senha do usuario"><button type="button" class="cl-btn-sec" onclick="clTogglePass('cl-pass',this)" style="padding:8px 10px">Ver</button></div><div id="cl-pass-help" style="font-size:10px;color:var(--ink3);margin-top:4px"></div></div>
+ <div class="cl-fg"><label>Confirm Password *</label><div style="display:flex;gap:6px;align-items:center"><input class="fi" id="cl-pass-confirm" type="password" required minlength="6" placeholder="Confirmar senha"><button type="button" class="cl-btn-sec" onclick="clTogglePass('cl-pass-confirm',this)" style="padding:8px 10px">Ver</button></div><div id="cl-pass-match" style="font-size:10px;color:var(--ink3);margin-top:4px"></div></div>
  </div>
  <button type="submit" class="bp" style="margin-top:18px">Register Client</button>
  </form>
@@ -626,7 +628,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div class="cl-table-wrap">
  <table class="cl-table" id="cl-table">
- <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Plan</th><th>Access</th><th>Users</th><th>Status</th><th>Actions</th></tr></thead>
+ <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Plan</th><th>Access</th><th>Users</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
  <tbody id="cl-tbody"></tbody>
  </table>
  </div>
@@ -795,8 +797,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="cl-row">
  <div class="cl-fg"><label>Name *</label><input class="fi" id="cu-name" type="text" required></div>
  <div class="cl-fg"><label>Email *</label><input class="fi" id="cu-em" type="email" required></div>
- <div class="cl-fg"><label>Username *</label><input class="fi" id="cu-user" type="text" required autocomplete="username"></div>
- <div class="cl-fg"><label>Password *</label><input class="fi" id="cu-pass" type="text" required autocomplete="new-password"></div>
+ <div class="cl-fg"><label>Password *</label><div style="display:flex;gap:6px;align-items:center"><input class="fi" id="cu-pass" type="password" required minlength="6" autocomplete="new-password"><button type="button" class="cl-btn-sec" onclick="clTogglePass('cu-pass',this)" style="padding:8px 10px">Ver</button></div></div>
  <div class="cl-fg"><label>Access Level *</label><select class="fi" id="cu-lvl" required><option value="ADMIN">ADMIN</option><option value="MANAGER">MANAGER</option><option value="VIEWER">VIEWER</option></select></div>
  </div>
  <p class="cu-limit-msg" id="cu-limit-msg" style="display:none">Upgrade plan to add more users.</p>
@@ -805,7 +806,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div class="cl-table-wrap">
  <table class="cl-table">
- <thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Status</th><th>Actions</th></tr></thead>
+ <thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
  <tbody id="cu-tbody"></tbody>
  </table>
  </div>
@@ -3851,10 +3852,79 @@ function getEffectiveLevel(){
  if(c.status==='inactive')return 'VIEWER';
  return c.accessLevel||'VIEWER';
 }
+window._clientsCache=null;
 function loadClientsRaw(){
- try{var r=gmLsGet('gm_clients');if(!r)return [];var a=JSON.parse(r);if(!Array.isArray(a))return [];return a.map(normalizeClient);}catch(e){return [];}
+ if(Array.isArray(window._clientsCache))return window._clientsCache.map(normalizeClient);
+ try{var r=gmLsGet('gm_clients');if(!r)return [];var a=JSON.parse(r);if(!Array.isArray(a))return [];window._clientsCache=a.map(normalizeClient);return window._clientsCache;}catch(e){return [];}
 }
-function saveClientsRaw(arr){try{gmLsSet('gm_clients',JSON.stringify(arr.map(normalizeClient)));}catch(e){}}
+function saveClientsRaw(arr){var n=(arr||[]).map(normalizeClient);window._clientsCache=n;try{gmLsSet('gm_clients',JSON.stringify(n));}catch(e){}}
+function clFmtLastLogin(v){
+ if(!v||v==='—')return '—';
+ var d=new Date(v);
+ if(isNaN(d.getTime()))return String(v);
+ return d.toLocaleString('en-US',{month:'2-digit',day:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function clPassStrength(v){
+ var p=String(v||'');
+ if(p.length<6)return {label:'Minimo 6 caracteres',color:'var(--red)',ok:false};
+ var score=0;
+ if(/[a-z]/.test(p))score++;
+ if(/[A-Z]/.test(p))score++;
+ if(/[0-9]/.test(p))score++;
+ if(/[^A-Za-z0-9]/.test(p))score++;
+ if(score<=1)return {label:'Fraca',color:'var(--red)',ok:true};
+ if(score<=3)return {label:'Media',color:'var(--amber)',ok:true};
+ return {label:'Forte',color:'var(--green)',ok:true};
+}
+function clTogglePass(id,btn){
+ var el=document.getElementById(id);if(!el)return;
+ el.type=(el.type==='password')?'text':'password';
+ if(btn)btn.textContent=(el.type==='password')?'Ver':'Ocultar';
+}
+function clValidateRegisterPasswords(){
+ var p=(document.getElementById('cl-pass')||{}).value||'';
+ var c=(document.getElementById('cl-pass-confirm')||{}).value||'';
+ var help=document.getElementById('cl-pass-help');
+ var match=document.getElementById('cl-pass-match');
+ var st=clPassStrength(p);
+ if(help){help.textContent=st.label;help.style.color=st.color;}
+ if(match){
+  if(!c)match.textContent='';
+  else if(p!==c){match.textContent='Senhas nao coincidem';match.style.color='var(--red)';}
+  else{match.textContent='Senhas coincidem';match.style.color='var(--green)';}
+ }
+ return st.ok&&p===c;
+}
+async function clFetchClientsFromServer(){
+ try{
+  var r=await fetch(GM_BACKEND_RAILWAY_APP+'/api/clients',{method:'GET',mode:'cors',credentials:'include'});
+  var j=await r.json();
+  if(!r.ok||!j||!Array.isArray(j.clients))return false;
+  var rows=j.clients.map(function(c){
+   var users=(c.users||[]).map(function(u){
+    return {id:'usr_'+u.id,name:u.name||'',email:u.email||'',username:(String(u.email||'').split('@')[0]||''),accessLevel:String(u.access_level||'VIEWER').toUpperCase(),status:u.status||'active',lastLogin:u.last_login||'—',isOwner:!!u.is_owner};
+   });
+   return normalizeClient({
+    id:'cl_'+c.id,
+    dbId:c.id,
+    company:c.company_name,
+    companyName:c.company_name,
+    contact:c.contact_name,
+    contactName:c.contact_name,
+    email:c.email,
+    phone:c.phone||'',
+    plan:c.plan||'professional',
+    accessLevel:String(c.access_level||'VIEWER').toUpperCase(),
+    status:c.status||'active',
+    createdAt:(c.created_at||'').slice(0,10),
+    lastLogin:c.last_login||'—',
+    users:users
+   });
+  });
+  saveClientsRaw(rows);
+  return true;
+ }catch(e){return false;}
+}
 function getMaxUsers(plan){
  var p=String(plan||'').toLowerCase();
  if(p==='starter')return 2;
@@ -4035,17 +4105,16 @@ function registerClient(e){
  var em=document.getElementById('cl-email').value.trim();
  var al=document.getElementById('cl-level').value.toUpperCase();
  var pl=document.getElementById('cl-plan').value;
+ var pw=(document.getElementById('cl-pass')||{}).value||'';
  if(!co||!contact||!em){alert('Fill required fields.');return false;}
- var un=(em.split('@')[0]||'owner').replace(/[^a-z0-9._-]/gi,'');
- var tp='Temp'+Math.random().toString(36).slice(2,10)+'!';
- var owner={id:'usr_'+Date.now(),name:contact,email:em,username:un,tempPassword:tp,accessLevel:al,status:'active',lastLogin:'—',isOwner:true};
- var rec={id:'cl_'+Date.now(),company:co,companyName:co,contact:contact,contactName:contact,email:em,phone:(document.getElementById('cl-phone').value||'').trim(),address:'',plan:pl,accessLevel:al,status:'active',createdAt:new Date().toISOString().slice(0,10),users:[owner]};
- var clients=loadClientsRaw();
- clients.push(rec);
- saveClientsRaw(clients);
- document.getElementById('cl-form').reset();
- if(document.getElementById('cl-plan'))document.getElementById('cl-plan').value='professional';
- loadClients();
+ if(!clValidateRegisterPasswords()){alert('Valide a senha antes de registrar.');return false;}
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/clients/register',{method:'POST',mode:'cors',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({company_name:co,contact_name:contact,email:em,phone:(document.getElementById('cl-phone').value||'').trim(),plan:pl,access_level:al,password:pw})})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||o.j.success===false){alert((o.j&&o.j.error)||'Erro ao registrar cliente');return;}
+  return clFetchClientsFromServer().then(function(){document.getElementById('cl-form').reset();if(document.getElementById('cl-plan'))document.getElementById('cl-plan').value='professional';clValidateRegisterPasswords();loadClients();showToast('Usuario registrado com sucesso','success');});
+ })
+ .catch(function(){alert('Erro de rede ao registrar cliente.');});
  return false;
 }
 function saveClients(data){if(data!==undefined)saveClientsRaw(data);return loadClientsRaw();}
@@ -4060,6 +4129,10 @@ function deleteClient(clientId){
 function loadClients(){
  var tb=document.getElementById('cl-tbody');
  if(!tb)return;
+ if(!window._clientsSyncing){
+  window._clientsSyncing=1;
+  clFetchClientsFromServer().then(function(){window._clientsSyncing=0;loadClients();}).catch(function(){window._clientsSyncing=0;});
+ }
  var q=(document.getElementById('cl-search')&&document.getElementById('cl-search').value||'').toLowerCase().trim();
  var clients=loadClientsRaw().filter(function(c){
   if(!q)return true;
@@ -4074,8 +4147,21 @@ function loadClients(){
   var uc=getUserCount(c.id)+'/'+getMaxUsers(getClientPlanObj(c));
   var co=String(c.company||c.companyName||'').replace(/</g,'&lt;');
   var id=c.id.replace(/'/g,'');
-  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
+  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td style="font-size:11px;color:var(--ink3)">'+clFmtLastLogin(c.lastLogin)+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="clResetClientPassword(\''+id+'\')">Reset Password</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
  }).join('');
+}
+function clDbClientId(c){if(c&&c.dbId)return Number(c.dbId)||0;var id=String((c&&c.id)||'');if(id.indexOf('cl_')===0)return Number(id.slice(3))||0;return Number(id)||0;}
+function clDbUserId(u){var id=String((u&&u.id)||'');if(id.indexOf('usr_')===0)return Number(id.slice(4))||0;return Number(id)||0;}
+function clResetClientPassword(clientId){
+ var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
+ if(!c)return;
+ var np=prompt('Nova senha (minimo 6 caracteres):','');
+ if(np==null)return;
+ if(String(np).length<6){alert('Minimo 6 caracteres');return;}
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/clients/'+encodeURIComponent(String(clDbClientId(c)))+'/reset-password',{method:'POST',mode:'cors',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:np})})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){if(!o.ok||!o.j||o.j.success===false){alert((o.j&&o.j.error)||'Erro ao resetar senha');return;}showToast('Senha redefinida com sucesso','success');})
+ .catch(function(){alert('Erro de rede ao resetar senha.');});
 }
 function editClient(clientId){
  var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
@@ -4190,9 +4276,7 @@ function addUserSubmit(e){
  e.preventDefault();
  var cid=document.getElementById('cu-client-id').value;
  if(!cid||!canAddUser(cid))return false;
- addUser(cid,{name:document.getElementById('cu-name').value.trim(),email:document.getElementById('cu-em').value.trim(),username:document.getElementById('cu-user').value.trim(),tempPassword:document.getElementById('cu-pass').value,accessLevel:document.getElementById('cu-lvl').value.toUpperCase()});
- document.getElementById('cu-add-form').reset();
- renderClientUsersPage();
+ addUser(cid,{name:document.getElementById('cu-name').value.trim(),email:document.getElementById('cu-em').value.trim(),password:document.getElementById('cu-pass').value,accessLevel:document.getElementById('cu-lvl').value.toUpperCase()});
  return false;
 }
 function addUser(clientId,userData){
@@ -4200,10 +4284,16 @@ function addUser(clientId,userData){
  var i=clients.findIndex(function(x){return x.id===clientId;});
  if(i<0)return;
  if(!canAddUser(clientId)){alert('User limit reached.');return;}
- if(!userData.name||!userData.email||!userData.username||!userData.tempPassword){alert('Fill all required fields.');return;}
- clients[i].users=clients[i].users||[];
- clients[i].users.push({id:'usr_'+Date.now(),name:userData.name,email:userData.email,username:userData.username,tempPassword:userData.tempPassword,accessLevel:userData.accessLevel||'VIEWER',status:'active',lastLogin:'—',isOwner:false});
- saveClientsRaw(clients);
+ if(!userData.name||!userData.email||!userData.password||String(userData.password).length<6){alert('Fill all required fields.');return;}
+ var c=clients[i];
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/clients/'+encodeURIComponent(String(clDbClientId(c)))+'/users',{method:'POST',mode:'cors',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:userData.name,email:userData.email,password:userData.password,access_level:userData.accessLevel||'VIEWER'})})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||o.j.success===false){alert((o.j&&o.j.error)||'Erro ao adicionar usuario');return;}
+  document.getElementById('cu-add-form').reset();
+  return clFetchClientsFromServer().then(function(){renderClientUsersPage();});
+ })
+ .catch(function(){alert('Erro de rede ao adicionar usuario.');});
 }
 function renderCuTable(){
  var cid=document.getElementById('cu-client-id').value;
@@ -4215,8 +4305,21 @@ function renderCuTable(){
   var st=u.status==='active';
   var pc=accessPillCls(u.accessLevel);
   var uid=(u.id||'').replace(/'/g,'');
-  return '<tr><td>'+String(u.name||'').replace(/</g,'&lt;')+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pc+'">'+(u.accessLevel||'')+'</span></td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editUser(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">Edit</button> <button type="button" class="cl-btn-sec cl-act-red" '+(u.isOwner?'disabled style="opacity:.4"':'')+' onclick="toggleUserStatus(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
+  return '<tr><td>'+String(u.name||'').replace(/</g,'&lt;')+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pc+'">'+(u.accessLevel||'')+'</span></td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td style="font-size:11px;color:var(--ink3)">'+clFmtLastLogin(u.lastLogin)+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editUser(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">Edit</button> <button type="button" class="cl-btn-sec cl-act-amber" onclick="resetUserPassword(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">Reset Senha</button> <button type="button" class="cl-btn-sec cl-act-red" '+(u.isOwner?'disabled style="opacity:.4"':'')+' onclick="toggleUserStatus(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
  }).join('');
+}
+function resetUserPassword(clientId,userId){
+ var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
+ if(!c)return;
+ var u=(c.users||[]).filter(function(x){return x.id===userId;})[0];
+ if(!u)return;
+ var np=prompt('Nova senha (minimo 6 caracteres):','');
+ if(np==null)return;
+ if(String(np).length<6){alert('Minimo 6 caracteres');return;}
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/clients/'+encodeURIComponent(String(clDbClientId(c)))+'/users/'+encodeURIComponent(String(clDbUserId(u)))+'/reset-password',{method:'POST',mode:'cors',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:np})})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){if(!o.ok||!o.j||o.j.success===false){alert((o.j&&o.j.error)||'Erro ao resetar senha');return;}showToast('Senha redefinida','success');})
+ .catch(function(){alert('Erro de rede ao resetar senha.');});
 }
 function editUser(clientId,userId){
  var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
@@ -4256,9 +4359,14 @@ function toggleUserStatus(clientId,userId){
  var us=clients[ci].users||[];
  var u=us.filter(function(x){return x.id===userId;})[0];
  if(!u||u.isOwner)return;
- u.status=u.status==='active'?'inactive':'active';
- saveClientsRaw(clients);
- renderClientUsersPage();
+ var nextStatus=u.status==='active'?'inactive':'active';
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/clients/'+encodeURIComponent(String(clDbClientId(clients[ci])))+'/users/'+encodeURIComponent(String(clDbUserId(u)))+'/status',{method:'POST',mode:'cors',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:nextStatus})})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j||o.j.success===false){alert((o.j&&o.j.error)||'Erro ao atualizar status');return;}
+  return clFetchClientsFromServer().then(function(){renderClientUsersPage();});
+ })
+ .catch(function(){alert('Erro de rede ao atualizar status.');});
 }
 
 // — Ramp / QuickBooks páginas dedicadas
@@ -9756,6 +9864,19 @@ window.rxSortBy=rxSortBy;
 window.rxChangePage=rxChangePage;
 window.rxRenderTable=rxRenderTable;
 
+async function gmCheckServerSession(){
+ try{
+  var r=await fetch(GM_BACKEND_RAILWAY_APP+'/api/auth/session',{method:'GET',mode:'cors',credentials:'include'});
+  var j=await r.json();
+  if(!r.ok||!j||!j.logged_in)return;
+  var u=j.user||{};
+  var level=String(u.access_level||'VIEWER').toUpperCase();
+  if(level==='ADMIN'||level==='MANAGER'||level==='VIEWER'){
+   applyPermissions(level);
+  }
+ }catch(e){}
+}
+
 // INIT 
 window.addEventListener('DOMContentLoaded',()=>{
  updateBranding();
@@ -9775,6 +9896,11 @@ window.addEventListener('DOMContentLoaded',()=>{
  ltClnPageRender();
  ltDashRender();
  opayRender();
+ var clPass=document.getElementById('cl-pass');
+ var clPassConfirm=document.getElementById('cl-pass-confirm');
+ if(clPass)clPass.addEventListener('input',clValidateRegisterPasswords);
+ if(clPassConfirm)clPassConfirm.addEventListener('input',clValidateRegisterPasswords);
+ clValidateRegisterPasswords();
  gvInit();
  tpInitSrSamples();
  // show home after brief splash
@@ -9785,6 +9911,7 @@ window.addEventListener('DOMContentLoaded',()=>{
  if(h && h.toLowerCase()==='integrations') h='integrations';
  if(h) nav(h); else nav('home');
  },400);
+ setTimeout(function(){gmCheckServerSession();},120);
  setTimeout(function(){if(typeof gmBootstrapServerData==='function')gmBootstrapServerData();},650);
 });
 
