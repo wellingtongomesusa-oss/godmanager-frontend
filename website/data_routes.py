@@ -10,7 +10,15 @@ from app import db
 from models import AppData, Expense, Property, SiteConfig
 
 _APPDATA_EXTRA_KEYS = frozenset(
-    {"appfolio_vendors", "manual_properties", "manual_expenses", "site_config", "gm_vendors"}
+    {
+        "appfolio_vendors",
+        "manual_properties",
+        "manual_expenses",
+        "site_config",
+        "gm_vendors",
+        "owner_payments",
+        "owner_payment_logs",
+    }
 )
 
 # Single JSON object: mirrors former browser localStorage (cross-device).
