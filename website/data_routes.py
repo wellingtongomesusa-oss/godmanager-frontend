@@ -18,6 +18,7 @@ _APPDATA_EXTRA_KEYS = frozenset(
         "gm_vendors",
         "owner_payments",
         "owner_payment_logs",
+        "owner_payment_history",
     }
 )
 

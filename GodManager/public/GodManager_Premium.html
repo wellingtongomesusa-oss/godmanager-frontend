@@ -1868,6 +1868,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MAINTENANCE ($)</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">OTHER ($)</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">NET OWNER ($)</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">NOTES</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">STATUS</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">APPROVAL</th>
     </tr></thead>
@@ -1896,6 +1897,21 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <button onclick="opayCloseLogModal()" style="border:none;background:transparent;color:var(--ink3);font-size:18px;cursor:pointer">×</button>
   </div>
   <div id="op-log-content" style="display:flex;flex-direction:column;gap:8px"></div>
+ </div>
+</div>
+
+<div id="op-notes-modal" style="display:none;position:fixed;inset:0;z-index:9012;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+ <div style="width:760px;max-width:95vw;max-height:82vh;overflow:auto;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 20px 40px rgba(0,0,0,.25)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+   <div id="op-notes-title" style="font-size:14px;font-weight:700;color:var(--ink)">Notas</div>
+   <button onclick="opayCloseNotesModal()" style="border:none;background:transparent;color:var(--ink3);font-size:18px;cursor:pointer">×</button>
+  </div>
+  <div id="op-notes-history" style="display:flex;flex-direction:column;gap:8px;max-height:48vh;overflow:auto;margin-bottom:12px"></div>
+  <textarea id="op-notes-new" rows="3" placeholder="Adicionar nota..." style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px;resize:vertical;outline:none"></textarea>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+   <button onclick="opayCloseNotesModal()" style="padding:8px 12px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--ink2);cursor:pointer">Fechar</button>
+   <button onclick="opayAddNoteFromModal()" style="padding:8px 12px;background:var(--amber);border:none;border-radius:8px;color:#fff;cursor:pointer">Adicionar Nota</button>
+  </div>
  </div>
 </div>
 
@@ -3351,7 +3367,7 @@ function saveAllData(){
  try{var glu=gmLsGet('gm_appfolio_last_upload');if(glu)siteCfg.gm_appfolio_last_upload=glu;}catch(e4){}
  try{var gis=gmLsGet('gm_appfolio_import_summary');if(gis)siteCfg.gm_appfolio_import_summary=JSON.parse(gis);}catch(e5){}
  try{if(typeof gvLoad==='function')siteCfg.gm_vendors=gvLoad();}catch(e6){}
- fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg,appfolio_vendors:gmExtractAppfolioVendors(),manual_properties:(typeof ltGetRecords==='function'?ltGetRecords():[]),manual_expenses:(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]),site_config:siteCfg,owner_payments:(typeof opayLoadState==='function'?opayLoadState():{}),owner_payment_logs:(typeof opayLoadLogs==='function'?opayLoadLogs():[]),client_kv:JSON.parse(JSON.stringify(window._gmClientKV||{}))})})
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg,appfolio_vendors:gmExtractAppfolioVendors(),manual_properties:(typeof ltGetRecords==='function'?ltGetRecords():[]),manual_expenses:(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]),site_config:siteCfg,owner_payments:(typeof opayLoadState==='function'?opayLoadState():{}),owner_payment_logs:(typeof opayLoadLogs==='function'?opayLoadLogs():[]),owner_payment_history:(typeof opayLoadHistory==='function'?opayLoadHistory():{}),client_kv:JSON.parse(JSON.stringify(window._gmClientKV||{}))})})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
   if(!o.ok||!o.j)throw new Error('Erro ao salvar');
@@ -8954,10 +8970,14 @@ window.normalizeClient=normalizeClient;
 // OWNER PAYMENTS
 const OPAY_STATE_KEY='owner_payments';
 const OPAY_LOGS_KEY='owner_payment_logs';
+const OPAY_HISTORY_KEY='owner_payment_history';
 let opaySelected={};
 let opayPendingRevertKey='';
 let opayStateCache=null;
 let opayLogsCache=null;
+let opayHistoryCache=null;
+let opayNotesModalKey='';
+let opayRowIndexByKey={};
 function opayLoadState(){
  if(opayStateCache&&typeof opayStateCache==='object')return opayStateCache;
  try{opayStateCache=JSON.parse(gmLsGet(OPAY_STATE_KEY)||'{}')}catch(e){opayStateCache={}}
@@ -8970,6 +8990,28 @@ function opayLoadLogs(){
 }
 function opaySaveState(v){opayStateCache=(v&&typeof v==='object')?v:{};try{gmPersistAppdataKey(OPAY_STATE_KEY,opayStateCache);}catch(e){}}
 function opaySaveLogs(v){opayLogsCache=Array.isArray(v)?v:[];try{gmPersistAppdataKey(OPAY_LOGS_KEY,opayLogsCache);}catch(e){}}
+function opayLoadHistory(){
+ if(opayHistoryCache&&typeof opayHistoryCache==='object')return opayHistoryCache;
+ try{opayHistoryCache=JSON.parse(gmLsGet(OPAY_HISTORY_KEY)||'{}')}catch(e){opayHistoryCache={}}
+ return opayHistoryCache;
+}
+function opaySaveHistory(v){opayHistoryCache=(v&&typeof v==='object')?v:{};try{gmPersistAppdataKey(OPAY_HISTORY_KEY,opayHistoryCache);}catch(e){}}
+function opayNowIso(){return new Date().toISOString();}
+function opayWhenLabel(iso){try{return new Date(iso||'').toLocaleString('pt-BR');}catch(e){return String(iso||'');}}
+function opayHistTypeBadge(t){
+ if(t==='approved')return '<span style="padding:2px 8px;border-radius:999px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);font-size:10px;font-weight:700">Aprovação</span>';
+ if(t==='comment')return '<span style="padding:2px 8px;border-radius:999px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:10px;font-weight:700">Comentário</span>';
+ if(t==='edited')return '<span style="padding:2px 8px;border-radius:999px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);font-size:10px;font-weight:700">Edição</span>';
+ if(t==='reverted')return '<span style="padding:2px 8px;border-radius:999px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-size:10px;font-weight:700">Reversão</span>';
+ return '<span style="padding:2px 8px;border-radius:999px;background:var(--slate-bg);color:var(--slate);font-size:10px;font-weight:700">Evento</span>';
+}
+function opayAppendHistory(key,entry){
+ var hist=opayLoadHistory();
+ var arr=Array.isArray(hist[key])?hist[key]:[];
+ arr.unshift(entry);
+ hist[key]=arr;
+ opaySaveHistory(hist);
+}
 function opayNum(v){var n=Number(v);return isFinite(n)?n:0;}
 function opayNorm(s){return String(s||'').trim().toLowerCase();}
 function opayEsc(s){return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
@@ -8986,29 +9028,36 @@ function opayBuildRows(){
  var period=((document.getElementById('op-filter-period')||{}).value||'').trim();
  var state=opayLoadState();
  return (props||[]).map(function(p){
-  var rent=opayNum(p.marketRent);
+  var autoRent=opayNum(p.marketRent);
   var mgmtPct=opayNum(p.mgmtPercent);
-  var mgmtFee=rent*(mgmtPct/100);
+  var key=opayKeyForProperty(p); var saved=state[key]||{};
+  var rentEdited=!!saved.rent_edited;
+  var rent=rentEdited?opayNum(saved.rent_amount):autoRent;
+  var autoMgmtFee=rent*(mgmtPct/100);
+  var mgmtEdited=!!saved.mgmt_edited;
+  var mgmtFee=mgmtEdited?opayNum(saved.mgmt_fee_amount):autoMgmtFee;
   var relevant=exps.filter(function(e){if(!opayMatches(e,p.address))return false; if(!period)return true; return opayExpenseMonth(e)===period;});
   var byCode={}; var totalExpenses=0;
   relevant.forEach(function(e){var code=opayAccountCode(e.expenseAccount);var amt=opayNum(e.amount);if(code){byCode[code]=(byCode[code]||0)+amt;}totalExpenses+=amt;});
   var autoHoa=opayNum(byCode['6075']);
   var autoMaintenance=['6073','6074','6141','6142','6144','7010'].reduce(function(s,c){return s+opayNum(byCode[c]);},0);
   var autoOther=['6076','6103'].reduce(function(s,c){return s+opayNum(byCode[c]);},0);
-  var key=opayKeyForProperty(p); var saved=state[key]||{};
   var hoaEdited=!!saved.hoa_edited;
   var maintenanceEdited=!!saved.maintenance_edited;
   var otherEdited=!!saved.other_edited;
   var hoa=hoaEdited?opayNum(saved.hoa_amount):autoHoa;
   var maintenance=maintenanceEdited?opayNum(saved.maintenance_amount):autoMaintenance;
   var other=otherEdited?opayNum(saved.other_amount):autoOther;
-  var autoNet=rent-mgmtFee-hoa-maintenance-other;
+  var autoExpenses=hoa+maintenance+other;
+  var expensesEdited=!!saved.expenses_edited;
+  var expenses=expensesEdited?opayNum(saved.expenses_amount):autoExpenses;
+  var autoNet=rent-mgmtFee-expenses;
   var manuallyOverridden=!!saved.manually_overridden;
   var edited=!!saved.net_owner_edited||manuallyOverridden;
   var net=manuallyOverridden?opayNum(saved.net_owner_amount):autoNet;
-  var effectiveExpenses=hoa+maintenance+other;
   var approved=saved.status==='approved';
-  return {key:key,address:String(p.address||''),city:String(p.city||''),zip:String(p.zip||''),owner:String(p.ownerName||''),rent:rent,mgmtFee:mgmtFee,totalExpenses:effectiveExpenses,rawTotalExpenses:totalExpenses,hoa:hoa,maintenance:maintenance,other:other,autoHoa:autoHoa,autoMaintenance:autoMaintenance,autoOther:autoOther,autoNet:autoNet,net:net,edited:edited,manuallyOverridden:manuallyOverridden,hoaEdited:hoaEdited,maintenanceEdited:maintenanceEdited,otherEdited:otherEdited,approved:approved,vacant:rent<=0};
+  var noteText=String(saved.note_text||'').trim();
+  return {key:key,address:String(p.address||''),city:String(p.city||''),zip:String(p.zip||''),owner:String(p.ownerName||''),rent:rent,mgmtFee:mgmtFee,mgmtPct:mgmtPct,totalExpenses:expenses,rawTotalExpenses:totalExpenses,hoa:hoa,maintenance:maintenance,other:other,autoRent:autoRent,autoMgmtFee:autoMgmtFee,autoExpenses:autoExpenses,autoHoa:autoHoa,autoMaintenance:autoMaintenance,autoOther:autoOther,autoNet:autoNet,net:net,edited:edited,manuallyOverridden:manuallyOverridden,rentEdited:rentEdited,mgmtEdited:mgmtEdited,expensesEdited:expensesEdited,hoaEdited:hoaEdited,maintenanceEdited:maintenanceEdited,otherEdited:otherEdited,noteText:noteText,approved:approved,vacant:rent<=0};
  });
 }
 function opayGetFilteredRows(){
@@ -9042,8 +9091,11 @@ function opayPersistRow(r,approved){
   property_address:r.address,
   owner_name:r.owner,
   rent_amount:r.rent,
+  rent_edited:!!r.rentEdited,
   expenses_amount:r.totalExpenses,
+  expenses_edited:!!r.expensesEdited,
   mgmt_fee_amount:r.mgmtFee,
+  mgmt_edited:!!r.mgmtEdited,
   hoa_amount:r.hoa,
   maintenance_amount:r.maintenance,
   other_amount:r.other,
@@ -9053,6 +9105,7 @@ function opayPersistRow(r,approved){
   net_owner_amount:r.net,
   net_owner_edited:r.edited,
   manually_overridden:!!r.manuallyOverridden,
+  note_text:String(r.noteText||''),
   approved_by:approved?opayCurrentUser():'',
   approved_at:approved?(new Date().toISOString()):'',
   status:approved?'approved':'pending'
@@ -9064,23 +9117,99 @@ function opayPushLog(r,status){
  logs.unshift({property_address:r.address,owner_name:r.owner,rent_amount:r.rent,expenses_amount:r.totalExpenses,mgmt_fee_amount:r.mgmtFee,hoa_amount:r.hoa,maintenance_amount:r.maintenance,other_amount:r.other,net_owner_amount:r.net,net_owner_edited:r.edited,manually_overridden:!!r.manuallyOverridden,approved_by:opayCurrentUser(),approved_at:new Date().toISOString(),status:status,ip_address:(window.gmClientIp||'')});
  opaySaveLogs(logs);
 }
-function opayApprove(key){var r=opayGetFilteredRows().find(function(x){return x.key===key;});if(!r)return;opayPersistRow(r,true);opayPushLog(r,'approved');opayRender();}
+function opayApprove(key){
+ var r=opayGetFilteredRows().find(function(x){return x.key===key;});if(!r)return;
+ if(String(r.noteText||'').trim()){
+  opayAppendHistory(key,{type:'comment',action:'comment',comment:'[Aprovacao] '+String(r.noteText||'').trim(),added_by:opayCurrentUser(),added_at:opayNowIso(),before_or_after_approval:(r.approved?'after':'before')});
+ }
+ opayPersistRow(r,true);
+ opayPushLog(r,'approved');
+ opayAppendHistory(key,{type:'approved',action:'approved',property_address:r.address,owner_name:r.owner,net_owner:r.net,comment:String(r.noteText||''),approved_by:opayCurrentUser(),approved_at:opayNowIso(),values_at_approval:{rent:r.rent,mgmt_fee:r.mgmtFee,hoa:r.hoa,maintenance:r.maintenance,other:r.other,net:r.net}});
+ opayRender();
+}
 function opayAskRevert(key){opayPendingRevertKey=key;var m=document.getElementById('op-revert-modal');if(m)m.style.display='flex';}
 function opayCloseRevertModal(){var m=document.getElementById('op-revert-modal');if(m)m.style.display='none';opayPendingRevertKey='';}
-function opayConfirmRevert(){if(!opayPendingRevertKey)return opayCloseRevertModal();var r=opayGetFilteredRows().find(function(x){return x.key===opayPendingRevertKey;});if(r){opayPersistRow(r,false);opayPushLog(r,'reverted');}opayCloseRevertModal();opayRender();}
+function opayConfirmRevert(){if(!opayPendingRevertKey)return opayCloseRevertModal();var r=opayGetFilteredRows().find(function(x){return x.key===opayPendingRevertKey;});if(r){opayPersistRow(r,false);opayPushLog(r,'reverted');opayAppendHistory(r.key,{type:'reverted',action:'reverted',description:'Aprovação revertida',reverted_by:opayCurrentUser(),reverted_at:opayNowIso(),values:{rent:r.rent,mgmt_fee:r.mgmtFee,hoa:r.hoa,maintenance:r.maintenance,other:r.other,net:r.net}});}opayCloseRevertModal();opayRender();}
 function opaySetNet(key,val){
  var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===key;}); if(!r)return;
  var n=opayNum(val);
+ var oldVal=opayNum(r.net);
  var state=opayLoadState();
  var isOverride=Math.abs(n-r.autoNet)>0.009;
  state[key]={...(state[key]||{}),property_address:r.address,owner_name:r.owner,rent_amount:r.rent,expenses_amount:r.totalExpenses,mgmt_fee_amount:r.mgmtFee,hoa_amount:r.hoa,maintenance_amount:r.maintenance,other_amount:r.other,hoa_edited:!!r.hoaEdited,maintenance_edited:!!r.maintenanceEdited,other_edited:!!r.otherEdited,net_owner_amount:n,net_owner_edited:isOverride,manually_overridden:isOverride,status:((state[key]||{}).status||'pending'),approved_by:(state[key]||{}).approved_by||'',approved_at:(state[key]||{}).approved_at||''};
  opaySaveState(state);
- opayRender();
+ if(Math.abs(oldVal-n)>0.009){
+  opayAppendHistory(key,{type:'edited',action:'edited',field:'net_owner',old_value:oldVal,new_value:n,edited_by:opayCurrentUser(),edited_at:opayNowIso(),values:{rent:r.rent,mgmt_fee:r.mgmtFee,hoa:r.hoa,maintenance:r.maintenance,other:r.other,net:n}});
+ }
+ opayPatchRowAndTotals(key);
+}
+function opaySyncRentToProperties(row,oldRent,newRent){
+ try{
+  afpLoadStoredData();
+  window.appfolioData=Array.isArray(window.appfolioData)?window.appfolioData:[];
+  window.appfolioData.forEach(function(p){
+   var addr=opayNorm(p&&p.address||p&&p.property||p&&p.Property||'');
+   if(!addr)return;
+   if(addr===opayNorm(row.address)||addr.indexOf(opayNorm(row.address))>=0||opayNorm(row.address).indexOf(addr)>=0){
+    p.marketRent=newRent;
+    if(p.raw&&typeof p.raw==='object'){
+     p.raw['Market Rent']=newRent;
+     p.raw['Market Rent (USD)']=newRent;
+    }
+   }
+  });
+  window.appfolioProperties=window.appfolioData;
+  gmPersistAppdataKey('properties',window.appfolioData||[]);
+  gmPersistAppdataKey('appfolio_properties',window.appfolioData||[]);
+  try{fetch(GM_BACKEND_RAILWAY_APP+'/api/data/properties/import',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.appfolioData||[])});}catch(e){}
+  if(typeof afpRenderAll==='function')afpRenderAll();
+  if(typeof ltpRender==='function')ltpRender();
+  if(typeof ltRender==='function')ltRender();
+  if(typeof lsRender==='function')lsRender();
+  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
+  opayAppendHistory(row.key,{type:'edited',action:'rent_updated',property:row.address,old_rent:oldRent,new_rent:newRent,source:'owner_payments',updated_by:opayCurrentUser(),updated_at:opayNowIso()});
+ }catch(e){}
+}
+function opaySetRent(key,val){
+ var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===key;}); if(!r)return;
+ var n=opayNum(val), oldVal=opayNum(r.rent);
+ var state=opayLoadState();
+ var rentEdited=Math.abs(n-r.autoRent)>0.009;
+ var cur=state[key]||{};
+ state[key]={...(cur),property_address:r.address,owner_name:r.owner,rent_amount:n,rent_edited:rentEdited,status:(cur.status||'pending'),approved_by:cur.approved_by||'',approved_at:cur.approved_at||''};
+ if(!cur.mgmt_edited){
+  state[key].mgmt_fee_amount=n*(opayNum(r.mgmtPct)/100);
+  state[key].mgmt_edited=false;
+ }
+ opaySaveState(state);
+ if(Math.abs(oldVal-n)>0.009) opaySyncRentToProperties(r,oldVal,n);
+ opayPatchRowAndTotals(key);
+}
+function opaySetExpenses(key,val){
+ var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===key;}); if(!r)return;
+ var n=opayNum(val), oldVal=opayNum(r.totalExpenses);
+ var state=opayLoadState();
+ var edited=Math.abs(n-r.autoExpenses)>0.009;
+ state[key]={...(state[key]||{}),property_address:r.address,owner_name:r.owner,expenses_amount:n,expenses_edited:edited,status:((state[key]||{}).status||'pending'),approved_by:(state[key]||{}).approved_by||'',approved_at:(state[key]||{}).approved_at||''};
+ opaySaveState(state);
+ if(Math.abs(oldVal-n)>0.009) opayAppendHistory(key,{type:'edited',action:'edited',field:'expenses',old_value:oldVal,new_value:n,edited_by:opayCurrentUser(),edited_at:opayNowIso()});
+ opayPatchRowAndTotals(key);
+}
+function opaySetMgmt(key,val){
+ var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===key;}); if(!r)return;
+ var n=opayNum(val), oldVal=opayNum(r.mgmtFee);
+ var state=opayLoadState();
+ var edited=Math.abs(n-r.autoMgmtFee)>0.009;
+ state[key]={...(state[key]||{}),property_address:r.address,owner_name:r.owner,mgmt_fee_amount:n,mgmt_edited:edited,status:((state[key]||{}).status||'pending'),approved_by:(state[key]||{}).approved_by||'',approved_at:(state[key]||{}).approved_at||''};
+ opaySaveState(state);
+ if(Math.abs(oldVal-n)>0.009) opayAppendHistory(key,{type:'edited',action:'edited',field:'mgmt_fee',old_value:oldVal,new_value:n,edited_by:opayCurrentUser(),edited_at:opayNowIso()});
+ opayPatchRowAndTotals(key);
 }
 function opaySetCostField(key,field,val){
  var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===key;}); if(!r)return;
  var state=opayLoadState();
  var n=opayNum(val);
+ var oldVal=(field==='hoa'?opayNum(r.hoa):(field==='maintenance'?opayNum(r.maintenance):opayNum(r.other)));
  var patch={};
  if(field==='hoa'){patch.hoa_amount=n;patch.hoa_edited=Math.abs(n-r.autoHoa)>0.009;}
  if(field==='maintenance'){patch.maintenance_amount=n;patch.maintenance_edited=Math.abs(n-r.autoMaintenance)>0.009;}
@@ -9097,7 +9226,54 @@ function opaySetCostField(key,field,val){
   ...patch
  };
  opaySaveState(state);
- opayRender();
+ if(Math.abs(oldVal-n)>0.009){
+  opayAppendHistory(key,{type:'edited',action:'edited',field:field,old_value:oldVal,new_value:n,edited_by:opayCurrentUser(),edited_at:opayNowIso()});
+ }
+ opayPatchRowAndTotals(key);
+}
+function opaySetNote(key,val){
+ var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===key;}); if(!r)return;
+ var text=String(val||'').trim();
+ var oldText=String(r.noteText||'').trim();
+ var state=opayLoadState();
+ state[key]={...(state[key]||{}),property_address:r.address,owner_name:r.owner,note_text:text};
+ opaySaveState(state);
+ if(text!==oldText && text){
+  opayAppendHistory(key,{type:'comment',action:'comment',comment:text,added_by:opayCurrentUser(),added_at:opayNowIso(),before_or_after_approval:(r.approved?'after':'before')});
+ }
+ opayPatchRowAndTotals(key);
+}
+function opayNotesIcon(has){
+ return has?'<span style="font-size:14px;line-height:1;color:var(--blue)">●</span>':'<span style="font-size:14px;line-height:1;color:var(--ink3)">○</span>';
+}
+function opayOpenNotesModal(key){
+ var row=(opayBuildRows().find(function(x){return x.key===key;})||null);
+ if(!row)return;
+ opayNotesModalKey=key;
+ var title=document.getElementById('op-notes-title'); if(title)title.textContent='Notas - '+(row.address||'Propriedade');
+ var hist=(opayLoadHistory()[key]||[]).filter(function(x){return x&&x.type==='comment';});
+ var box=document.getElementById('op-notes-history');
+ if(box){
+  box.innerHTML=hist.length?hist.map(function(h){
+   var who=opayEsc(h.added_by||h.approved_by||'admin');
+   var when=opayEsc(opayWhenLabel(h.added_at||h.approved_at||''));
+   var phase=opayEsc((h.before_or_after_approval||'before')==='after'?'depois da aprovação':'antes da aprovação');
+   var txt=opayEsc(h.comment||'');
+   return '<div style="border:1px solid var(--border);border-radius:10px;padding:9px 10px"><div style="font-size:12px;color:var(--ink)">'+txt+'</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">'+who+' · '+when+' · '+phase+'</div></div>';
+  }).join(''):'<div style="font-size:12px;color:var(--ink3)">Sem comentários para esta propriedade.</div>';
+ }
+ var input=document.getElementById('op-notes-new'); if(input)input.value='';
+ var modal=document.getElementById('op-notes-modal'); if(modal)modal.style.display='flex';
+}
+function opayCloseNotesModal(){var m=document.getElementById('op-notes-modal');if(m)m.style.display='none';opayNotesModalKey='';}
+function opayAddNoteFromModal(){
+ if(!opayNotesModalKey)return;
+ var ta=document.getElementById('op-notes-new'); if(!ta)return;
+ var txt=String(ta.value||'').trim(); if(!txt)return;
+ var rows=opayBuildRows(); var r=rows.find(function(x){return x.key===opayNotesModalKey;}); if(!r)return;
+ opaySetNote(opayNotesModalKey,txt);
+ ta.value='';
+ opayOpenNotesModal(opayNotesModalKey);
 }
 function opayToggleSelectAll(on){var rows=opayGetFilteredRows();rows.forEach(function(r){opaySelected[r.key]=!!on;});opayRender();}
 function opayToggleSelect(key,on){opaySelected[key]=!!on;}
@@ -9112,16 +9288,67 @@ function opayExportCsv(scope){
 }
 function opayShowLogs(key){
  var body=document.getElementById('op-log-content'); if(!body)return;
- var logs=opayLoadLogs().filter(function(x){return opayNorm(x.property_address)===opayNorm(key);});
- body.innerHTML=logs.length?logs.map(function(l){return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:var(--ink)">'+opayEsc(l.property_address||'')+'</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">Owner: '+opayEsc(l.owner_name||'')+' · Status: '+opayEsc(l.status||'')+'</div><div style="font-size:11px;color:var(--ink3)">Approved by: '+opayEsc(l.approved_by||'admin')+' · '+opayEsc(l.approved_at||'')+'</div><div style="font-size:11px;color:var(--ink3)">Net Owner: '+ltFmt(opayNum(l.net_owner_amount))+(l.net_owner_edited?' (edited)':'')+'</div></div>';}).join(''):'<div style="font-size:12px;color:var(--ink3)">Sem histórico para esta propriedade.</div>';
+ var logs=(opayLoadHistory()[key]||[]);
+ body.innerHTML=logs.length?logs.map(function(l){
+  var when=l.approved_at||l.added_at||l.edited_at||l.reverted_at||'';
+  var user=l.approved_by||l.added_by||l.edited_by||l.reverted_by||'admin';
+  var desc=''; var vals='';
+  if(l.type==='approved'){desc='Pagamento aprovado.'; if(l.comment)desc+=' Comentário: '+opayEsc(l.comment); vals='Rent '+ltFmt(opayNum(l.values_at_approval&&l.values_at_approval.rent))+' · Mgmt '+ltFmt(opayNum(l.values_at_approval&&l.values_at_approval.mgmt_fee))+' · HOA '+ltFmt(opayNum(l.values_at_approval&&l.values_at_approval.hoa))+' · Maintenance '+ltFmt(opayNum(l.values_at_approval&&l.values_at_approval.maintenance))+' · Other '+ltFmt(opayNum(l.values_at_approval&&l.values_at_approval.other))+' · Net '+ltFmt(opayNum(l.values_at_approval&&l.values_at_approval.net));}
+  if(l.type==='comment'){desc='Comentário: '+opayEsc(l.comment||'');}
+  if(l.type==='edited'){desc='Campo '+opayEsc(l.field||'')+' alterado de '+ltFmt(opayNum(l.old_value))+' para '+ltFmt(opayNum(l.new_value))+'.'; if(l.values)vals='Net '+ltFmt(opayNum(l.values.net));}
+  if(l.type==='reverted'){desc='Aprovação revertida.'; if(l.values)vals='Net '+ltFmt(opayNum(l.values.net));}
+  return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+opayHistTypeBadge(l.type||'')+'<div style="font-size:10px;color:var(--ink3)">'+opayEsc(user)+' · '+opayEsc(opayWhenLabel(when))+'</div></div><div style="font-size:12px;color:var(--ink);margin-top:6px">'+desc+'</div>'+(vals?'<div style="font-size:10px;color:var(--ink3);margin-top:4px">'+vals+'</div>':'')+'</div>';
+ }).join(''):'<div style="font-size:12px;color:var(--ink3)">Sem histórico para esta propriedade.</div>';
  var modal=document.getElementById('op-log-modal'); if(modal)modal.style.display='flex';
 }
 function opayCloseLogModal(){var m=document.getElementById('op-log-modal');if(m)m.style.display='none';}
+function opaySetFieldBorder(id,edited){
+ var el=document.getElementById(id); if(!el)return;
+ el.style.border=edited?'1px solid var(--amber-bd)':'1px solid var(--border2)';
+}
+function opayRefreshTotalsOnly(){
+ var rows=opayGetFilteredRows();
+ var tfoot=document.getElementById('op-payments-tfoot'); if(!tfoot)return;
+ var totals={rent:0,expenses:0,mgmt:0,hoa:0,maintenance:0,other:0,net:0,approved:0};
+ rows.forEach(function(r){totals.rent+=r.rent;totals.expenses+=r.totalExpenses;totals.mgmt+=r.mgmtFee;totals.hoa+=r.hoa;totals.maintenance+=r.maintenance;totals.other+=r.other;totals.net+=r.net;if(r.approved)totals.approved++;});
+ var x=document.getElementById('op-kpi-rent'); if(x)x.textContent=ltFmt(totals.rent);
+ x=document.getElementById('op-kpi-expenses'); if(x)x.textContent=ltFmt(totals.expenses);
+ x=document.getElementById('op-kpi-mgmt'); if(x)x.textContent=ltFmt(totals.mgmt);
+ x=document.getElementById('op-kpi-net'); if(x)x.textContent=ltFmt(totals.net);
+ x=document.getElementById('op-kpi-approved'); if(x)x.textContent=totals.approved+' of '+rows.length;
+ x=document.getElementById('op-kpi-pending'); if(x)x.textContent=String(Math.max(0,rows.length-totals.approved));
+ tfoot.innerHTML='<tr style="background:var(--cream);border-top:1px solid var(--border)"><td style="padding:10px 12px"></td><td colspan="3" style="padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">TOTALS</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.rent)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.expenses)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.mgmt)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.hoa)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.maintenance)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.other)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.net)+'</td><td></td><td colspan="2" style="padding:10px 12px;text-align:center"><span style="padding:3px 9px;border-radius:999px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:10px;font-weight:700">'+totals.approved+' Approved / '+rows.length+' Total</span></td></tr>';
+}
+function opayPatchRowAndTotals(key){
+ var rows=opayGetFilteredRows();
+ var r=rows.find(function(x){return x.key===key;});
+ var idx=opayRowIndexByKey[key];
+ if(r==null||idx==null){opayRender();return;}
+ var rentId='rent-input-'+idx, expId='expenses-input-'+idx, mgmtId='mgmt-input-'+idx, hoaId='hoa-input-'+idx, mntId='maintenance-input-'+idx, othId='other-input-'+idx, netId='net-owner-input-'+idx, noteId='note-input-'+idx, noteIconId='note-icon-'+idx;
+ var el=document.getElementById(rentId); if(el){el.value=(Math.round(r.rent*100)/100).toFixed(2); el.style.color=r.rent<0?'var(--red)':'var(--ink)';}
+ el=document.getElementById(expId); if(el){el.value=(Math.round(r.totalExpenses*100)/100).toFixed(2); el.style.color=r.totalExpenses<0?'var(--red)':'var(--ink)';}
+ el=document.getElementById(mgmtId); if(el){el.value=(Math.round(r.mgmtFee*100)/100).toFixed(2); el.style.color=r.mgmtFee<0?'var(--red)':'var(--ink)';}
+ el=document.getElementById(hoaId); if(el){el.value=(Math.round(r.hoa*100)/100).toFixed(2);}
+ el=document.getElementById(mntId); if(el){el.value=(Math.round(r.maintenance*100)/100).toFixed(2);}
+ el=document.getElementById(othId); if(el){el.value=(Math.round(r.other*100)/100).toFixed(2);}
+ el=document.getElementById(netId); if(el){el.value=(Math.round(r.net*100)/100).toFixed(2); el.style.color=r.net<0?'var(--red)':'var(--green)';}
+ el=document.getElementById(noteId); if(el){el.value=r.noteText||'';}
+ el=document.getElementById(noteIconId); if(el){el.innerHTML=opayNotesIcon(!!r.noteText);}
+ opaySetFieldBorder(rentId,r.rentEdited);
+ opaySetFieldBorder(expId,r.expensesEdited);
+ opaySetFieldBorder(mgmtId,r.mgmtEdited);
+ opaySetFieldBorder(hoaId,r.hoaEdited);
+ opaySetFieldBorder(mntId,r.maintenanceEdited);
+ opaySetFieldBorder(othId,r.otherEdited);
+ opaySetFieldBorder(netId,r.edited);
+ opayRefreshTotalsOnly();
+}
 function opayRender(){
  opaySyncPeriods();
  var rows=opayGetFilteredRows();
  var tbody=document.getElementById('op-payments-tbody'); var tfoot=document.getElementById('op-payments-tfoot');
  if(!tbody||!tfoot)return;
+ opayRowIndexByKey={};
  var totals={rent:0,expenses:0,mgmt:0,hoa:0,maintenance:0,other:0,net:0,approved:0};
  rows.forEach(function(r){totals.rent+=r.rent;totals.expenses+=r.totalExpenses;totals.mgmt+=r.mgmtFee;totals.hoa+=r.hoa;totals.maintenance+=r.maintenance;totals.other+=r.other;totals.net+=r.net;if(r.approved)totals.approved++;});
  document.getElementById('op-kpi-rent').textContent=ltFmt(totals.rent);
@@ -9135,14 +9362,18 @@ function opayRender(){
   var hoaEditedStyle=r.hoaEdited?'border:1px solid var(--amber-bd);':'border:1px solid var(--border2);';
   var maintenanceEditedStyle=r.maintenanceEdited?'border:1px solid var(--amber-bd);':'border:1px solid var(--border2);';
   var otherEditedStyle=r.otherEdited?'border:1px solid var(--amber-bd);':'border:1px solid var(--border2);';
+  var rentEditedStyle=r.rentEdited?'border:1px solid var(--amber-bd);':'border:1px solid var(--border2);';
+  var expensesEditedStyle=r.expensesEdited?'border:1px solid var(--amber-bd);':'border:1px solid var(--border2);';
+  var mgmtEditedStyle=r.mgmtEdited?'border:1px solid var(--amber-bd);':'border:1px solid var(--border2);';
   var netColor=r.net<0?'var(--red)':'var(--green)';
   var cb=opaySelected[r.key]?'checked':'';
   var loc=[r.city,r.zip].filter(Boolean).join(' ');
   var k=encodeURIComponent(r.key||'');
   var rowIdx=''+i;
-  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;text-align:center"><input type="checkbox" '+cb+' onchange="opayToggleSelect(decodeURIComponent(\''+k+'\'),this.checked)" /></td><td style="padding:8px 10px;font-size:11px;color:var(--ink3);font-family:\'JetBrains Mono\',monospace">'+(i+1)+'</td><td style="padding:8px 10px"><div style="font-size:12px;font-weight:700;color:var(--ink)">'+opayEsc(r.address||'—')+(r.vacant?' <span style="margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);font-size:10px;font-weight:700">Vacant</span>':'')+'</div><div style="font-size:10px;color:var(--ink3)">'+opayEsc(loc||'—')+'</div></td><td style="padding:8px 10px;font-size:11px;color:var(--ink2)">'+opayEsc(r.owner||'—')+'</td><td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+ltFmt(r.rent)+'</td><td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+ltFmt(r.totalExpenses)+'</td><td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+ltFmt(r.mgmtFee)+'</td><td style="padding:8px 10px;text-align:right"><input id="hoa-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.hoa*100)/100).toFixed(2)+'" onblur="opaySetCostField(decodeURIComponent(\''+k+'\'),\'hoa\',this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+hoaEditedStyle+'color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="maintenance-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.maintenance*100)/100).toFixed(2)+'" onblur="opaySetCostField(decodeURIComponent(\''+k+'\'),\'maintenance\',this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+maintenanceEditedStyle+'color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="other-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.other*100)/100).toFixed(2)+'" onblur="opaySetCostField(decodeURIComponent(\''+k+'\'),\'other\',this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+otherEditedStyle+'color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="net-owner-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.net*100)/100).toFixed(2)+'" onblur="opaySetNet(decodeURIComponent(\''+k+'\'),this.value)" style="width:128px;padding:6px 8px;border-radius:7px;background:var(--sand);'+editedStyle+'color:'+netColor+';font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:center">'+opayStatusBadge(r)+'</td><td style="padding:8px 10px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:6px">'+opayApprovalBtn(r)+opayInfoBtn(r)+'</div></td></tr>';
- }).join('') || '<tr><td colspan="13" style="padding:20px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma propriedade encontrada.</td></tr>';
- tfoot.innerHTML='<tr style="background:var(--cream);border-top:1px solid var(--border)"><td style="padding:10px 12px"></td><td colspan="3" style="padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">TOTALS</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.rent)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.expenses)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.mgmt)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.hoa)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.maintenance)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.other)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.net)+'</td><td colspan="2" style="padding:10px 12px;text-align:center"><span style="padding:3px 9px;border-radius:999px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:10px;font-weight:700">'+totals.approved+' Approved / '+rows.length+' Total</span></td></tr>';
+  opayRowIndexByKey[r.key]=rowIdx;
+  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;text-align:center"><input type="checkbox" '+cb+' onchange="opayToggleSelect(decodeURIComponent(\''+k+'\'),this.checked)" /></td><td style="padding:8px 10px;font-size:11px;color:var(--ink3);font-family:\'JetBrains Mono\',monospace">'+(i+1)+'</td><td style="padding:8px 10px"><div style="font-size:12px;font-weight:700;color:var(--ink)">'+opayEsc(r.address||'—')+(r.vacant?' <span style="margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);font-size:10px;font-weight:700">Vacant</span>':'')+'</div><div style="font-size:10px;color:var(--ink3)">'+opayEsc(loc||'—')+'</div></td><td style="padding:8px 10px;font-size:11px;color:var(--ink2)">'+opayEsc(r.owner||'—')+'</td><td style="padding:8px 10px;text-align:right"><input id="rent-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.rent*100)/100).toFixed(2)+'" onblur="opaySetRent(decodeURIComponent(\''+k+'\'),this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+rentEditedStyle+'color:'+(r.rent<0?'var(--red)':'var(--ink)')+';font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="expenses-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.totalExpenses*100)/100).toFixed(2)+'" onblur="opaySetExpenses(decodeURIComponent(\''+k+'\'),this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+expensesEditedStyle+'color:'+(r.totalExpenses<0?'var(--red)':'var(--ink)')+';font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="mgmt-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.mgmtFee*100)/100).toFixed(2)+'" onblur="opaySetMgmt(decodeURIComponent(\''+k+'\'),this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+mgmtEditedStyle+'color:'+(r.mgmtFee<0?'var(--red)':'var(--ink)')+';font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="hoa-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.hoa*100)/100).toFixed(2)+'" onblur="opaySetCostField(decodeURIComponent(\''+k+'\'),\'hoa\',this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+hoaEditedStyle+'color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="maintenance-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.maintenance*100)/100).toFixed(2)+'" onblur="opaySetCostField(decodeURIComponent(\''+k+'\'),\'maintenance\',this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+maintenanceEditedStyle+'color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="other-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.other*100)/100).toFixed(2)+'" onblur="opaySetCostField(decodeURIComponent(\''+k+'\'),\'other\',this.value)" style="width:120px;padding:6px 8px;border-radius:7px;background:var(--sand);'+otherEditedStyle+'color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px;text-align:right"><input id="net-owner-input-'+rowIdx+'" type="number" step="0.01" value="'+(Math.round(r.net*100)/100).toFixed(2)+'" onblur="opaySetNet(decodeURIComponent(\''+k+'\'),this.value)" style="width:128px;padding:6px 8px;border-radius:7px;background:var(--sand);'+editedStyle+'color:'+netColor+';font-family:\'JetBrains Mono\',monospace;font-weight:700;text-align:right"></td><td style="padding:8px 10px"><div style="display:flex;align-items:center;gap:6px"><button type="button" onclick="opayOpenNotesModal(decodeURIComponent(\''+k+'\'))" title="Abrir histórico de notas" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border2);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer"><span id="note-icon-'+rowIdx+'">'+opayNotesIcon(!!r.noteText)+'</span></button><input id="note-input-'+rowIdx+'" type="text" value="'+opayEsc(r.noteText||'')+'" placeholder="Adicionar nota..." onblur="opaySetNote(decodeURIComponent(\''+k+'\'),this.value)" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-size:11px"></div></td><td style="padding:8px 10px;text-align:center">'+opayStatusBadge(r)+'</td><td style="padding:8px 10px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:6px">'+opayApprovalBtn(r)+opayInfoBtn(r)+'</div></td></tr>';
+ }).join('') || '<tr><td colspan="14" style="padding:20px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma propriedade encontrada.</td></tr>';
+ tfoot.innerHTML='<tr style="background:var(--cream);border-top:1px solid var(--border)"><td style="padding:10px 12px"></td><td colspan="3" style="padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">TOTALS</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.rent)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.expenses)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.mgmt)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.hoa)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.maintenance)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.other)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.net)+'</td><td></td><td colspan="2" style="padding:10px 12px;text-align:center"><span style="padding:3px 9px;border-radius:999px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:10px;font-weight:700">'+totals.approved+' Approved / '+rows.length+' Total</span></td></tr>';
  var allCb=document.getElementById('op-select-all'); if(allCb){allCb.checked=rows.length>0&&rows.every(function(r){return !!opaySelected[r.key];});}
 }
 window.opayRender=opayRender;
@@ -9152,8 +9383,15 @@ window.opayCloseRevertModal=opayCloseRevertModal;
 window.opayConfirmRevert=opayConfirmRevert;
 window.opayShowLogs=opayShowLogs;
 window.opayCloseLogModal=opayCloseLogModal;
+window.opayOpenNotesModal=opayOpenNotesModal;
+window.opayCloseNotesModal=opayCloseNotesModal;
+window.opayAddNoteFromModal=opayAddNoteFromModal;
+window.opaySetRent=opaySetRent;
+window.opaySetExpenses=opaySetExpenses;
+window.opaySetMgmt=opaySetMgmt;
 window.opaySetNet=opaySetNet;
 window.opaySetCostField=opaySetCostField;
+window.opaySetNote=opaySetNote;
 window.opayToggleSelect=opayToggleSelect;
 window.opayToggleSelectAll=opayToggleSelectAll;
 window.opayApproveSelected=opayApproveSelected;
@@ -9226,6 +9464,7 @@ async function gmBootstrapServerData(){
   if(Array.isArray(j.manual_expenses)&&j.manual_expenses.length&&typeof ltExpSaveRecords==='function'){ltExpSaveRecords(j.manual_expenses);}
   if(j.owner_payments&&typeof j.owner_payments==='object'){opayStateCache=j.owner_payments;}
   if(Array.isArray(j.owner_payment_logs)){opayLogsCache=j.owner_payment_logs;}
+  if(j.owner_payment_history&&typeof j.owner_payment_history==='object'){opayHistoryCache=j.owner_payment_history;}
   gmApplyWorkspaceConfigFromServer(cfg);
   if(j.site_config&&typeof j.site_config==='object'){
    try{if(Array.isArray(j.site_config.gm_vendors)&&typeof gvSave==='function')gvSave(j.site_config.gm_vendors);}catch(e){}
