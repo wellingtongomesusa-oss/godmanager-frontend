@@ -496,6 +496,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('vendors')" id="nav-vendors">Vendors</div>
 <div class="ss" onclick="nav('appfolio-vendors')" id="nav-appfolio-vendors">AppFolio Vendors</div>
  <div class="ss" onclick="nav('owner-payments')" id="nav-owner-payments">Owner Payments</div>
+ <div class="ss" onclick="nav('ramp-expenses')" id="nav-ramp-expenses">Ramp Expenses</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
@@ -1875,6 +1876,85 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
     <tbody id="op-payments-tbody"></tbody>
     <tfoot id="op-payments-tfoot"></tfoot>
    </table>
+  </div>
+ </div>
+</div>
+
+<div class="page" id="page-ramp-expenses">
+ <div class="ph"><div class="pt">Ramp Expenses</div><div class="ps">Upload e análise detalhada de transações do Ramp</div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+  <div id="rx-drop" style="padding:20px;border:1px dashed var(--amber-bd);border-radius:10px;background:rgba(201,169,110,.05);text-align:center;cursor:pointer">
+   <div style="font-size:13px;font-weight:700;color:var(--ink)">Arraste o CSV Ramp Transaction Export aqui</div>
+   <div style="font-size:11px;color:var(--ink3);margin-top:6px">Formato esperado com colunas Merchant Name e Ramp Category</div>
+  </div>
+  <input id="rx-file" type="file" accept=".csv,text/csv" style="display:none" />
+  <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+   <button type="button" onclick="rxPickFile()" style="padding:8px 12px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Upload Ramp CSV</button>
+   <div id="rx-meta" style="font-size:11px;color:var(--ink3)">Sem CSV carregado</div>
+  </div>
+ </div>
+
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:12px;display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr auto auto;gap:8px;align-items:end">
+  <div><div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Período</div><select id="rx-filter-period" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px"></select></div>
+  <div><div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Pessoa</div><select id="rx-filter-user" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px"></select></div>
+  <div><div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Merchant</div><select id="rx-filter-merchant" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px"></select></div>
+  <div><div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Categoria</div><select id="rx-filter-category" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px"></select></div>
+  <div><div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px">Card</div><select id="rx-filter-card" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px"></select></div>
+  <button type="button" onclick="rxApplyFilters()" style="padding:8px 12px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Aplicar</button>
+  <button type="button" onclick="rxClearFilters()" style="padding:8px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Limpar</button>
+ </div>
+
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+  <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL SPENT</div><div id="rx-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--blue-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TRANSACTIONS</div><div id="rx-kpi-count" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue);margin-top:4px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">AVG PER TRANSACTION</div><div id="rx-kpi-avg" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--green-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PERÍODO</div><div id="rx-kpi-period" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green);margin-top:4px">All</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+ </div>
+
+ <div id="rx-by-user" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px"></div>
+ <div id="rx-by-month" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px"></div>
+
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)">Top 10 Merchants</div>
+   <div id="rx-top-merchants" style="padding:10px"></div>
+  </div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)">Gastos por Categoria</div>
+   <div id="rx-by-category" style="padding:10px"></div>
+  </div>
+ </div>
+
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px">
+  <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)">Gastos por Card</div>
+  <div id="rx-by-card" style="padding:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px"></div>
+ </div>
+
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+  <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
+   <div style="font-size:12px;font-weight:700;color:var(--ink)">Transações detalhadas</div>
+   <input id="rx-search" placeholder="Buscar merchant ou usuário" style="padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px;min-width:240px" oninput="rxRenderTable()">
+  </div>
+  <div style="overflow:auto">
+   <table style="width:100%;border-collapse:collapse;min-width:1100px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th onclick="rxSortBy('idx')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">#</th>
+     <th onclick="rxSortBy('date')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Date</th>
+     <th onclick="rxSortBy('merchant')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Merchant</th>
+     <th onclick="rxSortBy('category')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Category</th>
+     <th onclick="rxSortBy('amount')" style="padding:10px 12px;cursor:pointer;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Amount</th>
+     <th onclick="rxSortBy('user')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">User</th>
+     <th onclick="rxSortBy('card')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Card</th>
+     <th onclick="rxSortBy('department')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Department</th>
+     <th onclick="rxSortBy('location')" style="padding:10px 12px;cursor:pointer;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Location</th>
+    </tr></thead>
+    <tbody id="rx-tbody"></tbody>
+   </table>
+  </div>
+  <div style="padding:10px 14px;display:flex;justify-content:flex-end;align-items:center;gap:8px">
+   <button type="button" onclick="rxChangePage(-1)" style="padding:6px 10px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Prev</button>
+   <span id="rx-page" style="font-size:11px;color:var(--ink3)">Page 1/1</span>
+   <button type="button" onclick="rxChangePage(1)" style="padding:6px 10px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Next</button>
   </div>
  </div>
 </div>
@@ -3367,7 +3447,7 @@ function saveAllData(){
  try{var glu=gmLsGet('gm_appfolio_last_upload');if(glu)siteCfg.gm_appfolio_last_upload=glu;}catch(e4){}
  try{var gis=gmLsGet('gm_appfolio_import_summary');if(gis)siteCfg.gm_appfolio_import_summary=JSON.parse(gis);}catch(e5){}
  try{if(typeof gvLoad==='function')siteCfg.gm_vendors=gvLoad();}catch(e6){}
- fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg,appfolio_vendors:gmExtractAppfolioVendors(),manual_properties:(typeof ltGetRecords==='function'?ltGetRecords():[]),manual_expenses:(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]),site_config:siteCfg,owner_payments:(typeof opayLoadState==='function'?opayLoadState():{}),owner_payment_logs:(typeof opayLoadLogs==='function'?opayLoadLogs():[]),owner_payment_history:(typeof opayLoadHistory==='function'?opayLoadHistory():{}),client_kv:JSON.parse(JSON.stringify(window._gmClientKV||{}))})})
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg,appfolio_vendors:gmExtractAppfolioVendors(),manual_properties:(typeof ltGetRecords==='function'?ltGetRecords():[]),manual_expenses:(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]),site_config:siteCfg,owner_payments:(typeof opayLoadState==='function'?opayLoadState():{}),owner_payment_logs:(typeof opayLoadLogs==='function'?opayLoadLogs():[]),owner_payment_history:(typeof opayLoadHistory==='function'?opayLoadHistory():{}),ramp_expenses:(rxState&&Array.isArray(rxState.rows)?rxState.rows:[]),client_kv:JSON.parse(JSON.stringify(window._gmClientKV||{}))})})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
   if(!o.ok||!o.j)throw new Error('Erro ao salvar');
@@ -5259,7 +5339,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations','cadastro-appfolio':'Cadastro AppFolio',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','appfolio-vendors':'AppFolio Vendors','owner-payments':'Owner Payments','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations','cadastro-appfolio':'Cadastro AppFolio',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','appfolio-vendors':'AppFolio Vendors','owner-payments':'Owner Payments','ramp-expenses':'Ramp Expenses','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -5313,6 +5393,7 @@ function nav(r){
  listings:()=>typeof lsRender==='function'&&lsRender(),
  'appfolio-vendors':()=>typeof afvRender==='function'&&afvRender(),
  'owner-payments':()=>typeof opayRender==='function'&&opayRender(),
+ 'ramp-expenses':()=>typeof rxRenderPage==='function'&&rxRenderPage(),
  'cadastro-appfolio':()=>typeof afpInitPage==='function'&&afpInitPage(),
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
@@ -9414,6 +9495,267 @@ window.opayToggleSelectAll=opayToggleSelectAll;
 window.opayApproveSelected=opayApproveSelected;
 window.opayExportCsv=opayExportCsv;
 
+var rxState={rows:[],filtered:[],sortBy:'date',sortDir:'desc',page:1,pageSize:20,filters:{period:'all',user:'all',merchant:'all',category:'all',card:'all'}};
+function rxEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+function rxMoney(v){return (Number(v)||0).toLocaleString('en-US',{style:'currency',currency:'USD'});}
+function rxNorm(v){return String(v==null?'':v).trim();}
+function rxMonthKey(d){
+ var dt=new Date(d);if(isNaN(dt.getTime()))return '';
+ var m=String(dt.getMonth()+1).padStart(2,'0');
+ return String(dt.getFullYear())+'-'+m;
+}
+function rxMonthLabel(k){
+ if(!k)return '—';
+ var p=k.split('-');if(p.length<2)return k;
+ var mm=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+ return (mm[Number(p[1])-1]||p[1])+' '+p[0];
+}
+function rxMonthShort(k){
+ if(!k)return '—';
+ var p=k.split('-');if(p.length<2)return k;
+ var mm=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+ return (mm[Number(p[1])-1]||p[1])+'/'+String(p[0]).slice(2);
+}
+function rxParseAmount(v){
+ var s=String(v==null?'':v).replace(/[^\d.\-]/g,'');
+ return Number(s)||0;
+}
+function rxHydrateRows(list){
+ return (Array.isArray(list)?list:[]).map(function(r,idx){
+  var date=rxNorm(r.date);
+  return {
+   idx:Number(r.idx)||idx+1,
+   date:date,
+   dateObj:new Date(date),
+   month:rxNorm(r.month)||rxMonthKey(date),
+   merchant:rxNorm(r.merchant),
+   category:rxNorm(r.category),
+   amount:Number(r.amount)||0,
+   originalAmount:rxNorm(r.originalAmount),
+   currency:rxNorm(r.currency),
+   conversionRate:rxNorm(r.conversionRate),
+   user:rxNorm(r.user),
+   department:rxNorm(r.department),
+   location:rxNorm(r.location),
+   card:rxNorm(r.card)
+  };
+ });
+}
+function rxNormalizeRows(rows){
+ if(!Array.isArray(rows)||!rows.length)return [];
+ var head=rows[0].map(function(c){return String(c||'').trim();});
+ var low=head.map(function(c){return c.toLowerCase();});
+ if(low.indexOf('merchant name')<0||low.indexOf('ramp category')<0)throw new Error('CSV inválido');
+ var idx={};head.forEach(function(h,i){idx[h]=i;});
+ return rows.slice(1).map(function(r,i){
+  var get=function(k){return rxNorm(r[idx[k]]);};
+  var d=get('Transaction Date');
+  return {
+   idx:i+1,
+   date:d,
+   dateObj:(new Date(d)),
+   month:rxMonthKey(d),
+   merchant:get('Merchant Name'),
+   category:get('Ramp Category'),
+   amount:rxParseAmount(get('Amount')),
+   originalAmount:rxNorm(get('Original Currency Amount')),
+   currency:rxNorm(get('Original Currency Code')),
+   conversionRate:rxNorm(get('Conversion Rate')),
+   user:get('User'),
+   department:get('Ramp Department'),
+   location:get('Ramp Location'),
+   card:get('Card Display Name')
+  };
+ }).filter(function(x){return x.merchant||x.user||x.amount;});
+}
+async function rxLoadFromServer(){
+ try{
+  var r=await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/load/ramp_expenses',{method:'GET',mode:'cors',credentials:'omit'});
+  if(!r.ok)return;
+  var j=await r.json();
+  var val=j&&j.value;
+  if(Array.isArray(val)){rxState.rows=rxHydrateRows(val);}
+ }catch(e){}
+}
+async function rxSaveToServer(){
+ try{
+  if(typeof gmPersistAppdataKey==='function'){gmPersistAppdataKey('ramp_expenses',rxState.rows||[]);return;}
+  await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'ramp_expenses',value:rxState.rows||[]})});
+ }catch(e){}
+}
+function rxPickFile(){var i=document.getElementById('rx-file');if(i)i.click();}
+function rxOnFile(file){
+ if(!file)return;
+ var rd=new FileReader();
+ rd.onload=function(){
+  try{
+   var rows=afpParseCsvText(String(rd.result||''));
+   rxState.rows=rxNormalizeRows(rows);
+   rxSaveToServer();
+   rxPopulateFilters();
+   rxApplyFilters();
+   showToast('Ramp CSV importado: '+rxState.rows.length+' transações.','success');
+  }catch(err){showToast('CSV Ramp inválido. Verifique o header.','error');}
+ };
+ rd.onerror=function(){showToast('Não foi possível ler o arquivo.','error');};
+ rd.readAsText(file);
+}
+function rxUnique(field){
+ var set={};(rxState.rows||[]).forEach(function(r){var v=rxNorm(r[field]);if(v)set[v]=1;});
+ return Object.keys(set).sort(function(a,b){return a.localeCompare(b);});
+}
+function rxPopulateFilters(){
+ function fill(id,list,labelAll){
+  var el=document.getElementById(id);if(!el)return;
+  el.innerHTML='<option value="all">'+labelAll+'</option>'+list.map(function(x){return '<option value="'+rxEsc(x)+'">'+rxEsc(x)+'</option>';}).join('');
+ }
+ var months=rxUnique('month').sort();
+ fill('rx-filter-period',months.map(rxMonthLabel),'All');
+ fill('rx-filter-user',rxUnique('user'),'All');
+ fill('rx-filter-merchant',rxUnique('merchant'),'All');
+ fill('rx-filter-category',rxUnique('category'),'All');
+ fill('rx-filter-card',rxUnique('card'),'All');
+ document.getElementById('rx-filter-period').value='all';
+ document.getElementById('rx-filter-user').value='all';
+ document.getElementById('rx-filter-merchant').value='all';
+ document.getElementById('rx-filter-category').value='all';
+ document.getElementById('rx-filter-card').value='all';
+ var meta=document.getElementById('rx-meta');
+ if(meta)meta.textContent=rxState.rows.length?('Dataset carregado: '+rxState.rows.length+' transações'):'Sem CSV carregado';
+}
+function rxGetFilterValues(){
+ function v(id){var el=document.getElementById(id);return el?String(el.value||'all'):'all';}
+ rxState.filters.period=v('rx-filter-period');
+ rxState.filters.user=v('rx-filter-user');
+ rxState.filters.merchant=v('rx-filter-merchant');
+ rxState.filters.category=v('rx-filter-category');
+ rxState.filters.card=v('rx-filter-card');
+}
+function rxApplyFilters(){
+ rxGetFilterValues();
+ var f=rxState.filters;
+ rxState.filtered=(rxState.rows||[]).filter(function(r){
+  var monthLbl=rxMonthLabel(r.month);
+  if(f.period!=='all'&&monthLbl!==f.period)return false;
+  if(f.user!=='all'&&r.user!==f.user)return false;
+  if(f.merchant!=='all'&&r.merchant!==f.merchant)return false;
+  if(f.category!=='all'&&r.category!==f.category)return false;
+  if(f.card!=='all'&&r.card!==f.card)return false;
+  return true;
+ });
+ rxState.page=1;
+ rxRenderAll();
+}
+function rxClearFilters(){['rx-filter-period','rx-filter-user','rx-filter-merchant','rx-filter-category','rx-filter-card'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='all';});rxApplyFilters();}
+function rxSortBy(key){
+ if(rxState.sortBy===key)rxState.sortDir=rxState.sortDir==='asc'?'desc':'asc';
+ else{rxState.sortBy=key;rxState.sortDir=(key==='amount'||key==='date'||key==='idx')?'desc':'asc';}
+ rxRenderTable();
+}
+function rxGetSorted(){
+ var dir=rxState.sortDir==='asc'?1:-1;
+ var q=rxNorm((document.getElementById('rx-search')||{}).value).toLowerCase();
+ return (rxState.filtered||[]).filter(function(r){
+  if(!q)return true;
+  return String(r.merchant||'').toLowerCase().indexOf(q)>=0||String(r.user||'').toLowerCase().indexOf(q)>=0;
+ }).slice().sort(function(a,b){
+  var k=rxState.sortBy;
+  var av=a[k],bv=b[k];
+  if(k==='date'){av=a.dateObj&&a.dateObj.getTime?a.dateObj.getTime():0;bv=b.dateObj&&b.dateObj.getTime?b.dateObj.getTime():0;}
+  if(typeof av==='number'||typeof bv==='number')return ((Number(av)||0)-(Number(bv)||0))*dir;
+  return String(av||'').localeCompare(String(bv||''),undefined,{numeric:true,sensitivity:'base'})*dir;
+ });
+}
+function rxChangePage(d){rxState.page=Math.max(1,rxState.page+d);rxRenderTable();}
+function rxRenderTopKpis(list){
+ var total=list.reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ var cnt=list.length;var avg=cnt?total/cnt:0;
+ var period=rxState.filters.period==='all'?'All':rxState.filters.period;
+ var el1=document.getElementById('rx-kpi-total');if(el1)el1.textContent=rxMoney(total);
+ var el2=document.getElementById('rx-kpi-count');if(el2)el2.textContent=String(cnt);
+ var el3=document.getElementById('rx-kpi-avg');if(el3)el3.textContent=rxMoney(avg);
+ var el4=document.getElementById('rx-kpi-period');if(el4)el4.textContent=period;
+}
+function rxRenderByUser(list){
+ var wrap=document.getElementById('rx-by-user');if(!wrap)return;
+ var by={};var total=list.reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ list.forEach(function(r){var k=r.user||'—';if(!by[k])by[k]={name:k,total:0,count:0};by[k].total+=Number(r.amount)||0;by[k].count++;});
+ var rows=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return b.total-a.total;});
+ wrap.innerHTML=rows.map(function(x){
+  var pct=total>0?Math.max(2,Math.round((x.total/total)*100)):0;
+  return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:var(--ink)">'+rxEsc(x.name)+'</div><div style="margin-top:4px;font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:var(--ink)">'+rxMoney(x.total)+'</div><div style="font-size:10px;color:var(--ink3)">'+x.count+' transações</div><div style="margin-top:7px;height:6px;background:var(--cream);border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:var(--amber)"></i></div></div>';
+ }).join('')||'<div style="grid-column:1 / -1;font-size:12px;color:var(--ink3);padding:8px">Sem dados no filtro atual.</div>';
+}
+function rxRenderByMonth(list){
+ var wrap=document.getElementById('rx-by-month');if(!wrap)return;
+ var by={};var total=list.reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+ list.forEach(function(r){var k=r.month||'—';if(!by[k])by[k]={month:k,total:0,count:0};by[k].total+=Number(r.amount)||0;by[k].count++;});
+ var rows=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return String(a.month).localeCompare(String(b.month));});
+ wrap.innerHTML=rows.map(function(x){
+  var pct=total>0?Math.max(2,Math.round((x.total/total)*100)):0;
+  return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px"><div style="font-size:11px;font-weight:700;color:var(--ink)">'+rxMonthShort(x.month)+'</div><div style="margin-top:4px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--ink)">'+rxMoney(x.total)+'</div><div style="font-size:10px;color:var(--ink3)">('+x.count+')</div><div style="margin-top:7px;height:6px;background:var(--cream);border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:var(--blue)"></i></div></div>';
+ }).join('')||'<div style="grid-column:1 / -1;font-size:12px;color:var(--ink3);padding:8px">Sem dados no filtro atual.</div>';
+}
+function rxRank(list,field,target,topN){
+ var by={};
+ list.forEach(function(r){var k=rxNorm(r[field])||'—';if(!by[k])by[k]={name:k,total:0,count:0};by[k].total+=Number(r.amount)||0;by[k].count++;});
+ var rows=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return b.total-a.total;});
+ if(topN)rows=rows.slice(0,topN);
+ var el=document.getElementById(target);if(!el)return;
+ el.innerHTML=rows.map(function(x,i){return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--ink2)">'+(i+1)+'. '+rxEsc(x.name)+'</div><div style="text-align:right"><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:var(--ink)">'+rxMoney(x.total)+'</div><div style="font-size:10px;color:var(--ink3)">('+x.count+')</div></div></div>';}).join('')||'<div style="font-size:12px;color:var(--ink3);padding:8px">Sem dados no filtro atual.</div>';
+}
+function rxRenderByCard(list){
+ var wrap=document.getElementById('rx-by-card');if(!wrap)return;
+ var by={};list.forEach(function(r){var k=rxNorm(r.card)||'—';if(!by[k])by[k]={name:k,total:0,count:0};by[k].total+=Number(r.amount)||0;by[k].count++;});
+ var rows=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return b.total-a.total;});
+ wrap.innerHTML=rows.map(function(x){return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px"><div style="font-size:11px;font-weight:700;color:var(--ink)">'+rxEsc(x.name)+'</div><div style="margin-top:4px;font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--ink)">'+rxMoney(x.total)+'</div><div style="font-size:10px;color:var(--ink3)">('+x.count+')</div></div>';}).join('')||'<div style="grid-column:1 / -1;font-size:12px;color:var(--ink3);padding:8px">Sem dados no filtro atual.</div>';
+}
+function rxRenderTable(){
+ var body=document.getElementById('rx-tbody');if(!body)return;
+ var list=rxGetSorted();
+ var totalPages=Math.max(1,Math.ceil(list.length/rxState.pageSize));
+ if(rxState.page>totalPages)rxState.page=totalPages;
+ var start=(rxState.page-1)*rxState.pageSize;
+ var pageRows=list.slice(start,start+rxState.pageSize);
+ body.innerHTML=pageRows.map(function(r,i){
+  var odd=((start+i)%2===1)?'background:rgba(201,169,110,.03);':'';
+  return '<tr style="border-bottom:1px solid var(--border);'+odd+'"><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+(start+i+1)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+rxEsc(r.date||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink)">'+rxEsc(r.merchant||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+rxEsc(r.category||'—')+'</td><td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:var(--ink);text-align:right">'+rxMoney(r.amount)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+rxEsc(r.user||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+rxEsc(r.card||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+rxEsc(r.department||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+rxEsc(r.location||'—')+'</td></tr>';
+ }).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;font-size:12px;color:var(--ink3)">Sem transações para o filtro atual.</td></tr>';
+ var pg=document.getElementById('rx-page');if(pg)pg.textContent='Page '+rxState.page+'/'+totalPages;
+}
+function rxRenderAll(){
+ var list=rxState.filtered||[];
+ rxRenderTopKpis(list);
+ rxRenderByUser(list);
+ rxRenderByMonth(list);
+ rxRank(list,'merchant','rx-top-merchants',10);
+ rxRank(list,'category','rx-by-category');
+ rxRenderByCard(list);
+ rxRenderTable();
+}
+async function rxRenderPage(){
+ if(!window._rxInit){
+  window._rxInit=1;
+  await rxLoadFromServer();
+  var fi=document.getElementById('rx-file');if(fi)fi.addEventListener('change',function(ev){if(ev.target.files&&ev.target.files[0])rxOnFile(ev.target.files[0]);ev.target.value='';});
+  var dz=document.getElementById('rx-drop');
+  if(dz){
+   dz.addEventListener('click',rxPickFile);
+   dz.addEventListener('dragover',function(ev){ev.preventDefault();dz.style.borderColor='var(--amber)';});
+   dz.addEventListener('dragleave',function(){dz.style.borderColor='var(--amber-bd)';});
+   dz.addEventListener('drop',function(ev){ev.preventDefault();dz.style.borderColor='var(--amber-bd)';var f=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];if(f)rxOnFile(f);});
+  }
+ }
+ rxPopulateFilters();
+ rxApplyFilters();
+}
+window.rxPickFile=rxPickFile;
+window.rxApplyFilters=rxApplyFilters;
+window.rxClearFilters=rxClearFilters;
+window.rxSortBy=rxSortBy;
+window.rxChangePage=rxChangePage;
+window.rxRenderTable=rxRenderTable;
+
 // INIT 
 window.addEventListener('DOMContentLoaded',()=>{
  updateBranding();
@@ -9482,6 +9824,7 @@ async function gmBootstrapServerData(){
   if(j.owner_payments&&typeof j.owner_payments==='object'){opayStateCache=j.owner_payments;}
   if(Array.isArray(j.owner_payment_logs)){opayLogsCache=j.owner_payment_logs;}
   if(j.owner_payment_history&&typeof j.owner_payment_history==='object'){opayHistoryCache=j.owner_payment_history;}
+ if(Array.isArray(j.ramp_expenses)){rxState.rows=rxHydrateRows(j.ramp_expenses);}
   gmApplyWorkspaceConfigFromServer(cfg);
   if(j.site_config&&typeof j.site_config==='object'){
    try{if(Array.isArray(j.site_config.gm_vendors)&&typeof gvSave==='function')gvSave(j.site_config.gm_vendors);}catch(e){}
