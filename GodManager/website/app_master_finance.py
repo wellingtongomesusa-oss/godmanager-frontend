@@ -569,6 +569,17 @@ class IntegrationWebhookDelivery(db.Model):
     processed_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 
+class SiteConfig(db.Model):
+    """Chave/valor (JSON em text) — OAuth QuickBooks (`qb_oauth_store`), flags do site, etc."""
+
+    __tablename__ = "gm_site_config"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True)
+    value = db.Column(db.Text)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Reserva(db.Model):
     """Reservas - dados de reservas importados via CSV."""
     __tablename__ = "reservas"
@@ -990,6 +1001,12 @@ def create_app():
             db.session.commit()
         except Exception:
             db.session.rollback()
+        try:
+            from website.qb_routes import init_quickbooks_from_db
+        except ImportError:
+            from qb_routes import init_quickbooks_from_db
+
+        init_quickbooks_from_db(app)
     
     return app
 

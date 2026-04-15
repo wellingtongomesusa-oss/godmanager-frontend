@@ -31,13 +31,12 @@ const nextConfig = {
    */
   async rewrites() {
     const b = crmBackend.replace(/\/$/, '');
-    const flaskLocal = 'http://localhost:5001';
     return [
       {
         source: '/crm/integrations/quickbooks/:path*',
-        destination: `${flaskLocal}/crm/integrations/quickbooks/:path*`,
+        destination: `${b}/crm/integrations/quickbooks/:path*`,
       },
-      { source: '/api/quickbooks/:path*', destination: `${flaskLocal}/api/quickbooks/:path*` },
+      { source: '/api/quickbooks/:path*', destination: `${b}/api/quickbooks/:path*` },
       { source: '/crm/:path*', destination: `${b}/crm/:path*` },
       { source: '/api/integrations/:path*', destination: `${b}/api/integrations/:path*` },
       { source: '/api/webhooks/:path*', destination: `${b}/api/webhooks/:path*` },

@@ -1,6 +1,7 @@
 """Rotas QuickBooks OAuth2 + sync → GAAP (Intuit). Requer: pip install intuit-oauth requests."""
 from __future__ import annotations
 
+import json
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -9,13 +10,159 @@ from typing import Any, Dict, List, Optional
 import requests as http_requests
 from flask import Blueprint, flash, jsonify, redirect, request, session, url_for
 
-# Tokens em memória (dev); em produção usar DB ou cofre.
+# Cache em memória; fonte de verdade após arranque = Postgres (gm_site_config.qb_oauth_store).
 QB_TOKENS: Dict[str, Optional[str]] = {
     "access_token": None,
     "refresh_token": None,
     "realm_id": None,
     "expires_at": None,  # ISO8601 access token expiry (approx.)
 }
+
+_QB_SITE_KEY = "qb_oauth_store"
+
+
+def _qb_get_storage():
+    """Resolve SiteConfig + db (website Docker vs GodManager `app_master_finance`)."""
+    try:
+        from app import db as _db
+        from models import SiteConfig
+
+        return SiteConfig, _db
+    except ImportError:
+        pass
+    try:
+        import app_master_finance as _amf
+
+        sc = getattr(_amf, "SiteConfig", None)
+        if sc is not None:
+            return sc, _amf.db
+    except ImportError:
+        pass
+    try:
+        from website import app_master_finance as _amf
+
+        sc = getattr(_amf, "SiteConfig", None)
+        if sc is not None:
+            return sc, _amf.db
+    except ImportError:
+        pass
+    return None, None
+
+
+def _qb_load_tokens_from_db(app) -> None:
+    """Carrega tokens OAuth a partir de SiteConfig (Railway / Postgres)."""
+    SiteConfig, _db = _qb_get_storage()
+    if not SiteConfig:
+        return
+    try:
+        row = SiteConfig.query.filter_by(key=_QB_SITE_KEY).first()
+        if not row or not (row.value or "").strip():
+            return
+        data = json.loads(row.value)
+        if not isinstance(data, dict):
+            return
+        QB_TOKENS["access_token"] = data.get("access_token")
+        QB_TOKENS["refresh_token"] = data.get("refresh_token")
+        QB_TOKENS["realm_id"] = data.get("realm_id")
+        QB_TOKENS["expires_at"] = data.get("expires_at")
+        app.logger.info("QuickBooks: tokens carregados da base (realm_id=%s)", QB_TOKENS.get("realm_id"))
+    except Exception as e:
+        app.logger.warning("QuickBooks: falha ao carregar tokens da BD: %s", e)
+
+
+def _qb_save_tokens_to_db(app) -> None:
+    """Persiste tokens após OAuth / refresh (sobrevive a restarts no Railway)."""
+    SiteConfig, db = _qb_get_storage()
+    if not SiteConfig or not db:
+        return
+    blob = json.dumps(
+        {
+            "access_token": QB_TOKENS.get("access_token"),
+            "refresh_token": QB_TOKENS.get("refresh_token"),
+            "realm_id": QB_TOKENS.get("realm_id"),
+            "expires_at": QB_TOKENS.get("expires_at"),
+        },
+        separators=(",", ":"),
+    )
+    row = SiteConfig.query.filter_by(key=_QB_SITE_KEY).first()
+    if row:
+        row.value = blob
+    else:
+        row = SiteConfig(key=_QB_SITE_KEY, value=blob)
+        db.session.add(row)
+    db.session.commit()
+
+
+def _qb_clear_tokens_db(app) -> None:
+    SiteConfig, db = _qb_get_storage()
+    if not SiteConfig or not db:
+        return
+    row = SiteConfig.query.filter_by(key=_QB_SITE_KEY).first()
+    if row:
+        db.session.delete(row)
+        db.session.commit()
+
+
+def _qb_parse_expires(iso_s: Optional[str]) -> Optional[datetime]:
+    if not iso_s:
+        return None
+    s = str(iso_s).strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def _qb_try_refresh(app) -> bool:
+    rt = QB_TOKENS.get("refresh_token")
+    if not rt:
+        return False
+    auth = _create_qb_auth()
+    if not auth:
+        return False
+    try:
+        auth.refresh(refresh_token=rt)
+        QB_TOKENS["access_token"] = auth.access_token
+        if getattr(auth, "refresh_token", None):
+            QB_TOKENS["refresh_token"] = auth.refresh_token
+        exp_in = getattr(auth, "expires_in", None)
+        if exp_in is not None:
+            try:
+                exp_dt = datetime.now(timezone.utc) + timedelta(seconds=int(exp_in))
+                QB_TOKENS["expires_at"] = exp_dt.isoformat()
+            except (TypeError, ValueError):
+                QB_TOKENS["expires_at"] = None
+        else:
+            QB_TOKENS["expires_at"] = None
+        _qb_save_tokens_to_db(app)
+        app.logger.info("QuickBooks: access token renovado")
+        return True
+    except Exception as e:
+        app.logger.warning("QuickBooks: refresh falhou: %s", e)
+        return False
+
+
+def _qb_ensure_valid_access(app) -> bool:
+    """Garante access token utilizável (renova ~5 min antes de expirar)."""
+    if not QB_TOKENS.get("access_token") and QB_TOKENS.get("refresh_token"):
+        return _qb_try_refresh(app)
+    exp = _qb_parse_expires(QB_TOKENS.get("expires_at"))
+    rt = QB_TOKENS.get("refresh_token")
+    if exp and rt:
+        now = datetime.now(timezone.utc)
+        if (exp - now).total_seconds() < 300:
+            return _qb_try_refresh(app)
+    return QB_TOKENS.get("access_token") is not None
+
+
+def init_quickbooks_from_db(app) -> None:
+    """Chamar dentro de app.app_context() após db.create_all()."""
+    _qb_load_tokens_from_db(app)
 
 _DEFAULT_QB_CALLBACK = "/crm/integrations/quickbooks/callback"
 
@@ -155,8 +302,6 @@ def register_quickbooks_routes(app):
             qb_auth = _create_qb_auth(state_token=state)
             # Scopes.ACCOUNTING == "com.intuit.quickbooks.accounting"
             auth_url = qb_auth.get_authorization_url([Scopes.ACCOUNTING], state_token=state)
-            print(f"[QB CONNECT] Full auth URL: {auth_url}", flush=True)
-            app.logger.warning("[QB CONNECT] Full auth URL: %s", auth_url)
             return redirect(auth_url)
         except Exception as e:
             flash(f"QuickBooks OAuth: {e}", "danger")
@@ -199,6 +344,7 @@ def register_quickbooks_routes(app):
             else:
                 QB_TOKENS["expires_at"] = None
             flash("QuickBooks conectado.", "success")
+            _qb_save_tokens_to_db(app)
         except Exception as e:
             flash(f"Token QuickBooks: {e}", "danger")
         return redirect(url_for("crm_integrations_page"))
@@ -213,12 +359,13 @@ def register_quickbooks_routes(app):
             except Exception:
                 pass
         QB_TOKENS.update({"access_token": None, "refresh_token": None, "realm_id": None, "expires_at": None})
+        _qb_clear_tokens_db(app)
         flash("QuickBooks desligado.", "info")
         return redirect(url_for("crm_integrations_page"))
 
     @app.route("/crm/integrations/quickbooks/sync")
     def qb_sync():
-        if not QB_TOKENS.get("access_token"):
+        if not _qb_ensure_valid_access(app):
             return jsonify({"error": "QuickBooks não conectado"}), 401
         base = (os.getenv("QB_BASE_URL") or "https://sandbox-quickbooks.api.intuit.com").rstrip("/")
         realm = QB_TOKENS.get("realm_id")
@@ -257,7 +404,7 @@ def register_quickbooks_routes(app):
 
     @app.route("/api/quickbooks/raw/<entity>")
     def qb_raw(entity):
-        if not QB_TOKENS.get("access_token"):
+        if not _qb_ensure_valid_access(app):
             return jsonify({"error": "Não conectado"}), 401
         ent = "".join(c for c in (entity or "") if c.isalnum())
         if not ent:
@@ -302,6 +449,7 @@ def register_quickbooks_routes(app):
         QB_TOKENS["refresh_token"] = data.get("refresh_token")
         QB_TOKENS["realm_id"] = data.get("realm_id")
         QB_TOKENS["expires_at"] = (datetime.utcnow() + timedelta(seconds=3600)).isoformat()
+        _qb_save_tokens_to_db(app)
         return jsonify({"ok": True, "realm_id": QB_TOKENS["realm_id"]})
 
 

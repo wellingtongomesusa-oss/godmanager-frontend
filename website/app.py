@@ -199,10 +199,13 @@ def create_app():
     app.register_blueprint(data_bp)
     import models  # noqa: F401 - ensure persistence models are registered
 
-    # Create tables
+    # Create tables + QuickBooks OAuth tokens (SiteConfig)
     with app.app_context():
         db.create_all()
-    
+        from qb_routes import init_quickbooks_from_db
+
+        init_quickbooks_from_db(app)
+
     return app
 
 
