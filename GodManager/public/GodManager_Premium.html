@@ -2479,7 +2479,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  LONG TERM — PROPERTIES PAGE
  -->
 <div class="page" id="page-ltproperties">
- <div class="ph"><div class="pt">Long Term — Properties</div><div class="ps">Cadastro geral de propriedades · Gestao completa do portfolio</div></div>
+ <div class="ph"><div class="pt">Long Term -- Properties</div><div class="ps">Cadastro geral de propriedades - Gestao completa do portfolio</div></div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
  <input id="ltp-search" oninput="ltpRender()" placeholder="Buscar por endereco, owner ou tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:260px">
  <select id="ltp-filter-occ" onchange="ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
@@ -2487,16 +2487,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="rented">Alugada</option>
  <option value="vacant">Vaga</option>
  <option value="inprogress">Em Andamento</option>
- <option value="renovation">Reforma</option>
  </select>
  <select id="ltp-filter-month" onchange="ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
- <option value="">Todos os meses</option>
- <option value="2026-01">Jan 2026</option>
- <option value="2026-02">Fev 2026</option>
+ <option value="">All</option>
  <option value="2026-03" selected>Mar 2026</option>
  <option value="2026-04">Abr 2026</option>
- <option value="2026-05">Mai 2026</option>
- <option value="2026-06">Jun 2026</option>
  </select>
  <div style="margin-left:auto;display:flex;gap:8px">
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
@@ -2534,7 +2529,12 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <tbody id="ltp-tbody"></tbody>
  </table>
  </div>
- <div id="ltp-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma propriedade encontrada. Clique em + Nova Propriedade para comecar.</div>
+ <div id="ltp-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma propriedade encontrada. Faca upload do CSV em Integrations > AppFolio Upload</div>
+ <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center;gap:8px">
+  <button type="button" onclick="ltpChangePage(-1)" style="padding:6px 10px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Anterior</button>
+  <span id="ltp-page-info" style="font-size:11px;color:var(--ink3)">Pagina 1 de 1</span>
+  <button type="button" onclick="ltpChangePage(1)" style="padding:6px 10px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Proxima</button>
+ </div>
  </div>
 </div>
 
@@ -3174,22 +3174,14 @@ function afpGetActiveData(){
 function applyHomeDashboardFromAppfolio(){
  var list=afpGetActiveData();
  var leases=afpGetTenantLeases();
- var manual=(typeof ltGetRecords==='function'?ltGetRecords():[]).filter(function(r){return !r.isAppfolio;});
  var expMetrics=afxCalcMetrics();
  if(!list.length&&!(window.appfolioExpenseData||[]).length)return false;
- var rentedCsv=list.filter(function(x){return afpNum(x.marketRent)>0;}).length;
- var vacantCsv=list.length-rentedCsv;
- var rentReceivableCsv=list.reduce(function(s,x){return s+afpNum(x.marketRent);},0);
- var rentPotentialCsv=0;
- list.forEach(function(x){
-  rentPotentialCsv+=afpNum(x.marketRent);
- });
- var rentedManual=manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='rented';}).length;
- var rentReceivableManual=manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='rented';}).reduce(function(s,r){return s+(Number(r.rent)||0);},0);
- var rentPotentialManual=manual.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
- var total=list.length+manual.length;
- var rented=rentedCsv+rentedManual;
- var vacant=vacantCsv+manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='vacant';}).length;
+ // Home cards devem refletir somente o property CSV filtrado (fonte oficial).
+ var total=list.length;
+ var rented=list.filter(function(x){return afpNum(x.marketRent)>0;}).length;
+ var vacant=Math.max(0,total-rented);
+ var rentPotentialCsv=list.reduce(function(s,x){return s+afpNum(x.marketRent);},0);
+ var rentReceivableCsv=rentPotentialCsv;
  var ownersSet=new Set(list.map(function(x){
   var own=String(x.ownerName||'').trim();
   if(own)return own;
@@ -3197,8 +3189,8 @@ function applyHomeDashboardFromAppfolio(){
   return raw.split(/\(|\d/)[0].trim();
  }).filter(Boolean));
  var owners=ownersSet.size;
- var marketTotal=rentPotentialCsv+rentPotentialManual;
- var receivableTotal=rentReceivableCsv+rentReceivableManual;
+ var marketTotal=rentPotentialCsv;
+ var receivableTotal=rentReceivableCsv;
  var moveOutCount=leases.filter(function(l){return String(l.status||'').toLowerCase()==='notice';}).length;
  var ownerTrust=expMetrics.ownerTrust||0;
  var retained=Math.max(0,marketTotal-ownerTrust);
@@ -7570,7 +7562,43 @@ function ltpDeleteAppfolioProperty(appfolioId){
  try{fetch(GM_BACKEND_RAILWAY_APP+'/api/data/properties/import',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.appfolioData||[])});}catch(e3){}
  ltpRender();afpRenderAll();showToast('Propriedade AppFolio removida com sucesso.');
 }
+let ltpPage=1;
+const LTP_PAGE_SIZE=20;
+let ltpLoadBackendPromise=null;
+let ltpBackendLoaded=false;
+async function ltpEnsureBackendData(){
+ if(ltpBackendLoaded)return;
+ if(ltpLoadBackendPromise)return ltpLoadBackendPromise;
+ ltpLoadBackendPromise=(async function(){
+  try{
+   var rp=await fetch('/api/data/load/properties',{method:'GET'});
+   if(rp.ok){
+    var jp=await rp.json();
+    var props=Array.isArray(jp)?jp:(Array.isArray(jp.data)?jp.data:[]);
+    if(props.length){
+     window.appfolioData=afpFilterPropertyRows(props);
+     try{gmLsSet('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e1){}
+    }
+   }
+  }catch(e){}
+  try{
+   var rt=await fetch('/api/data/load/tenants',{method:'GET'});
+   if(rt.ok){
+    var jt=await rt.json();
+    var tenants=Array.isArray(jt)?jt:(Array.isArray(jt.data)?jt.data:[]);
+    if(Array.isArray(tenants)&&tenants.length){
+     window.appfolioTenantData=tenants;
+     try{gmLsSet('gm_appfolio_tenant_directory',JSON.stringify(tenants));}catch(e2){}
+    }
+   }
+  }catch(e3){}
+  ltpBackendLoaded=true;
+  ltpLoadBackendPromise=null;
+ })();
+ return ltpLoadBackendPromise;
+}
 function ltpGetAppfolioFallbackRecords(){
+ afxLoadStoredData();
  var list=afpFilterPropertyRows(afpGetActiveData()).filter(function(p){
   var prop=String((p&&((p.Property)||p.property||((p.raw||{})['Property'])||''))||'').trim();
   var addr=String((p&&p.address)||'').trim();
@@ -7615,6 +7643,11 @@ function ltpGetAppfolioFallbackRecords(){
 }
 
 function ltpRender(){
+ if(!ltpBackendLoaded){
+  ltpEnsureBackendData().then(function(){
+   if(document.getElementById('page-ltproperties')&&document.getElementById('page-ltproperties').classList.contains('active'))ltpRender();
+  }).catch(function(){});
+ }
  const records=ltGetRecords();
  const appfolioFallback=ltpGetAppfolioFallbackRecords();
  const sourceRecords=[...records,...appfolioFallback].filter(function(r){
@@ -7643,15 +7676,25 @@ function ltpRender(){
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody)return;
- if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
+ if(!filtered.length){
+  tbody.innerHTML='';
+  if(empty)empty.style.display='block';
+  var p0=document.getElementById('ltp-page-info');if(p0)p0.textContent='Pagina 1 de 1';
+  return;
+ }
  if(empty)empty.style.display='none';
+ const totalPages=Math.max(1,Math.ceil(filtered.length/LTP_PAGE_SIZE));
+ if(ltpPage>totalPages)ltpPage=totalPages;
+ if(ltpPage<1)ltpPage=1;
+ const start=(ltpPage-1)*LTP_PAGE_SIZE;
+ const pageRows=filtered.slice(start,start+LTP_PAGE_SIZE);
  const occLabel={rented:'Rented',vacant:'Available',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
- tbody.innerHTML=filtered.map((r,i)=>`
+ tbody.innerHTML=pageRows.map((r,i)=>`
  <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="${r.isAppfolio&&r.appfolioId?"afpOpenModal('"+r.appfolioId+"')":"ltOpenDetail('"+r.id+"')"}">
- <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
+ <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${start+i+1}</td>
 <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.isAppfolio?(r.addressSub||'--'):(r.baths||'—')}</div></td>
 <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${ltpCleanOwnerName(r.owner)}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
@@ -7668,7 +7711,9 @@ ${r.isAppfolio?`<button onclick="afpOpenModal('${r.appfolioId}')" style="padding
  </div>
  </td>
  </tr>`).join('');
+ const p=document.getElementById('ltp-page-info');if(p)p.textContent='Pagina '+ltpPage+' de '+totalPages;
 }
+function ltpChangePage(delta){ltpPage=Math.max(1,ltpPage+delta);ltpRender();}
 
 // 
 // LTCLNPAGE — CLEANINGS PAGE RENDER
@@ -10355,6 +10400,7 @@ window.ophSortBy=ophSortBy;
 window.ophChangePage=ophChangePage;
 window.ophExportCsv=ophExportCsv;
 window.ophExportPdf=ophExportPdf;
+window.ltpChangePage=ltpChangePage;
 
 var rxState={rows:[],filtered:[],sortBy:'date',sortDir:'desc',page:1,pageSize:20,filters:{period:'all',user:'all',merchant:'all',category:'all',card:'all'}};
 function rxEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
