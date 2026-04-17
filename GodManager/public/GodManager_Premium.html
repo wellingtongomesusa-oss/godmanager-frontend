@@ -2502,22 +2502,31 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button type="button" onclick="nav('ltproperties')" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Properties</button>
  <button type="button" onclick="nav('tenantportal')" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Tenant Portal</button>
  </div>
- <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL TENANTS</div><div id="tn-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">FROM PROPERTIES</div><div id="tn-kpi-lt" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">IMPORTED</div><div id="tn-kpi-af" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+ <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL LEASES</div><div id="tn-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">IN NOTICE</div><div id="tn-kpi-notice" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL PESSOAS</div><div id="tn-kpi-people" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">LEASE EXPIRING (30D)</div><div id="tn-kpi-expiring" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL RENT</div><div id="tn-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL DEPOSIT</div><div id="tn-kpi-deposit" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);margin-top:6px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(30,22,12,.06)">
  <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Directory</div>
  <div style="overflow-x:auto">
- <table style="width:100%;border-collapse:collapse;min-width:920px">
+ <table style="width:100%;border-collapse:collapse;min-width:1320px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">#</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Property</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
- <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Property / Unit</th>
- <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Contact</th>
- <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Monthly Rent</th>
- <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Source</th>
- <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Actions</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Co-Tenant</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Phone</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Email</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Move-in</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Lease To</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
  </tr></thead>
  <tbody id="tn-tbody"></tbody>
  </table>
@@ -3091,23 +3100,29 @@ function gmHomeMoneyCtr(n){
  return '$'+s;
 }
 function afpIsValidPropertyRecord(x){
- var prop=String((x&&(x.Property||x.property||((x.raw||{})['Property'])||x.address))||'').trim();
- var pLow=prop.toLowerCase();
- if(!prop)return false;
- if(pLow==='total')return false;
- if(pLow.indexOf('manager prop - admin')>=0)return false;
- return true;
+ var prop=afpPropertyLabel(x);
+ return !afpIsFilteredPropertyValue(prop);
 }
 function afpFilterPropertyRows(properties){
  var arr=Array.isArray(properties)?properties:[];
- return arr.filter(function(row){
-  var prop=String((row&&(row.Property||row['Property']||row.property||((row.raw||{})['Property'])))||'').trim();
-  var pLow=prop.toLowerCase();
-  if(pLow==='total')return false;
-  if(pLow.indexOf('manager prop - admin')>=0)return false;
-  if(prop==='')return false;
-  return true;
+ var bestByKey={};
+ function quality(row){
+  var q=0;
+  if(afpNum(row&&row.marketRent)>0)q+=3;
+  if(afpNum(row&&row.mgmtPercent)>0)q+=3;
+  if(String(row&&row.ownerName||'').trim())q+=2;
+  if(String(row&&row.ownerRaw||'').trim())q+=2;
+  if(String(row&&row.description||'').trim())q+=1;
+  return q;
+ }
+ arr.forEach(function(row){
+  var prop=afpPropertyLabel(row);
+  if(afpIsFilteredPropertyValue(prop))return;
+  var key=afpAddressKey((row&&row.address)||prop);
+  if(!key)return;
+  if(!bestByKey[key]||quality(row)>quality(bestByKey[key]))bestByKey[key]=row;
  });
+ return Object.keys(bestByKey).map(function(k){return bestByKey[k];});
 }
 function afpGetActiveData(){
  try{
@@ -3126,10 +3141,25 @@ function afpGetActiveData(){
 }
 function applyHomeDashboardFromAppfolio(){
  var list=afpGetActiveData();
+ var leases=afpGetTenantLeases();
+ var manual=(typeof ltGetRecords==='function'?ltGetRecords():[]).filter(function(r){return !r.isAppfolio;});
  var expMetrics=afxCalcMetrics();
  if(!list.length&&!(window.appfolioExpenseData||[]).length)return false;
- var total=list.length;
- var rented=list.filter(function(x){return Number(x.marketRent||0)>0;}).length;
+ var rentedCsv=0;
+ var rentReceivableCsv=0;
+ var rentPotentialCsv=0;
+ list.forEach(function(x){
+  var lease=afpFindLeaseForProperty(x);
+  var current=lease&&String(lease.status||'').toLowerCase()==='current';
+  var leaseRent=(lease&&afpNum(lease.rent)>0)?afpNum(lease.rent):afpNum(x.marketRent);
+  if(current){rentedCsv++;rentReceivableCsv+=leaseRent;}
+  rentPotentialCsv+=afpNum(x.marketRent);
+ });
+ var rentedManual=manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='rented';}).length;
+ var rentReceivableManual=manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='rented';}).reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+ var rentPotentialManual=manual.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+ var total=list.length+manual.length;
+ var rented=rentedCsv+rentedManual;
  var vacant=total-rented;
  var ownersSet=new Set(list.map(function(x){
   var own=String(x.ownerName||'').trim();
@@ -3138,7 +3168,9 @@ function applyHomeDashboardFromAppfolio(){
   return raw.split(/\(|\d/)[0].trim();
  }).filter(Boolean));
  var owners=ownersSet.size;
- var marketTotal=list.reduce(function(s,x){return s+(Number(x.marketRent)||0);},0);
+ var marketTotal=rentPotentialCsv+rentPotentialManual;
+ var receivableTotal=rentReceivableCsv+rentReceivableManual;
+ var moveOutCount=leases.filter(function(l){return String(l.status||'').toLowerCase()==='notice';}).length;
  var ownerTrust=expMetrics.ownerTrust||0;
  var retained=Math.max(0,marketTotal-ownerTrust);
  var op=expMetrics.operatingByCode||{};
@@ -3149,6 +3181,10 @@ function applyHomeDashboardFromAppfolio(){
   case 'total-houses':
    c.empty=false;c.value=String(total);c.ctr=String(total);c.sub1='All properties in portfolio';c.sub2='';
    c.cd=[Math.max(0.01,rented),Math.max(0.01,vacant),0.01];
+   break;
+  case 'move-out':
+   c.empty=false;c.value=String(moveOutCount);c.ctr=String(moveOutCount);c.sub1='Tenant/owner notices';
+   c.cd=[Math.max(0.01,moveOutCount),Math.max(0.01,Math.max(0,total-moveOutCount))];
    break;
   case 'total-rented':
    c.empty=false;c.value=String(rented);c.ctr=String(rented);c.sub1='Currently leased units';c.sub2='';
@@ -3166,8 +3202,8 @@ function applyHomeDashboardFromAppfolio(){
    c.empty=false;c.value=gmHomeMoney(0);c.ctr=gmHomeMoneyCtr(0);c.cd=[1];
    break;
   case 'rent-receivable':
-   c.empty=false;c.value=gmHomeMoney(marketTotal);c.ctr=gmHomeMoneyCtr(marketTotal);
-   c.cd=[Math.max(0.01,marketTotal),0.01,0.01];
+   c.empty=false;c.value=gmHomeMoney(receivableTotal);c.ctr=gmHomeMoneyCtr(receivableTotal);
+   c.cd=[Math.max(0.01,receivableTotal),0.01,0.01];
    break;
   case 'rent-potential':
    c.empty=false;c.value=gmHomeMoney(marketTotal);c.ctr=gmHomeMoneyCtr(marketTotal);
@@ -3464,7 +3500,7 @@ function saveAllData(){
  try{var glu=gmLsGet('gm_appfolio_last_upload');if(glu)siteCfg.gm_appfolio_last_upload=glu;}catch(e4){}
  try{var gis=gmLsGet('gm_appfolio_import_summary');if(gis)siteCfg.gm_appfolio_import_summary=JSON.parse(gis);}catch(e5){}
  try{if(typeof gvLoad==='function')siteCfg.gm_vendors=gvLoad();}catch(e6){}
- fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,expenses:exps,config:cfg,appfolio_vendors:gmExtractAppfolioVendors(),manual_properties:(typeof ltGetRecords==='function'?ltGetRecords():[]),manual_expenses:(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]),site_config:siteCfg,owner_payments:(typeof opayLoadState==='function'?opayLoadState():{}),owner_payment_logs:(typeof opayLoadLogs==='function'?opayLoadLogs():[]),owner_payment_history:(typeof opayLoadHistory==='function'?opayLoadHistory():{}),ramp_expenses:(rxState&&Array.isArray(rxState.rows)?rxState.rows:[]),client_kv:JSON.parse(JSON.stringify(window._gmClientKV||{}))})})
+ fetch(GM_BACKEND_RAILWAY_APP+'/api/data/save-all',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties:props,tenants:(window.appfolioTenantData||[]),expenses:exps,config:cfg,appfolio_vendors:gmExtractAppfolioVendors(),manual_properties:(typeof ltGetRecords==='function'?ltGetRecords():[]),manual_expenses:(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]),site_config:siteCfg,owner_payments:(typeof opayLoadState==='function'?opayLoadState():{}),owner_payment_logs:(typeof opayLoadLogs==='function'?opayLoadLogs():[]),owner_payment_history:(typeof opayLoadHistory==='function'?opayLoadHistory():{}),ramp_expenses:(rxState&&Array.isArray(rxState.rows)?rxState.rows:[]),client_kv:JSON.parse(JSON.stringify(window._gmClientKV||{}))})})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
   if(!o.ok||!o.j)throw new Error('Erro ao salvar');
@@ -4975,6 +5011,9 @@ function gmAppfolioDoImport(){
     window.afUploadQueue=[];
     gmAfRenderFileList();
     gmAppfolioRefreshDashboard(true);
+    if(typeof ltpRender==='function')ltpRender();
+    if(typeof tnRender==='function')tnRender();
+    if(typeof renderCards==='function')renderCards();
    }catch(e){
     gmAfSetErr('Resposta inválida do servidor.');
    }
@@ -7511,14 +7550,17 @@ function ltpGetAppfolioFallbackRecords(){
  });
  if(!list.length)return [];
  return list.map(function(p,idx){
-  var rent=Number(p.marketRent)||0;
+  var lease=afpFindLeaseForProperty(p);
+  var hasCurrent=!!(lease&&String(lease.status||'').toLowerCase()==='current');
+  var rent=(lease&&afpNum(lease.rent)>0)?afpNum(lease.rent):(Number(p.marketRent)||0);
+  var deposit=(lease&&afpNum(lease.deposit)>0)?afpNum(lease.deposit):null;
   var mgmtPct=Number(p.mgmtPercent)||0;
-  var netOwner=mgmtPct>0?(rent-(rent*(mgmtPct/100))):0;
+  var netOwner=mgmtPct>0?(rent-(rent*(mgmtPct/100))):rent;
   var cityStateZip=[p.city,p.state,p.zip].filter(Boolean).join(' ');
   var bathsInfo=(Number(p.sqft)||0)>0?(Math.round(p.sqft).toLocaleString('en-US')+' sqft'):'--';
   var st='disputed';
-  if(mgmtPct>0&&rent>0)st='approved';
-  else if(mgmtPct>0&&rent<=0)st='pending';
+  if(mgmtPct>0&&hasCurrent)st='approved';
+  else if(mgmtPct>0&&!hasCurrent)st='pending';
   return {
    id:'afp_lt_'+idx,
    appfolioId:String(p.id||''),
@@ -7526,13 +7568,16 @@ function ltpGetAppfolioFallbackRecords(){
    address:String(p.address||p.property||''),
    addressSub:String((cityStateZip||'--')+' · '+bathsInfo),
    owner:ltpCleanOwnerName(p.ownerName||p.ownerRaw||'—'),
-   tenant:'',
+   tenant:(lease&&lease.primaryTenant)||'',
    baths:'--',
-   occupancy:rent>0?'rented':'vacant',
+   occupancy:hasCurrent?'rented':'vacant',
    rent:rent,
-   deposit:null,
+   deposit:deposit,
    net:netOwner,
    month:'',
+   moveIn:(lease&&lease.moveIn)||'',
+   leaseTo:(lease&&lease.leaseTo)||'',
+   coTenants:(lease&&lease.coTenants)||[],
    status:st
   };
  });
@@ -7959,32 +8004,71 @@ function tpNorm(s){return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ')
 function tpAfJson(k){try{const x=gmLsGet(k);if(!x)return null;return JSON.parse(x);}catch(e){return null;}}
 function tpAfUnpaidRows(){const a=tpAfJson('gm_af_unpaid_balances');if(Array.isArray(a))return a;const b=tpAfJson('gm_appfolio_unpaid_balances');return Array.isArray(b)?b:[];}
 function tpAfIncomeRows(){const a=tpAfJson('gm_af_income_register');if(Array.isArray(a))return a;const b=tpAfJson('gm_appfolio_income_register');return Array.isArray(b)?b:[];}
-function tpAfTenantImportRows(){const a=tpAfJson('gm_appfolio_tenant_directory');if(Array.isArray(a))return a;const b=tpAfJson('gm_af_tenant_directory');return Array.isArray(b)?b:[];}
+function tpAfTenantImportRows(){if(Array.isArray(window.appfolioTenantData)&&window.appfolioTenantData.length)return window.appfolioTenantData;const a=tpAfJson('gm_appfolio_tenant_directory');if(Array.isArray(a))return a;const b=tpAfJson('gm_af_tenant_directory');return Array.isArray(b)?b:[];}
 function tpMonthBoundsFromRef(mref){if(!mref||typeof mref!=='string')return{start:'2026-01-01',end:'2026-12-31'};const p=mref.split('-');if(p.length>=2){const y=+p[0],mo=+p[1];if(y>1990&&mo>=1&&mo<=12){const d=new Date(y,mo-1,1);const end=new Date(y,mo,0);return{start:d.toISOString().slice(0,10),end:end.toISOString().slice(0,10)};}}return{start:'2026-01-01',end:'2026-12-31'};}
 function tpLeaseDatesFromRecord(r){const b=tpMonthBoundsFromRef(r.month);return{leaseStart:r.leaseStart||b.start,leaseEnd:r.leaseEnd||b.end,moveIn:r.moveIn||b.start};}
 function tpRowToProfile(r,idx){const ld=tpLeaseDatesFromRecord(r);const rent=+r.rent||0;return{id:'lt_'+r.id,tenant_id:'lt_'+r.id,source:'statement',propRecordId:r.id,name:String(r.tenant||'').trim(),email:r.tenantEmail||r.tenant_email||'',phone:r.tenantPhone||r.tenant_phone||'',emergency:r.emergencyContact||r.emergency_contact||'',address:r.address||'',unit:r.unit||'',propType:r.propType||'Residential',owner:r.owner||'',leaseStart:ld.leaseStart,leaseEnd:ld.leaseEnd,moveIn:ld.moveIn,monthlyRent:rent,securityDeposit:+r.deposit||0,petDeposit:+r.petDeposit||0,petRent:+r.petRent||0,lateFee:+r.lateFee||150,property:r.address||'',occupancy:r.occupancy||''};}
 function tpImportRowToProfile(row,i){const get=(...keys)=>{for(let k=0;k<keys.length;k++){const v=row[keys[k]]??row[keys[k].toLowerCase()];if(v!=null&&String(v).trim()!=='')return String(v).trim();}return '';};const name=get('Tenant','Tenant Name','Name','Primary Tenant');const prop=get('Property','Property Name','Address');const unit=get('Unit','Unit Number');const email=get('Email','E-mail');const phone=get('Phone','Mobile');return{id:'af_'+i,tenant_id:'af_'+i,source:'appfolio',propRecordId:'',name:name||('Tenant '+(i+1)),email,phone,emergency:'',address:prop,unit,propType:get('Property Type','Type')||'Residential',owner:'',leaseStart:get('Lease Start','Start')||'2026-01-01',leaseEnd:get('Lease End','End')||'2026-12-31',moveIn:get('Move-in','Move In')||'',monthlyRent:parseFloat(get('Rent','Monthly Rent','Amount').replace(/[^0-9.-]/g,''))||0,securityDeposit:parseFloat(get('Security Deposit','Deposit').replace(/[^0-9.-]/g,''))||0,petDeposit:0,petRent:0,lateFee:150,property:prop,occupancy:get('Status','Lease Status')||''};}
 function tpAllProfiles(){const out=[];const seen=new Set();ltGetRecords().filter(r=>r.tenant&&String(r.tenant).trim()).forEach(r=>{const p=tpRowToProfile(r);out.push(p);seen.add(tpNorm(p.name)+'|'+tpNorm(p.address));});tpAfTenantImportRows().forEach((row,i)=>{const p=tpImportRowToProfile(row,i);const k=tpNorm(p.name)+'|'+tpNorm(p.address);if(!seen.has(k)){seen.add(k);out.push(p);}});return out;}
 function tnEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+var tnExpanded={};
+function tnRows(){
+ var leases=afpGetTenantLeases();
+ return leases.filter(function(l){
+  var st=String(l.status||'').toLowerCase();
+  return st==='current'||st==='notice';
+ }).sort(function(a,b){return String(a.property||'').localeCompare(String(b.property||''));});
+}
+function tnCountExpiring30(rows){
+ var now=new Date();now.setHours(0,0,0,0);
+ var lim=new Date(now.getTime()+30*86400000);
+ return rows.filter(function(r){
+  if(!r.leaseTo)return false;
+  var d=new Date(r.leaseTo+'T00:00:00');
+  if(isNaN(d.getTime()))return false;
+  return d>=now&&d<=lim;
+ }).length;
+}
 function tnRender(){
  const q=((document.getElementById('tn-search')||{}).value||'').toLowerCase();
- const all=typeof tpAllProfiles==='function'?tpAllProfiles():[];
- const filtered=!q?all:all.filter(p=>{const blob=(p.name||'')+' '+(p.address||p.property||'')+' '+(p.email||'')+' '+(p.phone||'');return blob.toLowerCase().includes(q);});
- const ktot=document.getElementById('tn-kpi-total');const klt=document.getElementById('tn-kpi-lt');const kaf=document.getElementById('tn-kpi-af');
- if(ktot)ktot.textContent=String(all.length);
- if(klt)klt.textContent=String(all.filter(p=>p.source==='statement').length);
- if(kaf)kaf.textContent=String(all.filter(p=>p.source==='appfolio').length);
+ const all=tnRows();
+ const filtered=!q?all:all.filter(function(p){
+  var blob=(p.primaryTenant||'')+' '+(p.property||'')+' '+(p.email||'')+' '+(p.phone||'')+' '+(p.coTenant||'');
+  return blob.toLowerCase().indexOf(q)>=0;
+ });
+ const currentRows=all.filter(function(r){return String(r.status||'').toLowerCase()==='current';});
+ const noticeRows=all.filter(function(r){return String(r.status||'').toLowerCase()==='notice';});
+ const peopleTotal=(window.appfolioTenantData||[]).length;
+ const rentTotal=all.reduce(function(s,r){return s+afpNum(r.rent);},0);
+ const depTotal=all.reduce(function(s,r){return s+afpNum(r.deposit);},0);
+ var ktot=document.getElementById('tn-kpi-total');
+ var kno=document.getElementById('tn-kpi-notice');
+ var kpe=document.getElementById('tn-kpi-people');
+ var kex=document.getElementById('tn-kpi-expiring');
+ var kre=document.getElementById('tn-kpi-rent');
+ var kde=document.getElementById('tn-kpi-deposit');
+ if(ktot)ktot.textContent=String(currentRows.length);
+ if(kno)kno.textContent=String(noticeRows.length);
+ if(kpe)kpe.textContent=String(peopleTotal);
+ if(kex)kex.textContent=String(tnCountExpiring30(all));
+ if(kre)kre.textContent=ltFmt(rentTotal);
+ if(kde)kde.textContent=ltFmt(depTotal);
  const tb=document.getElementById('tn-tbody');const empty=document.getElementById('tn-empty');
  if(!tb)return;
  if(!filtered.length){tb.innerHTML='';if(empty)empty.style.display='block';return;}
  if(empty)empty.style.display='none';
- tb.innerHTML=filtered.map(p=>{
-  const src=p.source==='appfolio'?'AppFolio':'Property';
-  const badge=p.source==='appfolio'?'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)':'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)';
-  const contact=[p.email,p.phone].filter(Boolean).join(' · ')||'—';
-  return`<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">${tnEsc(p.name)}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${tnEsc(p.address||p.property)}${p.unit&&String(p.unit)!=='—'?' · Unit '+tnEsc(p.unit):''}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${tnEsc(contact)}</td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${ltFmt(p.monthlyRent||0)}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${badge}">${src}</span></td><td style="padding:9px 12px;text-align:center"><button type="button" onclick="tnOpenInPortal(${JSON.stringify(p.id)})" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:11px">Open in Portal</button></td></tr>`;
+ tb.innerHTML=filtered.map(function(p,idx){
+  var st=String(p.status||'').toLowerCase();
+  var sLabel=st==='notice'?'Notice':'Current';
+  var sStyle=st==='notice'?'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)':'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)';
+  var co='—';
+  if(p.coTenant)co=tnEsc(p.coTenant)+(p.extraCount>0?' +'+p.extraCount:'');
+  var key=p.key||String(idx);
+  var details=tnExpanded[key]?'<tr style="background:var(--sand)"><td colspan="12" style="padding:10px 12px;font-size:11px;color:var(--ink2)"><strong>Todos os moradores:</strong> '+tnEsc((p.people||[]).map(function(x){return x.tenant;}).filter(Boolean).join(' | ')||'—')+'</td></tr>':'';
+  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+(idx+1)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+tnEsc(p.property)+(p.unit?' · Unit '+tnEsc(p.unit):'')+'</td><td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">'+tnEsc(p.primaryTenant||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+co+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+sStyle+'">'+sLabel+'</span></td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+tnEsc(p.phone||'—')+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+tnEsc(p.email||'—')+'</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">'+tnEsc(p.moveIn||'—')+'</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">'+tnEsc(p.leaseTo||'—')+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(p.rent||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+ltFmt(p.deposit||0)+'</td><td style="padding:9px 12px;text-align:center"><button type="button" onclick="tnTogglePeople('+JSON.stringify(key).replace(/"/g,'&quot;')+')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:11px">Ver todos</button></td></tr>'+details;
  }).join('');
 }
+function tnTogglePeople(key){tnExpanded[key]=!tnExpanded[key];tnRender();}
 function tnOpenInPortal(id){tpCurrentId=id;nav('tenantportal');}
 function tpMatchUnpaid(p){const nu=tpNorm;const rows=tpAfUnpaidRows();if(!rows.length)return 0;let s=0;rows.forEach(row=>{const t=nu(row.Tenant||row.tenant||row.Name||row.name||'');const pr=nu(row.Property||row.property||row.Address||'');if((t&&nu(p.name).includes(t))||(t&&t.includes(nu(p.name)))){if(!pr||nu(p.address).includes(pr)||pr.includes(nu(p.address))){const raw=row.Total_Unpaid_Balance||row.total_unpaid_balance||row.Balance||row.balance||row.Amount||'0';s+=parseFloat(String(raw).replace(/[^0-9.-]/g,''))||0;}}});return Math.round(s*100)/100;}
 function tpMatchIncomePaidYtd(p){const rows=tpAfIncomeRows();if(!rows.length)return 0;const y='2026';let s=0;const nt=tpNorm(p.name);rows.forEach(row=>{const dt=row.Date||row.date||row.Posted||row['Payment Date']||'';if(String(dt).slice(0,4)!==y)return;const tn=tpNorm(row.Tenant||row.tenant||row.Name||'');if(tn&&(nt.includes(tn)||tn.includes(nt))){const a=parseFloat(String(row.Amount||row.amount||row.Paid||0).replace(/[^0-9.-]/g,''))||0;s+=a;}});return Math.round(s*100)/100;}
@@ -8183,13 +8267,110 @@ function lsRender(){
 // 
 const AFP_COLUMNS=['Property','Market Rent','Units','Sqft','Management Flat Fee','Management Fee Percent','Minimum Fee','Maximum Fee','Waive Fees When Vacant','Reserve','Home Warranty Expiration','Insurance Expiration','Tax Year End','Owner(s) - Phone Numbers','Description'];
 const AFX_COLUMNS=['Property','Unit','Payee Name','Bill Date','Check Date','Expense Account','Cash Account','Amount','Unpaid/Paid','Reference/Check #','Description'];
+const AFT_COLUMNS=['Property','Unit','Tenant','Status','Tenant Type','Phone Numbers','Emails','Move-in','Lease To','Rent','Deposit','Tenant Tags'];
 const AFX_DESC={'6111':'Management Fees','6112':'Tenant Placement Fees','4460':'Late Fee','6075':'HOA Dues','6073':'General Maintenance Labor','6074':'Landscaping','6076':'Cleaning and Maintenance Other','6103':'Other','6141':'Painting','6142':'Plumbing','6144':'HVAC','7010':'Appliances','3250':'Owner Distribution'};
 window.appfolioData=Array.isArray(window.appfolioData)?window.appfolioData:[];
 window.appfolioExpenseData=Array.isArray(window.appfolioExpenseData)?window.appfolioExpenseData:[];
+window.appfolioTenantData=Array.isArray(window.appfolioTenantData)?window.appfolioTenantData:[];
 window.appfolioState=window.appfolioState||{filter:'all',search:'',sortBy:'idx',sortDir:'asc',page:1,pageSize:20,ready:false,expenseFilter:'all'};
 function afpNum(v){if(v==null)return 0;const n=parseFloat(String(v).replace(/\$/g,'').replace(/,/g,'').replace('%','').trim());return isNaN(n)?0:n;}
 function afpMoney(v){return '$'+(afpNum(v)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function afpEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function afpAddressKey(raw){
+ const s=String(raw||'').trim().toLowerCase();
+ if(!s)return '';
+ const part=s.indexOf(' - ')>=0?s.split(' - ').slice(1).join(' - ').trim():s;
+ return part.replace(/[^a-z0-9]/g,'');
+}
+function afpPropertyLabel(row){
+ return String((row&&(row.Property||row['Property']||row.property||((row.raw||{})['Property'])||row.address))||'').trim();
+}
+function afpIsFilteredPropertyValue(v){
+ var prop=String(v||'').trim();
+ var pLow=prop.toLowerCase();
+ if(!prop)return true;
+ if(pLow==='total')return true;
+ if(pLow.indexOf('manager prop - admin')>=0)return true;
+ return false;
+}
+function afpAddressLooksMatch(a,b){
+ var x=afpAddressKey(a),y=afpAddressKey(b);
+ if(!x||!y)return false;
+ if(x===y)return true;
+ if(x.indexOf(y)>=0||y.indexOf(x)>=0)return true;
+ var n=Math.min(18,Math.min(x.length,y.length));
+ if(n>=10&&x.slice(0,n)===y.slice(0,n))return true;
+ return false;
+}
+function afpSafeDate(v){
+ var s=String(v||'').trim();
+ if(!s)return '';
+ if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+ if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){var p=s.split('/');return p[2]+'-'+String(p[0]).padStart(2,'0')+'-'+String(p[1]).padStart(2,'0');}
+ return s;
+}
+function afpTenantStatusRank(s){
+ var t=String(s||'').trim().toLowerCase();
+ if(t==='current')return 3;
+ if(t==='notice')return 2;
+ return 1;
+}
+function afpGetTenantLeases(){
+ aftLoadStoredData();
+ var rows=Array.isArray(window.appfolioTenantData)?window.appfolioTenantData:[];
+ if(!rows.length)return [];
+ var by={};
+ rows.forEach(function(r){
+  var prop=String(r.property||'').trim();
+  if(afpIsFilteredPropertyValue(prop))return;
+  var key=afpAddressKey(prop);
+  if(!key)return;
+  if(!by[key])by[key]={key:key,property:prop,unit:String(r.unit||''),people:[],status:'',rent:0,deposit:0,moveIn:'',leaseTo:''};
+  by[key].people.push(r);
+ });
+ return Object.keys(by).map(function(k){
+  var g=by[k];
+  var people=g.people.slice();
+  people.sort(function(a,b){
+   var ax=String(a.tenantType||'').toLowerCase().indexOf('financially responsible')>=0?0:1;
+   var bx=String(b.tenantType||'').toLowerCase().indexOf('financially responsible')>=0?0:1;
+   if(ax!==bx)return ax-bx;
+   return String(a.tenant||'').localeCompare(String(b.tenant||''));
+  });
+  var primary=people[0]||{};
+  var status=''; var sr=0;
+  people.forEach(function(p){
+   var pr=afpTenantStatusRank(p.status);
+   if(pr>sr){sr=pr;status=String(p.status||'');}
+   g.rent=Math.max(g.rent,afpNum(p.rent));
+   g.deposit=Math.max(g.deposit,afpNum(p.deposit));
+   if(!g.moveIn&&p.moveIn)g.moveIn=afpSafeDate(p.moveIn);
+   if(!g.leaseTo&&p.leaseTo)g.leaseTo=afpSafeDate(p.leaseTo);
+  });
+  var co=people.slice(1).map(function(p){return String(p.tenant||'').trim();}).filter(Boolean);
+  var phone=String(primary.phone||'').trim();
+  var email=String(primary.email||'').trim();
+  return {
+   key:g.key,property:g.property,unit:g.unit,status:status||String(primary.status||''),
+   primaryTenant:String(primary.tenant||'').trim(),
+   coTenants:co,coTenant:co[0]||'',extraCount:Math.max(0,co.length-1),
+   phone:phone,email:email,moveIn:g.moveIn,leaseTo:g.leaseTo,
+   rent:g.rent,deposit:g.deposit,peopleCount:people.length,people:people
+  };
+ });
+}
+function afpFindLeaseForProperty(p){
+ var leases=afpGetTenantLeases();
+ var addr=String((p&&p.address)||afpPropertyLabel(p)||'').trim();
+ var unit=String((p&&p.unit)||'').trim().toLowerCase();
+ for(var i=0;i<leases.length;i++){
+  var l=leases[i];
+  if(afpAddressLooksMatch(addr,l.property)){
+   if(!unit||!l.unit||String(l.unit).toLowerCase()===unit)return l;
+  }
+ }
+ return null;
+}
 function afpStatusBadges(item){
  const rentCls=item.isAvailable?'pg':'pb';
  const rentTxt=item.isAvailable?'Available':'Rented';
@@ -8236,12 +8417,15 @@ function afpDetectCsvType(rows){
  var hdr=rows[0].map(function(x){return String(x||'').toLowerCase().trim();});
  if(hdr.indexOf('expense account')>=0)return 'expense';
  if(hdr.indexOf('market rent')>=0&&hdr.indexOf('property')>=0)return 'property';
+ if(hdr.indexOf('tenant type')>=0&&hdr.indexOf('lease to')>=0&&hdr.indexOf('property')>=0)return 'tenant';
+ if(hdr.indexOf('tenant')>=0&&hdr.indexOf('move-in')>=0&&hdr.indexOf('lease to')>=0)return 'tenant';
  return 'unknown';
 }
 function afpNormalizeRows(rows){
  if(!rows.length)return [];
  const first=rows[0].map(function(x){return String(x||'').toLowerCase();});
  const hasHeader=first.indexOf('property')>=0&&first.indexOf('market rent')>=0;
+ if(!hasHeader)throw new Error('property_directory inválido');
  const dataRows=hasHeader?rows.slice(1):rows;
  const out=[];
  dataRows.forEach(function(r,idx){
@@ -8304,10 +8488,45 @@ function afxNormalizeRows(rows){
  });
  return out;
 }
+function aftNormalizeRows(rows){
+ if(!rows.length)return [];
+ var hdr=rows[0].map(function(c){return String(c||'').trim();});
+ var low=hdr.map(function(c){return c.toLowerCase();});
+ var hasHeader=low.indexOf('property')>=0&&low.indexOf('tenant')>=0&&low.indexOf('status')>=0;
+ if(!hasHeader)throw new Error('tenant_directory inválido');
+ var dataRows=hasHeader?rows.slice(1):rows;
+ var idx={};
+ hdr.forEach(function(h,i){idx[String(h||'').trim().toLowerCase()]=i;});
+ function get(r,name){
+  var i=idx[name];
+  return i==null?'':String(r[i]||'').trim();
+ }
+ var out=[];
+ dataRows.forEach(function(r){
+  if(!r||!r.length)return;
+  var prop=get(r,'property');
+  if(afpIsFilteredPropertyValue(prop))return;
+  out.push({
+   property:prop,
+   unit:get(r,'unit'),
+   tenant:get(r,'tenant'),
+   status:get(r,'status'),
+   tenantType:get(r,'tenant type'),
+   phone:get(r,'phone numbers'),
+   email:get(r,'emails'),
+   moveIn:afpSafeDate(get(r,'move-in')),
+   leaseTo:afpSafeDate(get(r,'lease to')),
+   rent:afpNum(get(r,'rent')),
+   deposit:afpNum(get(r,'deposit')),
+   tags:get(r,'tenant tags')
+  });
+ });
+ return out;
+}
 function afpStoreData(list){
  window.appfolioData=afpFilterPropertyRows(Array.isArray(list)?list:[]);
  try{gmLsSet('appfolio_properties',JSON.stringify(window.appfolioData));}catch(e){}
- try{if(typeof gmPersistAppdataKey==='function')gmPersistAppdataKey('appfolio_properties',window.appfolioData||[]);}catch(e2){}
+ try{if(typeof gmPersistAppdataKey==='function'){gmPersistAppdataKey('appfolio_properties',window.appfolioData||[]);gmPersistAppdataKey('properties',window.appfolioData||[]);}}catch(e2){}
  try{
   fetch(GM_BACKEND_RAILWAY_APP+'/api/data/properties/import',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.appfolioData||[])});
  }catch(e){}
@@ -8319,6 +8538,12 @@ function afxStoreData(list){
  try{
   fetch(GM_BACKEND_RAILWAY_APP+'/api/data/expenses/import',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.appfolioExpenseData||[])});
  }catch(e){}
+}
+function aftStoreData(list){
+ window.appfolioTenantData=Array.isArray(list)?list:[];
+ try{gmLsSet('gm_appfolio_tenant_directory',JSON.stringify(window.appfolioTenantData));}catch(e){}
+ try{gmLsSet('gm_af_tenant_directory',JSON.stringify(window.appfolioTenantData));}catch(e2){}
+ try{if(typeof gmPersistAppdataKey==='function'){gmPersistAppdataKey('tenants',window.appfolioTenantData||[]);}}catch(e3){}
 }
 function afpLoadStoredData(){
  if(window.appfolioData&&window.appfolioData.length)return;
@@ -8338,6 +8563,15 @@ function afxLoadStoredData(){
   if(Array.isArray(parsed))window.appfolioExpenseData=parsed;
  }catch(e){}
 }
+function aftLoadStoredData(){
+ if(window.appfolioTenantData&&window.appfolioTenantData.length)return;
+ try{
+  var raw=gmLsGet('gm_appfolio_tenant_directory')||gmLsGet('gm_af_tenant_directory');
+  if(!raw)return;
+  var parsed=JSON.parse(raw);
+  if(Array.isArray(parsed))window.appfolioTenantData=parsed;
+ }catch(e){}
+}
 function afpUploadFile(file){
  const reader=new FileReader();
  reader.onload=function(){
@@ -8351,12 +8585,22 @@ function afpUploadFile(file){
    if(typeof ltExpRender==='function')ltExpRender();
    if(typeof afvRender==='function')afvRender();
     showToast('Expense CSV importado: '+normalizedExp.length+' linhas.','success');
-   }else{
+   }else if(type==='tenant'){
+    const normalizedTen=aftNormalizeRows(rows);
+    aftStoreData(normalizedTen);
+    afpRenderAll();
+    if(typeof ltpRender==='function')ltpRender();
+    if(typeof tnRender==='function')tnRender();
+    if(typeof renderCards==='function')renderCards();
+    showToast('Tenant CSV importado: '+normalizedTen.length+' linhas.','success');
+   }else if(type==='property'){
     const normalized=afpNormalizeRows(rows);
     afpStoreData(normalized);
     window.appfolioState.page=1;
     afpRenderAll();
     showToast('CSV importado com sucesso: '+normalized.length+' propriedades.','success');
+   }else{
+    throw new Error('Tipo de CSV não suportado');
    }
   }catch(err){showToast('Erro ao processar CSV.','error');}
  };
@@ -8376,8 +8620,8 @@ function afpFilterData(){
  let list=afpGetActiveData().slice();
  if(st.filter==='managed')list=list.filter(function(x){return x.isManaged;});
  if(st.filter==='not-managed')list=list.filter(function(x){return !x.isManaged;});
- if(st.filter==='rented')list=list.filter(function(x){return !x.isAvailable;});
- if(st.filter==='available')list=list.filter(function(x){return x.isAvailable;});
+ if(st.filter==='rented')list=list.filter(function(x){var l=afpFindLeaseForProperty(x);return !!(l&&String(l.status||'').toLowerCase()==='current');});
+ if(st.filter==='available')list=list.filter(function(x){var l=afpFindLeaseForProperty(x);return !(l&&String(l.status||'').toLowerCase()==='current');});
  const q=String(st.search||'').toLowerCase().trim();
  if(q)list=list.filter(function(x){return (x.address+' '+x.city+' '+x.ownerName).toLowerCase().indexOf(q)>=0;});
  return afpSortFiltered(list);
@@ -8421,11 +8665,12 @@ function afxCalcMetrics(){
 }
 function afpRenderSummary(){
  const list=afpGetActiveData();
+ const merged=list.map(function(x){return {property:x,lease:afpFindLeaseForProperty(x)};});
  const managed=list.filter(function(x){return x.isManaged;}).length;
  const notManaged=list.length-managed;
- const rented=list.filter(function(x){return !x.isAvailable;}).length;
+ const rented=merged.filter(function(x){return x.lease&&String(x.lease.status||'').toLowerCase()==='current';}).length;
  const available=list.length-rented;
- const totalRent=list.reduce(function(s,x){return s+(x.marketRent||0);},0);
+ const totalRent=list.reduce(function(s,x){return s+afpNum(x.marketRent);},0);
  const avgMgmt=list.length?list.reduce(function(s,x){return s+(x.mgmtPercent||0);},0)/list.length:0;
  const sumGrid=document.getElementById('afp-summary-grid');
  if(sumGrid)sumGrid.style.display=list.length?'grid':'none';
@@ -8448,13 +8693,16 @@ function afpRenderTable(){
  const pageItems=list.slice(start,start+st.pageSize);
  if(!pageItems.length){body.innerHTML='<tr><td colspan="12" style="text-align:center;color:rgba(248,246,242,.6);padding:22px">Sem resultados para os filtros atuais.</td></tr>';}
  else body.innerHTML=pageItems.map(function(x,i){
+  var lease=afpFindLeaseForProperty(x);
   var rent=Number(x.marketRent)||0;
+  var deposit=(lease&&afpNum(lease.deposit)>0)?afpNum(lease.deposit):0;
   var mgmt=Number(x.mgmtPercent)||0;
-  var net=mgmt>0?(rent-(rent*(mgmt/100))):0;
-  var occLabel=rent>0?'Rented':'Available';
-  var occStyle=rent>0?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc';
-  var stName=(mgmt>0?(rent>0?'Aprovado':'Pendente'):'Disputa');
-  var stStyle=(mgmt>0?(rent>0?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'):'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)');
+  var net=rent-(rent*(mgmt/100));
+  var isCurrent=lease&&String(lease.status||'').toLowerCase()==='current';
+  var occLabel=isCurrent?'Rented':'Available';
+  var occStyle=isCurrent?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc';
+  var stName=(mgmt>0?(isCurrent?'Aprovado':'Pendente'):'Disputa');
+  var stStyle=(mgmt>0?(isCurrent?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'):'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)');
   var owner=ltpCleanOwnerName(x.ownerName||x.ownerRaw||'—');
   var fullAddress=String(x.address||x.property||((x.raw||{})['Property'])||'').trim();
   var addressMain=fullAddress||'—';
@@ -8462,7 +8710,7 @@ function afpRenderTable(){
   var cityStateZip=((x.city||'')+' '+(x.state||'')+' '+(x.zip||'')).trim();
   if(!cityStateZip&&fullAddress.indexOf(',')>=0)cityStateZip=fullAddress.split(',').slice(1).join(',').trim();
   var addrSub=(cityStateZip||'—')+' · '+Math.round(x.sqft||0).toLocaleString('en-US')+' sqft';
-  return '<tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'" onclick="afpOpenModal(\''+afpEsc(x.id)+'\')"><td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(start+i+1)+'</td><td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+afpEsc(addressMain)+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+afpEsc(addrSub)+'</div></td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+afpEsc(owner)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">--</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">--</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+occStyle+'">'+occLabel+'</span></td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+afpMoney(rent)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">--</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+((net>=0)?'var(--blue)':'var(--red)')+'">'+afpMoney(net)+'</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">--</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+stStyle+'">'+stName+'</span></td><td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()"><div style="display:flex;gap:4px;justify-content:center"><button onclick="afpOpenModal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="afpOpenModal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="afpDeletePropertyLocal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button></div></td></tr>';
+  return '<tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'" onclick="afpOpenModal(\''+afpEsc(x.id)+'\')"><td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(start+i+1)+'</td><td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+afpEsc(addressMain)+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+afpEsc(addrSub)+'</div></td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+afpEsc(owner)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+afpEsc((lease&&lease.primaryTenant)||'--')+'</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">--</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+occStyle+'">'+occLabel+'</span></td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+afpMoney(rent)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+(deposit?afpMoney(deposit):'--')+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+((net>=0)?'var(--blue)':'var(--red)')+'">'+afpMoney(net)+'</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">'+afpEsc((lease&&lease.leaseTo)||'--')+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+stStyle+'">'+stName+'</span></td><td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()"><div style="display:flex;gap:4px;justify-content:center"><button onclick="afpOpenModal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="afpOpenModal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="afpDeletePropertyLocal(\''+afpEsc(x.id)+'\')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button></div></td></tr>';
  }).join('');
  const pg=document.getElementById('afp-page-info');if(pg)pg.textContent='Page '+st.page+' / '+totalPages+' ('+list.length+' itens)';
  const prev=document.getElementById('afp-prev-page');if(prev)prev.disabled=st.page<=1;
@@ -8544,6 +8792,7 @@ function afpRenderAll(){afpRenderSummary();afpRenderFilterButtons();afpRenderTab
 function afpInitPage(){
  afpLoadStoredData();
  afxLoadStoredData();
+ aftLoadStoredData();
  if(window.appfolioState.ready){afpRenderAll();return;}
  window.appfolioState.ready=true;
  const pickBtn=document.getElementById('afp-upload-btn');
@@ -10175,6 +10424,7 @@ async function gmBootstrapServerData(){
   var exps=Array.isArray(j.expenses)?j.expenses:[];
   if(props.length){window.appfolioData=afpFilterPropertyRows(props);try{gmLsSet('appfolio_properties',JSON.stringify(window.appfolioData),true);}catch(e){}}
   if(exps.length){window.appfolioExpenseData=exps;try{gmLsSet('appfolio_expenses',JSON.stringify(exps),true);}catch(e){}}
+  if(Array.isArray(j.tenants)){window.appfolioTenantData=j.tenants;try{gmLsSet('gm_appfolio_tenant_directory',JSON.stringify(j.tenants),true);}catch(e4){}}
   var cfg=j.config&&typeof j.config==='object'?j.config:{};
   if(cfg.gm_last_saved){try{gmLsSet('gm_last_saved',String(cfg.gm_last_saved),true);}catch(e){}}
   if(cfg.gm_card_timestamps&&typeof cfg.gm_card_timestamps==='object'){setCardTimestamps(cfg.gm_card_timestamps);}
