@@ -1850,9 +1850,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <input id="op-filter-search" oninput="opayRender()" placeholder="Buscar por endereço ou owner" style="padding:7px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-size:12px;min-width:260px;outline:none">
   <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
    <button onclick="opayApproveSelected()" style="padding:8px 12px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Aprovar Selecionados</button>
-   <button onclick="opayExportCsv('approved')" style="padding:8px 12px;background:transparent;color:var(--green);border:1px solid var(--green-bd);border-radius:8px;font-size:12px;cursor:pointer">Export Aprovados</button>
-   <button onclick="opayExportCsv('pending')" style="padding:8px 12px;background:transparent;color:var(--amber);border:1px solid var(--amber-bd);border-radius:8px;font-size:12px;cursor:pointer">Export Pendentes</button>
-   <button onclick="opayExportCsv('all')" style="padding:8px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Export CSV</button>
+   <button type="button" onclick="opayPickCsv()" style="padding:8px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Importar CSV</button>
+   <input id="op-csv-file" type="file" accept=".csv,text/csv" style="display:none" onchange="if(this.files&amp;&amp;this.files[0]){opayOnCsvFile(this.files[0]);this.value='';}" />
+   <button onclick="opayOpenDownloadModal('approved')" style="padding:8px 12px;background:transparent;color:var(--green);border:1px solid var(--green-bd);border-radius:8px;font-size:12px;cursor:pointer">Export Aprovados</button>
+   <button onclick="opayOpenDownloadModal('pending')" style="padding:8px 12px;background:transparent;color:var(--amber);border:1px solid var(--amber-bd);border-radius:8px;font-size:12px;cursor:pointer">Export Pendentes</button>
+   <button onclick="opayOpenDownloadModal('all')" style="padding:8px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Export CSV</button>
   </div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
@@ -1978,6 +1980,20 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <button onclick="opayCloseLogModal()" style="border:none;background:transparent;color:var(--ink3);font-size:18px;cursor:pointer">×</button>
   </div>
   <div id="op-log-content" style="display:flex;flex-direction:column;gap:8px"></div>
+ </div>
+</div>
+
+<div id="op-dl-modal" style="display:none;position:fixed;inset:0;z-index:9013;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+ <div style="width:460px;max-width:92vw;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 20px 40px rgba(0,0,0,.25)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+   <div style="font-size:14px;font-weight:700;color:var(--ink)">Download CSV</div>
+   <button type="button" onclick="opayCloseDownloadModal()" style="border:none;background:transparent;color:var(--ink3);font-size:18px;cursor:pointer">×</button>
+  </div>
+  <div id="op-dl-msg" style="font-size:12px;color:var(--ink2);line-height:1.45;margin-bottom:16px">O arquivo CSV inclui o campo NOTES e mantém todo o histórico salvo.</div>
+  <div style="display:flex;justify-content:flex-end;gap:8px">
+   <button type="button" onclick="opayCloseDownloadModal()" style="padding:8px 12px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--ink2);cursor:pointer">Cancelar</button>
+   <button type="button" id="op-dl-confirm" onclick="opayConfirmDownload()" style="padding:8px 12px;background:var(--amber);border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600">Baixar CSV</button>
+  </div>
  </div>
 </div>
 
@@ -9167,6 +9183,214 @@ let opayLogsCache=null;
 let opayHistoryCache=null;
 let opayNotesModalKey='';
 let opayRowIndexByKey={};
+let opayDlScope='all';
+function opayOpenDownloadModal(scope){
+ opayDlScope=scope||'all';
+ var m=document.getElementById('op-dl-modal');
+ if(m){m.style.display='flex';}
+}
+function opayCloseDownloadModal(){
+ var m=document.getElementById('op-dl-modal');
+ if(m){m.style.display='none';}
+}
+function opayConfirmDownload(){
+ var s=opayDlScope||'all';
+ opayCloseDownloadModal();
+ opayExportCsv(s);
+}
+function opayCsvQuote(v){
+ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+}
+function opayPickCsv(){
+ var i=document.getElementById('op-csv-file');
+ if(i)i.click();
+}
+function opayOnCsvFile(file){
+ if(!file)return;
+ var rd=new FileReader();
+ rd.onload=function(){
+  try{
+   opayImportCsvText(String(rd.result||''));
+  }catch(err){
+   showToast('Falha ao importar CSV: '+(err&&err.message?err.message:String(err)),'error');
+  }
+ };
+ rd.onerror=function(){showToast('Não foi possível ler o arquivo.','error');};
+ rd.readAsText(file);
+}
+function opayCsvHeaderIndex(headers){
+ var low=headers.map(function(h){return String(h||'').replace(/^\uFEFF/,'').trim().toLowerCase();});
+ function ix(name){
+  var n=name.toLowerCase();
+  var j=low.indexOf(n);
+  return j>=0?j:-1;
+ }
+ return{
+  property_key:ix('property_key'),
+  property:ix('property'),
+  owner:ix('owner'),
+  rent:ix('rent'),
+  expenses:ix('expenses'),
+  mgmt:ix('mgmt fee'),
+  hoa:ix('hoa'),
+  maintenance:ix('maintenance'),
+  other:ix('other'),
+  net:ix('net owner'),
+  status:ix('status'),
+  notes:ix('notes')
+ };
+}
+function opayParseStatusCell(s){
+ var t=opayNorm(s);
+ if(!t)return null;
+ if(t==='approved'||t==='aprovado')return 'approved';
+ if(t==='pending'||t==='pendente')return 'pending';
+ return null;
+}
+function opayImportCsvText(text){
+ var rows=afpParseCsvText(text);
+ if(!rows||rows.length<1)throw new Error('Arquivo vazio.');
+ var hdr=rows[0].map(function(c){return String(c||'').replace(/^\uFEFF/,'').trim();});
+ var idx=opayCsvHeaderIndex(hdr);
+ if(idx.property_key<0&&idx.property<0)throw new Error('CSV deve incluir a coluna PROPERTY_KEY ou Property.');
+ var rowMap={};
+ var allRows=opayBuildRows();
+ allRows.forEach(function(r){rowMap[r.key]=r;});
+ var state=JSON.parse(JSON.stringify(opayLoadState()));
+ var seen={};
+ var dup=0,applied=0,skipped=0;
+ for(var ri=1;ri<rows.length;ri++){
+  var row=rows[ri];
+  if(!row||!row.length)continue;
+  var pk=idx.property_key>=0?String(row[idx.property_key]||'').trim():'';
+  var prop=idx.property>=0?String(row[idx.property]||'').trim():'';
+  var key=pk?opayNorm(pk):(prop?opayNorm(prop):'');
+  if(!key){skipped++;continue;}
+  var r=rowMap[key];
+  if(!r){
+   var alt=null;
+   if(pk){alt=allRows.find(function(x){return x.key===opayNorm(pk);});}
+   if(!alt&&prop){var np=opayNorm(prop);alt=allRows.find(function(x){return x.key===np||opayNorm(x.address)===np;});}
+   if(alt)r=alt; else {skipped++;continue;}
+  }
+  key=r.key;
+  if(seen[key])dup++;
+  seen[key]=1;
+  var cur=state[key]&&typeof state[key]==='object'?state[key]:{};
+  var patch={
+   property_address:r.address,
+   owner_name:r.owner,
+   rent_amount:cur.rent_amount!=null?cur.rent_amount:r.rent,
+   rent_edited:!!cur.rent_edited,
+   expenses_amount:cur.expenses_amount!=null?cur.expenses_amount:r.totalExpenses,
+   expenses_edited:!!cur.expenses_edited,
+   mgmt_fee_amount:cur.mgmt_fee_amount!=null?cur.mgmt_fee_amount:r.mgmtFee,
+   mgmt_edited:!!cur.mgmt_edited,
+   hoa_amount:cur.hoa_amount!=null?cur.hoa_amount:r.hoa,
+   maintenance_amount:cur.maintenance_amount!=null?cur.maintenance_amount:r.maintenance,
+   other_amount:cur.other_amount!=null?cur.other_amount:r.other,
+   hoa_edited:!!cur.hoa_edited,
+   maintenance_edited:!!cur.maintenance_edited,
+   other_edited:!!cur.other_edited,
+   net_owner_amount:cur.net_owner_amount!=null?cur.net_owner_amount:r.net,
+   net_owner_edited:!!cur.net_owner_edited,
+   manually_overridden:!!cur.manually_overridden,
+   note_text:cur.note_text!=null?String(cur.note_text):String(r.noteText||''),
+   status:cur.status||'pending',
+   approved_by:cur.approved_by||'',
+   approved_at:cur.approved_at||''
+  };
+  if(idx.rent>=0){
+   var rs=String(row[idx.rent]!=null?row[idx.rent]:'').trim();
+   if(rs!==''){
+    var rv=opayNum(row[idx.rent]);
+    patch.rent_amount=rv;
+    patch.rent_edited=Math.abs(rv-r.autoRent)>0.009;
+    if(!cur.mgmt_edited&&idx.mgmt<0){
+     patch.mgmt_fee_amount=rv*(opayNum(r.mgmtPct)/100);
+     patch.mgmt_edited=false;
+    }
+   }
+  }
+  if(idx.expenses>=0){
+   var es=String(row[idx.expenses]!=null?row[idx.expenses]:'').trim();
+   if(es!==''){
+    var ev=opayNum(row[idx.expenses]);
+    patch.expenses_amount=ev;
+    patch.expenses_edited=Math.abs(ev-r.autoExpenses)>0.009;
+   }
+  }
+  if(idx.mgmt>=0){
+   var ms=String(row[idx.mgmt]!=null?row[idx.mgmt]:'').trim();
+   if(ms!==''){
+    var mv=opayNum(row[idx.mgmt]);
+    patch.mgmt_fee_amount=mv;
+    patch.mgmt_edited=Math.abs(mv-r.autoMgmtFee)>0.009;
+   }
+  }
+  if(idx.hoa>=0){
+   var hs=String(row[idx.hoa]!=null?row[idx.hoa]:'').trim();
+   if(hs!==''){
+    var hv=opayNum(row[idx.hoa]);
+    patch.hoa_amount=hv;
+    patch.hoa_edited=Math.abs(hv-r.autoHoa)>0.009;
+   }
+  }
+  if(idx.maintenance>=0){
+   var mts=String(row[idx.maintenance]!=null?row[idx.maintenance]:'').trim();
+   if(mts!==''){
+    var mtv=opayNum(row[idx.maintenance]);
+    patch.maintenance_amount=mtv;
+    patch.maintenance_edited=Math.abs(mtv-r.autoMaintenance)>0.009;
+   }
+  }
+  if(idx.other>=0){
+   var os=String(row[idx.other]!=null?row[idx.other]:'').trim();
+   if(os!==''){
+    var ov=opayNum(row[idx.other]);
+    patch.other_amount=ov;
+    patch.other_edited=Math.abs(ov-r.autoOther)>0.009;
+   }
+  }
+  if(idx.net>=0){
+   var ns=String(row[idx.net]!=null?row[idx.net]:'').trim();
+   if(ns!==''){
+    var nv=opayNum(row[idx.net]);
+    patch.net_owner_amount=nv;
+    var isOv=Math.abs(nv-r.autoNet)>0.009;
+    patch.net_owner_edited=isOv;
+    patch.manually_overridden=isOv;
+   }
+  }
+  if(idx.owner>=0){
+   var ovner=String(row[idx.owner]||'').trim();
+   if(ovner)patch.owner_name=ovner;
+  }
+  if(idx.status>=0){
+   var st=opayParseStatusCell(row[idx.status]);
+   if(st==='approved'){
+    patch.status='approved';
+    if(!String(patch.approved_by||'').trim()){patch.approved_by=opayCurrentUser();patch.approved_at=opayNowIso();}
+   }else if(st==='pending'){
+    patch.status='pending';
+    patch.approved_by='';
+    patch.approved_at='';
+   }
+  }
+  if(idx.notes>=0){
+   var nt=String(row[idx.notes]!=null?row[idx.notes]:'');
+   if(nt.trim()!==''){patch.note_text=nt;}
+  }
+  state[key]={...cur,...patch};
+  applied++;
+ }
+ opaySaveState(state);
+ opayRender();
+ var msg='Importação concluída: '+applied+' propriedade(s) atualizada(s).';
+ if(skipped)msg+=' '+skipped+' linha(s) ignorada(s).';
+ if(dup)msg+=' Aviso: '+dup+' duplicata(s) de chave no CSV (última prevaleceu).';
+ showToast(msg,skipped&&!applied?'warning':'success');
+}
 function opayLoadState(){
  if(opayStateCache&&typeof opayStateCache==='object')return opayStateCache;
  try{opayStateCache=JSON.parse(gmLsGet(OPAY_STATE_KEY)||'{}')}catch(e){opayStateCache={}}
@@ -9470,10 +9694,13 @@ function opayApproveSelected(){var rows=opayGetFilteredRows().filter(function(r)
 function opayExportCsv(scope){
  var rows=opayGetFilteredRows().filter(function(r){if(scope==='approved')return r.approved;if(scope==='pending')return !r.approved;return true;});
  if(!rows.length){alert('Sem dados para exportar.');return;}
- var h=['Property','Owner','Rent','Expenses','Mgmt Fee','HOA','Maintenance','Other','Net Owner','Status'];
- var lines=rows.map(function(r){return [r.address,r.owner,r.rent.toFixed(2),r.totalExpenses.toFixed(2),r.mgmtFee.toFixed(2),r.hoa.toFixed(2),r.maintenance.toFixed(2),r.other.toFixed(2),r.net.toFixed(2),r.approved?'Approved':'Pending'].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');});
- var csv=[h.join(','),lines.join('\n')].join('\n');
- var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='Owner_Payments_'+scope+'.csv';a.click();
+ var h=['PROPERTY_KEY','Property','Owner','Rent','Expenses','Mgmt Fee','HOA','Maintenance','Other','NOTES','Net Owner','Status'];
+ var lines=rows.map(function(r){
+  var noteDb=String(r.noteText!=null?r.noteText:'');
+  return [opayCsvQuote(r.key),opayCsvQuote(r.address),opayCsvQuote(r.owner),opayCsvQuote(r.rent.toFixed(2)),opayCsvQuote(r.totalExpenses.toFixed(2)),opayCsvQuote(r.mgmtFee.toFixed(2)),opayCsvQuote(r.hoa.toFixed(2)),opayCsvQuote(r.maintenance.toFixed(2)),opayCsvQuote(r.other.toFixed(2)),opayCsvQuote(noteDb),opayCsvQuote(r.net.toFixed(2)),opayCsvQuote(r.approved?'Approved':'Pending')].join(',');
+ });
+ var csv='\uFEFF'+[h.join(','),lines.join('\n')].join('\n');
+ var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='Owner_Payments_'+scope+'.csv';a.click();
 }
 function opayShowLogs(key){
  var body=document.getElementById('op-log-content'); if(!body)return;
@@ -9602,6 +9829,11 @@ window.opayToggleSelect=opayToggleSelect;
 window.opayToggleSelectAll=opayToggleSelectAll;
 window.opayApproveSelected=opayApproveSelected;
 window.opayExportCsv=opayExportCsv;
+window.opayOpenDownloadModal=opayOpenDownloadModal;
+window.opayCloseDownloadModal=opayCloseDownloadModal;
+window.opayConfirmDownload=opayConfirmDownload;
+window.opayPickCsv=opayPickCsv;
+window.opayOnCsvFile=opayOnCsvFile;
 
 var rxState={rows:[],filtered:[],sortBy:'date',sortDir:'desc',page:1,pageSize:20,filters:{period:'all',user:'all',merchant:'all',category:'all',card:'all'}};
 function rxEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
