@@ -3105,24 +3105,10 @@ function afpIsValidPropertyRecord(x){
 }
 function afpFilterPropertyRows(properties){
  var arr=Array.isArray(properties)?properties:[];
- var bestByKey={};
- function quality(row){
-  var q=0;
-  if(afpNum(row&&row.marketRent)>0)q+=3;
-  if(afpNum(row&&row.mgmtPercent)>0)q+=3;
-  if(String(row&&row.ownerName||'').trim())q+=2;
-  if(String(row&&row.ownerRaw||'').trim())q+=2;
-  if(String(row&&row.description||'').trim())q+=1;
-  return q;
- }
- arr.forEach(function(row){
+ return arr.filter(function(row){
   var prop=afpPropertyLabel(row);
-  if(afpIsFilteredPropertyValue(prop))return;
-  var key=afpAddressKey((row&&row.address)||prop);
-  if(!key)return;
-  if(!bestByKey[key]||quality(row)>quality(bestByKey[key]))bestByKey[key]=row;
+  return !afpIsFilteredPropertyValue(prop);
  });
- return Object.keys(bestByKey).map(function(k){return bestByKey[k];});
 }
 function afpGetActiveData(){
  try{
@@ -7538,11 +7524,11 @@ function ltpDeleteAppfolioProperty(appfolioId){
 }
 function ltpGetAppfolioFallbackRecords(){
  var list=afpFilterPropertyRows(afpGetActiveData()).filter(function(p){
-  var prop=String((p&&((p.Property)||p.property||((p.raw||{})['Property'])||''))||'').trim().toLowerCase();
-  var addr=String((p&&p.address)||'').trim().toLowerCase();
+  var prop=String((p&&((p.Property)||p.property||((p.raw||{})['Property'])||''))||'').trim();
+  var addr=String((p&&p.address)||'').trim();
   if(!prop&&!addr)return false;
-  if(prop==='total'||addr==='total')return false;
-  if(prop.indexOf('manager prop - admin')>=0||addr.indexOf('manager prop - admin')>=0)return false;
+  if(afpIsFilteredPropertyValue(prop))return false;
+  if(afpIsFilteredPropertyValue(addr))return false;
   return true;
  });
  if(!list.length)return [];
@@ -7585,9 +7571,9 @@ function ltpRender(){
  const appfolioFallback=ltpGetAppfolioFallbackRecords();
  const sourceRecords=[...records,...appfolioFallback].filter(function(r){
   if(!r.isAppfolio)return true;
-  var addr=String(r.address||'').trim().toLowerCase();
-  if(!addr||addr==='total')return false;
-  if(addr.indexOf('manager prop - admin')>=0)return false;
+ var addr=String(r.address||'').trim();
+ if(!addr)return false;
+ if(afpIsFilteredPropertyValue(addr))return false;
   return true;
  }).sort(function(a,b){return String(a.address||'').localeCompare(String(b.address||''));});
  const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
@@ -8284,10 +8270,9 @@ function afpPropertyLabel(row){
 }
 function afpIsFilteredPropertyValue(v){
  var prop=String(v||'').trim();
- var pLow=prop.toLowerCase();
  if(!prop)return true;
- if(pLow==='total')return true;
- if(pLow.indexOf('manager prop - admin')>=0)return true;
+ if(prop==='Total')return true;
+ if(prop.startsWith('Manager Prop - Admin'))return true;
  return false;
 }
 function afpAddressLooksMatch(a,b){
@@ -8430,10 +8415,8 @@ function afpNormalizeRows(rows){
   const clean=r.slice(0,15);while(clean.length<15)clean.push('');
   const propertyRaw=String(clean[0]||'');
   const propertyTrim=propertyRaw.trim();
-  const pLow=propertyTrim.toLowerCase();
   if(!propertyTrim)return;
-  if(pLow==='total')return;
-  if(pLow.indexOf('manager prop - admin')>=0)return;
+  if(afpIsFilteredPropertyValue(propertyTrim))return;
   const raw={};AFP_COLUMNS.forEach(function(c,i){raw[c]=clean[i]||'';});
   const pp=afpParseProperty(raw['Property']);
   const owner=afpSplitOwner(raw['Owner(s) - Phone Numbers']);
@@ -8465,7 +8448,7 @@ function afxNormalizeRows(rows){
   var amount=afpNum(raw['Amount']);
  var prop=String(raw['Property']||'').trim();
  if(!prop)return;
- if(prop.indexOf('Manager Prop - Admin')>=0)return;
+ if(afpIsFilteredPropertyValue(prop))return;
  if(!accCode)return;
   var bill=String(raw['Bill Date']||'').trim();
   var ym='';
