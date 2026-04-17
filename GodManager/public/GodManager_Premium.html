@@ -3145,14 +3145,11 @@ function applyHomeDashboardFromAppfolio(){
  var manual=(typeof ltGetRecords==='function'?ltGetRecords():[]).filter(function(r){return !r.isAppfolio;});
  var expMetrics=afxCalcMetrics();
  if(!list.length&&!(window.appfolioExpenseData||[]).length)return false;
- var rentedCsv=0;
- var rentReceivableCsv=0;
+ var rentedCsv=list.filter(function(x){return afpNum(x.marketRent)>0;}).length;
+ var vacantCsv=list.length-rentedCsv;
+ var rentReceivableCsv=list.reduce(function(s,x){return s+afpNum(x.marketRent);},0);
  var rentPotentialCsv=0;
  list.forEach(function(x){
-  var lease=afpFindLeaseForProperty(x);
-  var current=lease&&String(lease.status||'').toLowerCase()==='current';
-  var leaseRent=(lease&&afpNum(lease.rent)>0)?afpNum(lease.rent):afpNum(x.marketRent);
-  if(current){rentedCsv++;rentReceivableCsv+=leaseRent;}
   rentPotentialCsv+=afpNum(x.marketRent);
  });
  var rentedManual=manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='rented';}).length;
@@ -3160,7 +3157,7 @@ function applyHomeDashboardFromAppfolio(){
  var rentPotentialManual=manual.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
  var total=list.length+manual.length;
  var rented=rentedCsv+rentedManual;
- var vacant=total-rented;
+ var vacant=vacantCsv+manual.filter(function(r){return String(r.occupancy||'').toLowerCase()==='vacant';}).length;
  var ownersSet=new Set(list.map(function(x){
   var own=String(x.ownerName||'').trim();
   if(own)return own;
@@ -7551,8 +7548,8 @@ function ltpGetAppfolioFallbackRecords(){
  if(!list.length)return [];
  return list.map(function(p,idx){
   var lease=afpFindLeaseForProperty(p);
-  var hasCurrent=!!(lease&&String(lease.status||'').toLowerCase()==='current');
-  var rent=(lease&&afpNum(lease.rent)>0)?afpNum(lease.rent):(Number(p.marketRent)||0);
+  var rent=Number(p.marketRent)||0;
+  var hasCurrent=rent>0;
   var deposit=(lease&&afpNum(lease.deposit)>0)?afpNum(lease.deposit):null;
   var mgmtPct=Number(p.mgmtPercent)||0;
   var netOwner=mgmtPct>0?(rent-(rent*(mgmtPct/100))):rent;
@@ -8620,8 +8617,8 @@ function afpFilterData(){
  let list=afpGetActiveData().slice();
  if(st.filter==='managed')list=list.filter(function(x){return x.isManaged;});
  if(st.filter==='not-managed')list=list.filter(function(x){return !x.isManaged;});
- if(st.filter==='rented')list=list.filter(function(x){var l=afpFindLeaseForProperty(x);return !!(l&&String(l.status||'').toLowerCase()==='current');});
- if(st.filter==='available')list=list.filter(function(x){var l=afpFindLeaseForProperty(x);return !(l&&String(l.status||'').toLowerCase()==='current');});
+ if(st.filter==='rented')list=list.filter(function(x){return afpNum(x.marketRent)>0;});
+ if(st.filter==='available')list=list.filter(function(x){return afpNum(x.marketRent)<=0;});
  const q=String(st.search||'').toLowerCase().trim();
  if(q)list=list.filter(function(x){return (x.address+' '+x.city+' '+x.ownerName).toLowerCase().indexOf(q)>=0;});
  return afpSortFiltered(list);
@@ -8665,10 +8662,9 @@ function afxCalcMetrics(){
 }
 function afpRenderSummary(){
  const list=afpGetActiveData();
- const merged=list.map(function(x){return {property:x,lease:afpFindLeaseForProperty(x)};});
  const managed=list.filter(function(x){return x.isManaged;}).length;
  const notManaged=list.length-managed;
- const rented=merged.filter(function(x){return x.lease&&String(x.lease.status||'').toLowerCase()==='current';}).length;
+ const rented=list.filter(function(x){return afpNum(x.marketRent)>0;}).length;
  const available=list.length-rented;
  const totalRent=list.reduce(function(s,x){return s+afpNum(x.marketRent);},0);
  const avgMgmt=list.length?list.reduce(function(s,x){return s+(x.mgmtPercent||0);},0)/list.length:0;
