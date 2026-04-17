@@ -1836,6 +1836,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
 <div class="page" id="page-owner-payments">
  <div class="ph"><div class="pt">Owner Payments</div><div class="ps">Contas a pagar dos owners com aprovação GodManager</div></div>
+ <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+  <button id="op-tab-payables-btn" type="button" onclick="opaySwitchTab('payables')" style="padding:8px 14px;border-radius:8px;border:1px solid var(--amber-bd);background:var(--amber);color:#fff;font-size:12px;font-weight:600;cursor:pointer">Contas a Pagar</button>
+  <button id="op-tab-history-btn" type="button" onclick="opaySwitchTab('history')" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">Histórico de Pagamentos</button>
+ </div>
+ <div id="op-tab-payables">
  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px">
   <div style="background:var(--paper);border:1px solid var(--green-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL RENT COLLECTED</div><div id="op-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
   <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL EXPENSES</div><div id="op-kpi-expenses" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--red);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
@@ -1879,6 +1884,47 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
     <tbody id="op-payments-tbody"></tbody>
     <tfoot id="op-payments-tfoot"></tfoot>
    </table>
+  </div>
+ </div>
+ <div id="op-tab-history" style="display:none">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div id="oph-drop" style="padding:16px;border:1px dashed var(--amber-bd);border-radius:10px;background:rgba(201,169,110,.05);min-width:300px;cursor:pointer">
+     <div style="font-size:12px;font-weight:700;color:var(--ink)">Arraste o CSV Owner Payments aqui</div>
+     <div style="font-size:11px;color:var(--ink3);margin-top:4px">Header esperado: Property, Owner, Rent, Expenses, Mgmt Fee, HOA, Maintenance, Other, Net Owner, Status</div>
+    </div>
+    <input id="oph-file" type="file" accept=".csv,text/csv" style="display:none">
+    <select id="oph-period" style="padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-size:12px"></select>
+    <button type="button" onclick="ophPickFile()" style="padding:8px 12px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Upload CSV</button>
+    <button type="button" onclick="ophExportCsv()" style="padding:8px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Export CSV</button>
+    <button type="button" onclick="ophExportPdf()" style="padding:8px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Export PDF</button>
+    <input id="oph-search" oninput="ophRender()" placeholder="Buscar por propriedade ou owner..." style="margin-left:auto;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);font-size:12px;min-width:260px">
+   </div>
+   <div id="oph-month-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1.3fr repeat(7,1fr);gap:10px;margin-bottom:12px">
+   <div style="background:var(--paper);border:1px solid var(--green-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ultimo Pagamento Realizado</div><div id="oph-last-period" style="font-size:12px;color:var(--ink2);margin-top:5px">—</div><div id="oph-last-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div><div id="oph-last-meta" style="font-size:10px;color:var(--ink3);margin-top:4px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--green-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Total Pago</div><div id="oph-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--blue-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Qty Propriedades</div><div id="oph-kpi-qty" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--blue);margin-top:4px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--green-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Rent Total</div><div id="oph-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Total Expenses</div><div id="oph-kpi-exp" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--red);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Total Mgmt Fee</div><div id="oph-kpi-mgmt" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--amber-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Total HOA</div><div id="oph-kpi-hoa" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+   <div style="background:var(--paper);border:1px solid var(--red-bd);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Negativos</div><div id="oph-kpi-neg" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--red);margin-top:4px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+  </div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="overflow:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:1600px">
+     <thead><tr id="oph-head" style="background:var(--cream);border-bottom:1px solid var(--border)"></tr></thead>
+     <tbody id="oph-body"></tbody>
+     <tfoot id="oph-foot"></tfoot>
+    </table>
+   </div>
+   <div style="padding:10px 14px;display:flex;justify-content:flex-end;align-items:center;gap:8px">
+    <button type="button" onclick="ophChangePage(-1)" style="padding:6px 10px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Prev</button>
+    <span id="oph-page" style="font-size:11px;color:var(--ink3)">Page 1/1</span>
+    <button type="button" onclick="ophChangePage(1)" style="padding:6px 10px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer">Next</button>
+   </div>
   </div>
  </div>
 </div>
@@ -6964,7 +7010,8 @@ function ltExpGetImportedRows(){
   return ex.filter(function(r){
    var prop=String(r.property||'').trim();
    if(!prop)return false;
-   if(prop.indexOf('Manager Prop - Admin')>=0)return false;
+   if(prop==='Total')return false;
+   if(prop.startsWith('Manager Prop - Admin'))return false;
    return ltExpExtractCode(r.expenseAccount)!=='';
   }).map(function(r){
    var meta=ltExpAccountMeta(r);
@@ -7244,7 +7291,8 @@ function afvRender(){
  const allRows=(window.appfolioExpenseData||[]).filter(function(r){
   const prop=String(r.property||'').trim();
   if(!prop)return false;
-  if(prop.indexOf('Manager Prop - Admin')>=0)return false;
+  if(prop==='Total')return false;
+  if(prop.startsWith('Manager Prop - Admin'))return false;
   return ltExpExtractCode(r.expenseAccount)!=='';
  });
  const rows=allRows.filter(r=>String(r.payee||'').trim()!=='');
@@ -10037,6 +10085,244 @@ function opayRender(){
  tfoot.innerHTML='<tr style="background:var(--cream);border-top:1px solid var(--border)"><td style="padding:10px 12px"></td><td colspan="3" style="padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">TOTALS</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.rent)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.expenses)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.mgmt)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.hoa)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.maintenance)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.other)+'</td><td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+ltFmt(totals.net)+'</td><td></td><td colspan="2" style="padding:10px 12px;text-align:center"><span style="padding:3px 9px;border-radius:999px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:10px;font-weight:700">'+totals.approved+' Approved / '+rows.length+' Total</span></td></tr>';
  var allCb=document.getElementById('op-select-all'); if(allCb){allCb.checked=rows.length>0&&rows.every(function(r){return !!opaySelected[r.key];});}
 }
+const OPH_INDEX_KEY='owner_payments_history_periods';
+let ophState={period:'all',sortBy:'property',sortDir:'asc',page:1,pageSize:30};
+let ophCache={};
+const OPH_MONTHS=[{k:'2026-01',l:'Jan'},{k:'2026-02',l:'Feb'},{k:'2026-03',l:'Mar'},{k:'2026-04',l:'Apr'},{k:'2026-05',l:'May'},{k:'2026-06',l:'Jun'},{k:'2026-07',l:'Jul'},{k:'2026-08',l:'Aug'},{k:'2026-09',l:'Sep'},{k:'2026-10',l:'Oct'},{k:'2026-11',l:'Nov'},{k:'2026-12',l:'Dec'}];
+function opaySwitchTab(tab){
+ var pay=document.getElementById('op-tab-payables'),hist=document.getElementById('op-tab-history');
+ var b1=document.getElementById('op-tab-payables-btn'),b2=document.getElementById('op-tab-history-btn');
+ var isHist=tab==='history';
+ if(pay)pay.style.display=isHist?'none':'block';
+ if(hist)hist.style.display=isHist?'block':'none';
+ if(b1){b1.style.background=isHist?'transparent':'var(--amber)';b1.style.color=isHist?'var(--ink2)':'#fff';b1.style.border=isHist?'1px solid var(--border2)':'1px solid var(--amber-bd)';}
+ if(b2){b2.style.background=isHist?'var(--amber)':'transparent';b2.style.color=isHist?'#fff':'var(--ink2)';b2.style.border=isHist?'1px solid var(--amber-bd)':'1px solid var(--border2)';}
+ if(isHist)ophRender();
+}
+function ophKey(period){return 'owner_payments_history_'+String(period||'').replace('-','_');}
+function ophOwnerClean(raw){
+ var s=String(raw||'').trim();
+ s=s.replace(/\s+(Mobile|Phone|Office)\s*:.*$/i,'');
+ s=s.replace(/\s+-\s*(Mobile|Phone|Office)\s*:.*$/i,'');
+ s=s.replace(/\s+\(?\d[\d\-\s\(\)]{5,}$/,'');
+ return s.trim();
+}
+function ophNum(v){return opayNum(v);}
+function ophLoadPeriods(){
+ try{return JSON.parse(gmLsGet(OPH_INDEX_KEY)||'[]');}catch(e){return[];}
+}
+function ophSavePeriods(list){
+ var uniq=Array.from(new Set((list||[]).filter(Boolean))).sort();
+ try{gmLsSet(OPH_INDEX_KEY,JSON.stringify(uniq));}catch(e){}
+ try{gmPersistAppdataKey(OPH_INDEX_KEY,uniq);}catch(e2){}
+ return uniq;
+}
+function ophLoadPeriodRows(period){
+ if(!period)return [];
+ if(Array.isArray(ophCache[period]))return ophCache[period];
+ try{
+  var a=gmLsGet(ophKey(period));
+  var arr=a?JSON.parse(a):[];
+  ophCache[period]=Array.isArray(arr)?arr:[];
+  return ophCache[period];
+ }catch(e){return [];}
+}
+function ophSavePeriodRows(period,rows){
+ var key=ophKey(period),arr=Array.isArray(rows)?rows:[];
+ ophCache[period]=arr;
+ try{gmLsSet(key,JSON.stringify(arr));}catch(e){}
+ try{gmPersistAppdataKey(key,arr);}catch(e2){}
+ try{
+  fetch('/api/data/save',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({key:key,data:arr})
+  }).catch(function(){});
+ }catch(e3){}
+}
+function ophParseCsvRows(text){
+ var rows=afpParseCsvText(text);
+ if(!rows.length)throw new Error('Arquivo vazio');
+ var h=rows[0].map(function(c){return String(c||'').replace(/^\uFEFF/,'').trim().toLowerCase();});
+ function ix(n){return h.indexOf(n.toLowerCase());}
+ var idx={property:ix('property'),owner:ix('owner'),rent:ix('rent'),expenses:ix('expenses'),mgmt:ix('mgmt fee'),hoa:ix('hoa'),maintenance:ix('maintenance'),other:ix('other'),net:ix('net owner'),status:ix('status')};
+ if(idx.property<0||idx.net<0||idx.mgmt<0||idx.status<0)throw new Error('Header inválido para Owner Payments');
+ return rows.slice(1).map(function(r){
+  var prop=String(r[idx.property]||'').trim(); if(!prop)return null;
+  return {property:prop,owner:ophOwnerClean(r[idx.owner]),rent:ophNum(r[idx.rent]),expenses:ophNum(r[idx.expenses]),mgmtFee:ophNum(r[idx.mgmt]),hoa:ophNum(r[idx.hoa]),maintenance:ophNum(r[idx.maintenance]),other:ophNum(r[idx.other]),netOwner:ophNum(r[idx.net]),status:String(r[idx.status]||'Approved').trim()||'Approved'};
+ }).filter(Boolean);
+}
+function ophPickFile(){var i=document.getElementById('oph-file');if(i)i.click();}
+function ophOnFile(file){
+ if(!file)return;
+ var period=((document.getElementById('oph-period')||{}).value||'').trim();
+ if(!period){showToast('Selecione o período antes do upload.','warning');return;}
+ var rd=new FileReader();
+ rd.onload=function(){
+  try{
+   var parsed=ophParseCsvRows(String(rd.result||''));
+   ophSavePeriodRows(period,parsed);
+   var periods=ophSavePeriods(ophLoadPeriods().concat([period]));
+   try{
+    fetch('/api/data/save',{
+     method:'POST',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({key:'owner_payments_history',data:{periods:periods,last_uploaded:period}})
+    }).catch(function(){});
+   }catch(e2){}
+   var nowIso=new Date().toISOString();
+   try{gmLsSet('owner_payments_history_last',JSON.stringify({period:period,paid_at:nowIso,rows:parsed.length,total:parsed.reduce(function(s,r){return s+r.netOwner;},0)}));}catch(e){}
+   showToast('Histórico importado: '+parsed.length+' linhas ('+period+').','success');
+   ophRenderPeriodOptions(period,periods);
+   ophRender();
+  }catch(err){showToast('Falha no CSV: '+String(err&&err.message||err),'error');}
+ };
+ rd.onerror=function(){showToast('Não foi possível ler o arquivo.','error');};
+ rd.readAsText(file);
+}
+function ophGetAllRows(){
+ var periods=ophLoadPeriods(),out=[];
+ periods.forEach(function(p){
+  ophLoadPeriodRows(p).forEach(function(r){out.push({...r,period:p});});
+ });
+ return out;
+}
+function ophMonthLabel(p){
+ var f=OPH_MONTHS.find(function(x){return x.k===p;});
+ return f?f.l:p;
+}
+function ophRenderPeriodOptions(sel,periods){
+ var s=document.getElementById('oph-period'); if(!s)return;
+ var arr=(periods&&periods.length)?periods:OPH_MONTHS.map(function(x){return x.k;});
+ s.innerHTML=arr.map(function(p){return '<option value="'+p+'">'+ophMonthLabel(p)+' '+String(p).slice(0,4)+'</option>';}).join('');
+ if(sel)s.value=sel;
+}
+function ophSummarize(rows){
+ var t={rent:0,exp:0,mgmt:0,hoa:0,mnt:0,other:0,net:0,neg:0};
+ rows.forEach(function(r){
+  t.rent+=r.rent||0;t.exp+=r.expenses||0;t.mgmt+=r.mgmtFee||0;t.hoa+=r.hoa||0;t.mnt+=r.maintenance||0;t.other+=r.other||0;t.net+=r.netOwner||0;
+  if((r.netOwner||0)<0)t.neg++;
+ });
+ return t;
+}
+function ophBuildBadges(){
+ var host=document.getElementById('oph-month-badges');if(!host)return;
+ var periods=ophLoadPeriods();
+ var allRows=ophGetAllRows();
+ var by={}; allRows.forEach(function(r){by[r.period]=(by[r.period]||0)+(r.netOwner||0);});
+ var btn=function(id,label,active,has,val){
+  var bg=active?'var(--amber)':(has?'rgba(201,169,110,.12)':'var(--sand)');
+  var cl=active?'#fff':(has?'var(--amber)':'var(--ink3)');
+  var bd=active?'var(--amber-bd)':(has?'var(--amber-bd)':'var(--border2)');
+  var txt=label+(val!=null?(' '+(has?ltFmt(val):'--')):'');
+  return '<button type="button" onclick="ophSetPeriod(\''+id+'\')" style="padding:6px 10px;border-radius:18px;border:1px solid '+bd+';background:'+bg+';color:'+cl+';font-size:11px;font-weight:600;cursor:pointer">'+txt+'</button>';
+ };
+ var html=[btn('all','Todos',ophState.period==='all',true,null)];
+ OPH_MONTHS.forEach(function(m){
+  var has=periods.indexOf(m.k)>=0;
+  html.push(btn(m.k,m.l,ophState.period===m.k,has,has?by[m.k]:null));
+ });
+ host.innerHTML=html.join('');
+}
+function ophSetPeriod(p){ophState.period=p||'all';ophState.page=1;ophRender();}
+function ophSortRows(rows){
+ var dir=ophState.sortDir==='asc'?1:-1,k=ophState.sortBy;
+ return rows.slice().sort(function(a,b){
+  var av=a[k],bv=b[k];
+  if(typeof av==='number'||typeof bv==='number')return ((Number(av)||0)-(Number(bv)||0))*dir;
+  return String(av||'').localeCompare(String(bv||''),undefined,{numeric:true,sensitivity:'base'})*dir;
+ });
+}
+function ophHeaderCell(key,label,align){
+ var style='padding:10px 12px;text-align:'+(align||'left')+';font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);cursor:pointer';
+ return '<th onclick="ophSortBy(\''+key+'\')" style="'+style+'">'+label+'</th>';
+}
+function ophSortBy(k){if(ophState.sortBy===k)ophState.sortDir=ophState.sortDir==='asc'?'desc':'asc';else{ophState.sortBy=k;ophState.sortDir=(k==='rent'||k==='netOwner')?'desc':'asc';}ophRender();}
+function ophRender(){
+ var periods=ophLoadPeriods();
+ ophRenderPeriodOptions(((document.getElementById('oph-period')||{}).value||OPH_MONTHS[2].k),periods);
+ ophBuildBadges();
+ var all=ophGetAllRows();
+ var rows=ophState.period==='all'?all:all.filter(function(r){return r.period===ophState.period;});
+ var q=String((document.getElementById('oph-search')||{}).value||'').toLowerCase().trim();
+ if(q)rows=rows.filter(function(r){return (String(r.property)+' '+String(r.owner)).toLowerCase().indexOf(q)>=0;});
+ var sum=ophSummarize(rows);
+ var qty=new Set(rows.map(function(r){return String(r.property||'').toLowerCase();})).size;
+ var x=document.getElementById('oph-kpi-net');if(x)x.textContent=ltFmt(sum.net);
+ x=document.getElementById('oph-kpi-qty');if(x)x.textContent=String(qty);
+ x=document.getElementById('oph-kpi-rent');if(x)x.textContent=ltFmt(sum.rent);
+ x=document.getElementById('oph-kpi-exp');if(x)x.textContent=ltFmt(sum.exp);
+ x=document.getElementById('oph-kpi-mgmt');if(x)x.textContent=ltFmt(sum.mgmt);
+ x=document.getElementById('oph-kpi-hoa');if(x)x.textContent=ltFmt(sum.hoa);
+ x=document.getElementById('oph-kpi-neg');if(x)x.textContent=String(sum.neg);
+ var lst=null; try{lst=JSON.parse(gmLsGet('owner_payments_history_last')||'null');}catch(e){}
+ x=document.getElementById('oph-last-period');if(x)x.textContent=lst?('Período: '+ophMonthLabel(lst.period)+' '+String(lst.period).slice(0,4)):'—';
+ x=document.getElementById('oph-last-total');if(x)x.textContent=lst?ltFmt(lst.total||0):'$0.00';
+ x=document.getElementById('oph-last-meta');if(x)x.textContent=lst?('Data: '+new Date(lst.paid_at).toLocaleDateString()+' · '+(lst.rows||0)+' propriedades · Completed'):'—';
+ var head=document.getElementById('oph-head'),body=document.getElementById('oph-body'),foot=document.getElementById('oph-foot');
+ if(!head||!body||!foot)return;
+ var isAll=ophState.period==='all';
+ if(isAll){
+  var monthKeys=OPH_MONTHS.map(function(m){return m.k;}).filter(function(m){return periods.indexOf(m)>=0;});
+  var byProp={};
+  rows.forEach(function(r){
+   var k=String(r.property||'').trim().toLowerCase();
+   if(!k)return;
+   if(!byProp[k])byProp[k]={property:r.property,owner:r.owner,months:{},total:0};
+   byProp[k].months[r.period]=r.netOwner||0;
+  });
+  var agg=Object.keys(byProp).map(function(k){
+   var row=byProp[k];
+   row.total=monthKeys.reduce(function(s,m){return s+(row.months[m]||0);},0);
+   return row;
+  });
+  agg=agg.sort(function(a,b){return String(a.property).localeCompare(String(b.property));});
+  var totalPages=Math.max(1,Math.ceil(agg.length/ophState.pageSize)); if(ophState.page>totalPages)ophState.page=totalPages;
+  var start=(ophState.page-1)*ophState.pageSize,show=agg.slice(start,start+ophState.pageSize);
+  head.innerHTML='<th style="padding:10px 12px">PROPERTY</th><th style="padding:10px 12px">OWNER</th>'+monthKeys.map(function(m){return '<th style="padding:10px 12px;text-align:right">'+ophMonthLabel(m)+'</th>';}).join('')+'<th style="padding:10px 12px;text-align:right">TOTAL</th>';
+  body.innerHTML=show.map(function(r){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:11px">'+opayEsc(r.property)+'</td><td style="padding:9px 12px;font-size:11px">'+opayEsc(r.owner||'—')+'</td>'+monthKeys.map(function(m){var v=r.months[m]||0;return '<td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:'+(v<0?'var(--red)':'var(--green)')+'">'+ltFmt(v)+'</td>';}).join('')+'<td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(r.total)+'</td></tr>';}).join('')||'<tr><td colspan="'+(monthKeys.length+3)+'" style="padding:18px;text-align:center;color:var(--ink3)">Sem dados</td></tr>';
+  foot.innerHTML='';
+  var pg=document.getElementById('oph-page');if(pg)pg.textContent='Page '+ophState.page+'/'+totalPages;
+  return;
+ }
+ rows=ophSortRows(rows);
+ var totalPages2=Math.max(1,Math.ceil(rows.length/ophState.pageSize)); if(ophState.page>totalPages2)ophState.page=totalPages2;
+ var start2=(ophState.page-1)*ophState.pageSize,show2=rows.slice(start2,start2+ophState.pageSize);
+ head.innerHTML=[ophHeaderCell('idx','#'),ophHeaderCell('property','Property'),ophHeaderCell('owner','Owner'),ophHeaderCell('rent','Rent ($)','right'),ophHeaderCell('expenses','Expenses ($)','right'),ophHeaderCell('mgmtFee','Mgmt Fee ($)','right'),ophHeaderCell('hoa','HOA ($)','right'),ophHeaderCell('maintenance','Maintenance ($)','right'),ophHeaderCell('other','Other ($)','right'),ophHeaderCell('netOwner','Net Owner ($)','right'),ophHeaderCell('status','Status','center')].join('');
+ body.innerHTML=show2.map(function(r,i){
+  var st='<span style="padding:3px 9px;border-radius:999px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);font-size:10px;font-weight:700">Approved</span>';
+  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+(start2+i+1)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink)">'+opayEsc(r.property)+'</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+opayEsc(r.owner||'—')+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(r.rent||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(r.expenses||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(r.mgmtFee||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(r.hoa||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(r.maintenance||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace">'+ltFmt(r.other||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:'+((r.netOwner||0)<0?'var(--red)':'var(--green)')+'">'+ltFmt(r.netOwner||0)+'</td><td style="padding:9px 12px;text-align:center">'+st+'</td></tr>';
+ }).join('')||'<tr><td colspan="11" style="padding:18px;text-align:center;color:var(--ink3)">Sem dados</td></tr>';
+ foot.innerHTML='<tr style="background:var(--cream);border-top:1px solid var(--border)"><td></td><td colspan="2" style="padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">TOTALS</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.rent)+'</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.exp)+'</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.mgmt)+'</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.hoa)+'</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.mnt)+'</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.other)+'</td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700">'+ltFmt(sum.net)+'</td><td></td></tr>';
+ var pg2=document.getElementById('oph-page');if(pg2)pg2.textContent='Page '+ophState.page+'/'+totalPages2;
+}
+function ophChangePage(d){ophState.page=Math.max(1,ophState.page+d);ophRender();}
+function ophExportCsv(){
+ var rows=ophState.period==='all'?ophGetAllRows():ophGetAllRows().filter(function(r){return r.period===ophState.period;});
+ if(!rows.length){showToast('Sem dados para exportar.','warning');return;}
+ var h=['Property','Owner','Rent','Expenses','Mgmt Fee','HOA','Maintenance','Other','Net Owner','Status','Period'];
+ var lines=rows.map(function(r){return [r.property,r.owner,r.rent,r.expenses,r.mgmtFee,r.hoa,r.maintenance,r.other,r.netOwner,r.status,r.period].map(opayCsvQuote).join(',');});
+ var csv='\uFEFF'+[h.join(','),lines.join('\n')].join('\n');
+ var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='Owner_Payments_History_'+(ophState.period||'all')+'.csv';a.click();
+}
+function ophExportPdf(){
+ var rows=ophState.period==='all'?ophGetAllRows():ophGetAllRows().filter(function(r){return r.period===ophState.period;});
+ var sum=ophSummarize(rows);
+ var w=window.open('','_blank'); if(!w)return;
+ w.document.write('<html><head><title>Owner Payments History</title><style>body{font-family:Inter,sans-serif;padding:22px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #ddd;padding:6px}th{background:#eee}</style></head><body><h3>Owner Payments - Histórico</h3><p>Período: '+(ophState.period==='all'?'Todos':ophMonthLabel(ophState.period)+' '+ophState.period.slice(0,4))+'</p><p>Total Net Owner: '+ltFmt(sum.net)+'</p><table><thead><tr><th>Property</th><th>Owner</th><th>Net Owner</th><th>Status</th><th>Period</th></tr></thead><tbody>'+rows.slice(0,500).map(function(r){return '<tr><td>'+opayEsc(r.property)+'</td><td>'+opayEsc(r.owner||'')+'</td><td>'+ltFmt(r.netOwner||0)+'</td><td>'+opayEsc(r.status||'Approved')+'</td><td>'+opayEsc(r.period||'')+'</td></tr>';}).join('')+'</tbody></table></body></html>');
+ w.document.close(); w.print();
+}
+function ophInit(){
+ ophRenderPeriodOptions(OPH_MONTHS[2].k,ophLoadPeriods());
+ var f=document.getElementById('oph-file'),d=document.getElementById('oph-drop');
+ if(f){f.addEventListener('change',function(ev){if(ev.target.files&&ev.target.files[0])ophOnFile(ev.target.files[0]);ev.target.value='';});}
+ if(d){
+  d.addEventListener('click',ophPickFile);
+  d.addEventListener('dragover',function(ev){ev.preventDefault();d.style.borderColor='var(--amber)';});
+  d.addEventListener('dragleave',function(){d.style.borderColor='var(--amber-bd)';});
+  d.addEventListener('drop',function(ev){ev.preventDefault();d.style.borderColor='var(--amber-bd)';var fi=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];if(fi)ophOnFile(fi);});
+ }
+}
 window.opayRender=opayRender;
 window.opayApprove=opayApprove;
 window.opayAskRevert=opayAskRevert;
@@ -10062,6 +10348,13 @@ window.opayCloseDownloadModal=opayCloseDownloadModal;
 window.opayConfirmDownload=opayConfirmDownload;
 window.opayPickCsv=opayPickCsv;
 window.opayOnCsvFile=opayOnCsvFile;
+window.opaySwitchTab=opaySwitchTab;
+window.ophPickFile=ophPickFile;
+window.ophSetPeriod=ophSetPeriod;
+window.ophSortBy=ophSortBy;
+window.ophChangePage=ophChangePage;
+window.ophExportCsv=ophExportCsv;
+window.ophExportPdf=ophExportPdf;
 
 var rxState={rows:[],filtered:[],sortBy:'date',sortDir:'desc',page:1,pageSize:20,filters:{period:'all',user:'all',merchant:'all',category:'all',card:'all'}};
 function rxEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
@@ -10356,6 +10649,8 @@ window.addEventListener('DOMContentLoaded',()=>{
  ltClnPageRender();
  ltDashRender();
  opayRender();
+ ophInit();
+ opaySwitchTab('payables');
  var clPass=document.getElementById('cl-pass');
  var clPassConfirm=document.getElementById('cl-pass-confirm');
  if(clPass)clPass.addEventListener('input',clValidateRegisterPasswords);
@@ -10412,6 +10707,16 @@ async function gmBootstrapServerData(){
   if(j.owner_payments&&typeof j.owner_payments==='object'){opayStateCache=j.owner_payments;}
   if(Array.isArray(j.owner_payment_logs)){opayLogsCache=j.owner_payment_logs;}
   if(j.owner_payment_history&&typeof j.owner_payment_history==='object'){opayHistoryCache=j.owner_payment_history;}
+  if(j.owner_payments_history&&typeof j.owner_payments_history==='object'){
+   try{
+    if(Array.isArray(j.owner_payments_history.periods)){
+     gmLsSet(OPH_INDEX_KEY,JSON.stringify(j.owner_payments_history.periods),true);
+    }
+    if(j.owner_payments_history.last&&typeof j.owner_payments_history.last==='object'){
+     gmLsSet('owner_payments_history_last',JSON.stringify(j.owner_payments_history.last),true);
+    }
+   }catch(eh){}
+  }
  if(Array.isArray(j.ramp_expenses)){rxState.rows=rxHydrateRows(j.ramp_expenses);}
   gmApplyWorkspaceConfigFromServer(cfg);
   if(j.site_config&&typeof j.site_config==='object'){
@@ -10432,6 +10737,8 @@ async function gmBootstrapServerData(){
   if(typeof ltDashRender==='function')ltDashRender();
   if(typeof afvRender==='function')afvRender();
   if(typeof opayRender==='function')opayRender();
+  try{if(typeof ophCache!=='undefined')ophCache={};}catch(eoc){}
+  if(typeof ophRender==='function')ophRender();
   if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
   updateLastSavedBar();
  }catch(err){
