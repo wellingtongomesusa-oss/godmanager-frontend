@@ -2498,7 +2498,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div class="cg" id="ltp-cards" style="margin-bottom:20px"></div>
+ <div style="display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">ocupadas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">disponiveis</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">EM ANDAMENTO</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">reforma/transicao</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
+ <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Todas as Propriedades</div>
@@ -7565,7 +7571,7 @@ async function ltpEnsureBackendData(){
  if(ltpLoadBackendPromise)return ltpLoadBackendPromise;
  ltpLoadBackendPromise=(async function(){
   try{
-   var rp=await fetch('/api/data/load/properties',{method:'GET'});
+   var rp=await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/load/properties',{method:'GET',mode:'cors',credentials:'omit'});
    if(rp.ok){
     var jp=await rp.json();
     var props=Array.isArray(jp)?jp:(Array.isArray(jp.data)?jp.data:[]);
@@ -7576,7 +7582,7 @@ async function ltpEnsureBackendData(){
    }
   }catch(e){}
   try{
-   var rt=await fetch('/api/data/load/tenants',{method:'GET'});
+   var rt=await fetch(GM_BACKEND_RAILWAY_APP+'/api/data/load/tenants',{method:'GET',mode:'cors',credentials:'omit'});
    if(rt.ok){
     var jt=await rt.json();
     var tenants=Array.isArray(jt)?jt:(Array.isArray(jt.data)?jt.data:[]);
@@ -7637,107 +7643,75 @@ function ltpGetAppfolioFallbackRecords(){
 }
 
 function ltpRender(){
+ if(!ltpBackendLoaded){
+  ltpEnsureBackendData().then(function(){
+   if(document.getElementById('page-ltproperties')&&document.getElementById('page-ltproperties').classList.contains('active'))ltpRender();
+  }).catch(function(){});
+ }
  const records=ltGetRecords();
+ const appfolioFallback=ltpGetAppfolioFallbackRecords();
+ const sourceRecords=[...records,...appfolioFallback].filter(function(r){
+  if(!r.isAppfolio)return true;
+ var addr=String(r.address||'').trim();
+ if(!addr)return false;
+ if(afpIsFilteredPropertyValue(addr))return false;
+  return true;
+ }).sort(function(a,b){return String(a.address||'').localeCompare(String(b.address||''));});
  const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
  const fOcc=(document.getElementById('ltp-filter-occ')?.value)||'';
  const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
- const filtered=records.filter(r=>{
-  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch))return false;
-  if(fOcc&&r.occupancy!==fOcc)return false;
-  if(fMonth&&r.month!==fMonth)return false;
-  return true;
+ const filtered=sourceRecords.filter(r=>{
+ if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch))return false;
+ if(fOcc&&r.occupancy!==fOcc)return false;
+ if(fMonth&&!(r.isAppfolio)&&r.month!==fMonth)return false;
+ return true;
  });
-
- // KPI metrics
- const total=filtered.length;
- const rented=filtered.filter(r=>r.occupancy==='rented').length;
- const vacant=filtered.filter(r=>r.occupancy==='vacant').length;
- const inprog=filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length;
- const totRent=filtered.reduce((s,r)=>s+(r.rent||0),0);
- const isEmpty=total===0;
-
- // Home-style cards
- const LTP_CARDS=[
-  {id:'ltp-total', label:'TOTAL PROPERTIES',badge:'TOT',barClass:'bb bb',value:String(total||0),sub1:'All properties in portfolio',sub2:'',cd:[Math.max(rented,1),Math.max(vacant,1),Math.max(inprog,1)],cc:['#2a6e4e','#b83030','#c9a96e'],ctr:String(total||'—'),pills:[{t:'Rented',c:'pg'},{t:'Vacant',c:'pr'},{t:'WIP',c:'pa'}]},
-  {id:'ltp-rented',label:'RENTED',          badge:'RNT',barClass:'bb bg',value:String(rented||0),sub1:'Currently leased units',sub2:'',cd:[Math.max(rented,1),Math.max(total-rented,1)],cc:['#2a6e4e','#e2ddd4'],ctr:String(rented||'—'),pills:[{t:'Occupied',c:'pg'}]},
-  {id:'ltp-vacant',label:'VACANT',          badge:'VAC',barClass:'bb br',value:String(vacant||0),sub1:'Currently unoccupied units',sub2:'Ready to lease',cd:[Math.max(vacant,1),Math.max(total-vacant,1)],cc:['#b83030','#e2ddd4'],ctr:String(vacant||'—'),pills:[{t:'Market Ready',c:'pa'},{t:'Listed',c:'pb'}]},
-  {id:'ltp-inprog',label:'IN PROGRESS',     badge:'WIP',barClass:'bb ba',value:String(inprog||0),sub1:'Move-in / renovation / onboarding',sub2:'Houses not yet available',cd:[Math.max(inprog,1),Math.max(total-inprog,1)],cc:['#c9a96e','#e2ddd4'],ctr:String(inprog||'—'),pills:[{t:'Renovation',c:'pa'},{t:'Onboarding',c:'pg'}]},
-  {id:'ltp-rent',  label:'RENT TOTAL',      badge:'USD',barClass:'bb ba',value:ltFmt(totRent),    sub1:'Gross monthly revenue',sub2:'Based on filtered portfolio',cd:[80,20],cc:['#c9a96e','#e2ddd4'],ctr:ltFmt(totRent),pills:[{t:'Realized',c:'pg'},{t:'Potential',c:'pa'}]}
- ];
-
- const g=document.getElementById('ltp-cards');
- if(g){
-  g.innerHTML='';
-  LTP_CARDS.forEach((c,i)=>{
-   const el=document.createElement('div');
-   el.className='card'+(isEmpty?' empty':'');
-   el.style.animationDelay=(i*.03)+'s';
-   el.onclick=()=>nav('ltproperties');
-   const s2=c.sub2?`<div class="cs2">${c.sub2}</div>`:'';
-   const csz=c.ctr.length>6?'9px':'11px';
-   const pillsHtml=c.pills.length?`<div class="cd"></div><div class="cp">${c.pills.map(p=>`<span class="pill ${p.c}">${p.t}</span>`).join('')}</div>`:'<div style="height:8px"></div>';
-   const updLine=(typeof formatCardUpdatedLine==='function')?formatCardUpdatedLine(c.id):'<div class="cu"><em style="font-style:italic">No data yet</em></div>';
-   el.innerHTML=`
-    <div class="ct"><div class="cl">${c.label}</div><div class="cb">${c.badge}</div></div>
-    <div class="cv2">${c.value}</div>
-    <div class="cs1">${c.sub1}</div>${s2}
-    <div class="cc">
-     <canvas id="ch-${c.id}" width="80" height="80"></canvas>
-     <div class="cc-ctr" style="width:70px;height:70px;font-size:${csz}">${c.ctr}</div>
-    </div>
-    ${pillsHtml}
-    ${updLine}
-    <div class="cf"><a class="ck">Ver detalhes →</a></div>
-    <div class="cbar ${c.barClass}"></div>`;
-   g.appendChild(el);
-  });
-  requestAnimationFrame(()=>{
-   LTP_CARDS.forEach(c=>{
-    const cv=document.getElementById('ch-'+c.id);
-    if(!cv||typeof Chart==='undefined')return;
-    window.CI=window.CI||{};
-    if(window.CI[c.id])window.CI[c.id].destroy();
-    window.CI[c.id]=new Chart(cv,{type:'doughnut',data:{labels:[],datasets:[{data:c.cd,backgroundColor:c.cc,borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:!isEmpty}},animation:{duration:500}}});
-   });
-  });
- }
-
- // Legacy ids — silently update if algum lugar ainda le
- [['ltp-kpi-total',total],['ltp-kpi-rented',rented],['ltp-kpi-vacant',vacant],['ltp-kpi-inprog',inprog],['ltp-kpi-rent',ltFmt(totRent)]]
-  .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
-
- const counter=document.getElementById('ltp-counter');
- if(counter)counter.textContent=filtered.length+' registro(s)';
-
+ // KPIs
+ const totR=filtered.reduce((s,r)=>s+(r.rent||0),0);
+ [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
+ ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
+ ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
+ ['ltp-kpi-rent',ltFmt(totR)]
+ ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody)return;
- if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
+ if(!filtered.length){
+  tbody.innerHTML='';
+  if(empty)empty.style.display='block';
+  var p0=document.getElementById('ltp-page-info');if(p0)p0.textContent='Pagina 1 de 1';
+  return;
+ }
  if(empty)empty.style.display='none';
- const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ const totalPages=Math.max(1,Math.ceil(filtered.length/LTP_PAGE_SIZE));
+ if(ltpPage>totalPages)ltpPage=totalPages;
+ if(ltpPage<1)ltpPage=1;
+ const start=(ltpPage-1)*LTP_PAGE_SIZE;
+ const pageRows=filtered.slice(start,start+LTP_PAGE_SIZE);
+ const occLabel={rented:'Rented',vacant:'Available',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
- tbody.innerHTML=filtered.map((r,i)=>`
-  <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="ltOpenDetail('${r.id}')">
-   <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
-   <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.baths||'—'}</div></td>
-   <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${r.owner}</td>
-   <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
-   <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${r.baths||'—'}</td>
-   <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
-   <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
-   <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
-   <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${(r.net||0)>=0?'var(--blue)':'var(--red)'}">${ltFmt(r.net||0)}</td>
-   <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
-   <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${stLabel[r.status]||'—'}</span></td>
-   <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
-    <div style="display:flex;gap:4px;justify-content:center">
-     <button onclick="ltOpenDetail('${r.id}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
-     <button onclick="ltOpenEdit('${r.id}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
-     <button onclick="ltpDeleteProperty('${r.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
-    </div>
-   </td>
-  </tr>`).join('');
+ tbody.innerHTML=pageRows.map((r,i)=>`
+ <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="${r.isAppfolio&&r.appfolioId?"afpOpenModal('"+r.appfolioId+"')":"ltOpenDetail('"+r.id+"')"}">
+ <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${start+i+1}</td>
+<td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.isAppfolio?(r.addressSub||'--'):(r.baths||'—')}</div></td>
+<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${ltpCleanOwnerName(r.owner)}</td>
+ <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
+ <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${r.baths||'—'}</td>
+ <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
+ <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
+ <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
+ <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${(r.net||0)>=0?'var(--blue)':'var(--red)'}">${ltFmt(r.net||0)}</td>
+ <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
+ <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${stLabel[r.status]||'—'}</span></td>
+ <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
+ <div style="display:flex;gap:4px;justify-content:center">
+${r.isAppfolio?`<button onclick="afpOpenModal('${r.appfolioId}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="afpOpenModal('${r.appfolioId}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="ltpDeleteAppfolioProperty('${r.appfolioId}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>`:`<button onclick="ltOpenDetail('${r.id}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button><button onclick="ltOpenEdit('${r.id}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button><button onclick="ltpDeleteProperty('${r.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>`}
+ </div>
+ </td>
+ </tr>`).join('');
+ const p=document.getElementById('ltp-page-info');if(p)p.textContent='Pagina '+ltpPage+' de '+totalPages;
 }
 function ltpChangePage(delta){ltpPage=Math.max(1,ltpPage+delta);ltpRender();}
 
