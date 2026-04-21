@@ -1,30 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useLanguage } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n/translations';
 
 export function LanguageSwitcher() {
-  const [language, setLanguage] = useState<'en' | 'pt'>('en');
-  const router = useRouter();
-  const pathname = usePathname();
+  const { locale, setLocale } = useLanguage();
 
-  useEffect(() => {
-    // Get language from localStorage or default to 'en'
-    if (typeof window !== 'undefined') {
-      const savedLang = localStorage.getItem('language') as 'en' | 'pt' | null;
-      if (savedLang) {
-        setLanguage(savedLang);
-      }
-    }
-  }, []);
-
-  const handleLanguageChange = (lang: 'en' | 'pt') => {
-    setLanguage(lang);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('language', lang);
-    }
-    // Reload to apply language changes
-    router.refresh();
+  const handleLanguageChange = (next: Locale) => {
+    setLocale(next);
   };
 
   return (
@@ -32,7 +15,7 @@ export function LanguageSwitcher() {
       <button
         onClick={() => handleLanguageChange('en')}
         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-          language === 'en'
+          locale === 'en'
             ? 'bg-primary-600 text-white'
             : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
         }`}
@@ -42,7 +25,7 @@ export function LanguageSwitcher() {
       <button
         onClick={() => handleLanguageChange('pt')}
         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-          language === 'pt'
+          locale === 'pt'
             ? 'bg-primary-600 text-white'
             : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
         }`}

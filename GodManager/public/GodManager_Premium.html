@@ -414,6 +414,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-org-chart .oc-chart-ul ul{margin-left:0;padding-left:0}
 }
 </style>
+<script src="/properties_seed.js"></script>
 </head>
 <body>
 <div id="ls" style="display:none" aria-hidden="true"></div>
@@ -503,6 +504,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss sb-ix-ic" onclick="nav('ramp')" id="nav-ramp" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Ramp</span></div>
  <div class="ss sb-ix-ic" onclick="nav('quickbooks')" id="nav-quickbooks" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg><span>QuickBooks</span></div>
  <div class="ss sb-ix-ic" onclick="nav('appfolio-upload')" id="nav-appfolio-upload" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>AppFolio Upload</span></div>
+ </div>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="results">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">RESULTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
+ <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
+ <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="admin" id="sb-gm-admin-section" style="display:none">
@@ -2590,7 +2598,143 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  </div>
 </div>
+
+<!-- ============================================================ -->
+<!-- RESULTS DASHBOARD -->
+<!-- ============================================================ -->
+<div class="page" id="page-results">
+ <div class="ph">
+  <div class="pt" data-i18n="results_dashboard_title">Results — Financial Performance</div>
+  <div class="ps" data-i18n="monthly_closings">Monthly closings, P&amp;L analysis and uploaded reports</div>
+ </div>
+ <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+  <label style="font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)" data-i18n="year">Year</label>
+  <select id="gm-res-year" onchange="if(typeof gmResRender==='function')gmResRender()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px">
+   <option value="2024">2024</option>
+   <option value="2025">2025</option>
+   <option value="2026" selected>2026</option>
+  </select>
+  <div style="margin-left:auto;display:flex;gap:8px">
+   <button type="button" onclick="nav('results-upload')" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)" data-i18n="upload_report">+ Upload Report</button>
+  </div>
+ </div>
+
+ <!-- KPI Row 1 -->
+ <div class="gm-res-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden">
+  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="gross_revenue">GROSS REVENUE</div><div id="gm-res-kpi-gross" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">$0.00</div><div style="font-size:10px;color:var(--ink3);margin-top:3px" data-i18n="annual_total">Annual total</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="total_expenses">TOTAL EXPENSES</div><div id="gm-res-kpi-exp" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red)">$0.00</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">OpEx + COGS</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
+  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="net_income">NET INCOME</div><div id="gm-res-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue)">$0.00</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Gross − Expenses</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+  <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="profit_margin">PROFIT MARGIN</div><div id="gm-res-kpi-margin" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">0.0%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Net / Gross</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ </div>
+
+ <!-- KPI Row 2 -->
+ <div class="gm-res-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:22px;overflow:hidden">
+  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="reports_uploaded">REPORTS UPLOADED</div><div id="gm-res-kpi-reports" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">HTML / PDF</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
+  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="periods_covered">PERIODS COVERED</div><div id="gm-res-kpi-periods" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">months</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="owner_dist">OWNER DISTRIBUTIONS</div><div id="gm-res-kpi-owner" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue)">$0.00</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">paid out</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+  <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="avg_monthly_net">AVG MONTHLY NET</div><div id="gm-res-kpi-avg" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0.00</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">avg</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ </div>
+
+ <!-- Monthly table -->
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:22px">
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+   <div style="font-size:13px;font-weight:700;color:var(--ink);font-family:'Cormorant Garamond',serif" data-i18n="monthly_closings_hdr">Monthly Closings</div>
+   <div id="gm-res-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace">0 reports</div>
+  </div>
+  <div style="overflow-x:auto">
+   <table style="width:100%;border-collapse:collapse;min-width:900px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="period">PERIOD</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="report">REPORT</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)" data-i18n="gross_revenue">GROSS REVENUE</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)" data-i18n="total_expenses">TOTAL EXPENSES</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)" data-i18n="net_income">NET INCOME</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="margin_pct">MARGIN %</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">ACTIONS</th>
+    </tr></thead>
+    <tbody id="gm-res-tbody"></tbody>
+    <tfoot id="gm-res-tfoot" style="background:var(--cream);border-top:1px solid var(--border);font-weight:700"></tfoot>
+   </table>
+  </div>
+  <div id="gm-res-empty" style="display:none;padding:36px 18px;text-align:center;color:var(--ink3);font-size:12px" data-i18n="no_reports">No reports uploaded yet. Upload your monthly HTML closing reports to track performance.</div>
+ </div>
+
+ <!-- Annual chart -->
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px 18px">
+  <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px;font-family:'Cormorant Garamond',serif">Annual Trend — Gross vs Expenses vs Net</div>
+  <div style="position:relative;height:280px"><canvas id="gm-res-annual-chart"></canvas></div>
+ </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- RESULTS UPLOAD -->
+<!-- ============================================================ -->
+<div class="page" id="page-results-upload">
+ <div class="ph">
+  <div class="pt" data-i18n="upload_reports">Upload Reports</div>
+  <div class="ps" data-i18n="monthly_closings">Monthly closings, P&amp;L analysis and uploaded reports</div>
+ </div>
+
+ <div style="max-width:720px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:22px 24px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin-bottom:14px">
+   <div>
+    <label for="gm-resu-period-start" style="display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="period_start">Period Start *</label>
+    <input type="date" id="gm-resu-period-start" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box"/>
+   </div>
+   <div>
+    <label for="gm-resu-period-end" style="display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="period_end">Period End *</label>
+    <input type="date" id="gm-resu-period-end" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box"/>
+   </div>
+   <div>
+    <label for="gm-resu-type" style="display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Type *</label>
+    <select id="gm-resu-type" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box">
+     <option value="Demonstrativo Executivo" data-i18n="demonstrativo">Executive Statement</option>
+     <option value="Monthly P&amp;L">Monthly P&amp;L</option>
+     <option value="Owner Statement">Owner Statement</option>
+     <option value="Bank Reconciliation">Bank Reconciliation</option>
+     <option value="Tax Report">Tax Report</option>
+     <option value="Custom Report">Custom Report</option>
+    </select>
+   </div>
+   <div>
+    <label for="gm-resu-title" style="display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Title</label>
+    <input type="text" id="gm-resu-title" placeholder="Auto-fill from filename" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;box-sizing:border-box"/>
+   </div>
+  </div>
+
+  <div id="gm-resu-drop" style="border:1.5px dashed var(--border2);border-radius:10px;background:var(--sand);padding:28px 18px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:14px">
+   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5" style="margin-bottom:8px"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+   <div style="font-size:13px;font-weight:600;color:var(--ink)">Drop HTML or PDF here</div>
+   <div style="font-size:11px;color:var(--ink3);margin-top:4px">or click to browse · .html .htm .pdf · max 25MB</div>
+   <input type="file" id="gm-resu-file" accept=".html,.htm,.pdf" style="display:none"/>
+  </div>
+
+  <div id="gm-resu-selected" style="display:none;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--cream);margin-bottom:14px;font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace"></div>
+
+  <div style="display:flex;justify-content:flex-end;gap:10px">
+   <button type="button" onclick="nav('results')" style="padding:9px 18px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancel</button>
+   <button type="button" onclick="if(typeof gmResDoUpload==='function')gmResDoUpload()" style="padding:9px 22px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)" data-i18n="upload_report">Upload Report</button>
+  </div>
+
+  <div id="gm-resu-feedback" style="display:none;margin-top:14px;padding:10px 14px;border-radius:8px;font-size:12px"></div>
+ </div>
+</div>
+
 </main>
+
+<!-- Results viewer modal -->
+<div id="gm-report-view-modal" style="display:none;position:fixed;inset:0;z-index:9030;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:2.5vh 2.5vw" onclick="if(event.target===this)gmResCloseView()">
+ <div style="background:var(--paper);border-radius:12px;width:95vw;height:95vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream)">
+   <div id="gm-report-view-title" style="font-size:14px;font-weight:700;color:var(--ink);font-family:'Cormorant Garamond',serif;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Report</div>
+   <div style="display:flex;gap:8px;flex-shrink:0">
+    <button type="button" onclick="gmResOpenNewTab()" style="padding:6px 12px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" data-i18n="open_new_tab">Open in New Tab</button>
+    <button type="button" onclick="gmResCloseView()" style="width:32px;height:32px;border:none;background:transparent;color:var(--ink3);cursor:pointer;font-size:20px;line-height:1" aria-label="Close">×</button>
+   </div>
+  </div>
+  <iframe id="gm-report-view-iframe" sandbox="allow-scripts allow-same-origin" style="flex:1;width:100%;border:none;background:#fff"></iframe>
+ </div>
+</div>
 
 <div id="save-bottom-bar" class="save-bottom-bar" aria-label="Save actions">
  <div class="save-bottom-inner">
@@ -4727,7 +4871,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -4787,7 +4931,9 @@ function nav(r){
  clients:()=>{if(typeof loadClients==='function')loadClients();},
  'client-users':()=>{if(typeof renderClientUsersPage==='function')renderClientUsersPage();},
  'gross-expenses':()=>{if(typeof geWirePageOnce==='function')geWirePageOnce();if(typeof geLoadPage==='function')geLoadPage();},
- 'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();}
+ 'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();},
+ results:()=>{if(typeof gmResRender==='function')gmResRender();},
+ 'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();}
  };
  if(renders[r]) setTimeout(renders[r],30);
 }
@@ -6536,8 +6682,59 @@ function ltpDeleteProperty(id){
  showToast('Propriedade removida com sucesso.');
 }
 
+/* === GM PROPERTIES STORE (seed AppFolio + cadastros manuais) === */
+window.GM_PROP_KEY='gm_properties';
+window.gmPropertiesLoad=function(){try{var r=localStorage.getItem(window.GM_PROP_KEY);var a=r?JSON.parse(r):[];return Array.isArray(a)?a:[];}catch(e){return[];}};
+window.gmPropertiesSave=function(a){try{localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(a||[]));}catch(e){}};
+window.gmPropertiesBootstrap=function(){
+ var cur=window.gmPropertiesLoad();
+ if(cur&&cur.length>0)return false;
+ var seed=(window.GM_PROPERTIES_SEED&&Array.isArray(window.GM_PROPERTIES_SEED))?window.GM_PROPERTIES_SEED:[];
+ if(!seed.length)return false;
+ window.gmPropertiesSave(seed);
+ return true;
+};
+window.gmPropertiesNextId=function(){
+ var arr=window.gmPropertiesLoad();var max=97;
+ arr.forEach(function(p){var m=/^P(\d+)$/.exec(String(p.id||''));if(m){var n=parseInt(m[1],10);if(n>max)max=n;}});
+ return 'P'+String(max+1).padStart(4,'0');
+};
+window.gmPropertiesToUi=function(p){
+ if(!p||typeof p!=='object')return p;
+ if(p.rent!=null&&p.occupancy!=null&&p.status&&(p.status==='approved'||p.status==='pending'||p.status==='disputed'))return p;
+ var curR=Number(p.currentRent)||0;
+ var mktR=Number(p.marketRent)||0;
+ var rent=curR>0?curR:mktR;
+ var occ=(curR>0)?'rented':(mktR>0?'vacant':'vacant');
+ var statusUi='approved';
+ var sLow=String(p.status||'').toLowerCase();
+ if(sLow==='pending')statusUi='pending';
+ else if(sLow==='disputed')statusUi='disputed';
+ else if(sLow==='active')statusUi='approved';
+ return{
+  id:p.id,
+  address:p.address||p.name||'—',
+  owner:p.owner||'—',
+  tenant:p.tenant||'',
+  baths:p.baths||(p.units?(p.units+' unit'+(p.units>1?'s':'')):''),
+  occupancy:p.occupancy||occ,
+  rent:rent,
+  deposit:Number(p.deposit)||0,
+  net:Number(p.netOwner!=null?p.netOwner:(p.net||0)),
+  month:p.month||'',
+  status:statusUi,
+  _src:p
+ };
+};
+document.addEventListener('DOMContentLoaded',function(){
+ try{
+  if(typeof window.gmPropertiesBootstrap==='function')window.gmPropertiesBootstrap();
+ }catch(e){console.warn('gmPropertiesBootstrap',e);}
+});
+
 function ltpRender(){
- const records=ltGetRecords();
+ var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ const records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
  const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
  const fOcc=(document.getElementById('ltp-filter-occ')?.value)||'';
  const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
@@ -7364,6 +7561,41 @@ async function ltpSaveNewProperty(){
   const res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(apiPayload)});
   if(!res.ok)throw new Error('api');
  }catch(e){console.warn('ltp api',e);}
+ try{
+  var gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+  var newId=(typeof window.gmPropertiesNextId==='function')?window.gmPropertiesNextId():(rec.id||('P'+String(gmArr.length+1).padStart(4,'0')));
+  var seedRec={
+   id:newId,
+   name:rec.address||'',
+   address:rec.address||'',
+   city:'',state:'',zip:'',
+   units:1,sqft:0,
+   marketRent:Number(rec.rent)||0,
+   currentRent:Number(rec.rent)||0,
+   mgmtPct:0,mgmtFlatFee:0,minFee:0,reserve:0,
+   waiveWhenVacant:'',homeWarrantyExp:'',insuranceExp:'',taxYearEnd:'',
+   owner:rec.owner||'',
+   description:'',
+   hoa:Number(rec.hoa)||0,
+   maintenance:Number(rec.maint)||0,
+   mgmtFeeUsd:0,
+   netOwner:Number(rec.net)||0,
+   notes:rec.notes||'',
+   status:'Active',
+   source:'manual',
+   tenant:rec.tenant||'',
+   baths:rec.baths||'',
+   occupancy:rec.occupancy||'vacant',
+   rent:Number(rec.rent)||0,
+   deposit:Number(rec.deposit)||0,
+   net:Number(rec.net)||0,
+   month:rec.month||'',
+   photos:rec.photos||[],
+   createdAt:new Date().toISOString()
+  };
+  gmArr.push(seedRec);
+  window.gmPropertiesSave(gmArr);
+ }catch(e){console.warn('gm_properties save',e);}
  const all=ltGetRecords();
  all.push(rec);
  ltSaveRecords(all);
@@ -8137,6 +8369,334 @@ window.gmFrReject=function(){
  var id=window._gmFrCurrentId;if(!id)return;
  fetch(gmFormsApiBase()+'/forms/'+id+'/reject',{method:'POST',mode:'cors',credentials:'omit'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){if(typeof showToast==='function')showToast('OK','success');gmFrViewClose();gmFrLoad();}).catch(function(){if(typeof showToast==='function')showToast(gmFrT('error'),'error');});
 };
+})();
+
+/* === GM RESULTS — Financial reports upload, extraction, dashboard === */
+(function(){
+var GM_RES_I18N={
+ en:{results:'RESULTS',results_dashboard:'Results Dashboard',upload_reports:'Upload Reports',financial_performance:'Financial Performance',monthly_closings:'Monthly closings, P&L analysis and uploaded reports',period:'Period',report:'Report',gross_revenue:'GROSS REVENUE',total_expenses:'TOTAL EXPENSES',net_income:'NET INCOME',profit_margin:'PROFIT MARGIN',margin_pct:'MARGIN %',reports_uploaded:'REPORTS UPLOADED',periods_covered:'PERIODS COVERED',owner_dist:'OWNER DISTRIBUTIONS',avg_monthly_net:'AVG MONTHLY NET',annual_total:'ANNUAL TOTAL',view_report:'View',open_new_tab:'Open in New Tab',upload_report:'Upload Report',report_uploaded:'Report uploaded',extracted:'Extracted',click_to_edit:'Click to edit',demonstrativo:'Executive Statement',period_start:'Period Start',period_end:'Period End',year:'Year',no_reports:'No reports uploaded yet. Upload your monthly HTML closing reports to track performance.',monthly_closings_hdr:'Monthly Closings',results_dashboard_title:'Results — Financial Performance'},
+ pt:{results:'RESULTADOS',results_dashboard:'Painel de Resultados',upload_reports:'Upload de Relatorios',financial_performance:'Performance Financeira',monthly_closings:'Fechamentos mensais, analise de resultado e relatorios',period:'Periodo',report:'Relatorio',gross_revenue:'RECEITA BRUTA',total_expenses:'DESPESAS TOTAIS',net_income:'RESULTADO LIQUIDO',profit_margin:'MARGEM DE LUCRO',margin_pct:'MARGEM %',reports_uploaded:'RELATORIOS ENVIADOS',periods_covered:'PERIODOS COBERTOS',owner_dist:'DISTRIBUICOES OWNERS',avg_monthly_net:'MEDIA MENSAL LIQUIDA',annual_total:'TOTAL DO ANO',view_report:'Ver',open_new_tab:'Abrir em Nova Aba',upload_report:'Enviar Relatorio',report_uploaded:'Relatorio enviado',extracted:'Extraido',click_to_edit:'Clique para editar',demonstrativo:'Demonstrativo Executivo',period_start:'Inicio do Periodo',period_end:'Fim do Periodo',year:'Ano',no_reports:'Nenhum relatorio enviado ainda. Envie seus fechamentos mensais HTML para acompanhar a performance.',monthly_closings_hdr:'Fechamentos Mensais',results_dashboard_title:'Resultados — Performance Financeira'},
+ es:{results:'RESULTADOS',results_dashboard:'Panel de Resultados',upload_reports:'Subir Informes',financial_performance:'Rendimiento Financiero',monthly_closings:'Cierres mensuales, analisis de resultados e informes',period:'Periodo',report:'Informe',gross_revenue:'INGRESO BRUTO',total_expenses:'GASTOS TOTALES',net_income:'RESULTADO NETO',profit_margin:'MARGEN DE GANANCIA',margin_pct:'MARGEN %',reports_uploaded:'INFORMES SUBIDOS',periods_covered:'PERIODOS CUBIERTOS',owner_dist:'DISTRIBUCIONES PROPIETARIOS',avg_monthly_net:'PROMEDIO MENSUAL NETO',annual_total:'TOTAL DEL ANO',view_report:'Ver',open_new_tab:'Abrir en Nueva Pestana',upload_report:'Subir Informe',report_uploaded:'Informe subido',extracted:'Extraido',click_to_edit:'Click para editar',demonstrativo:'Estado Ejecutivo',period_start:'Inicio del Periodo',period_end:'Fin del Periodo',year:'Ano',no_reports:'Ningun informe subido aun. Suba sus cierres mensuales HTML para seguir el rendimiento.',monthly_closings_hdr:'Cierres Mensuales',results_dashboard_title:'Resultados — Rendimiento Financiero'}
+};
+function gmResLang(){try{var l=(typeof getGmLang==='function'&&getGmLang())||(localStorage.getItem('gm_lang'))||'en';l=String(l||'en').toLowerCase();return (l==='pt'||l==='es')?l:'en';}catch(e){return 'en';}}
+function gmResT(k){var d=GM_RES_I18N[gmResLang()]||GM_RES_I18N.en;return d[k]||GM_RES_I18N.en[k]||k;}
+window.gmResT=gmResT;
+
+var LS_REPORTS='gm_results_reports';
+var LS_ANNUAL='gm_results_annual';
+var MAX_FILE=25*1024*1024;
+var _gmResFile=null;
+var _gmResChart=null;
+var _gmResCurrentViewId=null;
+
+function gmResFmtMoney(v){var n=Number(v)||0;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function gmResFmtPct(v){var n=Number(v)||0;return n.toFixed(1)+'%';}
+function gmResEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function gmResLoad(){try{var raw=localStorage.getItem(LS_REPORTS);var arr=raw?JSON.parse(raw):[];return Array.isArray(arr)?arr:[];}catch(e){return[];}}
+function gmResSave(arr){try{localStorage.setItem(LS_REPORTS,JSON.stringify(arr||[]));}catch(e){}}
+function gmResSaveAnnual(year,snap){try{var raw=localStorage.getItem(LS_ANNUAL);var o=raw?JSON.parse(raw):{};o[String(year)]=snap;localStorage.setItem(LS_ANNUAL,JSON.stringify(o));}catch(e){}}
+function gmResAnnualSnapFor(year){
+ var rows=gmResLoad().filter(function(r){return String(r.period_start||'').slice(0,4)===String(year);});
+ var g=0,e=0,d=0;
+ rows.forEach(function(r){var x=r.extracted_data||{};g+=Number(x.gross_revenue)||0;e+=Number(x.total_expenses)||0;d+=Number(x.owner_distributions)||0;});
+ var net=g-e;
+ var months={};
+ rows.forEach(function(r){var m=String(r.period_start||'').slice(0,7);if(m)months[m]=true;});
+ return {gross_revenue:g,total_expenses:e,net_income:net,owner_distributions:d,reports_count:rows.length,periods_covered:Object.keys(months).length};
+}
+
+function gmResParseMoney(s){
+ if(s==null)return 0;
+ var str=String(s).replace(/\u00a0/g,' ').trim();
+ if(!str)return 0;
+ var neg=/^\(.*\)$/.test(str)||/^-/.test(str);
+ str=str.replace(/[()\-]/g,'').replace(/[^\d.,]/g,'');
+ if(!str)return 0;
+ var lastComma=str.lastIndexOf(',');var lastDot=str.lastIndexOf('.');
+ if(lastComma>lastDot){str=str.replace(/\./g,'').replace(',','.');}
+ else{str=str.replace(/,/g,'');}
+ var n=parseFloat(str)||0;
+ return neg?-n:n;
+}
+
+function gmResExtractFromHtml(html){
+ var out={gross_revenue:0,total_expenses:0,net_income:0,margin_pct:0,owner_distributions:0,properties_managed:0,vacant:0,rent_roll:0};
+ try{
+  var doc=(new DOMParser()).parseFromString(html,'text/html');
+  var pairs=[];
+  doc.querySelectorAll('.kpi-val').forEach(function(el){
+   var lab='';var sib=el.previousElementSibling;
+   if(sib&&sib.classList&&sib.classList.contains('kpi-label'))lab=sib.textContent||'';
+   else{var par=el.parentElement;if(par){var lbl=par.querySelector('.kpi-label');if(lbl)lab=lbl.textContent||'';}}
+   pairs.push({label:String(lab).toLowerCase(),val:String(el.textContent||'').trim()});
+  });
+  pairs.forEach(function(p){
+   var l=p.label;var n=gmResParseMoney(p.val);
+   if(/managed|gerenciad/.test(l))out.properties_managed=parseInt(String(p.val).replace(/[^\d]/g,''))||0;
+   else if(/vacant|vaga/.test(l))out.vacant=parseInt(String(p.val).replace(/[^\d]/g,''))||0;
+   else if(/rent\s*roll/.test(l))out.rent_roll=n;
+   else if(/distribu/.test(l))out.owner_distributions=n;
+   else if(/gross|receita\s*bruta|ingres/.test(l)&&!out.gross_revenue)out.gross_revenue=n;
+  });
+  var tot=0,exp=0,gr=0;
+  doc.querySelectorAll('.fin-table,table').forEach(function(tbl){
+   var hdr=(tbl.querySelector('thead')||tbl).textContent||'';
+   var isExp=/despesa|expense|gasto/i.test(hdr);
+   var isRev=/receita|revenue|ingres/i.test(hdr);
+   tbl.querySelectorAll('tr').forEach(function(tr){
+    var txt=(tr.textContent||'').trim();
+    if(/^\s*TOTAL\b/i.test(txt)||/^TOTAL\s/i.test(txt)){
+     var tds=tr.querySelectorAll('td');if(!tds.length)return;
+     var v=gmResParseMoney(tds[tds.length-1].textContent);
+     if(isExp&&!exp)exp=v; else if(isRev&&!gr)gr=v;
+     else if(!tot)tot=v;
+    }
+   });
+  });
+  if(gr&&!out.gross_revenue)out.gross_revenue=gr;
+  if(exp)out.total_expenses=exp;
+  out.net_income=out.gross_revenue-out.total_expenses;
+  if(out.gross_revenue>0)out.margin_pct=(out.net_income/out.gross_revenue)*100;
+ }catch(e){}
+ return out;
+}
+
+function gmResNextId(){return 'RPT-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+
+function gmResUploadInit(){
+ var drop=document.getElementById('gm-resu-drop');
+ var inp=document.getElementById('gm-resu-file');
+ if(!drop||!inp||drop._gmResWired)return;
+ drop._gmResWired=1;
+ drop.addEventListener('click',function(){inp.click();});
+ drop.addEventListener('dragover',function(e){e.preventDefault();drop.style.borderColor='var(--amber)';drop.style.background='var(--cream)';});
+ drop.addEventListener('dragleave',function(){drop.style.borderColor='var(--border2)';drop.style.background='var(--sand)';});
+ drop.addEventListener('drop',function(e){e.preventDefault();drop.style.borderColor='var(--border2)';drop.style.background='var(--sand)';var f=(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0])||null;if(f)gmResSetFile(f);});
+ inp.addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)gmResSetFile(f);});
+ var today=new Date();var iso=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+ var ps=document.getElementById('gm-resu-period-start');var pe=document.getElementById('gm-resu-period-end');
+ if(ps&&!ps.value)ps.value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-01';
+ if(pe&&!pe.value)pe.value=iso;
+}
+window.gmResUploadInit=gmResUploadInit;
+
+function gmResSetFile(f){
+ if(!f)return;
+ if(f.size>MAX_FILE){if(typeof showToast==='function')showToast('File exceeds 25MB','error');return;}
+ if(!/\.(html?|pdf)$/i.test(f.name)){if(typeof showToast==='function')showToast('Only HTML or PDF allowed','error');return;}
+ _gmResFile=f;
+ var sel=document.getElementById('gm-resu-selected');
+ if(sel){sel.style.display='block';sel.textContent=f.name+' · '+(f.size/1024).toFixed(1)+' KB';}
+ var tit=document.getElementById('gm-resu-title');
+ if(tit&&!tit.value)tit.value=f.name.replace(/\.(html?|pdf)$/i,'');
+}
+
+function gmResFeedback(msg,ok){
+ var fb=document.getElementById('gm-resu-feedback');
+ if(!fb)return;
+ fb.style.display='block';
+ fb.style.background=ok?'var(--green-bg)':'var(--red-bg)';
+ fb.style.color=ok?'var(--green)':'var(--red)';
+ fb.style.border='1px solid '+(ok?'var(--green)':'var(--red)');
+ fb.textContent=msg;
+}
+
+function gmResPeriodLabel(ps,pe){
+ if(!ps)return '';
+ var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+ var a=ps.split('-'),b=(pe||'').split('-');
+ if(a.length<3)return ps;
+ var sm=MONTHS[parseInt(a[1],10)-1]||a[1];
+ var yr=a[0];
+ if(pe&&b.length>=3){var em=MONTHS[parseInt(b[1],10)-1]||b[1];if(sm===em&&a[0]===b[0])return sm+' '+yr;return sm+'-'+em+' '+yr;}
+ return sm+' '+yr;
+}
+
+function gmResDoUpload(){
+ if(!_gmResFile){gmResFeedback('Select a file first','');return;}
+ var ps=(document.getElementById('gm-resu-period-start')||{}).value||'';
+ var pe=(document.getElementById('gm-resu-period-end')||{}).value||'';
+ var tp=(document.getElementById('gm-resu-type')||{}).value||'Custom Report';
+ var ti=(document.getElementById('gm-resu-title')||{}).value||_gmResFile.name;
+ if(!ps||!pe){gmResFeedback('Period Start and End required','');return;}
+ var fr=new FileReader();
+ fr.onload=function(){
+  var content=String(fr.result||'');
+  var ext={gross_revenue:0,total_expenses:0,net_income:0,margin_pct:0,owner_distributions:0,properties_managed:0,vacant:0,rent_roll:0};
+  if(/\.html?$/i.test(_gmResFile.name))ext=gmResExtractFromHtml(content);
+  var rec={id:gmResNextId(),period_start:ps,period_end:pe,period_label:gmResPeriodLabel(ps,pe),type:tp,title:ti,filename:_gmResFile.name,content:content,extracted_data:ext,uploaded_at:new Date().toISOString()};
+  var arr=gmResLoad();arr.push(rec);gmResSave(arr);
+  var yr=ps.slice(0,4);gmResSaveAnnual(yr,gmResAnnualSnapFor(yr));
+  gmResFeedback(gmResT('report_uploaded')+'. '+gmResT('extracted')+': Gross '+gmResFmtMoney(ext.gross_revenue)+' / Expenses '+gmResFmtMoney(ext.total_expenses)+' / Net '+gmResFmtMoney(ext.net_income),1);
+  if(typeof showToast==='function')showToast(gmResT('report_uploaded'),'success');
+  _gmResFile=null;
+  var inp=document.getElementById('gm-resu-file');if(inp)inp.value='';
+  var sel=document.getElementById('gm-resu-selected');if(sel){sel.style.display='none';sel.textContent='';}
+  var tit=document.getElementById('gm-resu-title');if(tit)tit.value='';
+  setTimeout(function(){nav('results');},900);
+ };
+ fr.onerror=function(){gmResFeedback('Failed to read file','');};
+ if(/\.pdf$/i.test(_gmResFile.name))fr.readAsDataURL(_gmResFile);
+ else fr.readAsText(_gmResFile);
+}
+window.gmResDoUpload=gmResDoUpload;
+
+function gmResRender(){
+ var yrSel=document.getElementById('gm-res-year');
+ var yr=yrSel?String(yrSel.value||new Date().getFullYear()):String(new Date().getFullYear());
+ var all=gmResLoad();
+ var rows=all.filter(function(r){return String(r.period_start||'').slice(0,4)===yr;}).sort(function(a,b){return String(a.period_start).localeCompare(String(b.period_start));});
+ var snap=gmResAnnualSnapFor(yr);
+ gmResSaveAnnual(yr,snap);
+ var set=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+ set('gm-res-kpi-gross',gmResFmtMoney(snap.gross_revenue));
+ set('gm-res-kpi-exp',gmResFmtMoney(snap.total_expenses));
+ set('gm-res-kpi-net',gmResFmtMoney(snap.net_income));
+ var mg=snap.gross_revenue>0?(snap.net_income/snap.gross_revenue*100):0;
+ set('gm-res-kpi-margin',gmResFmtPct(mg));
+ set('gm-res-kpi-reports',String(snap.reports_count));
+ set('gm-res-kpi-periods',String(snap.periods_covered));
+ set('gm-res-kpi-owner',gmResFmtMoney(snap.owner_distributions));
+ set('gm-res-kpi-avg',gmResFmtMoney(snap.periods_covered>0?(snap.net_income/snap.periods_covered):0));
+ var tb=document.getElementById('gm-res-tbody');var tf=document.getElementById('gm-res-tfoot');var em=document.getElementById('gm-res-empty');var ct=document.getElementById('gm-res-counter');
+ if(ct)ct.textContent=rows.length+' report'+(rows.length===1?'':'s');
+ if(tb){
+  tb.innerHTML='';
+  if(!rows.length){if(em)em.style.display='block';if(tf)tf.innerHTML='';}
+  else{
+   if(em)em.style.display='none';
+   rows.forEach(function(r){
+    var x=r.extracted_data||{};
+    var mgR=(Number(x.gross_revenue)>0?(Number(x.net_income)/Number(x.gross_revenue)*100):0);
+    var mgColor=mgR>=15?'var(--green)':(mgR>=5?'var(--amber)':'var(--red)');
+    var mgBg=mgR>=15?'var(--green-bg)':(mgR>=5?'var(--amber-bg)':'var(--red-bg)');
+    var netColor=Number(x.net_income)>=0?'var(--green)':'var(--red)';
+    var tr=document.createElement('tr');
+    tr.style.borderBottom='1px solid var(--border)';
+    tr.innerHTML=
+     '<td style="padding:10px 12px;font-size:12px;color:var(--ink);font-weight:600">'+gmResEsc(r.period_label||r.period_start)+'</td>'+
+     '<td style="padding:10px 12px;font-size:11px;color:var(--ink2)">'+gmResEsc(r.type||'')+(r.title?'<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+gmResEsc(r.title)+'</div>':'')+'</td>'+
+     '<td class="gm-res-edit" data-id="'+r.id+'" data-field="gross_revenue" title="'+gmResT('click_to_edit')+'" style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;color:var(--ink);cursor:pointer">'+gmResFmtMoney(x.gross_revenue)+'</td>'+
+     '<td class="gm-res-edit" data-id="'+r.id+'" data-field="total_expenses" title="'+gmResT('click_to_edit')+'" style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;color:var(--ink);cursor:pointer">'+gmResFmtMoney(x.total_expenses)+'</td>'+
+     '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:'+netColor+'">'+gmResFmtMoney(x.net_income)+'</td>'+
+     '<td style="padding:10px 12px;text-align:right"><span style="display:inline-block;padding:3px 9px;border-radius:10px;background:'+mgBg+';color:'+mgColor+';font-size:10px;font-family:JetBrains Mono,monospace;font-weight:700">'+gmResFmtPct(mgR)+'</span></td>'+
+     '<td style="padding:10px 12px;text-align:center;white-space:nowrap">'+
+      '<button type="button" onclick="gmResView(\''+r.id+'\')" style="padding:4px 10px;margin-right:4px;border:1px solid var(--border2);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--ink2)">'+gmResT('view_report')+'</button>'+
+      '<button type="button" onclick="gmResDelete(\''+r.id+'\')" style="padding:4px 10px;border:1px solid var(--red);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--red)">Delete</button>'+
+     '</td>';
+    tb.appendChild(tr);
+   });
+   if(tf){
+    var ttlMg=snap.gross_revenue>0?(snap.net_income/snap.gross_revenue*100):0;
+    tf.innerHTML='<tr><td style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.6px">'+gmResT('annual_total')+'</td><td></td>'+
+     '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--green)">'+gmResFmtMoney(snap.gross_revenue)+'</td>'+
+     '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--red)">'+gmResFmtMoney(snap.total_expenses)+'</td>'+
+     '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--blue)">'+gmResFmtMoney(snap.net_income)+'</td>'+
+     '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--amber)">'+gmResFmtPct(ttlMg)+'</td>'+
+     '<td></td></tr>';
+   }
+   tb.querySelectorAll('.gm-res-edit').forEach(function(td){
+    td.addEventListener('click',function(){gmResInlineEdit(td.getAttribute('data-id'),td.getAttribute('data-field'),td);});
+    td.addEventListener('mouseenter',function(){td.style.background='rgba(201,169,110,.08)';});
+    td.addEventListener('mouseleave',function(){td.style.background='';});
+   });
+  }
+ }
+ gmResDrawChart(rows);
+}
+window.gmResRender=gmResRender;
+
+function gmResInlineEdit(id,field,td){
+ var arr=gmResLoad();var i=arr.findIndex(function(r){return r.id===id;});
+ if(i<0)return;
+ var cur=Number((arr[i].extracted_data||{})[field])||0;
+ var inp=document.createElement('input');
+ inp.type='number';inp.step='0.01';inp.value=String(cur);
+ inp.style.cssText='width:110px;padding:4px 6px;font-family:JetBrains Mono,monospace;font-size:12px;border:1px solid var(--amber);border-radius:5px;text-align:right;background:var(--sand);color:var(--ink)';
+ td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
+ var commit=function(){
+  var v=parseFloat(inp.value)||0;
+  arr[i].extracted_data=arr[i].extracted_data||{};
+  arr[i].extracted_data[field]=v;
+  var g=Number(arr[i].extracted_data.gross_revenue)||0;var e=Number(arr[i].extracted_data.total_expenses)||0;
+  arr[i].extracted_data.net_income=g-e;
+  arr[i].extracted_data.margin_pct=g>0?(arr[i].extracted_data.net_income/g*100):0;
+  gmResSave(arr);
+  var yr=String(arr[i].period_start||'').slice(0,4);gmResSaveAnnual(yr,gmResAnnualSnapFor(yr));
+  gmResRender();
+ };
+ inp.addEventListener('blur',commit);
+ inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();inp.blur();}else if(e.key==='Escape'){gmResRender();}});
+}
+window.gmResInlineEdit=gmResInlineEdit;
+
+function gmResView(id){
+ var r=gmResLoad().find(function(x){return x.id===id;});
+ if(!r){if(typeof showToast==='function')showToast('Report not found','error');return;}
+ _gmResCurrentViewId=id;
+ var m=document.getElementById('gm-report-view-modal');
+ var ti=document.getElementById('gm-report-view-title');
+ var ifr=document.getElementById('gm-report-view-iframe');
+ if(ti)ti.textContent=(r.type||'Report')+' — '+(r.period_label||r.period_start||'');
+ if(ifr){
+  if(/\.pdf$/i.test(r.filename||'')&&/^data:/i.test(r.content||'')){ifr.removeAttribute('sandbox');ifr.src=r.content;}
+  else{ifr.removeAttribute('src');ifr.setAttribute('sandbox','allow-scripts allow-same-origin');ifr.srcdoc=r.content||'<p>empty</p>';}
+ }
+ if(m){m.style.display='flex';document.body.style.overflow='hidden';}
+}
+window.gmResView=gmResView;
+
+function gmResCloseView(){
+ var m=document.getElementById('gm-report-view-modal');
+ var ifr=document.getElementById('gm-report-view-iframe');
+ if(ifr){ifr.srcdoc='';ifr.src='about:blank';}
+ if(m)m.style.display='none';
+ document.body.style.overflow='';
+ _gmResCurrentViewId=null;
+}
+window.gmResCloseView=gmResCloseView;
+
+function gmResOpenNewTab(){
+ if(!_gmResCurrentViewId)return;
+ var r=gmResLoad().find(function(x){return x.id===_gmResCurrentViewId;});
+ if(!r)return;
+ if(/\.pdf$/i.test(r.filename||'')&&/^data:/i.test(r.content||'')){window.open(r.content,'_blank');return;}
+ try{
+  var blob=new Blob([r.content||''],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
+ }catch(e){if(typeof showToast==='function')showToast('Failed to open','error');}
+}
+window.gmResOpenNewTab=gmResOpenNewTab;
+
+function gmResDelete(id){
+ if(!confirm('Delete this report?'))return;
+ var arr=gmResLoad().filter(function(r){return r.id!==id;});
+ gmResSave(arr);
+ if(typeof showToast==='function')showToast('Deleted','success');
+ gmResRender();
+}
+window.gmResDelete=gmResDelete;
+
+function gmResDrawChart(rows){
+ var cv=document.getElementById('gm-res-annual-chart');
+ if(!cv||typeof Chart==='undefined')return;
+ try{if(_gmResChart)_gmResChart.destroy();}catch(e){}
+ var labels=rows.map(function(r){return r.period_label||r.period_start;});
+ var gross=rows.map(function(r){return Number((r.extracted_data||{}).gross_revenue)||0;});
+ var exps=rows.map(function(r){return Number((r.extracted_data||{}).total_expenses)||0;});
+ var nets=rows.map(function(r){return Number((r.extracted_data||{}).net_income)||0;});
+ _gmResChart=new Chart(cv.getContext('2d'),{
+  data:{labels:labels,datasets:[
+   {type:'bar',label:gmResT('gross_revenue'),data:gross,backgroundColor:'rgba(76,175,80,.75)',borderColor:'rgba(76,175,80,1)',borderWidth:1,order:2},
+   {type:'bar',label:gmResT('total_expenses'),data:exps,backgroundColor:'rgba(229,57,53,.75)',borderColor:'rgba(229,57,53,1)',borderWidth:1,order:2},
+   {type:'line',label:gmResT('net_income'),data:nets,borderColor:'rgba(30,85,140,1)',backgroundColor:'rgba(30,85,140,.1)',borderWidth:2,borderDash:[6,4],tension:.2,pointRadius:3,order:1}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'}}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+gmResFmtMoney(c.parsed.y);}}}},scales:{y:{beginAtZero:true,ticks:{font:{family:'JetBrains Mono',size:10},callback:function(v){return '$'+(Number(v)||0).toLocaleString('en-US');}}},x:{ticks:{font:{family:'DM Sans',size:10}}}}}
+ });
+}
+
 })();
 
 </script>

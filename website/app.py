@@ -196,8 +196,9 @@ def create_app():
     app.register_blueprint(appfolio_bp)
     from ramp_routes import ramp_bp
     app.register_blueprint(ramp_bp)
-    from data_routes import data_bp
+    from data_routes import data_bp, expenses_bp
     app.register_blueprint(data_bp)
+    app.register_blueprint(expenses_bp)
     from auth_routes import auth_bp
     app.register_blueprint(auth_bp)
     import models  # noqa: F401 - ensure persistence models are registered

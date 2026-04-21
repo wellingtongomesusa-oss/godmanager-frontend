@@ -19,8 +19,35 @@ _APPDATA_EXTRA_KEYS = frozenset(
         "owner_payment_logs",
         "owner_payment_history",
         "ramp_expenses",
+        "expense_owner_payment_log",
+        "expense_register",
     }
 )
+
+_CATEGORY_TO_ACCOUNT = {
+    "Management Fee": "6111",
+    "Lease Fee": "6112",
+    "Late Fee": "4460",
+    "HOA": "6075",
+    "Cleaning": "6076",
+    "Maintenance": "6073",
+    "HVAC": "6144",
+    "Plumbing": "6142",
+    "Painting": "6141",
+    "Landscaping": "6074",
+    "Appliances": "7010",
+    "Insurance": "6103",
+    "Utilities": "6103",
+    "Payroll": "6103",
+    "Other": "6103",
+}
+
+_MVH_SYNONYMS = {
+    "master vacation homes",
+    "master vacation homes llc",
+    "mvh",
+    "master vacation",
+}
 
 # Single JSON object: mirrors former browser localStorage (cross-device).
 _CLIENT_KV_ROW_KEY = "gm_client_kv"
@@ -106,6 +133,45 @@ def _appdata_json_value(key: str) -> Any:
         return row.data_value
 
 data_bp = Blueprint("data", __name__, url_prefix="/api/data")
+expenses_bp = Blueprint("expenses_api", __name__, url_prefix="/api/expenses")
+
+
+def _is_mvh(name: str) -> bool:
+    s = (name or "").strip().lower()
+    if not s:
+        return False
+    if s in _MVH_SYNONYMS:
+        return True
+    if "master vacation" in s:
+        return True
+    if s == "mvh":
+        return True
+    return False
+
+
+def _normalize_addr(v: str) -> str:
+    return (v or "").strip().lower()
+
+
+def _next_expense_id() -> str:
+    import datetime as _dt
+
+    year = _dt.datetime.utcnow().year
+    reg = _appdata_json_list("expense_register") or []
+    max_n = 0
+    prefix = f"EXP-{year}-"
+    for row in reg:
+        if not isinstance(row, dict):
+            continue
+        eid = str(row.get("expense_id") or "")
+        if eid.startswith(prefix):
+            try:
+                n = int(eid[len(prefix):])
+                if n > max_n:
+                    max_n = n
+            except ValueError:
+                continue
+    return f"{prefix}{max_n + 1:04d}"
 
 
 def _f(v: Any, default: float = 0.0) -> float:
@@ -501,3 +567,196 @@ def load_all():
 
     return jsonify(out)
 
+
+@expenses_bp.get("/vendors")
+def list_expense_vendors():
+    """Return unique vendor names aggregated from manual + imported expenses."""
+    vendors: set[str] = set()
+    # AppFolio/imported expenses table
+    for e in Expense.query.all():
+        nm = (e.payee_name or "").strip()
+        if nm:
+            vendors.add(nm)
+    # Imported expenses blob (rich)
+    rich = _appdata_json_list("appfolio_expenses") or []
+    for row in rich:
+        if isinstance(row, dict):
+            nm = str(row.get("payee") or row.get("payeeName") or "").strip()
+            if nm:
+                vendors.add(nm)
+    # Manual expenses blob
+    manual = _appdata_json_list("manual_expenses") or []
+    for row in manual:
+        if isinstance(row, dict):
+            nm = str(row.get("vendor") or row.get("payeeName") or "").strip()
+            if nm:
+                vendors.add(nm)
+    # Expense register (created via /api/expenses/create)
+    reg = _appdata_json_list("expense_register") or []
+    for row in reg:
+        if isinstance(row, dict):
+            nm = str(row.get("vendor") or "").strip()
+            if nm:
+                vendors.add(nm)
+    return jsonify({"success": True, "vendors": sorted(vendors, key=lambda s: s.lower())})
+
+
+@expenses_bp.post("/create")
+def create_expense():
+    """Create an expense record and (optionally) deduct its net amount from Owner Payments.
+
+    Body: { vendor, property, category, expense_account, description, expense_date,
+            due_date, gross_amount, tax, net_amount, payment_method, cash_account,
+            reference, approver_room, notes, attachments, created_by, expense_id }
+    """
+    payload = request.get_json(silent=True) or {}
+
+    vendor = _s(payload.get("vendor"))
+    prop = _s(payload.get("property"))
+    category = _s(payload.get("category")) or "Other"
+    expense_account = _s(payload.get("expense_account")) or _CATEGORY_TO_ACCOUNT.get(category, "6103")
+    description = _s(payload.get("description"))
+    expense_date = _s(payload.get("expense_date"))
+    due_date = _s(payload.get("due_date"))
+    gross_amount = _f(payload.get("gross_amount"))
+    tax = _f(payload.get("tax"))
+    net_amount = _f(payload.get("net_amount"))
+    if net_amount <= 0:
+        net_amount = max(0.0, gross_amount - tax)
+    payment_method = _s(payload.get("payment_method"))
+    cash_account = _s(payload.get("cash_account")) or "1150"
+    reference = _s(payload.get("reference"))
+    approver_room = _s(payload.get("approver_room"))
+    if _is_mvh(vendor):
+        approver_room = "Man.Master"
+    notes = _s(payload.get("notes"))
+    created_by = _s(payload.get("created_by")) or "admin"
+    attachments = payload.get("attachments") if isinstance(payload.get("attachments"), list) else []
+
+    errors: List[str] = []
+    if not vendor:
+        errors.append("vendor is required")
+    if not category:
+        errors.append("category is required")
+    if len(description) < 3:
+        errors.append("description must have at least 3 characters")
+    if not expense_date:
+        errors.append("expense_date is required")
+    if gross_amount <= 0:
+        errors.append("gross_amount must be greater than 0")
+    if tax < 0:
+        errors.append("tax must be 0 or greater")
+    if net_amount <= 0:
+        errors.append("net_amount must be greater than 0")
+    if errors:
+        return jsonify({"success": False, "errors": errors}), 400
+
+    # Generate ID (prefer client-provided if valid and unique)
+    client_id = _s(payload.get("expense_id"))
+    import re as _re
+
+    reg = _appdata_json_list("expense_register") or []
+    existing_ids = {str((r or {}).get("expense_id") or "") for r in reg if isinstance(r, dict)}
+    if client_id and _re.match(r"^EXP-\d{4}-\d{4}$", client_id) and client_id not in existing_ids:
+        expense_id = client_id
+    else:
+        expense_id = _next_expense_id()
+
+    now_iso = __import__("datetime").datetime.utcnow().isoformat() + "Z"
+    record = {
+        "expense_id": expense_id,
+        "vendor": vendor,
+        "property": prop,
+        "category": category,
+        "expense_account": expense_account,
+        "description": description,
+        "expense_date": expense_date,
+        "due_date": due_date,
+        "gross_amount": gross_amount,
+        "tax": tax,
+        "net_amount": net_amount,
+        "payment_method": payment_method,
+        "cash_account": cash_account,
+        "reference": reference,
+        "approver_room": approver_room,
+        "notes": notes,
+        "attachments": [a for a in attachments if isinstance(a, dict)],
+        "is_mvh": _is_mvh(vendor),
+        "created_by": created_by,
+        "created_at": now_iso,
+    }
+    reg.insert(0, record)
+    _persist_appdata("expense_register", reg)
+
+    # Persist to Expense table for GAAP integration
+    _upsert_expense(
+        {
+            "property": prop,
+            "payee": vendor,
+            "billDate": expense_date,
+            "checkDate": "",
+            "expenseAccount": expense_account,
+            "cashAccount": cash_account,
+            "amount": net_amount,
+            "paymentStatus": "Unpaid",
+            "reference": reference or expense_id,
+            "description": description,
+            "source": "manual",
+        }
+    )
+
+    # Owner Payments integration
+    owner_payment_updated = False
+    if prop:
+        owner_payments = _appdata_json_value("owner_payments") or {}
+        if not isinstance(owner_payments, dict):
+            owner_payments = {}
+        op_log = _appdata_json_list("expense_owner_payment_log") or []
+        already = any(
+            isinstance(r, dict) and str(r.get("expense_id") or "") == expense_id for r in op_log
+        )
+        if not already:
+            key = _normalize_addr(prop)
+            cur = owner_payments.get(key) or {}
+            cur_expenses = _f(cur.get("expenses_amount"))
+            new_expenses = cur_expenses + net_amount
+            cur_rent = _f(cur.get("rent_amount"))
+            cur_mgmt = _f(cur.get("mgmt_fee_amount"))
+            net_owner = cur_rent - new_expenses - cur_mgmt
+            cur.update(
+                {
+                    "property_address": prop,
+                    "owner_name": cur.get("owner_name") or "",
+                    "expenses_amount": new_expenses,
+                    "expenses_edited": True,
+                    "net_owner_amount": net_owner,
+                    "net_owner_edited": True,
+                    "status": cur.get("status") or "pending",
+                }
+            )
+            owner_payments[key] = cur
+            _persist_appdata("owner_payments", owner_payments)
+            op_log.insert(
+                0,
+                {
+                    "expense_id": expense_id,
+                    "property": prop,
+                    "amount": net_amount,
+                    "category": category,
+                    "expense_account": expense_account,
+                    "created_by": created_by,
+                    "created_at": now_iso,
+                },
+            )
+            _persist_appdata("expense_owner_payment_log", op_log)
+            owner_payment_updated = True
+
+    db.session.commit()
+    return jsonify(
+        {
+            "success": True,
+            "expense_id": expense_id,
+            "owner_payment_updated": owner_payment_updated,
+            "record": record,
+        }
+    )

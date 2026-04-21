@@ -39,7 +39,7 @@ export default function FinancialLayout({
     router.push('/login');
   };
 
-  if (checking) {
+  if (checking || !user) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -55,7 +55,7 @@ export default function FinancialLayout({
       <FinancialSidebar />
       <div className="flex flex-1 flex-col pl-72">
         <FinancialHeader
-          userName={user?.email ?? user?.name ?? 'Usuário'}
+          userName={user.email ?? user.name ?? 'Usuário'}
           onLogout={handleLogout}
         />
         <main className="flex-1 bg-secondary-50/50 p-6">{children}</main>

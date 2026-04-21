@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Providers } from './providers';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -28,7 +29,9 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
