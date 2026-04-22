@@ -43,6 +43,7 @@ export function UserTable({
   onResetPassword,
   onToggleSuspend,
   onDelete,
+  onQuickApprove,
 }: {
   users: User[];
   page: number;
@@ -51,17 +52,25 @@ export function UserTable({
   onResetPassword: (u: User) => void;
   onToggleSuspend: (u: User) => void;
   onDelete: (u: User) => void;
+  onQuickApprove?: (userId: string) => void;
 }) {
   const [menu, setMenu] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   useEffect(() => {
+    if (!menu) return;
     const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setMenu(null);
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return;
+      if (btnRefs.current[menu]?.contains(t)) return;
+      setMenu(null);
+      setMenuPos(null);
     };
     document.addEventListener('mousedown', fn);
     return () => document.removeEventListener('mousedown', fn);
-  }, []);
+  }, [menu]);
 
   const start = (page - 1) * pageSize;
   const slice = users.slice(start, start + pageSize);
@@ -112,81 +121,126 @@ export function UserTable({
                   <Badge variant={roleBadgeVariant(u.role)}>{roleLabel(u.role)}</Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={statusVariant(u.status)}>{statusLabel(u.status)}</Badge>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge variant={statusVariant(u.status)}>{statusLabel(u.status)}</Badge>
+                    {u.status === 'pending' && onQuickApprove ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuickApprove(u.id);
+                        }}
+                        className="ml-1 rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-gm-green/30 text-gm-green transition-colors hover:bg-gm-green/50"
+                        title="Aprovar utilizador (passa a Active)"
+                      >
+                        Approve
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-gm-ink-secondary" title={new Date(u.lastActive).toLocaleString()}>
                   {relativeTime(u.lastActive)}
                 </td>
                 <td className="px-4 py-3 text-gm-ink-secondary">{formatDate(u.createdAt)}</td>
                 <td className="px-2 py-3">
-                  <div className="relative" ref={menu === u.id ? ref : undefined}>
                   <button
                     type="button"
+                    ref={(el) => {
+                      btnRefs.current[u.id] = el;
+                    }}
                     aria-label={`Actions for ${u.email}`}
                     aria-expanded={menu === u.id}
-                    onClick={() => setMenu(menu === u.id ? null : u.id)}
+                    onClick={(e) => {
+                      if (menu === u.id) {
+                        setMenu(null);
+                        setMenuPos(null);
+                        return;
+                      }
+                      const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                      setMenu(u.id);
+                      setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                    }}
                     className="rounded-lg p-2 text-gm-ink-secondary hover:bg-gm-cream hover:text-gm-amber"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
-                  {menu === u.id ? (
-                    <div
-                      role="menu"
-                      className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-gm-border bg-gm-paper py-1 shadow-xl"
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-4 py-2 text-left text-sm hover:bg-gm-amber-bg"
-                        onClick={() => {
-                          setMenu(null);
-                          onEdit(u);
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-4 py-2 text-left text-sm hover:bg-gm-amber-bg"
-                        onClick={() => {
-                          setMenu(null);
-                          onResetPassword(u);
-                        }}
-                      >
-                        Reset password
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-4 py-2 text-left text-sm hover:bg-gm-amber-bg"
-                        onClick={() => {
-                          setMenu(null);
-                          onToggleSuspend(u);
-                        }}
-                      >
-                        {u.status === 'suspended' ? 'Activate' : 'Suspend'}
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-4 py-2 text-left text-sm text-gm-red hover:bg-gm-red/10"
-                        onClick={() => {
-                          setMenu(null);
-                          onDelete(u);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ) : null}
-                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {menu && menuPos
+        ? (() => {
+            const u = users.find((x) => x.id === menu);
+            if (!u) return null;
+            return (
+              <div
+                role="menu"
+                ref={ref}
+                className="rounded-xl border border-gm-border bg-gm-paper py-1"
+                style={{
+                  position: 'fixed',
+                  top: menuPos.top,
+                  right: menuPos.right,
+                  width: '12rem',
+                  zIndex: 9999,
+                  backgroundColor: '#fffbf0',
+                  boxShadow: '0 10px 30px rgba(0,0,0,.25)',
+                }}
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-4 py-2 text-left text-sm hover:bg-gm-amber-bg"
+                  onClick={() => {
+                    setMenu(null);
+                    setMenuPos(null);
+                    onEdit(u);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-4 py-2 text-left text-sm hover:bg-gm-amber-bg"
+                  onClick={() => {
+                    setMenu(null);
+                    setMenuPos(null);
+                    onResetPassword(u);
+                  }}
+                >
+                  Reset password
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-4 py-2 text-left text-sm hover:bg-gm-amber-bg"
+                  onClick={() => {
+                    setMenu(null);
+                    setMenuPos(null);
+                    onToggleSuspend(u);
+                  }}
+                >
+                  {u.status === 'suspended' ? 'Activate' : 'Suspend'}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-4 py-2 text-left text-sm text-gm-red hover:bg-gm-red/10"
+                  onClick={() => {
+                    setMenu(null);
+                    setMenuPos(null);
+                    onDelete(u);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            );
+          })()
+        : null}
       <div className="border-t border-gm-border px-4 py-3 text-xs text-gm-ink-secondary">
         Showing {users.length === 0 ? 0 : start + 1}-{Math.min(start + pageSize, users.length)} of {users.length}{' '}
         users

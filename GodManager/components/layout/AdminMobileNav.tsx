@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Home, Settings, Shield, Users } from 'lucide-react';
+import { FileText, Home, KeyRound, Settings, Shield, Users } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { cn } from '@/lib/utils';
 
@@ -19,10 +19,12 @@ export function AdminMobileNav() {
 
   if (!user) return null;
 
+  const baseItems = [
+    { href: '/dashboard', label: 'Home', icon: Home },
+    { href: '/account/password', label: 'Password', icon: KeyRound },
+  ] as const;
   const items =
-    user.role === 'admin'
-      ? [{ href: '/dashboard', label: 'Home', icon: Home }, ...adminItems]
-      : [{ href: '/dashboard', label: 'Home', icon: Home }];
+    user.role === 'admin' ? [...baseItems, ...adminItems] : [...baseItems];
 
   return (
     <nav

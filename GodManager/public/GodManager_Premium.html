@@ -471,6 +471,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('ltexpenses')" id="nav-ltexpenses">Expenses</div>
  <div class="ss" onclick="nav('ltcleanings')" id="nav-ltcleanings">Cleanings</div>
  <div class="ss" onclick="nav('vendors')" id="nav-vendors">Vendors</div>
+ <div class="ss" onclick="nav('jobs')" id="nav-jobs">Jobs</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
@@ -1628,6 +1629,56 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="lt-exp-appr-pop" onclick="event.stopPropagation()" style="display:none;position:fixed;z-index:9005;max-width:300px;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:11px;color:var(--ink2);line-height:1.45"></div>
  </div>
 </div>
+
+<!-- JOBS PAGE -->
+<div class="page" id="page-jobs">
+ <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start">
+  <div>
+   <div class="pt">Jobs</div>
+   <div class="ps">Acoes de manutencao sobre expenses do Master Vacation Homes</div>
+  </div>
+  <div id="jobs-user-badge" style="font-size:12px;color:var(--ink3);padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"></div>
+ </div>
+
+ <div style="padding:0 32px;margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
+  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Total Jobs</div>
+   <div id="jobs-kpi-total" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
+  </div>
+  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Vendor Fees Applied</div>
+   <div id="jobs-kpi-vendor" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div>
+  </div>
+  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
+   <div id="jobs-kpi-job" style="font-size:22px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div>
+  </div>
+ </div>
+
+ <div style="padding:24px 32px 32px">
+  <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table">
+    <thead>
+     <tr style="background:var(--cream);border-bottom:2px solid var(--border)">
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">ExpenseID</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Vendor</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Categoria</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Descricao</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data</th>
+      <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Original</th>
+      <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Net</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
+      <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Acoes</th>
+     </tr>
+    </thead>
+    <tbody id="jobs-tbody">
+     <tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+</div>
+<!-- /JOBS PAGE -->
 
 <!-- 
  LONG TERM — MODAL: New / Edit Property
@@ -5001,7 +5052,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -6560,7 +6611,7 @@ function ltExpApprovalInfo(ev,id){
  const byStep=s=>logs.filter(x=>x.step===s);
  const cur=ltExpStepFromRecord(r);
  const line=(s)=>{const approved=cur>=s;const arr=byStep(s);const last=arr[0];const undone=arr.find(x=>x.action==='undo');if(approved&&last){return `<div style="margin-bottom:8px"><div style="color:#2d7252;font-weight:700">✓ ${ltExpStepName(s)}</div><div style="font-size:10px;color:var(--ink3)">${ltExpT('by')}: ${last.performed_by}</div><div style="font-size:10px;color:var(--ink3)">${last.date_display} ${ltExpT('at')} ${last.time_display}</div></div>`;}if(undone){return `<div style="margin-bottom:8px"><div style="color:#b83030;font-weight:700">↩ ${ltExpT('undone_by')} ${undone.performed_by}</div><div style="font-size:10px;color:var(--ink3)">${undone.date_display} ${ltExpT('at')} ${undone.time_display}</div></div>`;}return `<div style="margin-bottom:8px"><div style="color:#999;font-weight:700">○ ${ltExpStepName(s)}</div><div style="font-size:10px;color:var(--ink3)">${ltExpT('pending')}</div></div>`;};
- pop.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>${ltExpT('approval_history')}</strong><button type="button" onclick="document.getElementById('lt-exp-appr-pop').style.display='none'" style="border:none;background:transparent;color:#999;cursor:pointer">×</button></div><div style="font-size:10px;margin-bottom:8px">${r.desc||'—'} - ${ltFmt(r.value||0)}</div>${line(1)}${line(2)}${line(3)}`;
+ pop.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>${ltExpT('approval_history')}</strong><button type="button" onclick="document.getElementById('lt-exp-appr-pop').style.display='none'" style="border:none;background:transparent;color:#999;cursor:pointer">×</button></div><div style="font-size:10px;margin-bottom:8px">${r.desc||'—'} - ${ltFmt(ltExpValueWithExtras(r))}</div>${line(1)}${line(2)}${line(3)}`;
  pop.style.left=(ev.clientX+8)+'px'; pop.style.top=(ev.clientY+8)+'px'; pop.style.display='block';
  setTimeout(()=>{const close=(e)=>{if(pop.contains(e.target))return;pop.style.display='none';document.removeEventListener('click',close,true);};document.addEventListener('click',close,true);},10);
 }
@@ -6636,6 +6687,13 @@ function ltSaveExpense(){
  linkToStatement:document.getElementById('lt-nexp-link').checked,
  savedAt:new Date().toLocaleString('pt-BR')
  };
+ if(ltExpEditingId){
+  const prev=ltExpGetRecords().find(x=>x.id===ltExpEditingId);
+  if(prev){
+   if(Array.isArray(prev.extraFees)) exp.extraFees=prev.extraFees;
+   if(Array.isArray(prev.jobActions)) exp.jobActions=prev.jobActions;
+  }
+ }
  const arr=ltExpGetRecords();
  if(ltExpEditingId){const i=arr.findIndex(x=>x.id===ltExpEditingId);if(i>-1)arr[i]=exp;else arr.push(exp);}
  else arr.push(exp);
@@ -6663,6 +6721,12 @@ function ltExpDelete(id){
  ltExpRender(); ltDashRender(); if(typeof ltpRender==='function')ltpRender();
 }
 
+function ltExpValueWithExtras(r){
+ const base=Number(r.value||0)||0;
+ const extras=Array.isArray(r.extraFees)?r.extraFees.reduce((s,f)=>s+(Number(f.amount)||0),0):0;
+ return base+extras;
+}
+
 function ltExpRender(){
  const records=ltExpGetRecords();
  const fMonth=(document.getElementById('lt-exp-filter-month')?.value)||'';
@@ -6674,11 +6738,11 @@ function ltExpRender(){
  if(fSearch&&!(r.propAddress+r.desc).toLowerCase().includes(fSearch))return false;
  return true;
  });
- const tot=filtered.reduce((s,r)=>s+(r.value||0),0);
- const hoa=filtered.filter(r=>r.category==='HOA').reduce((s,r)=>s+(r.value||0),0);
- const water=filtered.filter(r=>r.category==='Água').reduce((s,r)=>s+(r.value||0),0);
- const luz=filtered.filter(r=>r.category==='Luz / Electric').reduce((s,r)=>s+(r.value||0),0);
- const mv=filtered.filter(r=>r.category==='Manutenção'||r.category==='Vendor').reduce((s,r)=>s+(r.value||0),0);
+ const tot=filtered.reduce((s,r)=>s+ltExpValueWithExtras(r),0);
+ const hoa=filtered.filter(r=>r.category==='HOA').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
+ const water=filtered.filter(r=>r.category==='Água').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
+ const luz=filtered.filter(r=>r.category==='Luz / Electric').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
+ const mv=filtered.filter(r=>r.category==='Manutenção'||r.category==='Vendor').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
  const approved=filtered.filter(r=>r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved).length;
  [['lt-exp-kpi-total',ltFmt(tot)],['lt-exp-kpi-hoa',ltFmt(hoa)],['lt-exp-kpi-water',ltFmt(water)],['lt-exp-kpi-luz',ltFmt(luz)],['lt-exp-kpi-mv',ltFmt(mv)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
  const kpiApproved=document.getElementById('lt-exp-kpi-approved'); 
@@ -6701,7 +6765,7 @@ function ltExpRender(){
  <td style="padding:9px 12px;font-size:12px;color:var(--ink)">${r.propAddress||'—'}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2);font-weight:500">${r.category}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc||'—'}</td>
- <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--red)">${ltFmt(r.value)}</td>
+ <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--red)">${ltFmt(ltExpValueWithExtras(r))}</td>
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;${sStyle[r.status]||''}">${sLabel[r.status]||r.status}</span></td>
  ${ltExpApprovalCell(r)}
@@ -6715,7 +6779,7 @@ function ltExpRender(){
 function ltExpExportCSV(){
  const records=ltExpGetRecords(); if(!records.length){alert('Nenhum registro.');return;}
  const headers=['Propriedade','Categoria','Descricao','Valor','Mes','Status','Approval'];
- const rows=records.map(r=>[(r.propAddress),(r.category),(r.desc),(r.value),ltFmtMonth(r.month),(r.status),((r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved)?'Approved':'Pending')].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`));
+ const rows=records.map(r=>[(r.propAddress),(r.category),(r.desc),ltExpValueWithExtras(r),ltFmtMonth(r.month),(r.status),((r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved)?'Approved':'Pending')].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`));
  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='LT_Despesas.csv'; a.click();
 }
@@ -6879,7 +6943,8 @@ function ltExpLoadSampleData(){
  {id:'ltexp_s3',propId:pid('1130 Oakwood Drive, Orlando FL 32801'),propAddress:'1130 Oakwood Drive, Orlando FL 32801',category:'HOA',month:'2026-03',value:220,desc:'HOA Oakwood Estates - Marco 2026',docnum:'INV-0298',due:'2026-03-05',paid:'',status:'unpaid',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
  {id:'ltexp_s4',propId:pid('1130 Oakwood Drive, Orlando FL 32801'),propAddress:'1130 Oakwood Drive, Orlando FL 32801',category:'Vendor',month:'2026-03',value:320,desc:'CoolAir HVAC Services - Troca capacitor',docnum:'HAVC-2241',due:'2026-03-10',paid:'2026-03-12',status:'paid',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
  {id:'ltexp_s5',propId:pid('987 Palmeira Court, Davenport FL 33837'),propAddress:'987 Palmeira Court, Davenport FL 33837',category:'Manutenção',month:'2026-03',value:200,desc:'Servico interno - verificacao vazamento',docnum:'',due:'2026-03-08',paid:'',status:'overdue',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s6',propId:pid('987 Palmeira Court, Davenport FL 33837'),propAddress:'987 Palmeira Court, Davenport FL 33837',category:'Vendor',month:'2026-03',value:750,desc:'ProPlumb Solutions - Substituicao cano e sifao',docnum:'PPL-5502',due:'2026-03-12',paid:'',status:'unpaid',linkToStatement:false,savedAt:new Date().toLocaleString('pt-BR')}
+ {id:'ltexp_s6',propId:pid('987 Palmeira Court, Davenport FL 33837'),propAddress:'987 Palmeira Court, Davenport FL 33837',category:'Vendor',month:'2026-03',value:750,desc:'ProPlumb Solutions - Substituicao cano e sifao',docnum:'PPL-5502',due:'2026-03-12',paid:'',status:'unpaid',linkToStatement:false,savedAt:new Date().toLocaleString('pt-BR')},
+ {id:'ltexp_s7',propId:pid('4821 Sunset Blvd, Kissimmee FL 34746'),propAddress:'4821 Sunset Blvd, Kissimmee FL 34746',category:'Vendor',month:'2026-03',value:410,desc:'Master Vacation Homes LLC — manutencao piscina Marco',docnum:'MVH-1001',due:'2026-03-18',paid:'',status:'unpaid',linkToStatement:false,savedAt:new Date().toLocaleString('pt-BR')}
  ]);
 }
 
@@ -9069,6 +9134,235 @@ function gmResDrawChart(rows){
 }
 
 })();
+
+/* ========== JOBS MODULE ========== */
+var JOBS_KEY='gm_job_actions';
+var JOBS_MASTER_VENDOR_NAMES=['master vacation homes llc','master vacation homes','manager prop'];
+var JOBS_FEES={vendor:120,job:200};
+
+function jobsIsMasterVendor(vendorName){
+ var s=String(vendorName||'').trim().toLowerCase();
+ if(!s)return false;
+ return JOBS_MASTER_VENDOR_NAMES.some(function(n){return s===n||s.indexOf(n)>=0;});
+}
+
+function jobsVendorSourceStr(r){
+ return String((r&&r.vendor!=null&&String(r.vendor).trim())?r.vendor:((r&&r.desc)||'')).trim();
+}
+
+function jobsLoadActions(){
+ try{var a=JSON.parse(localStorage.getItem(JOBS_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}
+}
+function jobsSaveActions(arr){
+ try{localStorage.setItem(JOBS_KEY,JSON.stringify(arr||[]));}catch(e){}
+}
+
+function jobsHasActionFor(expenseId,type){
+ return jobsLoadActions().some(function(a){return String(a.expenseId)===String(expenseId)&&a.type===type;});
+}
+
+function jobsGetCurrentUser(){
+ try{
+  if(typeof ltExpCurrentUser==='function')return ltExpCurrentUser();
+ }catch(e){}
+ var un=document.querySelector('.sb-un-n');
+ return un&&un.textContent?un.textContent.trim():'Unknown User';
+}
+
+function jobsApplyFeeToExpense(expenseId,type,amount,actionObj){
+ var arr=ltExpGetRecords();
+ var idx=arr.findIndex(function(r){return String(r.id)===String(expenseId);});
+ if(idx<0)return false;
+ var rec=arr[idx];
+ if(!rec.extraFees)rec.extraFees=[];
+ if(!rec.jobActions)rec.jobActions=[];
+ var at=(actionObj&&actionObj.at)?actionObj.at:new Date().toISOString();
+ var jid=(actionObj&&actionObj.id)?actionObj.id:('JA'+Date.now());
+ rec.extraFees.push({type:type,amount:Number(amount)||0,at:at,jobActionId:jid});
+ rec.jobActions.push({jobActionId:jid,expenseId:String(expenseId),type:type,amount:Number(amount)||0,at:at,user:(actionObj&&actionObj.user)||jobsGetCurrentUser()});
+ arr[idx]=rec;
+ ltExpSaveRecords(arr);
+ return true;
+}
+
+function jobsExpenseTotalWithFees(rec){
+ return ltExpValueWithExtras(rec);
+}
+
+function jobsRecordAction(expenseId,type){
+ if(!expenseId||!type)return{ok:false,err:'Parametros invalidos'};
+ if(jobsHasActionFor(expenseId,type))return{ok:false,err:'Esta acao ja foi registrada para esta despesa.'};
+ var fee=JOBS_FEES[type];
+ if(!fee)return{ok:false,err:'Tipo invalido'};
+ var action={
+  id:'JA'+Date.now()+Math.floor(Math.random()*9999),
+  expenseId:String(expenseId),
+  type:type,
+  amount:fee,
+  at:new Date().toISOString(),
+  user:jobsGetCurrentUser()
+ };
+ if(!jobsApplyFeeToExpense(expenseId,type,fee,action))return{ok:false,err:'Despesa nao encontrada.'};
+ var actions=jobsLoadActions();
+ actions.unshift(action);
+ jobsSaveActions(actions);
+ return{ok:true,action:action};
+}
+
+function jobsOnVendorClick(expenseId){
+ var r=jobsRecordAction(expenseId,'vendor');
+ if(!r.ok){
+  if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
+  return;
+ }
+ if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
+ jobsRender();
+ if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+}
+function jobsOnJobClick(expenseId){
+ var r=jobsRecordAction(expenseId,'job');
+ if(!r.ok){
+  if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
+  return;
+ }
+ if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
+ jobsRender();
+ if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+}
+
+function jobsMoney(n){
+ var v=Number(n)||0;
+ return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function jobsFilteredExpenses(){
+ return ltExpGetRecords().filter(function(r){return jobsIsMasterVendor(jobsVendorSourceStr(r));});
+}
+
+function jobsRender(){
+ var tbody=document.getElementById('jobs-tbody');
+ if(!tbody)return;
+ var rows=jobsFilteredExpenses();
+ var user=jobsGetCurrentUser();
+ var badge=document.getElementById('jobs-user-badge');
+ if(badge)badge.textContent='Utilizador: '+user;
+
+ var totalVendorFees=0, totalJobFees=0;
+ jobsLoadActions().forEach(function(a){
+  if(a.type==='vendor')totalVendorFees+=Number(a.amount)||0;
+  if(a.type==='job')totalJobFees+=Number(a.amount)||0;
+ });
+ var k1=document.getElementById('jobs-kpi-total'); if(k1)k1.textContent=String(rows.length);
+ var k2=document.getElementById('jobs-kpi-vendor'); if(k2)k2.textContent=jobsMoney(totalVendorFees);
+ var k3=document.getElementById('jobs-kpi-job'); if(k3)k3.textContent=jobsMoney(totalJobFees);
+
+ if(!rows.length){
+  tbody.innerHTML='<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa do Master Vacation Homes encontrada.</td></tr>';
+  return;
+ }
+
+ tbody.innerHTML=rows.map(function(r){
+  var vendorDone=jobsHasActionFor(r.id,'vendor');
+  var jobDone=jobsHasActionFor(r.id,'job');
+  var vendorDisplay=typeof gaapSanitizeDesc==='function'?gaapSanitizeDesc(jobsVendorSourceStr(r)):(jobsVendorSourceStr(r)||'—');
+  var baseVal=Number(r.value||0)||0;
+  var netTotal=jobsExpenseTotalWithFees(r);
+  var dateDisp=(r.due||r.paid||r.month||'—');
+
+  var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
+  var btnVendor=vendorDone
+   ? '<button disabled style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
+   : '<button type="button" onclick="jobsOnVendorClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff">Vendor +$120</button>';
+  var btnJob=jobDone
+   ? '<button disabled style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
+   : '<button type="button" onclick="jobsOnJobClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a">Job +$200</button>';
+
+  return '<tr style="border-bottom:1px solid var(--border)">'
+   +'<td style="padding:9px 12px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink3)">'+String(r.id)+'</td>'
+   +'<td style="padding:9px 12px;color:var(--ink)">'+vendorDisplay+'</td>'
+   +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
+   +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
+   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+   +'<td style="padding:9px 12px;text-align:right;color:var(--ink2)">'+jobsMoney(baseVal)+'</td>'
+   +'<td style="padding:9px 12px;text-align:right;font-weight:700;color:'+(netTotal>baseVal?'#c47b28':'var(--ink)')+'">'+jobsMoney(netTotal)+'</td>'
+   +'<td style="padding:9px 12px"><span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.status||'—')+'</span></td>'
+   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+'</div></td>'
+   +'</tr>';
+ }).join('');
+}
+
+(function(){
+ if(typeof window.nav!=='function')return;
+ var _origNav=window.nav;
+ window.nav=function(route){
+  var ret=_origNav.apply(this,arguments);
+  try{if(route==='jobs')setTimeout(jobsRender,10);}catch(e){}
+  return ret;
+ };
+})();
+
+async function jobsApplyRoleGate(){
+ try{
+  var role='';
+  var userName='';
+  try{
+   var res=await fetch('/api/auth/me',{credentials:'include',cache:'no-store'});
+   if(res.ok){
+    var data=await res.json();
+    if(data&&data.ok&&data.user){
+     role=String(data.user.role||'').toLowerCase();
+     userName=String(data.user.firstName||'')+' '+String(data.user.lastName||'');
+    }
+   }
+  }catch(e){console.warn('fetch /api/auth/me falhou',e);}
+
+  if(!role){
+   try{
+    var auth=JSON.parse(localStorage.getItem('gm_auth_token_v1')||'null');
+    if(auth&&auth.role)role=String(auth.role).toLowerCase();
+    if(auth&&auth.username&&!userName)userName=String(auth.username);
+   }catch(e){}
+  }
+
+  console.log('[jobsApplyRoleGate] role detected:',role,'user:',userName);
+
+  if(userName&&userName.trim()){
+   var badge=document.getElementById('jobs-user-badge');
+   if(badge)badge.textContent='Utilizador: '+userName.trim();
+  }
+
+  if(role!=='maintenance')return;
+
+  document.querySelectorAll('.sb-sec').forEach(function(sec){sec.style.display='none';});
+  var exp=document.querySelector('.sb-sec[data-sb-sec="expenses"]');
+  if(exp){
+   exp.style.display='';
+   exp.setAttribute('aria-expanded','true');
+   var head=exp.querySelector('.sb-sec-head');
+   if(head)head.setAttribute('aria-expanded','true');
+   var sbBody=exp.querySelector('.sb-sec-body');
+   if(sbBody){
+    sbBody.style.display='';
+    sbBody.querySelectorAll('.ss').forEach(function(el){
+     if(el.id!=='nav-jobs')el.style.display='none';
+    });
+   }
+   var lbl=exp.querySelector('.sb-sec-lbl');
+   if(lbl)lbl.textContent='JOBS';
+   var chev=exp.querySelector('.sb-sec-chev');
+   if(chev)chev.style.display='none';
+  }
+  if(typeof nav==='function')setTimeout(function(){try{nav('jobs');}catch(e){}},50);
+ }catch(e){console.warn('jobsApplyRoleGate error',e);}
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+ setTimeout(function(){jobsApplyRoleGate().catch(function(e){console.warn(e);});},100);
+});
+window.jobsRender=jobsRender;
+window.jobsOnVendorClick=jobsOnVendorClick;
+window.jobsOnJobClick=jobsOnJobClick;
+/* ========== /JOBS MODULE ========== */
 
 </script>
 </body>

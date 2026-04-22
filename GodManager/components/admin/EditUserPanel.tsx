@@ -128,19 +128,32 @@ export function EditUserPanel({
 
         <section>
           <p className="mb-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-gm-amber">Account status</p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={status === 'active'}
-              onClick={() => setStatus(status === 'active' ? 'suspended' : 'active')}
-              className={`relative h-7 w-12 rounded-full transition-colors ${status === 'active' ? 'bg-gm-green/40' : 'bg-gm-red/40'}`}
-            >
-              <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${status === 'active' ? 'left-6' : 'left-1'}`}
-              />
-            </button>
-            <span className="text-sm text-gm-ink-secondary">{status === 'active' ? 'Active' : 'Suspended'}</span>
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              {(['active', 'pending', 'suspended'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatus(s)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-all ${
+                    status === s
+                      ? s === 'active'
+                        ? 'bg-gm-green/40 text-white ring-2 ring-gm-green'
+                        : s === 'pending'
+                          ? 'bg-gm-amber/40 text-white ring-2 ring-gm-amber'
+                          : 'bg-gm-red/40 text-white ring-2 ring-gm-red'
+                      : 'border border-gm-border bg-gm-cream/80 text-gm-ink-secondary hover:bg-gm-cream'
+                  }`}
+                >
+                  {s === 'active' ? 'Active' : s === 'pending' ? 'Pending' : 'Suspended'}
+                </button>
+              ))}
+            </div>
+            {status === 'pending' ? (
+              <p className="mt-2 text-[10px] text-gm-amber">
+                Utilizador nao pode fazer login enquanto esta pendente.
+              </p>
+            ) : null}
           </div>
           <p className="mt-3 text-xs text-gm-ink-secondary">Last login: {new Date(user.lastActive).toLocaleString()}</p>
           <p className="text-xs text-gm-ink-secondary">Created: {new Date(user.createdAt).toLocaleString()}</p>

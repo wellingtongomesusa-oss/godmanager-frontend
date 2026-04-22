@@ -30,6 +30,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  /** Páginas públicas de resultados mensais (HTML em public/resultado/) — nunca exigir login. */
+  if (
+    pathname === '/resultado' ||
+    pathname === '/resultado/' ||
+    pathname.startsWith('/resultado/')
+  ) {
+    return NextResponse.next();
+  }
+
   /**
    * Consola Premium em public/: quando o dev server perde watchers (ex.: EMFILE no macOS),
    * o App Router pode deixar de registar rotas e devolver 404 em tudo excepto ficheiros estáticos.
@@ -66,7 +75,7 @@ export function middleware(request: NextRequest) {
 
   /** HTML estático em public/ — não exigir cookie aqui (evita redirecionar para /login ao abrir o URL direto). */
   const isProtected =
-    pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
+    pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/account');
 
   if (!isProtected) {
     return NextResponse.next();
@@ -97,6 +106,8 @@ export const config = {
     '/form-tenant',
     '/form-tenant.html',
     '/form-tenant/:path*',
+    '/resultado',
+    '/resultado/:path*',
     '/login',
     '/login/:path*',
     '/register',
@@ -104,5 +115,7 @@ export const config = {
     '/dashboard',
     '/dashboard/:path*',
     '/admin/:path*',
+    '/account',
+    '/account/:path*',
   ],
 };

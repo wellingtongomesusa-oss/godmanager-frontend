@@ -2,8 +2,8 @@
 
 import { AUTH_COOKIE, STORAGE_KEYS, TOKEN_TTL_MS } from '@/lib/constants';
 import type { AuthPayload, User, UserRole } from '@/lib/types';
-import { verifyPassword } from '@/lib/password';
-import { getUserByLoginIdentifier, getUserById, touchLastActive } from '@/lib/users';
+import { hashPassword, verifyPassword } from '@/lib/password';
+import { getUserByLoginIdentifier, getUserById, touchLastActive, updateUser } from '@/lib/users';
 
 function encodeCookiePayload(payload: { exp: number; userId: string; role: UserRole }): string {
   return typeof window !== 'undefined'
@@ -80,4 +80,34 @@ export function isAuthenticated(): boolean {
 export function isAdmin(): boolean {
   const p = getAuthPayload();
   return p?.role === 'admin';
+}
+
+/** API real quando ha cookie httpOnly; senao atualiza password em localStorage (demo). */
+export async function changePassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (newPassword.length < 8) {
+    return { ok: false, error: 'Nova password tem de ter pelo menos 8 caracteres.' };
+  }
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPassword, newPassword }),
+      credentials: 'include',
+    });
+    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+    if (res.ok && data.ok) return { ok: true };
+  } catch (e) {
+    console.error('[auth.changePassword]', e);
+  }
+  const u = getCurrentUser();
+  if (!u) return { ok: false, error: 'Nao autenticado.' };
+  if (!verifyPassword(oldPassword, u.passwordHash)) {
+    return { ok: false, error: 'Password actual incorrecta.' };
+  }
+  const updated = updateUser(u.id, { passwordHash: hashPassword(newPassword) });
+  if (!updated) return { ok: false, error: 'Falha ao actualizar password.' };
+  return { ok: true };
 }

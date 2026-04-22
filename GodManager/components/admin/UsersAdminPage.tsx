@@ -90,6 +90,22 @@ export function UsersAdminPage() {
     toast('Password reset email sent', 'info');
   };
 
+  function handleQuickApprove(userId: string) {
+    const result = updateUser(userId, { status: 'active' });
+    if (!result) {
+      toast('Falha ao aprovar utilizador.', 'error');
+      return;
+    }
+    appendAudit({
+      adminId: current?.id ?? 'unknown',
+      action: 'user.approve',
+      targetUserId: userId,
+      details: `Approved pending user ${result.email}`,
+    });
+    refresh();
+    toast('User approved.', 'success');
+  }
+
   const onToggleSuspend = (u: User) => {
     if (u.id === current?.id) {
       toast('You cannot suspend your own account.', 'warning');
@@ -193,6 +209,7 @@ export function UsersAdminPage() {
         onEdit={(u) => setEditUser(u)}
         onResetPassword={onResetPassword}
         onToggleSuspend={onToggleSuspend}
+        onQuickApprove={handleQuickApprove}
         onDelete={(u) => {
           if (u.id === current?.id) {
             toast('You cannot delete your own account.', 'error');

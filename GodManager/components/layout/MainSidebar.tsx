@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Home, LogOut, Settings, Shield, Users } from 'lucide-react';
+import { FileText, Home, KeyRound, LogOut, Settings, Shield, Users } from 'lucide-react';
 import { GodManagerLogo } from '@/components/layout/GodManagerLogo';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -10,7 +10,10 @@ import { cn } from '@/lib/utils';
 
 type Item = { href: string; label: string; icon: typeof Users };
 
-const mainNav: Item[] = [{ href: '/dashboard', label: 'Home', icon: Home }];
+const mainNav: Item[] = [
+  { href: '/dashboard', label: 'Home', icon: Home },
+  { href: '/account/password', label: 'Password', icon: KeyRound },
+];
 
 const adminSections: { label: string; items: Item[] }[] = [
   {
