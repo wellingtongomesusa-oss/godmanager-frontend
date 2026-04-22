@@ -3082,27 +3082,26 @@ function applyHomeDashboardFromApi(d){
   }
  });
 }
+// Constroi objeto compativel com applyHomeDashboardFromApi a partir de gm_properties local
 function gmHomeBuildDashboardFromLocal(){
  try{
   if(typeof window.gmPropertiesLoad!=='function')return null;
   var arr=window.gmPropertiesLoad()||[];
   if(!arr.length)return null;
-  var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0,tg=0,tmg=0;
+  var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
   var owners={};
   arr.forEach(function(p){
    var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
    var mrent=Number(p.marketRent!=null?p.marketRent:rent)||0;
    var dep=Number(p.deposit)||0;
-   var gua=Number(p.guarantee)||0;
-   var mgm=Number(p.mgmFeeUsd!=null?p.mgmFeeUsd:(p.mgmtFeeUsd||0))||0;
    var occ=String(p.occupancy||'').toLowerCase();
    var stt=String(p.status||'').toLowerCase();
-   var isRented=(occ==='rented')||(rent>0&&occ!=='vacant'&&occ!=='renovation');
-   var isVacant=(occ==='vacant')||(rent===0&&occ!=='rented');
+   var isRented=(occ==='rented')||(rent>0&&occ!=='vacant'&&occ!=='renovation'&&occ!=='inprogress');
+   var isVacant=(occ==='vacant')||(rent===0&&occ!=='rented'&&occ!=='inprogress'&&occ!=='renovation');
    if(isRented)ql++; else if(isVacant)qv++;
    if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
    if(stt==='disputed'||stt==='notice')qnot++;
-   pr+=rent;mkt+=mrent;tsd+=dep;tg+=gua;tmg+=mgm;
+   pr+=rent;mkt+=mrent;tsd+=dep;
    var ow=String(p.owner||'').trim();
    if(ow)owners[ow]=true;
   });
@@ -3113,22 +3112,35 @@ function gmHomeBuildDashboardFromLocal(){
    qty_properties:qp,qty_leases_active:ql,qty_vacant:qv,qty_owners:qo,
    qty_future:qf,qty_notice:qnot,
    potential_rent_monthly:pr,market_rent_total:mkt,occupancy_rate:occRate,
-   total_security_deposits:tsd,total_guarantee:tg,total_mgmt_fee:tmg,
-   operating_cash:0,unpaid_balance:0
+   total_security_deposits:tsd,
+   operating_cash:0,unpaid_balance:0,
+   _source:'local'
   };
  }catch(e){console.warn('gmHomeBuildDashboardFromLocal',e);return null;}
 }
 
 function loadHomeDashboardFromApi(){
+ // 1. Primeiro, render imediato com dados locais
  var local=gmHomeBuildDashboardFromLocal();
- if(local){applyHomeDashboardFromApi(local);renderCards();}else{renderCards();}
+ if(local){
+  applyHomeDashboardFromApi(local);
+  renderCards();
+ }else{
+  renderCards();
+ }
+ // 2. Depois, tenta API remota. So sobrescreve se vier com dados REAIS (qty_properties > 0)
  fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
-  if(!o.ok||!o.j){
-   if(!local)applyHomeDashboardFromApi(null);
-   renderCards();return;
+  // Condicao estrita: so aceita API se retornar dados significativos
+  var hasRealData=o&&o.ok&&o.j&&typeof o.j==='object'&&
+                  (Number(o.j.qty_properties)>0||Number(o.j.total_properties)>0);
+  if(!hasRealData){
+   // API nao tem dados validos - mantem o que ja esta (local ou vazio)
+   if(!local){applyHomeDashboardFromApi(null);renderCards();}
+   return;
   }
+  // API tem dados reais, sobrescreve
   applyHomeDashboardFromApi(o.j);
   renderCards();
   try{
@@ -3139,8 +3151,8 @@ function loadHomeDashboardFromApi(){
   }catch(e){}
  })
  .catch(function(){
-  if(!local)applyHomeDashboardFromApi(null);
-  renderCards();
+  // Falha de rede - mantem o que ja esta (local ou vazio)
+  if(!local){applyHomeDashboardFromApi(null);renderCards();}
  });
 }
 function saveAllData(){
@@ -6901,7 +6913,16 @@ function showToast(msg, type='success'){
 function ltpDeleteProperty(id){
  if(!confirm('Remover esta propriedade permanentemente? Esta acao nao pode ser desfeita.'))return;
  ltSaveRecords(ltGetRecords().filter(r=>r.id!==id));
+ // Tambem remover de gm_properties (sistema novo usado pela tabela e home)
+ try{
+  if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
+   var gmArr=window.gmPropertiesLoad()||[];
+   var filtered=gmArr.filter(function(p){return String(p&&p.id)!==String(id);});
+   if(filtered.length!==gmArr.length){window.gmPropertiesSave(filtered);}
+  }
+ }catch(e){console.warn('gm_properties delete sync',e);}
  ltpRender();ltRender();ltDashRender();
+ if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  showToast('Propriedade removida com sucesso.');
 }
 
@@ -6957,6 +6978,10 @@ document.addEventListener('DOMContentLoaded',function(){
  try{
   if(typeof window.gmPropertiesBootstrap==='function')window.gmPropertiesBootstrap();
  }catch(e){console.warn('gmPropertiesBootstrap',e);}
+ // Apos bootstrap, re-renderiza a home com dados populados
+ try{
+  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
+ }catch(e){console.warn('loadHomeDashboardFromApi',e);}
 });
 
 // Auxiliar: soma de despesas pagas de uma propriedade, filtradas por YYYY-MM opcional
@@ -7852,6 +7877,7 @@ async function ltpSaveNewProperty(){
  ltSaveRecords(all);
  ltpCloseNewPropertyModal();
  ltpRender();ltRender();ltDashRender();
+ if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  showToast('Propriedade cadastrada com sucesso','success');
 }
 function ltpTrapTab(e){
