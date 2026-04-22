@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { appendAudit } from '@/lib/audit';
-import { hashPassword } from '@/lib/password';
 import type { User, UserRole, UserStatus } from '@/lib/types';
 import { getUsers, updateUser } from '@/lib/users';
 
@@ -79,7 +78,7 @@ export function UsersAdminPage() {
 
   const onResetPassword = (u: User) => {
     const np = `Reset${Math.random().toString(36).slice(2, 10)}!`;
-    updateUser(u.id, { passwordHash: hashPassword(np) });
+    updateUser(u.id, { password: np });
     appendAudit({
       adminId: current?.id ?? 'unknown',
       action: 'user.password_reset',

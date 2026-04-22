@@ -1,95 +1,69 @@
-'use client';
-
-import { AUTH_COOKIE, STORAGE_KEYS, TOKEN_TTL_MS } from '@/lib/constants';
 import type { AuthPayload, User, UserRole } from '@/lib/types';
-import { hashPassword, verifyPassword } from '@/lib/password';
-import { getUserByLoginIdentifier, getUserById, touchLastActive, updateUser } from '@/lib/users';
 
-function encodeCookiePayload(payload: { exp: number; userId: string; role: UserRole }): string {
-  return typeof window !== 'undefined'
-    ? btoa(JSON.stringify(payload))
-    : Buffer.from(JSON.stringify(payload)).toString('base64');
-}
-
-export function setAuthCookie(payload: { exp: number; userId: string; role: UserRole }) {
-  const encoded = encodeCookiePayload(payload);
-  const maxAge = Math.max(0, Math.floor((payload.exp - Date.now()) / 1000));
-  document.cookie = `${AUTH_COOKIE}=${encodeURIComponent(encoded)}; path=/; max-age=${maxAge}; SameSite=Lax`;
-}
-
-export function clearAuthCookie() {
-  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
-}
-
-export function saveAuthSession(payload: AuthPayload) {
-  localStorage.setItem(STORAGE_KEYS.auth, JSON.stringify(payload));
-  setAuthCookie({ exp: payload.exp, userId: payload.userId, role: payload.role });
-}
-
-export function clearAuthSession() {
-  localStorage.removeItem(STORAGE_KEYS.auth);
-  clearAuthCookie();
-}
-
-export function getAuthPayload(): AuthPayload | null {
-  if (typeof window === 'undefined') return null;
+/** Synchronous JSON request (legacy callers: LoginForm, AuthProvider, password page). */
+function syncJson<T = unknown>(method: string, url: string, body?: unknown): { ok: boolean; status: number; data: T | null } {
+  const xhr = new XMLHttpRequest();
+  xhr.open(method, url, false);
+  if (body !== undefined) xhr.setRequestHeader('Content-Type', 'application/json');
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.auth);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as AuthPayload;
-    if (!p.exp || Date.now() > p.exp) {
-      clearAuthSession();
-      return null;
-    }
-    return p;
+    xhr.send(body !== undefined ? JSON.stringify(body) : null);
+  } catch {
+    return { ok: false, status: 0, data: null };
+  }
+  let data: T | null = null;
+  try {
+    data = xhr.responseText ? (JSON.parse(xhr.responseText) as T) : null;
+  } catch {
+    data = null;
+  }
+  return { ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data };
+}
+
+// --- Async API (fetch) — same contract as Fase 2 routes ---
+
+export async function loginAsync(
+  email: string,
+  password: string,
+): Promise<{ ok: true; user: User } | { ok: false; error: string }> {
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+      credentials: 'include',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) return { ok: false, error: data?.error || 'Login falhou.' };
+    return { ok: true, user: data.user as User };
+  } catch (e) {
+    console.error('[auth.loginAsync]', e);
+    return { ok: false, error: 'Erro de rede.' };
+  }
+}
+
+export async function logoutAsync(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (e) {
+    console.error('[auth.logoutAsync]', e);
+  }
+}
+
+export async function getCurrentUserAsync(): Promise<User | null> {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return data?.ok ? (data.user as User) : null;
   } catch {
     return null;
   }
 }
 
-export function getCurrentUser(): User | null {
-  const p = getAuthPayload();
-  if (!p) return null;
-  return getUserById(p.userId) ?? null;
-}
-
-export function login(email: string, password: string): { ok: true; user: User } | { ok: false; error: string } {
-  const user = getUserByLoginIdentifier(email);
-  if (!user) return { ok: false, error: 'Invalid email or password.' };
-  if (user.status === 'suspended') return { ok: false, error: 'This account is suspended. Contact your administrator.' };
-  if (user.status === 'pending') return { ok: false, error: 'Your access is still pending approval.' };
-  if (!verifyPassword(password, user.passwordHash)) return { ok: false, error: 'Invalid email or password.' };
-
-  const exp = Date.now() + TOKEN_TTL_MS;
-  const token = `gm_${user.id}_${exp}`;
-  const payload: AuthPayload = { token, exp, userId: user.id, role: user.role };
-  saveAuthSession(payload);
-  touchLastActive(user.id);
-
-  return { ok: true, user };
-}
-
-export function logout() {
-  clearAuthSession();
-}
-
-export function isAuthenticated(): boolean {
-  return getAuthPayload() !== null;
-}
-
-export function isAdmin(): boolean {
-  const p = getAuthPayload();
-  return p?.role === 'admin';
-}
-
-/** API real quando ha cookie httpOnly; senao atualiza password em localStorage (demo). */
 export async function changePassword(
   oldPassword: string,
   newPassword: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (newPassword.length < 8) {
-    return { ok: false, error: 'Nova password tem de ter pelo menos 8 caracteres.' };
-  }
   try {
     const res = await fetch('/api/auth/change-password', {
       method: 'POST',
@@ -97,17 +71,70 @@ export async function changePassword(
       body: JSON.stringify({ oldPassword, newPassword }),
       credentials: 'include',
     });
-    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-    if (res.ok && data.ok) return { ok: true };
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) return { ok: false, error: data?.error || 'Erro ao alterar password.' };
+    return { ok: true };
   } catch (e) {
     console.error('[auth.changePassword]', e);
+    return { ok: false, error: 'Erro de rede.' };
   }
-  const u = getCurrentUser();
-  if (!u) return { ok: false, error: 'Nao autenticado.' };
-  if (!verifyPassword(oldPassword, u.passwordHash)) {
-    return { ok: false, error: 'Password actual incorrecta.' };
-  }
-  const updated = updateUser(u.id, { passwordHash: hashPassword(newPassword) });
-  if (!updated) return { ok: false, error: 'Falha ao actualizar password.' };
-  return { ok: true };
 }
+
+// --- Sync API (XHR) — LoginForm, AuthProvider, useAuthPayload ---
+
+export function login(email: string, password: string): { ok: true; user: User } | { ok: false; error: string } {
+  const { ok, data } = syncJson<{ ok?: boolean; error?: string; user?: User }>('POST', '/api/auth/login', {
+    email,
+    password,
+  });
+  const d = data;
+  if (!ok || !d?.ok || !d.user) return { ok: false, error: d?.error || 'Login falhou.' };
+  return { ok: true, user: d.user as User };
+}
+
+export function logout(): void {
+  try {
+    syncJson('POST', '/api/auth/logout');
+  } catch (e) {
+    console.error('[auth.logout]', e);
+  }
+}
+
+export function getCurrentUser(): User | null {
+  const { ok, data } = syncJson<{ ok?: boolean; user?: User }>('GET', '/api/auth/me');
+  const d = data;
+  if (!ok || !d?.ok || !d.user) return null;
+  return d.user as User;
+}
+
+export function isAuthenticatedSync(): boolean {
+  return getCurrentUser() !== null;
+}
+
+export function getAuthPayload(): AuthPayload | null {
+  const u = getCurrentUser();
+  if (!u) return null;
+  return {
+    token: 'httpOnly-session',
+    exp: Date.now() + 24 * 60 * 60 * 1000,
+    userId: u.id,
+    role: u.role as UserRole,
+  };
+}
+
+export function isAuthenticated(): boolean {
+  return getAuthPayload() !== null;
+}
+
+export function isAdmin(): boolean {
+  return getAuthPayload()?.role === 'admin';
+}
+
+/** No-op: sessão real é cookie HttpOnly definido pelo servidor. */
+export function setAuthCookie(_payload: { exp: number; userId: string; role: UserRole }): void {}
+
+export function clearAuthCookie(): void {}
+
+export function saveAuthSession(_payload: AuthPayload): void {}
+
+export function clearAuthSession(): void {}

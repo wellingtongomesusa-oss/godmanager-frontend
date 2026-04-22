@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { hashPassword } from '@/lib/password';
 import type { User, UserRole } from '@/lib/types';
-import { createUser, emailExists } from '@/lib/users';
+import { createUser, emailExists, primeUserCreatePassword } from '@/lib/users';
 
 const PERM_OPTS = [
   { key: 'payments', label: 'Can approve payments' },
@@ -79,6 +79,7 @@ export function AddUserModal({
       lastActive: new Date().toISOString(),
       passwordHash: hashPassword(tempPass),
     };
+    primeUserCreatePassword(tempPass);
     createUser(user);
     reset();
     onCreated(user);

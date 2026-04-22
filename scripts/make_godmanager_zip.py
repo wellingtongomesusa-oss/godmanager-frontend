@@ -8,7 +8,7 @@ import zipfile
 from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXCLUDE_DIRS = {"node_modules", ".next", ".git", "__pycache__"}
+EXCLUDE_DIRS = {"node_modules", ".next", ".git", "__pycache__", ".venv", "venv"}
 EXCLUDE_FILES = {".DS_Store", ".env", ".env.local", ".env.production", ".env.development"}
 
 DIRS = ["GodManager", "website", "app", "components", "lib", "public"]
