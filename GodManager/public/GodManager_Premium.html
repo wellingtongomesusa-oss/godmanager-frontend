@@ -413,6 +413,14 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-org-chart .oc-chart-ul li{padding:0 0 0 0;margin:0 0 12px 16px;border-left:2px solid rgba(201,169,110,.28);padding-left:14px}
  #page-org-chart .oc-chart-ul ul{margin-left:0;padding-left:0}
 }
+
+/* === Scrollbar harmonica (champagne/sand) === */
+.page *{scrollbar-width:thin;scrollbar-color:rgba(196,123,40,.55) rgba(226,221,212,.35)}
+.page ::-webkit-scrollbar{height:10px;width:10px}
+.page ::-webkit-scrollbar-track{background:rgba(226,221,212,.35);border-radius:8px;margin:2px}
+.page ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(196,123,40,.55),rgba(212,146,62,.7));border-radius:8px;border:2px solid rgba(248,246,242,0);background-clip:padding-box;min-height:30px;min-width:30px;transition:background .18s ease}
+.page ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(196,123,40,.85),rgba(212,146,62,.95));background-clip:padding-box;border:2px solid rgba(248,246,242,0)}
+.page ::-webkit-scrollbar-corner{background:transparent}
 </style>
 <script src="/properties_seed.js"></script>
 </head>
@@ -1674,6 +1682,14 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <label style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px">SECURITY DEPOSIT ($)</label>
  <input id="lt-f-deposit" type="number" placeholder="0" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--amber-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
  </div>
+ <div>
+ <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CONTA GARANTIDA ($) <span style="font-weight:400;color:var(--ink3);font-size:10px">— min sugerido $500</span></label>
+ <input id="lt-f-guarantee" type="number" placeholder="500" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+ </div>
+ <div>
+ <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MGM FEE (%) <span style="font-weight:400;color:var(--ink3);font-size:10px">— % sobre rent</span></label>
+ <input id="lt-f-mgmpct" type="number" placeholder="8" min="0" max="100" step="0.1" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+ </div>
  </div>
 
  <!-- NET Preview -->
@@ -2095,10 +2111,10 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="renovation">Reforma</option>
  </select>
  <select id="ltp-filter-month" onchange="ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
- <option value="">Todos os meses</option>
+ <option value="" selected>Todos os meses</option>
  <option value="2026-01">Jan 2026</option>
  <option value="2026-02">Fev 2026</option>
- <option value="2026-03" selected>Mar 2026</option>
+ <option value="2026-03">Mar 2026</option>
  <option value="2026-04">Abr 2026</option>
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
@@ -2110,12 +2126,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div style="display:grid;grid-template-columns:repeat(6,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">ocupadas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">disponiveis</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">EM ANDAMENTO</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">reforma/transicao</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
- <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">NET ATUAL</div><div id="ltp-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">apos despesas pagas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -2123,7 +2140,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="ltp-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
  <div style="overflow-x:auto">
- <table style="width:100%;border-collapse:collapse;min-width:1100px">
+ <table style="width:100%;border-collapse:collapse;min-width:1400px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
@@ -2133,6 +2150,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ocupacao</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Garantida</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGM %</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Desp. Pagas</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
@@ -2650,6 +2670,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)" data-i18n="total_expenses">TOTAL EXPENSES</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)" data-i18n="net_income">NET INCOME</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" data-i18n="margin_pct">MARGIN %</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">LINK PÚBLICO</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">ACTIONS</th>
     </tr></thead>
     <tbody id="gm-res-tbody"></tbody>
@@ -2676,6 +2697,33 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
 
  <div style="max-width:720px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:22px 24px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+  <div style="margin-bottom:16px">
+   <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Mês de referência *</label>
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <select id="gm-resu-year" onchange="if(typeof gmResYearChange==='function')gmResYearChange()" style="padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif"></select>
+    <div id="gm-resu-month-chips" style="display:flex;gap:4px;flex-wrap:wrap">
+     <button type="button" class="gm-resu-mbtn" data-m="1" onclick="gmResSetMonth(1)">Jan</button>
+     <button type="button" class="gm-resu-mbtn" data-m="2" onclick="gmResSetMonth(2)">Fev</button>
+     <button type="button" class="gm-resu-mbtn" data-m="3" onclick="gmResSetMonth(3)">Mar</button>
+     <button type="button" class="gm-resu-mbtn" data-m="4" onclick="gmResSetMonth(4)">Abr</button>
+     <button type="button" class="gm-resu-mbtn" data-m="5" onclick="gmResSetMonth(5)">Mai</button>
+     <button type="button" class="gm-resu-mbtn" data-m="6" onclick="gmResSetMonth(6)">Jun</button>
+     <button type="button" class="gm-resu-mbtn" data-m="7" onclick="gmResSetMonth(7)">Jul</button>
+     <button type="button" class="gm-resu-mbtn" data-m="8" onclick="gmResSetMonth(8)">Ago</button>
+     <button type="button" class="gm-resu-mbtn" data-m="9" onclick="gmResSetMonth(9)">Set</button>
+     <button type="button" class="gm-resu-mbtn" data-m="10" onclick="gmResSetMonth(10)">Out</button>
+     <button type="button" class="gm-resu-mbtn" data-m="11" onclick="gmResSetMonth(11)">Nov</button>
+     <button type="button" class="gm-resu-mbtn" data-m="12" onclick="gmResSetMonth(12)">Dez</button>
+    </div>
+   </div>
+   <input type="hidden" id="gm-resu-slug" value=""/>
+   <div style="font-size:10px;color:var(--ink3);margin-top:7px">Slug: <span id="gm-resu-slug-echo" style="font-family:'JetBrains Mono',monospace;color:var(--amber)">—</span> · Link: <code style="font-family:'JetBrains Mono',monospace;color:var(--amber)">godmanager.us/resultado/<span id="gm-resu-slug-echo2">—</span></code></div>
+  </div>
+  <style>
+   .gm-resu-mbtn{padding:7px 12px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;cursor:pointer;transition:all .12s}
+   .gm-resu-mbtn:hover{border-color:var(--amber);color:var(--amber)}
+   .gm-resu-mbtn.on{background:var(--amber);color:#fff;border-color:var(--amber);box-shadow:0 2px 6px rgba(201,169,110,.3)}
+  </style>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin-bottom:14px">
    <div>
     <label for="gm-resu-period-start" style="display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px" data-i18n="period_start">Period Start *</label>
@@ -2711,12 +2759,37 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
   <div id="gm-resu-selected" style="display:none;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--cream);margin-bottom:14px;font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace"></div>
 
-  <div style="display:flex;justify-content:flex-end;gap:10px">
+  <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap">
    <button type="button" onclick="nav('results')" style="padding:9px 18px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancel</button>
-   <button type="button" onclick="if(typeof gmResDoUpload==='function')gmResDoUpload()" style="padding:9px 22px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)" data-i18n="upload_report">Upload Report</button>
+   <button type="button" onclick="if(typeof gmResDoUpload==='function')gmResDoUpload()" style="padding:9px 18px;background:transparent;color:var(--amber);border:1px solid var(--amber);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" data-i18n="upload_report" title="Apenas extrai KPIs para o Dashboard (sem link público)">Upload Report</button>
+   <button type="button" onclick="if(typeof gmResPublishPublic==='function')gmResPublishPublic()" style="padding:9px 22px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Gerar página pública</button>
   </div>
 
   <div id="gm-resu-feedback" style="display:none;margin-top:14px;padding:10px 14px;border-radius:8px;font-size:12px"></div>
+
+  <!-- Card de instruções após geração -->
+  <div id="gm-resu-success-card" style="display:none;margin-top:18px;padding:18px 20px;border:1px solid var(--green);background:var(--green-bg);border-radius:10px">
+   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <div style="font-size:13px;font-weight:700;color:var(--green);font-family:'Cormorant Garamond',serif">Arquivo pronto para commit</div>
+   </div>
+
+   <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">URL final</div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all"><a id="gm-resu-card-url" href="#" target="_blank" rel="noopener" style="color:var(--amber);text-decoration:none"></a></div>
+
+   <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Caminho no repo</div>
+   <div id="gm-resu-card-path" style="background:var(--paper);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink);word-break:break-all"></div>
+
+   <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Comandos git</div>
+   <pre id="gm-resu-card-cmds" style="background:#141416;color:#f5e8c7;padding:10px 12px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.55;margin:0 0 10px 0;overflow-x:auto;white-space:pre"></pre>
+
+   <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button type="button" onclick="gmResCopyGitCmds()" style="padding:7px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Copiar comandos Git</button>
+    <button type="button" onclick="gmResPreviewLocal()" style="padding:7px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif">Testar local (localhost)</button>
+   </div>
+
+   <div style="margin-top:12px;padding:8px 12px;border:1px solid var(--amber);background:var(--amber-bg);border-radius:6px;font-size:11px;color:var(--amber);line-height:1.5"><strong>Atenção:</strong> o link público só ficará acessível após commit + push. Teste primeiro em <code style="font-family:'JetBrains Mono',monospace">http://localhost:3101/resultado/&lt;slug&gt;</code>.</div>
+  </div>
  </div>
 </div>
 
@@ -5675,7 +5748,10 @@ function ltCalcNet(){
  const elec = parseFloat(document.getElementById('lt-f-electric').value)||0;
  const maint= parseFloat(document.getElementById('lt-f-maint').value)||0;
  const vend = parseFloat(document.getElementById('lt-f-vendor').value)||0;
- const net = rent - hoa - water - elec - maint - vend;
+ const mgmpctEl = document.getElementById('lt-f-mgmpct');
+ const mgmpct = mgmpctEl ? (parseFloat(mgmpctEl.value)||0) : 0;
+ const mgmFeeUsd = rent * mgmpct / 100;
+ const net = rent - hoa - water - elec - maint - vend - mgmFeeUsd;
  const el = document.getElementById('lt-f-net-preview');
  if(el){
  el.textContent = ltFmt(net);
@@ -5733,6 +5809,8 @@ function ltOpenNewProperty(){
  document.getElementById('lt-f-baths').value='';
  document.getElementById('lt-f-occupancy').value='rented';
  document.getElementById('lt-f-deposit').value='';
+ var _ge=document.getElementById('lt-f-guarantee');if(_ge)_ge.value='';
+ var _mp=document.getElementById('lt-f-mgmpct');if(_mp)_mp.value='';
  ['lt-f-owner-fullname','lt-f-owner-taxid','lt-f-owner-email','lt-f-owner-phone','lt-f-owner-mailingaddr','lt-f-bank-name','lt-f-bank-holder','lt-f-bank-routing','lt-f-bank-account','lt-f-bank-address'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
  const dobEl=document.getElementById('lt-f-owner-dob');if(dobEl)dobEl.value='';
  const btEl=document.getElementById('lt-f-bank-type');if(btEl)btEl.value='checking';
@@ -5755,9 +5833,49 @@ function ltOpenNewProperty(){
 }
 
 function ltOpenEdit(id){
- const records=ltGetRecords();
- const r=records.find(x=>x.id===id);
- if(!r)return;
+ let r=null;
+ if(typeof window.gmPropertiesLoad==='function'){
+  const gm=window.gmPropertiesLoad();
+  const raw=Array.isArray(gm)?gm.find(x=>x&&String(x.id)===String(id)):null;
+  if(raw){
+   const rent=(Number(raw.currentRent)>0?Number(raw.currentRent):Number(raw.marketRent))||0;
+   r={
+    id:raw.id,
+    address:raw.address||raw.name||'',
+    owner:raw.owner||'',
+    tenant:raw.tenant||'',
+    baths:raw.baths||'',
+    occupancy:raw.occupancy||(rent>0?'rented':'vacant'),
+    rent:rent,
+    hoa:Number(raw.hoa)||0,
+    water:Number(raw.water)||0,
+    electric:Number(raw.electric)||0,
+    maint:Number(raw.maint!=null?raw.maint:(raw.maintenance||0))||0,
+    vendor:Number(raw.vendor)||0,
+    deposit:Number(raw.deposit)||0,
+    guarantee:Number(raw.guarantee)||0,
+    mgmpct:Number(raw.mgmpct!=null?raw.mgmpct:(raw.mgmtPct||0))||0,
+    mgmFeeUsd:Number(raw.mgmFeeUsd!=null?raw.mgmFeeUsd:(raw.mgmtFeeUsd||0))||0,
+    net:Number(raw.net!=null?raw.net:(raw.netOwner||0))||0,
+    month:raw.month||'2026-03',
+    status:raw.status||'pending',
+    desc:raw.desc||raw.description||'',
+    vendorname:raw.vendorname||'',
+    vendordate:raw.vendordate||'',
+    approver:raw.approver||'',
+    notes:raw.notes||'',
+    files:raw.files||[],
+    photos:raw.photos||[],
+    ownerFullName:raw.ownerFullName||'',ownerTaxId:raw.ownerTaxId||'',ownerDob:raw.ownerDob||'',ownerEmail:raw.ownerEmail||'',ownerPhone:raw.ownerPhone||'',ownerMailingAddr:raw.ownerMailingAddr||'',
+    bankName:raw.bankName||'',bankType:raw.bankType||'checking',bankRouting:raw.bankRouting||'',bankAccount:raw.bankAccount||'',bankHolder:raw.bankHolder||'',bankAddress:raw.bankAddress||'',bankMethod:raw.bankMethod||'ach'
+   };
+  }
+ }
+ if(!r){
+  const records=ltGetRecords();
+  r=records.find(x=>x.id===id);
+ }
+ if(!r){alert('Propriedade nao encontrada');return;}
  ltEditingId=id;
  ltStagedFiles=r.files||[];
  document.getElementById('lt-modal-title').textContent=' Editar Statement';
@@ -5767,6 +5885,8 @@ function ltOpenEdit(id){
  document.getElementById('lt-f-baths').value=r.baths||'';
  document.getElementById('lt-f-occupancy').value=r.occupancy||'rented';
  document.getElementById('lt-f-deposit').value=r.deposit||'';
+ var _ge2=document.getElementById('lt-f-guarantee');if(_ge2)_ge2.value=(r.guarantee!=null?r.guarantee:'');
+ var _mp2=document.getElementById('lt-f-mgmpct');if(_mp2)_mp2.value=(r.mgmpct!=null?r.mgmpct:'');
  document.getElementById('lt-f-owner-fullname').value=r.ownerFullName||'';
  document.getElementById('lt-f-owner-taxid').value=r.ownerTaxId||'';
  document.getElementById('lt-f-owner-dob').value=r.ownerDob||'';
@@ -5816,7 +5936,12 @@ function ltSaveRecord(){
  const electric=parseFloat(document.getElementById('lt-f-electric').value)||0;
  const maint=parseFloat(document.getElementById('lt-f-maint').value)||0;
  const vendor=parseFloat(document.getElementById('lt-f-vendor').value)||0;
- const net=rent-hoa-water-electric-maint-vendor;
+ const _geEl=document.getElementById('lt-f-guarantee');
+ const guarantee=_geEl?(parseFloat(_geEl.value)||0):0;
+ const _mpEl=document.getElementById('lt-f-mgmpct');
+ const mgmpct=_mpEl?(parseFloat(_mpEl.value)||0):0;
+ const mgmFeeUsd=rent*mgmpct/100;
+ const net=rent-hoa-water-electric-maint-vendor-mgmFeeUsd;
  const rec={
  id: ltEditingId||('lt_'+Date.now()),
  address, owner,
@@ -5824,6 +5949,9 @@ function ltSaveRecord(){
  baths:document.getElementById('lt-f-baths').value,
  occupancy:document.getElementById('lt-f-occupancy').value,
  deposit:parseFloat(document.getElementById('lt-f-deposit').value)||0,
+ guarantee:guarantee,
+ mgmpct:mgmpct,
+ mgmFeeUsd:mgmFeeUsd,
  ownerFullName:document.getElementById('lt-f-owner-fullname').value.trim(),
  ownerTaxId:document.getElementById('lt-f-owner-taxid').value.trim(),
  ownerDob:document.getElementById('lt-f-owner-dob').value,
@@ -5855,6 +5983,43 @@ function ltSaveRecord(){
  if(idx>-1)records[idx]=rec; else records.push(rec);
  }else{ records.push(rec); }
  ltSaveRecords(records);
+ try{
+  if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
+   const gmArr=window.gmPropertiesLoad()||[];
+   const gmIdx=gmArr.findIndex(x=>x&&String(x.id)===String(rec.id));
+   const merged=gmIdx>-1?Object.assign({},gmArr[gmIdx]):{id:rec.id,source:'user_manual'};
+   merged.name=merged.name||rec.address;
+   merged.address=rec.address;
+   merged.owner=rec.owner;
+   merged.tenant=rec.tenant;
+   merged.baths=rec.baths;
+   merged.occupancy=rec.occupancy;
+   merged.currentRent=rec.rent;
+   merged.rent=rec.rent;
+   merged.hoa=rec.hoa;
+   merged.water=rec.water;
+   merged.electric=rec.electric;
+   merged.maintenance=rec.maint;
+   merged.maint=rec.maint;
+   merged.vendor=rec.vendor;
+   merged.deposit=rec.deposit;
+   merged.guarantee=rec.guarantee;
+   merged.mgmpct=rec.mgmpct;
+   merged.mgmtPct=rec.mgmpct;
+   merged.mgmFeeUsd=rec.mgmFeeUsd;
+   merged.mgmtFeeUsd=rec.mgmFeeUsd;
+   merged.netOwner=rec.net;
+   merged.net=rec.net;
+   merged.month=rec.month;
+   merged.status=rec.status;
+   merged.photos=rec.photos;
+   merged.ownerFullName=rec.ownerFullName;merged.ownerTaxId=rec.ownerTaxId;merged.ownerDob=rec.ownerDob;merged.ownerEmail=rec.ownerEmail;merged.ownerPhone=rec.ownerPhone;merged.ownerMailingAddr=rec.ownerMailingAddr;
+   merged.bankName=rec.bankName;merged.bankType=rec.bankType;merged.bankRouting=rec.bankRouting;merged.bankAccount=rec.bankAccount;merged.bankHolder=rec.bankHolder;merged.bankAddress=rec.bankAddress;merged.bankMethod=rec.bankMethod;
+   merged.updatedAt=new Date().toISOString();
+   if(gmIdx>-1){gmArr[gmIdx]=merged;}else{gmArr.push(merged);}
+   window.gmPropertiesSave(gmArr);
+  }
+ }catch(e){console.warn('gm sync failed',e);}
  ltCloseModal();
  ltRender();
  ltpRender();
@@ -6343,11 +6508,23 @@ function ltExpApprovalInfo(ev,id){
 }
 
 function ltPopulatePropertyDropdowns(){
- const records=ltGetRecords();
- const opts=records.map(r=>`<option value="${r.id}" data-address="${r.address}">${r.address}</option>`).join('');
+ var gm=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ if((!gm||!gm.length)&&typeof window.gmPropertiesBootstrap==='function'){
+  try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltPopulate auto-bootstrap',e);}
+  gm=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ }
+ var records;
+ if(Array.isArray(gm)&&gm.length){
+  records=gm.map(p=>{var ui=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;return{id:ui.id||p.id,address:ui.address||p.address||p.name||'—',owner:ui.owner||p.owner||''};});
+ }else{
+  records=ltGetRecords();
+ }
+ records=records.filter(r=>r&&r.address&&r.address!=='Total'&&r.address!=='Admin - * *, *');
+ records.sort((a,b)=>String(a.address).localeCompare(String(b.address)));
+ const opts=records.map(r=>`<option value="${r.id}" data-address="${String(r.address).replace(/"/g,'&quot;')}">${String(r.address)}${r.owner?' — '+r.owner:''}</option>`).join('');
  ['lt-nexp-prop','lt-cln-prop'].forEach(id=>{
- const el=document.getElementById(id);
- if(el) el.innerHTML='<option value="">— Selecionar propriedade —</option>'+opts;
+  const el=document.getElementById(id);
+  if(el) el.innerHTML='<option value="">— Selecionar propriedade —</option>'+opts;
  });
 }
 
@@ -6418,14 +6595,14 @@ function ltSaveExpense(){
  }
  }
  }
- ltCloseNewExpense(); ltExpRender(); ltDashRender();
+ ltCloseNewExpense(); ltExpRender(); ltDashRender(); if(typeof ltpRender==='function')ltpRender();
  showToast('Despesa salva com sucesso.');
 }
 
 function ltExpDelete(id){
  if(!confirm('Remover esta despesa?'))return;
  ltExpSaveRecords(ltExpGetRecords().filter(x=>x.id!==id));
- ltExpRender(); ltDashRender();
+ ltExpRender(); ltDashRender(); if(typeof ltpRender==='function')ltpRender();
 }
 
 function ltExpRender(){
@@ -6719,8 +6896,11 @@ window.gmPropertiesToUi=function(p){
   baths:p.baths||(p.units?(p.units+' unit'+(p.units>1?'s':'')):''),
   occupancy:p.occupancy||occ,
   rent:rent,
-  deposit:Number(p.deposit)||0,
-  net:Number(p.netOwner!=null?p.netOwner:(p.net||0)),
+ deposit:Number(p.deposit)||0,
+ guarantee:Number(p.guarantee!=null?p.guarantee:0),
+ mgmpct:Number(p.mgmpct!=null?p.mgmpct:(p.mgmtPct||0)),
+ mgmFeeUsd:Number(p.mgmFeeUsd!=null?p.mgmFeeUsd:(p.mgmtFeeUsd||0)),
+ net:Number(p.netOwner!=null?p.netOwner:(p.net||0)),
   month:p.month||'',
   status:statusUi,
   _src:p
@@ -6732,8 +6912,28 @@ document.addEventListener('DOMContentLoaded',function(){
  }catch(e){console.warn('gmPropertiesBootstrap',e);}
 });
 
+// Auxiliar: soma de despesas pagas de uma propriedade, filtradas por YYYY-MM opcional
+function ltGetPaidExpensesByProp(propId, monthYYYYMM){
+ try{
+  const all=JSON.parse(localStorage.getItem('mp_lt_expenses_v1')||'[]');
+  let total=0;
+  for(const e of (all||[])){
+   if(!e||String(e.propId)!==String(propId))continue;
+   if(e.status!=='paid')continue;
+   if(!e.paid)continue;
+   if(monthYYYYMM&&String(e.paid).slice(0,7)!==String(monthYYYYMM))continue;
+   total+=Number(e.value)||0;
+  }
+  return total;
+ }catch(err){return 0;}
+}
+
 function ltpRender(){
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
+  try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltpRender auto-bootstrap',e);}
+  __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ }
  const records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
  const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
  const fOcc=(document.getElementById('ltp-filter-occ')?.value)||'';
@@ -6746,10 +6946,12 @@ function ltpRender(){
  });
  // KPIs
  const totR=filtered.reduce((s,r)=>s+(r.rent||0),0);
+ const totNetAtual=filtered.reduce((s,r)=>{const pe=ltGetPaidExpensesByProp(r.id,r.month);return s+((r.net||0)-pe);},0);
  [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
  ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
  ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
- ['ltp-kpi-rent',ltFmt(totR)]
+ ['ltp-kpi-rent',ltFmt(totR)],
+ ['ltp-kpi-net',ltFmt(totNetAtual)]
  ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
@@ -6770,7 +6972,9 @@ function ltpRender(){
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
- <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${(r.net||0)>=0?'var(--blue)':'var(--red)'}">${ltFmt(r.net||0)}</td>
+ <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.guarantee?ltFmt(r.guarantee):'—'}</td>
+ <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.mgmpct?r.mgmpct+'%':'—'}</td>
+ ${(()=>{const pe=ltGetPaidExpensesByProp(r.id,r.month);const nf=(r.net||0)-pe;return `<td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:${pe>0?'var(--red)':'var(--ink3)'}">${pe>0?'-'+ltFmt(pe):'—'}</td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${nf>=0?'var(--blue)':'var(--red)'}" title="NET base: ${ltFmt(r.net||0)} | Despesas pagas: -${ltFmt(pe)} | NET atual: ${ltFmt(nf)}">${ltFmt(nf)}</td>`;})()}
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${stLabel[r.status]||'—'}</span></td>
  <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
@@ -8384,10 +8588,87 @@ window.gmResT=gmResT;
 
 var LS_REPORTS='gm_results_reports';
 var LS_ANNUAL='gm_results_annual';
+var GM_RES_HTML_KEY='gm_results_html';
 var MAX_FILE=25*1024*1024;
 var _gmResFile=null;
 var _gmResChart=null;
 var _gmResCurrentViewId=null;
+var _gmResSelectedSlug='';
+
+function gmResHtmlLoad(){try{var raw=localStorage.getItem(GM_RES_HTML_KEY);var o=raw?JSON.parse(raw):{};return (o&&typeof o==='object')?o:{};}catch(e){return{};}}
+function gmResHtmlSave(o){try{localStorage.setItem(GM_RES_HTML_KEY,JSON.stringify(o||{}));}catch(e){}}
+function gmResHtmlSet(slug,html){var o=gmResHtmlLoad();o[slug]=String(html||'');gmResHtmlSave(o);}
+function gmResHtmlDelete(slug){var o=gmResHtmlLoad();if(o.hasOwnProperty(slug)){delete o[slug];gmResHtmlSave(o);}}
+function gmResHtmlGet(slug){var o=gmResHtmlLoad();return o[slug]||'';}
+
+function gmMonthToSlug(mes,ano){return String(ano)+'-'+String(mes).padStart(2,'0');}
+function gmResSlugMonthStart(slug){var p=String(slug||'').split('-');if(p.length<2)return '';return p[0]+'-'+p[1].padStart(2,'0')+'-01';}
+function gmResSlugMonthEnd(slug){var p=String(slug||'').split('-');if(p.length<2)return '';var y=parseInt(p[0],10),m=parseInt(p[1],10);if(!y||!m)return '';var d=new Date(y,m,0).getDate();return p[0]+'-'+p[1].padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function gmResSlugMonthLabel(slug){var p=String(slug||'').split('-');if(p.length<2)return slug;var M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var m=parseInt(p[1],10);return (M[m-1]||p[1])+' '+p[0];}
+
+function gmResPopulateYearDropdown(){
+ var sel=document.getElementById('gm-resu-year');if(!sel||sel._gmResWired)return;sel._gmResWired=1;
+ var cur=new Date().getFullYear();var min=2024,max=cur+1;sel.innerHTML='';
+ for(var y=max;y>=min;y--){var o=document.createElement('option');o.value=String(y);o.textContent=String(y);if(y===cur)o.selected=true;sel.appendChild(o);}
+}
+function gmResYearChange(){if(_gmResSelectedSlug){var p=_gmResSelectedSlug.split('-');if(p.length>=2)gmResSetMonth(parseInt(p[1],10));}}
+function gmResSetMonth(m){
+ var ySel=document.getElementById('gm-resu-year');var y=ySel?parseInt(ySel.value,10)||new Date().getFullYear():new Date().getFullYear();
+ var slug=gmMonthToSlug(m,y);_gmResSelectedSlug=slug;
+ var hid=document.getElementById('gm-resu-slug');if(hid)hid.value=slug;
+ var e1=document.getElementById('gm-resu-slug-echo');if(e1)e1.textContent=slug;
+ var e2=document.getElementById('gm-resu-slug-echo2');if(e2)e2.textContent=slug;
+ document.querySelectorAll('.gm-resu-mbtn').forEach(function(b){if(parseInt(b.getAttribute('data-m'),10)===m)b.classList.add('on');else b.classList.remove('on');});
+ var ps=document.getElementById('gm-resu-period-start');var pe=document.getElementById('gm-resu-period-end');
+ if(ps)ps.value=gmResSlugMonthStart(slug);if(pe)pe.value=gmResSlugMonthEnd(slug);
+}
+window.gmResYearChange=gmResYearChange;window.gmResSetMonth=gmResSetMonth;
+
+function gmResIsHtmlContent(s){if(!s)return false;var head=String(s).slice(0,300).toLowerCase().trim();return head.indexOf('<!doctype html')===0||head.indexOf('<html')===0;}
+function gmResTriggerDownload(filename,content,type){
+ try{var blob=new Blob([content],{type:type||'text/html;charset=utf-8'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},200);}catch(e){if(typeof showToast==='function')showToast('Download falhou','error');}
+}
+
+function gmResPublishPublic(){
+ if(!_gmResFile){gmResFeedback('Selecione um arquivo HTML primeiro',0);return;}
+ var slug=(document.getElementById('gm-resu-slug')||{}).value||_gmResSelectedSlug||'';
+ if(!slug){gmResFeedback('Escolha um mês de referência',0);return;}
+ if(!/\.html?$/i.test(_gmResFile.name)){gmResFeedback('Apenas arquivos .html ou .htm são aceitos para página pública',0);return;}
+ var tp=(document.getElementById('gm-resu-type')||{}).value||'Demonstrativo Executivo';
+ var ti=(document.getElementById('gm-resu-title')||{}).value||_gmResFile.name;
+ var fr=new FileReader();
+ fr.onload=function(){
+  var content=String(fr.result||'');
+  if(!gmResIsHtmlContent(content)){gmResFeedback('Conteúdo não parece ser HTML válido (deve começar com <!DOCTYPE html> ou <html>)',0);return;}
+  gmResHtmlSet(slug,content);
+  var ext=gmResExtractFromHtml(content);
+  var ps=gmResSlugMonthStart(slug),pe=gmResSlugMonthEnd(slug);
+  var arr=gmResLoad();var idx=arr.findIndex(function(r){return r.slug===slug;});
+  var rec={id:(idx>=0?arr[idx].id:gmResNextId()),slug:slug,period_start:ps,period_end:pe,period_label:gmResSlugMonthLabel(slug),type:tp,title:ti,filename:slug+'.html',content:content,extracted_data:ext,is_public:true,uploaded_at:new Date().toISOString()};
+  if(idx>=0)arr[idx]=rec;else arr.push(rec);
+  gmResSave(arr);gmResSaveAnnual(slug.slice(0,4),gmResAnnualSnapFor(slug.slice(0,4)));
+  gmResTriggerDownload(slug+'.html',content,'text/html;charset=utf-8');
+  var url='https://www.godmanager.us/resultado/'+slug;
+  var path='GodManager/public/resultado/'+slug+'.html';
+  var cmds='git add '+path+'\ngit commit -m "add resultado '+slug+'"\ngit push origin main';
+  var card=document.getElementById('gm-resu-success-card');var aU=document.getElementById('gm-resu-card-url');var pE=document.getElementById('gm-resu-card-path');var pC=document.getElementById('gm-resu-card-cmds');
+  if(aU){aU.href=url;aU.textContent=url;}
+  if(pE)pE.textContent=path;
+  if(pC)pC.textContent=cmds;
+  if(card)card.style.display='block';
+  gmResFeedback('Página pública gerada. Faça commit + push do arquivo baixado.',1);
+  if(typeof showToast==='function')showToast('Página pública pronta para commit','success');
+ };
+ fr.onerror=function(){gmResFeedback('Falha ao ler arquivo',0);};
+ fr.readAsText(_gmResFile);
+}
+window.gmResPublishPublic=gmResPublishPublic;
+
+function gmResCopyGitCmds(){var pre=document.getElementById('gm-resu-card-cmds');if(!pre)return;var txt=pre.textContent||'';try{navigator.clipboard.writeText(txt).then(function(){if(typeof showToast==='function')showToast('Comandos copiados','success');});}catch(e){var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');if(typeof showToast==='function')showToast('Comandos copiados','success');}catch(e2){}document.body.removeChild(ta);}}
+window.gmResCopyGitCmds=gmResCopyGitCmds;
+
+function gmResPreviewLocal(){var slug=(document.getElementById('gm-resu-slug')||{}).value||_gmResSelectedSlug||'';if(!slug)return;var html=gmResHtmlGet(slug);if(!html){if(typeof showToast==='function')showToast('Sem HTML salvo para esse mês','error');return;}try{var blob=new Blob([html],{type:'text/html'});var url=URL.createObjectURL(blob);window.open(url,'_blank');}catch(e){}}
+window.gmResPreviewLocal=gmResPreviewLocal;
 
 function gmResFmtMoney(v){var n=Number(v)||0;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function gmResFmtPct(v){var n=Number(v)||0;return n.toFixed(1)+'%';}
@@ -8465,19 +8746,24 @@ function gmResExtractFromHtml(html){
 function gmResNextId(){return 'RPT-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
 
 function gmResUploadInit(){
+ gmResPopulateYearDropdown();
+ var card=document.getElementById('gm-resu-success-card');if(card)card.style.display='none';
  var drop=document.getElementById('gm-resu-drop');
  var inp=document.getElementById('gm-resu-file');
- if(!drop||!inp||drop._gmResWired)return;
- drop._gmResWired=1;
- drop.addEventListener('click',function(){inp.click();});
- drop.addEventListener('dragover',function(e){e.preventDefault();drop.style.borderColor='var(--amber)';drop.style.background='var(--cream)';});
- drop.addEventListener('dragleave',function(){drop.style.borderColor='var(--border2)';drop.style.background='var(--sand)';});
- drop.addEventListener('drop',function(e){e.preventDefault();drop.style.borderColor='var(--border2)';drop.style.background='var(--sand)';var f=(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0])||null;if(f)gmResSetFile(f);});
- inp.addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)gmResSetFile(f);});
+ if(!drop||!inp){return;}
+ if(!drop._gmResWired){
+  drop._gmResWired=1;
+  drop.addEventListener('click',function(){inp.click();});
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.style.borderColor='var(--amber)';drop.style.background='var(--cream)';});
+  drop.addEventListener('dragleave',function(){drop.style.borderColor='var(--border2)';drop.style.background='var(--sand)';});
+  drop.addEventListener('drop',function(e){e.preventDefault();drop.style.borderColor='var(--border2)';drop.style.background='var(--sand)';var f=(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0])||null;if(f)gmResSetFile(f);});
+  inp.addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)gmResSetFile(f);});
+ }
  var today=new Date();var iso=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
  var ps=document.getElementById('gm-resu-period-start');var pe=document.getElementById('gm-resu-period-end');
  if(ps&&!ps.value)ps.value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-01';
  if(pe&&!pe.value)pe.value=iso;
+ if(!_gmResSelectedSlug)gmResSetMonth(today.getMonth()+1);
 }
 window.gmResUploadInit=gmResUploadInit;
 
@@ -8574,6 +8860,13 @@ function gmResRender(){
     var netColor=Number(x.net_income)>=0?'var(--green)':'var(--red)';
     var tr=document.createElement('tr');
     tr.style.borderBottom='1px solid var(--border)';
+    var pubMap=gmResHtmlLoad();
+    var slug=r.slug||(r.period_start?r.period_start.slice(0,7):'');
+    var hasPub=slug&&pubMap[slug];
+    var pubUrl=slug?('https://www.godmanager.us/resultado/'+slug):'';
+    var pubCell=hasPub
+      ?('<a href="'+pubUrl+'" target="_blank" rel="noopener" style="color:var(--amber);text-decoration:none;font-family:JetBrains Mono,monospace;font-size:11px;font-weight:600">/'+gmResEsc(slug)+'</a>')
+      :'<span style="color:var(--ink3);font-size:11px">—</span>';
     tr.innerHTML=
      '<td style="padding:10px 12px;font-size:12px;color:var(--ink);font-weight:600">'+gmResEsc(r.period_label||r.period_start)+'</td>'+
      '<td style="padding:10px 12px;font-size:11px;color:var(--ink2)">'+gmResEsc(r.type||'')+(r.title?'<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+gmResEsc(r.title)+'</div>':'')+'</td>'+
@@ -8581,6 +8874,7 @@ function gmResRender(){
      '<td class="gm-res-edit" data-id="'+r.id+'" data-field="total_expenses" title="'+gmResT('click_to_edit')+'" style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;color:var(--ink);cursor:pointer">'+gmResFmtMoney(x.total_expenses)+'</td>'+
      '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:'+netColor+'">'+gmResFmtMoney(x.net_income)+'</td>'+
      '<td style="padding:10px 12px;text-align:right"><span style="display:inline-block;padding:3px 9px;border-radius:10px;background:'+mgBg+';color:'+mgColor+';font-size:10px;font-family:JetBrains Mono,monospace;font-weight:700">'+gmResFmtPct(mgR)+'</span></td>'+
+     '<td style="padding:10px 12px;text-align:center">'+pubCell+'</td>'+
      '<td style="padding:10px 12px;text-align:center;white-space:nowrap">'+
       '<button type="button" onclick="gmResView(\''+r.id+'\')" style="padding:4px 10px;margin-right:4px;border:1px solid var(--border2);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--ink2)">'+gmResT('view_report')+'</button>'+
       '<button type="button" onclick="gmResDelete(\''+r.id+'\')" style="padding:4px 10px;border:1px solid var(--red);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--red)">Delete</button>'+
@@ -8594,7 +8888,7 @@ function gmResRender(){
      '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--red)">'+gmResFmtMoney(snap.total_expenses)+'</td>'+
      '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--blue)">'+gmResFmtMoney(snap.net_income)+'</td>'+
      '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:12px;font-weight:700;color:var(--amber)">'+gmResFmtPct(ttlMg)+'</td>'+
-     '<td></td></tr>';
+     '<td></td><td></td></tr>';
    }
    tb.querySelectorAll('.gm-res-edit').forEach(function(td){
     td.addEventListener('click',function(){gmResInlineEdit(td.getAttribute('data-id'),td.getAttribute('data-field'),td);});
@@ -8639,9 +8933,11 @@ function gmResView(id){
  var ti=document.getElementById('gm-report-view-title');
  var ifr=document.getElementById('gm-report-view-iframe');
  if(ti)ti.textContent=(r.type||'Report')+' — '+(r.period_label||r.period_start||'');
+ var content=r.content||'';
+ if(!content&&r.slug)content=gmResHtmlGet(r.slug)||'';
  if(ifr){
-  if(/\.pdf$/i.test(r.filename||'')&&/^data:/i.test(r.content||'')){ifr.removeAttribute('sandbox');ifr.src=r.content;}
-  else{ifr.removeAttribute('src');ifr.setAttribute('sandbox','allow-scripts allow-same-origin');ifr.srcdoc=r.content||'<p>empty</p>';}
+  if(/\.pdf$/i.test(r.filename||'')&&/^data:/i.test(content)){ifr.removeAttribute('sandbox');ifr.src=content;}
+  else{ifr.removeAttribute('src');ifr.setAttribute('sandbox','allow-scripts allow-same-origin');ifr.srcdoc=content||'<p>empty</p>';}
  }
  if(m){m.style.display='flex';document.body.style.overflow='hidden';}
 }
@@ -8672,8 +8968,10 @@ window.gmResOpenNewTab=gmResOpenNewTab;
 
 function gmResDelete(id){
  if(!confirm('Delete this report?'))return;
- var arr=gmResLoad().filter(function(r){return r.id!==id;});
+ var all=gmResLoad();var rec=all.find(function(r){return r.id===id;});
+ var arr=all.filter(function(r){return r.id!==id;});
  gmResSave(arr);
+ if(rec&&rec.slug)gmResHtmlDelete(rec.slug);
  if(typeof showToast==='function')showToast('Deleted','success');
  gmResRender();
 }
