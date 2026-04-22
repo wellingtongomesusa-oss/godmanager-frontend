@@ -423,6 +423,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .page ::-webkit-scrollbar-corner{background:transparent}
 </style>
 <script src="/properties_seed.js"></script>
+<script src="/gm_clean_ghost_props.js"></script>
 </head>
 <body>
 <div id="ls" style="display:none" aria-hidden="true"></div>
@@ -3081,12 +3082,53 @@ function applyHomeDashboardFromApi(d){
   }
  });
 }
+function gmHomeBuildDashboardFromLocal(){
+ try{
+  if(typeof window.gmPropertiesLoad!=='function')return null;
+  var arr=window.gmPropertiesLoad()||[];
+  if(!arr.length)return null;
+  var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0,tg=0,tmg=0;
+  var owners={};
+  arr.forEach(function(p){
+   var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
+   var mrent=Number(p.marketRent!=null?p.marketRent:rent)||0;
+   var dep=Number(p.deposit)||0;
+   var gua=Number(p.guarantee)||0;
+   var mgm=Number(p.mgmFeeUsd!=null?p.mgmFeeUsd:(p.mgmtFeeUsd||0))||0;
+   var occ=String(p.occupancy||'').toLowerCase();
+   var stt=String(p.status||'').toLowerCase();
+   var isRented=(occ==='rented')||(rent>0&&occ!=='vacant'&&occ!=='renovation');
+   var isVacant=(occ==='vacant')||(rent===0&&occ!=='rented');
+   if(isRented)ql++; else if(isVacant)qv++;
+   if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
+   if(stt==='disputed'||stt==='notice')qnot++;
+   pr+=rent;mkt+=mrent;tsd+=dep;tg+=gua;tmg+=mgm;
+   var ow=String(p.owner||'').trim();
+   if(ow)owners[ow]=true;
+  });
+  var qp=arr.length;
+  var qo=Object.keys(owners).length;
+  var occRate=qp>0?((ql/qp)*100):0;
+  return{
+   qty_properties:qp,qty_leases_active:ql,qty_vacant:qv,qty_owners:qo,
+   qty_future:qf,qty_notice:qnot,
+   potential_rent_monthly:pr,market_rent_total:mkt,occupancy_rate:occRate,
+   total_security_deposits:tsd,total_guarantee:tg,total_mgmt_fee:tmg,
+   operating_cash:0,unpaid_balance:0
+  };
+ }catch(e){console.warn('gmHomeBuildDashboardFromLocal',e);return null;}
+}
+
 function loadHomeDashboardFromApi(){
- renderCards();
+ var local=gmHomeBuildDashboardFromLocal();
+ if(local){applyHomeDashboardFromApi(local);renderCards();}else{renderCards();}
  fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
-  if(!o.ok||!o.j){applyHomeDashboardFromApi(null);renderCards();return;}
+  if(!o.ok||!o.j){
+   if(!local)applyHomeDashboardFromApi(null);
+   renderCards();return;
+  }
   applyHomeDashboardFromApi(o.j);
   renderCards();
   try{
@@ -3096,7 +3138,10 @@ function loadHomeDashboardFromApi(){
    setCardTimestamps(ts);
   }catch(e){}
  })
- .catch(function(){applyHomeDashboardFromApi(null);renderCards();});
+ .catch(function(){
+  if(!local)applyHomeDashboardFromApi(null);
+  renderCards();
+ });
 }
 function saveAllData(){
  var now=new Date().toISOString();
@@ -6023,6 +6068,7 @@ function ltSaveRecord(){
  ltCloseModal();
  ltRender();
  ltpRender();
+ if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  showToast('Statement salvo com sucesso.');
 }
 
@@ -6861,13 +6907,14 @@ function ltpDeleteProperty(id){
 
 /* === GM PROPERTIES STORE (seed AppFolio + cadastros manuais) === */
 window.GM_PROP_KEY='gm_properties';
-window.gmPropertiesLoad=function(){try{var r=localStorage.getItem(window.GM_PROP_KEY);var a=r?JSON.parse(r):[];return Array.isArray(a)?a:[];}catch(e){return[];}};
+window.gmPropertiesLoad=function(){try{var r=localStorage.getItem(window.GM_PROP_KEY);var a=r?JSON.parse(r):[];if(!Array.isArray(a))return[];return a.filter(function(p){if(!p||typeof p!=='object')return false;var nm=String(p.name||'').trim().toLowerCase();var addr=String(p.address||'').trim().toLowerCase();if(nm==='total'||nm==='manager prop')return false;if(addr==='total'||addr.indexOf('admin -')===0)return false;return true;});}catch(e){return[];}};
 window.gmPropertiesSave=function(a){try{localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(a||[]));}catch(e){}};
 window.gmPropertiesBootstrap=function(){
  var cur=window.gmPropertiesLoad();
  if(cur&&cur.length>0)return false;
- var seed=(window.GM_PROPERTIES_SEED&&Array.isArray(window.GM_PROPERTIES_SEED))?window.GM_PROPERTIES_SEED:[];
- if(!seed.length)return false;
+ var raw=(window.GM_PROPERTIES_SEED&&Array.isArray(window.GM_PROPERTIES_SEED))?window.GM_PROPERTIES_SEED:[];
+ if(!raw.length)return false;
+ var seed=raw.filter(function(p){if(!p||typeof p!=='object')return false;var nm=String(p.name||'').trim().toLowerCase();var addr=String(p.address||'').trim().toLowerCase();if(nm==='total'||nm==='manager prop')return false;if(addr==='total'||addr.indexOf('admin -')===0)return false;return true;});
  window.gmPropertiesSave(seed);
  return true;
 };
