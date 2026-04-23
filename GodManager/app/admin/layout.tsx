@@ -1,5 +1,11 @@
-import { PlatformShell } from '@/components/layout/PlatformShell';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <PlatformShell>{children}</PlatformShell>;
+  return (
+    <div className="min-h-screen bg-white">
+      <ProtectedRoute>
+        <main className="min-h-screen">{children}</main>
+      </ProtectedRoute>
+    </div>
+  );
 }
