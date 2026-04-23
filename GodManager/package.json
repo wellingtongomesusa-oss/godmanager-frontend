@@ -15,8 +15,8 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "build": "prisma generate && prisma migrate deploy && next build",
-    "start": "next start -p 3101",
+    "build": "prisma generate && next build",
+    "start": "prisma migrate deploy && next start -p 3101",
     "lint": "next lint"
   },
   "dependencies": {
