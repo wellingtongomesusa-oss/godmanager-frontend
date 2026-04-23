@@ -3,6 +3,21 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { hashPassword } from '@/lib/password';
 
+function generateRandomPassword(length = 12): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const symbols = '!@#$%&*';
+  const all = upper + lower + digits + symbols;
+  const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
+  let pwd = pick(upper) + pick(lower) + pick(digits) + pick(symbols);
+  for (let i = 4; i < length; i++) pwd += pick(all);
+  return pwd
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('');
+}
+
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getCurrentUserFromSession>>>;
 
 async function requireAdmin(): Promise<{ error: string; status: number; user: null } | { error: null; status: number; user: SessionUser }> {
@@ -40,7 +55,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const email = String(body?.email || '').trim().toLowerCase();
-    const password = String(body?.password || '');
+    const rawPassword = String(body?.password ?? '').trim();
     const firstName = String(body?.firstName || '').trim();
     const lastName = String(body?.lastName || '').trim();
     const phone = body?.phone ? String(body.phone).trim() : null;
@@ -48,11 +63,18 @@ export async function POST(req: Request) {
     const status = String(body?.status || 'active');
     const permissions = Array.isArray(body?.permissions) ? body.permissions.map(String) : [];
 
-    if (!email || !password || !firstName || !lastName) {
-      return NextResponse.json({ ok: false, error: 'email, password, firstName, lastName sao obrigatorios.' }, { status: 400 });
+    if (!email || !firstName || !lastName) {
+      return NextResponse.json({ ok: false, error: 'email, firstName, lastName sao obrigatorios.' }, { status: 400 });
     }
-    if (password.length < 8) {
-      return NextResponse.json({ ok: false, error: 'Password com pelo menos 8 caracteres.' }, { status: 400 });
+
+    let password: string;
+    if (rawPassword.length > 0) {
+      if (rawPassword.length < 8) {
+        return NextResponse.json({ ok: false, error: 'Password com pelo menos 8 caracteres.' }, { status: 400 });
+      }
+      password = rawPassword;
+    } else {
+      password = generateRandomPassword(12);
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });

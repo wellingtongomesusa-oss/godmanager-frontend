@@ -1,19 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { UserKPICards } from '@/components/admin/UserKPICards';
 import { UserTable } from '@/components/admin/UserTable';
 import { AddUserModal } from '@/components/admin/AddUserModal';
 import { EditUserPanel } from '@/components/admin/EditUserPanel';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
+import { ResetPasswordModal } from '@/components/admin/ResetPasswordModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { appendAudit } from '@/lib/audit';
 import type { User, UserRole, UserStatus } from '@/lib/types';
-import { getUsers, updateUser } from '@/lib/users';
+import { listUsers, updateUser } from '@/lib/users';
 
 type SortKey = 'newest' | 'az' | 'active';
 
@@ -31,10 +32,12 @@ export function UsersAdminPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUserState, setDeleteUserState] = useState<User | null>(null);
+  const [resetUser, setResetUser] = useState<User | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const allUsers = useMemo(() => {
+  useEffect(() => {
     void tick;
-    return getUsers();
+    listUsers().then(setAllUsers);
   }, [tick]);
 
   const filtered = useMemo(() => {
@@ -76,22 +79,9 @@ export function UsersAdminPage() {
     toast('Export ready — file downloaded.', 'success');
   };
 
-  const onResetPassword = (u: User) => {
-    const np = `Reset${Math.random().toString(36).slice(2, 10)}!`;
-    updateUser(u.id, { password: np });
-    appendAudit({
-      adminId: current?.id ?? 'unknown',
-      action: 'user.password_reset',
-      targetUserId: u.id,
-      details: `Password reset for ${u.email}`,
-    });
-    refresh();
-    toast('Password reset email sent', 'info');
-  };
-
-  function handleQuickApprove(userId: string) {
-    const result = updateUser(userId, { status: 'active' });
-    if (!result) {
+  async function handleQuickApprove(userId: string) {
+    const res = await updateUser(userId, { status: 'active' });
+    if (!res.ok) {
       toast('Falha ao aprovar utilizador.', 'error');
       return;
     }
@@ -99,19 +89,23 @@ export function UsersAdminPage() {
       adminId: current?.id ?? 'unknown',
       action: 'user.approve',
       targetUserId: userId,
-      details: `Approved pending user ${result.email}`,
+      details: `Approved pending user ${res.user.email}`,
     });
     refresh();
     toast('User approved.', 'success');
   }
 
-  const onToggleSuspend = (u: User) => {
+  const onToggleSuspend = async (u: User) => {
     if (u.id === current?.id) {
       toast('You cannot suspend your own account.', 'warning');
       return;
     }
     const next = u.status === 'suspended' ? 'active' : 'suspended';
-    updateUser(u.id, { status: next });
+    const res = await updateUser(u.id, { status: next });
+    if (!res.ok) {
+      toast(res.error, 'error');
+      return;
+    }
     appendAudit({
       adminId: current?.id ?? 'unknown',
       action: next === 'suspended' ? 'user.suspend' : 'user.activate',
@@ -206,7 +200,7 @@ export function UsersAdminPage() {
         page={page}
         pageSize={pageSize}
         onEdit={(u) => setEditUser(u)}
-        onResetPassword={onResetPassword}
+        onResetPassword={(u) => setResetUser(u)}
         onToggleSuspend={onToggleSuspend}
         onQuickApprove={handleQuickApprove}
         onDelete={(u) => {
@@ -289,6 +283,22 @@ export function UsersAdminPage() {
           }
           refresh();
           toast('User removed from organization', 'success');
+        }}
+      />
+
+      <ResetPasswordModal
+        open={!!resetUser}
+        user={resetUser}
+        onClose={() => setResetUser(null)}
+        onReset={(u) => {
+          appendAudit({
+            adminId: current?.id ?? 'unknown',
+            action: 'user.password_reset',
+            targetUserId: u.id,
+            details: `Password reset for ${u.email}`,
+          });
+          refresh();
+          toast('Password updated.', 'success');
         }}
       />
     </div>

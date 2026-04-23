@@ -3,13 +3,21 @@
 import { useEffect, useState } from 'react';
 import { listAudit } from '@/lib/audit';
 import type { AuditEntry } from '@/lib/types';
-import { getUserById } from '@/lib/users';
+import { listUsers } from '@/lib/users';
 
 export function AuditLogTable() {
   const [rows, setRows] = useState<AuditEntry[]>([]);
+  const [nameById, setNameById] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setRows(listAudit());
+    listUsers().then((users) => {
+      const m: Record<string, string> = {};
+      for (const u of users) {
+        m[u.id] = `${u.firstName} ${u.lastName}`;
+      }
+      setNameById(m);
+    });
   }, []);
 
   return (
@@ -42,8 +50,7 @@ export function AuditLogTable() {
               </tr>
             ) : (
               rows.map((r, i) => {
-                const actor = getUserById(r.adminId);
-                const actorLabel = actor ? `${actor.firstName} ${actor.lastName}` : r.adminId;
+                const actorLabel = nameById[r.adminId] ?? r.adminId;
                 return (
                   <tr
                     key={r.id}

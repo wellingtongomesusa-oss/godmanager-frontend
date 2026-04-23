@@ -7,16 +7,10 @@ import { Lock, Mail, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
-import { hashPassword } from '@/lib/password';
-import type { User } from '@/lib/types';
-import { createUser, emailExists } from '@/lib/users';
+import { emailExists } from '@/lib/users';
 
 function validEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-}
-
-function uuid(): string {
-  return crypto.randomUUID();
 }
 
 export function RegisterForm() {
@@ -30,7 +24,7 @@ export function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!firstName.trim()) next.firstName = 'First name is required.';
@@ -38,29 +32,34 @@ export function RegisterForm() {
     if (!validEmail(email)) next.email = 'Enter a valid work email.';
     if (password.length < 8) next.password = 'Password must be at least 8 characters.';
     if (password !== confirm) next.confirm = 'Passwords must match.';
-    if (email.trim() && emailExists(email)) next.email = 'This email is already registered.';
+    if (email.trim() && (await emailExists(email))) next.email = 'This email is already registered.';
     setErrors(next);
     if (Object.keys(next).length) return;
 
     setLoading(true);
-    window.setTimeout(() => {
-      const user: User = {
-        id: uuid(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim().toLowerCase(),
-        role: 'viewer',
-        status: 'pending',
-        permissions: [],
-        createdAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
-        passwordHash: hashPassword(password),
-      };
-      createUser(user);
-      setLoading(false);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !data?.ok) {
+        toast(data?.error || 'Nao foi possivel submeter o pedido.', 'error');
+        return;
+      }
       toast('Your access request has been submitted. An administrator will activate your account.', 'success');
       router.replace('/login');
-    }, 350);
+    } catch {
+      toast('Network error. Try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const valid =
@@ -68,8 +67,7 @@ export function RegisterForm() {
     lastName.trim() &&
     validEmail(email) &&
     password.length >= 8 &&
-    password === confirm &&
-    !emailExists(email);
+    password === confirm;
 
   return (
     <form onSubmit={submit} className="mx-auto w-full max-w-[400px] space-y-5">

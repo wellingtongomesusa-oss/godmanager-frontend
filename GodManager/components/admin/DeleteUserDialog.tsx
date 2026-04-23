@@ -29,9 +29,13 @@ export function DeleteUserDialog({
 
   const match = confirm.trim().toLowerCase() === user.email.toLowerCase();
 
-  const del = () => {
+  const del = async () => {
     if (!match) return;
-    deleteUser(user.id);
+    const res = await deleteUser(user.id);
+    if (!res.ok) {
+      window.alert(res.error);
+      return;
+    }
     setConfirm('');
     onDeleted();
     onClose();

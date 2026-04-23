@@ -211,7 +211,7 @@ export function UserTable({
                     onResetPassword(u);
                   }}
                 >
-                  Reset password
+                  Reset Password
                 </button>
                 <button
                   type="button"

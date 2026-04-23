@@ -55,9 +55,9 @@ export function EditUserPanel({
 
   if (!user) return null;
 
-  const save = () => {
+  const save = async () => {
     const e = email.trim().toLowerCase();
-    if (emailExists(e, user.id)) {
+    if (await emailExists(e, user.id)) {
       toast('That email address is already assigned to another user.', 'error');
       return;
     }
@@ -66,7 +66,7 @@ export function EditUserPanel({
       return;
     }
     const permissions = PERM_OPTS.filter((p) => perms[p.key]).map((p) => p.key);
-    updateUser(user.id, {
+    const res = await updateUser(user.id, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim().toLowerCase(),
@@ -75,6 +75,10 @@ export function EditUserPanel({
       status,
       permissions,
     });
+    if (!res.ok) {
+      toast(res.error, 'error');
+      return;
+    }
     onSaved();
     onClose();
   };
