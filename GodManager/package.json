@@ -12,7 +12,10 @@
     "dev:crm": "cd website && .venv/bin/python run_crm_manager_prop.py",
     "dev:full": "concurrently -k -n next,crm -c blue,magenta \"npm run dev\" \"npm run dev:crm\"",
     "dev:godmanager": "npm run dev:full",
-    "build": "next build",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -p 3101",
     "lint": "next lint"
   },
@@ -44,7 +47,11 @@
     "postcss": "^8.4.0",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "engines": {
     "node": ">=18.0.0"
