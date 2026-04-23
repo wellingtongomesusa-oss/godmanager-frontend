@@ -528,6 +528,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px">Clients</div>
  <div class="ss" onclick="gmAdminUsersModalOpen()" id="nav-admin-users" style="padding-left:16px">Users</div>
+ <div class="ss" onclick="nav('backup')" id="nav-backup" style="padding-left:16px">Backup & Restore</div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px">Settings</div>
  <div class="ss" onclick="nav('gross-expenses')" id="nav-gross-expenses" style="padding-left:16px">Gross &amp; Expenses</div>
  <div class="ss" onclick="nav('forms-received')" id="nav-forms-received" style="padding-left:16px">Forms Received</div>
@@ -568,6 +569,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <span class="tsn">Sessão: admin</span>
  <button type="button" id="btn-topbar-clients" class="tb-clients" onclick="nav('clients')" style="display:none">Clients</button>
  <button class="tb">EN</button>
+ <button type="button" class="tb gm-allow-viewer" onclick="gmBackupExport()" title="Export backup JSON" style="padding:6px 12px;background:#22558c;color:#fff;border:1px solid #22558c;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;margin-right:8px">Backup</button>
  <button class="tb gm-allow-viewer" onclick="window.print()">Export PDF</button>
  </div>
 </header>
@@ -932,7 +934,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <button type="button" onclick="gvExportCsv()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer">Export CSV</button>
  </div>
  <div id="gv-months" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
- <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px" id="gv-kpis"></div>
+ <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px" id="gv-kpis"></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px">
   <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)" id="gv-top-title">Top Vendors by Orders</div>
   <div style="overflow:auto">
@@ -1012,6 +1014,15 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
     <div><label style="font-size:10px;color:var(--ink3)">Send 1099?</label><select id="gv-send_1099" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"><option value="true">Yes</option><option value="false">No</option></select></div>
     <div><label style="font-size:10px;color:var(--ink3)">Rating</label><input id="gv-rating" type="number" min="1" max="5" value="5" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
     <div><label style="font-size:10px;color:var(--ink3)">Status</label><select id="gv-status" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"><option>Active</option><option>Inactive</option><option>Pending Review</option></select></div>
+   </div>
+   <div style="grid-column:1/-1;padding:12px 14px;margin-top:6px;background:linear-gradient(135deg,#fdf6e3,#faf0c9);border:1px solid #e0c86a;border-radius:8px">
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+     <input type="checkbox" id="gv-commission_mp" style="margin-top:3px;width:16px;height:16px;accent-color:#c47b28;cursor:pointer;flex-shrink:0">
+     <div style="flex:1">
+      <div style="font-size:12px;font-weight:700;color:#6b4423;display:flex;align-items:center;gap:6px">Commission MP (18%)</div>
+      <div style="font-size:10px;color:#8a6635;margin-top:3px;line-height:1.45">Marque se este vendor deve ser cobrado com <b>18% de management fee</b> sobre cada despesa. Deixe desmarcado para owners, HOA, utilities, ou vendors que nao cobram comissao.</div>
+     </div>
+    </label>
    </div>
    <div style="margin-top:10px"><label style="font-size:10px;color:var(--ink3)">Internal Notes</label><textarea id="gv-notes" rows="3" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></textarea></div>
    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
@@ -1955,7 +1966,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Detalhes</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
- <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DESCRIÇÃO / FORNECEDOR</label><input id="lt-nexp-desc" placeholder="Ex: Fatura HOA referente a Marco 2026" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR *</label><select id="lt-nexp-vendor" onchange="ltNexpVendorChanged()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer"><option value="">— Selecionar vendor —</option></select><input id="lt-nexp-vendor-new" type="text" placeholder="Nome do novo vendor" style="display:none;width:100%;margin-top:6px;padding:8px 11px;border:1px solid var(--amber);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DESCRIÇÃO *</label><input id="lt-nexp-desc" placeholder="Ex: Fatura HOA referente a Marco 2026" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NÚMERO DO DOCUMENTO</label><input id="lt-nexp-docnum" placeholder="Número da fatura, boleto ou invoice" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE VENCIMENTO</label><input id="lt-nexp-due" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE PAGAMENTO</label><input id="lt-nexp-paid" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
@@ -2847,6 +2859,55 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   </div>
  </div>
 </div>
+
+<!-- BACKUP & RESTORE PAGE -->
+<div class="page" id="page-backup">
+ <div class="ph" style="padding:28px 32px 12px">
+  <div class="pt">Backup & Restore</div>
+  <div class="ps">Exporte o estado actual do seu sistema ou restaure a partir de um ficheiro JSON</div>
+ </div>
+
+ <div style="padding:0 32px 32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1200px">
+
+  <!-- EXPORT CARD -->
+  <div style="padding:24px;background:var(--paper);border:1px solid var(--border);border-radius:12px">
+   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <div style="width:38px;height:38px;background:#22558c;border-radius:8px;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+    <div>
+     <div style="font-size:14px;font-weight:700;color:var(--ink)">Export Backup</div>
+     <div style="font-size:11px;color:var(--ink3)">Download completo do estado</div>
+    </div>
+   </div>
+   <div style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:14px">Gera um ficheiro JSON com <b id="bk-kpi-keys">—</b> chaves do seu localStorage, incluindo propriedades, tenants, despesas, limpezas, fornecedores e toda a configuracao. Guarde este ficheiro em local seguro (PC, Drive, Dropbox).</div>
+   <div id="bk-export-stats" style="padding:12px;background:var(--cream);border-radius:6px;font-size:11px;color:var(--ink2);margin-bottom:14px;font-family:'JetBrains Mono',monospace">A calcular...</div>
+   <button type="button" onclick="gmBackupExport()" style="padding:10px 18px;background:#22558c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;width:100%">Fazer Backup Agora</button>
+  </div>
+
+  <!-- IMPORT CARD -->
+  <div style="padding:24px;background:var(--paper);border:1px solid var(--border);border-radius:12px">
+   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <div style="width:38px;height:38px;background:#c47b28;border-radius:8px;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+    <div>
+     <div style="font-size:14px;font-weight:700;color:var(--ink)">Restore / Import</div>
+     <div style="font-size:11px;color:var(--ink3)">Carregar backup previo</div>
+    </div>
+   </div>
+   <div style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:14px">Carregue um ficheiro .json criado por Export. <b style="color:#b83030">ATENCAO:</b> esta operacao vai <b>substituir</b> todos os dados actuais. Faca Backup antes se houver duvida.</div>
+   <input type="file" id="bk-file-input" accept=".json,application/json" style="display:none" onchange="gmBackupHandleFile(event)">
+   <button type="button" onclick="document.getElementById('bk-file-input').click()" style="padding:10px 18px;background:#c47b28;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;width:100%">Escolher Ficheiro de Backup</button>
+   <div id="bk-import-preview" style="display:none;margin-top:14px;padding:12px;background:var(--cream);border-left:3px solid var(--amber);border-radius:4px;font-size:11px;color:var(--ink2);font-family:'JetBrains Mono',monospace"></div>
+  </div>
+
+ </div>
+
+ <!-- HISTORY / LOG -->
+ <div style="padding:0 32px 32px;max-width:1200px">
+  <div style="padding:16px 20px;background:var(--sand);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--ink3)">
+   <b style="color:var(--ink2)">Dica:</b> Exporte um backup pelo menos 1 vez por semana. Quando os 3 utilizadores estiverem a usar o sistema, cada um deve fazer o seu proprio backup. O backup e local ao browser que o exporta.
+  </div>
+ </div>
+</div>
+<!-- /BACKUP PAGE -->
 
 </main>
 
@@ -5055,7 +5116,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Long Term — Dashboard',ltproperties:'Long Term — Properties',tenants:'Tenants',ltstatements:'Long Term — Statements',ltexpenses:'Long Term — Expenses',ltcleanings:'Long Term — Cleanings',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -5069,6 +5130,7 @@ function nav(r){
   }
  }
  if(r==='gross-expenses'&&lvl!=='ADMIN')r='home';
+ if(r==='backup'&&lvl!=='ADMIN')r='home';
  if(r==='org-chart'&&lvl!=='ADMIN')r='home';
  if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart'];if(vb.indexOf(r)>=0)r='home';}
  if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart'];if(mb.indexOf(r)>=0)r='home';}
@@ -6640,7 +6702,108 @@ function ltPopulatePropertyDropdowns(){
  });
 }
 
+/* ========== VENDOR DROPDOWN (Nova Despesa) ========== */
+const LT_NEXP_MVH_NAMES=['master vacation homes llc','master vacation homes','manager prop'];
+
+function ltNexpCollectVendors(){
+ var fromCadastro=[];
+ try{
+  var gk=(typeof GV_KEY!=='undefined')?GV_KEY:'gm_vendors';
+  var gv=JSON.parse(localStorage.getItem(gk)||'[]');
+  if(Array.isArray(gv))fromCadastro=gv.map(function(v){return v.company_name||'';}).filter(Boolean);
+ }catch(e){}
+
+ var fromRecords=[];
+ try{
+  var expRecs=(typeof ltExpGetRecords==='function')?ltExpGetRecords():[];
+  if(Array.isArray(expRecs)){
+   expRecs.forEach(function(r){
+    if(r.vendor&&typeof r.vendor==='string')fromRecords.push(r.vendor);
+    if(r.desc&&typeof r.desc==='string')fromRecords.push(r.desc);
+   });
+  }
+ }catch(e){}
+ try{
+  var recs=(typeof ltGetRecords==='function')?ltGetRecords():[];
+  if(Array.isArray(recs)){
+   recs.forEach(function(r){
+    if(r.vendorname&&typeof r.vendorname==='string')fromRecords.push(r.vendorname);
+    if(r.vendor&&typeof r.vendor==='string')fromRecords.push(r.vendor);
+    else if(r.desc&&typeof r.desc==='string')fromRecords.push(r.desc);
+   });
+  }
+ }catch(e){}
+
+ var seen={};
+ var merged=[];
+ fromCadastro.concat(fromRecords).forEach(function(v){
+  var clean=String(v||'').trim();
+  if(!clean)return;
+  var key=clean.toLowerCase();
+  if(seen[key])return;
+  seen[key]=true;
+  merged.push(clean);
+ });
+
+ var mvh=[];
+ var rest=[];
+ merged.forEach(function(v){
+  var isMVH=LT_NEXP_MVH_NAMES.some(function(n){return v.toLowerCase().indexOf(n)>=0;});
+  if(isMVH)mvh.push(v);else rest.push(v);
+ });
+ rest.sort(function(a,b){return a.toLowerCase().localeCompare(b.toLowerCase());});
+ return mvh.concat(rest);
+}
+
+function ltNexpPopulateVendorSelect(selectedValue){
+ var sel=document.getElementById('lt-nexp-vendor');
+ if(!sel)return;
+ var vendors=ltNexpCollectVendors();
+ var options=['<option value="">— Selecionar vendor —</option>'];
+ vendors.forEach(function(v){
+  var safe=String(v).replace(/"/g,'&quot;');
+  var isSel=selectedValue&&String(selectedValue).trim().toLowerCase()===v.toLowerCase();
+  options.push('<option value="'+safe+'"'+(isSel?' selected':'')+'>'+safe+'</option>');
+ });
+ options.push('<option value="__NEW__">+ Novo Vendor...</option>');
+ sel.innerHTML=options.join('');
+ if(selectedValue&&!vendors.some(function(v){return v.toLowerCase()===String(selectedValue).trim().toLowerCase();})){
+  sel.value='__NEW__';
+  var ni=document.getElementById('lt-nexp-vendor-new');
+  if(ni){ni.style.display='block';ni.value=selectedValue;}
+ }else{
+  var ni2=document.getElementById('lt-nexp-vendor-new');
+  if(ni2){ni2.style.display='none';ni2.value='';}
+ }
+}
+
+function ltNexpVendorChanged(){
+ var sel=document.getElementById('lt-nexp-vendor');
+ var ni=document.getElementById('lt-nexp-vendor-new');
+ if(!sel||!ni)return;
+ if(sel.value==='__NEW__'){
+  ni.style.display='block';
+  ni.value='';
+  setTimeout(function(){ni.focus();},30);
+ }else{
+  ni.style.display='none';
+  ni.value='';
+ }
+}
+
+function ltNexpGetVendorValue(){
+ var sel=document.getElementById('lt-nexp-vendor');
+ var ni=document.getElementById('lt-nexp-vendor-new');
+ if(!sel)return '';
+ if(sel.value==='__NEW__'){
+  return ni&&ni.value?ni.value.trim():'';
+ }
+ return sel.value||'';
+}
+/* ========== /VENDOR DROPDOWN ========== */
+
 function ltOpenNewExpense(){
+ try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
  ltExpEditingId=null; ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Nova Despesa';
  ['lt-nexp-desc','lt-nexp-docnum'].forEach(id=>document.getElementById(id).value='');
@@ -6663,6 +6826,7 @@ function ltOpenEditExpense(id){
  document.getElementById('lt-nexp-month').value=r.month||'2026-03';
  document.getElementById('lt-nexp-value').value=r.value||'';
  document.getElementById('lt-nexp-desc').value=r.desc||'';
+ try{ltNexpPopulateVendorSelect((r&&r.vendor)||'');}catch(e){}
  document.getElementById('lt-nexp-docnum').value=r.docnum||'';
  document.getElementById('lt-nexp-due').value=r.due||'';
  document.getElementById('lt-nexp-paid').value=r.paid||'';
@@ -6679,10 +6843,52 @@ function ltSaveExpense(){
  const month=document.getElementById('lt-nexp-month').value;
  const value=parseFloat(document.getElementById('lt-nexp-value').value)||0;
  if(!propId||!value){alert('Propriedade e Valor são obrigatórios.');return;}
+ var vendorVal=(typeof ltNexpGetVendorValue==='function')?String(ltNexpGetVendorValue()).trim():'';
+ var descEl=document.getElementById('lt-nexp-desc');
+ var descVal=descEl?String(descEl.value||'').trim():'';
+ if(!vendorVal){
+  if(typeof showToast==='function')showToast('Seleccione ou adicione um Vendor','error');
+  else alert('Seleccione ou adicione um Vendor');
+  return;
+ }
+ if(!descVal){
+  if(typeof showToast==='function')showToast('Preencha a Descricao','error');
+  else alert('Preencha a Descricao');
+  return;
+ }
+ try{
+  var gk=(typeof GV_KEY!=='undefined')?GV_KEY:'gm_vendors';
+  var existingVendors=JSON.parse(localStorage.getItem(gk)||'[]');
+  if(Array.isArray(existingVendors)){
+   var alreadyExists=existingVendors.some(function(v){
+    return String(v.company_name||'').trim().toLowerCase()===vendorVal.toLowerCase();
+   });
+   if(!alreadyExists){
+    var newVendorEntry={
+     id:'v'+Date.now()+Math.floor(Math.random()*999),
+     company_name:vendorVal,
+     contact_name:'',
+     email:'',
+     phone:'',
+     trade:'Other',
+     status:'Active',
+     rating:3,
+     send_1099:true,
+     checklist:{name:true},
+     createdFrom:'expense-form',
+     createdAt:new Date().toISOString()
+    };
+    existingVendors.push(newVendorEntry);
+    localStorage.setItem(gk,JSON.stringify(existingVendors));
+    console.log('[nova despesa] vendor auto-registado:',vendorVal);
+   }
+  }
+ }catch(e){console.warn('auto-register vendor falhou',e);}
  const exp={
  id:ltExpEditingId||('ltexp_'+Date.now()),
  propId,propAddress,category,month,value,
- desc:document.getElementById('lt-nexp-desc').value.trim(),
+ vendor:vendorVal,
+ desc:descVal,
  docnum:document.getElementById('lt-nexp-docnum').value.trim(),
  due:document.getElementById('lt-nexp-due').value,
  paid:document.getElementById('lt-nexp-paid').value,
@@ -8257,7 +8463,7 @@ const GV_STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL
 const GV_I18N={en:{vendors_title:'Vendors',vendors_subtitle:'Manage vendors, service providers and payment setup',new_vendor:'+ New Vendor',total_vendors:'TOTAL VENDORS',registered_vendors:'registered vendors',work_orders:'WORK ORDERS',service_requests:'service requests',pending_payment:'PENDING PAYMENT',incomplete_setup:'incomplete payment setup',top_vendors:'Top Vendors by Orders',payment_checklist:'Payment Setup Checklist',items_complete:'items complete',vendor_name_card:'Vendor Name',complete_address:'Complete Address',w9_form:'W-9 Form',upload_w9:'Upload signed W-9 form',bank_info:'Bank Information',voided_check:'Voided check, bank letter or equivalent',workers_comp:'Workers Compensation',workers_comp_cert:'Workers comp certificate',not_applicable:'Not Applicable',not_required:'N/A - Not Required',valid_until:'Valid until',expired:'EXPIRED',missing:'MISSING',complete:'COMPLETE',choose_file:'Choose File',drag_drop:'or drag & drop',all_months:'All'},pt:{vendors_title:'Fornecedores',vendors_subtitle:'Gerencie fornecedores, prestadores e setup de pagamento',new_vendor:'+ Novo Fornecedor',total_vendors:'TOTAL FORNECEDORES',registered_vendors:'fornecedores cadastrados',work_orders:'PEDIDOS',service_requests:'pedidos de servico',pending_payment:'PAGAMENTO PENDENTE',incomplete_setup:'setup de pagamento incompleto',top_vendors:'Top Fornecedores por Pedidos',payment_checklist:'Checklist de Pagamento',items_complete:'itens completos',vendor_name_card:'Nome do Fornecedor',complete_address:'Endereco Completo',w9_form:'Formulario W-9',upload_w9:'Envie o W-9 assinado',bank_info:'Dados Bancarios',voided_check:'Cheque cancelado, carta do banco ou equivalente',workers_comp:'Workers Compensation',workers_comp_cert:'Certificado workers comp',not_applicable:'Nao Aplicavel',not_required:'N/A - Nao Necessario',valid_until:'Valido ate',expired:'VENCIDO',missing:'PENDENTE',complete:'COMPLETO',choose_file:'Escolher Arquivo',drag_drop:'ou arraste e solte',all_months:'Todos'},es:{vendors_title:'Proveedores',vendors_subtitle:'Gestione proveedores, prestadores y configuracion de pago',new_vendor:'+ Nuevo Proveedor',total_vendors:'TOTAL PROVEEDORES',registered_vendors:'proveedores registrados',work_orders:'ORDENES',service_requests:'solicitudes de servicio',pending_payment:'PAGO PENDIENTE',incomplete_setup:'configuracion de pago incompleta',top_vendors:'Top Proveedores por Ordenes',payment_checklist:'Checklist de Pago',items_complete:'items completos',vendor_name_card:'Nombre del Proveedor',complete_address:'Direccion Completa',w9_form:'Formulario W-9',upload_w9:'Suba el W-9 firmado',bank_info:'Datos Bancarios',voided_check:'Cheque anulado, carta del banco o equivalente',workers_comp:'Workers Compensation',workers_comp_cert:'Certificado workers comp',not_applicable:'No Aplica',not_required:'N/A - No Requerido',valid_until:'Valido hasta',expired:'VENCIDO',missing:'PENDIENTE',complete:'COMPLETO',choose_file:'Elegir Archivo',drag_drop:'o arrastre y suelte',all_months:'Todos'}};
 function gvLang(){const l=(document.documentElement.lang||'en').toLowerCase();if(l.startsWith('pt'))return'pt';if(l.startsWith('es'))return'es';return'en';}
 function gvT(k){const g=GV_I18N[gvLang()]||GV_I18N.en;return g[k]||GV_I18N.en[k]||k;}
-function gvLoad(){try{return JSON.parse(localStorage.getItem(GV_KEY)||'[]')}catch(e){return[]}}
+function gvLoad(){try{var arr=JSON.parse(localStorage.getItem(GV_KEY)||'[]');if(!Array.isArray(arr))return[];var changed=false;for(var i=0;i<arr.length;i++){var v=arr[i];if(!v)continue;if(v.charge_18_percent===true&&v.commission_mp!==true){v.commission_mp=true;changed=true;}if(Object.prototype.hasOwnProperty.call(v,'charge_18_percent')){delete v.charge_18_percent;changed=true;}}if(changed){try{localStorage.setItem(GV_KEY,JSON.stringify(arr));}catch(e2){}}return arr;}catch(e){return[]}}
 function gvSave(arr){localStorage.setItem(GV_KEY,JSON.stringify(arr))}
 function gvOrdersFor(vendorId){const m=gvMonth;const rows=gvBills.filter(b=>b.vendor_id===vendorId&&(m==='all'||b.month===m));return{qty:rows.length,total:rows.reduce((s,r)=>s+(+r.amount||0),0)}}
 function gvChecklistCount(v){const c=v.checklist||{};return['name','address','email','phone','w9','bank_info','workers_comp'].reduce((s,k)=>s+(c[k]?1:0),0)}
@@ -8266,19 +8472,19 @@ function gvMonthLabel(){return gvMonth==='all'?'all time':GV_MONTHS[+gvMonth]}
 function gvWireMonths(){const host=document.getElementById('gv-months');if(!host)return;host.innerHTML=GV_MONTHS.map((m,i)=>{const key=i===0?'all':String(i);const on=gvMonth===key;return `<button type="button" onclick="gvSetMonth('${key}')" style="padding:6px 12px;border-radius:18px;white-space:nowrap;cursor:pointer;border:1px solid ${on?'#c47b28':'#ccc'};background:${on?'#c47b28':'transparent'};color:${on?'#fff':'#777'}">${m}</button>`}).join('')}
 function gvSetMonth(m){gvMonth=m;gvPage=1;gvRender()}
 function gvTopRows(vendors){const rows=vendors.map(v=>{const o=gvOrdersFor(v.id);return{v,o}}).sort((a,b)=>b.o.qty-a.o.qty||b.o.total-a.o.total).slice(0,5);const tb=document.getElementById('gv-top-body');if(!tb)return;tb.innerHTML=rows.map((r,i)=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px">${i+1}</td><td style="padding:8px 10px">${r.v.company_name||'—'}</td><td style="padding:8px 10px">${r.v.trade||'—'}</td><td style="padding:8px 10px;text-align:right">${r.o.qty}</td><td style="padding:8px 10px;text-align:right">${ltFmt(r.o.total)}</td></tr>`).join('')||'<tr><td colspan="5" style="padding:12px;color:var(--ink3)">No data</td></tr>'}
-function gvRenderKpis(vendors){const total=vendors.length;const active=vendors.filter(v=>gvStatus(v)==='Active/Complete').length;const orders=vendors.reduce((s,v)=>s+gvOrdersFor(v.id).qty,0);const pending=vendors.filter(v=>gvChecklistCount(v)<7).length;const el=document.getElementById('gv-kpis');if(!el)return;el.innerHTML=[[gvT('total_vendors'),total,gvT('registered_vendors'),'var(--blue)'],[ 'ACTIVE',active,gvT('items_complete'),'#2d7252'],[gvT('work_orders'),orders,`${gvT('service_requests')} in ${gvMonthLabel()}`,'var(--amber)'],[gvT('pending_payment'),pending,gvT('incomplete_setup'),'#b83030']].map(k=>`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;color:var(--ink3);font-weight:700;letter-spacing:.8px;text-transform:uppercase">${k[0]}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${k[3]};margin-top:3px">${k[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${k[2]}</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:${k[3]}"></div></div>`).join('')}
-function gvRenderTable(){const v=gvLoad();const q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();const filtered=v.filter(x=>!q||(`${x.company_name} ${x.contact_name} ${x.trade} ${x.email} ${x.phone}`).toLowerCase().includes(q));const totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));if(gvPage>totalPages)gvPage=totalPages;const pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);const tb=document.getElementById('gv-tbody');if(tb)tb.innerHTML=pageRows.map(v=>{const o=gvOrdersFor(v.id);const done=gvChecklistCount(v);const pct=Math.round((done/7)*100);const c=pct===100?'#2d7252':pct>50?'#c47b28':'#b83030';const st=gvStatus(v);const bs=st==='Active/Complete'?'background:var(--green-bg);color:var(--green)':(st==='Pending'?'background:var(--amber-bg);color:var(--amber)':'background:var(--red-bg);color:var(--red)');return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 10px">${v.company_name||'—'}</td><td style="padding:9px 10px">${v.contact_name||'—'}</td><td style="padding:9px 10px">${v.trade||'—'}</td><td style="padding:9px 10px">${v.phone||'—'}</td><td style="padding:9px 10px">${v.email||'—'}</td><td style="padding:9px 10px;text-align:right">${o.qty}</td><td style="padding:9px 10px"><div style="background:#eee;height:8px;border-radius:999px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${c}"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px;text-align:center">${done}/7</div></td><td style="padding:9px 10px;text-align:center"><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;${bs}">${st}</span></td><td style="padding:9px 10px;text-align:center"><button onclick="gvView('${v.id}')" style="padding:4px 7px">Ver</button> <button onclick="gvEdit('${v.id}')" style="padding:4px 7px">Editar</button> <button onclick="gvDelete('${v.id}')" style="padding:4px 7px">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="9" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';const pi=document.getElementById('gv-page-info');if(pi)pi.textContent=`Page ${gvPage}/${totalPages} · ${filtered.length} vendor(s)`}
+function gvRenderKpis(vendors){const total=vendors.length;const active=vendors.filter(v=>gvStatus(v)==='Active/Complete').length;const orders=vendors.reduce((s,v)=>s+gvOrdersFor(v.id).qty,0);const pending=vendors.filter(v=>gvChecklistCount(v)<7).length;const el=document.getElementById('gv-kpis');if(!el)return;el.innerHTML=(function(){var com18=vendors.filter(function(v){return v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true);}).length;return[['COM 18%',com18,'vendors com commission fee','#c47b28'],[gvT('total_vendors'),total,gvT('registered_vendors'),'var(--blue)'],['ACTIVE',active,gvT('items_complete'),'#2d7252'],[gvT('work_orders'),orders,`${gvT('service_requests')} in ${gvMonthLabel()}`,'var(--amber)'],[gvT('pending_payment'),pending,gvT('incomplete_setup'),'#b83030']];})().map(k=>`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;color:var(--ink3);font-weight:700;letter-spacing:.8px;text-transform:uppercase">${k[0]}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${k[3]};margin-top:3px">${k[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${k[2]}</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:${k[3]}"></div></div>`).join('')}
+function gvRenderTable(){const v=gvLoad();const q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();const filtered=v.filter(x=>!q||(`${x.company_name} ${x.contact_name} ${x.trade} ${x.email} ${x.phone}`).toLowerCase().includes(q));const totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));if(gvPage>totalPages)gvPage=totalPages;const pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);const tb=document.getElementById('gv-tbody');if(tb)tb.innerHTML=pageRows.map(v=>{const o=gvOrdersFor(v.id);const done=gvChecklistCount(v);const pct=Math.round((done/7)*100);const c=pct===100?'#2d7252':pct>50?'#c47b28':'#b83030';const st=gvStatus(v);const bs=st==='Active/Complete'?'background:var(--green-bg);color:var(--green)':(st==='Pending'?'background:var(--amber-bg);color:var(--amber)':'background:var(--red-bg);color:var(--red)');return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 10px">${v.company_name||'—'}${(v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true))?' <span style="display:inline-block;padding:1px 6px;margin-left:4px;background:#c47b28;color:#fff;border-radius:3px;font-size:9px;font-weight:700;vertical-align:middle" title="Commission MP 18%">18%</span>':''}</td><td style="padding:9px 10px">${v.contact_name||'—'}</td><td style="padding:9px 10px">${v.trade||'—'}</td><td style="padding:9px 10px">${v.phone||'—'}</td><td style="padding:9px 10px">${v.email||'—'}</td><td style="padding:9px 10px;text-align:right">${o.qty}</td><td style="padding:9px 10px"><div style="background:#eee;height:8px;border-radius:999px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${c}"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px;text-align:center">${done}/7</div></td><td style="padding:9px 10px;text-align:center"><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;${bs}">${st}</span></td><td style="padding:9px 10px;text-align:center"><button onclick="gvView('${v.id}')" style="padding:4px 7px">Ver</button> <button onclick="gvEdit('${v.id}')" style="padding:4px 7px">Editar</button> <button onclick="gvDelete('${v.id}')" style="padding:4px 7px">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="9" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';const pi=document.getElementById('gv-page-info');if(pi)pi.textContent=`Page ${gvPage}/${totalPages} · ${filtered.length} vendor(s)`}
 function gvRender(){const vendors=gvLoad();const t=document.getElementById('gv-title');if(t)t.textContent=`${gvT('vendors_title')} — ${(gvMonth==='all'?gvT('all_months'):GV_MONTHS[+gvMonth])} 2026`;const s=document.getElementById('gv-subtitle');if(s)s.textContent=gvT('vendors_subtitle');const n=document.getElementById('gv-btn-new');if(n)n.textContent=gvT('new_vendor');const tt=document.getElementById('gv-top-title');if(tt)tt.textContent=gvT('top_vendors');gvWireMonths();gvRenderKpis(vendors);gvTopRows(vendors);gvRenderTable()}
 function gvBuildBills(vendors){const m=['1','2','3','4','5','6','7','8','9','10','11','12'];if(!vendors.length)return[];const out=[];vendors.forEach((v,idx)=>{for(let i=0;i<6;i++){const mm=m[(idx+i)%12];out.push({vendor_id:v.id,month:mm,amount:Math.round(180+Math.random()*2400)})}});return out}
 function gvLoadBills(){fetch('/api/appfolio/bills').then(r=>r.ok?r.json():Promise.reject()).then(j=>{const arr=Array.isArray(j)?j:(j.bills||[]);gvBills=arr.map((b,i)=>({vendor_id:String(b.vendor_id||b.vendor||b.vendor_name||('v'+i)),month:String(new Date(b.bill_date||b.date||Date.now()).getMonth()+1),amount:+(b.amount||b.total||0)}));gvRender();}).catch(()=>{const v=gvLoad();gvBills=gvBuildBills(v);gvRender();});}
-function gvOpenModal(){gvEditingId=null;gvFillForm({rating:5,status:'Active',send_1099:true,checklist:{}});document.getElementById('gv-modal-title').textContent='New Vendor';document.getElementById('gv-modal').style.display='flex';}
+function gvOpenModal(){gvEditingId=null;gvFillForm({rating:5,status:'Active',send_1099:true,commission_mp:false,checklist:{}});document.getElementById('gv-modal-title').textContent='New Vendor';document.getElementById('gv-modal').style.display='flex';}
 function gvCloseModal(){document.getElementById('gv-modal').style.display='none';}
 function gvTradeChanged(){const v=document.getElementById('gv-trade').value;document.getElementById('gv-trade-new').style.display=v==='+ Add New Trade...'?'block':'none';}
-function gvFillForm(v){['company_name','contact_name','email','phone','address_street','address_city','address_state','address_zip','trade','bank_name','routing_number','account_number','account_type','payment_type','notes','rating','status'].forEach(k=>{const el=document.getElementById('gv-'+k);if(el)el.value=v[k]??''});document.getElementById('gv-send_1099').value=(v.send_1099===false?'false':'true');gvRefreshChecklist(v)}
+function gvFillForm(v){['company_name','contact_name','email','phone','address_street','address_city','address_state','address_zip','trade','bank_name','routing_number','account_number','account_type','payment_type','notes','rating','status'].forEach(k=>{const el=document.getElementById('gv-'+k);if(el)el.value=v[k]??''});document.getElementById('gv-send_1099').value=(v.send_1099===false?'false':'true');var cbCom=document.getElementById('gv-commission_mp');if(cbCom){var val=(v.commission_mp===true)||(v.commission_mp===undefined&&v.charge_18_percent===true);cbCom.checked=val;}gvRefreshChecklist(v)}
 function gvChecklistState(v){const c=v||{company_name:document.getElementById('gv-company_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),documents:(gvEditingId?((gvLoad().find(x=>x.id===gvEditingId)||{}).documents||[]):[]),workers_comp_na:false};return{name:!!c.company_name,address:!!(c.address_street&&c.address_city&&c.address_state&&c.address_zip),email:!!(c.email&&c.email.includes('@')),phone:!!c.phone,w9:(c.documents||[]).some(d=>d.kind==='w9'),bank_info:(c.documents||[]).some(d=>d.kind==='bank_info'),workers_comp:!!(c.workers_comp_na||(c.documents||[]).some(d=>d.kind==='workers_comp'))}}
 function gvRefreshChecklist(vx){const v=vx||null;const c=gvChecklistState(v||undefined);const done=Object.values(c).filter(Boolean).length;const pct=Math.round(done/7*100);const bar=document.getElementById('gv-check-progress-bar');if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'#2d7252':(pct>50?'#c47b28':'#b83030')}const cp=document.getElementById('gv-check-progress');if(cp)cp.textContent=`${done} of 7 ${gvT('items_complete')}`;const cc=document.getElementById('gv-cl-company');if(cc)cc.textContent=(document.getElementById('gv-company_name').value||'—');const grid=document.getElementById('gv-check-grid');if(!grid)return;const miss='MISSING',ok='COMPLETE';const addrMissing=[];if(!document.getElementById('gv-address_city').value.trim())addrMissing.push('City');if(!document.getElementById('gv-address_state').value.trim())addrMissing.push('State');if(!document.getElementById('gv-address_zip').value.trim())addrMissing.push('ZIP');const cards=[['name',gvT('vendor_name_card'),c.name,miss,ok,''],['address',gvT('complete_address'),c.address,addrMissing.length?('Missing: '+addrMissing.join(', ')):'',ok,''],['email','Email',c.email,miss,ok,''],['phone','Phone',c.phone,miss,ok,''],['w9',gvT('w9_form'),c.w9,gvT('upload_w9'),ok,'w9'],['bank_info',gvT('bank_info'),c.bank_info,gvT('voided_check'),ok,'bank_info'],['workers_comp',gvT('workers_comp'),c.workers_comp,gvT('workers_comp_cert'),ok,'workers_comp']];grid.innerHTML=cards.map(x=>{const on=x[2];const border=on?'#2d7252':'#b83030';const text=on?ok:miss;const helper=on?x[4]:x[3];const upload=x[5]?`<div style="margin-top:8px"><input type="file" onchange="gvUploadDoc('${x[5]}',this)" accept=".pdf,.jpg,.jpeg,.png" style="font-size:10px"></div>`:'';return `<div style="border:1px solid var(--border);border-left:3px solid ${border};border-radius:8px;padding:10px;background:var(--paper);transition:all .3s ease"><div style="font-size:22px;color:${border};line-height:1">${on?'✓':'✕'}</div><div style="font-size:12px;font-weight:700;margin-top:6px">${x[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${helper||''}</div>${upload}<div style="margin-top:8px;font-size:10px;font-weight:700;color:${border}">${text}</div></div>`;}).join('')}
 function gvUploadDoc(kind,input){const f=input.files&&input.files[0];if(!f)return;if(f.size>10*1024*1024){alert('Max 10MB');input.value='';return;}const rd=new FileReader();rd.onload=()=>{const arr=gvLoad();if(!gvEditingId){gvEditingId='gv_tmp_'+Date.now();}const rec=arr.find(x=>x.id===gvEditingId)||{id:gvEditingId,documents:[]};rec.documents=(rec.documents||[]).filter(d=>d.kind!==kind);rec.documents.push({kind,name:f.name,type:f.type,size:f.size,data_url:String(rd.result),uploaded_at:new Date().toISOString()});const others=arr.filter(x=>x.id!==gvEditingId);others.push(rec);gvSave(others);gvRefreshChecklist(rec);};rd.readAsDataURL(f);}
-function gvCollect(){const tradeSel=document.getElementById('gv-trade').value;let trade=tradeSel;if(tradeSel==='+ Add New Trade...'){const nv=document.getElementById('gv-trade-new').value.trim();if(nv)trade=nv;}const arr=gvLoad();const prev=gvEditingId?arr.find(x=>x.id===gvEditingId):null;const obj={id:gvEditingId||('gv_'+Date.now()),company_name:document.getElementById('gv-company_name').value.trim(),contact_name:document.getElementById('gv-contact_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),trade:trade,bank_name:document.getElementById('gv-bank_name').value.trim(),routing_number:document.getElementById('gv-routing_number').value.trim(),account_number:document.getElementById('gv-account_number').value.trim(),account_type:document.getElementById('gv-account_type').value,payment_type:document.getElementById('gv-payment_type').value,send_1099:document.getElementById('gv-send_1099').value==='true',notes:document.getElementById('gv-notes').value.trim(),rating:+document.getElementById('gv-rating').value||0,status:document.getElementById('gv-status').value,workers_comp_expiration:'',workers_comp_na:false,documents:(prev&&prev.documents)||[],created_at:(prev&&prev.created_at)||new Date().toISOString(),updated_at:new Date().toISOString()};obj.checklist=gvChecklistState(obj);return obj;}
+function gvCollect(){const tradeSel=document.getElementById('gv-trade').value;let trade=tradeSel;if(tradeSel==='+ Add New Trade...'){const nv=document.getElementById('gv-trade-new').value.trim();if(nv)trade=nv;}const arr=gvLoad();const prev=gvEditingId?arr.find(x=>x.id===gvEditingId):null;const obj={id:gvEditingId||('gv_'+Date.now()),company_name:document.getElementById('gv-company_name').value.trim(),contact_name:document.getElementById('gv-contact_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),trade:trade,bank_name:document.getElementById('gv-bank_name').value.trim(),routing_number:document.getElementById('gv-routing_number').value.trim(),account_number:document.getElementById('gv-account_number').value.trim(),account_type:document.getElementById('gv-account_type').value,payment_type:document.getElementById('gv-payment_type').value,commission_mp:!!(document.getElementById('gv-commission_mp')&&document.getElementById('gv-commission_mp').checked),send_1099:document.getElementById('gv-send_1099').value==='true',notes:document.getElementById('gv-notes').value.trim(),rating:+document.getElementById('gv-rating').value||0,status:document.getElementById('gv-status').value,workers_comp_expiration:'',workers_comp_na:false,documents:(prev&&prev.documents)||[],created_at:(prev&&prev.created_at)||new Date().toISOString(),updated_at:new Date().toISOString()};obj.checklist=gvChecklistState(obj);return obj;}
 function gvSaveVendor(){const v=gvCollect();if(!v.company_name||!v.email||!v.phone||!v.address_street){alert('Fill required fields.');return;}const arr=gvLoad().filter(x=>x.id!==v.id);arr.push(v);gvSave(arr);gvEditingId=null;gvCloseModal();if(!gvBills.length)gvBills=gvBuildBills(arr);gvRender();}
 function gvEdit(id){const r=gvLoad().find(x=>x.id===id);if(!r)return;gvEditingId=id;gvFillForm(r);document.getElementById('gv-modal-title').textContent='Edit Vendor';document.getElementById('gv-modal').style.display='flex';}
 function gvView(id){gvEdit(id)}
@@ -9497,6 +9703,167 @@ window.gmAdminUsersModalClose=gmAdminUsersModalClose;
 window.gmAuthLogout=gmAuthLogout;
 window.gmAuthHydrateUserBadge=gmAuthHydrateUserBadge;
 /* ========== /ADMIN USERS MODAL ========== */
+
+/* ========== BACKUP & RESTORE MODULE ========== */
+const GM_BACKUP_VERSION='1.0';
+const GM_BACKUP_KEYS_PREFIX=['gm_','mp_','lt_'];
+const GM_BACKUP_EXCLUDE=['gm_auth_token_v1'];
+
+function gmBackupCollectKeys(){
+ var all=[];
+ for(var i=0;i<localStorage.length;i++){
+  var k=localStorage.key(i);
+  if(!k)continue;
+  if(GM_BACKUP_EXCLUDE.indexOf(k)>=0)continue;
+  var matches=GM_BACKUP_KEYS_PREFIX.some(function(p){return k.indexOf(p)===0;});
+  if(matches)all.push(k);
+ }
+ return all.sort();
+}
+
+function gmBackupBuildPayload(){
+ var keys=gmBackupCollectKeys();
+ var data={};
+ keys.forEach(function(k){
+  var raw=localStorage.getItem(k);
+  if(raw===null)return;
+  try{data[k]={type:'json',value:JSON.parse(raw)};}
+  catch(e){data[k]={type:'string',value:raw};}
+ });
+ return {
+  version:GM_BACKUP_VERSION,
+  exportedAt:new Date().toISOString(),
+  exportedBy:(window.__gmCurrentUser&&window.__gmCurrentUser.email)||'unknown',
+  keyCount:keys.length,
+  data:data
+ };
+}
+
+function gmBackupExport(){
+ try{
+  var payload=gmBackupBuildPayload();
+  var json=JSON.stringify(payload,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var now=new Date();
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var stamp=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'-'+pad(now.getHours())+'-'+pad(now.getMinutes());
+  var filename='godmanager-backup-'+stamp+'.json';
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  if(typeof showToast==='function')showToast('Backup exportado: '+filename+' ('+payload.keyCount+' chaves)','success');
+  else alert('Backup exportado!\n\nFicheiro: '+filename+'\nChaves: '+payload.keyCount+'\nTamanho: '+(Math.round(json.length/1024))+' KB');
+  gmBackupUpdateStats();
+ }catch(e){
+  console.error('Backup falhou',e);
+  alert('Erro ao exportar: '+e.message);
+ }
+}
+
+function gmBackupUpdateStats(){
+ var keys=gmBackupCollectKeys();
+ var totalBytes=0;
+ var keyDetails=[];
+ keys.forEach(function(k){
+  var v=localStorage.getItem(k)||'';
+  totalBytes+=v.length;
+  keyDetails.push({key:k,size:v.length});
+ });
+ keyDetails.sort(function(a,b){return b.size-a.size;});
+ var top=keyDetails.slice(0,8).map(function(d){
+  var kb=(d.size/1024).toFixed(1);
+  return d.key.padEnd(26,' ')+kb+' KB';
+ }).join('\n');
+ var kbTotal=(totalBytes/1024).toFixed(1);
+ var el=document.getElementById('bk-export-stats');
+ if(el){
+  el.textContent='Total: '+keys.length+' chaves | '+kbTotal+' KB\n\nTop chaves:\n'+top;
+ }
+ var kpi=document.getElementById('bk-kpi-keys');
+ if(kpi)kpi.textContent=String(keys.length);
+}
+
+function gmBackupHandleFile(event){
+ var file=event.target.files&&event.target.files[0];
+ if(!file){return;}
+ var reader=new FileReader();
+ reader.onload=function(e){
+  try{
+   var payload=JSON.parse(e.target.result);
+   if(!payload||!payload.data||!payload.version){
+    throw new Error('Ficheiro invalido - estrutura nao reconhecida');
+   }
+   gmBackupShowImportPreview(payload,file.name);
+  }catch(err){
+   alert('Erro ao ler ficheiro: '+err.message);
+  }
+ };
+ reader.readAsText(file);
+ event.target.value='';
+}
+
+function gmBackupShowImportPreview(payload,filename){
+ var keys=Object.keys(payload.data||{});
+ var preview=document.getElementById('bk-import-preview');
+ if(preview){
+  preview.style.display='block';
+  preview.innerHTML=filename
+   +'<br>Versao: '+(payload.version||'?')
+   +'<br>Criado: '+(payload.exportedAt||'?')
+   +'<br>Por: '+(payload.exportedBy||'?')
+   +'<br>Chaves: '+keys.length
+   +'<br><br><button type="button" onclick="gmBackupConfirmImport()" style="padding:8px 14px;background:#b83030;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700">Confirmar Restore (substituir tudo)</button>';
+ }
+ window.__gmPendingImport=payload;
+}
+
+function gmBackupConfirmImport(){
+ var payload=window.__gmPendingImport;
+ if(!payload){alert('Nenhum backup carregado');return;}
+ if(!confirm('ATENCAO!\n\nIsto vai substituir todos os dados actuais por os do backup.\n\nContinuar?')){return;}
+
+ try{
+  var safetyPayload=gmBackupBuildPayload();
+  var safetyJson=JSON.stringify(safetyPayload);
+  localStorage.setItem('__gm_backup_safety_'+Date.now(),safetyJson);
+
+  var currentKeys=gmBackupCollectKeys();
+  currentKeys.forEach(function(k){localStorage.removeItem(k);});
+
+  Object.keys(payload.data).forEach(function(k){
+   var entry=payload.data[k];
+   if(!entry)return;
+   var value=entry.type==='json'?JSON.stringify(entry.value):String(entry.value);
+   localStorage.setItem(k,value);
+  });
+
+  alert('Restore completo!\n\nRe-carregando a pagina em 2 segundos para aplicar...');
+  setTimeout(function(){location.reload();},2000);
+ }catch(e){
+  console.error('Import falhou',e);
+  alert('Erro ao importar: '+e.message);
+ }
+}
+
+(function(){
+ if(typeof window.nav!=='function')return;
+ var _origNav=window.nav;
+ window.nav=function(route){
+  var r=_origNav.apply(this,arguments);
+  try{if(route==='backup')setTimeout(gmBackupUpdateStats,50);}catch(e){}
+  return r;
+ };
+})();
+
+window.gmBackupExport=gmBackupExport;
+window.gmBackupHandleFile=gmBackupHandleFile;
+window.gmBackupConfirmImport=gmBackupConfirmImport;
+/* ========== /BACKUP & RESTORE MODULE ========== */
 
 </script>
 </body>
