@@ -527,6 +527,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">ADMIN</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px">Clients</div>
+ <div class="ss" onclick="gmAdminUsersModalOpen()" id="nav-admin-users" style="padding-left:16px">Users</div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px">Settings</div>
  <div class="ss" onclick="nav('gross-expenses')" id="nav-gross-expenses" style="padding-left:16px">Gross &amp; Expenses</div>
  <div class="ss" onclick="nav('forms-received')" id="nav-forms-received" style="padding-left:16px">Forms Received</div>
@@ -546,8 +547,10 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </nav>
  <div class="sb-ft">
  <div class="sb-av">A</div>
- <div class="sb-un"><div class="sb-un-n">Admin User</div><div class="sb-un-r">Administrator</div></div>
- <div class="sb-lo" onclick="doLogout()" title="Logout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
+ <div class="sb-un" style="flex:1;min-width:0"><div class="sb-un-n">Loading...</div><div class="sb-un-r">—</div></div>
+ <button onclick="gmAuthLogout()" title="Logout" style="background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:4px;flex-shrink:0" onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,.7)'">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+ </button>
  </div>
  <div style="padding:10px 16px 14px;border-top:1px solid rgba(255,255,255,.08);text-align:center;flex-shrink:0">
  <div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.25px;line-height:1.5">© 2026 GodManager. All rights reserved.</div>
@@ -9357,12 +9360,143 @@ async function jobsApplyRoleGate(){
 }
 
 document.addEventListener('DOMContentLoaded',function(){
- setTimeout(function(){jobsApplyRoleGate().catch(function(e){console.warn(e);});},100);
+ /* jobsApplyRoleGate substituido por jobsApplyRoleGateV2 no orchestrador */
 });
 window.jobsRender=jobsRender;
 window.jobsOnVendorClick=jobsOnVendorClick;
 window.jobsOnJobClick=jobsOnJobClick;
 /* ========== /JOBS MODULE ========== */
+
+/* ========== ADMIN USERS MODAL + AUTH UNIFICADO ========== */
+
+/* Modal fullscreen com iframe para /admin/users */
+function gmAdminUsersModalOpen(){
+ var existing=document.getElementById('gm-admin-users-modal');
+ if(existing){existing.style.display='flex';return;}
+ var overlay=document.createElement('div');
+ overlay.id='gm-admin-users-modal';
+ overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+ overlay.innerHTML=''
+  +'<div style="position:relative;background:#fff;width:100%;max-width:1400px;height:calc(100vh - 32px);border-radius:12px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.4);display:flex;flex-direction:column">'
+  +'<div style="padding:14px 20px;border-bottom:1px solid #e8e3d8;display:flex;align-items:center;justify-content:space-between;background:#faf8f1;flex-shrink:0">'
+   +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
+    +'<span style="font-family:\'Sora\',sans-serif;font-size:14px;font-weight:600;color:#1a2332">User Management</span>'
+   +'</div>'
+   +'<button onclick="gmAdminUsersModalClose()" aria-label="Fechar" style="background:transparent;border:none;width:34px;height:34px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a5568;font-size:20px" onmouseover="this.style.background=\'#f0ece4\'" onmouseout="this.style.background=\'transparent\'">&times;</button>'
+  +'</div>'
+  +'<div style="flex:1;overflow:hidden;background:#fff">'
+   +'<iframe id="gm-admin-users-iframe" src="/admin/users" style="width:100%;height:100%;border:none;display:block" title="User Management"></iframe>'
+  +'</div>'
+  +'</div>';
+ document.body.appendChild(overlay);
+
+ // Fechar com ESC
+ var escHandler=function(e){if(e.key==='Escape')gmAdminUsersModalClose();};
+ overlay._escHandler=escHandler;
+ document.addEventListener('keydown',escHandler);
+
+ // Fechar clicando fora
+ overlay.addEventListener('click',function(e){if(e.target===overlay)gmAdminUsersModalClose();});
+}
+
+function gmAdminUsersModalClose(){
+ var m=document.getElementById('gm-admin-users-modal');
+ if(!m)return;
+ if(m._escHandler)document.removeEventListener('keydown',m._escHandler);
+ m.remove();
+}
+
+/* Badge do utilizador: buscar dados reais via /api/auth/me */
+async function gmAuthHydrateUserBadge(){
+ try{
+  var res=await fetch('/api/auth/me',{credentials:'include',cache:'no-store'});
+  if(!res.ok){
+   // Nao autenticado - middleware deveria ter bloqueado, mas double-check
+   console.warn('[gmAuth] /api/auth/me retornou', res.status);
+   return null;
+  }
+  var data=await res.json();
+  if(!data||!data.ok||!data.user){console.warn('[gmAuth] sem user em /me');return null;}
+  var u=data.user;
+  var fullName=((u.firstName||'')+' '+(u.lastName||'')).trim()||u.email||'User';
+  var roleLabel=(u.role||'').charAt(0).toUpperCase()+(u.role||'').slice(1);
+  // Actualizar badge na sidebar
+  var nameEl=document.querySelector('.sb-un-n');
+  var roleEl=document.querySelector('.sb-un-r');
+  if(nameEl)nameEl.textContent=fullName;
+  if(roleEl)roleEl.textContent=roleLabel||u.email||'';
+  // Cache rapido
+  window.__gmCurrentUser=u;
+  return u;
+ }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
+}
+
+/* Logout handler */
+async function gmAuthLogout(){
+ try{
+  await fetch('/api/auth/logout',{method:'POST',credentials:'include'});
+ }catch(e){console.warn('[gmAuth] logout falhou',e);}
+ try{localStorage.removeItem('gm_auth_token_v1');}catch(e){}
+ window.location.href='/login';
+}
+
+/* Gate maintenance actualizado - usa window.__gmCurrentUser ou refaz fetch */
+async function jobsApplyRoleGateV2(){
+ try{
+  var user=window.__gmCurrentUser;
+  if(!user){
+   user=await gmAuthHydrateUserBadge();
+  }
+  if(!user)return;
+  var role=String(user.role||'').toLowerCase();
+
+  // Nao admin nao pode ver secção ADMIN (inteira)
+  if(role!=='admin'){
+   var adminSec=document.querySelector('.sb-sec[data-sb-sec="admin"]');
+   if(adminSec)adminSec.style.display='none';
+  }
+
+  // Maintenance - so JOBS
+  if(role==='maintenance'){
+   document.querySelectorAll('.sb-sec').forEach(function(sec){sec.style.display='none';});
+   var exp=document.querySelector('.sb-sec[data-sb-sec="expenses"]');
+   if(exp){
+    exp.style.display='';
+    exp.setAttribute('aria-expanded','true');
+    var head=exp.querySelector('.sb-sec-head');
+    if(head)head.setAttribute('aria-expanded','true');
+    var sbBody=exp.querySelector('.sb-sec-body');
+    if(sbBody){
+     sbBody.style.display='';
+     sbBody.querySelectorAll('.ss').forEach(function(el){
+      if(el.id!=='nav-jobs')el.style.display='none';
+     });
+    }
+    var lbl=exp.querySelector('.sb-sec-lbl');
+    if(lbl)lbl.textContent='JOBS';
+    var chev=exp.querySelector('.sb-sec-chev');
+    if(chev)chev.style.display='none';
+   }
+   if(typeof nav==='function')setTimeout(function(){try{nav('jobs');}catch(e){}},50);
+  }
+ }catch(e){console.warn('jobsApplyRoleGateV2',e);}
+}
+
+/* Orchestrador: carregar auth + aplicar gates em sequencia */
+document.addEventListener('DOMContentLoaded',function(){
+ setTimeout(async function(){
+  await gmAuthHydrateUserBadge();
+  await jobsApplyRoleGateV2();
+ },100);
+});
+
+/* Expor no window para debug */
+window.gmAdminUsersModalOpen=gmAdminUsersModalOpen;
+window.gmAdminUsersModalClose=gmAdminUsersModalClose;
+window.gmAuthLogout=gmAuthLogout;
+window.gmAuthHydrateUserBadge=gmAuthHydrateUserBadge;
+/* ========== /ADMIN USERS MODAL ========== */
 
 </script>
 </body>
