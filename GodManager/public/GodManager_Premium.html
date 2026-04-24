@@ -8187,54 +8187,60 @@ function ltpBuildRecord(){
 async function ltpSaveNewProperty(){
  if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
  const rec=ltpBuildRecord();
- const apiPayload=Object.assign({},rec);
- apiPayload.photos=(rec.photos||[]).map(function(p){return{name:p.name,type:p.type,size:p.size,isPrimary:!!p.isPrimary};});
- try{
-  const res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(apiPayload)});
-  if(!res.ok)throw new Error('api');
- }catch(e){console.warn('ltp api',e);}
- try{
-  var gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
-  var newId=(typeof window.gmPropertiesNextId==='function')?window.gmPropertiesNextId():(rec.id||('P'+String(gmArr.length+1).padStart(4,'0')));
-  var seedRec={
-   id:newId,
+ // Gerar novo code P####
+ var gmArrCur=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ var newCode=(typeof window.gmPropertiesNextId==='function')?window.gmPropertiesNextId():(rec.id||('P'+String(gmArrCur.length+1).padStart(4,'0')));
+ // Payload no formato que /api/properties POST espera
+ var apiPayload={
+  code:newCode,
+  address:rec.address||'',
+  city:rec.city||'',
+  state:rec.state||'',
+  zip:rec.zip||'',
+  ownerName:rec.owner||'',
+  rent:Number(rec.rent)||0,
+  deposit:Number(rec.deposit)||0,
+  mgmtFeePct:Number(rec.mgmtPct)||0,
+  status:'active',
+  notes:rec.notes||'',
+  metadata:{
    name:rec.address||'',
-   address:rec.address||'',
-   city:'',state:'',zip:'',
-   units:1,sqft:0,
    marketRent:Number(rec.rent)||0,
-   currentRent:Number(rec.rent)||0,
-   mgmtPct:0,mgmtFlatFee:0,minFee:0,reserve:0,
-   waiveWhenVacant:'',homeWarrantyExp:'',insuranceExp:'',taxYearEnd:'',
-   owner:rec.owner||'',
-   description:'',
    hoa:Number(rec.hoa)||0,
    maintenance:Number(rec.maint)||0,
-   mgmtFeeUsd:0,
    netOwner:Number(rec.net)||0,
-   notes:rec.notes||'',
-   status:'Active',
-   source:'manual',
    tenant:rec.tenant||'',
    baths:rec.baths||'',
    occupancy:rec.occupancy||'vacant',
-   rent:Number(rec.rent)||0,
-   deposit:Number(rec.deposit)||0,
-   net:Number(rec.net)||0,
    month:rec.month||'',
-   photos:rec.photos||[],
-   createdAt:new Date().toISOString()
-  };
-  gmArr.push(seedRec);
-  window.gmPropertiesSave(gmArr);
- }catch(e){console.warn('gm_properties save',e);}
+   source:'manual_ui',
+   photos:(rec.photos||[]).map(function(p){return{name:p.name,type:p.type,size:p.size,isPrimary:!!p.isPrimary};})
+  }
+ };
+ var apiOk=false;
+ try{
+  const res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
+  apiOk=res.ok;
+  if(!res.ok){var errBody=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,errBody);}
+ }catch(e){console.warn('ltpSaveNewProperty fetch',e);}
+ // Se API OK, puxa verdade do servidor. Se falhar, faz fallback local para nao perder cadastro.
+ if(apiOk && typeof window.gmPropertiesRefresh==='function'){
+  await window.gmPropertiesRefresh();
+ } else {
+  // Fallback: salvar local (para nao perder se API offline)
+  try{
+   var seedRec={id:newCode,name:rec.address||'',address:rec.address||'',city:'',state:'',zip:'',units:1,sqft:0,marketRent:Number(rec.rent)||0,currentRent:Number(rec.rent)||0,mgmtPct:Number(rec.mgmtPct)||0,mgmtFlatFee:0,minFee:0,reserve:0,waiveWhenVacant:'',homeWarrantyExp:'',insuranceExp:'',taxYearEnd:'',owner:rec.owner||'',description:'',hoa:Number(rec.hoa)||0,maintenance:Number(rec.maint)||0,mgmtFeeUsd:0,netOwner:Number(rec.net)||0,notes:rec.notes||'',status:'Active',source:'manual_local_fallback',tenant:rec.tenant||'',baths:rec.baths||'',occupancy:rec.occupancy||'vacant',rent:Number(rec.rent)||0,deposit:Number(rec.deposit)||0,net:Number(rec.net)||0,month:rec.month||'',photos:rec.photos||[],createdAt:new Date().toISOString()};
+   gmArrCur.push(seedRec);
+   window.gmPropertiesSave(gmArrCur);
+  }catch(e){console.warn('gm_properties fallback save',e);}
+ }
  const all=ltGetRecords();
  all.push(rec);
  ltSaveRecords(all);
  ltpCloseNewPropertyModal();
  ltpRender();ltRender();ltDashRender();
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
- showToast('Propriedade cadastrada com sucesso','success');
+ showToast(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)','success');
 }
 function ltpTrapTab(e){
  if(e.key!=='Tab')return;
