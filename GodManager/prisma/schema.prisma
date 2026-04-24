@@ -33,36 +33,36 @@ enum ClientPlan {
 }
 
 model Client {
-  id           String     @id @default(cuid())
-  companyName  String
-  contactName  String
-  email        String     @unique
-  phone        String?
-  address      String?
-  plan         ClientPlan @default(starter)
-  accessLevel  UserRole   @default(manager)
-  active       Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  users        User[]
+  id          String     @id @default(cuid())
+  companyName String
+  contactName String
+  email       String     @unique
+  phone       String?
+  address     String?
+  plan        ClientPlan @default(starter)
+  accessLevel UserRole   @default(manager)
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  users       User[]
 
   @@map("clients")
 }
 
 model User {
-  id           String     @id @default(cuid())
+  id           String       @id @default(cuid())
   firstName    String
   lastName     String
-  email        String     @unique
+  email        String       @unique
   phone        String?
-  role         UserRole   @default(viewer)
-  status       UserStatus @default(pending)
-  permissions  String[]   @default([])
+  role         UserRole     @default(viewer)
+  status       UserStatus   @default(pending)
+  permissions  String[]     @default([])
   passwordHash String
-  createdAt    DateTime   @default(now())
-  lastActive   DateTime   @default(now())
+  createdAt    DateTime     @default(now())
+  lastActive   DateTime     @default(now())
   clientId     String?
-  client       Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
   auditEntries AuditEntry[] @relation("ActorAudit")
   targetAudits AuditEntry[] @relation("TargetAudit")
 
@@ -86,4 +86,32 @@ model AuditEntry {
   @@index([targetUserId])
   @@index([timestamp])
   @@map("audit_entries")
+}
+
+model Property {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  address    String
+  city       String?
+  state      String?
+  zip        String?
+  unitType   String?
+  bedrooms   Int?
+  bathrooms  Float?
+  rent       Decimal  @default(0) @db.Decimal(10, 2)
+  deposit    Decimal  @default(0) @db.Decimal(10, 2)
+  ownerName  String?
+  ownerEmail String?
+  ownerPhone String?
+  mgmtFeePct Decimal  @default(0) @db.Decimal(5, 2)
+  status     String   @default("active")
+  notes      String?  @db.Text
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+
+  @@index([code])
+  @@index([status])
+  @@map("properties")
 }
