@@ -6191,6 +6191,65 @@ function ltSaveRecord(){
    merged.updatedAt=new Date().toISOString();
    if(gmIdx>-1){gmArr[gmIdx]=merged;}else{gmArr.push(merged);}
    window.gmPropertiesSave(gmArr);
+   // Sync API Postgres (PATCH se existe _apiId, senao POST novo)
+   (async function(){
+    try{
+     var apiId=merged._apiId;
+     if(!apiId){
+      // Tenta resolver pelo code
+      var getRes=await fetch('/api/properties',{credentials:'include'});
+      if(getRes.ok){
+       var data=await getRes.json();
+       var match=(data&&data.properties||[]).find(function(p){return p.code===String(merged.id);});
+       if(match)apiId=match.id;
+      }
+     }
+     var payload={
+      code:String(merged.id),
+      address:merged.address||'',
+      ownerName:merged.owner||'',
+      rent:Number(merged.rent)||0,
+      deposit:Number(merged.deposit)||0,
+      mgmtFeePct:Number(merged.mgmtPct)||0,
+      status:(merged.status||'active').toLowerCase(),
+      notes:merged.notes||'',
+      metadata:{
+       name:merged.name||merged.address||'',
+       hoa:Number(merged.hoa)||0,
+       water:Number(merged.water)||0,
+       electric:Number(merged.electric)||0,
+       maintenance:Number(merged.maint)||0,
+       vendor:Number(merged.vendor)||0,
+       guarantee:Number(merged.guarantee)||0,
+       mgmFeeUsd:Number(merged.mgmFeeUsd)||0,
+       netOwner:Number(merged.net)||0,
+       marketRent:Number(merged.marketRent)||Number(merged.rent)||0,
+       tenant:merged.tenant||'',
+       baths:merged.baths||'',
+       occupancy:merged.occupancy||'',
+       month:merged.month||'',
+       ownerFullName:merged.ownerFullName||'',
+       ownerTaxId:merged.ownerTaxId||'',
+       ownerEmail:merged.ownerEmail||'',
+       ownerPhone:merged.ownerPhone||''
+      }
+     };
+     var apiOk=false;
+     if(apiId){
+      var patchRes=await fetch('/api/properties/'+apiId,{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+      apiOk=patchRes.ok;
+      if(!patchRes.ok){var eb=await patchRes.json().catch(function(){return{};});console.warn('ltSaveRecord PATCH',patchRes.status,eb);}
+     } else {
+      // Sem apiId -> POST novo (casa nova no modal LT)
+      var postRes=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+      apiOk=postRes.ok;
+      if(!postRes.ok){var eb2=await postRes.json().catch(function(){return{};});console.warn('ltSaveRecord POST',postRes.status,eb2);}
+     }
+     if(apiOk && typeof window.gmPropertiesRefresh==='function'){
+      await window.gmPropertiesRefresh();
+     }
+    }catch(e){console.warn('ltSaveRecord API sync',e);}
+   })();
   }
  }catch(e){console.warn('gm sync failed',e);}
  ltCloseModal();
