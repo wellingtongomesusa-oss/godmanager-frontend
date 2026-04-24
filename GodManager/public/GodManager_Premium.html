@@ -7184,20 +7184,48 @@ function showToast(msg, type='success'){
 // 
 // LTP — PROPERTIES PAGE RENDER
 // 
-function ltpDeleteProperty(id){
+async function ltpDeleteProperty(id){
  if(!confirm('Remover esta propriedade permanentemente? Esta acao nao pode ser desfeita.'))return;
  ltSaveRecords(ltGetRecords().filter(r=>r.id!==id));
- // Tambem remover de gm_properties (sistema novo usado pela tabela e home)
+ // Tentar apagar via API Postgres (multi-user)
+ var apiOk=false;
  try{
-  if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
-   var gmArr=window.gmPropertiesLoad()||[];
-   var filtered=gmArr.filter(function(p){return String(p&&p.id)!==String(id);});
-   if(filtered.length!==gmArr.length){window.gmPropertiesSave(filtered);}
+  // A API usa o id interno do Postgres; primeiro procura o _apiId pelo code (id local)
+  var list=window.gmPropertiesLoad()||[];
+  var target=list.find(function(p){return String(p&&p.id)===String(id);});
+  var apiId=target&&target._apiId;
+  if(!apiId){
+   // Fallback: GET completo para localizar pelo code
+   var getRes=await fetch('/api/properties',{credentials:'include'});
+   if(getRes.ok){
+    var data=await getRes.json();
+    var match=(data&&data.properties||[]).find(function(p){return p.code===String(id);});
+    if(match)apiId=match.id;
+   }
   }
- }catch(e){console.warn('gm_properties delete sync',e);}
+  if(apiId){
+   var delRes=await fetch('/api/properties/'+apiId,{method:'DELETE',credentials:'include'});
+   apiOk=delRes.ok;
+   if(!delRes.ok){var errBody=await delRes.json().catch(function(){return{};});console.warn('ltpDeleteProperty API',delRes.status,errBody);}
+  } else {
+   console.warn('ltpDeleteProperty sem apiId para code',id);
+  }
+ }catch(e){console.warn('ltpDeleteProperty fetch',e);}
+ // Se API OK: puxa verdade do servidor. Se falhou: fallback local.
+ if(apiOk && typeof window.gmPropertiesRefresh==='function'){
+  await window.gmPropertiesRefresh();
+ } else {
+  try{
+   if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
+    var gmArr=window.gmPropertiesLoad()||[];
+    var filtered=gmArr.filter(function(p){return String(p&&p.id)!==String(id);});
+    if(filtered.length!==gmArr.length){window.gmPropertiesSave(filtered);}
+   }
+  }catch(e){console.warn('gm_properties delete fallback',e);}
+ }
  ltpRender();ltRender();ltDashRender();
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
- showToast('Propriedade removida com sucesso.');
+ showToast(apiOk?'Propriedade removida e sincronizada':'Propriedade removida (sync pendente)');
 }
 
 /* === GM PROPERTIES STORE (seed AppFolio + cadastros manuais) === */
