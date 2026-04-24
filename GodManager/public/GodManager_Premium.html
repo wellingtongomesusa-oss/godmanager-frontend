@@ -7213,6 +7213,88 @@ window.gmPropertiesBootstrap=function(){
  window.gmPropertiesSave(seed);
  return true;
 };
+// ===== Sync Postgres <-> localStorage (adicionado PASSO 4C) =====
+window.gmPropertiesFetchFromApi=async function(){
+ try{
+  var res=await fetch('/api/properties',{credentials:'include'});
+  if(!res.ok){console.warn('gmPropertiesFetchFromApi HTTP',res.status);return null;}
+  var data=await res.json();
+  if(!data||!data.ok||!Array.isArray(data.properties))return null;
+  // Mapear do formato API (Postgres) para formato UI (compatible com gm_properties local)
+  return data.properties.map(function(p){
+   var meta=p.metadata||{};
+   return {
+    id:p.code,
+    name:meta.name||p.address||p.code,
+    address:p.address||'',
+    city:p.city||'',
+    state:p.state||'',
+    zip:p.zip||'',
+    owner:p.ownerName||'',
+    currentRent:Number(p.rent)||0,
+    marketRent:Number(meta.marketRent)||0,
+    mgmtPct:Number(p.mgmtFeePct)||0,
+    mgmtFeeUsd:Number(meta.mgmtFeeUsd)||0,
+    mgmtFlatFee:Number(meta.mgmtFlatFee)||0,
+    minFee:Number(meta.minFee)||0,
+    waiveWhenVacant:!!meta.waiveWhenVacant,
+    hoa:Number(meta.hoa)||0,
+    maintenance:Number(meta.maintenance)||0,
+    reserve:Number(meta.reserve)||0,
+    netOwner:Number(meta.netOwner)||0,
+    homeWarrantyExp:meta.homeWarrantyExp||'',
+    insuranceExp:meta.insuranceExp||'',
+    taxYearEnd:meta.taxYearEnd||'',
+    notes:p.notes||'',
+    sqft:Number(meta.sqft)||0,
+    units:Number(meta.units)||0,
+    status:p.status||'active',
+    source:meta.source||'api',
+    _apiId:p.id
+   };
+  });
+ }catch(e){console.warn('gmPropertiesFetchFromApi',e);return null;}
+};
+window.gmPropertiesPushToApi=async function(item){
+ try{
+  if(!item||!item.id)return false;
+  var payload={code:item.id,address:item.address||'',city:item.city||'',state:item.state||'',zip:item.zip||'',ownerName:item.owner||'',rent:Number(item.currentRent)||0,mgmtFeePct:Number(item.mgmtPct)||0,status:item.status||'active',notes:item.notes||'',metadata:{name:item.name||'',marketRent:Number(item.marketRent)||0,mgmtFeeUsd:Number(item.mgmtFeeUsd)||0,mgmtFlatFee:Number(item.mgmtFlatFee)||0,minFee:Number(item.minFee)||0,waiveWhenVacant:!!item.waiveWhenVacant,hoa:Number(item.hoa)||0,maintenance:Number(item.maintenance)||0,reserve:Number(item.reserve)||0,netOwner:Number(item.netOwner)||0,homeWarrantyExp:item.homeWarrantyExp||'',insuranceExp:item.insuranceExp||'',taxYearEnd:item.taxYearEnd||'',sqft:Number(item.sqft)||0,units:Number(item.units)||0,source:item.source||'ui'}};
+  // Tenta POST; se der 409 (ja existe), faz PATCH
+  var res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+  if(res.status===409){
+   // PATCH por code - precisamos do id interno; faz GET + PATCH
+   var list=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
+   var existing=(list&&list.properties||[]).find(function(p){return p.code===item.id;});
+   if(!existing)return false;
+   var patchRes=await fetch('/api/properties/'+existing.id,{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+   return patchRes.ok;
+  }
+  return res.ok;
+ }catch(e){console.warn('gmPropertiesPushToApi',e);return false;}
+};
+window.gmPropertiesRefresh=async function(opts){
+ opts=opts||{};
+ var fromApi=await window.gmPropertiesFetchFromApi();
+ if(!fromApi)return false;
+ // Substitui localStorage com verdade do servidor
+ try{window.gmPropertiesSave(fromApi);}catch(e){console.warn('gmPropertiesRefresh save',e);}
+ // Re-render se houver funcao global de render da tabela Properties
+ try{
+  if(typeof window.ltPopulate==='function')window.ltPopulate();
+  if(typeof window.ltpRender==='function')window.ltpRender();
+  if(typeof window.gmHomeRefresh==='function')window.gmHomeRefresh();
+ }catch(e){console.warn('gmPropertiesRefresh rerender',e);}
+ return true;
+};
+// Auto-refresh ao carregar a pagina (espera 500ms para nao bloquear first paint)
+if(typeof window!=='undefined'){
+ setTimeout(function(){
+  if(typeof window.gmPropertiesRefresh==='function'){
+   window.gmPropertiesRefresh().catch(function(e){console.warn('auto-refresh',e);});
+  }
+ },500);
+}
+// ===== fim sync =====
 window.gmPropertiesNextId=function(){
  var arr=window.gmPropertiesLoad();var max=97;
  arr.forEach(function(p){var m=/^P(\d+)$/.exec(String(p.id||''));if(m){var n=parseInt(m[1],10);if(n>max)max=n;}});
