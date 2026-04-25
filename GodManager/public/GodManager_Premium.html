@@ -1488,6 +1488,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </tr></thead>
  <tbody id="ltd-prop-tbody"></tbody>
  </table></div>
+ <div id="ltd-prop-footer" style="display:none;padding:8px 12px 12px;border-top:1px solid var(--border);text-align:center"></div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Alertas e Pendencias</div>
@@ -6324,6 +6325,7 @@ function ltSaveRecord(){
  ltCloseModal();
  ltRender();
  ltpRender();
+ if(typeof ltDashRender==='function')ltDashRender();
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  showToast('Statement salvo com sucesso.');
 }
@@ -7599,52 +7601,45 @@ function ltClnDelete(id){
 // 
 function ltDashRender(){
  const records=ltGetRecords();
- const expenses=(function(){
-  var m=(typeof ltExpMergeAll==='function')?ltExpMergeAll():(ltExpGetRecords?ltExpGetRecords():[]);
-  return m.map(function(r){
-   if(r && r._isPm){
-    return {status:r.status, category:r.category, propAddress:r.propAddress, due: String(r.serviceDate||'').slice(0,10)};
-   }
-   return {status:r.status, category:r.category, propAddress:r.propAddress, due:r.due};
-  });
- })();
- const cleanings=ltClnGetRecords();
+ const curMonth=new Date().toISOString().slice(0,7);
+ const cleaningsMonth=(ltClnGetRecords()||[]).filter(function(c){return c&&(String(c.date||'').slice(0,7)===curMonth);});
+ const clnPeriodEl=document.getElementById('ltd-clean-period');
+ if(clnPeriodEl) clnPeriodEl.textContent='Periodo: '+(typeof ltFmtMonth==='function'?ltFmtMonth(curMonth):curMonth);
 
- // Row 1 KPIs
- const curMonth='2026-03';
- const uniqueAddr=new Set(records.map(r=>r.address));
- const uniqueOwners=new Set(records.map(r=>r.owner).filter(Boolean));
- const totRent=records.filter(r=>r.month===curMonth).reduce((s,r)=>s+(r.rent||0),0);
- const totDeposit=records.reduce((s,r)=>s+(r.deposit||0),0);
- [['ltd-total-houses',uniqueAddr.size],['ltd-total-owners',uniqueOwners.size],
+ // Row 1 KPIs (fonte unica: ltGetRecords)
+ const totHouses=records.length;
+ const totOwners=new Set(records.map(function(r){return r.owner;})).size;
+ const totRent=records.reduce(function(s,r){return s+(Number(r&&r.rent)||0);},0);
+ const totDeposit=records.reduce(function(s,r){return s+(Number(r&&r.deposit)||0);},0);
+ [['ltd-total-houses',String(totHouses)],['ltd-total-owners',String(totOwners)],
  ['ltd-total-rent',ltFmt(totRent)],['ltd-total-deposit',ltFmt(totDeposit)]
- ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ ].forEach(function(arr){const el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
 
  // Row 2 KPIs
- const openStmt=records.filter(r=>r.status==='pending'||r.status==='disputed').length;
- const rented=records.filter(r=>r.occupancy==='rented').length;
- const vacant=records.filter(r=>r.occupancy==='vacant').length;
- const inprog=records.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length;
- [['ltd-open-statements',openStmt],['ltd-rented',rented],['ltd-vacant',vacant],['ltd-inprogress',inprog]
- ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ const openStmt=records.filter(function(r){return r&&r.status==='pending';}).length;
+ const rented=records.filter(function(r){return r&&r.occupancy==='rented';}).length;
+ const vacant=records.filter(function(r){return r&&r.occupancy==='vacant';}).length;
+ const inprog=records.filter(function(r){return r&&r.occupancy==='inprogress';}).length;
+ [['ltd-open-statements',String(openStmt)],['ltd-rented',String(rented)],['ltd-vacant',String(vacant)],['ltd-inprogress',String(inprog)]
+ ].forEach(function(arr){const el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
 
- // Cleanings KPIs
- const totClean=cleanings.length;
- const paidClean=cleanings.filter(c=>c.status==='paid').length;
- const valClean=cleanings.reduce((s,c)=>s+(c.value||0),0);
- [['ltd-clean-total',totClean],['ltd-clean-paid',paidClean],['ltd-clean-value',ltFmt(valClean)]
- ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ // Cleanings KPIs (apenas mes atual)
+ const totClean=cleaningsMonth.length;
+ const paidClean=cleaningsMonth.filter(function(c){return c&&c.status==='paid';}).length;
+ const valClean=cleaningsMonth.reduce(function(s,c){return s+(Number(c&&c.value)||0);},0);
+ [['ltd-clean-total',String(totClean)],['ltd-clean-paid',String(paidClean)],['ltd-clean-value',ltFmt(valClean)]
+ ].forEach(function(arr){const el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
 
- // Cleanings table
+ // Cleanings table (mes corrente)
  const ctbody=document.getElementById('ltd-clean-tbody');
  const cempty=document.getElementById('ltd-clean-empty');
  if(ctbody){
- if(!cleanings.length){ctbody.innerHTML='';if(cempty)cempty.style.display='block';}
+ if(!cleaningsMonth.length){ctbody.innerHTML='';if(cempty)cempty.style.display='block';}
  else{
  if(cempty)cempty.style.display='none';
  const cs={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',unpaid:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
  const cl={paid:'Pago',unpaid:'Pendente'};
- ctbody.innerHTML=cleanings.map((c,i)=>`
+ ctbody.innerHTML=cleaningsMonth.map((c,i)=>`
  <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
  <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:8px 12px;font-size:11px;color:var(--ink)">${c.propAddress}</td>
@@ -7658,44 +7653,64 @@ function ltDashRender(){
  }
  }
 
- // Property summary table
+ // Property summary: todos, ordenar NET desc, exibir no maximo 20
  const ptbody=document.getElementById('ltd-prop-tbody');
+ const pfoot=document.getElementById('ltd-prop-footer');
  if(ptbody){
  const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
- ptbody.innerHTML=records.map(r=>`
- <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
- <td style="padding:7px 12px;font-size:11px;color:var(--ink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.address}">${r.address}</td>
- <td style="padding:7px 12px;font-size:11px;color:var(--ink2)">${r.owner}</td>
- <td style="padding:7px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${ltFmt(r.rent)}</td>
- <td style="padding:7px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
- <td style="padding:7px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:${(r.net||0)>=0?'var(--blue)':'var(--red)'}">${ltFmt(r.net||0)}</td>
- </tr>`).join('');
+ const byNet=records.slice().sort(function(a,b){return (Number(b&&b.net)||0)-(Number(a&&a.net)||0);});
+ const top20=byNet.slice(0,20);
+ ptbody.innerHTML=top20.map(function(r){
+  var o=r&&r.occupancy;
+  return '<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'">'
+  +'<td style="padding:7px 12px;font-size:11px;color:var(--ink);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r&&r.address?String(r.address).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'):'')+'">'+(r&&r.address?String(r.address).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</td>'
+  +'<td style="padding:7px 12px;font-size:11px;color:var(--ink2)">'+(r&&r.owner?String(r.owner).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</td>'
+  +'<td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(r&&r.rent)+'</td>'
+  +'<td style="padding:7px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;'+(occStyle[o]||'')+'">'+(occLabel[o]||'—')+'</span></td>'
+  +'<td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:'+((Number(r&&r.net)||0)>=0?'var(--blue)':'var(--red)')+'">'+ltFmt((r&&r.net)||0)+'</td>'
+  +'</tr>';
+ }).join('');
+ if(pfoot){
+  if(records.length>20){
+   pfoot.style.display='block';
+   pfoot.innerHTML='<a href="javascript:void(0)" onclick="nav(\'ltproperties\')" style="font-size:11px;font-weight:600;color:var(--amber);text-decoration:underline;cursor:pointer">Ver todas em Properties</a>';
+  }else{
+   pfoot.style.display='none';
+   pfoot.innerHTML='';
+  }
+ }
  }
 
- // Alerts
- const alerts=[];
- records.filter(r=>r.status==='disputed').forEach(r=>alerts.push({text:'Statement em disputa: '+r.address,level:'red'}));
- records.filter(r=>r.status==='pending').forEach(r=>alerts.push({text:'Aguardando aprovacao: '+r.address,level:'amber'}));
- expenses.filter(e=>e.status==='overdue').forEach(e=>alerts.push({text:'Despesa vencida: '+e.category+' — '+e.propAddress,level:'red'}));
- const today=new Date().toISOString().slice(0,10);
- expenses.filter(e=>e.status==='unpaid'&&e.due&&e.due<today).forEach(e=>alerts.push({text:'Despesa a vencer: '+e.category+' — '+e.propAddress,level:'amber'}));
- if(typeof tpDashServiceAlerts==='function'){tpDashServiceAlerts().forEach(a=>alerts.push(a));}
+ // Alertas: apenas disputed (URGENTE) e pending (ATENCAO), ate 10 mais recentes
+ const stName={disputed:'Disputa',pending:'Pendente'};
+ const alertItems=[];
+ records.forEach(function(r){
+  if(!r) return;
+  if(r.status==='disputed'){alertItems.push({r:r,urgent:true,label:stName.disputed||'Disputa'});}
+  else if(r.status==='pending'){alertItems.push({r:r,urgent:false,label:stName.pending||'Pendente'});}
+ });
+ alertItems.sort(function(a,b){
+  var ta=Date.parse((a.r&&a.r.savedAt)||'')||0;
+  var tb=Date.parse((b.r&&b.r.savedAt)||'')||0;
+  if(tb!==ta) return tb-ta;
+  return String(b.r&&b.r.id).localeCompare(String(a.r&&a.r.id));
+ });
+ const alertTop=alertItems.slice(0,10);
  const alertEl=document.getElementById('ltd-alerts-list');
  if(alertEl){
- if(!alerts.length){
- alertEl.innerHTML='<div style="padding:14px 18px;font-size:12px;color:var(--green);font-weight:500">Nenhuma pendencia encontrada.</div>';
+ if(!alertTop.length){
+  alertEl.innerHTML='<div style="padding:14px 18px;font-size:12px;color:var(--ink2)">Nenhuma pendencia no momento.</div>';
  } else {
- const styles={red:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',amber:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',blue:'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)'};
- alertEl.innerHTML=alerts.map(a=>{
- const lab=a.level==='red'?'URGENTE':(a.level==='blue'?'INFO':'ATENÇÃO');
- const lk=a.level==='red'?'red':(a.level==='blue'?'blue':'amber');
- const body=a.title?`<div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0"><span style="font-size:11px;font-weight:600;color:var(--ink)">${a.title}</span><span style="font-size:11px;color:var(--ink2)">${a.detail||''}</span></div>`:`<span style="font-size:11px;color:var(--ink2);flex:1">${a.text}</span>`;
- const nav=a.nav?`onclick="nav('${a.nav}')" style="cursor:pointer"`:'';return`
- <div ${nav} style="display:flex;align-items:flex-start;gap:10px;padding:9px 18px;border-bottom:1px solid var(--border)">
- <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;${styles[lk]||styles.amber}">${lab}</span>
- ${body}
- </div>`;}).join('');
+  const stylesU='background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)';
+  const stylesA='background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)';
+  alertEl.innerHTML=alertTop.map(function(it){
+   var ad=(it.r&&it.r.address)?String(it.r.address).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
+   var line='<span style="font-size:11px;font-weight:600;color:var(--ink)">'+ad+'</span> — <span style="font-size:11px;color:var(--ink2)">Status: '+it.label+'</span>';
+   return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 18px;border-bottom:1px solid var(--border)">'
+   +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;'+(it.urgent?stylesU:stylesA)+'">'+(it.urgent?'URGENTE':'ATEN\u00C7\u00C3O')+'</span>'
+   +'<div style="flex:1;min-width:0">'+line+'</div></div>';
+  }).join('');
  }
  }
 }
