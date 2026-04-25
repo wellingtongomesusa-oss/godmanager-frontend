@@ -1844,15 +1844,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  </div>
 
- <!-- Section: Property Photos -->
- <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Property Photos</div>
- <div id="lt-photo-dropzone" onclick="document.getElementById('lt-photo-input').click()" ondragover="ltPhotoDragOver(event)" ondragleave="ltPhotoDragLeave(event)" ondrop="ltPhotoDrop(event)" style="border:2px dashed var(--border2);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:6px">
- <div style="font-size:12px;font-weight:600;color:var(--ink2)">Drag and drop photos here or click to select</div>
- <div style="font-size:10.5px;color:var(--ink3);margin-top:3px">JPG, PNG, HEIC, WEBP — up to 10 photos</div>
- </div>
- <input type="file" id="lt-photo-input" multiple accept="image/*,.heic,.heif" style="display:none" onchange="ltPhotoHandleFiles(this.files)">
- <div id="lt-photo-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
-
  <!-- Section: Approval -->
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Aprovação do Statement</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
@@ -1873,6 +1864,14 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <input id="lt-f-notes" placeholder="Observações adicionais sobre o statement..." style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  </div>
  </div>
+
+ <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">FOTOS DA PROPRIEDADE</div>
+ <input type="file" id="lt-f-photos" accept="image/*" multiple style="display:none" />
+ <div style="margin-bottom:8px">
+ <button type="button" id="lt-f-photos-add-btn" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Fotos</button>
+ </div>
+ <div id="lt-f-photos-preview" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px"></div>
+ <p style="font-size:10px;color:var(--ink3);margin:0 0 20px;line-height:1.45">A primeira foto será usada como CAPA no listing</p>
 
  <div style="display:flex;gap:10px;justify-content:flex-end">
  <button onclick="ltCloseModal()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
@@ -6077,8 +6076,10 @@ function ltOpenNewProperty(){
  const dobEl=document.getElementById('lt-f-owner-dob');if(dobEl)dobEl.value='';
  const btEl=document.getElementById('lt-f-bank-type');if(btEl)btEl.value='checking';
  const bmEl=document.getElementById('lt-f-bank-method');if(bmEl)bmEl.value='ach';
- ltStagedPhotos=[];
- const pp=document.getElementById('lt-photo-preview');if(pp)pp.innerHTML='';
+ ltPhotoFiles=[];
+ var pp2=document.getElementById('lt-f-photos-preview');if(pp2)pp2.innerHTML='';
+ var pIn=document.getElementById('lt-f-photos');if(pIn)pIn.value='';
+ if(typeof ltRenderPhotoPreview==='function')ltRenderPhotoPreview();
  document.getElementById('lt-f-rent').value='';
  document.getElementById('lt-f-hoa').value='';
  document.getElementById('lt-f-status').value='pending';
@@ -6156,8 +6157,14 @@ function ltOpenEdit(id){
  document.getElementById('lt-f-bank-holder').value=r.bankHolder||'';
  document.getElementById('lt-f-bank-address').value=r.bankAddress||'';
  document.getElementById('lt-f-bank-method').value=r.bankMethod||'ach';
- ltStagedPhotos=r.photos?[...r.photos]:[];
- ltPhotoRenderPreview();
+ ltPhotoFiles=[];
+ if(Array.isArray(r.photos)&&r.photos.length){
+  r.photos.forEach(function(p,idx){
+   if(typeof p==='string'&&p.indexOf('data:')===0) ltPhotoFiles.push({dataUrl:p,name:'foto_'+(idx+1)});
+   else if(p && typeof p==='object' && p.dataUrl) ltPhotoFiles.push({dataUrl:p.dataUrl,name:p.name||('foto_'+(idx+1))});
+  });
+ }
+ if(typeof ltRenderPhotoPreview==='function')ltRenderPhotoPreview();
  document.getElementById('lt-f-month').value=r.month||'2026-03';
  document.getElementById('lt-f-rent').value=r.rent||'';
  document.getElementById('lt-f-hoa').value=r.hoa||'';
@@ -6211,7 +6218,7 @@ function ltSaveRecord(){
  bankHolder:document.getElementById('lt-f-bank-holder').value.trim(),
  bankAddress:document.getElementById('lt-f-bank-address').value.trim(),
  bankMethod:document.getElementById('lt-f-bank-method').value,
- photos:[...ltStagedPhotos],
+ photos:typeof ltPhotoFiles!=='undefined' && ltPhotoFiles.length ? ltPhotoFiles.map(function(f){ return f.dataUrl; }) : [],
  month:document.getElementById('lt-f-month').value,
  rent, hoa, water, electric, maint, vendor, net,
  desc:'',
@@ -6355,6 +6362,12 @@ function ltOpenDetail(id){
  const statusBg={approved:'var(--green-bg)',pending:'var(--amber-bg)',disputed:'var(--red-bg)'};
  const statusBd={approved:'var(--green-bd)',pending:'var(--amber-bd)',disputed:'var(--red-bd)'};
  document.getElementById('lt-detail-title').textContent=' Statement — '+r.address;
+ var coverHtml='';
+ if(r.photos&&r.photos.length){
+  var p0=r.photos[0];
+  var csrc=typeof p0==='string'?p0:((p0&&p0.dataUrl)||'');
+  if(csrc) coverHtml='<div style="margin-bottom:16px"><img src="'+String(csrc).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;display:block" alt=""></div>';
+ }
  const filesHtml=r.files&&r.files.length?`
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)">Evidências Anexadas (${r.files.length})</div>
  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
@@ -6363,7 +6376,7 @@ function ltOpenDetail(id){
  :`<a href="${f.dataUrl}" download="${f.name}" style="text-decoration:none"><div style="width:80px;height:80px;background:var(--cream);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer"><div style="font-size:22px"></div><div style="font-size:9px;color:var(--ink3);text-align:center;padding:0 4px;overflow:hidden;text-overflow:ellipsis;max-width:70px;white-space:nowrap">${f.name}</div></div></a>`
  ).join('')}
  </div>`:'<div style="color:var(--ink3);font-size:11px;margin-bottom:14px">Nenhuma evidência anexada.</div>';
- document.getElementById('lt-detail-body').innerHTML=`
+ document.getElementById('lt-detail-body').innerHTML=coverHtml+`
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
  <div style="background:var(--cream);border-radius:7px;padding:10px 14px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Owner</div><div style="font-size:13px;font-weight:600;color:var(--ink);margin-top:3px">${r.owner||'—'}</div></div>
  <div style="background:var(--cream);border-radius:7px;padding:10px 14px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Tenant</div><div style="font-size:13px;font-weight:600;color:var(--ink);margin-top:3px">${r.tenant||'—'}</div></div>
@@ -7925,6 +7938,7 @@ document.addEventListener('DOMContentLoaded',function(){
  try{
   if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  }catch(e){console.warn('loadHomeDashboardFromApi',e);}
+ try{ if(typeof ltPropertyModalPhotosInitOnce==='function')ltPropertyModalPhotosInitOnce(); }catch(e){}
 });
 
 window._pmSummaryByCode=null;
@@ -9123,51 +9137,77 @@ function ltpCloseNewPropertyModal(){
 }
 
 // 
-// PROPERTY PHOTOS — UPLOAD & PREVIEW
+// PROPERTY PHOTOS — modal #lt-modal (primeira foto = capa do listing)
 // 
-let ltStagedPhotos=[];
+let ltPhotoFiles=[];
 
-function ltPhotoDragOver(e){
- e.preventDefault();
- const dz=document.getElementById('lt-photo-dropzone');
- if(dz){dz.style.borderColor='var(--amber)';dz.style.background='var(--amber-bg)';}
-}
-function ltPhotoDragLeave(e){
- const dz=document.getElementById('lt-photo-dropzone');
- if(dz){dz.style.borderColor='var(--border2)';dz.style.background='';}
-}
-function ltPhotoDrop(e){
- e.preventDefault();
- ltPhotoDragLeave(e);
- ltPhotoHandleFiles(e.dataTransfer.files);
-}
-function ltPhotoHandleFiles(files){
- const max=10;
- Array.from(files).forEach(f=>{
- if(ltStagedPhotos.length>=max)return;
- if(!f.type.startsWith('image/')&&!f.name.match(/\.(heic|heif)$/i))return;
- const reader=new FileReader();
- reader.onload=ev=>{
- ltStagedPhotos.push({dataUrl:ev.target.result,name:f.name,type:f.type||'image/jpeg'});
- ltPhotoRenderPreview();
- };
- reader.readAsDataURL(f);
+function ltRenderPhotoPreview(){
+ var c=document.getElementById('lt-f-photos-preview');
+ if(!c) return;
+ c.innerHTML='';
+ ltPhotoFiles.forEach(function(item, idx){
+  var wrap=document.createElement('div');
+  wrap.style.cssText='position:relative;border-radius:6px;overflow:hidden';
+  var img=document.createElement('img');
+  img.src=item.dataUrl;
+  img.setAttribute('alt','');
+  img.style.cssText='width:100%;height:90px;object-fit:cover;border-radius:6px';
+  wrap.appendChild(img);
+  if(idx===0){
+   var badge=document.createElement('span');
+   badge.textContent='CAPA';
+   badge.style.cssText='position:absolute;top:4px;left:4px;background:var(--amber);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px';
+   wrap.appendChild(badge);
+  }
+  var btn=document.createElement('button');
+  btn.type='button';
+  btn.setAttribute('aria-label','Remover foto');
+  btn.textContent='\u00D7';
+  btn.style.cssText='position:absolute;top:4px;right:4px;width:24px;height:24px;border:none;border-radius:4px;background:rgba(0,0,0,.5);color:#fff;font-size:14px;line-height:1;cursor:pointer;padding:0;font-family:inherit';
+  (function(removeIdx){
+   btn.addEventListener('click', function(){
+    ltPhotoFiles.splice(removeIdx,1);
+    ltRenderPhotoPreview();
+   });
+  })(idx);
+  wrap.appendChild(btn);
+  c.appendChild(wrap);
  });
 }
-function ltPhotoRemove(idx){
- ltStagedPhotos.splice(idx,1);
- ltPhotoRenderPreview();
+
+function ltOnPropertyPhotosInputChange(ev){
+ var inp=ev.target;
+ var files=inp && inp.files;
+ if(!files||!files.length) return;
+ var seen={};
+ ltPhotoFiles.forEach(function(f){ if(f&&f.name) seen[f.name]=true; });
+ var max=30;
+ Array.from(files).forEach(function(file){
+  if(ltPhotoFiles.length>=max) return;
+  if(!file.type||file.type.indexOf('image/')!==0) return;
+  if(seen[file.name]) return;
+  seen[file.name]=true;
+  var reader=new FileReader();
+  reader.onload=function(e){
+   ltPhotoFiles.push({ dataUrl:e.target.result, name:file.name });
+   ltRenderPhotoPreview();
+  };
+  reader.readAsDataURL(file);
+ });
+ inp.value='';
 }
-function ltPhotoRenderPreview(){
- const c=document.getElementById('lt-photo-preview');
- if(!c)return;
- if(!ltStagedPhotos.length){c.innerHTML='';return;}
- c.innerHTML=ltStagedPhotos.map((p,i)=>`
- <div style="position:relative;display:inline-block">
- <img src="${p.dataUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block" alt="">
- <button onclick="ltPhotoRemove(${i})" style="position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;border:none;line-height:1">X</button>
- <div style="font-size:8px;color:var(--ink3);text-align:center;margin-top:2px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Photo ${i+1}</div>
- </div>`).join('');
+
+function ltPropertyModalPhotosInitOnce(){
+ if(window._ltPropertyModalPhotosBound) return;
+ window._ltPropertyModalPhotosBound=1;
+ var addBtn=document.getElementById('lt-f-photos-add-btn');
+ var finput=document.getElementById('lt-f-photos');
+ if(addBtn&&finput){
+  addBtn.addEventListener('click', function(){ finput.click(); });
+ }
+ if(finput){
+  finput.addEventListener('change', ltOnPropertyPhotosInputChange);
+ }
 }
 
 // 
@@ -9221,7 +9261,11 @@ function opPhotosRenderGallery(recordId){
  const r=ltGetRecords().find(x=>x.id===recordId);
  if(!r){gallery.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink3)">Property not found.</div>';return;}
 
- const photos=r.photos||[];
+ const photos=(r.photos||[]).map(function(p,i){
+  if(typeof p==='string') return { dataUrl: p, name: 'foto_'+(i+1) };
+  if(p && p.dataUrl) return p;
+  return { dataUrl: '', name: 'foto_'+(i+1) };
+ }).filter(function(p){ return p && p.dataUrl; });
  if(!photos.length){
  gallery.innerHTML=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center">
  <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px">No photos available</div>
@@ -9285,7 +9329,7 @@ function opPhotoUpdateMain(){
  const p=opCurrentPhotos[opCurrentPhotoIdx];
  const img=document.getElementById('op-photo-main-img');
  const ctr=document.getElementById('op-photo-counter');
- if(img)img.src=p.dataUrl;
+ if(img)img.src=(typeof p==='string'?p:(p&&p.dataUrl))||'';
  if(ctr)ctr.textContent=(opCurrentPhotoIdx+1)+' / '+opCurrentPhotos.length;
  document.querySelectorAll('.op-thumb-img').forEach((el,i)=>{
  el.style.borderColor=i===opCurrentPhotoIdx?'var(--amber)':'transparent';
@@ -9316,7 +9360,7 @@ function opLightboxUpdate(){
  const p=opLightboxPhotos[opLightboxIdx];
  const img=document.getElementById('lb-img');
  const ctr=document.getElementById('lb-counter');
- if(img)img.src=p.dataUrl;
+ if(img)img.src=(typeof p==='string'?p:(p&&p.dataUrl))||'';
  if(ctr)ctr.textContent=(opLightboxIdx+1)+' / '+opLightboxPhotos.length;
  const thumbs=document.getElementById('lb-thumbs');
  if(thumbs)thumbs.innerHTML=opLightboxPhotos.map((ph,i)=>`
@@ -9332,36 +9376,6 @@ function opLightboxKeyHandler(e){
  if(e.key==='ArrowLeft')opLightboxNav(-1);
  else if(e.key==='ArrowRight')opLightboxNav(1);
  else if(e.key==='Escape')opLightboxClose();
-}
-
-// 
-// PATCH ltOpenDetail — show photo cover if photos exist
-// 
-const _origLtOpenDetail=ltOpenDetail;
-function ltOpenDetail(id){
- _origLtOpenDetail(id);
- // Inject photo strip after render (brief timeout to let DOM settle)
- setTimeout(()=>{
- const r=ltGetRecords().find(x=>x.id===id);
- if(!r||!r.photos||!r.photos.length)return;
- const body=document.getElementById('lt-detail-body');
- if(!body)return;
- const maxThumb=4;
- const visible=r.photos.slice(0,maxThumb);
- const extra=r.photos.length-maxThumb;
- const strip=document.createElement('div');
- strip.innerHTML=`<div style="margin-bottom:14px">
- <img src="${r.photos[0].dataUrl}" alt="" onclick="opPhotoOpenLightbox(ltGetRecords().find(x=>x.id==='${id}').photos,0)"
- style="width:100%;height:180px;object-fit:cover;border-radius:8px;cursor:pointer;display:block;margin-bottom:6px">
- <div style="display:flex;gap:6px;flex-wrap:wrap">
- ${visible.map((p,i)=>`<img src="${p.dataUrl}" alt="" onclick="opPhotoOpenLightbox(ltGetRecords().find(x=>x.id==='${id}').photos,${i})"
- style="width:52px;height:52px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--border)" />`).join('')}
- ${extra>0?`<div onclick="opPhotoOpenLightbox(ltGetRecords().find(x=>x.id==='${id}').photos,${maxThumb})"
- style="width:52px;height:52px;background:rgba(0,0,0,.5);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">+${extra}</div>`:''}
- </div>
- </div>`;
- body.insertBefore(strip,body.firstChild);
- },50);
 }
 
 // VENDORS — page module
