@@ -1620,7 +1620,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <option value="__PM__">Vendor (markup / API)</option>
  </select>
  <input id="lt-exp-search" oninput="ltExpRender()" placeholder="Buscar por propriedade ou descrição..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:280px">
- <div style="margin-left:auto;display:flex;gap:8px">
+ <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+ <span id="lt-exp-migrate-status" style="font-size:11px;color:var(--ink2);max-width:280px" aria-live="polite"></span>
+ <button type="button" id="lt-exp-migrate-local-btn" onclick="if(typeof ltExpMigrateLocalToDb==='function')ltExpMigrateLocalToDb();" style="display:none;padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Migrar dados locais → Banco</button>
  <button onclick="ltOpenNewExpense()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Despesa</button>
  <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
@@ -7180,6 +7182,117 @@ async function ltExpRenderWithPm(){
  if(typeof ltExpRender==='function')ltExpRender();
 }
 
+function ltExpGetRawLocalStorageArray(){
+ try{
+  var s=localStorage.getItem('mp_lt_expenses_v1');
+  if(!s) return [];
+  var a=JSON.parse(s);
+  return Array.isArray(a)?a:[];
+ }catch(e){ return []; }
+}
+function ltExpUpdateMigrateButtonVisibility(){
+ var btn=document.getElementById('lt-exp-migrate-local-btn');
+ var stEl=document.getElementById('lt-exp-migrate-status');
+ if(!btn) return;
+ var n=ltExpGetRawLocalStorageArray().length;
+ btn.style.display=n>0?'inline-block':'none';
+ if(stEl && stEl.textContent.indexOf('Migrando')===-1) stEl.textContent='';
+}
+async function ltExpMigrateLocalToDb(){
+ var list=ltExpGetRawLocalStorageArray();
+ if(!list.length) return;
+ if(!confirm('Migrar '+list.length+' registro(s) local para a base de dados? Os itens migrados com sucesso deixam de existir no armazenamento local.')) return;
+ var btn=document.getElementById('lt-exp-migrate-local-btn');
+ var stEl=document.getElementById('lt-exp-migrate-status');
+ if(btn) btn.disabled=true;
+ var vlist=[];
+ try{
+  var vr=await fetch('/api/pm/vendors', { credentials:'include' });
+  if(vr.ok){
+   var vj=await vr.json();
+   vlist=(vj && Array.isArray(vj.vendors))?vj.vendors:[];
+  }
+ }catch(e1){ vlist=[]; }
+ function findVendorRow(name){
+  if(!name||!vlist||!vlist.length) return null;
+  var t=String(name).trim().toLowerCase();
+  for(var v=0;v<vlist.length;v++){
+   var w=vlist[v];
+   var cn=String((w && (w.company_name||w.companyName))||'').trim().toLowerCase();
+   if(cn===t) return w;
+  }
+  return null;
+ }
+ var total=list.length;
+ var ok=0;
+ var remaining=[];
+ for(var i=0;i<list.length;i++){
+  if(stEl) stEl.textContent='Migrando '+(i+1)+' de '+total+' registros...';
+  var r=list[i];
+  if(!r){ remaining.push(r); continue; }
+  var propId=String(r.propId||'').trim();
+  var value=parseFloat(r.value);
+  if(!propId || !Number.isFinite(value) || value<0){
+   remaining.push(r);
+   continue;
+  }
+  var monthRef=String(r.month||'').trim();
+  if(!/^\d{4}-\d{1,2}$/.test(monthRef)){
+   remaining.push(r);
+   continue;
+  }
+  var sDate=String((r.due||r.paid||'')).trim();
+  if(!sDate) sDate=monthRef.length>=7?monthRef.slice(0,7)+'-01':(monthRef+'-01');
+  var dTest=new Date(sDate);
+  if(Number.isNaN(dTest.getTime())) sDate=new Date().toISOString().slice(0,10);
+  var stPm=(typeof ltExpUiStatusToPm==='function')?ltExpUiStatusToPm(r.status||'unpaid'):'SCHEDULED';
+  var cat=String(r.category||'').trim()||'HOA';
+  var body={
+   propertyCode:propId,
+   vendorId:null,
+   packageApplied:'PACOTE_4',
+   pmPackage:'PACOTE_4',
+   vendorCost:value,
+   serviceType:cat,
+   monthRef:monthRef,
+   serviceDate:sDate,
+   status:stPm,
+   description:String(r.desc||'').trim()||null
+  };
+  if(cat==='Vendor' && r.vendor){
+   var vrow=findVendorRow(r.vendor);
+   if(vrow && vrow.id){
+    body.vendorId=String(vrow.id);
+    var dp=String((vrow.default_package||vrow.defaultPackage||'PACOTE_1')).trim();
+    if(dp==='PACOTE_1'||dp==='PACOTE_2'||dp==='PACOTE_3'||dp==='PACOTE_4'){ body.packageApplied=dp; body.pmPackage=dp; }
+   } else {
+    var pref=String(r.vendor).trim()+(r.desc?(' - '+String(r.desc).trim()):'');
+    body.description=pref||body.description;
+   }
+  }
+  try{
+   var res=await fetch('/api/pm/expenses', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(body) });
+   if(res.ok) ok++;
+   else remaining.push(r);
+  }catch(e2){ remaining.push(r); }
+ }
+ if(typeof ltExpSaveRecords==='function') ltExpSaveRecords(remaining);
+ else try{ localStorage.setItem('mp_lt_expenses_v1', JSON.stringify(remaining)); }catch(e3){}
+ if(stEl) stEl.textContent='';
+ if(btn) btn.disabled=false;
+ if(typeof ltExpUpdateMigrateButtonVisibility==='function') ltExpUpdateMigrateButtonVisibility();
+ if(remaining.length===0 && ok>0){
+  if(typeof showToast==='function') showToast(ok+' registro(s) migrados com sucesso. Recarregando...');
+  setTimeout(function(){ window.location.reload(); }, 800);
+  return;
+ }
+ if(typeof showToast==='function'){
+  if(ok>0) showToast(ok+' registro(s) migrados com sucesso.'+(remaining.length?(' '+remaining.length+' permaneceram (erro).'):''));
+  else showToast('Nenhum registro migrado. Verifique propriedade, mes (YYYY-M(M)) e sessao.');
+ }
+ if(typeof ltExpRenderWithPm==='function' && ok>0) await ltExpRenderWithPm();
+}
+
 function ltOpenNewExpense(){
  try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
  ltExpEditingId=null;ltExpEditingPmId=null;ltPopulatePropertyDropdowns();
@@ -7478,6 +7591,7 @@ function ltExpRender(){
  </div></td>
  </tr>`;
  }).join('');
+ if(typeof ltExpUpdateMigrateButtonVisibility==='function')ltExpUpdateMigrateButtonVisibility();
 }
 
 function ltExpExportCSV(){
