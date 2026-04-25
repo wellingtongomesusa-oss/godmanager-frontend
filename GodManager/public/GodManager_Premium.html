@@ -2228,6 +2228,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
  <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
+ <button type="button" onclick="if(typeof ltpResetAllToPending==='function')ltpResetAllToPending();" style="padding:8px 14px;background:transparent;color:var(--red);border:1px solid var(--red-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">&#8635; Resetar Status</button>
  </div>
  </div>
  <div style="display:grid;grid-template-columns:repeat(6,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
@@ -6542,12 +6543,90 @@ function ltSaveRecord(){
 }
 
 // Quick Approve / Dispute from table 
+function ltpGetApprovalUserLabel(){
+ var u=typeof gmSessionUserSync==='function'?gmSessionUserSync():null;
+ if(!u) return 'admin';
+ return (u.name||u.displayName||u.email||'admin');
+}
 function ltSetStatus(id,status){
  const records=ltGetRecords();
  const r=records.find(x=>x.id===id);
- if(r){r.status=status;r.savedAt=new Date().toLocaleString('pt-BR');ltSaveRecords(records);ltRender();}
+ if(r){
+  r.status=status;
+  r.savedAt=new Date().toLocaleString('pt-BR');
+  if(status==='approved'){
+   r.approvedBy=ltpGetApprovalUserLabel();
+   r.approvedAt=new Date().toLocaleString('pt-BR');
+  } else {
+   r.approvedBy='';
+   r.approvedAt='';
+  }
+  ltSaveRecords(records);
+  if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
+   var g=window.gmPropertiesLoad()||[];
+   var gi=g.findIndex(p=>p&&String(p.id)===String(id));
+   if(gi>=0){
+    var p=Object.assign({},g[gi],{status:status,approvedBy:status==='approved'?r.approvedBy:'',approvedAt:status==='approved'?r.approvedAt:''});
+    g[gi]=p;
+    window.gmPropertiesSave(g);
+   }
+  }
+  ltRender();
+  if(typeof ltpRender==='function') void ltpRender();
+ }
 }
-
+function ltpResetAllToPending(){
+ if(!confirm('Resetar TODAS as propriedades para Pendente? Esta ação não pode ser desfeita.')) return;
+ var rec=(ltGetRecords()||[]).map(function(r){ if(!r) return r; return Object.assign({}, r, { status: 'pending', approvedBy: '', approvedAt: '' }); });
+ var n=rec.length;
+ ltSaveRecords(rec);
+ if(typeof window.gmPropertiesLoad==='function' && typeof window.gmPropertiesSave==='function'){
+  var g=window.gmPropertiesLoad()||[];
+  if(g.length){
+   var g2=g.map(function(p){ if(!p) return p; return Object.assign({}, p, { status: 'pending', approvedBy: '', approvedAt: '' }); });
+   window.gmPropertiesSave(g2);
+   n=Math.max(n, g2.length);
+  }
+ }
+ if(typeof ltpRender==='function') void ltpRender();
+ alert(String(n) + ' propriedades resetadas para Pendente.');
+}
+function ltpToggleStatementStatusFromBadge(id){
+ if(!id) return;
+ var hasGm=typeof window.gmPropertiesLoad==='function' && (window.gmPropertiesLoad()||[]).length>0;
+ var fromG=hasGm ? (window.gmPropertiesLoad()||[]).find(function(p){ return p && String(p.id)===String(id); }) : null;
+ var fromL=(ltGetRecords()||[]).find(function(r){ return r && String(r.id)===String(id); });
+ var rUi=null;
+ if (hasGm && fromG) {
+  rUi=typeof window.gmPropertiesToUi==='function' ? window.gmPropertiesToUi(Object.assign({}, fromG)) : fromG;
+ } else if (fromL) {
+  rUi=fromL;
+ }
+ if (!rUi) return;
+ var s=String(rUi.status||'').toLowerCase();
+ var next, by=''; var at='';
+ if (s==='approved') {
+  next='pending';
+ } else {
+  next='approved';
+  by=ltpGetApprovalUserLabel();
+  at=new Date().toLocaleString('pt-BR');
+ }
+ if (hasGm) {
+  var g=(window.gmPropertiesLoad()||[]).map(function(p){
+   if (!p || String(p.id)!==String(id)) return p;
+   return Object.assign({}, p, { status: next, approvedBy: by, approvedAt: at });
+  });
+  window.gmPropertiesSave(g);
+ }
+ var le=ltGetRecords()||[];
+ var l2=le.map(function(r){
+  if (!r || String(r.id)!==String(id)) return r;
+  return Object.assign({}, r, { status: next, approvedBy: by, approvedAt: at });
+ });
+ ltSaveRecords(l2);
+ if(typeof ltpRender==='function') void ltpRender();
+}
 function ltDelete(id){
  if(!confirm('Remover este statement permanentemente?'))return;
  ltSaveRecords(ltGetRecords().filter(x=>x.id!==id));
@@ -6609,7 +6688,7 @@ function ltOpenDetail(id){
  </div>`:''}
  `:''}
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
- <div style="background:${statusBg[r.status]};border:1px solid ${statusBd[r.status]};border-radius:7px;padding:10px 14px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:${statusColors[r.status]}">Status</div><div style="font-size:13px;font-weight:700;color:${statusColors[r.status]};margin-top:3px">${statusLabels[r.status]||r.status}</div></div>
+ <div style="background:${statusBg[r.status]};border:1px solid ${statusBd[r.status]};border-radius:7px;padding:10px 14px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:${statusColors[r.status]}">Status</div><div style="font-size:13px;font-weight:700;color:${statusColors[r.status]};margin-top:3px">${statusLabels[r.status]||r.status}</div>${(r.status==='approved' && (r.approvedBy || r.approvedAt)) ? '<div style="font-size:11px;font-weight:500;color:var(--ink2);margin-top:8px;line-height:1.5">Aprovado por: ' + String(r.approvedBy || '—').replace(/</g,'&lt;') + ' em ' + String(r.approvedAt || '—').replace(/</g,'&lt;') + '</div>' : ''}</div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px">
  <table style="width:100%;border-collapse:collapse">
@@ -8289,6 +8368,16 @@ function ltpBindTbodyActionDelegationOnce(){
  window._ltpTbodyActBound=1;
  /* capture: true -- <td> das acoes usa stopPropagation(); sem capture o click nao chega ao document */
  document.addEventListener('click', function(ev){
+  var st=ev.target && ev.target.closest && ev.target.closest('[data-ltp-st-toggle]');
+  if(st){
+   var tb0=document.getElementById('ltp-tbody');
+   if(!tb0 || !tb0.contains(st)) return;
+   ev.preventDefault();
+   ev.stopPropagation();
+   var sid=st.getAttribute('data-ltp-id');
+   if(sid && typeof ltpToggleStatementStatusFromBadge==='function') ltpToggleStatementStatusFromBadge(sid);
+   return;
+  }
   var t=ev.target && ev.target.closest && ev.target.closest('[data-ltp-a]');
   if(!t) return;
   var tb=document.getElementById('ltp-tbody');
@@ -8387,7 +8476,7 @@ async function ltpRender(){
  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.mgmpct?r.mgmpct+'%':'—'}</td>
  ${ltpRowNetExpDia15(r, expByProp)}
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
- <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${stLabel[r.status]||'—'}</span></td>
+ <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-ltp-st-toggle data-ltp-id="${esc(r.id)}" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''};cursor:pointer;font-family:'Inter',sans-serif;border-width:1px;border-style:solid">${stLabel[r.status]||'—'}</button></td>
  <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
  <div style="display:flex;gap:4px;justify-content:center">
  <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
