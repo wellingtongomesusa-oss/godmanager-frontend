@@ -47,7 +47,7 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const monthRef = searchParams.get('monthRef') || undefined;
+  const monthRef = searchParams.get('monthRef') || searchParams.get('month') || undefined;
 
   try {
     const rows = await prisma.pmExpense.findMany({

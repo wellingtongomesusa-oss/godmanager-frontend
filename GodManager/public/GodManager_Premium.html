@@ -1985,26 +1985,30 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="lt-nexp-pm-block" style="display:none;margin-bottom:16px;border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:16px;background:rgba(20,20,22,.35)">
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">Despesa com vendor (Postgres, markup, NET owner)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-   <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (cadastrado) *</label><select id="lt-nexp-pm-vendor" class="lt-nexp-pm-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select></div>
-   <div id="lt-nexp-pacote-new" style="grid-column:1/-1;margin-bottom:2px">
-    <label style="display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--ink2)">PACOTE / MARKUP</label>
-    <select id="lt-expense-pacote" class="lt-nexp-pm-pacote-sel" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
-     <option value="">— Selecionar pacote —</option>
-     <option value="PACOTE_1">Pacote 1 — +15%</option>
-     <option value="PACOTE_2">Pacote 2 — +18%</option>
-     <option value="PACOTE_3">Pacote 3 — +25%</option>
-     <option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option>
-    </select>
+   <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR (cadastrado) *</label><select id="lt-nexp-pm-vendor" class="lt-nexp-pm-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select></div>
+   <div id="lt-nexp-pacote-new" style="grid-column:1/-1">
+    <div style="margin-bottom:12px">
+     <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px;color:#555">Pacote / Markup</label>
+     <select id="lt-pm-pacote-nova" class="lt-pacote-select" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+      <option value="">— Selecionar pacote —</option>
+      <option value="PACOTE_1">Pacote 1 — +15%</option>
+      <option value="PACOTE_2">Pacote 2 — +18%</option>
+      <option value="PACOTE_3">Pacote 3 — +25%</option>
+      <option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option>
+     </select>
+    </div>
    </div>
-   <div id="lt-nexp-pacote-edit" style="grid-column:1/-1;margin-bottom:2px;display:none">
-    <label style="display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--ink2)">PACOTE / MARKUP</label>
-    <select id="lt-expense-pacote-edit" class="lt-nexp-pm-pacote-sel" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
-     <option value="">— Selecionar pacote —</option>
-     <option value="PACOTE_1">Pacote 1 — +15%</option>
-     <option value="PACOTE_2">Pacote 2 — +18%</option>
-     <option value="PACOTE_3">Pacote 3 — +25%</option>
-     <option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option>
-    </select>
+   <div id="lt-nexp-pacote-edit" style="grid-column:1/-1;display:none">
+    <div style="margin-bottom:12px">
+     <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px;color:#555">Pacote / Markup</label>
+     <select id="lt-pm-pacote-edita" class="lt-pacote-select" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+      <option value="">— Selecionar pacote —</option>
+      <option value="PACOTE_1">Pacote 1 — +15%</option>
+      <option value="PACOTE_2">Pacote 2 — +18%</option>
+      <option value="PACOTE_3">Pacote 3 — +25%</option>
+      <option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option>
+     </select>
+    </div>
    </div>
    <div id="lt-nexp-pm-pkg-hint" style="grid-column:1/-1;font-size:10px;color:var(--ink3);margin-top:-2px;margin-bottom:6px;line-height:1.4"></div>
    <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TIPO DE SERVIÇO</label><input id="lt-nexp-pm-svc" placeholder="Sobrescreve / complementa" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
@@ -2017,7 +2021,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Detalhes</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
- <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR *</label><select id="lt-nexp-vendor" onchange="ltNexpVendorChanged()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer"><option value="">— Selecionar vendor —</option></select><input id="lt-nexp-vendor-new" type="text" placeholder="Nome do novo vendor" style="display:none;width:100%;margin-top:6px;padding:8px 11px;border:1px solid var(--amber);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR *</label><select id="lt-nexp-vendor" onchange="ltNexpVendorChanged()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer"><option value="">— Selecionar vendor —</option></select><div style="margin-bottom:12px"><label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px;color:#555">Pacote / Markup</label><select id="lt-detalhe-pacote" class="lt-pacote-select" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px"><option value="">— Selecionar pacote —</option><option value="PACOTE_1">Pacote 1 — +15%</option><option value="PACOTE_2">Pacote 2 — +18%</option><option value="PACOTE_3">Pacote 3 — +25%</option><option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option></select></div><input id="lt-nexp-vendor-new" type="text" placeholder="Nome do novo vendor" style="display:none;width:100%;margin-top:6px;padding:8px 11px;border:1px solid var(--amber);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DESCRIÇÃO *</label><input id="lt-nexp-desc" placeholder="Ex: Fatura HOA referente a Marco 2026" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NÚMERO DO DOCUMENTO</label><input id="lt-nexp-docnum" placeholder="Número da fatura, boleto ou invoice" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE VENCIMENTO</label><input id="lt-nexp-due" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
@@ -3032,6 +3036,7 @@ const CARDS=[
  {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'—',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'cleaning-spend',label:'CLEANING SPEND',badge:'CLN',barClass:'bb ba',value:'—',sub1:'Total spent with cleaners',sub2:'Current period',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Turnover',c:'pa'},{t:'Deep Clean',c:'pb'},{t:'Routine',c:'pg'}],r:'ltcleanings',empty:true,labels:[]},
  {id:'vendor-spend',label:'VENDOR SPEND',badge:'VND',barClass:'bb br',value:'—',sub1:'Total spent with vendors',sub2:'Current period',cd:[50,50],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Paid',c:'pr'},{t:'Pending',c:'pa'}],r:'vendors',empty:true,labels:[]},
+ {id:'pm-month-markup',label:'TOTAL MARKUP DO MÊS',badge:'MRK',barClass:'bb ba',value:'—',sub1:'Carregando…',sub2:'',cd:[1],cc:['#c9a96e','#22558c'],ctr:'—',pills:[],r:'ltexpenses',empty:true,labels:[]},
  {id:'contractor-payroll',label:'CONTRACTOR & PAYROLL',badge:'PAY',barClass:'bb br',value:'—',sub1:'Contractors + payroll total',sub2:'Current period',cd:[60,40],cc:['#b83030','#22558c'],ctr:'—',pills:[{t:'Contractors',c:'pr'},{t:'Payroll',c:'pb'}],r:'contractors',empty:true,labels:[]},
  {id:'software-services',label:'SOFTWARE & SERVICES',badge:'SFT',barClass:'bb bb',value:'—',sub1:'SaaS, subscriptions, services',sub2:'Monthly recurring',cd:[45,30,25],cc:['#22558c','#c9a96e','#4a5568'],ctr:'—',pills:[{t:'SaaS',c:'pb'},{t:'Services',c:'pa'},{t:'Other',c:'pg'}],r:'ltexpenses',empty:true,labels:[]},
  {id:'maintenance-tickets',label:'MAINTENANCE TICKETS',badge:'MNT',barClass:'bb ba',value:'—',sub1:'Total maintenance requests',sub2:'Master managed properties',cd:[40,35,25],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Resolved',c:'pg'},{t:'In Progress',c:'pa'},{t:'Open',c:'pr'}],r:'longterm',empty:true,labels:[]},
@@ -3090,6 +3095,48 @@ function gmHomeMoneyCtr(n){
  var s=n>=1e6?(n/1e6).toFixed(2)+'M':(n>=1e3?(n/1e3).toFixed(1)+'k':n.toFixed(0));
  return '$'+s;
 }
+function gmHomeFetchPmMarkupMonth(){
+ var d=new Date();
+ var ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+ var ml=String(d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})||'');
+ var mTit=ml?ml.charAt(0).toLocaleUpperCase()+ml.slice(1):ym;
+ fetch('/api/pm/expenses?month='+encodeURIComponent(ym),{credentials:'include'})
+  .then(function(r){if(!r.ok)throw new Error('pm expenses');return r.json();})
+  .then(function(j){
+   var rows=(j&&j.expenses)||[];
+   var sum=0;
+   for(var i=0;i<rows.length;i++){
+    var e=rows[i],o=parseFloat(e.ownerCharged),v=parseFloat(e.vendorCost);
+    if(!isNaN(o)&&!isNaN(v)) sum+=o-v;
+   }
+   sum=Math.round(sum*100)/100;
+   var c=CARDS.find(function(x){return x.id==='pm-month-markup';});
+   if(c){
+    var sMoney=typeof gmHomeMoney==='function'?gmHomeMoney(sum):('$'+sum.toFixed(2));
+    c.value=sMoney;
+    c.sub1=sMoney+' \u2014 markup gerado em '+mTit;
+    c.sub2='';
+    c.ctr=typeof gmHomeMoneyCtr==='function'?gmHomeMoneyCtr(sum):sMoney;
+    c.cd=[Math.max(0.01,sum),1];
+    c.cc=['#c9a96e','#22558c'];
+    c.empty=sum===0;
+    if(typeof renderCards==='function') renderCards();
+   }
+  })
+  .catch(function(){
+   var c=CARDS.find(function(x){return x.id==='pm-month-markup';});
+   if(c){
+    c.value='\u2014';
+    c.sub1='Sess\xe3o necess\xe1ria ou API indispon\xedvel';
+    c.sub2='';
+    c.ctr='\u2014';
+    c.cd=[1,1];
+    c.cc=['#e2ddd4','#4a5568'];
+    c.empty=true;
+    if(typeof renderCards==='function') renderCards();
+   }
+  });
+}
 function applyHomeDashboardFromApi(d){
  CARDS.forEach(function(c){
   if(!d){
@@ -3100,6 +3147,10 @@ function applyHomeDashboardFromApi(d){
    if(c.id==='inspections'){
     c.value='16';c.sub1='Property inspections / Zen Inspector';c.sub2='Estimated monthly / $80 per inspection';c.cd=[10,4,2];c.cc=['#2a6e4e','#c9a96e','#b83030'];c.ctr='16';c.empty=false;
     if(c.pills&&c.pills[0]){c.pills[0].t='Completed (10)';c.pills[1].t='Scheduled (4)';c.pills[2].t='Overdue (2)';}
+    return;
+   }
+   if(c.id==='pm-month-markup'){
+    c.value='\u2014';c.sub1='Carregando…';c.sub2='';c.ctr='\u2014';c.cd=[1,1];c.cc=['#e2ddd4','#4a5568'];c.empty=true;
     return;
    }
    c.value='—';c.sub1='No data yet';c.sub2='';c.ctr='—';c.cd=[1];c.cc=['#e2ddd4'];c.empty=true;
@@ -3351,6 +3402,7 @@ function loadHomeDashboardFromApi(){
   // Falha de rede - mantem o que ja esta (local ou vazio)
   if(!local){applyHomeDashboardFromApi(null);renderCards();}
  });
+ try{ if(typeof gmHomeFetchPmMarkupMonth==='function') gmHomeFetchPmMarkupMonth(); }catch(e){}
 }
 function saveAllData(){
  var now=new Date().toISOString();
@@ -6971,15 +7023,15 @@ function ltNexpPopulatePmVendorSelect(){
 function ltNexpGetPmPackageValue(){
  var we=document.getElementById('lt-nexp-pacote-edit');
  var vis=we && window.getComputedStyle(we).display!=='none';
- var el=vis ? document.getElementById('lt-expense-pacote-edit') : document.getElementById('lt-expense-pacote');
- if(!el) el=document.getElementById('lt-expense-pacote') || document.getElementById('lt-expense-pacote-edit');
+ var el=vis ? document.getElementById('lt-pm-pacote-edita') : document.getElementById('lt-pm-pacote-nova');
+ if(!el) el=document.getElementById('lt-pm-pacote-nova') || document.getElementById('lt-pm-pacote-edita');
  return el?String(el.value || '').trim():'';
 }
 function ltNexpSetPmBlockPacoteMode(isEdit){
  var wn=document.getElementById('lt-nexp-pacote-new');
  var we=document.getElementById('lt-nexp-pacote-edit');
- var a=document.getElementById('lt-expense-pacote');
- var b=document.getElementById('lt-expense-pacote-edit');
+ var a=document.getElementById('lt-pm-pacote-nova');
+ var b=document.getElementById('lt-pm-pacote-edita');
  if(!wn || !we) return;
  if(isEdit){
   if(a && b) b.value = a.value;
@@ -6993,10 +7045,19 @@ function ltNexpSetPmBlockPacoteMode(isEdit){
  if(typeof ltNexpPmRecalc === 'function') ltNexpPmRecalc();
 }
 function ltNexpSetBothPacoteSelects(v){
- var a=document.getElementById('lt-expense-pacote');
- var b=document.getElementById('lt-expense-pacote-edit');
+ var a=document.getElementById('lt-pm-pacote-nova');
+ var b=document.getElementById('lt-pm-pacote-edita');
+ var d=document.getElementById('lt-detalhe-pacote');
  if(a) a.value = v;
  if(b) b.value = v;
+ if(d) d.value = v;
+}
+function ltNexpSyncPacoteFrom( srcId ){
+ var el=document.getElementById(srcId);
+ if(!el) return;
+ var v=el.value;
+ ltNexpSetBothPacoteSelects(v);
+ if(typeof ltNexpPmRecalc==='function') ltNexpPmRecalc();
 }
 function ltNexpMultForPackage(pkg){
  if(!pkg) return 1.0;
@@ -7033,10 +7094,11 @@ function ltNexpPmRecalc(){
 }
 (function ltNexpWirePmPacoteListeners(){
  function wire(){
-  var a=document.getElementById('lt-expense-pacote');
-  var b=document.getElementById('lt-expense-pacote-edit');
-  if(a) a.addEventListener('change', function(){ if(typeof ltNexpPmRecalc==='function') ltNexpPmRecalc(); });
-  if(b) b.addEventListener('change', function(){ if(typeof ltNexpPmRecalc==='function') ltNexpPmRecalc(); });
+  var ids=['lt-pm-pacote-nova','lt-pm-pacote-edita','lt-detalhe-pacote'];
+  ids.forEach(function(id){
+   var s=document.getElementById(id);
+   if(s) s.addEventListener('change', function(){ if(typeof ltNexpSyncPacoteFrom==='function') ltNexpSyncPacoteFrom(id); });
+  });
   var v=document.getElementById('lt-nexp-pm-vendor');
   if(v) v.addEventListener('change', function(){ if(typeof ltNexpPmVendorChange==='function') ltNexpPmVendorChange(); });
  }
