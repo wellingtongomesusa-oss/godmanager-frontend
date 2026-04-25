@@ -2663,14 +2663,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="ls-count" style="margin-left:auto;font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
  <div id="ls-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px"></div>
- <div id="ls-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:13px">No listings found matching your criteria.</div>
-</div>
-
-<!-- Listing Detail Modal -->
-<div id="ls-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9005;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this)document.getElementById('ls-detail-modal').style.display='none'">
- <div style="background:var(--paper);border-radius:14px;width:700px;max-width:98vw;box-shadow:0 24px 64px rgba(0,0,0,.3);margin:auto;overflow:hidden">
- <div id="ls-modal-body"></div>
- </div>
+ <div id="ls-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:13px">Nenhum imovel disponivel no momento.</div>
 </div>
 
 <!-- Maintenance Request Modal -->
@@ -5256,7 +5249,7 @@ function nav(r){
  ltownerpay:()=>typeof ltOwnerPayRender==='function'&&ltOwnerPayRender(),
  ownerportal:()=>typeof opRender==='function'&&opRender(),
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
- listings:()=>typeof lsRender==='function'&&lsRender(),
+ listings:()=>typeof listingsRender==='function'&&listingsRender(),
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
@@ -8732,108 +8725,89 @@ function tpInitSrSamples(){if(tpSrLoad().length)return;const p=tpAllProfiles()[0
 function tpSaveMaint(){document.getElementById('tp-maint-modal').style.display='none';showToast('Use Tenant Portal Service Requests.','info');}
 
 // 
-// LISTINGS — ZILLOW STYLE
+// LISTINGS — imoveis vagos a partir de ltGetRecords()
 // 
-function lsGetDemoListings(){
- return [
- {id:'demo1',address:'512 Cypress Lake Dr, Kissimmee FL 34741',baths:'3 Baths',rent:2400,deposit:2400,hoa:180,occupancy:'vacant',desc:'Spacious home in gated community with open floor plan, modern kitchen with granite countertops and stainless steel appliances. Large backyard perfect for entertaining.'},
- {id:'demo2',address:'2288 Hammock Trace Dr, Davenport FL 33837',baths:'2 Baths',rent:1850,deposit:1850,hoa:120,occupancy:'vacant',desc:'Charming 2-bath home close to shopping and major highways. Recently updated flooring and fresh paint throughout. Great for young professionals or small families.'},
- {id:'demo3',address:'7740 Sandy Ridge Dr, Reunion FL 34747',baths:'4 Baths',rent:3200,deposit:4800,hoa:240,occupancy:'vacant',desc:'Luxury 4-bath home in Reunion Resort with access to world-class amenities. Fully furnished option available. Minutes from Disney and major attractions.'},
- {id:'demo4',address:'1890 Bali Circle, Kissimmee FL 34747',baths:'2.5 Baths',rent:2100,deposit:2100,hoa:0,occupancy:'vacant',desc:'Well-maintained home in quiet neighborhood. No HOA. Large master suite, two-car garage, and covered lanai. Pets considered on a case-by-case basis.'},
- {id:'demo5',address:'4401 Masters Blvd, Orlando FL 32819',baths:'2 Baths',rent:1950,deposit:3900,hoa:95,occupancy:'vacant',desc:'Modern 2-bath near International Drive corridor. Close to restaurants, entertainment, and top-rated schools. Community pool and fitness center included.'},
- {id:'demo6',address:'3310 Hanging Moss Cir, Kissimmee FL 34741',baths:'3.5 Baths',rent:2800,deposit:2800,hoa:200,occupancy:'vacant',desc:'Beautiful corner lot home with 3.5 baths and bonus room. Upgraded kitchen, crown molding throughout, and screened-in pool area. Move-in ready.'}
- ];
+function listingsPhotoUrl(r){
+ if(!r||!r.photos||!r.photos.length) return null;
+ var p0=r.photos[0];
+ if(typeof p0==='string'&&p0) return p0;
+ if(p0&&typeof p0.dataUrl==='string'&&p0.dataUrl) return p0.dataUrl;
+ if(p0&&typeof p0.data_url==='string'&&p0.data_url) return p0.data_url;
+ return null;
 }
-
-function lsOpenDetail(id){
- const records=ltGetRecords();
- const fromStorage=records.find(r=>r.id===id);
- const demos=lsGetDemoListings();
- const r=fromStorage||demos.find(d=>d.id===id);
- if(!r)return;
- const grad=`linear-gradient(135deg, #c47b28 0%, #f0d09a 50%, #faf7f2 100%)`;
- document.getElementById('ls-modal-body').innerHTML=`
- <div style="height:280px;background:${grad};position:relative">
- <span style="position:absolute;top:14px;left:14px;background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px;letter-spacing:.5px">AVAILABLE</span>
- <button onclick="document.getElementById('ls-detail-modal').style.display='none'" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,.9);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700"></button>
- </div>
- <div style="display:grid;grid-template-columns:1fr 360px;gap:0">
- <div style="padding:24px">
- <div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px">${r.address}</div>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
- ${r.baths?`<span style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px">${r.baths}</span>`:''}
- <span style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px">For Rent</span>
- </div>
- <div style="font-size:12px;color:var(--ink2);line-height:1.7;margin-bottom:16px">${r.desc||'Contact us for more details about this property.'}</div>
- <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px">About this home</div>
- <div style="font-size:12px;color:var(--ink2);line-height:1.8">
- This well-maintained property is located in a desirable neighborhood with easy access to major highways, shopping, dining, and entertainment. Professionally managed by GodManager.com 2026.
- </div>
- </div>
- <div style="padding:24px;border-left:1px solid var(--border);background:var(--cream)">
- <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--green);margin-bottom:4px">${ltFmt(r.rent)}<span style="font-size:13px;font-weight:400;color:var(--ink3)">/mo</span></div>
- ${r.hoa?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px">HOA: ${ltFmt(r.hoa)}/mo</div>`:''}
- ${r.deposit?`<div style="font-size:11px;color:var(--ink3);margin-bottom:12px">Security Deposit: ${ltFmt(r.deposit)}</div>`:'<div style="margin-bottom:12px"></div>'}
- <div style="height:1px;background:var(--border);margin-bottom:16px"></div>
- <button style="width:100%;padding:11px;background:var(--amber);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px" onclick="showToast('Visita agendada! Entraremos em contato em breve.','success')">Schedule a Tour</button>
- <button style="width:100%;padding:11px;background:transparent;color:var(--amber);border:2px solid var(--amber);border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:16px" onclick="showToast('Mensagem enviada para GodManager.com.','info')">Contact Us</button>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
- <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:6px">GodManager.com 2026</div>
- <div style="font-size:11px;color:var(--ink3);line-height:1.7">(407) 000-0000<br>contact@hopm.com<br>Kissimmee, FL</div>
- </div>
- </div>
- </div>`;
- document.getElementById('ls-detail-modal').style.display='flex';
+function listingsDescSnippet(r){
+ var src=String((r&&r.desc)||'').trim()||String((r&&r.notes)||'').trim();
+ if(!src) return 'Imovel disponivel para locacao. Entre em contato com GodManager.com para agendar visita.';
+ if(src.length>120) return src.substring(0,120)+'...';
+ return src;
 }
-
-function lsRender(){
- const records=ltGetRecords().filter(r=>r.occupancy==='vacant');
- const demos=lsGetDemoListings();
- const allIds=new Set(records.map(r=>r.id));
- const listings=[...records,...demos.filter(d=>!allIds.has(d.id))];
- const fSearch=((document.getElementById('ls-search')?.value)||'').toLowerCase();
- const fBaths=document.getElementById('ls-baths-filter')?.value||'';
- const fPrice=document.getElementById('ls-price')?.value||'';
- const filtered=listings.filter(r=>{
- if(fSearch&&!r.address.toLowerCase().includes(fSearch))return false;
- if(fBaths){const b=parseFloat((r.baths||'0'));if(b<parseFloat(fBaths))return false;}
- if(fPrice){
- const p=parseInt(fPrice);
- if(fPrice==='1500'&&r.rent>1500)return false;
- else if(fPrice==='2000'&&(r.rent<=1500||r.rent>2000))return false;
- else if(fPrice==='2500'&&(r.rent<=2000||r.rent>2500))return false;
- else if(fPrice==='3000'&&(r.rent<=2500||r.rent>3000))return false;
- else if(fPrice==='9999'&&r.rent<=3000)return false;
- }
- return true;
+function listingsRender(){
+ var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+ var base=ltGetRecords().filter(function(r){return r&&r.occupancy==='vacant';});
+ var fSearch=((document.getElementById('ls-search')&&document.getElementById('ls-search').value)||'').toLowerCase();
+ var fBaths=(document.getElementById('ls-baths-filter')&&document.getElementById('ls-baths-filter').value)||'';
+ var fPrice=(document.getElementById('ls-price')&&document.getElementById('ls-price').value)||'';
+ var filtered=base.filter(function(r){
+  if(fSearch&&!(String(r.address||'').toLowerCase().indexOf(fSearch)>=0)) return false;
+  if(fBaths){
+   var b=parseFloat(String((r.baths||'0')));if(isNaN(b)) b=0;
+   if(b<parseFloat(fBaths)) return false;
+  }
+  if(fPrice){
+   var rent=Number(r.rent)||0;
+   if(fPrice==='1500'&&rent>1500) return false;
+   if(fPrice==='2000'&&(rent<=1500||rent>2000)) return false;
+   if(fPrice==='2500'&&(rent<=2000||rent>2500)) return false;
+   if(fPrice==='3000'&&(rent<=2500||rent>3000)) return false;
+   if(fPrice==='9999'&&rent<=3000) return false;
+  }
+  return true;
  });
- const count=document.getElementById('ls-count');if(count)count.textContent=filtered.length+' listing'+(filtered.length!==1?'s':'');
- const grid=document.getElementById('ls-grid');const empty=document.getElementById('ls-empty');
- if(!grid)return;
- if(!filtered.length){grid.innerHTML='';if(empty)empty.style.display='block';return;}
- if(empty)empty.style.display='none';
- const grads=['linear-gradient(135deg,#c47b28,#f0d09a)','linear-gradient(135deg,#2d7252,#9fd4b8)','linear-gradient(135deg,#22558c,#a8c4e0)','linear-gradient(135deg,#6b5c48,#e2d9cc)','linear-gradient(135deg,#c47b28 0%,#22558c 100%)','linear-gradient(135deg,#2d7252 0%,#c47b28 100%)'];
- grid.innerHTML=filtered.map((r,i)=>`
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(30,22,12,.08);transition:all .15s;cursor:pointer" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 28px rgba(30,22,12,.14)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(30,22,12,.08)'" onclick="lsOpenDetail('${r.id}')">
- <div style="height:200px;background:${grads[i%grads.length]};position:relative">
- <span style="position:absolute;top:10px;left:10px;background:rgba(45,114,82,.9);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:.5px">AVAILABLE</span>
- <span style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px">${ltFmt(r.rent)}/mo</span>
- </div>
- <div style="padding:16px">
- <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.address.split(',')[0]}</div>
- <div style="font-size:11px;color:var(--ink3);margin-bottom:10px">${r.address.split(',').slice(1).join(',').trim()}</div>
- <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
- ${r.baths?`<span style="font-size:10px;font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid var(--blue-bd);padding:2px 8px;border-radius:4px">${r.baths}</span>`:''}
- ${r.hoa?`<span style="font-size:10px;color:var(--ink3)">HOA ${ltFmt(r.hoa)}/mo</span>`:'<span style="font-size:10px;color:var(--green)">No HOA</span>'}
- </div>
- <div style="font-size:11px;color:var(--ink3);line-height:1.5;height:34px;overflow:hidden">${(r.desc||'Contact us for details.').substring(0,95)}...</div>
- <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
- <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--green)">${ltFmt(r.rent)}<span style="font-size:10px;font-weight:400;color:var(--ink3)">/mo</span></div>
- <button style="padding:6px 14px;background:transparent;color:var(--amber);border:2px solid var(--amber);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Ver Detalhes</button>
- </div>
- </div>
- </div>`).join('');
+ var count=document.getElementById('ls-count');
+ if(count) count.textContent=String(filtered.length)+' anuncio(s)';
+ var grid=document.getElementById('ls-grid');
+ var empty=document.getElementById('ls-empty');
+ if(!grid) return;
+ if(!filtered.length){
+  grid.innerHTML='';
+  if(empty){
+   empty.style.display='block';
+   empty.textContent=base.length?'Nenhum imovel corresponde aos criterios selecionados.':'Nenhum imovel disponivel no momento.';
+  }
+  return;
+ }
+ if(empty) empty.style.display='none';
+ var grads=['linear-gradient(135deg,#c47b28,#f0d09a)','linear-gradient(135deg,#2d7252,#9fd4b8)','linear-gradient(135deg,#22558c,#a8c4e0)','linear-gradient(135deg,#6b5c48,#e2d9cc)','linear-gradient(135deg,#c47b28 0%,#22558c 100%)','linear-gradient(135deg,#2d7252 0%,#c47b28 100%)'];
+ grid.innerHTML=filtered.map(function(r,i){
+  var ph=listingsPhotoUrl(r);
+  var headBg=ph?('background-image:url('+JSON.stringify(ph)+');background-size:cover;background-position:center center;background-repeat:no-repeat'):('background:'+grads[i%grads.length]);
+  var fullAddr=String(r.address||'');
+  var a0=fullAddr.indexOf(',')>=0?fullAddr.split(',')[0].trim():fullAddr;
+  var a1=fullAddr.indexOf(',')>=0?fullAddr.split(',').slice(1).join(',').trim():'';
+  var hoaN=Number(r.hoa);
+  var hoaSpan=(hoaN>0)?('<span style="font-size:10px;color:var(--ink3)">HOA '+ltFmt(r.hoa)+'/mo</span>'):('<span style="font-size:10px;color:var(--green)">No HOA</span>');
+  var descText=listingsDescSnippet(r);
+  var idJs=JSON.stringify(r.id);
+  return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(30,22,12,.08);transition:all .15s" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 28px rgba(30,22,12,.14)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(30,22,12,.08)\'">'
+   +'<div style="height:200px;'+headBg+';position:relative">'
+   +'<span style="position:absolute;top:10px;left:10px;background:rgba(45,114,82,.9);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:.5px">AVAILABLE</span>'
+   +'<span style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;font-family:\'JetBrains Mono\',monospace">'+ltFmt(r.rent)+'/mo</span>'
+   +'</div>'
+   +'<div style="padding:16px">'
+   +'<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a0)+'</div>'
+   +(a1?'<div style="font-size:11px;color:var(--ink3);margin-bottom:10px">'+esc(a1)+'</div>':'<div style="font-size:11px;margin-bottom:10px"></div>')
+   +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">'
+   +'<span style="font-size:10px;font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid var(--blue-bd);padding:2px 8px;border-radius:4px">'+esc(r.baths||'—')+'</span>'
+   +hoaSpan
+   +'</div>'
+   +'<div style="font-size:11px;color:var(--ink3);line-height:1.5;min-height:36px;max-height:52px;overflow:hidden">'+esc(descText)+'</div>'
+   +'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'
+   +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:16px;font-weight:700;color:var(--green)">'+ltFmt(r.rent)+'<span style="font-size:10px;font-weight:400;color:var(--ink3)">/mo</span></div>'
+   +'<button type="button" onclick="if(typeof ltOpenDetail===\'function\')ltOpenDetail('+idJs+');event.stopPropagation()" style="padding:6px 14px;background:transparent;color:var(--amber);border:2px solid var(--amber);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:\'Inter\',sans-serif">Ver Detalhes</button>'
+   +'</div></div></div>';
+ }).join('');
 }
+var lsRender=listingsRender;
 
 
 
