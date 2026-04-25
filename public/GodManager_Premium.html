@@ -6511,6 +6511,20 @@ function ltSaveRecord(){
  if(idx>-1)records[idx]=rec; else records.push(rec);
  }else{ records.push(rec); }
  ltSaveRecords(records);
+ try{
+  if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
+   var gmArr=window.gmPropertiesLoad()||[];
+   var gmIdx=gmArr.findIndex(function(x){return x&&String(x.id)===String(rec.id);});
+   if(gmIdx>-1){
+    gmArr[gmIdx].deposit=rec.deposit;
+    gmArr[gmIdx].rent=rec.rent;
+    gmArr[gmIdx].currentRent=rec.rent;
+    gmArr[gmIdx].owner=rec.owner;
+    gmArr[gmIdx].tenant=rec.tenant;
+    window.gmPropertiesSave(gmArr);
+   }
+  }
+ }catch(e){console.warn('gm sync deposit',e);}
  ltCloseModal();
  ltRender();
  ltpRender();
