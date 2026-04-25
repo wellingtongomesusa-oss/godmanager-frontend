@@ -2366,6 +2366,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <label style="font-size:11px;color:var(--ink3)">Mês</label>
   <input type="month" id="ltop-month" value="2026-04" onchange="ltOwnerPayRender()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px">
   <span id="ltop-d15-hint" style="font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(201,169,110,.12);color:var(--amber);border:1px solid rgba(201,169,110,.3)">Próximo dia 15</span>
+  <button type="button" id="op-expand-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Expandir todos</button>
+  <button type="button" id="op-collapse-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Colapsar todos</button>
  </div>
  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;max-width:900px">
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Total a pagar (OUTstanding NET)</div><div id="ltop-kpi-due" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
@@ -7792,7 +7794,64 @@ function ltClnExportCSV(){
 // OWNER PAYMENT (dia 15)
 // 
 window._ltopData=null;
+function ltOwnerPayInitUiOnce(){
+ if(window._ltopPayUiInited)return;
+ var host=document.getElementById('ltop-host');
+ if(!host)return;
+ window._ltopPayUiInited=1;
+  host.addEventListener('click',function(e){
+  var t=e&&e.target;
+  if(!t||!t.closest)return;
+  var tog=t.closest('.op-toggle-btn');
+  if(tog&&host.contains(tog)){
+   e.stopPropagation();
+   var id=tog.getAttribute('data-prop-id');
+   if(!id)return;
+   var table=null;
+   var nodes=host.querySelectorAll('.op-detail-table');
+   for(var i=0;i<nodes.length;i++){
+    if(nodes[i].getAttribute('data-prop-id')===id){table=nodes[i];break;}
+   }
+   if(!table)return;
+   var isHidden=String(table.style.display||'').toLowerCase()!=='table';
+   if(isHidden){
+    table.style.display='table';
+    tog.textContent='\u25B2 Fechar';
+   }else{
+    table.style.display='none';
+    tog.textContent='\u25BC Ver detalhes';
+   }
+   return;
+  }
+  var mk=t.closest('.op-mark-paid-btn');
+  if(mk&&host.contains(mk)){
+   e.stopPropagation();
+   var pid=mk.getAttribute('data-prop-id');
+   var ymonth=mk.getAttribute('data-ym');
+   if(pid&&ymonth&&typeof ltOwnerPayMark==='function')ltOwnerPayMark(pid,ymonth);
+  }
+ });
+ var ex=document.getElementById('op-expand-all');
+ var cl=document.getElementById('op-collapse-all');
+ if(ex)ex.addEventListener('click',function(){
+  var h=document.getElementById('ltop-host');
+  if(!h)return;
+  var tables=h.querySelectorAll('.op-detail-table');
+  for(var a=0;a<tables.length;a++)tables[a].style.display='table';
+  var btns=h.querySelectorAll('.op-toggle-btn');
+  for(var b=0;b<btns.length;b++)btns[b].textContent='\u25B2 Fechar';
+ });
+ if(cl)cl.addEventListener('click',function(){
+  var h=document.getElementById('ltop-host');
+  if(!h)return;
+  var tables=h.querySelectorAll('.op-detail-table');
+  for(var a=0;a<tables.length;a++)tables[a].style.display='none';
+  var btns=h.querySelectorAll('.op-toggle-btn');
+  for(var b=0;b<btns.length;b++)btns[b].textContent='\u25BC Ver detalhes';
+ });
+}
 async function ltOwnerPayRender(){
+ ltOwnerPayInitUiOnce();
  const ym=(document.getElementById('ltop-month')||{}).value||'2026-04';
  const hint=document.getElementById('ltop-d15-hint');
  if(hint){
@@ -7822,8 +7881,12 @@ async function ltOwnerPayRender(){
      return '<tr><td style="padding:6px 8px;font-size:11px">'+String(e.vendorName||'—')+'</td><td style="padding:6px 8px;font-size:11px;text-align:right">'+String(e.vendorCost)+'</td><td style="padding:6px 8px;font-size:11px">'+String(e.packageApplied)+'</td><td style="padding:6px 8px;font-size:11px">'+String(e.markupPct)+'%</td><td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:600">'+String(e.ownerCharged)+'</td></tr>';
     }).join('')||'<tr><td colspan="5" style="padding:8px;font-size:11px;color:var(--ink3)">Nenhuma despesa vendor (mês)</td></tr>';
     var paid=p.paidAt?('<span style="font-size:10px;padding:3px 8px;border-radius:999px;background:var(--green-bg);color:var(--green)">Pago '+String(p.paidAt).slice(0,10)+'</span>'):'';
-    var btn=!p.paidAt?('<button type="button" onclick="ltOwnerPayMark(\''+p.propertyId.replace(/'/g,"\\'")+'\',\''+ym+'\')" style="padding:6px 12px;border-radius:6px;border:none;background:var(--amber);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Marcar como pago</button>'):'';
-    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right">'+paid+btn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>Rent: <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>Vendor+markup: <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">Vendor</th><th style="text-align:right">Custo</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">Owner</th></tr></thead><tbody>'+exRows+'</tbody></table></div>';
+    var enc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+    var pid=enc(p.propertyId);
+    var ymEnc=enc(ym);
+    var markBtn=p.paidAt?'':('<button type="button" class="op-mark-paid-btn" data-prop-id="'+pid+'" data-ym="'+ymEnc+'" style="padding:6px 12px;border-radius:6px;border:none;background:var(--amber);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Marcar como pago</button>');
+    var toggleBtn='<button type="button" class="op-toggle-btn" data-prop-id="'+pid+'" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--paper);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">\u25BC Ver detalhes</button>';
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end">'+paid+markBtn+toggleBtn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>Rent: <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>Vendor+markup: <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><table class="op-detail-table" data-prop-id="'+pid+'" style="display:none;width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">Vendor</th><th style="text-align:right">Custo</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">Owner</th></tr></thead><tbody>'+exRows+'</tbody></table></div>';
    }).join('');
    return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:linear-gradient(180deg,var(--paper),var(--cream))"><div style="font-family:\'Sora\',serif;font-size:16px;font-weight:700;margin-bottom:12px">'+og.ownerName+'</div>'+props+'</div>';
   }).join('');
