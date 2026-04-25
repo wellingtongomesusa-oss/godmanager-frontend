@@ -1750,13 +1750,14 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
 
  <!-- Section: Property Info -->
- <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Informações da Propriedade</div>
+ <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">1. Informações básicas</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO *</label><input id="lt-f-address" placeholder="ex: 1234 Oak Street, Kissimmee FL" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">OWNER *</label><input id="lt-f-owner" placeholder="ex: John Smith" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TENANT (INQUILINO)</label><input id="lt-f-tenant" placeholder="ex: Maria Oliveira" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-f-month" type="month" value="2026-03" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px"> BATHS</label><select id="lt-f-baths" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="">— Selecionar —</option><option value="1 Bath">1 Bath</option><option value="1.5 Baths">1.5 Baths</option><option value="2 Baths">2 Baths</option><option value="2.5 Baths">2.5 Baths</option><option value="3 Baths">3 Baths</option><option value="3.5 Baths">3.5 Baths</option><option value="4 Baths">4 Baths</option></select></div>
+ <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MOVE IN DATE</label><input id="lt-f-movein" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <select id="lt-f-occupancy" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0" tabindex="-1" aria-hidden="true">
  <option value="rented" selected>Alugada</option><option value="vacant">Vaga</option><option value="inprogress">Em Andamento</option><option value="renovation">Reforma</option>
  </select>
@@ -1770,8 +1771,12 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <input id="lt-f-rent" type="number" placeholder="2500" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--green-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
  </div>
  <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">HOA ($)</label>
- <input id="lt-f-hoa" type="number" placeholder="0" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+ <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+  <input type="checkbox" id="lt-f-hoa-check" onchange="ltCalcNet()" style="width:16px;height:16px;accent-color:var(--amber);cursor:pointer">
+  <label for="lt-f-hoa-check" style="font-size:11px;font-weight:600;color:var(--ink2);margin:0;cursor:pointer">HOA</label>
+ </div>
+ <input id="lt-f-hoa" type="number" placeholder="0.00" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+ <div style="font-size:10px;color:var(--ink3);margin-top:6px;line-height:1.45">Se HOA ativo, +2% será adicionado ao MGM Fee automaticamente</div>
  </div>
  <div>
  <label style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px">SECURITY DEPOSIT ($)</label>
@@ -1782,8 +1787,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <input id="lt-f-guarantee" type="number" placeholder="500" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
  </div>
  <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MGM FEE (%) <span style="font-weight:400;color:var(--ink3);font-size:10px">— % sobre rent</span></label>
+ <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MGM FEE (%) (base) <span style="font-weight:400;color:var(--ink3);font-size:10px">— % sobre rent</span></label>
  <input id="lt-f-mgmpct" type="number" placeholder="8" min="0" max="100" step="0.1" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+ <div id="lt-mgm-fee-apply" style="font-size:10px;color:var(--ink3);margin-top:6px;line-height:1.4"></div>
  </div>
  </div>
 
@@ -2243,7 +2249,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Owner</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
- <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Baths</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MOVE IN</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ocupacao</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
@@ -6051,18 +6057,48 @@ function ltFmtMonth(m){
  const names=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
  return (names[parseInt(mo)]||mo)+' '+y;
 }
+function ltFormatMoveIn(s){
+ if(!s) return '—';
+ var t=String(s).trim();
+ var m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(m) return m[3]+'/'+m[2]+'/'+m[1];
+ return t;
+}
+function ltMgmBaseFromRecord(r){
+ if(!r) return 0;
+ if(r.mgmFeeBase != null && r.mgmFeeBase !== ''){ var b0=Number(r.mgmFeeBase); return isNaN(b0) ? 0 : b0; }
+ var eff=Number(r.mgmFee != null ? r.mgmFee : (r.mgmpct != null ? r.mgmpct : 0)) || 0;
+ if(r.hoaActive === true) return Math.max(0, eff - 2);
+ return eff;
+}
+function ltSyncMgmFeeApplyLine(){
+ var baseEl=document.getElementById('lt-f-mgmpct');
+ var chk=document.getElementById('lt-f-hoa-check');
+ var line=document.getElementById('lt-mgm-fee-apply');
+ if(!line) return;
+ var base=baseEl ? parseFloat(baseEl.value) : 0; if(isNaN(base)) base=0;
+ var eff=base + ((chk && chk.checked) ? 2 : 0);
+ if(chk && chk.checked){
+  line.textContent='MGM aplicado: '+(Math.round(eff*10)/10)+'% (base '+(Math.round(base*10)/10)+'% + 2% HOA)';
+ } else {
+  line.textContent='MGM aplicado: '+(Math.round(eff*10)/10)+'%';
+ }
+}
 
 function ltCalcNet(){
- const rent = parseFloat(document.getElementById('lt-f-rent').value)||0;
- const hoa = parseFloat(document.getElementById('lt-f-hoa').value)||0;
- const mgmpctEl = document.getElementById('lt-f-mgmpct');
- const mgmpct = mgmpctEl ? (parseFloat(mgmpctEl.value)||0) : 0;
- const mgmFeeUsd = rent * mgmpct / 100;
- const net = rent - hoa - mgmFeeUsd;
- const el = document.getElementById('lt-f-net-preview');
+ const rent=parseFloat(document.getElementById('lt-f-rent').value)||0;
+ const hoa=parseFloat(document.getElementById('lt-f-hoa').value)||0;
+ const mgmpctEl=document.getElementById('lt-f-mgmpct');
+ const mgmBase=mgmpctEl ? (parseFloat(mgmpctEl.value)||0) : 0;
+ const hoaChk=document.getElementById('lt-f-hoa-check');
+ const mgmFee=mgmBase+((hoaChk && hoaChk.checked)?2:0);
+ const mgmFeeUsd=rent*mgmFee/100;
+ const net=rent-hoa-mgmFeeUsd;
+ const el=document.getElementById('lt-f-net-preview');
+ ltSyncMgmFeeApplyLine();
  if(el){
- el.textContent = ltFmt(net);
- el.style.color = net>=0 ? 'var(--blue)' : 'var(--red)';
+ el.textContent=ltFmt(net);
+ el.style.color=net>=0?'var(--blue)':'var(--red)';
  }
 }
 
@@ -6128,10 +6164,13 @@ function ltOpenNewProperty(){
  if(typeof ltRenderPhotoPreview==='function')ltRenderPhotoPreview();
  document.getElementById('lt-f-rent').value='';
  document.getElementById('lt-f-hoa').value='';
+ var _hoaChk=document.getElementById('lt-f-hoa-check');if(_hoaChk)_hoaChk.checked=false;
+ var _min=document.getElementById('lt-f-movein');if(_min)_min.value='';
  document.getElementById('lt-f-status').value='pending';
  document.getElementById('lt-f-month').value='2026-03';
  document.getElementById('lt-f-net-preview').textContent='$0.00';
  var _lfp=document.getElementById('lt-file-preview');if(_lfp)_lfp.innerHTML='';
+ ltCalcNet();
  document.getElementById('lt-modal').style.display='flex';
 }
 
@@ -6148,16 +6187,20 @@ function ltOpenEdit(id){
     owner:raw.owner||'',
     tenant:raw.tenant||'',
     baths:raw.baths||'',
+    moveIn:raw.moveIn||'',
     occupancy:raw.occupancy||(rent>0?'rented':'vacant'),
     rent:rent,
     hoa:Number(raw.hoa)||0,
+    hoaActive:raw.hoaActive===true,
+    mgmFeeBase:(raw.mgmFeeBase != null && raw.mgmFeeBase !== '')?Number(raw.mgmFeeBase):null,
+    mgmFee:Number(raw.mgmFee != null ? raw.mgmFee : (raw.mgmpct != null ? raw.mgmpct : (raw.mgmtPct || 0))) || 0,
     water:Number(raw.water)||0,
     electric:Number(raw.electric)||0,
     maint:Number(raw.maint!=null?raw.maint:(raw.maintenance||0))||0,
     vendor:Number(raw.vendor)||0,
     deposit:Number(raw.deposit)||0,
     guarantee:Number(raw.guarantee)||0,
-    mgmpct:Number(raw.mgmpct!=null?raw.mgmpct:(raw.mgmtPct||0))||0,
+    mgmpct:Number(raw.mgmFee != null ? raw.mgmFee : (raw.mgmpct!=null?raw.mgmpct:(raw.mgmtPct||0)))||0,
     mgmFeeUsd:Number(raw.mgmFeeUsd!=null?raw.mgmFeeUsd:(raw.mgmtFeeUsd||0))||0,
     net:Number(raw.net!=null?raw.net:(raw.netOwner||0))||0,
     month:raw.month||'2026-03',
@@ -6189,7 +6232,13 @@ function ltOpenEdit(id){
  document.getElementById('lt-f-occupancy').value=r.occupancy||'rented';
  document.getElementById('lt-f-deposit').value=r.deposit||'';
  var _ge2=document.getElementById('lt-f-guarantee');if(_ge2)_ge2.value=(r.guarantee!=null?r.guarantee:'');
- var _mp2=document.getElementById('lt-f-mgmpct');if(_mp2)_mp2.value=(r.mgmpct!=null?r.mgmpct:'');
+ var _mp2=document.getElementById('lt-f-mgmpct');
+ if(_mp2){
+  if(r.mgmFeeBase==null && r.mgmpct==null && r.mgmFee==null && r.hoaActive!==true) _mp2.value='';
+  else _mp2.value=String(ltMgmBaseFromRecord(r));
+ }
+ var _hoaChk2=document.getElementById('lt-f-hoa-check');if(_hoaChk2)_hoaChk2.checked=(r.hoaActive===true);
+ var _min2=document.getElementById('lt-f-movein');if(_min2)_min2.value=r.moveIn||'';
  document.getElementById('lt-f-owner-fullname').value=r.ownerFullName||'';
  document.getElementById('lt-f-owner-taxid').value=r.ownerTaxId||'';
  document.getElementById('lt-f-owner-dob').value=r.ownerDob||'';
@@ -6234,22 +6283,29 @@ function ltSaveRecord(){
  const rent=parseFloat(document.getElementById('lt-f-rent').value)||0;
  if(!address||!owner||!rent){alert('Endereço, Owner e Rent são obrigatórios.');return;}
  const hoa=parseFloat(document.getElementById('lt-f-hoa').value)||0;
+ const hoaCheck=!!(document.getElementById('lt-f-hoa-check')&&document.getElementById('lt-f-hoa-check').checked);
  const water=0, electric=0, maint=0, vendor=0;
  const _geEl=document.getElementById('lt-f-guarantee');
  const guarantee=_geEl?(parseFloat(_geEl.value)||0):0;
  const _mpEl=document.getElementById('lt-f-mgmpct');
- const mgmpct=_mpEl?(parseFloat(_mpEl.value)||0):0;
- const mgmFeeUsd=rent*mgmpct/100;
+ const mgmFeeBase=_mpEl?(parseFloat(_mpEl.value)||0):0;
+ const mgmFee=mgmFeeBase+(hoaCheck?2:0);
+ const mgmFeeUsd=rent*mgmFee/100;
  const net=rent-hoa-mgmFeeUsd;
+ const _moveInEl=document.getElementById('lt-f-movein');
  const rec={
  id: ltEditingId||('lt_'+Date.now()),
  address, owner,
  tenant:document.getElementById('lt-f-tenant').value.trim(),
  baths:document.getElementById('lt-f-baths').value,
+ moveIn:(_moveInEl&&_moveInEl.value)?_moveInEl.value:'',
  occupancy:document.getElementById('lt-f-occupancy').value,
  deposit:parseFloat(document.getElementById('lt-f-deposit').value)||0,
  guarantee:guarantee,
- mgmpct:mgmpct,
+ hoaActive:hoaCheck,
+ mgmFeeBase:mgmFeeBase,
+ mgmFee:mgmFee,
+ mgmpct:mgmFee,
  mgmFeeUsd:mgmFeeUsd,
  ownerFullName:document.getElementById('lt-f-owner-fullname').value.trim(),
  ownerTaxId:document.getElementById('lt-f-owner-taxid').value.trim(),
@@ -6292,10 +6348,14 @@ function ltSaveRecord(){
    merged.owner=rec.owner;
    merged.tenant=rec.tenant;
    merged.baths=rec.baths;
+   merged.moveIn=rec.moveIn||'';
    merged.occupancy=rec.occupancy;
    merged.currentRent=rec.rent;
    merged.rent=rec.rent;
    merged.hoa=rec.hoa;
+   merged.hoaActive=rec.hoaActive;
+   merged.mgmFeeBase=rec.mgmFeeBase;
+   merged.mgmFee=rec.mgmFee;
    merged.water=rec.water;
    merged.electric=rec.electric;
    merged.maintenance=rec.maint;
@@ -6303,8 +6363,8 @@ function ltSaveRecord(){
    merged.vendor=rec.vendor;
    merged.deposit=rec.deposit;
    merged.guarantee=rec.guarantee;
-   merged.mgmpct=rec.mgmpct;
-   merged.mgmtPct=rec.mgmpct;
+   merged.mgmpct=rec.mgmFee;
+   merged.mgmtPct=rec.mgmFee;
    merged.mgmFeeUsd=rec.mgmFeeUsd;
    merged.mgmtFeeUsd=rec.mgmFeeUsd;
    merged.netOwner=rec.net;
@@ -6352,6 +6412,7 @@ function ltSaveRecord(){
        marketRent:Number(merged.marketRent)||Number(merged.rent)||0,
        tenant:merged.tenant||'',
        baths:merged.baths||'',
+       moveIn:merged.moveIn||'',
        occupancy:merged.occupancy||'',
        month:merged.month||'',
        ownerFullName:merged.ownerFullName||'',
@@ -8048,11 +8109,12 @@ window.gmPropertiesToUi=function(p){
   owner:p.owner||'—',
   tenant:p.tenant||'',
   baths:p.baths||(p.units?(p.units+' unit'+(p.units>1?'s':'')):''),
+  moveIn:p.moveIn||'',
   occupancy:p.occupancy||occ,
   rent:rent,
  deposit:Number(p.deposit)||0,
  guarantee:Number(p.guarantee!=null?p.guarantee:0),
- mgmpct:Number(p.mgmpct!=null?p.mgmpct:(p.mgmtPct||0)),
+ mgmpct:Number(p.mgmFee != null ? p.mgmFee : (p.mgmpct!=null?p.mgmpct:(p.mgmtPct||0))),
  mgmFeeUsd:Number(p.mgmFeeUsd!=null?p.mgmFeeUsd:(p.mgmtFeeUsd||0)),
  net:Number(p.netOwner!=null?p.netOwner:(p.net||0)),
   month:p.month||'',
@@ -8199,7 +8261,7 @@ async function ltpRender(){
  <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.baths||'—'}</div></td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${r.owner}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
- <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${r.baths||'—'}</td>
+ <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${ltFormatMoveIn(r.moveIn)}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
