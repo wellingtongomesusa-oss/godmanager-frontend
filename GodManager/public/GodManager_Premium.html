@@ -1601,7 +1601,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div class="page" id="page-ltexpenses">
  <div class="ph"><div class="pt">Long Term — Expenses</div><div class="ps">Registro e gestao de despesas por propriedade</div></div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
- <select id="lt-exp-filter-month" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+ <select id="lt-exp-filter-month" onchange="if(typeof ltExpRenderWithPm==='function')ltExpRenderWithPm();else if(typeof ltExpRender==='function')ltExpRender();" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todos os meses</option>
  <option value="2026-01">Jan 2026</option>
  <option value="2026-02">Fev 2026</option>
@@ -5294,7 +5294,10 @@ function nav(r){
  // render hooks
  const renders={
  home:()=>{if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();},
- longterm:()=>typeof ltDashRender==='function'&&ltDashRender(),
+ longterm:()=>{
+  if(typeof ltExpFetchPm==='function'){void ltExpFetchPm().then(function(){if(typeof ltDashRender==='function')ltDashRender();});}
+  if(typeof ltDashRender==='function')ltDashRender();
+ },
  ltproperties:()=>{if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender();},
  tenants:()=>typeof tnRender==='function'&&tnRender(),
  ltstatements:()=>typeof ltRender==='function'&&ltRender(),
@@ -7108,13 +7111,69 @@ function ltNexpPmRecalc(){
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
  else wire();
 })();
+function ltExpUiStatusToPm(ui){
+ if(ui==='paid') return 'PAID';
+ if(ui==='overdue') return 'PENDING';
+ if(ui==='unpaid') return 'SCHEDULED';
+ return 'SCHEDULED';
+}
+function ltExpPmStatusToUi(st){
+ if(st==='PAID') return 'paid';
+ if(st==='CANCELLED') return 'overdue';
+ if(st==='PENDING') return 'overdue';
+ return 'unpaid';
+}
+function ltExpMapApiToRow(e){
+ var hasVendor=!!(e.vendorId && String(e.vendorId).trim());
+ var cat=hasVendor ? 'Vendor (API)' : String(e.serviceType || 'Despesa').trim() || 'Despesa';
+ var pSrc=(e.pmPackage != null && String(e.pmPackage) !== '') ? e.pmPackage : (e.packageApplied != null ? e.packageApplied : '');
+ var pa=String(pSrc || '').trim();
+ var pkgL, mLab, mk;
+ if(!pa || pa === 'null' || pa === 'undefined') {
+  pkgL='\u2014'; mLab='\u2014'; mk=NaN;
+ } else {
+  mk=pa==='PACOTE_2'?18:(pa==='PACOTE_3'?25:(pa==='PACOTE_4'?0:15));
+  pkgL=pa==='PACOTE_1'?'P1':(pa==='PACOTE_2'?'P2':(pa==='PACOTE_3'?'P3':(pa==='PACOTE_4'?'P4':'\u2014')));
+  mLab=pa==='PACOTE_1'?'15%':(pa==='PACOTE_2'?'18%':(pa==='PACOTE_3'?'25%':(pa==='PACOTE_4'?'0%':'\u2014')));
+ }
+ var vc=parseFloat(e.vendorCost)||0;
+ var oc=parseFloat(e.ownerCharged)||0;
+ var ui=ltExpPmStatusToUi(e.status);
+ return {
+  _isPm:true,
+  _isVendorPm:hasVendor,
+  id:e.id,
+  pmId:e.id,
+  propAddress:e.propAddress || '\u2014',
+  category:cat,
+  desc:e.description || '',
+  month:e.monthRef,
+  vendorName:hasVendor ? (e.vendorName || '\u2014') : '\u2014',
+  vendorCost:vc,
+  ownerCharged:oc,
+  packageApplied:pa,
+  pmPackage:pa,
+  pkgLabel:pkgL,
+  markupLabel:mLab,
+  markupPct:mk,
+  serviceType:e.serviceType || '',
+  serviceDate:e.serviceDate,
+  statusPm:e.status,
+  value:oc,
+  status:ui,
+  vendor:hasVendor ? (e.vendorName || '') : '',
+  _apiRaw:e
+ };
+}
 async function ltExpFetchPm(){
  try{
-  var r=await fetch('/api/pm/expenses',{credentials:'include'});
-  if(!r.ok){window._pmExpenseRows=[];return;}
+  var fm=(document.getElementById('lt-exp-filter-month') || {}).value;
+  var q=fm ? ('?month=' + encodeURIComponent(fm)) : '';
+  var r=await fetch('/api/pm/expenses' + q, { credentials:'include' });
+  if(!r.ok){ window._pmExpenseRows=[]; return; }
   var j=await r.json();
-  window._pmExpenseRows=(j&&j.expenses)||[];
- }catch(e){window._pmExpenseRows=[];}
+  window._pmExpenseRows=(j && j.expenses) || [];
+ }catch(e){ window._pmExpenseRows=[]; }
 }
 async function ltExpRenderWithPm(){
  await ltExpFetchPm();
@@ -7145,14 +7204,12 @@ function ltCloseNewExpense(){document.getElementById('lt-newexp-modal').style.di
 
 function ltOpenEditExpense(id){
  id=String(id);
- if(String(id).indexOf('pm:')===0){
-  var pid=String(id).slice(3);
-  var e=(window._pmExpenseRows||[]).find(function(x){return x.id===pid;});
-  if(!e)return;
-  ltExpEditingId=null;ltExpEditingPmId=pid;ltPopulatePropertyDropdowns();
-  document.getElementById('lt-newexp-title').textContent='Editar Despesa (vendor)';
-  document.getElementById('lt-nexp-cat').value='Vendor';
-  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
+ var e=(window._pmExpenseRows || []).find(function(x){ return String(x.id) === id; });
+ if(e && e.vendorId) {
+  ltExpEditingId = null; ltExpEditingPmId = id; ltPopulatePropertyDropdowns();
+  document.getElementById('lt-newexp-title').textContent = 'Editar Despesa (vendor)';
+  document.getElementById('lt-nexp-cat').value = 'Vendor';
+  if(typeof ltNexpOnCatChange==='function') ltNexpOnCatChange();
   var propSel=document.getElementById('lt-nexp-prop');
   if(propSel){
    var pCode=e.propertyCode?String(e.propertyCode):'';
@@ -7161,28 +7218,55 @@ function ltOpenEditExpense(id){
     var v=o.value?String(o.value):'';
     return v===pCode||v===pId;
    });
-   if(opt)propSel.value=opt.value;else propSel.value=pCode||pId||'';
+   if(opt) propSel.value=opt.value; else propSel.value=pCode||pId||'';
   }
-  document.getElementById('lt-nexp-month').value=e.monthRef||'2026-04';
-  document.getElementById('lt-nexp-desc').value=e.description||'';
+  document.getElementById('lt-nexp-month').value = e.monthRef || '2026-04';
+  document.getElementById('lt-nexp-desc').value = e.description || '';
   ltNexpPopulatePmVendorSelect();
   setTimeout(function(){
    var vsel=document.getElementById('lt-nexp-pm-vendor');
-   if(vsel&&e.vendorId)vsel.value=String(e.vendorId);
+   if(vsel && e.vendorId) vsel.value=String(e.vendorId);
   },0);
-  var psvc=document.getElementById('lt-nexp-pm-svc');if(psvc)psvc.value=e.serviceType||'';
-  if(typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects(e.packageApplied||'PACOTE_1');
-  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(true);
-  var pvc=document.getElementById('lt-nexp-pm-vendor-cost');if(pvc)pvc.value=e.vendorCost||'0';
+  var psvc=document.getElementById('lt-nexp-pm-svc'); if(psvc) psvc.value = e.serviceType || '';
+  if(typeof ltNexpSetBothPacoteSelects==='function') ltNexpSetBothPacoteSelects(e.packageApplied || 'PACOTE_1');
+  if(typeof ltNexpSetPmBlockPacoteMode==='function') ltNexpSetPmBlockPacoteMode(true);
+  var pvc=document.getElementById('lt-nexp-pm-vendor-cost'); if(pvc) pvc.value = e.vendorCost || '0';
   ltNexpPmRecalc();
-  var sdt=document.getElementById('lt-nexp-pm-svc-date');if(sdt&&e.serviceDate)sdt.value=String(e.serviceDate).slice(0,10);
-  var st=document.getElementById('lt-nexp-pm-status');if(st)st.value=e.status||'PENDING';
+  var sdt=document.getElementById('lt-nexp-pm-svc-date'); if(sdt && e.serviceDate) sdt.value=String(e.serviceDate).slice(0,10);
+  var st=document.getElementById('lt-nexp-pm-status'); if(st) st.value = e.status || 'PENDING';
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
- const r=ltExpGetRecords().find(x=>String(x.id)===String(id)); if(!r) return;
+ if(e) {
+  ltExpEditingId = id; ltExpEditingPmId = null; ltPopulatePropertyDropdowns();
+  document.getElementById('lt-newexp-title').textContent = 'Editar Despesa';
+  if(typeof ltNexpSetPmBlockPacoteMode==='function') ltNexpSetPmBlockPacoteMode(false);
+  var propSel2=document.getElementById('lt-nexp-prop');
+  if(propSel2){
+   var pC=e.propertyCode?String(e.propertyCode):'';
+   var pI=e.propertyId?String(e.propertyId):'';
+   var op=Array.from(propSel2.options).find(function(o){
+    var v=o.value?String(o.value):'';
+    return v===pC||v===pI;
+   });
+   if(op) propSel2.value=op.value; else propSel2.value=pC||pI||'';
+  }
+  document.getElementById('lt-nexp-cat').value = e.serviceType || 'HOA';
+  if(typeof ltNexpOnCatChange==='function') ltNexpOnCatChange();
+  document.getElementById('lt-nexp-month').value = e.monthRef || '2026-04';
+  document.getElementById('lt-nexp-value').value = e.vendorCost != null ? String(e.vendorCost) : '';
+  document.getElementById('lt-nexp-desc').value = e.description || '';
+  document.getElementById('lt-nexp-docnum').value = '';
+  document.getElementById('lt-nexp-due').value = e.serviceDate ? String(e.serviceDate).slice(0,10) : '';
+  document.getElementById('lt-nexp-paid').value = '';
+  document.getElementById('lt-nexp-status').value = ltExpPmStatusToUi(e.status);
+  try{ ltNexpPopulateVendorSelect(''); }catch(err){}
+  document.getElementById('lt-newexp-modal').style.display='flex';
+  return;
+ }
+ var r=ltExpGetRecords().find(x=>String(x.id)===String(id)); if(!r) return;
  ltExpEditingId=id;ltExpEditingPmId=null; ltPopulatePropertyDropdowns();
- document.getElementById('lt-newexp-title').textContent='Editar Despesa';
+ document.getElementById('lt-newexp-title').textContent='Editar Despesa (local legado)';
  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
  document.getElementById('lt-nexp-prop').value=r.propId||'';
  document.getElementById('lt-nexp-cat').value=r.category||'HOA';
@@ -7190,7 +7274,7 @@ function ltOpenEditExpense(id){
  document.getElementById('lt-nexp-month').value=r.month||'2026-04';
  document.getElementById('lt-nexp-value').value=r.value||'';
  document.getElementById('lt-nexp-desc').value=r.desc||'';
- try{ltNexpPopulateVendorSelect((r&&r.vendor)||'');}catch(e){}
+ try{ltNexpPopulateVendorSelect((r&&r.vendor)||'');}catch(e2){}
  document.getElementById('lt-nexp-docnum').value=r.docnum||'';
  document.getElementById('lt-nexp-due').value=r.due||'';
  document.getElementById('lt-nexp-paid').value=r.paid||'';
@@ -7221,12 +7305,14 @@ function ltSaveExpense(){
     const isEd=!!ltExpEditingPmId;
     const url=isEd?('/api/pm/expenses/'+encodeURIComponent(ltExpEditingPmId)):'/api/pm/expenses';
     const method=isEd?'PATCH':'POST';
-    const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(isEd?{...body,propertyCode:propId}:body)});
+    var edBody=isEd?Object.assign({},body,{propertyCode:propId}):body;
+    const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(edBody)});
     if(!r.ok){var er=await r.json().catch(function(){return{};});alert(er.error||('Erro '+r.status));return;}
     ltExpEditingPmId=null;ltCloseNewExpense();await ltExpRenderWithPm();
     if(typeof ltpRenderNetFromApi==='function')await ltpRenderNetFromApi();
     if(typeof ltOwnerPayRender==='function')await ltOwnerPayRender();
     ltDashRender();
+    if(typeof ltpRender==='function')ltpRender();
     if(typeof showToast==='function')showToast('Despesa vendor salva.');
    }catch(e){console.error(e);alert('Falha ao guardar despesa.');}
   })();
@@ -7234,106 +7320,77 @@ function ltSaveExpense(){
  }
  const propEl=document.getElementById('lt-nexp-prop');
  const propId=propEl.value;
- const propAddress=propEl.options[propEl.selectedIndex]?.dataset?.address||'';
  const value=parseFloat(document.getElementById('lt-nexp-value').value)||0;
- if(!propId||!value){alert('Propriedade e Valor são obrigatórios.');return;}
- var vendorVal=(typeof ltNexpGetVendorValue==='function')?String(ltNexpGetVendorValue()).trim():'';
  var descEl=document.getElementById('lt-nexp-desc');
  var descVal=descEl?String(descEl.value||'').trim():'';
- if(!vendorVal){
-  if(typeof showToast==='function')showToast('Seleccione ou adicione um Vendor','error');
-  else alert('Seleccione ou adicione um Vendor');
-  return;
- }
+ if(!propId || !value){ alert('Propriedade e Valor sao obrigatorios.'); return; }
  if(!descVal){
-  if(typeof showToast==='function')showToast('Preencha a Descricao','error');
+  if(typeof showToast==='function') showToast('Preencha a Descricao', 'error');
   else alert('Preencha a Descricao');
   return;
  }
- try{
-  var gk=(typeof GV_KEY!=='undefined')?GV_KEY:'gm_vendors';
-  var existingVendors=JSON.parse(localStorage.getItem(gk)||'[]');
-  if(Array.isArray(existingVendors)){
-   var alreadyExists=existingVendors.some(function(v){
-    return String(v.company_name||'').trim().toLowerCase()===vendorVal.toLowerCase();
-   });
-   if(!alreadyExists){
-    var newVendorEntry={
-     id:'v'+Date.now()+Math.floor(Math.random()*999),
-     company_name:vendorVal,
-     contact_name:'',
-     email:'',
-     phone:'',
-     trade:'Other',
-     status:'Active',
-     rating:3,
-     send_1099:true,
-     checklist:{name:true},
-     createdFrom:'expense-form',
-     createdAt:new Date().toISOString()
-    };
-    existingVendors.push(newVendorEntry);
-    localStorage.setItem(gk,JSON.stringify(existingVendors));
-    console.log('[nova despesa] vendor auto-registado:',vendorVal);
+ var uiSt=document.getElementById('lt-nexp-status') && document.getElementById('lt-nexp-status').value;
+ var stPm=ltExpUiStatusToPm(uiSt || 'unpaid');
+ var sDate = (document.getElementById('lt-nexp-due') && document.getElementById('lt-nexp-due').value)
+  ? document.getElementById('lt-nexp-due').value
+  : (month && month.length >= 7 ? (month + '-01') : '');
+ if(!sDate) sDate = new Date().toISOString().slice(0, 10);
+ (async function(){
+  var body = {
+   propertyCode: propId,
+   vendorId: null,
+   packageApplied: 'PACOTE_4',
+   pmPackage: 'PACOTE_4',
+   vendorCost: value,
+   serviceType: category,
+   monthRef: month,
+   serviceDate: sDate,
+   status: stPm,
+   description: descVal
+  };
+  var isEd = !!ltExpEditingId;
+  var url = isEd ? ('/api/pm/expenses/' + encodeURIComponent(ltExpEditingId)) : '/api/pm/expenses';
+  var method = isEd ? 'PATCH' : 'POST';
+  try{
+   var r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+   if(!r.ok) {
+    var er = await r.json().catch(function(){ return {}; });
+    alert(er.error || ('Erro ' + r.status));
+    return;
    }
-  }
- }catch(e){console.warn('auto-register vendor falhou',e);}
- const exp={
- id:ltExpEditingId||('ltexp_'+Date.now()),
- propId,propAddress,category,month,value,
- vendor:vendorVal,
- desc:descVal,
- docnum:document.getElementById('lt-nexp-docnum').value.trim(),
- due:document.getElementById('lt-nexp-due').value,
- paid:document.getElementById('lt-nexp-paid').value,
- status:document.getElementById('lt-nexp-status').value,
- linkToStatement:document.getElementById('lt-nexp-link').checked,
- savedAt:new Date().toLocaleString('pt-BR')
- };
- if(ltExpEditingId){
-  const prev=ltExpGetRecords().find(x=>x.id===ltExpEditingId);
-  if(prev){
-   if(Array.isArray(prev.extraFees)) exp.extraFees=prev.extraFees;
-   if(Array.isArray(prev.jobActions)) exp.jobActions=prev.jobActions;
-  }
- }
- const arr=ltExpGetRecords();
- if(ltExpEditingId){const i=arr.findIndex(x=>x.id===ltExpEditingId);if(i>-1)arr[i]=exp;else arr.push(exp);}
- else arr.push(exp);
- ltExpSaveRecords(arr);
- if(exp.linkToStatement&&exp.propId){
- const stmts=ltGetRecords();
- const s=stmts.find(x=>x.id===exp.propId&&x.month===exp.month);
- if(s){
- const catMap={'HOA':'hoa','Água':'water','Luz / Electric':'electric','Manutenção':'maint','Vendor':'vendor'};
- const field=catMap[exp.category];
- if(field){
- s[field]=exp.value;
- s.net=(s.rent||0)-(s.hoa||0)-(s.water||0)-(s.electric||0)-(s.maint||0)-(s.vendor||0);
- ltSaveRecords(stmts); ltRender();
- }
- }
- }
- ltCloseNewExpense(); ltExpRender(); ltDashRender(); if(typeof ltpRender==='function')ltpRender();
- showToast('Despesa salva com sucesso.');
+   ltExpEditingId = null;
+   ltCloseNewExpense();
+   await ltExpRenderWithPm();
+   if(typeof ltpRenderNetFromApi==='function') await ltpRenderNetFromApi();
+   if(typeof ltOwnerPayRender==='function') await ltOwnerPayRender();
+   ltDashRender();
+   if(typeof ltpRender==='function') ltpRender();
+   if(typeof showToast==='function') showToast('Despesa salva (base de dados).');
+  }catch(err){ console.error(err); alert('Falha ao guardar despesa na API.'); }
+ })();
 }
 
 function ltExpDelete(id){
  id=String(id);
- if(String(id).indexOf('pm:')===0){
-  if(!confirm('Remover esta despesa (Postgres)?'))return;
+ if((window._pmExpenseRows || []).some(function(x){ return String(x.id) === id; })) {
+  if(!confirm('Remover esta despesa (base de dados)?')) return;
   (async function(){
-   var pid=String(id).slice(3);
    try{
-    var r=await fetch('/api/pm/expenses/'+encodeURIComponent(pid),{method:'DELETE',credentials:'include'});
-    if(r.ok){await ltExpRenderWithPm();if(typeof ltpRenderNetFromApi==='function')await ltpRenderNetFromApi();if(typeof ltOwnerPayRender==='function')await ltOwnerPayRender();if(typeof ltpRender==='function')ltpRender();}
-   }catch(e){console.error(e);}
+    var r=await fetch('/api/pm/expenses/' + encodeURIComponent(id), { method:'DELETE', credentials:'include' });
+    if(r.ok) {
+     await ltExpRenderWithPm();
+     if(typeof ltpRenderNetFromApi==='function') await ltpRenderNetFromApi();
+     if(typeof ltOwnerPayRender==='function') await ltOwnerPayRender();
+     if(typeof ltpRender==='function') ltpRender();
+     ltDashRender();
+    } else { alert('Nao foi possivel remover (codigo ' + r.status + ').'); }
+   }catch(e){ console.error(e); }
   })();
   return;
  }
- if(!confirm('Remover esta despesa?'))return;
- ltExpSaveRecords(ltExpGetRecords().filter(x=>x.id!==id));
- ltExpRender(); ltDashRender(); if(typeof ltpRender==='function')ltpRender();
+ if(!confirm('Remover este registo local (legado)?')) return;
+ ltExpSaveRecords(ltExpGetRecords().filter(x=>String(x.id) !== id));
+ ltExpRender(); ltDashRender(); if(typeof ltpRender==='function') ltpRender();
 }
 
 function ltExpValueWithExtras(r){
@@ -7343,29 +7400,13 @@ function ltExpValueWithExtras(r){
  return base+extras;
 }
 function ltExpMergeAll(){
- const local=ltExpGetRecords();
- const pm=(window._pmExpenseRows||[]).map(function(e){
-  var pSrc=e&&(e.pmPackage!=null&&String(e.pmPackage)!=='')?e.pmPackage:((e&&e.packageApplied!=null)?e.packageApplied:'');
-  var pa=String(pSrc||'').trim();
-  if(!pa||pa==='null'||pa==='undefined'){
-   return{
-    _isPm:true,id:'pm:'+e.id,pmId:e.id,propAddress:e.propAddress,category:'Vendor (API)',desc:e.description||'',month:e.monthRef,
-    vendorName:e.vendorName,vendorCost:parseFloat(e.vendorCost)||0,ownerCharged:parseFloat(e.ownerCharged)||0,packageApplied:'',pmPackage:null,
-    pkgLabel:'\u2014',markupLabel:'\u2014',markupPct:NaN,serviceType:e.serviceType||'',serviceDate:e.serviceDate,statusPm:e.status,
-    value:parseFloat(e.ownerCharged)||0,status:'paid',vendor:e.vendorName
-   };
-  }
-  var mk=pa==='PACOTE_2'?18:(pa==='PACOTE_3'?25:(pa==='PACOTE_4'?0:15));
-  var pkgL=pa==='PACOTE_1'?'P1':(pa==='PACOTE_2'?'P2':(pa==='PACOTE_3'?'P3':(pa==='PACOTE_4'?'P4':'\u2014')));
-  var mLab=pa==='PACOTE_1'?'15%':(pa==='PACOTE_2'?'18%':(pa==='PACOTE_3'?'25%':(pa==='PACOTE_4'?'0%':'\u2014')));
-  return{
-   _isPm:true,id:'pm:'+e.id,pmId:e.id,propAddress:e.propAddress,category:'Vendor (API)',desc:e.description||'',month:e.monthRef,
-   vendorName:e.vendorName,vendorCost:parseFloat(e.vendorCost)||0,ownerCharged:parseFloat(e.ownerCharged)||0,packageApplied:pa,pmPackage:pa,
-   pkgLabel:pkgL,markupLabel:mLab,markupPct:mk,serviceType:e.serviceType||'',serviceDate:e.serviceDate,statusPm:e.status,
-   value:parseFloat(e.ownerCharged)||0,status:'paid',vendor:e.vendorName
-  };
- });
- return pm.concat(local);
+ return (window._pmExpenseRows || []).map(ltExpMapApiToRow).concat(ltExpGetRecords().map(function(r){
+  if(!r) return r;
+  var o={};
+  for (var k in r) { if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k]; }
+  o._isPm = false; o._isVendorPm = false;
+  return o;
+ }));
 }
 function ltExpRender(){
  const records=ltExpMergeAll();
@@ -7374,9 +7415,9 @@ function ltExpRender(){
  const fSearch=((document.getElementById('lt-exp-search')?.value)||'').toLowerCase();
  const filtered=records.filter(function(r){
   if(fMonth&&r.month!==fMonth)return false;
-  if(fCat==='__PM__'){if(!r._isPm)return false;}
+  if(fCat==='__PM__'){if(!r._isPm||!r._isVendorPm)return false;}
   else if(fCat){
-   if(fCat==='Vendor'){if(r.category!=='Vendor'&&r.category!=='Vendor (API)'&&!r._isPm)return false;}
+   if(fCat==='Vendor'){if(r.category!=='Vendor'&&r.category!=='Vendor (API)'&&!(r._isPm&&r._isVendorPm))return false;}
    else{if(r.category!==fCat)return false;}
   }
   if(fSearch&&!String((r.propAddress||'')+(r.desc||'')+(r.vendor||r.vendorName||'')).toLowerCase().includes(fSearch))return false;
@@ -7386,7 +7427,7 @@ function ltExpRender(){
  const hoa=filtered.filter(r=>r.category==='HOA').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
  const water=filtered.filter(r=>r.category==='Água').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
  const luz=filtered.filter(r=>r.category==='Luz / Electric').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
- const mv=filtered.filter(r=>r.category==='Manutenção'||r.category==='Vendor'||r.category==='Vendor (API)'||r._isPm).reduce((s,r)=>s+ltExpValueWithExtras(r),0);
+ const mv=filtered.filter(r=>r.category==='Manutenção'||r.category==='Vendor'||r.category==='Vendor (API)'||(r._isPm&&r._isVendorPm)).reduce((s,r)=>s+ltExpValueWithExtras(r),0);
  const approved=filtered.filter(r=>!r._isPm&&r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved).length;
  const apprDenom=filtered.filter(r=>!r._isPm).length;
  [['lt-exp-kpi-total',ltFmt(tot)],['lt-exp-kpi-hoa',ltFmt(hoa)],['lt-exp-kpi-water',ltFmt(water)],['lt-exp-kpi-luz',ltFmt(luz)],['lt-exp-kpi-mv',ltFmt(mv)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
@@ -7408,13 +7449,14 @@ function ltExpRender(){
  tbody.innerHTML=filtered.map((r,i)=>{
   const isPm=!!r._isPm;
   const ven=esc(isPm?r.vendorName:(r.vendor||'—'));
-  const svc=esc(isPm?r.serviceType||r.desc:(r.desc||'—'));
+  var svcRaw=isPm ? (r._isVendorPm ? (r.serviceType || r.desc) : (r.desc || r.serviceType)) : (r.desc || '—');
+  const svc=esc(svcRaw || '—');
   const vVend=isPm?ltFmt(r.vendorCost):ltFmt(ltExpValueWithExtras(r));
   const pkg=esc(isPm?r.pkgLabel:'—');
   const mk=esc(isPm?(r.markupLabel!=null&&r.markupLabel!==''?r.markupLabel:(!isNaN(r.markupPct)?String(r.markupPct)+'%':'\u2014')):'\u2014');
   const vOwn=esc(ltFmt(isPm?r.ownerCharged:ltExpValueWithExtras(r)));
   const dStr=isPm?String(r.serviceDate||'').slice(0,10):(r.due||r.paid||'—');
-  const stK=isPm?r.statusPm:r.status;
+  const stK=isPm?(r.statusPm||r.status):r.status;
   const catShow=esc(r.category);
   return `<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
@@ -7439,9 +7481,18 @@ function ltExpRender(){
 }
 
 function ltExpExportCSV(){
- const records=ltExpGetRecords(); if(!records.length){alert('Nenhum registro.');return;}
+ const records=(typeof ltExpMergeAll==='function')?ltExpMergeAll():ltExpGetRecords();
+ if(!records.length){alert('Nenhum registro.');return;}
  const headers=['Propriedade','Categoria','Descricao','Valor','Mes','Status','Approval'];
- const rows=records.map(r=>[(r.propAddress),(r.category),(r.desc),ltExpValueWithExtras(r),ltFmtMonth(r.month),(r.status),((r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved)?'Approved':'Pending')].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`));
+ const rows=records.map(function(r){
+  var isPm=!!(r && r._isPm);
+  var desc=isPm?((r._isVendorPm?(r.serviceType||r.desc):r.desc)||''):(r.desc||'');
+  var st=isPm?String(r.statusPm||''):(r.status||'');
+  var val=ltExpValueWithExtras(r);
+  var appr=(!isPm && r.approvalInvoice && r.approvalAppfolio && r.approvalApproved)?'Approved':'Pending';
+  if(isPm) appr='';
+  return [(r.propAddress),(r.category),desc,val,ltFmtMonth(r.month),st,appr].map(function(v){ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; });
+ });
  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='LT_Despesas.csv'; a.click();
 }
@@ -7499,7 +7550,15 @@ function ltClnDelete(id){
 // 
 function ltDashRender(){
  const records=ltGetRecords();
- const expenses=ltExpGetRecords();
+ const expenses=(function(){
+  var m=(typeof ltExpMergeAll==='function')?ltExpMergeAll():(ltExpGetRecords?ltExpGetRecords():[]);
+  return m.map(function(r){
+   if(r && r._isPm){
+    return {status:r.status, category:r.category, propAddress:r.propAddress, due: String(r.serviceDate||'').slice(0,10)};
+   }
+   return {status:r.status, category:r.category, propAddress:r.propAddress, due:r.due};
+  });
+ })();
  const cleanings=ltClnGetRecords();
 
  // Row 1 KPIs
