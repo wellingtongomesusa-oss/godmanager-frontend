@@ -1717,7 +1717,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <!-- 
  LONG TERM — MODAL: New / Edit Property
  -->
-<div id="lt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this)ltCloseModal()">
+<div id="lt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px">
  <div style="background:var(--paper);border-radius:12px;width:700px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
  <div style="font-size:14px;font-weight:700;color:var(--ink)" id="lt-modal-title"> Nova Propriedade Long Term</div>
@@ -1747,22 +1747,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div>
  <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">HOA ($)</label>
  <input id="lt-f-hoa" type="number" placeholder="0" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
- </div>
- <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ÁGUA ($)</label>
- <input id="lt-f-water" type="number" placeholder="0" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
- </div>
- <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">LUZ / ELECTRIC ($)</label>
- <input id="lt-f-electric" type="number" placeholder="0" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
- </div>
- <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MANUTENÇÃO ($)</label>
- <input id="lt-f-maint" type="number" placeholder="0" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
- </div>
- <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / DESPESAS ($)</label>
- <input id="lt-f-vendor" type="number" placeholder="0" min="0" step="0.01" oninput="ltCalcNet()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
  </div>
  <div>
  <label style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px">SECURITY DEPOSIT ($)</label>
@@ -1860,37 +1844,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  </div>
 
- <!-- Section: Maintenance & Vendor Detail -->
- <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Detalhamento Manutenção / Vendor</div>
- <div style="margin-bottom:16px">
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DESCRIÇÃO DO SERVIÇO</label>
- <textarea id="lt-f-desc" placeholder="Ex: Tenant reportou vazamento na pia → Manutenção interna não resolveu → Vendor Plumber Pro executou troca do sifão em 02/03/2026. Serviço aprovado pelo manager." rows="3" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;resize:vertical;line-height:1.5"></textarea>
- </div>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
- <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (nome da empresa)</label>
- <input id="lt-f-vendorname" placeholder="ex: Plumber Pro LLC" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
- </div>
- <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE EXECUÇÃO</label>
- <input id="lt-f-vendordate" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
- </div>
- </div>
-
- <!-- Section: Evidence Upload -->
- <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Evidências / Comprovantes</div>
- <div style="margin-bottom:18px">
- <div id="lt-drop-zone" onclick="document.getElementById('lt-f-files').click()" ondragover="ltDragOver(event)" ondragleave="ltDragLeave(event)" ondrop="ltDrop(event)"
- style="border:2px dashed var(--border2);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s">
- <div style="font-size:22px;margin-bottom:6px"></div>
- <div style="font-size:12px;font-weight:600;color:var(--ink2)">Arraste fotos ou clique para selecionar</div>
- <div style="font-size:10.5px;color:var(--ink3);margin-top:3px">JPG, PNG, PDF, HEIC — múltiplos arquivos aceitos</div>
- </div>
- <input type="file" id="lt-f-files" multiple accept="image/*,.pdf,.heic" style="display:none" onchange="ltHandleFiles(this.files)">
- <div id="lt-file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
- </div>
-
-
  <!-- Section: Property Photos -->
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Property Photos</div>
  <div id="lt-photo-dropzone" onclick="document.getElementById('lt-photo-input').click()" ondragover="ltPhotoDragOver(event)" ondragleave="ltPhotoDragLeave(event)" ondrop="ltPhotoDrop(event)" style="border:2px dashed var(--border2);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:6px">
@@ -1923,7 +1876,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
  <div style="display:flex;gap:10px;justify-content:flex-end">
  <button onclick="ltCloseModal()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
- <button onclick="ltSaveRecord()" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700"> Salvar Statement</button>
+ <button onclick="ltSaveRecord()" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar</button>
  </div>
  </div>
 </div>
@@ -2276,8 +2229,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Garantida</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGM %</th>
- <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp. mês (PM)</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Dia 15</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
@@ -6057,14 +6010,10 @@ function ltFmtMonth(m){
 function ltCalcNet(){
  const rent = parseFloat(document.getElementById('lt-f-rent').value)||0;
  const hoa = parseFloat(document.getElementById('lt-f-hoa').value)||0;
- const water= parseFloat(document.getElementById('lt-f-water').value)||0;
- const elec = parseFloat(document.getElementById('lt-f-electric').value)||0;
- const maint= parseFloat(document.getElementById('lt-f-maint').value)||0;
- const vend = parseFloat(document.getElementById('lt-f-vendor').value)||0;
  const mgmpctEl = document.getElementById('lt-f-mgmpct');
  const mgmpct = mgmpctEl ? (parseFloat(mgmpctEl.value)||0) : 0;
  const mgmFeeUsd = rent * mgmpct / 100;
- const net = rent - hoa - water - elec - maint - vend - mgmFeeUsd;
+ const net = rent - hoa - mgmFeeUsd;
  const el = document.getElementById('lt-f-net-preview');
  if(el){
  el.textContent = ltFmt(net);
@@ -6118,7 +6067,7 @@ function ltOpenNewProperty(){
  ltEditingId=null;
  ltStagedFiles=[];
  document.getElementById('lt-modal-title').textContent=' Nova Propriedade Long Term';
- ['lt-f-address','lt-f-owner','lt-f-tenant','lt-f-vendorname','lt-f-approver','lt-f-notes'].forEach(id=>document.getElementById(id).value='');
+ ['lt-f-address','lt-f-owner','lt-f-tenant','lt-f-approver','lt-f-notes'].forEach(id=>document.getElementById(id).value='');
  document.getElementById('lt-f-baths').value='';
  document.getElementById('lt-f-occupancy').value='rented';
  document.getElementById('lt-f-deposit').value='';
@@ -6132,16 +6081,10 @@ function ltOpenNewProperty(){
  const pp=document.getElementById('lt-photo-preview');if(pp)pp.innerHTML='';
  document.getElementById('lt-f-rent').value='';
  document.getElementById('lt-f-hoa').value='';
- document.getElementById('lt-f-water').value='';
- document.getElementById('lt-f-electric').value='';
- document.getElementById('lt-f-maint').value='';
- document.getElementById('lt-f-vendor').value='';
- document.getElementById('lt-f-desc').value='';
- document.getElementById('lt-f-vendordate').value='';
  document.getElementById('lt-f-status').value='pending';
  document.getElementById('lt-f-month').value='2026-03';
  document.getElementById('lt-f-net-preview').textContent='$0.00';
- document.getElementById('lt-file-preview').innerHTML='';
+ var _lfp=document.getElementById('lt-file-preview');if(_lfp)_lfp.innerHTML='';
  document.getElementById('lt-modal').style.display='flex';
 }
 
@@ -6191,7 +6134,7 @@ function ltOpenEdit(id){
  if(!r){alert('Propriedade nao encontrada');return;}
  ltEditingId=id;
  ltStagedFiles=r.files||[];
- document.getElementById('lt-modal-title').textContent=' Editar Statement';
+ document.getElementById('lt-modal-title').textContent='Editar';
  document.getElementById('lt-f-address').value=r.address||'';
  document.getElementById('lt-f-owner').value=r.owner||'';
  document.getElementById('lt-f-tenant').value=r.tenant||'';
@@ -6218,13 +6161,6 @@ function ltOpenEdit(id){
  document.getElementById('lt-f-month').value=r.month||'2026-03';
  document.getElementById('lt-f-rent').value=r.rent||'';
  document.getElementById('lt-f-hoa').value=r.hoa||'';
- document.getElementById('lt-f-water').value=r.water||'';
- document.getElementById('lt-f-electric').value=r.electric||'';
- document.getElementById('lt-f-maint').value=r.maint||'';
- document.getElementById('lt-f-vendor').value=r.vendor||'';
- document.getElementById('lt-f-desc').value=r.desc||'';
- document.getElementById('lt-f-vendorname').value=r.vendorname||'';
- document.getElementById('lt-f-vendordate').value=r.vendordate||'';
  document.getElementById('lt-f-status').value=r.status||'pending';
  document.getElementById('lt-f-approver').value=r.approver||'';
  document.getElementById('lt-f-notes').value=r.notes||'';
@@ -6245,16 +6181,13 @@ function ltSaveRecord(){
  const rent=parseFloat(document.getElementById('lt-f-rent').value)||0;
  if(!address||!owner||!rent){alert('Endereço, Owner e Rent são obrigatórios.');return;}
  const hoa=parseFloat(document.getElementById('lt-f-hoa').value)||0;
- const water=parseFloat(document.getElementById('lt-f-water').value)||0;
- const electric=parseFloat(document.getElementById('lt-f-electric').value)||0;
- const maint=parseFloat(document.getElementById('lt-f-maint').value)||0;
- const vendor=parseFloat(document.getElementById('lt-f-vendor').value)||0;
+ const water=0, electric=0, maint=0, vendor=0;
  const _geEl=document.getElementById('lt-f-guarantee');
  const guarantee=_geEl?(parseFloat(_geEl.value)||0):0;
  const _mpEl=document.getElementById('lt-f-mgmpct');
  const mgmpct=_mpEl?(parseFloat(_mpEl.value)||0):0;
  const mgmFeeUsd=rent*mgmpct/100;
- const net=rent-hoa-water-electric-maint-vendor-mgmFeeUsd;
+ const net=rent-hoa-mgmFeeUsd;
  const rec={
  id: ltEditingId||('lt_'+Date.now()),
  address, owner,
@@ -6281,9 +6214,9 @@ function ltSaveRecord(){
  photos:[...ltStagedPhotos],
  month:document.getElementById('lt-f-month').value,
  rent, hoa, water, electric, maint, vendor, net,
- desc:document.getElementById('lt-f-desc').value.trim(),
- vendorname:document.getElementById('lt-f-vendorname').value.trim(),
- vendordate:document.getElementById('lt-f-vendordate').value,
+ desc:'',
+ vendorname:'',
+ vendordate:'',
  status:document.getElementById('lt-f-status').value,
  approver:document.getElementById('lt-f-approver').value.trim(),
  notes:document.getElementById('lt-f-notes').value.trim(),
@@ -7998,7 +7931,7 @@ window._pmSummaryByCode=null;
 async function ltpRenderNetFromApi(){
  try{
   var fm=(document.getElementById('ltp-filter-month')||{}).value;
-  if(!fm){window._pmSummaryByCode=null;if(typeof ltpRender==='function')ltpRender();return;}
+  if(!fm){window._pmSummaryByCode=null;if(typeof ltpRender==='function')await ltpRender();return;}
   var r=await fetch('/api/pm/summary?month='+encodeURIComponent(fm),{credentials:'include'});
   if(!r.ok){window._pmSummaryByCode=null;}
   else{
@@ -8008,7 +7941,7 @@ async function ltpRenderNetFromApi(){
    window._pmSummaryByCode=m;
   }
  }catch(e){window._pmSummaryByCode=null;}
- if(typeof ltpRender==='function')ltpRender();
+ if(typeof ltpRender==='function')await ltpRender();
 }
 
 // Auxiliar: soma de despesas pagas de uma propriedade, filtradas por YYYY-MM opcional
@@ -8027,7 +7960,58 @@ function ltGetPaidExpensesByProp(propId, monthYYYYMM){
  }catch(err){return 0;}
 }
 
-function ltpRender(){
+function ltpBindTbodyActionDelegationOnce(){
+ if(window._ltpTbodyActBound) return;
+ window._ltpTbodyActBound=1;
+ document.addEventListener('click', function(ev){
+  var t=ev.target && ev.target.closest && ev.target.closest('[data-ltp-a]');
+  if(!t) return;
+  var tb=document.getElementById('ltp-tbody');
+  if(!tb || !tb.contains(t)) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  var a=t.getAttribute('data-ltp-a');
+  var id=t.getAttribute('data-ltp-id');
+  if(!id) return;
+  if(a==='detail' && typeof ltOpenDetail==='function') ltOpenDetail(id);
+  else if(a==='edit' && typeof ltOpenEdit==='function') ltOpenEdit(id);
+  else if(a==='del' && typeof ltpDeleteProperty==='function') ltpDeleteProperty(id);
+ });
+}
+function ltpRowNetExpDia15(r, expByProp){
+ var ev=0;
+ if(expByProp && typeof expByProp.get==='function') ev=expByProp.get(String(r.id))||0;
+ var expStr=(ev>0)?ltFmt(ev):'—';
+ var colX=(ev>0)?'var(--red)':'var(--ink3)';
+ var sum=window._pmSummaryByCode && window._pmSummaryByCode[r.id];
+ if(sum){
+  var btxt=sum.payStatus==='paid'?'Pago':(sum.payStatus==='overdue'?'Atrasado':'A pagar dia 15');
+  var bc=sum.payStatus==='paid'?'var(--green)':(sum.payStatus==='overdue'?'var(--red)':'var(--amber)');
+  return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+(sum.net>=0?'var(--green)':'var(--red)')+'">'+ltFmt(sum.net)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid '+bc+';color:'+bc+'">'+btxt+'</span></td>';
+ }
+ var pe=ltGetPaidExpensesByProp(r.id,r.month);
+ var nf=(r.net||0)-pe;
+ return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+(nf>=0?'var(--blue)':'var(--red)')+'" title="NET">'+ltFmt(nf)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">—</td>';
+}
+
+async function ltpRender(){
+ ltpBindTbodyActionDelegationOnce();
+ var curMonth=new Date().toISOString().slice(0,7);
+ var expByProp=new Map();
+ try{
+  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include'});
+  if(exRes.ok){
+   var exJ=await exRes.json();
+   (exJ.expenses||[]).forEach(function(e){
+    if(!e) return;
+    var add=parseFloat(e.ownerCharged)||0;
+    var pUuid=String(e.propertyId||'').trim();
+    var pCode=String(e.propertyCode||'').trim();
+    if(pUuid) expByProp.set(pUuid,(expByProp.get(pUuid)||0)+add);
+    if(pCode && pCode!==pUuid) expByProp.set(pCode,(expByProp.get(pCode)||0)+add);
+   });
+  }
+ }catch(e){}
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
   try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltpRender auto-bootstrap',e);}
@@ -8061,6 +8045,7 @@ function ltpRender(){
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
  tbody.innerHTML=filtered.map((r,i)=>`
  <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="ltOpenDetail('${r.id}')">
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
@@ -8073,14 +8058,14 @@ function ltpRender(){
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.guarantee?ltFmt(r.guarantee):'—'}</td>
  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.mgmpct?r.mgmpct+'%':'—'}</td>
- ${(()=>{var sum=window._pmSummaryByCode&&window._pmSummaryByCode[r.id];if(sum){var btxt=sum.payStatus==='paid'?'Pago':(sum.payStatus==='overdue'?'Atrasado':'A pagar dia 15');var bc=sum.payStatus==='paid'?'var(--green)':(sum.payStatus==='overdue'?'var(--red)':'var(--amber)');return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--red)">'+ltFmt(sum.expensesMonth)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+(sum.net>=0?'var(--green)':'var(--red)')+'">'+ltFmt(sum.net)+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid '+bc+';color:'+bc+'">'+btxt+'</span></td>';}var pe=ltGetPaidExpensesByProp(r.id,r.month);var nf=(r.net||0)-pe;return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+(pe>0?'var(--red)':'var(--ink3)')+'">'+(pe>0?'-'+ltFmt(pe):'—')+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+(nf>=0?'var(--blue)':'var(--red)')+'" title="NET">'+ltFmt(nf)+'</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">—</td>';})()}
+ ${ltpRowNetExpDia15(r, expByProp)}
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${stLabel[r.status]||'—'}</span></td>
  <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
  <div style="display:flex;gap:4px;justify-content:center">
- <button onclick="ltOpenDetail('${r.id}')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
- <button onclick="ltOpenEdit('${r.id}')" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
- <button onclick="ltpDeleteProperty('${r.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
+ <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
+ <button type="button" data-ltp-a="edit" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
+ <button type="button" data-ltp-a="del" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  </div>
  </td>
  </tr>`).join('');
