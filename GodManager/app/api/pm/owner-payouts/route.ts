@@ -99,6 +99,7 @@ export async function GET(req: Request) {
         orderBy: { ownerName: 'asc' },
         include: { ownerMonthPayouts: { where: { yearMonth: { in: monthKeys } } } },
       }),
+      // Todas as despesas do mês por propriedade (com ou sem pacote) — nunca filtrar por pmPackage / packageApplied
       prisma.pmExpense.findMany({
         where: {
           monthRef: { in: monthKeys },

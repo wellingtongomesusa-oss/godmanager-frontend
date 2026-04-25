@@ -33,6 +33,7 @@ function toJson(e: {
     vendorName: e.vendor?.companyName ?? '',
     serviceType: e.serviceType ?? '',
     packageApplied: e.packageApplied,
+    pmPackage: e.packageApplied,
     vendorCost: e.vendorCost.toString(),
     ownerCharged: e.ownerCharged.toString(),
     serviceDate: e.serviceDate ? e.serviceDate.toISOString().slice(0, 10) : '',
