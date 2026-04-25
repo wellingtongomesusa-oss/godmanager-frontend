@@ -2106,10 +2106,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div id="ltp-err-bathrooms" class="ltp-err-msg"></div>
 </div>
 <div>
-<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-garage">Garagem (vagas)</label>
-<input id="ltp-f-garage" type="number" min="0" step="1" value="0" aria-label="Vagas de garagem" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
-</div>
-<div>
 <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-sqft">Área (sq ft)</label>
 <input id="ltp-f-sqft" type="number" min="0" step="1" placeholder="opcional" aria-label="Área em pés quadrados" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
 </div>
@@ -7977,6 +7973,7 @@ function ltGetPaidExpensesByProp(propId, monthYYYYMM){
 function ltpBindTbodyActionDelegationOnce(){
  if(window._ltpTbodyActBound) return;
  window._ltpTbodyActBound=1;
+ /* capture: true -- <td> das acoes usa stopPropagation(); sem capture o click nao chega ao document */
  document.addEventListener('click', function(ev){
   var t=ev.target && ev.target.closest && ev.target.closest('[data-ltp-a]');
   if(!t) return;
@@ -7990,22 +7987,24 @@ function ltpBindTbodyActionDelegationOnce(){
   if(a==='detail' && typeof ltOpenDetail==='function') ltOpenDetail(id);
   else if(a==='edit' && typeof ltOpenEdit==='function') ltOpenEdit(id);
   else if(a==='del' && typeof ltpDeleteProperty==='function') ltpDeleteProperty(id);
- });
+ }, true);
 }
 function ltpRowNetExpDia15(r, expByProp){
  var ev=0;
  if(expByProp && typeof expByProp.get==='function') ev=expByProp.get(String(r.id))||0;
+ var rent=Number(r.rent)||0;
+ var mPct=Number(r.mgmpct)||0;
+ var netDisplay=rent-rent*mPct/100-ev;
+ var netColor=netDisplay>=0?'var(--blue)':'var(--red)';
  var expStr=(ev>0)?ltFmt(ev):'—';
  var colX=(ev>0)?'var(--red)':'var(--ink3)';
  var sum=window._pmSummaryByCode && window._pmSummaryByCode[r.id];
  if(sum){
   var btxt=sum.payStatus==='paid'?'Pago':(sum.payStatus==='overdue'?'Atrasado':'A pagar dia 15');
   var bc=sum.payStatus==='paid'?'var(--green)':(sum.payStatus==='overdue'?'var(--red)':'var(--amber)');
-  return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+(sum.net>=0?'var(--green)':'var(--red)')+'">'+ltFmt(sum.net)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid '+bc+';color:'+bc+'">'+btxt+'</span></td>';
+  return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+netColor+'" title="NET: Rent - MGM% - EXP mês (PM)">'+ltFmt(netDisplay)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid '+bc+';color:'+bc+'">'+btxt+'</span></td>';
  }
- var pe=ltGetPaidExpensesByProp(r.id,r.month);
- var nf=(r.net||0)-pe;
- return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+(nf>=0?'var(--blue)':'var(--red)')+'" title="NET">'+ltFmt(nf)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">—</td>';
+ return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+netColor+'" title="NET: Rent - MGM% - EXP mês (PM)">'+ltFmt(netDisplay)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">—</td>';
 }
 
 async function ltpRender(){
@@ -8043,7 +8042,7 @@ async function ltpRender(){
  });
  // KPIs
  const totR=filtered.reduce((s,r)=>s+(r.rent||0),0);
- const totNetAtual=filtered.reduce((s,r)=>{const pe=ltGetPaidExpensesByProp(r.id,r.month);return s+((r.net||0)-pe);},0);
+ const totNetAtual=filtered.reduce((s,r)=>{var ev=0;if(expByProp&&typeof expByProp.get==='function')ev=expByProp.get(String(r.id))||0;var rent=Number(r.rent)||0,mPct=Number(r.mgmpct)||0;return s+(rent-rent*mPct/100-ev);},0);
  [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
  ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
  ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
@@ -9009,7 +9008,6 @@ function ltpBuildRecord(){
  propertyType:document.getElementById('ltp-f-type').value,
  bedrooms:parseInt(document.getElementById('ltp-f-bedrooms').value,10)||0,
  bathrooms:br,
- garage:parseInt(document.getElementById('ltp-f-garage').value,10)||0,
  pool:document.getElementById('ltp-f-pool').checked,
  sqft:parseFloat(document.getElementById('ltp-f-sqft').value)||0,
  baths:ltpFormatBaths(br),
@@ -9105,7 +9103,6 @@ function ltpOpenNewPropertyModal(){
  document.getElementById('ltp-f-type').value='house';
  document.getElementById('ltp-f-bedrooms').value='0';
  document.getElementById('ltp-f-bathrooms').value='1';
- document.getElementById('ltp-f-garage').value='0';
  document.getElementById('ltp-f-pool').checked=false;
  document.getElementById('ltp-f-rent').value='';
  document.getElementById('ltp-f-net').value='';
