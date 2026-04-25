@@ -2369,6 +2369,18 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <button type="button" id="op-expand-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Expandir todos</button>
   <button type="button" id="op-collapse-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Colapsar todos</button>
  </div>
+ <div id="ltop-filter-bar" style="max-width:900px;margin-bottom:10px">
+  <div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap">
+   <input type="search" id="op-search-input" placeholder="Buscar owner, propriedade ou endere&#231;o..." autocomplete="off" style="flex:1;min-width:200px;max-width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px" />
+   <select id="op-status-filter" style="min-width:130px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">
+    <option value="todos" selected>Todos</option>
+    <option value="pendente">Pendente</option>
+    <option value="pago">Pago</option>
+   </select>
+   <button type="button" id="op-clear-filter" style="min-width:40px;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:20px;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif" title="Limpar" aria-label="Limpar">&#215;</button>
+  </div>
+  <div id="op-filter-count" style="font-size:11px;color:var(--ink3);margin-top:6px;letter-spacing:.02em">Exibindo 0 de 0 owners</div>
+ </div>
  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;max-width:900px">
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Total a pagar (OUTstanding NET)</div><div id="ltop-kpi-due" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Propriedades pagas</div><div id="ltop-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--green);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
@@ -7794,6 +7806,47 @@ function ltClnExportCSV(){
 // OWNER PAYMENT (dia 15)
 // 
 window._ltopData=null;
+function opApplyFilter(){
+ var si=document.getElementById('op-search-input');
+ var term=si&&si.value?String(si.value).toLowerCase().replace(/\s+/g,' ').trim():'';
+ var sf=document.getElementById('op-status-filter');
+ var status=sf&&sf.value?sf.value:'todos';
+ var ownerBlocks=document.querySelectorAll('.op-owner-block');
+ var shown=0;
+ var lastVisible=null;
+ for(var b=0;b<ownerBlocks.length;b++){
+  var block=ownerBlocks[b];
+  var text=(block.textContent||'').toLowerCase();
+  var matchTerm=!term||text.indexOf(term)>=0;
+  var st=block.getAttribute('data-status')||'';
+  var matchStatus=status==='todos'||st===status;
+  var visible=matchTerm&&matchStatus;
+  block.style.display=visible?'':'none';
+  if(visible){shown++;lastVisible=block;}
+ }
+ var counter=document.getElementById('op-filter-count');
+ if(counter)counter.textContent='Exibindo '+shown+' de '+ownerBlocks.length+' owners';
+ if(shown===1&&lastVisible&&(term||status!=='todos')){
+  var t1=lastVisible.querySelectorAll('.op-detail-table');
+  var t2=lastVisible.querySelectorAll('.op-toggle-btn');
+  for(var i=0;i<t1.length;i++)t1[i].style.display='table';
+  for(var j=0;j<t2.length;j++)t2[j].textContent='\u25B2 Fechar';
+ }
+}
+function ltopOwnerPayBindFilterBarOnce(){
+ if(window._ltopFilterBarInited)return;
+ window._ltopFilterBarInited=1;
+ var si=document.getElementById('op-search-input');
+ var sf=document.getElementById('op-status-filter');
+ var sc=document.getElementById('op-clear-filter');
+ if(si)si.addEventListener('input',opApplyFilter);
+ if(sf)sf.addEventListener('change',opApplyFilter);
+ if(sc)sc.addEventListener('click',function(){
+  if(si)si.value='';
+  if(sf)sf.value='todos';
+  opApplyFilter();
+ });
+}
 function ltOwnerPayInitUiOnce(){
  if(window._ltopPayUiInited)return;
  var host=document.getElementById('ltop-host');
@@ -7851,6 +7904,7 @@ function ltOwnerPayInitUiOnce(){
  });
 }
 async function ltOwnerPayRender(){
+ ltopOwnerPayBindFilterBarOnce();
  ltOwnerPayInitUiOnce();
  const ym=(document.getElementById('ltop-month')||{}).value||'2026-04';
  const hint=document.getElementById('ltop-d15-hint');
@@ -7864,7 +7918,7 @@ async function ltOwnerPayRender(){
  }
  try{
   const r=await fetch('/api/pm/owner-payouts?month='+encodeURIComponent(ym),{credentials:'include'});
-  if(!r.ok){document.getElementById('ltop-host').innerHTML='<p style="color:var(--ink3);font-size:13px">Sessão necessária ou API indisponível.</p>';return;}
+  if(!r.ok){document.getElementById('ltop-host').innerHTML='<p style="color:var(--ink3);font-size:13px">Sessão necessária ou API indisponível.</p>';if(typeof opApplyFilter==='function')opApplyFilter();return;}
   const j=await r.json();
   window._ltopData=j;
   const s=j.summary||{};
@@ -7874,7 +7928,7 @@ async function ltOwnerPayRender(){
   const host=document.getElementById('ltop-host');
   if(!host)return;
   const own=j.owners||[];
-  if(!own.length){host.innerHTML='<p style="color:var(--ink3)">Nenhum owner.</p>';return;}
+  if(!own.length){host.innerHTML='<p style="color:var(--ink3)">Nenhum owner.</p>';if(typeof opApplyFilter==='function')opApplyFilter();return;}
   host.innerHTML=own.map(function(og){
    var props=(og.properties||[]).map(function(p){
     var exRows=(p.expenses||[]).map(function(e){
@@ -7888,11 +7942,16 @@ async function ltOwnerPayRender(){
     var toggleBtn='<button type="button" class="op-toggle-btn" data-prop-id="'+pid+'" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--paper);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">\u25BC Ver detalhes</button>';
     return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end">'+paid+markBtn+toggleBtn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>Rent: <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>Vendor+markup: <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><table class="op-detail-table" data-prop-id="'+pid+'" style="display:none;width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">Vendor</th><th style="text-align:right">Custo</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">Owner</th></tr></thead><tbody>'+exRows+'</tbody></table></div>';
    }).join('');
-   return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:linear-gradient(180deg,var(--paper),var(--cream))"><div style="font-family:\'Sora\',serif;font-size:16px;font-weight:700;margin-bottom:12px">'+og.ownerName+'</div>'+props+'</div>';
+   var pl=og.properties||[];
+   var ownerSt='pendente';
+   if(pl.length>0)ownerSt=pl.every(function(pp){ return !!pp.paidAt; }) ? 'pago' : 'pendente';
+   return '<div class="op-owner-block" data-status="'+ownerSt+'" style="border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:linear-gradient(180deg,var(--paper),var(--cream))"><div style="font-family:\'Sora\',serif;font-size:16px;font-weight:700;margin-bottom:12px">'+og.ownerName+'</div>'+props+'</div>';
   }).join('');
+  if(typeof opApplyFilter==='function')opApplyFilter();
  }catch(e){
   console.error(e);
   document.getElementById('ltop-host').innerHTML='<p style="color:var(--red)">Erro ao carregar.</p>';
+  if(typeof opApplyFilter==='function')opApplyFilter();
  }
 }
 async function ltOwnerPayMark(propertyId,ym){
