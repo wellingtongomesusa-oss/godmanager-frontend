@@ -6508,7 +6508,7 @@ function ltSaveRecord(){
  const records=ltGetRecords();
  if(ltEditingId){
  const idx=records.findIndex(x=>x.id===ltEditingId);
- if(idx>-1)records[idx]=rec; else records.push(rec);
+ if(idx>-1)records[idx]=Object.assign({},records[idx],rec); else records.push(rec);
  }else{ records.push(rec); }
  ltSaveRecords(records);
  try{
