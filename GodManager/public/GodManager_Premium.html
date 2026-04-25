@@ -486,6 +486,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">TENANTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('tenantportal')" id="nav-tenantportal">Tenant Portal</div>
+ <div class="ss" onclick="nav('listings')" id="nav-listings-tenants">Listings</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible sb-sec-headpad" data-sb-sec="compliance" id="wrap-nav-compliance">
@@ -5259,6 +5260,7 @@ function nav(r){
  var el=document.getElementById('nav-'+r);
  if(r==='settings')el=document.getElementById('nav-settings-gm')||document.getElementById('nav-settings-co');
  if(el)el.classList.add('active');
+ if(r==='listings'){const elLt=document.getElementById('nav-listings-tenants');if(elLt)elLt.classList.add('active');}
  if(r==='home'){const hel=document.getElementById('nav-home');if(hel)hel.classList.add('active');}
  const titleEl=document.getElementById('page-title');
  if(titleEl) titleEl.textContent=TITLES[r]||r;
