@@ -83,7 +83,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.address_zip != null) data.addressZip = String(body.address_zip).trim() || null;
     if (body.trade != null) data.trade = String(body.trade).trim() || null;
     if (body.service_type != null) data.serviceType = String(body.service_type).trim() || null;
-    if (body.default_package != null && ['PACOTE_1', 'PACOTE_2', 'PACOTE_3'].includes(String(body.default_package))) {
+    if (
+      body.default_package != null &&
+      ['PACOTE_1', 'PACOTE_2', 'PACOTE_3', 'PACOTE_4'].includes(String(body.default_package))
+    ) {
       data.defaultPackage = body.default_package;
     }
     if (body.bank_name != null) data.bankName = String(body.bank_name).trim() || null;

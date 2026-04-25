@@ -1005,6 +1005,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
      <option value="PACOTE_1">Pacote 1 (+15%)</option>
      <option value="PACOTE_2">Pacote 2 (+18%)</option>
      <option value="PACOTE_3">Pacote 3 (+25%)</option>
+     <option value="PACOTE_4">P4 — Sem markup (0%)</option>
     </select></div>
     <div><label style="font-size:10px;color:var(--ink3)">Markup padrão (calculado)</label><div id="gv-markup_display" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber);padding:8px 10px;border:1px dashed var(--border2);border-radius:6px;background:var(--sand)">15%</div></div>
    </div>
@@ -1037,8 +1038,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    </div>
    <div style="margin-top:10px"><label style="font-size:10px;color:var(--ink3)">Internal Notes</label><textarea id="gv-notes" rows="3" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></textarea></div>
    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
-    <button type="button" onclick="gvCloseModal()" style="padding:8px 14px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Cancel</button>
-    <button type="button" onclick="gvSaveVendor()" style="padding:8px 14px;border:none;background:#2d7252;color:#fff;border-radius:6px;cursor:pointer">Save Vendor</button>
+    <button type="button" onclick="gvCloseModal()" style="padding:8px 14px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Cancelar</button>
+    <button type="button" onclick="gvSaveVendor()" style="padding:8px 14px;border:none;background:#2d7252;color:#fff;border-radius:6px;cursor:pointer">Salvar</button>
    </div>
   </div>
  </div>
@@ -1977,7 +1978,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Informações da Despesa</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
  <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PROPRIEDADE *</label><select id="lt-nexp-prop" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="">— Selecionar propriedade —</option></select></div>
- <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
+ <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-nexp-month" type="month" value="2026-04" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div id="lt-nexp-legacy-value-wrap"><label style="font-size:11px;font-weight:600;color:var(--red);display:block;margin-bottom:4px">VALOR ($) *</label><input id="lt-nexp-value" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--red-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none"></div>
  </div>
@@ -1986,7 +1987,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
    <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (cadastrado) *</label><select id="lt-nexp-pm-vendor" onchange="ltNexpPmVendorChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TIPO DE SERVIÇO</label><input id="lt-nexp-pm-svc" placeholder="Sobrescreve / complementa" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PACOTE APLICADO *</label><select id="lt-nexp-pm-pkg" onchange="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="PACOTE_1">Pacote 1 (+15%)</option><option value="PACOTE_2">Pacote 2 (+18%)</option><option value="PACOTE_3">Pacote 3 (+25%)</option></select></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PACOTE APLICADO *</label><select id="lt-nexp-pm-pkg" onchange="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="PACOTE_1">Pacote 1 (+15%)</option><option value="PACOTE_2">Pacote 2 (+18%)</option><option value="PACOTE_3">Pacote 3 (+25%)</option><option value="PACOTE_4">Pacote 4 — Sem adicional (0%)</option></select></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VALOR PAGO AO VENDOR ($) *</label><input id="lt-nexp-pm-vendor-cost" type="number" min="0" step="0.01" oninput="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--green);display:block;margin-bottom:4px">VALOR COBRADO AO OWNER ($)</label><input id="lt-nexp-pm-owner-charged" readonly tabindex="-1" style="width:100%;padding:8px 11px;border:1px solid var(--green-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;background:var(--green-bg);color:var(--green)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DO SERVIÇO *</label><input id="lt-nexp-pm-svc-date" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
@@ -2008,8 +2009,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="display:flex;align-items:flex-end;gap:8px;padding-bottom:2px"><input type="checkbox" id="lt-nexp-link" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer"><label for="lt-nexp-link" style="font-size:11px;color:var(--ink2);cursor:pointer;line-height:1.4">Atualizar automaticamente o valor desta categoria no Statement desta propriedade/mês</label></div>
  </div>
  <div style="display:flex;gap:10px;justify-content:flex-end">
- <button onclick="ltCloseNewExpense()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
- <button onclick="ltSaveExpense()" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar Despesa</button>
+ <button type="button" onclick="ltCloseNewExpense()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
+ <button type="button" onclick="ltSaveExpense()" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar</button>
  </div>
  </div>
 </div>
@@ -6713,6 +6714,9 @@ const LT_EXP_KEY='mp_lt_expenses_v1';
 let ltExpEditingId=null;
 let ltExpEditingPmId=null;
 window._pmExpenseRows=[];
+function gmHtmlEscAttr(s){
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
 const LT_EXP_APPROVALS_KEY='gm_expense_approvals';
 const LT_EXP_APPROVAL_LOGS_KEY='gm_approval_logs';
 const LT_EXP_I18N={en:{approval_col:'APPROVAL',invoice_step:'Invoice',appfolio_step:'AppFolio',approved_step:'Approved',approval_history:'Approval History',step_1_name:'Invoice Received',step_2_name:'Registered in AppFolio',step_3_name:'Final Approval',pending:'Pending',undo_confirm:'Undo this approval step? All subsequent steps will also be undone.',undo_btn:'Undo',complete_previous:'Complete the previous step first',fully_approved:'fully approved',undone_by:'Undone by',by:'By',at:'at'},pt:{approval_col:'APROVACAO',invoice_step:'Invoice',appfolio_step:'AppFolio',approved_step:'Aprovado',approval_history:'Historico de Aprovacao',step_1_name:'Invoice Recebida',step_2_name:'Cadastrado no AppFolio',step_3_name:'Aprovacao Final',pending:'Pendente',undo_confirm:'Desfazer esta aprovacao? Todas as etapas posteriores tambem serao desfeitas.',undo_btn:'Desfazer',complete_previous:'Complete a etapa anterior primeiro',fully_approved:'totalmente aprovados',undone_by:'Desfeito por',by:'Por',at:'as'},es:{approval_col:'APROBACION',invoice_step:'Factura',appfolio_step:'AppFolio',approved_step:'Aprobado',approval_history:'Historial de Aprobacion',step_1_name:'Factura Recibida',step_2_name:'Registrado en AppFolio',step_3_name:'Aprobacion Final',pending:'Pendiente',undo_confirm:'Deshacer esta aprobacion? Todos los pasos posteriores tambien seran deshechos.',undo_btn:'Deshacer',complete_previous:'Complete el paso anterior primero',fully_approved:'totalmente aprobados',undone_by:'Deshecho por',by:'Por',at:'a las'}};
@@ -6942,7 +6946,8 @@ function ltNexpPmVendorChange(){
 function ltNexpPmRecalc(){
  var vc=parseFloat((document.getElementById('lt-nexp-pm-vendor-cost')||{}).value)||0;
  var pkg=(document.getElementById('lt-nexp-pm-pkg')||{}).value||'PACOTE_1';
- var m=(pkg==='PACOTE_2')?1.18:((pkg==='PACOTE_3')?1.25:1.15);
+ var m=1.15;
+ if(pkg==='PACOTE_2')m=1.18;else if(pkg==='PACOTE_3')m=1.25;else if(pkg==='PACOTE_4')m=1.0;
  var own=Math.round(vc*m*100)/100;
  var out=document.getElementById('lt-nexp-pm-owner-charged');
  if(out)out.value=own?String(own):'0';
@@ -6981,6 +6986,7 @@ function ltOpenNewExpense(){
 function ltCloseNewExpense(){document.getElementById('lt-newexp-modal').style.display='none';}
 
 function ltOpenEditExpense(id){
+ id=String(id);
  if(String(id).indexOf('pm:')===0){
   var pid=String(id).slice(3);
   var e=(window._pmExpenseRows||[]).find(function(x){return x.id===pid;});
@@ -6991,13 +6997,21 @@ function ltOpenEditExpense(id){
   if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
   var propSel=document.getElementById('lt-nexp-prop');
   if(propSel){
-   var opt=Array.from(propSel.options).find(function(o){return o.value===e.propertyCode||o.value===e.propertyId;});
-   if(opt)propSel.value=opt.value;else propSel.value=e.propertyCode||'';
+   var pCode=e.propertyCode?String(e.propertyCode):'';
+   var pId=e.propertyId?String(e.propertyId):'';
+   var opt=Array.from(propSel.options).find(function(o){
+    var v=o.value?String(o.value):'';
+    return v===pCode||v===pId;
+   });
+   if(opt)propSel.value=opt.value;else propSel.value=pCode||pId||'';
   }
   document.getElementById('lt-nexp-month').value=e.monthRef||'2026-04';
   document.getElementById('lt-nexp-desc').value=e.description||'';
   ltNexpPopulatePmVendorSelect();
-  var vsel=document.getElementById('lt-nexp-pm-vendor');if(vsel&&e.vendorId)vsel.value=e.vendorId;
+  setTimeout(function(){
+   var vsel=document.getElementById('lt-nexp-pm-vendor');
+   if(vsel&&e.vendorId)vsel.value=String(e.vendorId);
+  },0);
   var psvc=document.getElementById('lt-nexp-pm-svc');if(psvc)psvc.value=e.serviceType||'';
   var pkg=document.getElementById('lt-nexp-pm-pkg');if(pkg)pkg.value=e.packageApplied||'PACOTE_1';
   var pvc=document.getElementById('lt-nexp-pm-vendor-cost');if(pvc)pvc.value=e.vendorCost||'0';
@@ -7007,7 +7021,7 @@ function ltOpenEditExpense(id){
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
- const r=ltExpGetRecords().find(x=>x.id===id); if(!r) return;
+ const r=ltExpGetRecords().find(x=>String(x.id)===String(id)); if(!r) return;
  ltExpEditingId=id;ltExpEditingPmId=null; ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Editar Despesa';
  document.getElementById('lt-nexp-prop').value=r.propId||'';
@@ -7144,6 +7158,7 @@ function ltSaveExpense(){
 }
 
 function ltExpDelete(id){
+ id=String(id);
  if(String(id).indexOf('pm:')===0){
   if(!confirm('Remover esta despesa (Postgres)?'))return;
   (async function(){
@@ -7169,8 +7184,8 @@ function ltExpValueWithExtras(r){
 function ltExpMergeAll(){
  const local=ltExpGetRecords();
  const pm=(window._pmExpenseRows||[]).map(function(e){
-  var mk=e.packageApplied==='PACOTE_2'?18:(e.packageApplied==='PACOTE_3'?25:15);
-  var pkgL=e.packageApplied==='PACOTE_2'?'P2':(e.packageApplied==='PACOTE_3'?'P3':'P1');
+  var mk=e.packageApplied==='PACOTE_2'?18:(e.packageApplied==='PACOTE_3'?25:(e.packageApplied==='PACOTE_4'?0:15));
+  var pkgL=e.packageApplied==='PACOTE_2'?'P2':(e.packageApplied==='PACOTE_3'?'P3':(e.packageApplied==='PACOTE_4'?'P4':'P1'));
   return{
    _isPm:true,id:'pm:'+e.id,pmId:e.id,propAddress:e.propAddress,category:'Vendor (API)',desc:e.description||'',month:e.monthRef,
    vendorName:e.vendorName,vendorCost:parseFloat(e.vendorCost)||0,ownerCharged:parseFloat(e.ownerCharged)||0,packageApplied:e.packageApplied,
@@ -7244,8 +7259,8 @@ function ltExpRender(){
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;${sStyle[stK]||''}">${sLabel[stK]||stK}</span></td>
  ${isPm?'<td style="padding:9px 8px;text-align:center;font-size:10px;color:var(--ink3)">—</td>':ltExpApprovalCell(r)}
  <td style="padding:9px 10px;text-align:center"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap">
- <button onclick="ltOpenEditExpense(${JSON.stringify(r.id)})" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
- <button onclick="ltExpDelete(${JSON.stringify(r.id)})" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
+ <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltOpenEditExpense==='function')ltOpenEditExpense(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
+ <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltExpDelete==='function')ltExpDelete(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  </div></td>
  </tr>`;
  }).join('');
@@ -8919,7 +8934,7 @@ window._pmVendorsList=null;
 function gvMapApiToLocal(a){
  if(!a)return null;
  var dp=a.default_package||'PACOTE_1';
- var mk=a.markup_pct!=null?a.markup_pct:((dp==='PACOTE_2')?18:((dp==='PACOTE_3')?25:15));
+ var mk=a.markup_pct!=null?a.markup_pct:((dp==='PACOTE_2')?18:((dp==='PACOTE_3')?25:((dp==='PACOTE_4')?0:15)));
  return{
   id:a.id,company_name:a.company_name,contact_name:a.contact_name||'',email:a.email,phone:a.phone,
   address_street:a.address_street,address_city:a.address_city||'',address_state:a.address_state||'',address_zip:a.address_zip||'',
@@ -8930,7 +8945,7 @@ function gvMapApiToLocal(a){
  };
 }
 function gvLoadFromLocal(){
- try{var arr=JSON.parse(localStorage.getItem(GV_KEY)||'[]');if(!Array.isArray(arr))return[];var changed=false;for(var i=0;i<arr.length;i++){var v=arr[i];if(!v)continue;if(v.charge_18_percent===true&&v.commission_mp!==true){v.commission_mp=true;changed=true;}if(Object.prototype.hasOwnProperty.call(v,'charge_18_percent')){delete v.charge_18_percent;changed=true;}if(v.service_type==null)v.service_type='';if(v.default_package==null)v.default_package='PACOTE_1';if(v.markup_pct==null)v.markup_pct=(v.default_package==='PACOTE_2')?18:((v.default_package==='PACOTE_3')?25:15);}if(changed){try{localStorage.setItem(GV_KEY,JSON.stringify(arr));}catch(e2){}}return arr;}catch(e){return[]}
+ try{var arr=JSON.parse(localStorage.getItem(GV_KEY)||'[]');if(!Array.isArray(arr))return[];var changed=false;for(var i=0;i<arr.length;i++){var v=arr[i];if(!v)continue;if(v.charge_18_percent===true&&v.commission_mp!==true){v.commission_mp=true;changed=true;}if(Object.prototype.hasOwnProperty.call(v,'charge_18_percent')){delete v.charge_18_percent;changed=true;}if(v.service_type==null)v.service_type='';if(v.default_package==null)v.default_package='PACOTE_1';if(v.markup_pct==null)v.markup_pct=(v.default_package==='PACOTE_2')?18:((v.default_package==='PACOTE_3')?25:((v.default_package==='PACOTE_4')?0:15));}if(changed){try{localStorage.setItem(GV_KEY,JSON.stringify(arr));}catch(e2){}}return arr;}catch(e){return[]}
 }
 function gvLoad(){
  if(window._pmVendorsList&&window._pmVendorsList.length){
@@ -8955,7 +8970,7 @@ function gvRefreshPackageMarkup(){
  var out=document.getElementById('gv-markup_display');
  if(!sel||!out)return;
  var p=sel.value||'PACOTE_1';
- var pct=(p==='PACOTE_2')?18:((p==='PACOTE_3')?25:15);
+ var pct=(p==='PACOTE_2')?18:((p==='PACOTE_3')?25:((p==='PACOTE_4')?0:15));
  out.textContent=pct+'%';
 }
 function gvOrdersFor(vendorId){const m=gvMonth;const rows=gvBills.filter(b=>b.vendor_id===vendorId&&(m==='all'||b.month===m));return{qty:rows.length,total:rows.reduce((s,r)=>s+(+r.amount||0),0)}}
@@ -8966,9 +8981,9 @@ function gvWireMonths(){const host=document.getElementById('gv-months');if(!host
 function gvSetMonth(m){gvMonth=m;gvPage=1;gvRender()}
 function gvTopRows(vendors){const rows=vendors.map(v=>{const o=gvOrdersFor(v.id);return{v,o}}).sort((a,b)=>b.o.qty-a.o.qty||b.o.total-a.o.total).slice(0,5);const tb=document.getElementById('gv-top-body');if(!tb)return;tb.innerHTML=rows.map((r,i)=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px">${i+1}</td><td style="padding:8px 10px">${r.v.company_name||'—'}</td><td style="padding:8px 10px">${r.v.trade||'—'}</td><td style="padding:8px 10px;text-align:right">${r.o.qty}</td><td style="padding:8px 10px;text-align:right">${ltFmt(r.o.total)}</td></tr>`).join('')||'<tr><td colspan="5" style="padding:12px;color:var(--ink3)">No data</td></tr>'}
 function gvRenderKpis(vendors){const total=vendors.length;const active=vendors.filter(v=>gvStatus(v)==='Active/Complete').length;const orders=vendors.reduce((s,v)=>s+gvOrdersFor(v.id).qty,0);const pending=vendors.filter(v=>gvChecklistCount(v)<7).length;const el=document.getElementById('gv-kpis');if(!el)return;el.innerHTML=(function(){var com18=vendors.filter(function(v){return v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true);}).length;return[['COM 18%',com18,'vendors com commission fee','#c47b28'],[gvT('total_vendors'),total,gvT('registered_vendors'),'var(--blue)'],['ACTIVE',active,gvT('items_complete'),'#2d7252'],[gvT('work_orders'),orders,`${gvT('service_requests')} in ${gvMonthLabel()}`,'var(--amber)'],[gvT('pending_payment'),pending,gvT('incomplete_setup'),'#b83030']];})().map(k=>`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;color:var(--ink3);font-weight:700;letter-spacing:.8px;text-transform:uppercase">${k[0]}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${k[3]};margin-top:3px">${k[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${k[2]}</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:${k[3]}"></div></div>`).join('')}
-function gvRenderTable(){const v=gvLoad();const q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();const filtered=v.filter(x=>!q||(`${x.company_name} ${x.contact_name} ${x.trade} ${x.email} ${x.phone}`).toLowerCase().includes(q));const totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));if(gvPage>totalPages)gvPage=totalPages;const pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);const tb=document.getElementById('gv-tbody');if(tb)tb.innerHTML=pageRows.map(v=>{const o=gvOrdersFor(v.id);const done=gvChecklistCount(v);const pct=Math.round((done/7)*100);const c=pct===100?'#2d7252':pct>50?'#c47b28':'#b83030';const st=gvStatus(v);const bs=st==='Active/Complete'?'background:var(--green-bg);color:var(--green)':(st==='Pending'?'background:var(--amber-bg);color:var(--amber)':'background:var(--red-bg);color:var(--red)');const _pkgLab=(function(){var p=v.default_package||'PACOTE_1';if(p==='PACOTE_2')return'P2 18%';if(p==='PACOTE_3')return'P3 25%';return'P1 15%';})();
-const _mk=v.markup_pct!=null?v.markup_pct+'%':((v.default_package==='PACOTE_2')?'18%':(v.default_package==='PACOTE_3')?'25%':'15%');
-return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 10px">${v.company_name||'—'}${(v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true))?' <span style="display:inline-block;padding:1px 6px;margin-left:4px;background:#c47b28;color:#fff;border-radius:3px;font-size:9px;font-weight:700;vertical-align:middle" title="Commission MP 18%">18%</span>':''}</td><td style="padding:9px 10px">${v.contact_name||'—'}</td><td style="padding:9px 10px">${v.trade||'—'}</td><td style="padding:9px 10px">${v.phone||'—'}</td><td style="padding:9px 10px">${v.email||'—'}</td><td style="padding:9px 10px;font-size:11px;color:var(--ink2)">${v.service_type||'—'}</td><td style="padding:9px 10px;text-align:center;font-size:10px;font-weight:600;color:var(--ink)">${_pkgLab}</td><td style="padding:9px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${_mk}</td><td style="padding:9px 10px;text-align:right">${o.qty}</td><td style="padding:9px 10px"><div style="background:#eee;height:8px;border-radius:999px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${c}"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px;text-align:center">${done}/7</div></td><td style="padding:9px 10px;text-align:center"><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;${bs}">${st}</span></td><td style="padding:9px 10px;text-align:center"><button onclick="gvView('${v.id}')" style="padding:4px 7px">Ver</button> <button onclick="gvEdit('${v.id}')" style="padding:4px 7px">Editar</button> <button onclick="gvDelete('${v.id}')" style="padding:4px 7px">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="12" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';const pi=document.getElementById('gv-page-info');if(pi)pi.textContent=`Page ${gvPage}/${totalPages} · ${filtered.length} vendor(s)`}
+function gvRenderTable(){const v=gvLoad();const q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();const filtered=v.filter(x=>!q||(`${x.company_name} ${x.contact_name} ${x.trade} ${x.email} ${x.phone}`).toLowerCase().includes(q));const totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));if(gvPage>totalPages)gvPage=totalPages;const pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);const tb=document.getElementById('gv-tbody');if(tb)tb.innerHTML=pageRows.map(v=>{const o=gvOrdersFor(v.id);const done=gvChecklistCount(v);const pct=Math.round((done/7)*100);const c=pct===100?'#2d7252':pct>50?'#c47b28':'#b83030';const st=gvStatus(v);const bs=st==='Active/Complete'?'background:var(--green-bg);color:var(--green)':(st==='Pending'?'background:var(--amber-bg);color:var(--amber)':'background:var(--red-bg);color:var(--red)');const _pkgLab=(function(){var p=v.default_package||'PACOTE_1';if(p==='PACOTE_2')return'P2 18%';if(p==='PACOTE_3')return'P3 25%';if(p==='PACOTE_4')return'P4 — 0%';return'P1 15%';})();
+const _mk=v.markup_pct!=null?v.markup_pct+'%':((v.default_package==='PACOTE_2')?'18%':(v.default_package==='PACOTE_3')?'25%':(v.default_package==='PACOTE_4')?'0%':'15%');
+return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 10px">${v.company_name||'—'}${(v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true))?' <span style="display:inline-block;padding:1px 6px;margin-left:4px;background:#c47b28;color:#fff;border-radius:3px;font-size:9px;font-weight:700;vertical-align:middle" title="Commission MP 18%">18%</span>':''}</td><td style="padding:9px 10px">${v.contact_name||'—'}</td><td style="padding:9px 10px">${v.trade||'—'}</td><td style="padding:9px 10px">${v.phone||'—'}</td><td style="padding:9px 10px">${v.email||'—'}</td><td style="padding:9px 10px;font-size:11px;color:var(--ink2)">${v.service_type||'—'}</td><td style="padding:9px 10px;text-align:center;font-size:10px;font-weight:600;color:var(--ink)">${_pkgLab}</td><td style="padding:9px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${_mk}</td><td style="padding:9px 10px;text-align:right">${o.qty}</td><td style="padding:9px 10px"><div style="background:#eee;height:8px;border-radius:999px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${c}"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px;text-align:center">${done}/7</div></td><td style="padding:9px 10px;text-align:center"><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;${bs}">${st}</span></td><td style="padding:9px 10px;text-align:center"><button type="button" data-gm-eid="${gmHtmlEscAttr(v.id)}" onclick="gvView(this.getAttribute('data-gm-eid'))" style="padding:4px 7px">Ver</button> <button type="button" data-gm-eid="${gmHtmlEscAttr(v.id)}" onclick="gvEdit(this.getAttribute('data-gm-eid'))" style="padding:4px 7px">Editar</button> <button type="button" data-gm-eid="${gmHtmlEscAttr(v.id)}" onclick="gvDelete(this.getAttribute('data-gm-eid'))" style="padding:4px 7px">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="12" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';const pi=document.getElementById('gv-page-info');if(pi)pi.textContent=`Page ${gvPage}/${totalPages} · ${filtered.length} vendor(s)`}
 function gvRender(){const vendors=gvLoad();const t=document.getElementById('gv-title');if(t)t.textContent=`${gvT('vendors_title')} — ${(gvMonth==='all'?gvT('all_months'):GV_MONTHS[+gvMonth])} 2026`;const s=document.getElementById('gv-subtitle');if(s)s.textContent=gvT('vendors_subtitle');const n=document.getElementById('gv-btn-new');if(n)n.textContent=gvT('new_vendor');const tt=document.getElementById('gv-top-title');if(tt)tt.textContent=gvT('top_vendors');gvWireMonths();gvRenderKpis(vendors);gvTopRows(vendors);gvRenderTable()}
 function gvBuildBills(vendors){const m=['1','2','3','4','5','6','7','8','9','10','11','12'];if(!vendors.length)return[];const out=[];vendors.forEach((v,idx)=>{for(let i=0;i<6;i++){const mm=m[(idx+i)%12];out.push({vendor_id:v.id,month:mm,amount:Math.round(180+Math.random()*2400)})}});return out}
 function gvLoadBills(){fetch('/api/appfolio/bills').then(r=>r.ok?r.json():Promise.reject()).then(j=>{const arr=Array.isArray(j)?j:(j.bills||[]);gvBills=arr.map((b,i)=>({vendor_id:String(b.vendor_id||b.vendor||b.vendor_name||('v'+i)),month:String(new Date(b.bill_date||b.date||Date.now()).getMonth()+1),amount:+(b.amount||b.total||0)}));gvRender();}).catch(()=>{const v=gvLoad();gvBills=gvBuildBills(v);gvRender();});}
@@ -8979,7 +8994,7 @@ function gvFillForm(v){['company_name','contact_name','email','phone','address_s
 function gvChecklistState(v){const c=v||{company_name:document.getElementById('gv-company_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),documents:(gvEditingId?((gvLoad().find(x=>x.id===gvEditingId)||{}).documents||[]):[]),workers_comp_na:false};return{name:!!c.company_name,address:!!(c.address_street&&c.address_city&&c.address_state&&c.address_zip),email:!!(c.email&&c.email.includes('@')),phone:!!c.phone,w9:(c.documents||[]).some(d=>d.kind==='w9'),bank_info:(c.documents||[]).some(d=>d.kind==='bank_info'),workers_comp:!!(c.workers_comp_na||(c.documents||[]).some(d=>d.kind==='workers_comp'))}}
 function gvRefreshChecklist(vx){const v=vx||null;const c=gvChecklistState(v||undefined);const done=Object.values(c).filter(Boolean).length;const pct=Math.round(done/7*100);const bar=document.getElementById('gv-check-progress-bar');if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'#2d7252':(pct>50?'#c47b28':'#b83030')}const cp=document.getElementById('gv-check-progress');if(cp)cp.textContent=`${done} of 7 ${gvT('items_complete')}`;const cc=document.getElementById('gv-cl-company');if(cc)cc.textContent=(document.getElementById('gv-company_name').value||'—');const grid=document.getElementById('gv-check-grid');if(!grid)return;const miss='MISSING',ok='COMPLETE';const addrMissing=[];if(!document.getElementById('gv-address_city').value.trim())addrMissing.push('City');if(!document.getElementById('gv-address_state').value.trim())addrMissing.push('State');if(!document.getElementById('gv-address_zip').value.trim())addrMissing.push('ZIP');const cards=[['name',gvT('vendor_name_card'),c.name,miss,ok,''],['address',gvT('complete_address'),c.address,addrMissing.length?('Missing: '+addrMissing.join(', ')):'',ok,''],['email','Email',c.email,miss,ok,''],['phone','Phone',c.phone,miss,ok,''],['w9',gvT('w9_form'),c.w9,gvT('upload_w9'),ok,'w9'],['bank_info',gvT('bank_info'),c.bank_info,gvT('voided_check'),ok,'bank_info'],['workers_comp',gvT('workers_comp'),c.workers_comp,gvT('workers_comp_cert'),ok,'workers_comp']];grid.innerHTML=cards.map(x=>{const on=x[2];const border=on?'#2d7252':'#b83030';const text=on?ok:miss;const helper=on?x[4]:x[3];const upload=x[5]?`<div style="margin-top:8px"><input type="file" onchange="gvUploadDoc('${x[5]}',this)" accept=".pdf,.jpg,.jpeg,.png" style="font-size:10px"></div>`:'';return `<div style="border:1px solid var(--border);border-left:3px solid ${border};border-radius:8px;padding:10px;background:var(--paper);transition:all .3s ease"><div style="font-size:22px;color:${border};line-height:1">${on?'✓':'✕'}</div><div style="font-size:12px;font-weight:700;margin-top:6px">${x[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${helper||''}</div>${upload}<div style="margin-top:8px;font-size:10px;font-weight:700;color:${border}">${text}</div></div>`;}).join('')}
 function gvUploadDoc(kind,input){const f=input.files&&input.files[0];if(!f)return;if(f.size>10*1024*1024){alert('Max 10MB');input.value='';return;}const rd=new FileReader();rd.onload=()=>{const arr=gvLoad();if(!gvEditingId){gvEditingId='gv_tmp_'+Date.now();}const rec=arr.find(x=>x.id===gvEditingId)||{id:gvEditingId,documents:[]};rec.documents=(rec.documents||[]).filter(d=>d.kind!==kind);rec.documents.push({kind,name:f.name,type:f.type,size:f.size,data_url:String(rd.result),uploaded_at:new Date().toISOString()});const others=arr.filter(x=>x.id!==gvEditingId);others.push(rec);gvSave(others);gvRefreshChecklist(rec);};rd.readAsDataURL(f);}
-function gvCollect(){const tradeSel=document.getElementById('gv-trade').value;let trade=tradeSel;if(tradeSel==='+ Add New Trade...'){const nv=document.getElementById('gv-trade-new').value.trim();if(nv)trade=nv;}const arr=gvLoad();const prev=gvEditingId?arr.find(x=>x.id===gvEditingId):null;var dpEl=document.getElementById('gv-default_package');var default_package=(dpEl&&dpEl.value)?dpEl.value:'PACOTE_1';var mk=(default_package==='PACOTE_2')?18:((default_package==='PACOTE_3')?25:15);const obj={id:gvEditingId||('gv_'+Date.now()),company_name:document.getElementById('gv-company_name').value.trim(),contact_name:document.getElementById('gv-contact_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),trade:trade,service_type:document.getElementById('gv-service_type')?document.getElementById('gv-service_type').value.trim():'',default_package:default_package,markup_pct:mk,bank_name:document.getElementById('gv-bank_name').value.trim(),routing_number:document.getElementById('gv-routing_number').value.trim(),account_number:document.getElementById('gv-account_number').value.trim(),account_type:document.getElementById('gv-account_type').value,payment_type:document.getElementById('gv-payment_type').value,commission_mp:!!(document.getElementById('gv-commission_mp')&&document.getElementById('gv-commission_mp').checked),send_1099:document.getElementById('gv-send_1099').value==='true',notes:document.getElementById('gv-notes').value.trim(),rating:+document.getElementById('gv-rating').value||0,status:document.getElementById('gv-status').value,workers_comp_expiration:'',workers_comp_na:false,documents:(prev&&prev.documents)||[],created_at:(prev&&prev.created_at)||new Date().toISOString(),updated_at:new Date().toISOString()};obj.checklist=gvChecklistState(obj);return obj;}
+function gvCollect(){const tradeSel=document.getElementById('gv-trade').value;let trade=tradeSel;if(tradeSel==='+ Add New Trade...'){const nv=document.getElementById('gv-trade-new').value.trim();if(nv)trade=nv;}const arr=gvLoad();const prev=gvEditingId?arr.find(x=>x.id===gvEditingId):null;var dpEl=document.getElementById('gv-default_package');var default_package=(dpEl&&dpEl.value)?dpEl.value:'PACOTE_1';var mk=(default_package==='PACOTE_2')?18:((default_package==='PACOTE_3')?25:((default_package==='PACOTE_4')?0:15));const obj={id:gvEditingId||('gv_'+Date.now()),company_name:document.getElementById('gv-company_name').value.trim(),contact_name:document.getElementById('gv-contact_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),trade:trade,service_type:document.getElementById('gv-service_type')?document.getElementById('gv-service_type').value.trim():'',default_package:default_package,markup_pct:mk,bank_name:document.getElementById('gv-bank_name').value.trim(),routing_number:document.getElementById('gv-routing_number').value.trim(),account_number:document.getElementById('gv-account_number').value.trim(),account_type:document.getElementById('gv-account_type').value,payment_type:document.getElementById('gv-payment_type').value,commission_mp:!!(document.getElementById('gv-commission_mp')&&document.getElementById('gv-commission_mp').checked),send_1099:document.getElementById('gv-send_1099').value==='true',notes:document.getElementById('gv-notes').value.trim(),rating:+document.getElementById('gv-rating').value||0,status:document.getElementById('gv-status').value,workers_comp_expiration:'',workers_comp_na:false,documents:(prev&&prev.documents)||[],created_at:(prev&&prev.created_at)||new Date().toISOString(),updated_at:new Date().toISOString()};obj.checklist=gvChecklistState(obj);return obj;}
 async function gvSaveVendor(){
  const v=gvCollect();
  if(!v.company_name||!v.email||!v.phone||!v.address_street){alert('Fill required fields.');return;}
@@ -9007,9 +9022,15 @@ async function gvSaveVendor(){
  if(!gvBills.length)gvBills=gvBuildBills(gvLoad());
  gvRender();
 }
-function gvEdit(id){const r=gvLoad().find(x=>x.id===id);if(!r)return;gvEditingId=id;gvFillForm(r);document.getElementById('gv-modal-title').textContent='Edit Vendor';document.getElementById('gv-modal').style.display='flex';}
+function gvEdit(id){
+ id=String(id);
+ const r=gvLoad().find(x=>String(x.id)===id);
+ if(!r)return;
+ gvEditingId=id;gvFillForm(r);document.getElementById('gv-modal-title').textContent='Editar fornecedor';document.getElementById('gv-modal').style.display='flex';
+}
 function gvView(id){gvEdit(id)}
 async function gvDelete(id){
+ id=String(id);
  if(!confirm('Delete vendor?'))return;
  try{
   const r=await fetch('/api/pm/vendors/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});

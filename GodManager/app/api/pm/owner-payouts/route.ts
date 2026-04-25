@@ -120,7 +120,7 @@ export async function GET(req: Request) {
       }
     > = {};
 
-    const mPct: Record<string, number> = { PACOTE_1: 15, PACOTE_2: 18, PACOTE_3: 25 };
+    const mPct: Record<string, number> = { PACOTE_1: 15, PACOTE_2: 18, PACOTE_3: 25, PACOTE_4: 0 };
 
     for (const p of properties) {
       const ownerName = p.ownerName?.trim() || 'Sem owner';

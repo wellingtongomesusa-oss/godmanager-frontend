@@ -27,6 +27,7 @@ export function packageLabel(pkg: PmPackage): string {
     PACOTE_1: 'P1 (15%)',
     PACOTE_2: 'P2 (18%)',
     PACOTE_3: 'P3 (25%)',
+    PACOTE_4: 'P4 (0%)',
   };
   return m[pkg] || pkg;
 }

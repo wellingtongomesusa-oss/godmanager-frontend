@@ -92,7 +92,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'company_name, email, phone, address_street required' }, { status: 400 });
     }
 
-    const defaultPackage = (['PACOTE_1', 'PACOTE_2', 'PACOTE_3'] as const).includes(body.default_package)
+    const defaultPackage = (['PACOTE_1', 'PACOTE_2', 'PACOTE_3', 'PACOTE_4'] as const).includes(
+      body.default_package,
+    )
       ? body.default_package
       : 'PACOTE_1';
 
