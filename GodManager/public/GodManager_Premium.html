@@ -7830,7 +7830,7 @@ function opApplyFilter(){
  if(shown===1&&lastVisible&&(term||status!=='todos')){
   var t1=lastVisible.querySelectorAll('.op-detail-table');
   var t2=lastVisible.querySelectorAll('.op-toggle-btn');
-  for(var i=0;i<t1.length;i++)t1[i].style.display='table';
+  for(var i=0;i<t1.length;i++)t1[i].style.display='block';
   for(var j=0;j<t2.length;j++)t2[j].textContent='\u25B2 Fechar';
  }
 }
@@ -7867,9 +7867,10 @@ function ltOwnerPayInitUiOnce(){
     if(nodes[i].getAttribute('data-prop-id')===id){table=nodes[i];break;}
    }
    if(!table)return;
-   var isHidden=String(table.style.display||'').toLowerCase()!=='table';
+   var d0=String(table.style.display||'').toLowerCase();
+   var isHidden=(d0==='none'||d0==='');
    if(isHidden){
-    table.style.display='table';
+    table.style.display='block';
     tog.textContent='\u25B2 Fechar';
    }else{
     table.style.display='none';
@@ -7891,7 +7892,7 @@ function ltOwnerPayInitUiOnce(){
   var h=document.getElementById('ltop-host');
   if(!h)return;
   var tables=h.querySelectorAll('.op-detail-table');
-  for(var a=0;a<tables.length;a++)tables[a].style.display='table';
+  for(var a=0;a<tables.length;a++)tables[a].style.display='block';
   var btns=h.querySelectorAll('.op-toggle-btn');
   for(var b=0;b<btns.length;b++)btns[b].textContent='\u25B2 Fechar';
  });
@@ -7949,7 +7950,7 @@ async function ltOwnerPayRender(){
     var ymEnc=enc(ym);
     var markBtn=p.paidAt?'':('<button type="button" class="op-mark-paid-btn" data-prop-id="'+pid+'" data-ym="'+ymEnc+'" style="padding:6px 12px;border-radius:6px;border:none;background:var(--amber);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Marcar como pago</button>');
     var toggleBtn='<button type="button" class="op-toggle-btn" data-prop-id="'+pid+'" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--paper);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">\u25BC Ver detalhes</button>';
-    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end">'+paid+markBtn+toggleBtn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>Rent: <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>Despesas: <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><table class="op-detail-table" data-prop-id="'+pid+'" style="display:none;width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">Vendor</th><th style="text-align:right">Custo</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">Owner</th></tr></thead><tbody>'+exRows+'</tbody></table>'+totBlock+'</div>';
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end">'+paid+markBtn+toggleBtn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>Rent: <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>Despesas: <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><div class="op-detail-table" data-prop-id="'+pid+'" style="display:none"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">Vendor</th><th style="text-align:right">Custo</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">Owner</th></tr></thead><tbody>'+exRows+'</tbody></table>'+totBlock+'</div></div>';
    }).join('');
    var pl=og.properties||[];
    var ownerSt='pendente';
