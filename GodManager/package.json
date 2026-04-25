@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "sh -c 'ulimit -n 65536 2>/dev/null; exec next dev -p 3101'",
-    "dev:poll": "sh -c 'ulimit -n 65536 2>/dev/null; export GM_DEV_POLL_WATCH=1; exec next dev -p 3101'",
+    "dev:poll": "sh -c 'ulimit -n 65536 2>/dev/null; export WATCHPACK_POLLING=true; export CHOKIDAR_USEPOLLING=true; export GM_DEV_POLL_WATCH=1; exec next dev -p 3101'",
     "dev:3010": "sh -c 'ulimit -n 65536 2>/dev/null; exec next dev -p 3010'",
     "dev:clean": "sh -c 'ulimit -n 65536 2>/dev/null; rm -rf .next node_modules/.cache && exec next dev -p 3101'",
     "dev:fresh": "sh -c 'ulimit -n 65536 2>/dev/null; rm -rf .next node_modules/.cache && exec next dev -p 3101'",
