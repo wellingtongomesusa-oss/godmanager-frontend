@@ -4,6 +4,7 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
+import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +51,7 @@ export async function GET(req: Request) {
 
   try {
     const rows = await prisma.pmExpense.findMany({
-      where: monthRef ? { monthRef } : undefined,
+      where: monthRef ? { monthRef: { in: monthRefQueryValues(monthRef) } } : undefined,
       include: {
         property: { select: { code: true, address: true, ownerName: true } },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
@@ -94,9 +95,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'vendorCost must be a non-negative number' }, { status: 400 });
     }
 
-    const monthRef = String(body.monthRef || '').trim();
-    if (!/^\d{4}-\d{2}$/.test(monthRef)) {
-      return NextResponse.json({ ok: false, error: 'monthRef must be YYYY-MM' }, { status: 400 });
+    const monthRef = normalizeYearMonthForWrite(String(body.monthRef || '').trim());
+    if (!monthRef) {
+      return NextResponse.json({ ok: false, error: 'monthRef must be YYYY-M(M)' }, { status: 400 });
     }
 
     let st: PmExpenseStatus = 'PENDING';

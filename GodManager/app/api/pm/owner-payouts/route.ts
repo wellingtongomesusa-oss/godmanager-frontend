@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { computeNetForPropertyMonth } from '@/lib/pmNetCompute';
+import { monthRefQueryValues } from '@/lib/pmMonthRef';
+import type { PmPackage } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,9 +21,11 @@ export async function POST(req: Request) {
     if (!prop) return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
 
     const yearMonth = String(body.yearMonth || '').trim();
-    if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
-      return NextResponse.json({ ok: false, error: 'yearMonth must be YYYY-MM' }, { status: 400 });
+    if (!/^\d{4}-\d{1,2}$/.test(yearMonth)) {
+      return NextResponse.json({ ok: false, error: 'yearMonth must be YYYY-M(M)' }, { status: 400 });
     }
+    const m = /^(\d{4})-(\d{1,2})$/.exec(yearMonth);
+    const yearMonthPadded = m ? `${m[1]}-${String(parseInt(m[2], 10)).padStart(2, '0')}` : yearMonth;
 
     const paidAt = body.paidAt ? new Date(String(body.paidAt)) : new Date();
     if (Number.isNaN(paidAt.getTime())) {
@@ -29,8 +33,8 @@ export async function POST(req: Request) {
     }
 
     const row = await prisma.ownerMonthPayout.upsert({
-      where: { propertyId_yearMonth: { propertyId: prop.id, yearMonth } },
-      create: { propertyId: prop.id, yearMonth, paidAt },
+      where: { propertyId_yearMonth: { propertyId: prop.id, yearMonth: yearMonthPadded } },
+      create: { propertyId: prop.id, yearMonth: yearMonthPadded, paidAt },
       update: { paidAt },
     });
 
@@ -58,11 +62,13 @@ export async function DELETE(req: Request) {
     const propertyId = searchParams.get('propertyId') || '';
     const yearMonth = searchParams.get('yearMonth') || '';
     const prop = await resolvePropertyId(propertyId);
-    if (!prop || !/^\d{4}-\d{2}$/.test(yearMonth)) {
+    if (!prop || !/^\d{4}-\d{1,2}$/.test(yearMonth)) {
       return NextResponse.json({ ok: false, error: 'Invalid params' }, { status: 400 });
     }
+    const m = /^(\d{4})-(\d{1,2})$/.exec(yearMonth);
+    const padded = m ? `${m[1]}-${String(parseInt(m[2], 10)).padStart(2, '0')}` : yearMonth;
     await prisma.ownerMonthPayout.deleteMany({
-      where: { propertyId: prop.id, yearMonth },
+      where: { propertyId: prop.id, yearMonth: { in: monthRefQueryValues(padded) } },
     });
     return NextResponse.json({ ok: true });
   } catch (e) {
@@ -71,29 +77,44 @@ export async function DELETE(req: Request) {
   }
 }
 
+const M_PCT: Record<PmPackage, number> = { PACOTE_1: 15, PACOTE_2: 18, PACOTE_3: 25, PACOTE_4: 0 };
+
 /** Vista agregada por owner (Owner Payment) */
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const yearMonth = searchParams.get('month') || '';
-  if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
-    return NextResponse.json({ ok: false, error: 'month YYYY-MM required' }, { status: 400 });
+  const raw = String(searchParams.get('month') || '').trim();
+  const mp = /^(\d{4})-(\d{1,2})$/.exec(raw);
+  if (!mp) {
+    return NextResponse.json({ ok: false, error: 'month YYYY-M(M) required' }, { status: 400 });
   }
+  const yearMonth = `${mp[1]}-${String(parseInt(mp[2], 10)).padStart(2, '0')}`;
+  const monthKeys = monthRefQueryValues(yearMonth);
 
   try {
-    const properties = await prisma.property.findMany({
-      orderBy: { ownerName: 'asc' },
-      include: {
-        pmExpenses: {
-          where: { monthRef: yearMonth, status: { in: ['SCHEDULED', 'PAID', 'PENDING'] } },
-          include: { vendor: { select: { companyName: true } } },
-          orderBy: { serviceDate: 'asc' },
+    const [properties, monthExpenses] = await Promise.all([
+      prisma.property.findMany({
+        orderBy: { ownerName: 'asc' },
+        include: { ownerMonthPayouts: { where: { yearMonth: { in: monthKeys } } } },
+      }),
+      prisma.pmExpense.findMany({
+        where: {
+          monthRef: { in: monthKeys },
+          status: { in: ['SCHEDULED', 'PAID', 'PENDING'] },
         },
-        ownerMonthPayouts: { where: { yearMonth } },
-      },
-    });
+        include: { vendor: { select: { companyName: true } } },
+        orderBy: [{ serviceDate: 'asc' }, { createdAt: 'asc' }],
+      }),
+    ]);
+
+    const byPropertyId = new Map<string, typeof monthExpenses>();
+    for (const e of monthExpenses) {
+      const list = byPropertyId.get(e.propertyId) ?? [];
+      list.push(e);
+      byPropertyId.set(e.propertyId, list);
+    }
 
     const byOwner: Record<
       string,
@@ -106,13 +127,16 @@ export async function GET(req: Request) {
           rent: number;
           net: number;
           expensesTotal: number;
+          totalVendorCost: number;
+          totalMarkupAmount: number;
           expenses: Array<{
             id: string;
             vendorName: string;
             vendorCost: string;
-            packageApplied: string;
-            markupPct: number;
             ownerCharged: string;
+            packageApplied: string;
+            pmPackage: string;
+            markupPct: number;
             serviceType: string;
           }>;
           paidAt: string | null;
@@ -120,15 +144,34 @@ export async function GET(req: Request) {
       }
     > = {};
 
-    const mPct: Record<string, number> = { PACOTE_1: 15, PACOTE_2: 18, PACOTE_3: 25, PACOTE_4: 0 };
-
     for (const p of properties) {
       const ownerName = p.ownerName?.trim() || 'Sem owner';
       if (!byOwner[ownerName]) {
         byOwner[ownerName] = { ownerName, properties: [] };
       }
       const { net, rent, expensesOwnerCharged } = await computeNetForPropertyMonth(p.id, yearMonth);
-      const payout = p.ownerMonthPayouts[0];
+      const exList = byPropertyId.get(p.id) ?? [];
+      let totalVendor = 0;
+      let totalMarkup = 0;
+      const expRows = exList.map((e) => {
+        const v = Number(e.vendorCost);
+        const o = Number(e.ownerCharged);
+        if (Number.isFinite(v)) totalVendor += v;
+        if (Number.isFinite(v) && Number.isFinite(o)) totalMarkup += o - v;
+        const pkg = e.packageApplied;
+        return {
+          id: e.id,
+          vendorName: e.vendor?.companyName ?? '—',
+          vendorCost: e.vendorCost.toString(),
+          ownerCharged: e.ownerCharged.toString(),
+          packageApplied: pkg,
+          pmPackage: pkg,
+          markupPct: M_PCT[pkg] ?? 0,
+          serviceType: e.serviceType ?? '',
+        };
+      });
+      const pouts = p.ownerMonthPayouts;
+      const payout = pouts.find((o) => o.paidAt) ?? pouts[0];
       byOwner[ownerName].properties.push({
         propertyId: p.id,
         code: p.code,
@@ -136,15 +179,9 @@ export async function GET(req: Request) {
         rent,
         net,
         expensesTotal: expensesOwnerCharged,
-        expenses: p.pmExpenses.map((e) => ({
-          id: e.id,
-          vendorName: e.vendor?.companyName ?? '—',
-          vendorCost: e.vendorCost.toString(),
-          packageApplied: e.packageApplied,
-          markupPct: mPct[e.packageApplied] ?? 0,
-          ownerCharged: e.ownerCharged.toString(),
-          serviceType: e.serviceType ?? '',
-        })),
+        totalVendorCost: Math.round(totalVendor * 100) / 100,
+        totalMarkupAmount: Math.round(totalMarkup * 100) / 100,
+        expenses: expRows,
         paidAt: payout?.paidAt ? payout.paidAt.toISOString() : null,
       });
     }
@@ -155,7 +192,7 @@ export async function GET(req: Request) {
       0
     );
     const totalProperties = properties.length;
-    const paidCount = properties.filter((p) => p.ownerMonthPayouts[0]?.paidAt).length;
+    const paidCount = properties.filter((p) => p.ownerMonthPayouts.some((o) => o.paidAt)).length;
 
     return NextResponse.json({
       ok: true,

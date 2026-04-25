@@ -4,6 +4,7 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
+import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,9 +95,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     let monthRef = cur.monthRef;
     if (body.monthRef != null) {
-      const m = String(body.monthRef).trim();
-      if (!/^\d{4}-\d{2}$/.test(m)) {
-        return NextResponse.json({ ok: false, error: 'monthRef must be YYYY-MM' }, { status: 400 });
+      const m = normalizeYearMonthForWrite(String(body.monthRef));
+      if (!m) {
+        return NextResponse.json({ ok: false, error: 'monthRef must be YYYY-M(M)' }, { status: 400 });
       }
       monthRef = m;
     }

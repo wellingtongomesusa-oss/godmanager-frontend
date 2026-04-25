@@ -1,14 +1,16 @@
 import { prisma } from '@/lib/db';
 import { getEffectiveMonthlyRent, dec } from '@/lib/pmRent';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
+import { monthRefQueryValues } from '@/lib/pmMonthRef';
 
 const PM_ACTIVE: PmExpenseStatus[] = ['SCHEDULED', 'PAID', 'PENDING'];
 
 export async function sumOwnerChargedForPropertyMonth(propertyId: string, yearMonth: string) {
+  const months = monthRefQueryValues(yearMonth);
   const agg = await prisma.pmExpense.aggregate({
     where: {
       propertyId,
-      monthRef: yearMonth,
+      monthRef: { in: months },
       status: { in: PM_ACTIVE },
     },
     _sum: { ownerCharged: true },
