@@ -89,7 +89,8 @@ export async function POST(req: Request) {
       if (!v) return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
     }
 
-    const pkg = parsePmPackage(body.packageApplied) ?? 'PACOTE_1';
+    const pkg =
+      parsePmPackage(String(body.packageApplied ?? body.pmPackage ?? '')) ?? 'PACOTE_1';
     const vendorCost = Number(body.vendorCost);
     if (!Number.isFinite(vendorCost) || vendorCost < 0) {
       return NextResponse.json({ ok: false, error: 'vendorCost must be a non-negative number' }, { status: 400 });

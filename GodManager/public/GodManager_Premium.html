@@ -1985,9 +1985,29 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="lt-nexp-pm-block" style="display:none;margin-bottom:16px;border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:16px;background:rgba(20,20,22,.35)">
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">Despesa com vendor (Postgres, markup, NET owner)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-   <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (cadastrado) *</label><select id="lt-nexp-pm-vendor" onchange="ltNexpPmVendorChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select></div>
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TIPO DE SERVIÇO</label><input id="lt-nexp-pm-svc" placeholder="Sobrescreve / complementa" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PACOTE APLICADO *</label><select id="lt-nexp-pm-pkg" onchange="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="PACOTE_1">Pacote 1 (+15%)</option><option value="PACOTE_2">Pacote 2 (+18%)</option><option value="PACOTE_3">Pacote 3 (+25%)</option><option value="PACOTE_4">Pacote 4 — Sem adicional (0%)</option></select></div>
+   <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (cadastrado) *</label><select id="lt-nexp-pm-vendor" class="lt-nexp-pm-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select></div>
+   <div id="lt-nexp-pacote-new" style="grid-column:1/-1;margin-bottom:2px">
+    <label style="display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--ink2)">PACOTE / MARKUP</label>
+    <select id="lt-expense-pacote" class="lt-nexp-pm-pacote-sel" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+     <option value="">— Selecionar pacote —</option>
+     <option value="PACOTE_1">Pacote 1 — +15%</option>
+     <option value="PACOTE_2">Pacote 2 — +18%</option>
+     <option value="PACOTE_3">Pacote 3 — +25%</option>
+     <option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option>
+    </select>
+   </div>
+   <div id="lt-nexp-pacote-edit" style="grid-column:1/-1;margin-bottom:2px;display:none">
+    <label style="display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--ink2)">PACOTE / MARKUP</label>
+    <select id="lt-expense-pacote-edit" class="lt-nexp-pm-pacote-sel" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+     <option value="">— Selecionar pacote —</option>
+     <option value="PACOTE_1">Pacote 1 — +15%</option>
+     <option value="PACOTE_2">Pacote 2 — +18%</option>
+     <option value="PACOTE_3">Pacote 3 — +25%</option>
+     <option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option>
+    </select>
+   </div>
+   <div id="lt-nexp-pm-pkg-hint" style="grid-column:1/-1;font-size:10px;color:var(--ink3);margin-top:-2px;margin-bottom:6px;line-height:1.4"></div>
+   <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TIPO DE SERVIÇO</label><input id="lt-nexp-pm-svc" placeholder="Sobrescreve / complementa" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VALOR PAGO AO VENDOR ($) *</label><input id="lt-nexp-pm-vendor-cost" type="number" min="0" step="0.01" oninput="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--green);display:block;margin-bottom:4px">VALOR COBRADO AO OWNER ($)</label><input id="lt-nexp-pm-owner-charged" readonly tabindex="-1" style="width:100%;padding:8px 11px;border:1px solid var(--green-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;background:var(--green-bg);color:var(--green)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DO SERVIÇO *</label><input id="lt-nexp-pm-svc-date" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
@@ -6948,24 +6968,81 @@ function ltNexpPopulatePmVendorSelect(){
  });
  sel.innerHTML=opts.join('');
 }
+function ltNexpGetPmPackageValue(){
+ var we=document.getElementById('lt-nexp-pacote-edit');
+ var vis=we && window.getComputedStyle(we).display!=='none';
+ var el=vis ? document.getElementById('lt-expense-pacote-edit') : document.getElementById('lt-expense-pacote');
+ if(!el) el=document.getElementById('lt-expense-pacote') || document.getElementById('lt-expense-pacote-edit');
+ return el?String(el.value || '').trim():'';
+}
+function ltNexpSetPmBlockPacoteMode(isEdit){
+ var wn=document.getElementById('lt-nexp-pacote-new');
+ var we=document.getElementById('lt-nexp-pacote-edit');
+ var a=document.getElementById('lt-expense-pacote');
+ var b=document.getElementById('lt-expense-pacote-edit');
+ if(!wn || !we) return;
+ if(isEdit){
+  if(a && b) b.value = a.value;
+  wn.style.display = 'none';
+  we.style.display = '';
+ }else{
+  if(a && b) a.value = b.value;
+  wn.style.display = '';
+  we.style.display = 'none';
+ }
+ if(typeof ltNexpPmRecalc === 'function') ltNexpPmRecalc();
+}
+function ltNexpSetBothPacoteSelects(v){
+ var a=document.getElementById('lt-expense-pacote');
+ var b=document.getElementById('lt-expense-pacote-edit');
+ if(a) a.value = v;
+ if(b) b.value = v;
+}
+function ltNexpMultForPackage(pkg){
+ if(!pkg) return 1.0;
+ if(pkg==='PACOTE_1') return 1.15;
+ if(pkg==='PACOTE_2') return 1.18;
+ if(pkg==='PACOTE_3') return 1.25;
+ if(pkg==='PACOTE_4') return 1.0;
+ return 1.0;
+}
 function ltNexpPmVendorChange(){
  var sel=document.getElementById('lt-nexp-pm-vendor');
- var pkg=document.getElementById('lt-nexp-pm-pkg');
- if(!sel||!pkg)return;
+ if(!sel) return;
  var o=sel.options[sel.selectedIndex];
- var dp=o&&o.getAttribute('data-pkg');
- if(dp)pkg.value=dp;
+ var dp=o && o.getAttribute('data-pkg');
+ if(dp) ltNexpSetBothPacoteSelects(dp);
  ltNexpPmRecalc();
 }
 function ltNexpPmRecalc(){
  var vc=parseFloat((document.getElementById('lt-nexp-pm-vendor-cost')||{}).value)||0;
- var pkg=(document.getElementById('lt-nexp-pm-pkg')||{}).value||'PACOTE_1';
- var m=1.15;
- if(pkg==='PACOTE_2')m=1.18;else if(pkg==='PACOTE_3')m=1.25;else if(pkg==='PACOTE_4')m=1.0;
+ var pkg=ltNexpGetPmPackageValue();
+ var m=ltNexpMultForPackage(pkg);
  var own=Math.round(vc*m*100)/100;
  var out=document.getElementById('lt-nexp-pm-owner-charged');
- if(out)out.value=own?String(own):'0';
+ if(out) out.value=own?String(own):'0';
+ var hint=document.getElementById('lt-nexp-pm-pkg-hint');
+ if(hint){
+  if(!vc) hint.textContent='';
+  else{
+   var f=function(x){ return (Math.round(x*100)/100).toFixed(2).replace('.',',');};
+   if(!pkg) hint.textContent='Valor Owner = '+f(vc)+' x 1,00 = '+f(own)+' (sem pacote: valor replicado ao owner)';
+   else hint.textContent='Valor Owner = '+f(vc)+' x '+String(m).replace('.',',')+' = '+f(own);
+  }
+ }
 }
+(function ltNexpWirePmPacoteListeners(){
+ function wire(){
+  var a=document.getElementById('lt-expense-pacote');
+  var b=document.getElementById('lt-expense-pacote-edit');
+  if(a) a.addEventListener('change', function(){ if(typeof ltNexpPmRecalc==='function') ltNexpPmRecalc(); });
+  if(b) b.addEventListener('change', function(){ if(typeof ltNexpPmRecalc==='function') ltNexpPmRecalc(); });
+  var v=document.getElementById('lt-nexp-pm-vendor');
+  if(v) v.addEventListener('change', function(){ if(typeof ltNexpPmVendorChange==='function') ltNexpPmVendorChange(); });
+ }
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+ else wire();
+})();
 async function ltExpFetchPm(){
  try{
   var r=await fetch('/api/pm/expenses',{credentials:'include'});
@@ -6994,6 +7071,8 @@ function ltOpenNewExpense(){
  var ps=document.getElementById('lt-nexp-pm-svc');if(ps)ps.value='';
  var pdt=document.getElementById('lt-nexp-pm-svc-date');if(pdt)pdt.value='';
  var pst=document.getElementById('lt-nexp-pm-status');if(pst)pst.value='PENDING';
+ if(typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects('');
+ if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
@@ -7027,7 +7106,8 @@ function ltOpenEditExpense(id){
    if(vsel&&e.vendorId)vsel.value=String(e.vendorId);
   },0);
   var psvc=document.getElementById('lt-nexp-pm-svc');if(psvc)psvc.value=e.serviceType||'';
-  var pkg=document.getElementById('lt-nexp-pm-pkg');if(pkg)pkg.value=e.packageApplied||'PACOTE_1';
+  if(typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects(e.packageApplied||'PACOTE_1');
+  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(true);
   var pvc=document.getElementById('lt-nexp-pm-vendor-cost');if(pvc)pvc.value=e.vendorCost||'0';
   ltNexpPmRecalc();
   var sdt=document.getElementById('lt-nexp-pm-svc-date');if(sdt&&e.serviceDate)sdt.value=String(e.serviceDate).slice(0,10);
@@ -7038,6 +7118,7 @@ function ltOpenEditExpense(id){
  const r=ltExpGetRecords().find(x=>String(x.id)===String(id)); if(!r) return;
  ltExpEditingId=id;ltExpEditingPmId=null; ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Editar Despesa';
+ if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
  document.getElementById('lt-nexp-prop').value=r.propId||'';
  document.getElementById('lt-nexp-cat').value=r.category||'HOA';
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
@@ -7062,14 +7143,15 @@ function ltSaveExpense(){
   const descVal=String((document.getElementById('lt-nexp-desc')||{}).value||'').trim();
   const vid=String((document.getElementById('lt-nexp-pm-vendor')||{}).value||'').trim();
   const vc=parseFloat((document.getElementById('lt-nexp-pm-vendor-cost')||{}).value)||0;
-  const pkg=(document.getElementById('lt-nexp-pm-pkg')||{}).value||'PACOTE_1';
+  const pkgRaw=(typeof ltNexpGetPmPackageValue==='function')?ltNexpGetPmPackageValue():'';
+  const pkg=pkgRaw?pkgRaw:'PACOTE_4';
   const svc=String((document.getElementById('lt-nexp-pm-svc')||{}).value||'').trim();
   const sDate=(document.getElementById('lt-nexp-pm-svc-date')||{}).value;
   const st=(document.getElementById('lt-nexp-pm-status')||{}).value||'PENDING';
   if(!propId||!vid||!descVal||!sDate){alert('Propriedade, vendor cadastrado, descrição e data do serviço são obrigatórios.');return;}
   if(!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
   (async function(){
-   const body={propertyCode:propId,vendorId:vid,packageApplied:pkg,vendorCost:vc,serviceType:svc,monthRef:month,serviceDate:sDate,status:st,description:descVal};
+   const body={propertyCode:propId,vendorId:vid,packageApplied:pkg,pmPackage:pkg,vendorCost:vc,serviceType:svc,monthRef:month,serviceDate:sDate,status:st,description:descVal};
    try{
     const isEd=!!ltExpEditingPmId;
     const url=isEd?('/api/pm/expenses/'+encodeURIComponent(ltExpEditingPmId)):'/api/pm/expenses';

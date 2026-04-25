@@ -80,6 +80,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.packageApplied != null) {
       const p = parsePmPackage(String(body.packageApplied));
       if (p) pkg = p;
+    } else if ((body as { pmPackage?: unknown }).pmPackage != null) {
+      const p = parsePmPackage(String((body as { pmPackage?: unknown }).pmPackage));
+      if (p) pkg = p;
     }
 
     let vendorCost = Number(cur.vendorCost);
