@@ -8888,30 +8888,77 @@ function tpInitSrSamples(){if(tpSrLoad().length)return;const p=tpAllProfiles()[0
 function tpSaveMaint(){document.getElementById('tp-maint-modal').style.display='none';showToast('Use Tenant Portal Service Requests.','info');}
 
 // 
-// LISTINGS — imoveis vagos a partir de ltGetRecords()
+// LISTINGS — mesma fonte que Properties (ltpRender): gmPropertiesLoad + gmPropertiesToUi, fallback ltGetRecords
 // 
+function listingsEnrichForCard(ui){
+ if(!ui||typeof ui!=='object') return ui;
+ var raw=ui._src||ui;
+ var out=Object.assign({},ui);
+ if((!out.photos||!out.photos.length)&&raw.photos&&raw.photos.length) out.photos=raw.photos;
+ if(out.hoa==null&&raw.hoa!=null) out.hoa=raw.hoa;
+ if((out.notes==null||out.notes==='')&&raw.notes) out.notes=raw.notes;
+ if((out.desc==null||out.desc==='')&&raw.description) out.desc=raw.description;
+ return out;
+}
+function listingsGetUnifiedRecords(){
+ var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
+  try{ window.gmPropertiesBootstrap(); }catch(e){}
+  __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ }
+ if(Array.isArray(__gmArr)&&__gmArr.length){
+  return __gmArr.map(function(p){
+   var ui=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;
+   return listingsEnrichForCard(ui);
+  });
+ }
+ return (typeof ltGetRecords==='function')?(ltGetRecords()||[]):[];
+}
+function listingsIsVacant(r){
+ if(!r) return false;
+ var o=String(r.occupancy==null?'':r.occupancy).trim().toLowerCase();
+ if(o==='vacant'||o==='vaga'||o==='available'||o==='disponivel'||o==='empty'||o==='unoccupied') return true;
+ if(o==='rented'||o==='occupied'||o==='alugada'||o==='inprogress'||o==='renovation'||o==='reforma'||o==='leased') return false;
+ return o==='vacant';
+}
 function listingsPhotoUrl(r){
- if(!r||!r.photos||!r.photos.length) return null;
- var p0=r.photos[0];
+ if(!r) return null;
+ var photos=r.photos;
+ if((!photos||!photos.length)&&r._src&&r._src.photos) photos=r._src.photos;
+ if(!photos||!photos.length) return null;
+ var p0=photos[0];
  if(typeof p0==='string'&&p0) return p0;
  if(p0&&typeof p0.dataUrl==='string'&&p0.dataUrl) return p0.dataUrl;
  if(p0&&typeof p0.data_url==='string'&&p0.data_url) return p0.data_url;
  return null;
 }
 function listingsDescSnippet(r){
- var src=String((r&&r.desc)||'').trim()||String((r&&r.notes)||'').trim();
+ var raw=r&&r._src;
+ var src=String((r&&r.desc)||'').trim()||String((r&&r.notes)||'').trim()||String((raw&&raw.notes)||'').trim()||String((raw&&raw.description)||'').trim();
  if(!src) return 'Imovel disponivel para locacao. Entre em contato com GodManager.com para agendar visita.';
  if(src.length>120) return src.substring(0,120)+'...';
  return src;
 }
-function listingsRender(){
+async function listingsRender(){
+ try{
+  var g0=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+  if((!g0||!g0.length)&&typeof window.gmPropertiesRefresh==='function'){
+   try{ await window.gmPropertiesRefresh(); }catch(e){}
+  } else if((!g0||!g0.length)&&typeof window.gmPropertiesBootstrap==='function'){
+   try{ window.gmPropertiesBootstrap(); }catch(e){}
+  }
+ }catch(e){}
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- var base=ltGetRecords().filter(function(r){return r&&r.occupancy==='vacant';});
- var lr=typeof gmUserRole==='function'?gmUserRole():'';
- if(lr==='owner'){
-  var ok=gmOwnerNameForPropertyMatch();
-  base=base.filter(function(r){return gmOwnerNameEqualsRecord(r&&r.owner,ok);});
- }
+ var allRecords=listingsGetUnifiedRecords();
+ var base=allRecords.filter(function(r){ return r&&listingsIsVacant(r); });
+ try{
+  var uniques={};
+  for(var uix=0;uix<allRecords.length;uix++){
+   var ox=allRecords[uix]&&allRecords[uix].occupancy;
+   uniques[String(ox==null?'':ox)]=1;
+  }
+  console.log('[Listings] total registros:',allRecords.length,'vagas:',base.length,'sample occupancy:',(allRecords[0]&&allRecords[0].occupancy),'[occupancy unicos: '+Object.keys(uniques).join(', ')+']');
+ }catch(e){}
  var fSearch=((document.getElementById('ls-search')&&document.getElementById('ls-search').value)||'').toLowerCase();
  var fBaths=(document.getElementById('ls-baths-filter')&&document.getElementById('ls-baths-filter').value)||'';
  var fPrice=(document.getElementById('ls-price')&&document.getElementById('ls-price').value)||'';
@@ -8953,7 +9000,8 @@ function listingsRender(){
   var a0=fullAddr.indexOf(',')>=0?fullAddr.split(',')[0].trim():fullAddr;
   var a1=fullAddr.indexOf(',')>=0?fullAddr.split(',').slice(1).join(',').trim():'';
   var hoaN=Number(r.hoa);
-  var hoaSpan=(hoaN>0)?('<span style="font-size:10px;color:var(--ink3)">HOA '+ltFmt(r.hoa)+'/mo</span>'):('<span style="font-size:10px;color:var(--green)">No HOA</span>');
+  if((!hoaN||isNaN(hoaN))&&r._src&&r._src.hoa!=null) hoaN=Number(r._src.hoa);
+  var hoaSpan=(hoaN>0)?('<span style="font-size:10px;color:var(--ink3)">HOA '+ltFmt(hoaN)+'/mo</span>'):('<span style="font-size:10px;color:var(--green)">No HOA</span>');
   var descText=listingsDescSnippet(r);
   var idJs=JSON.stringify(r.id);
   return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(30,22,12,.08);transition:all .15s" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 28px rgba(30,22,12,.14)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(30,22,12,.08)\'">'
@@ -8977,7 +9025,7 @@ function listingsRender(){
 }
 function tpVacantListingsRender(){
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- var vac=(ltGetRecords()||[]).filter(function(r){return r&&r.occupancy==='vacant';});
+ var vac=(listingsGetUnifiedRecords()||[]).filter(function(r){return r&&listingsIsVacant(r);});
  var q=((document.getElementById('tp-vacant-search')&&document.getElementById('tp-vacant-search').value)||'').toLowerCase();
  if(q) vac=vac.filter(function(r){ return (String(r.address||'').toLowerCase().indexOf(q)>=0); });
  var grid=document.getElementById('tp-vacant-grid');
