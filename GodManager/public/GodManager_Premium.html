@@ -423,6 +423,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .page ::-webkit-scrollbar-corner{background:transparent}
 </style>
 <script src="/properties_seed.js"></script>
+<script src="/tenants_seed.js"></script>
 <script src="/gm_clean_ghost_props.js"></script>
 </head>
 <body>
@@ -2671,125 +2672,31 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <style>
 @keyframes tpEmPulse{0%,100%{box-shadow:0 0 0 0 rgba(184,48,48,.45)}50%{box-shadow:0 0 0 6px rgba(184,48,48,.12)}}
 .tp-em-pulse{animation:tpEmPulse 1.6s ease-in-out infinite}
+.tp-kpi-card{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--paper);box-shadow:0 1px 4px rgba(30,22,12,.04)}
+.tp-kpi-card .lbl{font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.tp-kpi-card .val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;color:var(--ink);line-height:1}
+.tp-th{padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);background:var(--cream);border-bottom:1px solid var(--border)}
+.tp-td{padding:10px 14px;font-size:12px;color:var(--ink);border-bottom:1px solid var(--border)}
+.tp-row:hover{background:rgba(201,169,110,.04)}
+.tp-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.tp-pill.act{background:var(--green-bg);color:var(--green)}
+.tp-pill.not{background:var(--amber-bg);color:var(--amber)}
+.tp-pill.inv{background:var(--slate-bg);color:var(--slate)}
+.tp-act-btn{padding:6px 11px;font-size:10.5px;font-weight:600;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;margin:0 2px;border:1px solid var(--border2);background:var(--paper);color:var(--ink2)}
+.tp-act-btn:hover{border-color:var(--amber);color:var(--ink)}
+.tp-act-btn.primary{background:var(--amber);color:#fff;border-color:var(--amber);box-shadow:0 2px 8px rgba(201,169,110,.25)}
+.tp-act-btn.primary:hover{background:var(--champ-lt);color:#fff}
 </style>
  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
  <div>
  <div class="pt" id="tp-page-title">Tenant Portal</div>
- <div class="ps" id="tp-page-subtitle">Lease information, payments and service requests</div>
+ <div class="ps" id="tp-page-subtitle">Cadastro geral de inquilinos</div>
  </div>
- <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
- <label for="tp-tenant-select" id="tp-lbl-select" style="font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Select Tenant</label>
- <select id="tp-tenant-select" onchange="tpOnTenantChange(this.value)" style="min-width:240px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
- </div>
- </div>
- <div id="tp-vacant-section" style="margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--border)">
- <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:10px">Imoveis Disponiveis para Locacao</div>
- <input type="search" id="tp-vacant-search" placeholder="Buscar por endereco ou cidade..." autocomplete="off" oninput="tpVacantListingsRender()" style="width:100%;max-width:360px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;margin-bottom:14px" />
- <div id="tp-vacant-empty" style="display:none;padding:20px;text-align:center;font-size:12px;color:var(--ink3)">Nenhum imovel disponivel no momento.</div>
- <div id="tp-vacant-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"></div>
- </div>
- <div id="tp-empty-hint" style="padding:28px;text-align:center;font-size:12px;color:var(--ink3);border:1px dashed var(--border2);border-radius:12px;background:var(--cream)">Select a tenant to load lease data, payments and service requests.</div>
- <div id="tp-main-wrap" style="display:none;margin-top:18px">
- <div id="tp-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px"></div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 12px rgba(30,22,12,.06)">
- <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:14px" id="tp-lease-h2">Lease Details</div>
- <div id="tp-lease-body" style="font-size:12px;color:var(--ink2);line-height:1.65"></div>
- <div style="margin-top:16px"><button type="button" onclick="tpOpenRequestUpdate()" id="tp-btn-req-update" style="padding:9px 18px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Request Update</button></div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 12px rgba(30,22,12,.06)">
- <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:14px" id="tp-pay-h2">Payments</div>
- <div id="tp-pay-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
- <div style="overflow:auto;border:1px solid var(--border);border-radius:10px">
- <table style="width:100%;border-collapse:collapse;min-width:720px">
- <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
- <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Month</th>
- <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Due Date</th>
- <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Amount Due</th>
- <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Amount Paid</th>
- <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Balance</th>
- <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Status</th>
- <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Late Fee</th>
- </tr></thead>
- <tbody id="tp-pay-tbody"></tbody>
- </table>
+ <div style="display:flex;gap:8px;align-items:center">
+ <button type="button" onclick="tenantOpenNew()" class="tp-act-btn primary" style="padding:9px 18px;font-size:12px">+ Novo Tenant</button>
  </div>
  </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 2px 12px rgba(30,22,12,.06)">
- <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
- <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)" id="tp-sr-h2">Service Requests</div>
- <button type="button" onclick="tpOpenNewRequestModal()" id="tp-btn-new-req" style="padding:9px 18px;border:none;border-radius:8px;background:var(--amber);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">+ New Request</button>
- </div>
- <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:flex-end">
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px">Type</label><select id="tp-f-srtype" onchange="tpSrFilter()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand)"><option value="">All</option></select></div>
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px">Priority</label><select id="tp-f-prio" onchange="tpSrFilter()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand)"><option value="">All</option><option value="emergency">Emergency</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px">Status</label><select id="tp-f-st" onchange="tpSrFilter()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand)"><option value="">All</option><option value="open">Open</option><option value="in progress">In Progress</option><option value="waiting parts">Waiting Parts</option><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div>
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px">From</label><input type="date" id="tp-f-d1" onchange="tpSrFilter()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand)"/></div>
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px">To</label><input type="date" id="tp-f-d2" onchange="tpSrFilter()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand)"/></div>
- </div>
- <div style="overflow:auto;border:1px solid var(--border);border-radius:10px">
- <table style="width:100%;border-collapse:collapse;min-width:900px">
- <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
- <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Ref #</th>
- <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Date</th>
- <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Type</th>
- <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Subject</th>
- <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Priority</th>
- <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Status</th>
- <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Actions</th>
- </tr></thead>
- <tbody id="tp-sr-tbody"></tbody>
- </table>
- </div>
- </div>
- </div>
- <div id="tp-modal-sr" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.45);align-items:flex-start;justify-content:center;overflow-y:auto;padding:28px 16px" onclick="if(event.target===this)tpCloseNewRequestModal()">
- <div style="background:var(--paper);border-radius:14px;max-width:720px;width:100%;margin:0 auto 40px;box-shadow:0 24px 60px rgba(0,0,0,.22);border:1px solid var(--border)" onclick="event.stopPropagation()">
- <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
- <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)" id="tp-modal-sr-title">New Service Request</div>
- <button type="button" onclick="tpCloseNewRequestModal()" style="background:transparent;border:none;font-size:18px;color:var(--ink3);cursor:pointer;line-height:1">&times;</button>
- </div>
- <div style="padding:18px 22px;max-height:70vh;overflow:auto">
- <div style="margin-bottom:14px">
- <label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:6px" id="tp-lbl-rtype">Request Type</label>
- <select id="tp-sr-type" onchange="tpReqTypeChanged()" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
- </div>
- <div id="tp-sr-prio-note" style="display:none;font-size:11px;padding:10px 12px;border-radius:8px;background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--ink2);margin-bottom:12px"></div>
- <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px">
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px" id="tp-lbl-subj">Subject</label><input id="tp-sr-subject" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--sand)"/></div>
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px" id="tp-lbl-desc">Description</label><textarea id="tp-sr-desc" rows="4" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--sand);resize:vertical"></textarea></div>
- <div><label style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px" id="tp-lbl-prio2">Priority</label><select id="tp-sr-priority" onchange="tpPrioNote()" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--sand)"><option value="emergency">Emergency</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
- </div>
- <div id="tp-sr-extra" style="display:none;border-top:1px solid var(--border);padding-top:14px;margin-top:4px"></div>
- <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
- <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:8px">Attachments</div>
- <div id="tp-sr-drop" style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;background:var(--cream);cursor:pointer;font-size:11px;color:var(--ink3)" onclick="document.getElementById('tp-sr-files').click()">Drop files or click to upload (JPG, PNG, PDF, MP4 — max 25MB each)</div>
- <input type="file" id="tp-sr-files" multiple accept=".jpg,.jpeg,.png,.pdf,.mp4" style="display:none" onchange="tpSrOnFiles(this)"/>
- <div id="tp-sr-file-list" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
- </div>
- <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
- <label style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--ink2);cursor:pointer"><input type="checkbox" id="tp-sr-confirm" style="margin-top:2px;accent-color:var(--amber)"/><span id="tp-sr-confirm-txt">I confirm this information is accurate</span></label>
- <div id="tp-sr-email-note" style="font-size:10px;color:var(--ink3);margin-top:8px"></div>
- </div>
- </div>
- <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--cream)">
- <button type="button" onclick="tpCloseNewRequestModal()" style="padding:9px 18px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancel</button>
- <button type="button" onclick="tpSubmitServiceRequest()" style="padding:9px 22px;border:none;border-radius:8px;background:#2d7252;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Submit Request</button>
- </div>
- </div>
- </div>
- <div id="tp-modal-done" style="display:none;position:fixed;inset:0;z-index:9150;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('tp-modal-done').style.display='none'">
- <div style="background:var(--paper);border-radius:12px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.25)" onclick="event.stopPropagation()">
- <div id="tp-modal-done-body" style="font-size:13px;color:var(--ink2);line-height:1.6"></div>
- <button type="button" onclick="document.getElementById('tp-modal-done').style.display='none'" style="margin-top:18px;padding:9px 18px;border:none;border-radius:8px;background:var(--amber);color:#fff;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%">OK</button>
- </div>
- </div>
- <div id="tp-modal-view" style="display:none;position:fixed;inset:0;z-index:9120;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)document.getElementById('tp-modal-view').style.display='none'">
- <div style="background:var(--paper);border-radius:12px;max-width:520px;width:100%;padding:22px;max-height:80vh;overflow:auto" onclick="event.stopPropagation()">
- <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--ink)" id="tp-view-title">Request</div>
- <div id="tp-view-body" style="font-size:12px;color:var(--ink2);line-height:1.6"></div>
- <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" onclick="tpSrActionStatus()" id="tp-act-st" style="padding:7px 12px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer">Update Status</button><button type="button" onclick="tpSrActionVendor()" id="tp-act-vn" style="padding:7px 12px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer">Assign Vendor</button><button type="button" onclick="tpSrActionClose()" id="tp-act-cl" style="padding:7px 12px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer">Close</button></div>
- </div>
- </div>
+ <div id="tp-render"></div>
 </div>
 
 <!-- 
@@ -12177,6 +12084,260 @@ window.gmBackupHandleFile=gmBackupHandleFile;
 window.gmBackupConfirmImport=gmBackupConfirmImport;
 /* ========== /BACKUP & RESTORE MODULE ========== */
 
+/* ========== TENANT PORTAL REBUILD ========== */
+window.tenantCurrentChamadoId=null;
+
+window.tenantOpenChamado=function(tenantId, tenantName, propertyId){
+ window.tenantCurrentChamadoId={tenantId:tenantId, tenantName:tenantName, propertyId:propertyId};
+ var nm=document.getElementById('tch-f-name');if(nm)nm.value=tenantName||tenantId;
+ var ty=document.getElementById('tch-f-type');if(ty)ty.value='manutencao';
+ var ds=document.getElementById('tch-f-desc');if(ds)ds.value='';
+ var ph=document.getElementById('tch-f-photo');if(ph)ph.value='';
+ var md=document.getElementById('tenant-chamado-modal');if(md)md.style.display='flex';
+};
+
+window.tenantCloseChamado=function(){
+ var md=document.getElementById('tenant-chamado-modal');if(md)md.style.display='none';
+ window.tenantCurrentChamadoId=null;
+};
+
+window.tenantSaveChamado=function(){
+ var ctx=window.tenantCurrentChamadoId;
+ if(!ctx){alert('Erro: sem contexto');return;}
+ var tipo=(document.getElementById('tch-f-type')||{}).value||'outro';
+ var desc=String((document.getElementById('tch-f-desc')||{}).value||'').trim();
+ if(!desc){alert('Descricao e obrigatoria.');return;}
+ var photoEl=document.getElementById('tch-f-photo');
+ var saveAndShow=function(fotoStr){
+  try{
+   var rec={
+    id:'cha_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    type:'chamado',
+    isAlert:true,
+    status:'aberto',
+    tenantId:ctx.tenantId||'',
+    tenantName:ctx.tenantName||'',
+    propertyId:ctx.propertyId||'',
+    chamadoTipo:tipo,
+    descricao:desc,
+    foto:fotoStr,
+    createdAt:new Date().toISOString(),
+    createdBy:(window.gmAuthUser&&window.gmAuthUser.email)||'tenant',
+    savedAt:new Date().toLocaleString('pt-BR')
+   };
+   if(typeof ltGetRecords==='function'&&typeof ltSaveRecords==='function'){
+    var all=ltGetRecords()||[];
+    all.push(rec);
+    ltSaveRecords(all);
+   }else{
+    var raw=localStorage.getItem('lt_records');
+    var arr=[];try{arr=JSON.parse(raw)||[];}catch(e){arr=[];}
+    arr.push(rec);
+    localStorage.setItem('lt_records',JSON.stringify(arr));
+   }
+   if(typeof showToast==='function')showToast('Chamado criado: '+tipo,'success');else alert('Chamado criado.');
+   tenantCloseChamado();
+   if(typeof tpRender==='function')tpRender();
+   if(typeof gmHomeRender==='function')gmHomeRender();
+   if(typeof homeRender==='function')homeRender();
+   if(typeof ltDashRender==='function')ltDashRender();
+  }catch(e){console.warn('saveChamado',e);alert('Erro: '+e.message);}
+ };
+ if(photoEl&&photoEl.files&&photoEl.files[0]){
+  var f=photoEl.files[0];
+  if(f.size>5*1024*1024){alert('Foto demasiado grande (max 5MB).');return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){saveAndShow(ev.target.result);};
+  reader.onerror=function(){saveAndShow(null);};
+  reader.readAsDataURL(f);
+ }else{
+  saveAndShow(null);
+ }
+};
+
+window.tenantOpenNew=function(){
+ if(typeof showToast==='function')showToast('Novo tenant: em breve','info');
+ else alert('Novo tenant: em breve');
+};
+
+window.tenantViewDetails=function(tid){
+ if(typeof showToast==='function')showToast('Detalhes do tenant '+tid+' em breve','info');
+ else alert('Detalhes em breve');
+};
+
+window.tenantEditRow=function(tid){
+ if(typeof showToast==='function')showToast('Edit tenant '+tid+' em breve','info');
+ else alert('Edit em breve');
+};
+
+(function(){
+ var __origTpRender=window.tpRender;
+ window.tpRender=function(){
+  try{
+   var container=document.getElementById('tp-render');
+   if(!container){
+    if(typeof __origTpRender==='function')return __origTpRender();
+    return;
+   }
+   var fmt=function(v){try{return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(v)||0);}catch(e){return '$'+(Number(v)||0);}};
+   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');};
+
+   var tenants=[];
+   var seenKey={};
+   var addTenant=function(t){
+    if(!t)return;
+    var k=(t.id||'')+'|'+(t.name||'').toLowerCase()+'|'+(t.property||'');
+    if(seenKey[k])return;
+    seenKey[k]=1;
+    tenants.push(t);
+   };
+
+   try{
+    var seed=window.GM_TENANTS_SEED||[];
+    if(Array.isArray(seed)){
+     seed.forEach(function(t){
+      addTenant({
+       id:t.id||t.tenantId||('tn_'+Math.random().toString(36).slice(2,8)),
+       name:t.name||t.fullName||'-',
+       property:t.propertyCsv||t.property||t.address||'-',
+       propertyId:t.propId||t.propertyId||'',
+       phone:t.phone||'-',
+       email:t.email||'-',
+       moveIn:t.moveIn||'',
+       leaseTo:t.leaseTo||'',
+       rent:Number(t.rent)||0,
+       status:String(t.status||'active').toLowerCase(),
+       source:'seed'
+      });
+     });
+    }
+   }catch(e){console.warn('tp seed',e);}
+
+   try{
+    if(typeof ltGetRecords==='function'){
+     var lts=ltGetRecords()||[];
+     lts.forEach(function(r){
+      if(!r||!r.tenant||r.type==='chamado')return;
+      addTenant({
+       id:r.id||('tn_'+Math.random().toString(36).slice(2,8)),
+       name:r.tenant,
+       property:r.address||'-',
+       propertyId:r.propId||r.propertyId||r.id||'',
+       phone:r.tenantPhone||r.phone||'-',
+       email:r.tenantEmail||r.email||'-',
+       moveIn:r.moveIn||'',
+       leaseTo:r.leaseTo||'',
+       rent:Number(r.rent)||0,
+       status:String(r.status||'active').toLowerCase(),
+       source:'lt_records'
+      });
+     });
+    }
+   }catch(e){console.warn('tp lts',e);}
+
+   tenants.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''));});
+
+   var totTenants=tenants.length;
+   var totAtivos=tenants.filter(function(t){return t.status==='active'||t.status==='aprovado'||t.status==='notice';}).length;
+   var hoje=new Date();var d60=new Date(hoje.getTime()+60*86400*1000);
+   var totMoveOut60=tenants.filter(function(t){
+    if(!t.leaseTo)return false;
+    var d=new Date(t.leaseTo);
+    if(isNaN(d.getTime()))return false;
+    return d>=hoje&&d<=d60;
+   }).length;
+
+   var html='';
+   html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 22px">';
+   html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--amber)"><div class="lbl">TOTAL TENANTS</div><div class="val">'+totTenants+'</div></div>';
+   html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--green)"><div class="lbl">ATIVOS</div><div class="val" style="color:var(--green)">'+totAtivos+'</div></div>';
+   html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--red)"><div class="lbl">MOVE-OUT 60D</div><div class="val" style="color:var(--red)">'+totMoveOut60+'</div></div>';
+   html+='</div>';
+
+   html+='<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--paper);box-shadow:0 1px 4px rgba(30,22,12,.04)">';
+   html+='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:1080px">';
+   html+='<thead><tr>';
+   html+='<th class="tp-th">Nome</th>';
+   html+='<th class="tp-th">Propriedade</th>';
+   html+='<th class="tp-th">Phone</th>';
+   html+='<th class="tp-th">Email</th>';
+   html+='<th class="tp-th" style="text-align:center">Move In</th>';
+   html+='<th class="tp-th" style="text-align:right">Rent</th>';
+   html+='<th class="tp-th" style="text-align:center">Status</th>';
+   html+='<th class="tp-th" style="text-align:center">Acoes</th>';
+   html+='</tr></thead><tbody>';
+
+   if(tenants.length===0){
+    html+='<tr><td class="tp-td" colspan="8" style="padding:32px;text-align:center;color:var(--ink3);font-style:italic">Nenhum tenant cadastrado</td></tr>';
+   }else{
+    tenants.forEach(function(t){
+     var stCls='inv';
+     if(t.status==='active'||t.status==='aprovado')stCls='act';
+     else if(t.status==='notice')stCls='not';
+     var stLabel=t.status?t.status.toUpperCase():'-';
+     html+='<tr class="tp-row">';
+     html+='<td class="tp-td" style="font-weight:600">'+esc(t.name)+'</td>';
+     html+='<td class="tp-td" style="color:var(--ink2)">'+esc(t.property)+'</td>';
+     html+='<td class="tp-td" style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'+esc(t.phone||'-')+'</td>';
+     html+='<td class="tp-td" style="font-size:11px;color:var(--ink2)">'+esc(t.email||'-')+'</td>';
+     html+='<td class="tp-td" style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px">'+esc(t.moveIn||'-')+'</td>';
+     html+='<td class="tp-td" style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+fmt(t.rent)+'</td>';
+     html+='<td class="tp-td" style="text-align:center"><span class="tp-pill '+stCls+'">'+esc(stLabel)+'</span></td>';
+     html+='<td class="tp-td" style="text-align:center;white-space:nowrap">';
+     html+='<button class="tp-act-btn" onclick="tenantViewDetails(\''+esc(t.id)+'\')">Ver</button>';
+     html+='<button class="tp-act-btn" onclick="tenantEditRow(\''+esc(t.id)+'\')">Editar</button>';
+     var nmEsc=String(t.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+     html+='<button class="tp-act-btn primary" onclick="tenantOpenChamado(\''+esc(t.id)+'\',\''+nmEsc+'\',\''+esc(t.propertyId||'')+'\')">Criar Chamado</button>';
+     html+='</td>';
+     html+='</tr>';
+    });
+   }
+
+   html+='</tbody></table></div></div>';
+   container.innerHTML=html;
+  }catch(err){
+   console.warn('tpRender rebuild error',err);
+   try{if(typeof __origTpRender==='function')__origTpRender();}catch(e){}
+  }
+ };
+})();
+/* ========== /TENANT PORTAL REBUILD ========== */
+
 </script>
+
+<div id="tenant-chamado-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+ <div style="background:var(--paper);border-radius:14px;padding:22px 24px;width:520px;max-width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.22);border:1px solid var(--border)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+   <h2 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink)">Criar Chamado</h2>
+   <button type="button" onclick="tenantCloseChamado()" style="border:none;background:none;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1">&times;</button>
+  </div>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Tenant</label>
+   <input id="tch-f-name" type="text" disabled style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--cream);color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:12px"/>
+  </div>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Tipo *</label>
+   <select id="tch-f-type" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)">
+    <option value="manutencao">Manutencao</option>
+    <option value="queixa">Queixa</option>
+    <option value="pagamento">Pagamento</option>
+    <option value="outro">Outro</option>
+   </select>
+  </div>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Descricao *</label>
+   <textarea id="tch-f-desc" rows="5" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);resize:vertical" placeholder="Descreva o chamado em detalhe..."></textarea>
+  </div>
+  <div style="margin-bottom:18px">
+   <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Foto (opcional)</label>
+   <input id="tch-f-photo" type="file" accept="image/*" style="width:100%;font-size:11px;color:var(--ink2)"/>
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:14px">
+   <button type="button" onclick="tenantCloseChamado()" style="padding:9px 18px;border:1px solid var(--border2);background:transparent;color:var(--ink2);border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px">Cancelar</button>
+   <button type="button" onclick="tenantSaveChamado()" style="padding:9px 18px;border:none;background:var(--amber);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;font-size:12px;box-shadow:0 2px 8px rgba(201,169,110,.25)">Salvar Chamado</button>
+  </div>
+ </div>
+</div>
+
 </body>
 </html>
