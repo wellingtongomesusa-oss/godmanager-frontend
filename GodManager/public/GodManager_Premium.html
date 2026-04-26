@@ -36,15 +36,34 @@
  .sidebar.open{transform:translateX(0)}
  .sb-toggle{display:flex}
  .sb-overlay.visible{display:block}
- .topbar{left:0!important;padding-left:58px}
- .content{margin-left:0!important}
+ .topbar{left:0!important;padding-left:58px;padding-right:8px;gap:8px;min-height:var(--th);align-items:center;flex-wrap:nowrap}
+ .topbar-left{flex:0 1 auto;min-width:0;max-width:42%;gap:8px;align-items:center}
+ .btn-save-top{padding:5px 10px!important;font-size:11px!important;min-height:30px;letter-spacing:.2px;flex-shrink:0}
+ .bc{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:10.5px!important;flex:1}
+ .tr{flex:1 1 auto;min-width:0;max-width:100%;display:flex;flex-wrap:nowrap;align-items:center;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding:2px 0 2px 4px}
+ .tr::-webkit-scrollbar{height:3px}
+ .tr::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+ .tr .tb,.tr .tb-clients,.tr #btn-exit-client{padding:5px 7px!important;font-size:10px!important;min-height:28px;flex-shrink:0;white-space:nowrap}
+ .tr button[onclick*="gmBackupExport"]{max-width:88px;overflow:hidden;text-overflow:ellipsis}
+ .tr button[onclick*="print"]{max-width:100px;overflow:hidden;text-overflow:ellipsis}
+ .content{margin-left:0!important;padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))!important}
  .page{padding:16px!important}
- .cg{grid-template-columns:1fr!important}
+ .cg{grid-template-columns:1fr!important;gap:14px!important}
+ #page-home .card{padding:16px 18px 0}
+ #page-home .ct{margin-bottom:8px}
  .pt{font-size:18px!important}
  .tsn{display:none}
  .lc{width:95vw!important;padding:28px 16px!important}
  table{font-size:11px!important}
  th,td{padding:6px 8px!important}
+ .save-bottom-bar{left:0!important;height:auto;min-height:44px;padding:6px 10px;z-index:999}
+ .save-bottom-inner{display:flex!important;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;grid-template:none!important;width:100%;max-width:100%}
+ .save-bottom-inner>span:empty{display:none!important}
+ .save-bottom-inner .btn-save-bottom{order:2;grid-column:unset;justify-self:unset;flex-shrink:0}
+ .gm-last-saved-text{order:1;flex:1;min-width:0;grid-column:unset;font-size:10px!important;text-align:left!important}
+ .btn-save-bottom{padding:6px 16px!important;font-size:11px!important}
+ .gm-save-toast{bottom:52px;z-index:1001}
+ #page-clients .cl-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
 @media(min-width:769px) and (max-width:1100px){
  :root{--sw:200px}
