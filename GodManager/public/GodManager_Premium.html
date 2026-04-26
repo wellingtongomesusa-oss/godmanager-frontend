@@ -869,8 +869,18 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 </div>
 
 <div class="page" id="page-settings">
- <div class="ph"><div class="pt">Settings</div><div class="ps">Configurações administrativas. Apenas administradores.</div></div>
+ <div class="ph"><div class="pt">Settings</div> <div class="ps">Configurações administrativas. Apenas administradores.</div></div>
  <div style="max-width:780px;display:flex;flex-direction:column;gap:18px">
+  <div style="padding:22px 24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);position:relative">
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green);border-radius:0 0 12px 12px"></div>
+   <h3 style="margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Nome da Empresa</h3>
+   <p style="font-size:12px;color:var(--ink3);margin:0 0 16px">Aparece no canto superior esquerdo do sidebar (modo plataforma) para todos. Apenas admin pode alterar.</p>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input id="admin-company-name-input" type="text" placeholder="Manager Prop LLC" style="flex:1;min-width:200px;padding:9px 10px;border:1px solid var(--border2);border-radius:7px;font-size:12px;font-family:'Inter',sans-serif;background:var(--sand);color:var(--ink)"/>
+    <button type="button" onclick="if(typeof window.adminSaveCompanyName==='function')window.adminSaveCompanyName();" style="padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;font-family:'DM Sans',sans-serif">Salvar</button>
+   </div>
+   <p id="admin-company-name-current" style="font-size:11px;color:var(--ink3);margin-top:8px;font-style:italic">A carregar…</p>
+  </div>
   <div style="padding:22px 24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);position:relative">
    <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber);border-radius:0 0 12px 12px"></div>
    <h3 style="margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Acesso GAAP</h3>
@@ -4112,6 +4122,7 @@ function planPillCls(p){var v=String(p||'').toLowerCase();if(v==='starter')retur
 function planLabel(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'Starter';if(v==='enterprise')return 'Enterprise';return 'Professional';}
 function planLabelDisp(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'STARTER';if(v==='enterprise')return 'ENTERPRISE';return 'PROFESSIONAL';}
 const clientConfig={company_name:'Manager Prop LLC',logo_url:''};
+if(typeof window.gmPlatformCompanyName!=='string'||!window.gmPlatformCompanyName)window.gmPlatformCompanyName=clientConfig.company_name;
 function gmClientInitials(name){
  var s=String(name||'').trim();
  if(!s)return'GM';
@@ -4121,7 +4132,7 @@ function gmClientInitials(name){
 }
 function renderSidebarClientBrand(client){
  var c=(client!==undefined)?client:getActiveClient();
- var name=(c&&(c.company||c.companyName))||clientConfig.company_name;
+ var name=(c&&(c.company||c.companyName))||window.gmPlatformCompanyName||clientConfig.company_name;
  var logo=String((c&&(c.logoUrl||c.client_logo_url))||clientConfig.logo_url||'').trim();
  var nameEl=document.getElementById('sb-brand-name');
  var tagEl=document.getElementById('sb-brand-tag');
@@ -5585,7 +5596,7 @@ function nav(r){
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
- settings:()=>{if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();},
+ settings:()=>{if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
@@ -13541,6 +13552,68 @@ window.tenantViewDetails=function(tid){
    alert('Erro: '+(e&&e.message?e.message:String(e)));
   }
  };
+})();
+(function(){
+ var DEF_CO='Manager Prop LLC';
+ window.gmUpdateCompanyNameInSidebar=function(name){
+  var n=String(name||'').trim()||DEF_CO;
+  window.gmPlatformCompanyName=n;
+  try{clientConfig.company_name=n;}catch(e0){}
+  if(typeof renderSidebarClientBrand==='function'){try{renderSidebarClientBrand();}catch(e1){}}
+ };
+ window.adminLoadCompanyName=async function(){
+  try{
+   var res=await fetch('/api/settings/company-name',{credentials:'include',cache:'no-store'});
+   var data=await res.json().catch(function(){return{};});
+   var name=(data&&data.name)||DEF_CO;
+   window.gmPlatformCompanyName=name;
+   try{clientConfig.company_name=name;}catch(eC){}
+   var input=document.getElementById('admin-company-name-input');
+   if(input)input.value=name;
+   var cur=document.getElementById('admin-company-name-current');
+   if(cur)cur.textContent='Nome actual: '+name;
+   if(typeof renderSidebarClientBrand==='function'){try{renderSidebarClientBrand();}catch(e2){}}
+  }catch(e){console.warn('adminLoadCompanyName',e);var cur0=document.getElementById('admin-company-name-current');if(cur0)cur0.textContent='';}
+ };
+ window.adminSaveCompanyName=async function(){
+  var input=document.getElementById('admin-company-name-input');
+  if(!input)return;
+  var name=String(input.value||'').trim();
+  if(!name){alert('Nome nao pode estar vazio.');return;}
+  if(name.length>100){alert('Nome muito longo (max 100 caracteres).');return;}
+  try{
+   var res=await fetch('/api/admin/settings/company_name',{
+    method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',
+    body:JSON.stringify({value:{name:name}}),
+   });
+   if(!res.ok){
+    if(res.status===403){alert('Apenas admin pode alterar.');return;}
+    var d=await res.json().catch(function(){return{};});
+    alert('Erro: '+(d.error||'HTTP '+res.status));
+    return;
+   }
+   if(typeof showToast==='function')showToast('Nome actualizado.','success');
+   try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('update','company_name',null,{name:name});}catch(eA){}
+   if(typeof window.gmUpdateCompanyNameInSidebar==='function')window.gmUpdateCompanyNameInSidebar(name);
+   var cur=document.getElementById('admin-company-name-current');
+   if(cur)cur.textContent='Nome actual: '+name;
+  }catch(e){alert('Erro: '+(e&&e.message?e.message:String(e)));}
+ };
+ window.gmLoadCompanyNameOnBoot=async function(){
+  try{
+   var res=await fetch('/api/settings/company-name',{credentials:'include',cache:'no-store'});
+   var data=await res.json().catch(function(){return{};});
+   var name=(data&&data.name)||DEF_CO;
+   window.gmPlatformCompanyName=name;
+   try{clientConfig.company_name=name;}catch(eB){}
+   if(typeof window.gmUpdateCompanyNameInSidebar==='function')window.gmUpdateCompanyNameInSidebar(name);
+  }catch(e){console.warn('gmLoadCompanyNameOnBoot',e);}
+ };
+ if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(typeof window.gmLoadCompanyNameOnBoot==='function')window.gmLoadCompanyNameOnBoot();},800);});
+ }else{
+  setTimeout(function(){if(typeof window.gmLoadCompanyNameOnBoot==='function')window.gmLoadCompanyNameOnBoot();},800);
+ }
 })();
 /* ========== /ADMIN SETTINGS ========== */
 
