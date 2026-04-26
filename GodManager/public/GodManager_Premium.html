@@ -6430,7 +6430,7 @@ function ltSaveRecord(){
  const records=ltGetRecords();
  if(ltEditingId){
  const idx=records.findIndex(x=>x.id===ltEditingId);
- if(idx>-1)records[idx]=rec; else records.push(rec);
+ if(idx>-1)records[idx]=Object.assign({},records[idx],rec); else records.push(rec);
  }else{ records.push(rec); }
  ltSaveRecords(records);
  try{
@@ -8388,7 +8388,7 @@ function ltpBindTbodyActionDelegationOnce(){
   var id=t.getAttribute('data-ltp-id');
   if(!id) return;
   if(a==='detail' && typeof ltOpenDetail==='function') ltOpenDetail(id);
-  else if(a==='edit' && typeof ltOpenEdit==='function') ltOpenEdit(id);
+  else if(a==='edit'){ if(typeof ltpOpenEditProperty==='function') ltpOpenEditProperty(id); else if(typeof ltOpenEdit==='function') ltOpenEdit(id); }
   else if(a==='del' && typeof ltpDeleteProperty==='function') ltpDeleteProperty(id);
  }, true);
 }
@@ -10017,6 +10017,35 @@ function ltpCloseNewPropertyModal(){
  if(ltpPrevFocus&&typeof ltpPrevFocus.focus==='function')try{ltpPrevFocus.focus();}catch(e){}
  ltpPrevFocus=null;
 }
+window.ltpOpenEditProperty=function(id){
+ var records=ltGetRecords();
+ var r=records.find(function(x){return x.id===id;});
+ if(!r){alert('Casa nao encontrada');return;}
+ ltEditingId=id;
+ var s=function(k,v){var e=document.getElementById(k);if(e)e.value=(v!=null?v:'');};
+ var c=function(k,v){var e=document.getElementById(k);if(e)e.checked=!!v;};
+ s('ltp-f-address',r.address);s('ltp-f-owner',r.owner);s('ltp-f-tenant',r.tenant);
+ s('ltp-f-month',r.month);s('ltp-f-type',r.propertyType||'house');
+ s('ltp-f-bedrooms',r.bedrooms);s('ltp-f-bathrooms',r.bathrooms);
+ s('ltp-f-garage',r.garage);c('ltp-f-pool',r.pool);s('ltp-f-sqft',r.sqft);
+ s('ltp-f-rent',r.rent);s('ltp-f-occ',r.occupancy||'rented');
+ var dep=Number(r.deposit)||0;
+ c('ltp-f-deposit-toggle',dep>0);
+ var dw=document.getElementById('ltp-deposit-wrap');if(dw)dw.style.display=dep>0?'block':'none';
+ s('ltp-f-deposit-amt',dep>0?dep:'');
+ s('ltp-f-hoa',r.hoa);s('ltp-f-mgmpct',r.mgmpct);s('ltp-f-guarantee',r.guarantee);
+ s('ltp-f-owner-fullname',r.ownerFullName);s('ltp-f-owner-taxid',r.ownerTaxId);
+ s('ltp-f-owner-dob',r.ownerDob);s('ltp-f-owner-email',r.ownerEmail);
+ s('ltp-f-owner-phone',r.ownerPhone);s('ltp-f-owner-mailingaddr',r.ownerMailingAddr);
+ s('ltp-f-bank-name',r.bankName);s('ltp-f-bank-type',r.bankType||'checking');
+ s('ltp-f-bank-routing',r.bankRouting);s('ltp-f-bank-account',r.bankAccount);
+ s('ltp-f-bank-holder',r.bankHolder);s('ltp-f-bank-address',r.bankAddress);
+ s('ltp-f-bank-method',r.bankMethod||'ach');
+ s('ltp-f-status',r.status||'pending');s('ltp-f-approver',r.approver);s('ltp-f-notes',r.notes);
+ if(typeof ltpCalcNet==='function')ltpCalcNet();
+ var t=document.getElementById('ltp-modal-title');if(t)t.textContent='Editar Propriedade';
+ document.getElementById('ltp-property-modal').style.display='flex';
+};
 
 // 
 // PROPERTY PHOTOS — modal #lt-modal (primeira foto = capa do listing)
