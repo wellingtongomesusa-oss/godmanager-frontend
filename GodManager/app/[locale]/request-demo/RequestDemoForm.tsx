@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { useTranslations } from 'next-intl';
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: '100%',
   background: 'rgba(15,23,42,0.8)',
   border: '1px solid rgba(201,169,110,0.3)',
@@ -14,7 +15,7 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 };
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: 'block',
   color: '#c9a96e',
   fontSize: 10,
@@ -43,12 +44,23 @@ const empty: FormState = {
 };
 
 export function RequestDemoForm() {
+  const t = useTranslations('demo');
+  const tCommon = useTranslations('common');
   const [form, setForm] = useState<FormState>(empty);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  function mapError(res: Response, data: { code?: string; error?: string }): string {
+    if (res.status === 429 || data.code === 'RATE_LIMIT') return t('errors.rateLimit');
+    if (data.code === 'MISSING_FIELDS') return t('errors.missing');
+    if (data.code === 'INVALID_EMAIL') return t('errors.email');
+    if (data.code === 'INTERNAL' || res.status === 500) return tCommon('error');
+    if (data.error && !data.code) return data.error;
+    return tCommon('error');
   }
 
   async function submit(e: React.FormEvent) {
@@ -61,16 +73,21 @@ export function RequestDemoForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        redirectTo?: string;
+        code?: string;
+        error?: string;
+      };
       if (!res.ok || !data?.ok || !data?.redirectTo) {
-        setError(data?.error || 'Erro ao processar pedido.');
+        setError(mapError(res, data));
         setLoading(false);
         return;
       }
       window.location.href = String(data.redirectTo);
     } catch (err) {
       console.error(err);
-      setError('Erro de rede. Tente novamente.');
+      setError(t('networkError'));
       setLoading(false);
     }
   }
@@ -86,37 +103,33 @@ export function RequestDemoForm() {
           color: '#fff',
         }}
       >
-        Os seus dados
+        {t('dataTitle')}
       </h2>
-      <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 20 }}>
-        Preencha para receber acesso imediato.
-      </p>
+      <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 20 }}>{t('dataSubtitle')}</p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label style={labelStyle}>Nome *</label>
+          <label style={labelStyle}>{t('form.name')}</label>
           <input
             required
             style={inputStyle}
             value={form.nome}
             onChange={(e) => update('nome', e.target.value)}
-            placeholder="O seu nome"
             autoComplete="name"
           />
         </div>
         <div>
-          <label style={labelStyle}>Empresa *</label>
+          <label style={labelStyle}>{t('form.company')}</label>
           <input
             required
             style={inputStyle}
             value={form.empresa}
             onChange={(e) => update('empresa', e.target.value)}
-            placeholder="Nome da empresa"
             autoComplete="organization"
           />
         </div>
         <div>
-          <label style={labelStyle}>Email *</label>
+          <label style={labelStyle}>{t('form.email')}</label>
           <input
             required
             type="email"
@@ -128,32 +141,31 @@ export function RequestDemoForm() {
           />
         </div>
         <div>
-          <label style={labelStyle}>Telefone *</label>
+          <label style={labelStyle}>{t('form.phone')}</label>
           <input
             required
             style={inputStyle}
             value={form.telefone}
             onChange={(e) => update('telefone', e.target.value)}
-            placeholder="+1 (407) 000-0000"
             autoComplete="tel"
           />
         </div>
         <div>
-          <label style={labelStyle}>Rede social</label>
+          <label style={labelStyle}>{t('form.social')}</label>
           <input
             style={inputStyle}
             value={form.redeSocial}
             onChange={(e) => update('redeSocial', e.target.value)}
-            placeholder="LinkedIn, Instagram, etc. (opcional)"
+            placeholder={t('form.socialPh')}
           />
         </div>
         <div>
-          <label style={labelStyle}>Site da empresa</label>
+          <label style={labelStyle}>{t('form.website')}</label>
           <input
             style={inputStyle}
             value={form.siteEmpresa}
             onChange={(e) => update('siteEmpresa', e.target.value)}
-            placeholder="https://exemplo.com (opcional)"
+            placeholder={t('form.websitePh')}
           />
         </div>
       </div>
@@ -194,12 +206,10 @@ export function RequestDemoForm() {
           boxShadow: '0 2px 8px rgba(201,169,110,0.25)',
         }}
       >
-        {loading ? 'A processar...' : 'Aceder ao Demo'}
+        {loading ? t('form.submitting') : t('form.submit')}
       </button>
 
-      <p style={{ marginTop: 14, color: '#64748b', fontSize: 11, textAlign: 'center' }}>
-        Acesso imediato. Sem cartao de credito.
-      </p>
+      <p style={{ marginTop: 14, color: '#64748b', fontSize: 11, textAlign: 'center' }}>{t('footerNote')}</p>
     </form>
   );
 }

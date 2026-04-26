@@ -22,19 +22,16 @@ export async function POST(req: Request) {
     const mensagem = body.mensagem ? String(body.mensagem).trim() : null;
 
     if (!nome || !email || !telefone) {
-      return NextResponse.json({ ok: false, error: 'Campos obrigatorios em falta' }, { status: 400 });
+      return NextResponse.json({ ok: false, code: 'MISSING_FIELDS' }, { status: 400 });
     }
     if (!EMAIL_RE.test(email)) {
-      return NextResponse.json({ ok: false, error: 'Email invalido' }, { status: 400 });
+      return NextResponse.json({ ok: false, code: 'INVALID_EMAIL' }, { status: 400 });
     }
     if (tipoContacto !== 'pessoal' && tipoContacto !== 'empresa') {
-      return NextResponse.json({ ok: false, error: 'tipo invalido' }, { status: 400 });
+      return NextResponse.json({ ok: false, code: 'INVALID_TIPO' }, { status: 400 });
     }
     if (tipoContacto === 'empresa' && !empresa) {
-      return NextResponse.json(
-        { ok: false, error: 'Indique o nome da empresa.' },
-        { status: 400 },
-      );
+      return NextResponse.json({ ok: false, code: 'COMPANY_REQUIRED' }, { status: 400 });
     }
 
     const ip = ipFromHeaders(req);
@@ -71,6 +68,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, id: lead.id });
   } catch (e) {
     console.error('[POST contacto]', e);
-    return NextResponse.json({ ok: false, error: 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ ok: false, code: 'INTERNAL' }, { status: 500 });
   }
 }

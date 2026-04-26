@@ -30,13 +30,10 @@ export async function POST(req: Request) {
       : null;
 
     if (!nome || !empresa || !email || !telefone) {
-      return NextResponse.json(
-        { ok: false, error: 'Preencha nome, empresa, email e telefone.' },
-        { status: 400 },
-      );
+      return NextResponse.json({ ok: false, code: 'MISSING_FIELDS' }, { status: 400 });
     }
     if (!EMAIL_RE.test(email)) {
-      return NextResponse.json({ ok: false, error: 'Email invalido.' }, { status: 400 });
+      return NextResponse.json({ ok: false, code: 'INVALID_EMAIL' }, { status: 400 });
     }
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -47,14 +44,7 @@ export async function POST(req: Request) {
       },
     });
     if (recentCount >= 3) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            'Limite de 3 acessos por 24h atingido para este email. Para acesso prolongado, fale conosco em /contacto.',
-        },
-        { status: 429 },
-      );
+      return NextResponse.json({ ok: false, code: 'RATE_LIMIT' }, { status: 429 });
     }
 
     const ip = ipFromHeaders(req);
@@ -104,6 +94,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, redirectTo });
   } catch (e) {
     console.error('[POST /api/request-demo]', e);
-    return NextResponse.json({ ok: false, error: 'Erro interno.' }, { status: 500 });
+    return NextResponse.json({ ok: false, code: 'INTERNAL' }, { status: 500 });
   }
 }

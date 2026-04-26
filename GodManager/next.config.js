@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+const createNextIntlPlugin = require('next-intl/plugin');
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
 const crmBackend =
   process.env.CRM_BACKEND_URL || process.env.NEXT_PUBLIC_CRM_BACKEND_URL || 'http://127.0.0.1:5001';
 
@@ -63,4 +66,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

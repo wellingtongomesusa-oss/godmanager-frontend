@@ -1,38 +1,33 @@
-import type { Metadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 
-export const metadata: Metadata = {
-  title: 'Sobre nos · GodManager',
-  description:
-    'Godroox LLC — bookkeeping profissional, trust compliance e operacoes financeiras diarias para imobiliarias e brokerages nos EUA.',
-};
-
-const STATS: Array<{ value: string; label: string }> = [
-  { value: '98%', label: 'Accuracy rate em reconciliacao' },
-  { value: '3x', label: 'Velocidade vs metodo manual' },
-  { value: '24h', label: 'Cobertura de auditoria diaria' },
+const STAT_KEYS = [
+  { value: '98%', key: 'accuracy' as const },
+  { value: '3×', key: 'faster' as const },
+  { value: '24h', key: 'audit' as const },
 ];
 
-const STEPS: Array<{ title: string; desc: string }> = [
-  {
-    title: 'Diagnostico inicial',
-    desc: 'Entendemos o estado actual dos teus livros antes de prometer qualquer coisa.',
-  },
-  {
-    title: 'Cleanup se necessario',
-    desc: 'Se ha meses ou anos de registos por organizar, limpamos antes de comecar a operacao corrente.',
-  },
-  {
-    title: 'Operacao continua',
-    desc: 'Bookkeeping diario, reconciliacao, audit, relatorios mensais.',
-  },
-  {
-    title: 'Suporte estrategico',
-    desc: 'Quando estiveres pronto a procurar investimento ou IPO, ja temos os fundamentos prontos.',
-  },
-];
+const STEP_INDEX = [1, 2, 3, 4] as const;
 
-export default function AboutPage() {
+type PageProps = { params: { locale: string } };
+
+export async function generateMetadata({ params: { locale } }: PageProps) {
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: 'about' });
+  return { title: `GodManager — ${t('title')}`, description: t('subtitle') };
+}
+
+function stepK(i: number): 'step1' | 'step2' | 'step3' | 'step4' {
+  if (i === 1) return 'step1';
+  if (i === 2) return 'step2';
+  if (i === 3) return 'step3';
+  return 'step4';
+}
+
+export default async function AboutPage({ params: { locale } }: PageProps) {
+  setRequestLocale(locale);
+  const t = await getTranslations('about');
+
   return (
     <div
       style={{
@@ -40,6 +35,7 @@ export default function AboutPage() {
         background: '#f8f4ec',
         color: '#1f2937',
         fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
+        WebkitFontSmoothing: 'antialiased' as const,
       }}
     >
       <SiteHeader active="about" />
@@ -53,7 +49,7 @@ export default function AboutPage() {
             letterSpacing: '-0.5px',
           }}
         >
-          Sobre a Godroox LLC
+          {t('title')}
         </h1>
         <p
           style={{
@@ -64,8 +60,7 @@ export default function AboutPage() {
             lineHeight: 1.6,
           }}
         >
-          Bookkeeping profissional, trust compliance e operacoes financeiras diarias para
-          imobiliarias e brokerages nos EUA.
+          {t('subtitle')}
         </p>
 
         <section style={{ marginBottom: 48 }}>
@@ -79,19 +74,12 @@ export default function AboutPage() {
               letterSpacing: '0.5px',
             }}
           >
-            A nossa missao
+            {t('missionTitle')}
           </h2>
           <p style={{ fontSize: 15, lineHeight: 1.7, color: '#1f2937', marginBottom: 16 }}>
-            Preparamos empresas pequenas e medias para crescer com integridade financeira. O nosso
-            objectivo e que cada cliente atinja a fase em que tenha opcoes reais: continuar como
-            negocio familiar, atrair investidores institucionais, expandir nacionalmente, ou um dia
-            abrir capital atraves de um IPO.
+            {t('mission1')}
           </p>
-          <p style={{ fontSize: 15, lineHeight: 1.7, color: '#1f2937', margin: 0 }}>
-            Nao prometemos crescimento. Garantimos que quando a oportunidade chegar, os teus livros
-            estao prontos para ser auditados, os teus reports estao em conformidade GAAP, e as tuas
-            operacoes financeiras nao serao um obstaculo.
-          </p>
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: '#1f2937', margin: 0 }}>{t('mission2')}</p>
         </section>
 
         <section style={{ marginBottom: 48 }}>
@@ -105,7 +93,7 @@ export default function AboutPage() {
               letterSpacing: '0.5px',
             }}
           >
-            O que entregamos
+            {t('deliverTitle')}
           </h2>
           <div
             style={{
@@ -115,9 +103,9 @@ export default function AboutPage() {
               marginTop: 16,
             }}
           >
-            {STATS.map((s) => (
+            {STAT_KEYS.map((s) => (
               <div
-                key={s.label}
+                key={s.key}
                 style={{
                   background: '#fff',
                   border: '1px solid #e5e7eb',
@@ -137,7 +125,7 @@ export default function AboutPage() {
                 >
                   {s.value}
                 </div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>{s.label}</div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>{t(`stats.${s.key}`)}</div>
               </div>
             ))}
           </div>
@@ -154,48 +142,47 @@ export default function AboutPage() {
               letterSpacing: '0.5px',
             }}
           >
-            Como trabalhamos
+            {t('howTitle')}
           </h2>
           <ol style={{ paddingLeft: 0, listStyle: 'none', margin: 0 }}>
-            {STEPS.map((step, i) => (
-              <li
-                key={step.title}
-                style={{
-                  display: 'flex',
-                  gap: 16,
-                  padding: '16px 0',
-                  borderBottom:
-                    i === STEPS.length - 1 ? 'none' : '1px solid rgba(31,41,55,0.08)',
-                }}
-              >
-                <span
+            {STEP_INDEX.map((i) => {
+              const sk = stepK(i);
+              return (
+                <li
+                  key={sk}
                   style={{
-                    flexShrink: 0,
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    background: 'rgba(201,169,110,0.15)',
-                    color: '#c9a96e',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
-                    fontWeight: 600,
-                    fontSize: 14,
+                    gap: 16,
+                    padding: '16px 0',
+                    borderBottom: i === 4 ? 'none' : '1px solid rgba(31,41,55,0.08)',
                   }}
                 >
-                  {i + 1}
-                </span>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1f2937' }}>
-                    {step.title}
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      background: 'rgba(201,169,110,0.15)',
+                      color: '#c9a96e',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
+                      fontWeight: 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    {i}
+                  </span>
+                  <div>
+                    <p style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6, margin: 0 }}>
+                      {t(sk)}
+                    </p>
                   </div>
-                  <p style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6, margin: '4px 0 0' }}>
-                    {step.desc}
-                  </p>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ol>
         </section>
 
@@ -216,16 +203,22 @@ export default function AboutPage() {
               marginBottom: 12,
             }}
           >
-            Contatos
+            {t('contactTitle')}
           </h2>
           <p style={{ fontSize: 14, color: '#e5e7eb', margin: 0, lineHeight: 1.7 }}>
-            Godroox LLC &middot; godmanager.com &middot; trust.godmanager.com &middot;{' '}
-            <a
-              href="mailto:contact@godmanager.com"
-              style={{ color: '#c9a96e', textDecoration: 'none', fontWeight: 600 }}
-            >
-              contact@godmanager.com
-            </a>
+            {t('contactInfo').split('w@godmanager.com').map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <a
+                    href="mailto:w@godmanager.com"
+                    style={{ color: '#c9a96e', textDecoration: 'none', fontWeight: 600 }}
+                  >
+                    w@godmanager.com
+                  </a>
+                )}
+              </span>
+            ))}
           </p>
         </section>
       </div>

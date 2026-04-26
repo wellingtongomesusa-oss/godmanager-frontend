@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { login } from '@/lib/auth';
 import { appendAudit } from '@/lib/audit';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,6 @@ function validEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
-/** E-mail completo ou utilizador (ex.: wellington.gomes). */
 function validLoginId(v: string): boolean {
   const s = v.trim();
   if (!s) return false;
@@ -26,6 +26,7 @@ const inputLoginClass =
   'rounded-lg border-login-navy/12 bg-white pl-10 text-login-navy placeholder:text-login-muted/70 focus:border-login-gold focus:ring-[3px] focus:ring-login-gold/20';
 
 export function LoginForm() {
+  const t = useTranslations('login');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -50,8 +51,8 @@ export function LoginForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: typeof errors = {};
-    if (!validLoginId(email)) next.email = 'Enter a valid email or username.';
-    if (password.length < 8) next.password = 'Password must be at least 8 characters.';
+    if (!validLoginId(email)) next.email = t('invalidId');
+    if (password.length < 8) next.password = t('passwordShort');
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -68,7 +69,7 @@ export function LoginForm() {
     appendAudit({
       adminId: res.user.id,
       action: 'auth.login',
-      details: `User signed in: ${res.user.email}`,
+      details: t('auditIn', { email: res.user.email }),
     });
 
     if (remember) {
@@ -81,7 +82,7 @@ export function LoginForm() {
       localStorage.removeItem('gm_remember_email');
     }
 
-    toast('Signed in successfully.', 'success');
+    toast(t('signedIn'), 'success');
     const destination = from.startsWith('/') ? from : '/dashboard';
     const normalized = destination.replace(/\/$/, '') || '/';
     if (normalized === '/dashboard') {
@@ -96,14 +97,14 @@ export function LoginForm() {
     <form onSubmit={submit} className="mx-auto w-full max-w-[400px] space-y-5 font-inter" noValidate>
       <div className="text-center">
         <h1 className="font-playfair text-[32px] font-semibold leading-tight text-login-navy sm:text-[36px]">
-          Welcome back
+          {t('welcome')}
         </h1>
-        <p className="mt-2 text-[14px] text-login-muted">Sign in to your financial operations dashboard</p>
+        <p className="mt-2 text-[14px] text-login-muted">{t('subtitle')}</p>
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="login-email" className="text-[10px] font-semibold uppercase tracking-[0.2em] text-login-gold">
-          Email ou utilizador
+          {t('emailLabel')}
         </label>
         <div className="relative">
           <Mail
@@ -114,7 +115,7 @@ export function LoginForm() {
             id="login-email"
             type="text"
             autoComplete="username"
-            placeholder="you@company.com"
+            placeholder={t('emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => setErrors((er) => ({ ...er, email: undefined }))}
@@ -127,7 +128,7 @@ export function LoginForm() {
 
       <div className="space-y-1.5">
         <label htmlFor="login-password" className="text-[10px] font-semibold uppercase tracking-[0.2em] text-login-gold">
-          Password
+          {t('passwordLabel')}
         </label>
         <div className="relative">
           <Lock
@@ -138,7 +139,7 @@ export function LoginForm() {
             id="login-password"
             type={show ? 'text' : 'password'}
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder="********"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => setErrors((er) => ({ ...er, password: undefined }))}
@@ -148,7 +149,7 @@ export function LoginForm() {
           />
           <button
             type="button"
-            aria-label={show ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
+            aria-label={show ? t('hidePassword') : t('showPassword')}
             aria-pressed={show}
             onClick={() => setShow((s) => !s)}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md text-login-muted outline-none transition-colors hover:text-login-gold focus-visible:ring-2 focus-visible:ring-login-gold focus-visible:ring-offset-2"
@@ -166,14 +167,14 @@ export function LoginForm() {
             onChange={(e) => setRemember(e.target.checked)}
             className="h-4 w-4 rounded border-login-navy/20 text-login-gold focus:ring-login-gold focus:ring-offset-0"
           />
-          Remember me
+          {t('rememberMe')}
         </label>
         <button
           type="button"
           className="rounded-md font-semibold text-login-gold outline-none transition-colors hover:text-[#b8924f] focus-visible:ring-2 focus-visible:ring-login-gold focus-visible:ring-offset-2"
-          onClick={() => toast('Password reset email sent', 'info')}
+          onClick={() => toast(t('passwordResetInfo'), 'info')}
         >
-          Forgot password?
+          {t('forgotPassword')}
         </button>
       </div>
 
@@ -187,15 +188,15 @@ export function LoginForm() {
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
-            Signing in…
+            {t('signingIn')}
           </span>
         ) : (
-          'Sign In'
+          t('signIn')
         )}
       </Button>
 
       <div className="relative py-2 text-center text-xs text-login-muted">
-        <span className="relative z-10 bg-white px-3">or continue with</span>
+        <span className="relative z-10 bg-white px-3">{t('orContinueWith')}</span>
         <div className="absolute left-0 right-0 top-1/2 h-px bg-login-navy/10" aria-hidden />
       </div>
 
@@ -203,30 +204,30 @@ export function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          aria-label="Continue with Google"
+          aria-label="Google"
           className="border-login-navy/15 text-login-navy hover:border-login-gold hover:text-login-gold focus-visible:ring-offset-white"
-          onClick={() => toast('Google sign-in is not configured in this demo.', 'warning')}
+          onClick={() => toast(t('googleNotConfigured'), 'warning')}
         >
           Google
         </Button>
         <Button
           type="button"
           variant="outline"
-          aria-label="Continue with Microsoft"
+          aria-label="Microsoft"
           className="border-login-navy/15 text-login-navy hover:border-login-gold hover:text-login-gold focus-visible:ring-offset-white"
-          onClick={() => toast('Microsoft sign-in is not configured in this demo.', 'warning')}
+          onClick={() => toast(t('microsoftNotConfigured'), 'warning')}
         >
           Microsoft
         </Button>
       </div>
 
       <p className="text-center text-[13px] text-login-muted">
-        Don&apos;t have an account?{' '}
+        {t('noAccount')}{' '}
         <Link
           href="/register"
           className="font-semibold text-login-gold outline-none hover:text-[#b8924f] focus-visible:rounded focus-visible:ring-2 focus-visible:ring-login-gold focus-visible:ring-offset-2"
         >
-          Request access
+          {t('requestAccess')}
         </Link>
       </p>
     </form>
