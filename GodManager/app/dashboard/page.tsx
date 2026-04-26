@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export default function DashboardPage() {
   useEffect(() => {
-    window.location.replace('/GodManager_Premium.html#longterm');
+    window.location.replace('/GodManager_Premium.html');
   }, []);
 
   return (
