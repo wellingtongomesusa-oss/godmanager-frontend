@@ -941,7 +941,18 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
 <div class="page" id="page-agencies"><div class="ph"><div class="pt">Agencies</div><div class="ps">Ranking de agências por receita</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Agencies</h3><p>Usa o mesmo CSV de Reservations.</p></div></div>
 
-<div class="page" id="page-properties"><div class="ph"><div class="pt">Properties</div><div class="ps">Ranking por unidade, condomínio e franchisee</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Properties</h3><p>Upload Excel + DataGrid para ranking com DP.</p><div class="ur"><div class="ub"><h4>Excel Unidades</h4><p>Unit Name, Bedrooms, Community</p></div><div class="ub"><h4>DataGrid CSV</h4><p>Reservas com Total (inc tax)</p></div></div><button class="bp">Process Fusão</button></div></div>
+<div class="page" id="page-properties">
+ <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div>
+   <div class="pt">Ranking Properties</div>
+   <div class="ps">Top 10 das principais métricas do portfolio · Long-term rentals</div>
+  </div>
+  <button type="button" onclick="if(typeof rankingRender==='function')rankingRender();" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Atualizar</button>
+ </div>
+ <div id="ranking-container">
+  <div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar rankings...</div>
+ </div>
+</div>
 
 <div class="page" id="page-renovations"><div class="ph"><div class="pt">Renovations</div><div class="ps">Projetos com fluxo de pagamento</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Renovations</h3><p>Upload do CSV de renovações.</p><div class="ur"><div class="ub"><h4>Renovations CSV</h4><p>property_address, total_amount, status</p></div></div><button class="bp">Process</button></div></div>
 
@@ -5501,6 +5512,7 @@ function nav(r){
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
  settings:()=>{if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();},
+ properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
@@ -13115,6 +13127,221 @@ window.tenantViewDetails=function(tid){
  };
 })();
 /* ========== /ADMIN SETTINGS ========== */
+
+/* ========== RANKING PROPERTIES — 5 Top 10 ========== */
+(function(){
+ var fmtUSD=function(v){
+  var n=Number(v)||0;
+  try{return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0}).format(n);}
+  catch(e){return '$'+n.toFixed(0);}
+ };
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+ var renderTable=function(opts){
+  var headers=opts.headers||[];
+  var rows=opts.rows||[];
+  var aligns=opts.aligns||[];
+  var accent=opts.accent||'var(--amber)';
+  var html=''
+  +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative">'
+   +'<div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:'+accent+'"></div>'
+   +'<div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">'
+    +'<h3 style="margin:0;font-family:\'Cormorant Garamond\',serif;font-size:18px;font-weight:600;color:var(--ink)">'+esc(opts.title||'')+'</h3>'
+    +(opts.sub?'<span style="font-size:10px;color:var(--ink3)">· '+esc(opts.sub)+'</span>':'')
+   +'</div>'
+   +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
+    +'<thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'
+     +headers.map(function(h,i){
+      var al=aligns[i]||(i===0?'left':(i===headers.length-1?'right':'left'));
+      return '<th style="padding:9px 14px;text-align:'+al+';font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">'+esc(h)+'</th>';
+     }).join('')
+    +'</tr></thead><tbody>';
+  if(!rows.length){
+   html+='<tr><td colspan="'+headers.length+'" style="padding:32px;text-align:center;font-size:12px;color:var(--ink3);font-style:italic">Sem dados disponíveis.</td></tr>';
+  }else{
+   html+=rows.map(function(r){
+    return '<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'rgba(201,169,110,.04)\'" onmouseout="this.style.background=\'\'">'
+    +r.map(function(c,j){
+     var al=aligns[j]||(j===0?'left':(j===r.length-1?'right':'left'));
+     var mono=c&&typeof c==='object'&&c.mono;
+     var html2=c&&typeof c==='object'?(c.html||esc(c.text||'')):esc(c);
+     var color=c&&typeof c==='object'&&c.color?c.color:'var(--ink)';
+     var weight=c&&typeof c==='object'&&c.weight?c.weight:(j===0?'600':'500');
+     var ff=mono?"'JetBrains Mono',monospace":"'DM Sans',sans-serif";
+     var fs=mono?'12px':'12px';
+     return '<td style="padding:9px 14px;text-align:'+al+';font-family:'+ff+';font-size:'+fs+';color:'+color+';font-weight:'+weight+'">'+html2+'</td>';
+    }).join('')
+    +'</tr>';
+   }).join('');
+  }
+  html+='</tbody></table></div></div>';
+  return html;
+ };
+ window.rankingRender=async function(){
+  var container=document.getElementById('ranking-container');
+  if(!container)return;
+  container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar rankings...</div>';
+  var properties=[],expenses=[];
+  try{
+   var pRes=await fetch('/api/properties',{credentials:'include'});
+   if(pRes&&pRes.ok){var pData=await pRes.json();properties=(pData&&pData.properties)||[];}
+  }catch(e){console.warn('rankingRender properties',e);}
+  try{
+   var eRes=await fetch('/api/pm/expenses',{credentials:'include'});
+   if(eRes&&eRes.ok){var eData=await eRes.json();expenses=(eData&&(eData.expenses||eData.items||eData.records))||[];}
+  }catch(e){console.warn('rankingRender expenses',e);}
+
+  // Saldo devedor por propertyId / propertyCode
+  var debtById={},debtByCode={};
+  expenses.forEach(function(e){
+   if(!e)return;
+   var st=String(e.status||'').toLowerCase();
+   if(st==='paid'||st==='applied'||st==='cancelled'||st==='reembolsado')return;
+   var amt=Number(e.ownerCharged||e.amount||e.vendorCost||0)||0;
+   if(amt<=0)return;
+   if(e.propertyId)debtById[e.propertyId]=(debtById[e.propertyId]||0)+amt;
+   if(e.propertyCode)debtByCode[e.propertyCode]=(debtByCode[e.propertyCode]||0)+amt;
+  });
+
+  var sortBy=function(arr,fn){return arr.slice().sort(function(a,b){return fn(b)-fn(a);}).slice(0,10);};
+
+  // 1. Maior aluguel
+  var topRent=sortBy(properties.filter(function(p){return Number(p.rent)>0;}),function(p){return Number(p.rent)||0;});
+  // 2. Maior depósito
+  var topDep=sortBy(properties.filter(function(p){return Number(p.deposit)>0;}),function(p){return Number(p.deposit)||0;});
+  // 3. Saldo devedor (apenas com débito > 0)
+  var withDebt=properties.map(function(p){
+   var d=(p.id&&debtById[p.id])||(p.code&&debtByCode[p.code])||0;
+   return {p:p,debt:d};
+  }).filter(function(x){return x.debt>0;}).sort(function(a,b){return b.debt-a.debt;}).slice(0,10);
+  // 4. Owners por nº de casas
+  var ownerCount={};
+  properties.forEach(function(p){
+   var o=String(p.ownerName||'').trim();
+   if(!o)return;
+   ownerCount[o]=(ownerCount[o]||0)+1;
+  });
+  var topOwnersByCount=Object.keys(ownerCount).map(function(k){return {name:k,count:ownerCount[k]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10);
+  // 5. Owners por receita mensal
+  var ownerRev={};
+  properties.forEach(function(p){
+   var o=String(p.ownerName||'').trim();
+   if(!o)return;
+   ownerRev[o]=(ownerRev[o]||0)+(Number(p.rent)||0);
+  });
+  var topOwnersByRev=Object.keys(ownerRev).map(function(k){return {name:k,revenue:ownerRev[k]};}).sort(function(a,b){return b.revenue-a.revenue;}).slice(0,10);
+
+  // KPIs
+  var totProps=properties.length;
+  var totRent=properties.reduce(function(s,p){return s+(Number(p.rent)||0);},0);
+  var totDep=properties.reduce(function(s,p){return s+(Number(p.deposit)||0);},0);
+  var totDebt=expenses.filter(function(e){
+   if(!e)return false;
+   var st=String(e.status||'').toLowerCase();
+   return st!=='paid'&&st!=='applied'&&st!=='cancelled'&&st!=='reembolsado';
+  }).reduce(function(s,e){return s+(Number(e.ownerCharged||e.amount||e.vendorCost||0)||0);},0);
+  var totOwners=Object.keys(ownerCount).length;
+
+  var kpiCell=function(label,value,color,desc){
+   return '<div style="padding:14px 16px;border-right:1px solid var(--border);position:relative">'
+    +'<div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">'+esc(label)+'</div>'
+    +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:'+color+'">'+esc(value)+'</div>'
+    +(desc?'<div style="font-size:10px;color:var(--ink3);margin-top:3px">'+esc(desc)+'</div>':'')
+    +'<div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:'+color+'"></div>'
+   +'</div>';
+  };
+
+  var html=''
+  +'<div style="display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">'
+   +kpiCell('PROPRIEDADES',String(totProps),'var(--blue)','no portfolio')
+   +kpiCell('OWNERS ATIVOS',String(totOwners),'var(--ink2)','distintos')
+   +kpiCell('RENT TOTAL',fmtUSD(totRent),'var(--green)','receita bruta/mês')
+   +kpiCell('DEPÓSITOS',fmtUSD(totDep),'var(--amber)','security deposit')
+   +'<div style="padding:14px 16px;position:relative">'
+    +'<div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">SALDO DEVEDOR</div>'
+    +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:var(--red)">'+esc(fmtUSD(totDebt))+'</div>'
+    +'<div style="font-size:10px;color:var(--ink3);margin-top:3px">despesas pendentes</div>'
+    +'<div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div>'
+   +'</div>'
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+  html+=renderTable({
+   title:'Top 10 — Maior Aluguel',
+   sub:'monthly rent',
+   accent:'var(--green)',
+   headers:['#','Endereço','Owner','Rent'],
+   aligns:['center','left','left','right'],
+   rows:topRent.map(function(p,i){return [
+    {text:String(i+1),mono:true,color:'var(--ink3)'},
+    {text:p.address||'—',weight:'600'},
+    {text:p.ownerName||'—',color:'var(--ink2)',weight:'500'},
+    {text:fmtUSD(p.rent),mono:true,color:'var(--green)',weight:'700'}
+   ];})
+  });
+  html+=renderTable({
+   title:'Top 10 — Maior Depósito',
+   sub:'security deposit',
+   accent:'var(--amber)',
+   headers:['#','Endereço','Owner','Depósito'],
+   aligns:['center','left','left','right'],
+   rows:topDep.map(function(p,i){return [
+    {text:String(i+1),mono:true,color:'var(--ink3)'},
+    {text:p.address||'—',weight:'600'},
+    {text:p.ownerName||'—',color:'var(--ink2)',weight:'500'},
+    {text:fmtUSD(p.deposit),mono:true,color:'var(--amber)',weight:'700'}
+   ];})
+  });
+
+  html+='</div>'
+  +'<div style="margin-bottom:16px">';
+
+  html+=renderTable({
+   title:'Top 10 — Maior Saldo Devedor',
+   sub:'despesas pendentes (status ≠ paid/applied/cancelled)',
+   accent:'var(--red)',
+   headers:['#','Endereço','Owner','Saldo'],
+   aligns:['center','left','left','right'],
+   rows:withDebt.map(function(x,i){return [
+    {text:String(i+1),mono:true,color:'var(--ink3)'},
+    {text:x.p.address||'—',weight:'600'},
+    {text:x.p.ownerName||'—',color:'var(--ink2)',weight:'500'},
+    {text:fmtUSD(x.debt),mono:true,color:'var(--red)',weight:'700'}
+   ];})
+  });
+
+  html+='</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+  html+=renderTable({
+   title:'Top 10 — Owners com Mais Propriedades',
+   sub:'contagem de unidades',
+   accent:'var(--blue)',
+   headers:['#','Owner','Casas'],
+   aligns:['center','left','right'],
+   rows:topOwnersByCount.map(function(o,i){return [
+    {text:String(i+1),mono:true,color:'var(--ink3)'},
+    {text:o.name,weight:'600'},
+    {text:String(o.count),mono:true,color:'var(--blue)',weight:'700'}
+   ];})
+  });
+  html+=renderTable({
+   title:'Top 10 — Owners com Maior Receita',
+   sub:'soma rent mensal',
+   accent:'var(--green)',
+   headers:['#','Owner','Receita/mês'],
+   aligns:['center','left','right'],
+   rows:topOwnersByRev.map(function(o,i){return [
+    {text:String(i+1),mono:true,color:'var(--ink3)'},
+    {text:o.name,weight:'600'},
+    {text:fmtUSD(o.revenue),mono:true,color:'var(--green)',weight:'700'}
+   ];})
+  });
+
+  html+='</div>';
+  container.innerHTML=html;
+ };
+})();
+/* ========== /RANKING PROPERTIES ========== */
 
 </script>
 
