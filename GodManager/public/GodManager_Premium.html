@@ -3128,11 +3128,9 @@ const CARDS=[
  {id:'in-progress',label:'IN PROGRESS',badge:'WIP',barClass:'bb ba',value:'—',sub1:'Move-in / renovation / onboarding',sub2:'Houses not yet available',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Move-in',c:'pa'},{t:'Renovation',c:'pb'},{t:'Onboarding',c:'pg'}],r:'renovations',empty:true,labels:[]},
  {id:'move-out',label:'TENANT / OWNER MOVE-OUT',badge:'OUT',barClass:'bb br',value:'—',sub1:'Upcoming departures',sub2:'Tenants and owners leaving',cd:[60,40],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Tenant Notice',c:'pr'},{t:'Owner Notice',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'security-deposits',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb bg',value:'—',sub1:'Total deposits held in trust',sub2:'',cd:[100],cc:['#2a6e4e'],ctr:'—',pills:[{t:'Trust Account',c:'pg'}],r:'ltstatements',empty:true,labels:[]},
- {id:'total-deposit',label:'TOTAL DEPOSIT',badge:'DEP',barClass:'bb ba',value:'—',sub1:'Soma de depositos das casas',sub2:'',cd:[1],cc:['#c9a96e'],ctr:'—',pills:[{t:'Portfolio',c:'pa'}],r:'ltproperties',empty:true,labels:[]},
  {id:'total-net-owner',label:'TOTAL NET OWNER',badge:'NET',barClass:'bb bb',value:'—',sub1:'Soma a repassar aos owners',sub2:'',cd:[1],cc:['#22558c'],ctr:'—',pills:[{t:'Net Mensal',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
  {id:'total-exp-pm',label:'TOTAL EXP MES (PM)',badge:'EXP',barClass:'bb br',value:'—',sub1:'Soma despesas do mes (PM)',sub2:'',cd:[1],cc:['#b83030'],ctr:'—',pills:[{t:'Atual',c:'pr'}],r:'ltexpenses',empty:true,labels:[]},
  {id:'rent-receivable',label:'RENT RECEIVABLE',badge:'RCV',barClass:'bb ba',value:'—',sub1:'Active rents due this month',sub2:'',cd:[65,25,10],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Collected',c:'pg'},{t:'Pending',c:'pa'},{t:'Late',c:'pr'}],r:'ltstatements',empty:true,labels:[]},
- {id:'rent-potential',label:'RENT POTENTIAL',badge:'POT',barClass:'bb bb',value:'—',sub1:'Maximum possible rent revenue',sub2:'If 100% occupied',cd:[80,20],cc:['#22558c','#4a5568'],ctr:'—',pills:[{t:'Realized',c:'pb'},{t:'Unrealized',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'—',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'cleaning-spend',label:'CLEANING SPEND',badge:'CLN',barClass:'bb ba',value:'—',sub1:'Total spent with cleaners',sub2:'Current period',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Turnover',c:'pa'},{t:'Deep Clean',c:'pb'},{t:'Routine',c:'pg'}],r:'ltcleanings',empty:true,labels:[]},
  {id:'vendor-spend',label:'VENDOR SPEND',badge:'VND',barClass:'bb br',value:'—',sub1:'Total spent with vendors',sub2:'Current period',cd:[50,50],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Paid',c:'pr'},{t:'Pending',c:'pa'}],r:'vendors',empty:true,labels:[]},
@@ -3331,13 +3329,6 @@ function applyHomeDashboardFromApi(d){
   c.cd=[Math.max(0.01,tsd)];
   c.ctr=gmHomeMoneyCtr(tsd);
   break;
- case 'total-deposit':{
-  var tdep=gmHomeNum(d.total_deposit_sum,tsd);
-  c.value=gmHomeMoney(tdep);
-  c.cd=[Math.max(0.01,tdep)];
-  c.ctr=gmHomeMoneyCtr(tdep);
-  break;
- }
  case 'total-net-owner':{
   var tno=gmHomeNum(d.total_net_owner_sum,0);
   c.value=gmHomeMoney(tno);
@@ -3357,12 +3348,6 @@ function applyHomeDashboardFromApi(d){
    var pend=Math.max(0,pr-oc);
    c.cd=[Math.max(0.01,oc),Math.max(0.01,pend),Math.max(0.01,ub)];
    c.ctr=gmHomeMoneyCtr(pr);
-   break;
-  case 'rent-potential':
-   c.value=isNaN(mkt)?'—':gmHomeMoney(mkt);
-   var unr=isNaN(mkt)||isNaN(pr)?0:Math.max(0,mkt-pr);
-   c.cd=isNaN(mkt)||isNaN(pr)?[1,1]:[Math.max(0.01,pr),Math.max(0.01,unr)];
-   c.ctr=isNaN(mkt)?'—':gmHomeMoneyCtr(mkt);
    break;
   case 'occupancy-index':
    c.value=isNaN(occ)?'—':(occ.toFixed(1)+'%');
