@@ -4,7 +4,7 @@ import { SiteHeader } from '@/components/landing/SiteHeader';
 import ContactForm from './ContactForm';
 
 export const metadata: Metadata = {
-  title: 'Contacto | GodManager',
+  title: 'Contato | GodManager',
   description: 'Fale com a Godroox LLC por email, SMS ou formulario. Resposta em menos de 24h.',
 };
 
@@ -39,11 +39,11 @@ export default function ContactoPage() {
               marginBottom: 8,
             }}
           >
-            Fale connosco
+            Fale conosco
           </h1>
           <p style={{ fontSize: 16, color: 'var(--ink2)', marginBottom: 32, lineHeight: 1.6 }}>
-            Estamos disponiveis para responder a duvidas, agendar demos personalizadas, ou discutir
-            como podemos ajudar a tua empresa.
+            Estamos disponiveis para responder duvidas, agendar demos personalizadas, ou discutir
+            como podemos ajudar sua empresa.
           </p>
           <div
             style={{
@@ -110,7 +110,7 @@ export default function ContactoPage() {
             style={{ background: 'var(--sidebar-bg)', color: '#fff', padding: 24, borderRadius: 10 }}
           >
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,.9)', margin: 0, lineHeight: 1.6 }}>
-              Tipicamente respondemos em menos de 24h. Para acesso imediato ao produto, usa{' '}
+              Tipicamente respondemos em menos de 24h. Para acesso imediato ao produto, use{' '}
               <Link
                 href="/request-demo"
                 style={{ color: 'var(--amber)', textDecoration: 'underline' }}

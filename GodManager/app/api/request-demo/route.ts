@@ -51,7 +51,7 @@ export async function POST(req: Request) {
         {
           ok: false,
           error:
-            'Limite de 3 acessos por 24h atingido para este email. Para acesso prolongado, fale connosco em /contacto.',
+            'Limite de 3 acessos por 24h atingido para este email. Para acesso prolongado, fale conosco em /contacto.',
         },
         { status: 429 },
       );

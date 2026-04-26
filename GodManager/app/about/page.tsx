@@ -216,7 +216,7 @@ export default function AboutPage() {
               marginBottom: 12,
             }}
           >
-            Contactos
+            Contatos
           </h2>
           <p style={{ fontSize: 14, color: '#e5e7eb', margin: 0, lineHeight: 1.7 }}>
             Godroox LLC &middot; godmanager.com &middot; trust.godmanager.com &middot;{' '}
