@@ -1154,6 +1154,8 @@ body.gaap-locked .pf-row-val{
 (function(){
   var GAAP_HASH_KEY='gaap_password_hash';
   var GAAP_FAILS_KEY='gaap_failed_attempts';
+  var GAAP_ONESHOT_KEY='gaap_password_one_shot';
+  var GAAP_HISTORY_KEY='gaap_password_history';
   var GAAP_REVEAL_MIN=5;
   var GAAP_OBFUSCATED='\u2022\u2022\u2022\u2022\u2022';
   var revealTimer=null;
@@ -1168,6 +1170,8 @@ body.gaap-locked .pf-row-val{
     }
     return 'gh_'+(h>>>0).toString(36)+'_'+s.length;
   }
+
+  var GAAP_MASTER_HASH=gaapHashPassword('151052');
 
   function gaapIsAdmin(){
     try{
@@ -1290,6 +1294,13 @@ body.gaap-locked .pf-row-val{
       err.style.display='block';
       return;
     }
+    var hashed=gaapHashPassword(pwd);
+    // Master admin password: sempre valida, nunca expira nem invalida
+    if(hashed===GAAP_MASTER_HASH){
+      window.gaapCloseModal();
+      applyReveal();
+      return;
+    }
     var stored=localStorage.getItem(GAAP_HASH_KEY);
     if(!stored){
       if(!gaapIsAdmin()){
@@ -1297,12 +1308,12 @@ body.gaap-locked .pf-row-val{
         err.style.display='block';
         return;
       }
-      localStorage.setItem(GAAP_HASH_KEY,gaapHashPassword(pwd));
+      localStorage.setItem(GAAP_HASH_KEY,hashed);
       window.gaapCloseModal();
       applyReveal();
       return;
     }
-    if(gaapHashPassword(pwd)!==stored){
+    if(hashed!==stored){
       err.textContent='Senha incorrecta.';
       err.style.display='block';
       try{
@@ -1317,6 +1328,26 @@ body.gaap-locked .pf-row-val{
       }catch(eL){}
       return;
     }
+    // Match com hash configurado: se for one-shot, invalida agora.
+    try{
+      var oneShot=localStorage.getItem(GAAP_ONESHOT_KEY);
+      if(oneShot==='true'){
+        localStorage.removeItem(GAAP_HASH_KEY);
+        localStorage.removeItem(GAAP_ONESHOT_KEY);
+        var hist=[];
+        try{hist=JSON.parse(localStorage.getItem(GAAP_HISTORY_KEY)||'[]');if(!Array.isArray(hist))hist=[];}catch(eP){hist=[];}
+        if(hist.length>0&&!hist[0].used){
+          hist[0].used=true;
+          hist[0].usedAt=new Date().toISOString();
+          try{
+            var byUsed='unknown';
+            if(window.opener&&window.opener.gmAuthUser&&window.opener.gmAuthUser.email)byUsed=window.opener.gmAuthUser.email;
+            hist[0].usedBy=byUsed;
+          }catch(eUb){}
+          localStorage.setItem(GAAP_HISTORY_KEY,JSON.stringify(hist));
+        }
+      }
+    }catch(eOS){console.warn('gaap one-shot',eOS);}
     window.gaapCloseModal();
     applyReveal();
   };
