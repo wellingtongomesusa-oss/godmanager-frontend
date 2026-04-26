@@ -13260,26 +13260,38 @@ window.tenantViewDetails=function(tid){
   }).join('');
  };
  window.adminResetPropertiesStatus=async function(){
-  if(!confirm('Reset status de TODAS as Properties para pendente?\n\nEsta acção afecta todos os utilizadores.'))return;
-  var done=false;
+  if(!confirm('Reset status de TODAS as Properties para pendente?\n\nEsta accao afecta todos os utilizadores e fica registada no audit log.'))return;
   try{
-   var res=await fetch('/api/pm/properties/reset-status',{method:'POST',credentials:'include'});
-   if(res&&res.ok){done=true;if(typeof showToast==='function')showToast('Status resetado para pendente.','success');}
-  }catch(e){console.warn('reset-status api',e);}
-  try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('reset_status','properties',null,{scope:'all',apiOk:done});}catch(eAud){}
-  if(!done){
+   var res=await fetch('/api/properties/reset-status',{method:'POST',credentials:'include'});
+   var data=await res.json().catch(function(){return{};});
+   if(!res.ok){
+    var msg=data.error||'Erro HTTP '+res.status;
+    if(res.status===403)msg='Apenas admin pode resetar status.';
+    alert(msg);
+    try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('reset_status','properties',null,{success:false,error:msg});}catch(eAudErr){}
+    return;
+   }
+   if(typeof showToast==='function')showToast('Status resetado: '+(data.count||0)+' propriedades ('+(data.changed||0)+' alteradas)','success');
+   try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('reset_status','properties',null,{success:true,count:data.count||0,changed:data.changed||0});}catch(eAudOk){}
    try{
-    if(typeof ltpResetAllToPending==='function'){ltpResetAllToPending();return;}
+    if(typeof window.gmPropertiesCache!=='undefined')window.gmPropertiesCache=null;
+    if(typeof window.gmPropertiesRefresh==='function'){try{await window.gmPropertiesRefresh();}catch(eRefr){}}
     if(typeof ltGetRecords==='function'&&typeof ltSaveRecords==='function'){
-     var arr=ltGetRecords()||[];
-     arr.forEach(function(r){if(r)r.status='pending';});
-     ltSaveRecords(arr);
-     if(typeof showToast==='function')showToast('Status resetado (local).','success');
+     try{
+      var arrLocal=ltGetRecords()||[];
+      arrLocal.forEach(function(r){if(r&&r.type!=='chamado')r.status='pending';});
+      ltSaveRecords(arrLocal);
+     }catch(eLoc){console.warn('reset local cache',eLoc);}
     }
-   }catch(eL){console.warn('reset-status local',eL);if(typeof showToast==='function')showToast('Erro ao resetar status.','error');return;}
+    if(typeof loadHomeDashboardFromApi==='function')await loadHomeDashboardFromApi();
+    if(typeof ltpRender==='function')try{await ltpRender();}catch(eR){}
+    if(typeof ltRender==='function')try{ltRender();}catch(eR2){}
+    if(typeof gmHomeRender==='function')try{gmHomeRender();}catch(eR3){}
+   }catch(eRefresh){console.warn('refresh apos reset',eRefresh);}
+  }catch(e){
+   console.warn('resetStatus',e);
+   alert('Erro: '+e.message);
   }
-  if(typeof ltpRender==='function')try{ltpRender();}catch(eR){}
-  if(typeof ltRender==='function')try{ltRender();}catch(eR2){}
  };
 })();
 /* ========== /ADMIN SETTINGS ========== */
