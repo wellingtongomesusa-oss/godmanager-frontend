@@ -537,6 +537,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px">Settings</div>
  <div class="ss" onclick="nav('gross-expenses')" id="nav-gross-expenses" style="padding-left:16px">Gross &amp; Expenses</div>
  <div class="ss" onclick="nav('forms-received')" id="nav-forms-received" style="padding-left:16px">Forms Received</div>
+<div class="ss" onclick="nav('admin-audit')" id="nav-admin-audit" style="padding-left:16px">Audit Log</div>
  <div class="sg open" onclick="togG(this)" id="sb-hr-group"><span>HR</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
  <div class="gi exp" id="sb-hr-items">
  <div class="ss" onclick="nav('org-chart')" id="nav-org-chart" style="padding-left:16px">Org Chart</div>
@@ -804,6 +805,47 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="display:flex;justify-content:flex-end;margin-top:16px">
  <button type="button" class="cl-btn-sec" onclick="closeUsersModal()">Close</button>
  </div>
+ </div>
+</div>
+
+<div class="page" id="page-admin-audit">
+ <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div>
+   <div class="pt">Audit Log</div>
+   <div class="ps">Registo de ações críticas multi-utilizador (Postgres) · Apenas administradores</div>
+  </div>
+  <button type="button" onclick="if(typeof adminAuditRender==='function')adminAuditRender();" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Atualizar</button>
+ </div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+  <input id="audit-f-actor" type="text" placeholder="Filtrar por email do utilizador" style="flex:1;min-width:220px;padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px"/>
+  <select id="audit-f-entity" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px">
+   <option value="">Todas as entidades</option>
+   <option value="session">Sessão</option>
+   <option value="property">Property</option>
+   <option value="tenant">Tenant</option>
+   <option value="vendor">Vendor</option>
+   <option value="vendor_payment">Vendor Payment</option>
+   <option value="gaap">GAAP</option>
+   <option value="properties">Properties (bulk)</option>
+  </select>
+  <select id="audit-f-action" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px">
+   <option value="">Todas as ações</option>
+   <option value="login">Login</option>
+   <option value="logout">Logout</option>
+   <option value="create">Create</option>
+   <option value="update">Update</option>
+   <option value="delete">Delete</option>
+   <option value="mark_paid">Mark Paid</option>
+   <option value="gaap_unlock">GAAP Unlock</option>
+   <option value="gaap_unlock_fail">GAAP Unlock Fail</option>
+   <option value="reset_status">Reset Status</option>
+  </select>
+  <input id="audit-f-from" type="date" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px"/>
+  <input id="audit-f-to" type="date" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px"/>
+  <button type="button" onclick="if(typeof adminAuditRender==='function')adminAuditRender();" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Filtrar</button>
+ </div>
+ <div id="admin-audit-container">
+  <div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar audit log...</div>
  </div>
 </div>
 
@@ -5450,7 +5492,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -5466,8 +5508,9 @@ function nav(r){
  if(r==='gross-expenses'&&lvl!=='ADMIN')r='home';
  if(r==='backup'&&lvl!=='ADMIN')r='home';
  if(r==='org-chart'&&lvl!=='ADMIN')r='home';
- if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart'];if(mb.indexOf(r)>=0)r='home';}
+ if(r==='admin-audit'&&lvl!=='ADMIN')r='home';
+ if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit'];if(vb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','admin-audit'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -5513,6 +5556,7 @@ function nav(r){
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
  settings:()=>{if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
+ 'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
@@ -10401,6 +10445,7 @@ async function ltpSaveNewProperty(){
  ltpCloseNewPropertyModal();
  ltpRender();ltRender();ltDashRender();
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
+ try{if(typeof window.gmLogAudit==='function')window.gmLogAudit(isEdit?'update':'create','property',newCode,{address:rec.address||'',rent:Number(rec.rent)||0,owner:rec.owner||'',apiOk:apiOk});}catch(eAud){}
  showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Propriedade actualizada (sync pendente)'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),'success');
 }
 function ltpTrapTab(e){
@@ -10964,6 +11009,7 @@ window.vendorMarcarPago=async function(vendorId,vendorName){
     localStorage.setItem(histKey,JSON.stringify(hist));
    }catch(eHist){console.warn('vendorHist',eHist);}
   }
+  try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('mark_paid','vendor_payment',vendorId||name,{vendor:name,amount:total,count:pend.length,persisted:persisted});}catch(eAud){}
   if(typeof showToast==='function')showToast('Pagamento registado: '+ltFmt(total)+' ('+changed+' chamados)'+(persisted?'':' [local]'),'success');
   else alert('Pagamento registado: '+ltFmt(total));
   if(typeof gvRender==='function')try{gvRender();}catch(eR){}
@@ -12782,6 +12828,11 @@ window.tenantSaveEdit=async function(){
   var method=window.tenantEditingId?'PATCH':'POST';
   var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
   if(!res.ok){var eb={};try{eb=await res.json();}catch(e){}throw new Error(eb.error||('HTTP '+res.status));}
+  try{
+   var jr=await res.clone().json().catch(function(){return{};});
+   var tid=(jr&&jr.tenant&&(jr.tenant.id||jr.tenant.code))||code;
+   if(typeof window.gmLogAudit==='function')window.gmLogAudit(window.tenantEditingId?'update':'create','tenant',tid,{name:name,code:code,status:payload.status});
+  }catch(eAud){}
   if(typeof showToast==='function')showToast(window.tenantEditingId?'Tenant actualizado':'Tenant criado','success');
   else alert(window.tenantEditingId?'Tenant actualizado':'Tenant criado');
   tenantCloseEdit();
@@ -13111,6 +13162,7 @@ window.tenantViewDetails=function(tid){
    var res=await fetch('/api/pm/properties/reset-status',{method:'POST',credentials:'include'});
    if(res&&res.ok){done=true;if(typeof showToast==='function')showToast('Status resetado para pendente.','success');}
   }catch(e){console.warn('reset-status api',e);}
+  try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('reset_status','properties',null,{scope:'all',apiOk:done});}catch(eAud){}
   if(!done){
    try{
     if(typeof ltpResetAllToPending==='function'){ltpResetAllToPending();return;}
@@ -13342,6 +13394,134 @@ window.tenantViewDetails=function(tid){
  };
 })();
 /* ========== /RANKING PROPERTIES ========== */
+
+/* ========== AUDIT LOG ========== */
+window.gmLogAudit=function(action,entity,entityId,details){
+ try{
+  fetch('/api/audit',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   credentials:'include',
+   body:JSON.stringify({
+    action:String(action||''),
+    entity:String(entity||''),
+    entityId:entityId!=null?String(entityId):null,
+    details:details==null?null:details
+   })
+  }).catch(function(e){console.warn('gmLogAudit fetch',e);});
+ }catch(e){console.warn('gmLogAudit',e);}
+};
+(function(){
+ // Log de login uma vez por sessao apos hidratacao do badge.
+ try{
+  var orig=window.gmAuthHydrateUserBadge;
+  if(typeof orig==='function'){
+   window.gmAuthHydrateUserBadge=async function(){
+    var u=await orig.apply(this,arguments);
+    try{
+     if(u&&u.email){
+      var key='gm_audit_login_logged';
+      if(!sessionStorage.getItem(key)){
+       sessionStorage.setItem(key,'1');
+       window.gmLogAudit('login','session',null,{email:u.email,role:u.role||''});
+      }
+     }
+    }catch(eL){}
+    return u;
+   };
+  }
+ }catch(e){console.warn('audit login wrap',e);}
+ // Log de logout antes do redirect.
+ try{
+  var origOut=window.gmAuthLogout;
+  if(typeof origOut==='function'){
+   window.gmAuthLogout=async function(){
+    try{
+     var u=window.__gmCurrentUser||{};
+     window.gmLogAudit('logout','session',null,{email:u.email||''});
+    }catch(eL){}
+    return origOut.apply(this,arguments);
+   };
+  }
+ }catch(e){console.warn('audit logout wrap',e);}
+})();
+
+window.adminAuditRender=async function(){
+ var container=document.getElementById('admin-audit-container');
+ if(!container)return;
+ container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar audit log...</div>';
+ var qs=[];
+ var actor=(document.getElementById('audit-f-actor')||{}).value||'';
+ var ent=(document.getElementById('audit-f-entity')||{}).value||'';
+ var act=(document.getElementById('audit-f-action')||{}).value||'';
+ var fr=(document.getElementById('audit-f-from')||{}).value||'';
+ var to=(document.getElementById('audit-f-to')||{}).value||'';
+ if(actor.trim())qs.push('actor='+encodeURIComponent(actor.trim()));
+ if(ent)qs.push('entity='+encodeURIComponent(ent));
+ if(act)qs.push('action='+encodeURIComponent(act));
+ if(fr)qs.push('from='+encodeURIComponent(fr));
+ if(to)qs.push('to='+encodeURIComponent(to+'T23:59:59'));
+ qs.push('limit=200');
+ try{
+  var res=await fetch('/api/audit?'+qs.join('&'),{credentials:'include',cache:'no-store'});
+  if(res.status===401){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Sessão expirada. Faça login novamente.</div>';return;}
+  if(res.status===403){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Acesso negado. Apenas administradores.</div>';return;}
+  if(!res.ok){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Erro ao carregar (HTTP '+res.status+').</div>';return;}
+  var data=await res.json();
+  var entries=(data&&data.entries)||[];
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var actionPill=function(a){
+   var bg='var(--blue-bg)',fg='var(--blue)';
+   if(a==='login'||a==='create'){bg='var(--green-bg)';fg='var(--green)';}
+   else if(a==='logout'||a==='delete'){bg='var(--red-bg)';fg='var(--red)';}
+   else if(a==='update'||a==='mark_paid'){bg='var(--amber-bg)';fg='var(--amber)';}
+   else if(a==='gaap_unlock_fail'){bg='var(--red-bg)';fg='var(--red)';}
+   else if(a==='reset_status'){bg='var(--red-bg)';fg='var(--red)';}
+   return '<span style="display:inline-block;padding:3px 9px;border-radius:20px;background:'+bg+';color:'+fg+';font-size:9.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase">'+esc(a)+'</span>';
+  };
+  if(!entries.length){
+   container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic;border:1px dashed var(--border2);border-radius:12px">Sem registos para os filtros aplicados.</div>';
+   return;
+  }
+  var html=''
+   +'<div style="font-size:11px;color:var(--ink3);margin-bottom:10px">Mostrando '+entries.length+' '+(entries.length===1?'registo':'registos')+' (limite 200, ordenado por mais recente).</div>'
+   +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(30,22,12,.06)">'
+   +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1080px">'
+   +'<thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Data</th>'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Utilizador</th>'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Ação</th>'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Entidade</th>'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">ID</th>'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Detalhes</th>'
+    +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">IP</th>'
+   +'</tr></thead><tbody>';
+  entries.forEach(function(e){
+   var d=e.timestamp?new Date(e.timestamp):null;
+   var when=d&&!isNaN(d.getTime())?d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'-';
+   var det='';
+   if(e.details!=null){
+    try{det=typeof e.details==='string'?e.details:JSON.stringify(e.details);}catch(eS){det='';}
+    if(det.length>120)det=det.slice(0,120)+'...';
+   }
+   html+='<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'rgba(201,169,110,.04)\'" onmouseout="this.style.background=\'\'">'
+    +'<td style="padding:8px 14px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2);white-space:nowrap">'+esc(when)+'</td>'
+    +'<td style="padding:8px 14px;font-size:12px;color:var(--ink)">'+esc(e.actorEmail||'(anónimo)')+'</td>'
+    +'<td style="padding:8px 14px">'+actionPill(e.action||'-')+'</td>'
+    +'<td style="padding:8px 14px;font-size:11.5px;color:var(--ink2)">'+esc(e.entity||'-')+'</td>'
+    +'<td style="padding:8px 14px;font-family:\'JetBrains Mono\',monospace;font-size:10.5px;color:var(--ink3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(e.entityId||'')+'">'+esc(e.entityId||'-')+'</td>'
+    +'<td style="padding:8px 14px;font-family:\'JetBrains Mono\',monospace;font-size:10.5px;color:var(--ink3);max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(det)+'">'+esc(det||'-')+'</td>'
+    +'<td style="padding:8px 14px;font-family:\'JetBrains Mono\',monospace;font-size:10.5px;color:var(--ink3)">'+esc(e.ip||'-')+'</td>'
+    +'</tr>';
+  });
+  html+='</tbody></table></div></div>';
+  container.innerHTML=html;
+ }catch(err){
+  console.warn('adminAuditRender',err);
+  container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Erro: '+(err.message||'desconhecido')+'</div>';
+ }
+};
+/* ========== /AUDIT LOG ========== */
 
 </script>
 

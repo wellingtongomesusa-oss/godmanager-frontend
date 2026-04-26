@@ -73,17 +73,23 @@ model User {
 
 model AuditEntry {
   id           String   @id @default(cuid())
-  actorId      String
-  actor        User     @relation("ActorAudit", fields: [actorId], references: [id], onDelete: Cascade)
+  actorId      String?
+  actor        User?    @relation("ActorAudit", fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail   String?
   action       String
+  entity       String   @default("")
+  entityId     String?
   targetUserId String?
   targetUser   User?    @relation("TargetAudit", fields: [targetUserId], references: [id], onDelete: SetNull)
-  details      String
+  details      String   @default("")
   ip           String?
+  userAgent    String?
   timestamp    DateTime @default(now())
 
   @@index([actorId])
   @@index([targetUserId])
+  @@index([entity])
+  @@index([action])
   @@index([timestamp])
   @@map("audit_entries")
 }
