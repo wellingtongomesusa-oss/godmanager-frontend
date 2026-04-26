@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { GodManagerLogo } from '@/components/layout/GodManagerLogo';
+import { SiteHeader } from '@/components/landing/SiteHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /** Rua / skyline ao entardecer (NYC) — full-bleed no painel esquerdo */
@@ -23,9 +24,11 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="gm-login-root relative flex min-h-screen flex-col bg-login-cream lg:flex-row">
-      {/* Painel esquerdo — desktop 50%; oculto no mobile */}
-      <div className="relative hidden min-h-screen w-full lg:flex lg:w-1/2">
+    <>
+      <SiteHeader active="home" />
+      <div className="gm-login-root relative flex min-h-screen flex-col bg-login-cream lg:flex-row">
+        {/* Painel esquerdo — desktop 50%; oculto no mobile */}
+        <div className="relative hidden min-h-screen w-full lg:flex lg:w-1/2">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -108,6 +111,7 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
