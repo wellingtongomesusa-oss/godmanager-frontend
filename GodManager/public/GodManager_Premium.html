@@ -3466,6 +3466,7 @@ function loadHomeDashboardFromApi(){
  });
  try{ if(typeof gmHomeFetchPmMarkupMonth==='function') gmHomeFetchPmMarkupMonth(); }catch(e){}
  try{ if(typeof gmHomeFetchExpPmTotal==='function') gmHomeFetchExpPmTotal(); }catch(e){}
+ try{ if(typeof gmHomeFetchExpensesCalls==='function') gmHomeFetchExpensesCalls(); }catch(e){}
 }
 function gmHomeFetchExpPmTotal(){
  try{
@@ -3489,6 +3490,64 @@ function gmHomeFetchExpPmTotal(){
    .catch(function(){});
  }catch(e){console.warn('gmHomeFetchExpPmTotal',e);}
 }
+function gmHomeExpensesCallsApply(n){
+ var card=CARDS.find(function(x){return x.id==='expenses-calls';});
+ if(!card)return;
+ var nec=Math.round(Number(n)||0);
+ card.value=String(nec);
+ card.cd=[Math.max(0.01,nec),1];
+ card.cc=['#92400e','#e2ddd4'];
+ card.ctr=String(nec);
+ card.empty=nec===0;
+ if(card.pills&&card.pills[0])card.pills[0].t='Abertos ('+nec+')';
+ if(typeof renderCards==='function')renderCards();
+}
+function gmHomeExpensesCallsFallback(){
+ var n=0;
+ try{
+  var raw=localStorage.getItem('gm_lt_expenses');
+  if(raw){
+   var arr=JSON.parse(raw);
+   if(Array.isArray(arr)){
+    n=arr.filter(function(e){
+     if(!e)return false;
+     var st=String(e.status||'').toLowerCase();
+     return st!=='paid'&&st!=='applied'&&st!=='cancelled'&&st!=='reembolsado';
+    }).length;
+   }
+  }
+ }catch(e){}
+ if(!n){
+  try{
+   var lts=(typeof ltGetRecords==='function')?(ltGetRecords()||[]):[];
+   n=lts.filter(function(r){
+    if(!r||r.type==='chamado')return false;
+    var v=String(r.vendor||r.vendorname||r.vendorName||'').trim();
+    if(!v&&r.type!=='expense'&&r.isJob!==true)return false;
+    var st=String(r.status||'').toLowerCase();
+    return st!=='paid'&&st!=='applied'&&st!=='cancelled';
+   }).length;
+  }catch(e){}
+ }
+ gmHomeExpensesCallsApply(n);
+}
+window.gmHomeFetchExpensesCalls=function(){
+ try{
+  fetch('/api/pm/expenses',{credentials:'include'})
+   .then(function(r){return r.ok?r.json():null;})
+   .then(function(j){
+    var arr=j&&Array.isArray(j.expenses)?j.expenses:null;
+    if(!arr){gmHomeExpensesCallsFallback();return;}
+    var n=arr.filter(function(e){
+     if(!e)return false;
+     var st=String(e.status||'').toLowerCase();
+     return st!=='paid'&&st!=='applied'&&st!=='cancelled'&&st!=='reembolsado';
+    }).length;
+    gmHomeExpensesCallsApply(n);
+   })
+   .catch(function(){gmHomeExpensesCallsFallback();});
+ }catch(e){console.warn('gmHomeFetchExpensesCalls',e);gmHomeExpensesCallsFallback();}
+};
 function saveAllData(){
  var now=new Date().toISOString();
  try{localStorage.setItem('gm_last_saved',now);}catch(e){}
