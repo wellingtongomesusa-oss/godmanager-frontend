@@ -9910,60 +9910,96 @@ function ltpBuildRecord(){
 async function ltpSaveNewProperty(){
  if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
  const rec=ltpBuildRecord();
- // Gerar novo code P####
+ const isEdit=!!ltEditingId;
  var gmArrCur=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
- var newCode=(typeof window.gmPropertiesNextId==='function')?window.gmPropertiesNextId():(rec.id||('P'+String(gmArrCur.length+1).padStart(4,'0')));
- // Payload no formato que /api/properties POST espera
+ const newCode=isEdit?ltEditingId:((typeof window.gmPropertiesNextId==='function')?window.gmPropertiesNextId():(rec.id||('P'+String(gmArrCur.length+1).padStart(4,'0'))));
  var apiPayload={
   code:newCode,
   address:rec.address||'',
-  city:rec.city||'',
-  state:rec.state||'',
-  zip:rec.zip||'',
+  city:rec.city||'',state:rec.state||'',zip:rec.zip||'',
   ownerName:rec.owner||'',
   rent:Number(rec.rent)||0,
   deposit:Number(rec.deposit)||0,
-  mgmtFeePct:Number(rec.mgmtPct)||0,
-  status:'active',
+  mgmtFeePct:Number(rec.mgmpct)||0,
+  status:rec.status||'pending',
   notes:rec.notes||'',
   metadata:{
    name:rec.address||'',
-   marketRent:Number(rec.rent)||0,
-   hoa:Number(rec.hoa)||0,
-   maintenance:Number(rec.maint)||0,
-   netOwner:Number(rec.net)||0,
+   bedrooms:Number(rec.bedrooms)||0,
+   bathrooms:Number(rec.bathrooms)||0,
+   garage:Number(rec.garage)||0,
+   pool:!!rec.pool,
+   sqft:Number(rec.sqft)||0,
+   propertyType:rec.propertyType||'house',
    tenant:rec.tenant||'',
-   baths:rec.baths||'',
-   occupancy:rec.occupancy||'vacant',
+   occupancy:rec.occupancy||'',
    month:rec.month||'',
-   source:'manual_ui',
-   photos:(rec.photos||[]).map(function(p){return{name:p.name,type:p.type,size:p.size,isPrimary:!!p.isPrimary};})
+   hoa:Number(rec.hoa)||0,
+   guarantee:Number(rec.guarantee)||0,
+   ownerFullName:rec.ownerFullName||'',
+   ownerTaxId:rec.ownerTaxId||'',
+   ownerDob:rec.ownerDob||'',
+   ownerEmail:rec.ownerEmail||'',
+   ownerPhone:rec.ownerPhone||'',
+   ownerMailingAddr:rec.ownerMailingAddr||'',
+   bankName:rec.bankName||'',
+   bankType:rec.bankType||'',
+   bankRouting:rec.bankRouting||'',
+   bankAccount:rec.bankAccount||'',
+   bankHolder:rec.bankHolder||'',
+   bankAddress:rec.bankAddress||'',
+   bankMethod:rec.bankMethod||'',
+   approver:rec.approver||'',
+   source:'manual_ui'
   }
  };
+ var apiId=null;
+ if(isEdit){
+  var foundLocal=gmArrCur.find(function(p){return p&&String(p.id)===String(newCode);});
+  apiId=foundLocal&&foundLocal._apiId?foundLocal._apiId:null;
+  if(!apiId){
+   try{
+    var lst=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
+    var match=(lst&&lst.properties||[]).find(function(p){return p.code===newCode;});
+    if(match)apiId=match.id;
+   }catch(e){console.warn('resolve apiId',e);}
+  }
+ }
  var apiOk=false;
  try{
-  const res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
+  var url,method;
+  if(isEdit&&apiId){url='/api/properties/'+encodeURIComponent(apiId);method='PATCH';}
+  else{url='/api/properties';method='POST';}
+  var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
   apiOk=res.ok;
-  if(!res.ok){var errBody=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,errBody);}
+  if(!res.ok){var eb=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,eb);}
  }catch(e){console.warn('ltpSaveNewProperty fetch',e);}
- // Se API OK, puxa verdade do servidor. Se falhar, faz fallback local para nao perder cadastro.
+ try{
+  if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
+   var arr=window.gmPropertiesLoad()||[];
+   var ix=arr.findIndex(function(p){return p&&String(p.id)===String(newCode);});
+   var seedRec=Object.assign({id:newCode,name:rec.address||'',source:'manual_ui'},rec);
+   seedRec.id=newCode;
+   if(ix>-1){arr[ix]=Object.assign({},arr[ix],seedRec);}else{arr.push(seedRec);}
+   window.gmPropertiesSave(arr);
+  }
+ }catch(e){console.warn('gm sync ltpSave',e);}
  if(apiOk && typeof window.gmPropertiesRefresh==='function'){
-  await window.gmPropertiesRefresh();
- } else {
-  // Fallback: salvar local (para nao perder se API offline)
-  try{
-   var seedRec={id:newCode,name:rec.address||'',address:rec.address||'',city:'',state:'',zip:'',units:1,sqft:0,marketRent:Number(rec.rent)||0,currentRent:Number(rec.rent)||0,mgmtPct:Number(rec.mgmtPct)||0,mgmtFlatFee:0,minFee:0,reserve:0,waiveWhenVacant:'',homeWarrantyExp:'',insuranceExp:'',taxYearEnd:'',owner:rec.owner||'',description:'',hoa:Number(rec.hoa)||0,maintenance:Number(rec.maint)||0,mgmtFeeUsd:0,netOwner:Number(rec.net)||0,notes:rec.notes||'',status:'Active',source:'manual_local_fallback',tenant:rec.tenant||'',baths:rec.baths||'',occupancy:rec.occupancy||'vacant',rent:Number(rec.rent)||0,deposit:Number(rec.deposit)||0,net:Number(rec.net)||0,month:rec.month||'',photos:rec.photos||[],createdAt:new Date().toISOString()};
-   gmArrCur.push(seedRec);
-   window.gmPropertiesSave(gmArrCur);
-  }catch(e){console.warn('gm_properties fallback save',e);}
+  try{await window.gmPropertiesRefresh();}catch(e){console.warn('refresh apos save',e);}
  }
  const all=ltGetRecords();
- all.push(rec);
+ if(isEdit){
+  const idx=all.findIndex(function(x){return x.id===ltEditingId;});
+  if(idx>-1)all[idx]=Object.assign({},all[idx],rec);else all.push(rec);
+ }else{
+  all.push(rec);
+ }
  ltSaveRecords(all);
+ ltEditingId=null;
  ltpCloseNewPropertyModal();
  ltpRender();ltRender();ltDashRender();
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
- showToast(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)','success');
+ showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Propriedade actualizada (sync pendente)'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),'success');
 }
 function ltpTrapTab(e){
  if(e.key!=='Tab')return;
