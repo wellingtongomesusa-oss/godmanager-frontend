@@ -28,6 +28,8 @@ function toJson(v: {
   send1099: boolean;
   status: string;
   notes: string | null;
+  source: string | null;
+  reviewedAt: Date | null;
   metadata: unknown;
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +57,8 @@ function toJson(v: {
     send_1099: v.send1099,
     status: v.status,
     notes: v.notes ?? '',
+    source: v.source ?? '',
+    reviewed_at: v.reviewedAt ? v.reviewedAt.toISOString() : '',
     metadata: v.metadata ?? {},
     created_at: v.createdAt.toISOString(),
     updated_at: v.updatedAt.toISOString(),
@@ -120,6 +124,8 @@ export async function POST(req: Request) {
         send1099: body.send_1099 !== false && body.send1099 !== 'false',
         status: String(body.status || 'Active').trim() || 'Active',
         notes: String(body.notes || '').trim() || null,
+        source: String(body.source || 'manual').trim() || 'manual',
+        reviewedAt: body.reviewed_at ? new Date(String(body.reviewed_at)) : (body.reviewedAt ? new Date(String(body.reviewedAt)) : null),
         metadata: (body.metadata && typeof body.metadata === 'object' ? body.metadata : {}) as object,
       },
     });

@@ -10712,36 +10712,63 @@ function vendorIsOwnerType(v){
  var s=String(v.service_type||v.tipoServico||v.type||'').trim().toLowerCase();
  return s==='owner';
 }
+function vendorRenderHistRows(arr){
+ if(!arr||!arr.length)return '<div style="color:var(--ink3);font-size:12px;font-style:italic">Nenhum pagamento registado.</div>';
+ var rows=arr.slice().sort(function(a,b){
+  var da=Date.parse(a.paid_at||a.date||0)||0;
+  var db=Date.parse(b.paid_at||b.date||0)||0;
+  return db-da;
+ }).map(function(h){
+  var raw=h.paid_at||h.date;
+  var d=new Date(raw);
+  var dStr=isNaN(d.getTime())?(raw||'-'):d.toLocaleString('pt-BR');
+  return '<div style="display:grid;grid-template-columns:1.6fr 1fr 0.8fr 1.2fr;gap:14px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'
+   +'<div style="color:var(--ink2);font-family:JetBrains Mono,monospace">'+dStr+'</div>'
+   +'<div style="color:#16a34a;font-weight:700;font-family:JetBrains Mono,monospace">'+ltFmt(Number(h.amount)||0)+'</div>'
+   +'<div style="color:var(--ink2)">'+(Number(h.count)||0)+' chamados</div>'
+   +'<div style="color:var(--ink3);font-size:11px">'+(h.paid_by||h.paidBy||'-')+'</div>'
+   +'</div>';
+ }).join('');
+ var header='<div style="display:grid;grid-template-columns:1.6fr 1fr 0.8fr 1.2fr;gap:14px;padding:6px 0;border-bottom:1px solid var(--border);font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">'
+  +'<div>Data</div><div>Valor</div><div>Chamados</div><div>Pago Por</div></div>';
+ return header+rows;
+}
 function vendorBuildHistHtml(vendorName){
  try{
   var hist=JSON.parse(localStorage.getItem('gm_vendor_payment_history')||'{}');
-  var arr=hist[vendorName]||[];
-  if(!arr.length)return '<div style="color:var(--ink3);font-size:12px;font-style:italic">Nenhum pagamento registado.</div>';
-  arr=arr.slice().sort(function(a,b){return Date.parse(b.date||0)-Date.parse(a.date||0);});
-  var rows=arr.map(function(h){
-   var d=new Date(h.date);
-   var dStr=isNaN(d.getTime())?(h.date||'-'):d.toLocaleString('pt-BR');
-   return '<div style="display:grid;grid-template-columns:1.6fr 1fr 0.8fr 1.2fr;gap:14px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'
-    +'<div style="color:var(--ink2);font-family:JetBrains Mono,monospace">'+dStr+'</div>'
-    +'<div style="color:#16a34a;font-weight:700;font-family:JetBrains Mono,monospace">'+ltFmt(Number(h.amount)||0)+'</div>'
-    +'<div style="color:var(--ink2)">'+(Number(h.count)||0)+' chamados</div>'
-    +'<div style="color:var(--ink3);font-size:11px">'+(h.paidBy||'-')+'</div>'
-    +'</div>';
-  }).join('');
-  var header='<div style="display:grid;grid-template-columns:1.6fr 1fr 0.8fr 1.2fr;gap:14px;padding:6px 0;border-bottom:1px solid var(--border);font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">'
-   +'<div>Data</div><div>Valor</div><div>Chamados</div><div>Pago Por</div></div>';
-  return header+rows;
+  var arr=(hist[vendorName]||[]).map(function(h){
+   return {paid_at:h.date,amount:h.amount,count:h.count,paid_by:h.paidBy};
+  });
+  return vendorRenderHistRows(arr);
  }catch(e){return '<div style="color:var(--red);font-size:12px">Erro ao carregar historico.</div>';}
 }
-window.vendorToggleHist=function(eid){
+window.vendorToggleHist=async function(eid){
  var el=document.getElementById('vendor-hist-'+eid);
  if(!el)return;
  var btn=document.getElementById('vendor-tg-'+eid);
  var open=el.style.display==='none'||!el.style.display;
  el.style.display=open?'table-row':'none';
  if(btn)btn.textContent=open?'\u25BC':'\u25B6';
+ if(!open)return;
+ var inner=el.querySelector('.vendor-hist-content');
+ if(!inner)return;
+ try{
+  inner.innerHTML='<div style="color:var(--ink3);font-size:12px;padding:6px">A carregar historico...</div>';
+  var r=await fetch('/api/pm/vendors/'+encodeURIComponent(eid)+'/payments',{credentials:'include'});
+  var d=await r.json();
+  if(d&&d.ok&&Array.isArray(d.payments)){
+   inner.innerHTML=vendorRenderHistRows(d.payments);
+   return;
+  }
+  throw new Error((d&&d.error)||'fetch_failed');
+ }catch(e){
+  console.warn('vendorToggleHist',e);
+  var name='';
+  try{var btn2=document.querySelector('button[data-gm-eid="'+eid+'"][data-gm-vname]');if(btn2)name=btn2.getAttribute('data-gm-vname')||'';}catch(en){}
+  inner.innerHTML=vendorBuildHistHtml(name);
+ }
 };
-window.vendorMarcarPago=function(vendorId,vendorName){
+window.vendorMarcarPago=async function(vendorId,vendorName){
  try{
   var name=String(vendorName||'').trim();
   if(!name){alert('Vendor sem nome');return;}
@@ -10768,19 +10795,36 @@ window.vendorMarcarPago=function(vendorId,vendorName){
    changed++;
   }
   if(typeof ltExpSaveRecords==='function')ltExpSaveRecords(local);
+  var persisted=false;
   try{
-   var histKey='gm_vendor_payment_history';
-   var hist={};try{hist=JSON.parse(localStorage.getItem(histKey)||'{}')||{};}catch(eh){hist={};}
-   if(!hist[name])hist[name]=[];
-   var paidBy='-';
+   if(vendorId&&String(vendorId).indexOf('c')===0||/^[a-z0-9]{20,}$/i.test(String(vendorId||''))){
+    var resp=await fetch('/api/pm/vendors/'+encodeURIComponent(vendorId)+'/payments',{
+     method:'POST',
+     headers:{'Content-Type':'application/json'},
+     credentials:'include',
+     body:JSON.stringify({amount:total,count:pend.length,metadata:{expense_ids:Object.keys(pendIds)}})
+    });
+    if(resp&&resp.ok){
+     var jr=await resp.json();
+     persisted=!!(jr&&jr.ok);
+    }
+   }
+  }catch(eApi){console.warn('vendorMarcarPago.api',eApi);}
+  if(!persisted){
    try{
-    if(window.gmAuthUser&&window.gmAuthUser.email)paidBy=window.gmAuthUser.email;
-    else{var un=document.querySelector('.sb-un-n');if(un&&un.textContent)paidBy=un.textContent.trim();}
-   }catch(eu){}
-   hist[name].push({date:nowIso,amount:total,count:pend.length,paidBy:paidBy});
-   localStorage.setItem(histKey,JSON.stringify(hist));
-  }catch(eHist){console.warn('vendorHist',eHist);}
-  if(typeof showToast==='function')showToast('Pagamento registado: '+ltFmt(total)+' ('+changed+' chamados)','success');
+    var histKey='gm_vendor_payment_history';
+    var hist={};try{hist=JSON.parse(localStorage.getItem(histKey)||'{}')||{};}catch(eh){hist={};}
+    if(!hist[name])hist[name]=[];
+    var paidBy='-';
+    try{
+     if(window.gmAuthUser&&window.gmAuthUser.email)paidBy=window.gmAuthUser.email;
+     else{var un=document.querySelector('.sb-un-n');if(un&&un.textContent)paidBy=un.textContent.trim();}
+    }catch(eu){}
+    hist[name].push({date:nowIso,amount:total,count:pend.length,paidBy:paidBy});
+    localStorage.setItem(histKey,JSON.stringify(hist));
+   }catch(eHist){console.warn('vendorHist',eHist);}
+  }
+  if(typeof showToast==='function')showToast('Pagamento registado: '+ltFmt(total)+' ('+changed+' chamados)'+(persisted?'':' [local]'),'success');
   else alert('Pagamento registado: '+ltFmt(total));
   if(typeof gvRender==='function')try{gvRender();}catch(eR){}
   if(typeof jobsRender==='function')try{jobsRender();}catch(eJ){}
@@ -10829,8 +10873,7 @@ function gvRenderTable(){
     +'<td style="padding:9px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+totCol+'">'+ltFmt(totPag)+'</td>'
     +'<td style="padding:9px 10px;text-align:center;white-space:nowrap"><button type="button" data-gm-eid="'+eid+'" onclick="gvView(this.getAttribute(\'data-gm-eid\'))" style="padding:4px 7px">Ver</button> <button type="button" data-gm-eid="'+eid+'" onclick="gvEdit(this.getAttribute(\'data-gm-eid\'))" style="padding:4px 7px">Editar</button> <button type="button" data-gm-eid="'+eid+'" onclick="gvDelete(this.getAttribute(\'data-gm-eid\'))" style="padding:4px 7px">Excluir</button>'+btnPago+'</td>'
     +'</tr>';
-   var histHtml=vendorBuildHistHtml(v.company_name||'');
-   var histRow='<tr id="vendor-hist-'+eid+'" style="display:none;background:var(--cream)"><td colspan="13" style="padding:14px 24px"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px">Historico de pagamentos \u2014 '+(v.company_name||'')+'</div>'+histHtml+'</td></tr>';
+   var histRow='<tr id="vendor-hist-'+eid+'" style="display:none;background:var(--cream)"><td colspan="13" style="padding:14px 24px"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px">Historico de pagamentos \u2014 '+(v.company_name||'')+'</div><div class="vendor-hist-content"><div style="color:var(--ink3);font-size:12px;font-style:italic">Clique no botao para carregar.</div></div></td></tr>';
    return rowHtml+histRow;
   }).join('');
   tb.innerHTML=html||'<tr><td colspan="13" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';
