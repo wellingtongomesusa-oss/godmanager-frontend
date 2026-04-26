@@ -114,7 +114,7 @@ export function LoginForm() {
             id="login-email"
             type="text"
             autoComplete="username"
-            placeholder="wellington.gomes ou you@company.com"
+            placeholder="you@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => setErrors((er) => ({ ...er, email: undefined }))}
