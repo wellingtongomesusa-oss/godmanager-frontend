@@ -2093,7 +2093,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 </div>
 
 <!-- LTP — Modal Nova Propriedade (Long Term — Properties) -->
-<div id="ltp-property-modal" style="display:none;position:fixed;inset:0;z-index:9010;align-items:center;justify-content:center;overflow-y:auto;padding:20px 12px" onclick="ltpModalBackdropClick(event)">
+<div id="ltp-property-modal" style="display:none;position:fixed;inset:0;z-index:9010;align-items:center;justify-content:center;overflow-y:auto;padding:20px 12px">
 <div class="ltp-modal-panel" style="background:var(--paper);width:min(720px,95vw);max-height:min(92vh,900px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="ltp-modal-title">
 <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
 <div id="ltp-modal-title" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif">Nova Propriedade</div>
@@ -9924,7 +9924,7 @@ var ltpPrevFocus=null;
 var ltpEscHandler=null;
 var ltpTabHandler=null;
 
-function ltpModalBackdropClick(e){if(e.target===e.currentTarget)ltpCloseNewPropertyModal();}
+function ltpModalBackdropClick(e){/* lock: clique fora nao fecha o modal Property */}
 function ltpOnNetInput(){ltpNetManual=true;}
 function ltpOnRentInput(){
  const el=document.getElementById('ltp-f-rent');
@@ -10239,7 +10239,7 @@ function ltpTrapTab(e){
  if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus();}}
  else{if(document.activeElement===last){e.preventDefault();first.focus();}}
 }
-function ltpEscClose(e){if(e.key==='Escape')ltpCloseNewPropertyModal();}
+function ltpEscClose(e){/* lock: tecla Esc nao fecha o modal Property */}
 function ltpOpenNewPropertyModal(){
  ltpPrevFocus=document.activeElement;
  ltpStagedPhotos=[];ltpPrimaryIdx=0;ltpNetManual=false;
@@ -10267,9 +10267,8 @@ function ltpOpenNewPropertyModal(){
  ltpPhotoRender();
  document.body.style.overflow='hidden';
  m.style.display='flex';
- ltpEscHandler=ltpEscClose;
+ ltpEscHandler=null;
  ltpTabHandler=ltpTrapTab;
- document.addEventListener('keydown',ltpEscHandler);
  document.addEventListener('keydown',ltpTabHandler);
  setTimeout(function(){var a=document.getElementById('ltp-f-address');if(a)a.focus();},80);
 }
