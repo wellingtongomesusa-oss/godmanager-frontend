@@ -94,8 +94,8 @@ export function SiteHeader({ active }: { active: Active }) {
         <Link href="/about" style={navStyle(active === 'about')}>
           Sobre nos
         </Link>
-        <a
-          href="mailto:contact@godmanager.com?subject=Solicite%20o%20Demo%20-%20GodManager"
+        <Link
+          href="/request-demo"
           style={{
             background: '#c9a96e',
             color: '#fff',
@@ -112,7 +112,7 @@ export function SiteHeader({ active }: { active: Active }) {
           }}
         >
           Solicite o Demo
-        </a>
+        </Link>
       </nav>
     </header>
   );

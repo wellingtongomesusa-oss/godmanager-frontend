@@ -105,6 +105,38 @@ model AppSetting {
   @@map("app_settings")
 }
 
+model DemoLead {
+  id          String      @id @default(cuid())
+  nome        String
+  empresa     String
+  email       String
+  telefone    String
+  redeSocial  String?
+  siteEmpresa String?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+  tokens      DemoToken[]
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("demo_leads")
+}
+
+model DemoToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  leadId    String
+  lead      DemoLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+  @@map("demo_tokens")
+}
+
 model Property {
   id                String                  @id @default(cuid())
   code              String                  @unique
