@@ -2315,7 +2315,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
  <input id="tn-search" oninput="tnRender()" placeholder="Buscar por nome, email ou endereco..." style="padding:8px 14px;border:1px solid var(--border2);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;min-width:260px;flex:1;max-width:400px"/>
  <button type="button" onclick="nav('ltproperties')" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Properties</button>
- <button type="button" onclick="nav('tenantportal')" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Tenant Portal</button>
+ <button type="button" onclick="nav('tenantportal')" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Tenant Portal</button>
+ <button type="button" onclick="if(typeof tenantOpenNew==='function')tenantOpenNew();" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">+ Novo Tenant</button>
  </div>
  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL TENANTS</div><div id="tn-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
@@ -12645,7 +12646,9 @@ window.tenantSaveEdit=async function(){
   if(typeof showToast==='function')showToast(window.tenantEditingId?'Tenant actualizado':'Tenant criado','success');
   else alert(window.tenantEditingId?'Tenant actualizado':'Tenant criado');
   tenantCloseEdit();
+  window.__gmTenantsTnCache=null;
   if(typeof tpRender==='function')tpRender();
+  if(typeof tnRender==='function')try{tnRender();}catch(eR){}
  }catch(e){console.warn('tenantSaveEdit',e);alert('Erro ao salvar: '+e.message);}
 };
 
@@ -12767,6 +12770,131 @@ window.tenantViewDetails=function(tid){
  };
 })();
 /* ========== /TENANT PORTAL REBUILD ========== */
+
+/* ========== TENANTS PAGE (PROPERTIES) MIRROR -> /api/tenants ========== */
+(function(){
+ window.__gmTenantsTnCache=null;
+ function apiToProfile(t){
+  var prop=t.property||{};
+  var meta=t.metadata||{};
+  var srcRaw=String(meta.source||t.createdBy||'').toLowerCase();
+  var src=(srcRaw.indexOf('appfolio')>=0||srcRaw==='import'||srcRaw==='af')?'appfolio':'statement';
+  var addr=(prop&&prop.address)||meta.propertyCsv||t.unit||'';
+  var moveIn=t.moveIn?String(t.moveIn).split('T')[0]:'';
+  var leaseEnd=t.leaseTo?String(t.leaseTo).split('T')[0]:'';
+  return {
+   id:t.id,
+   tenant_id:t.id,
+   code:t.code||'',
+   name:t.name||'',
+   address:addr,
+   property:addr,
+   unit:t.unit||(prop&&prop.unit)||'',
+   email:t.email||'',
+   phone:t.phone||'',
+   moveIn:moveIn,
+   moveOut:leaseEnd,
+   leaseStart:moveIn,
+   leaseEnd:leaseEnd,
+   monthlyRent:Number(t.rent)||0,
+   securityDeposit:Number(t.deposit)||0,
+   petDeposit:0,
+   petRent:0,
+   lateFee:150,
+   status:String(t.status||'active').toLowerCase(),
+   source:src,
+   propType:(prop&&(prop.propertyType||prop.unitType))||'',
+   owner:(prop&&(prop.ownerName||(prop.owner&&prop.owner.name)))||'',
+   emergency:meta.emergency||'',
+   propertyCode:t.propertyCode||(prop&&prop.code)||'',
+   propertyId:t.propertyId||''
+  };
+ }
+
+ async function fetchProfiles(){
+  try{
+   var r=await fetch('/api/tenants',{credentials:'include'});
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   var data=await r.json();
+   var arr=(data&&data.tenants)||[];
+   return arr.map(apiToProfile);
+  }catch(e){console.warn('tnFetchProfiles',e);return null;}
+ }
+
+ function renderInternal(all){
+  var q=((document.getElementById('tn-search')||{}).value||'').toLowerCase();
+  var filtered=!q?all:all.filter(function(p){
+   var blob=(p.name||'')+' '+(p.address||p.property||'')+' '+(p.email||'')+' '+(p.phone||'');
+   return blob.toLowerCase().indexOf(q)>=0;
+  });
+  var ktot=document.getElementById('tn-kpi-total');
+  var klt=document.getElementById('tn-kpi-lt');
+  var kaf=document.getElementById('tn-kpi-af');
+  if(ktot)ktot.textContent=String(all.length);
+  if(klt)klt.textContent=String(all.filter(function(p){return p.source==='statement';}).length);
+  if(kaf)kaf.textContent=String(all.filter(function(p){return p.source==='appfolio';}).length);
+  var tb=document.getElementById('tn-tbody');
+  var empty=document.getElementById('tn-empty');
+  if(!tb)return;
+  if(!filtered.length){tb.innerHTML='';if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
+  var fmtShort=(typeof tnFmtShort==='function')?tnFmtShort:function(s){return s||'-';};
+  var esc=(typeof tnEsc==='function')?tnEsc:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  var fmt$=(typeof ltFmt==='function')?ltFmt:function(n){return '$'+(Number(n)||0);};
+  tb.innerHTML=filtered.map(function(p){
+   var src=p.source==='appfolio'?'AppFolio':'Property';
+   var sb=p.source==='appfolio'?'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)':'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)';
+   var contact=[p.email,p.phone].filter(Boolean).join(' \u00B7 ')||'\u2014';
+   var bd=(typeof tnContractUiBadge==='function')?tnContractUiBadge(p):{s:'',l:''};
+   var dl=(typeof tnProfileDaysLeft==='function')?tnProfileDaysLeft(p):null;
+   var dtxt=(dl===null||dl===undefined)?'\u2014':(dl<=0?'0':String(dl));
+   var showRen=(typeof tnShowRenewIf==='function')&&tnShowRenewIf(p);
+   var showNoRen=(typeof tnShowNonRenewIf==='function')&&tnShowNonRenewIf(p);
+   var idJs=String(p.id||'').replace(/'/g,"\\'");
+   return '<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">'+esc(p.name)+'</td>'
+    +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+esc(p.address||p.property)+(p.unit&&String(p.unit)!=='\u2014'?' \u00B7 Unit '+esc(p.unit):'')+'</td>'
+    +'<td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+esc(contact)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">'+fmtShort(p.moveIn)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">'+fmtShort(p.leaseEnd||p.moveOut)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink)">'+dtxt+'</td>'
+    +'<td style="padding:9px 12px;text-align:center"><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;'+(bd.s||'')+'">'+(bd.l||'')+'</span></td>'
+    +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+fmt$(p.monthlyRent||0)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+sb+'">'+src+'</span></td>'
+    +'<td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top">'
+     +'<button type="button" onclick="if(typeof tenantOpenEdit===\'function\')tenantOpenEdit(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Editar</button>'
+     +(showNoRen?'<button type="button" onclick="if(typeof tnConfirmNonRenewalPrompt===\'function\')tnConfirmNonRenewalPrompt(\''+idJs+'\');" style="padding:4px 6px;border-radius:6px;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:9px;font-weight:600;margin:2px 4px 2px 0">N\u00E3o Vai Renovar</button>':'')
+     +(showRen?'<button type="button" onclick="if(typeof tnOpenRenewModal===\'function\')tnOpenRenewModal(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--amber);background:rgba(201,169,110,.1);color:var(--amber);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Renovar</button>':'')
+     +'<button type="button" onclick="if(typeof tnOpenInPortal===\'function\')tnOpenInPortal(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 0">Portal</button>'
+    +'</td>'
+    +'</tr>';
+  }).join('');
+ }
+
+ var __origTnRender=window.tnRender;
+ window.tnRender=async function(){
+  try{
+   if(typeof checkTenantContractAlerts==='function'){checkTenantContractAlerts();if(typeof tnUpdateContractBanner==='function')tnUpdateContractBanner();}
+   if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();
+   var tb=document.getElementById('tn-tbody');
+   if(!tb){if(typeof __origTnRender==='function')return __origTnRender();return;}
+   if(!window.__gmTenantsTnCache){
+    tb.innerHTML='<tr><td colspan="10" style="padding:32px;text-align:center;color:var(--ink3);font-style:italic">A carregar tenants...</td></tr>';
+    var fetched=await fetchProfiles();
+    if(!fetched){
+     tb.innerHTML='<tr><td colspan="10" style="padding:32px;text-align:center;color:var(--red)">Erro ao carregar tenants. <button onclick="window.__gmTenantsTnCache=null;tnRender()" style="margin-left:8px;padding:4px 10px;border:1px solid var(--border2);background:var(--cream);border-radius:6px;cursor:pointer">Recarregar</button></td></tr>';
+     return;
+    }
+    window.__gmTenantsTnCache=fetched;
+   }
+   renderInternal(window.__gmTenantsTnCache);
+  }catch(err){
+   console.warn('tnRender override',err);
+   if(typeof __origTnRender==='function')try{__origTnRender();}catch(e){}
+  }
+ };
+})();
+/* ========== /TENANTS PAGE (PROPERTIES) MIRROR ========== */
 
 </script>
 
