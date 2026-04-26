@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-type Active = 'home' | 'services' | 'about';
+type Active = 'home' | 'services' | 'about' | 'contact';
 
 const linkBase = {
   textDecoration: 'none',
@@ -93,6 +93,9 @@ export function SiteHeader({ active }: { active: Active }) {
         </Link>
         <Link href="/about" style={navStyle(active === 'about')}>
           Sobre nos
+        </Link>
+        <Link href="/contacto" style={navStyle(active === 'contact')}>
+          Contacto
         </Link>
         <Link
           href="/request-demo"
