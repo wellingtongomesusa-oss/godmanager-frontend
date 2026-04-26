@@ -10054,10 +10054,34 @@ function ltpCloseNewPropertyModal(){
  ltpPrevFocus=null;
 }
 window.ltpOpenEditProperty=function(id){
- var records=ltGetRecords();
- var r=records.find(function(x){return x.id===id;});
- if(!r){alert('Casa nao encontrada');return;}
- ltEditingId=id;
+ var r=null;
+ try{
+  var records=ltGetRecords()||[];
+  r=records.find(function(x){return x&&(String(x.id)===String(id)||String(x.code)===String(id));});
+ }catch(e){}
+ if(!r){
+  try{
+   var gm=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+   r=gm.find(function(x){return x&&(String(x.id)===String(id)||String(x.code)===String(id)||String(x._apiId)===String(id));});
+  }catch(e){}
+ }
+ if(!r){
+  fetch('/api/properties',{credentials:'include'}).then(function(res){return res.json();}).then(function(data){
+   var match=(data&&data.properties||[]).find(function(p){return String(p.id)===String(id)||String(p.code)===String(id);});
+   if(match){
+    var meta=match.metadata||{};
+    var rApi={id:match.code,code:match.code,_apiId:match.id,address:match.address,owner:match.ownerName,rent:Number(match.rent)||0,deposit:Number(match.deposit)||0,mgmpct:Number(match.mgmtFeePct)||0,status:match.status,notes:match.notes,bedrooms:meta.bedrooms,bathrooms:meta.bathrooms,garage:meta.garage,pool:!!meta.pool,sqft:meta.sqft,propertyType:meta.propertyType||'house',tenant:meta.tenant,occupancy:meta.occupancy,month:meta.month,hoa:meta.hoa,guarantee:meta.guarantee,ownerFullName:meta.ownerFullName,ownerTaxId:meta.ownerTaxId,ownerDob:meta.ownerDob,ownerEmail:meta.ownerEmail,ownerPhone:meta.ownerPhone,ownerMailingAddr:meta.ownerMailingAddr,bankName:meta.bankName,bankType:meta.bankType,bankRouting:meta.bankRouting,bankAccount:meta.bankAccount,bankHolder:meta.bankHolder,bankAddress:meta.bankAddress,bankMethod:meta.bankMethod,approver:meta.approver};
+    window.ltpOpenEditProperty._populate(rApi);
+   } else {
+    alert('Casa nao encontrada (id='+id+')');
+   }
+  }).catch(function(e){alert('Erro ao buscar casa: '+e.message);});
+  return;
+ }
+ window.ltpOpenEditProperty._populate(r);
+};
+window.ltpOpenEditProperty._populate=function(r){
+ ltEditingId=r.id||r.code;
  var s=function(k,v){var e=document.getElementById(k);if(e)e.value=(v!=null?v:'');};
  var c=function(k,v){var e=document.getElementById(k);if(e)e.checked=!!v;};
  s('ltp-f-address',r.address);s('ltp-f-owner',r.owner);s('ltp-f-tenant',r.tenant);
