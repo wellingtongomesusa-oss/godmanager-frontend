@@ -70,3 +70,24 @@ export async function getCurrentUserFromSession() {
   if (!user) return null;
   return user;
 }
+
+const ADMIN_EMAILS = new Set([
+  'wellington.gomes@godmanager.com',
+  'wellingtongomesusa@gmail.com',
+]);
+
+export function isAdminUser(user: { email?: string | null; role?: string | null } | null | undefined): boolean {
+  if (!user) return false;
+  if (String(user.role || '').toLowerCase() === 'admin') return true;
+  const email = String(user.email || '').toLowerCase();
+  if (!email) return false;
+  if (ADMIN_EMAILS.has(email)) return true;
+  if (email.indexOf('admin') >= 0) return true;
+  return false;
+}
+
+export async function getCurrentAdminFromSession() {
+  const u = await getCurrentUserFromSession();
+  if (!u) return null;
+  return isAdminUser(u) ? u : null;
+}
