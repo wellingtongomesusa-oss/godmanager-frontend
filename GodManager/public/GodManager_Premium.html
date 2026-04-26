@@ -1721,19 +1721,18 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table">
     <thead>
      <tr style="background:var(--cream);border-bottom:2px solid var(--border)">
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">ExpenseID</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Unit</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Vendor</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Categoria</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Descricao</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data</th>
-      <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Original</th>
-      <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Net</th>
+      <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Valor</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
       <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Acoes</th>
      </tr>
     </thead>
     <tbody id="jobs-tbody">
-     <tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
+     <tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
     </tbody>
    </table>
   </div>
@@ -11556,6 +11555,11 @@ function jobsRecordAction(expenseId,type){
 }
 
 function jobsOnVendorClick(expenseId){
+ if(jobsHasActionFor(expenseId,'job')){
+  var msg='Job fee ja aplicado. Use Retornar para reverter antes de aplicar Vendor.';
+  if(typeof showToast==='function')showToast(msg,'error');else alert(msg);
+  return;
+ }
  var r=jobsRecordAction(expenseId,'vendor');
  if(!r.ok){
   if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
@@ -11566,6 +11570,11 @@ function jobsOnVendorClick(expenseId){
  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
 }
 function jobsOnJobClick(expenseId){
+ if(jobsHasActionFor(expenseId,'vendor')){
+  var msg='Vendor fee ja aplicado. Use Retornar para reverter antes de aplicar Job.';
+  if(typeof showToast==='function')showToast(msg,'error');else alert(msg);
+  return;
+ }
  var r=jobsRecordAction(expenseId,'job');
  if(!r.ok){
   if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
@@ -11590,6 +11599,35 @@ function jobsFilteredExpenses(){
  });
 }
 
+function jobsResolveAddress(r){
+ if(!r)return '-';
+ var direct=r.propAddress||r.address||r.unit||r.propertyAddress||'';
+ var s=String(direct||'').trim();
+ if(s&&s!=='\u2014')return s;
+ var code=String((r._apiRaw&&r._apiRaw.propertyCode)||r.propId||r.propertyCode||r.propertyId||'').trim();
+ if(code){
+  try{
+   var props=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+   for(var i=0;i<props.length;i++){
+    var p=props[i];
+    if(p&&(String(p.id)===code||String(p.code)===code)){
+     if(p.address)return String(p.address);
+    }
+   }
+  }catch(e){}
+  try{
+   var seed=window.GM_PROPERTIES_SEED||[];
+   for(var j=0;j<seed.length;j++){
+    var sp=seed[j];
+    if(sp&&(String(sp.id)===code||String(sp.code)===code)){
+     if(sp.address)return String(sp.address);
+    }
+   }
+  }catch(e){}
+ }
+ return '-';
+}
+
 function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
@@ -11608,7 +11646,7 @@ function jobsRender(){
  var k3=document.getElementById('jobs-kpi-job'); if(k3)k3.textContent=jobsMoney(totalJobFees);
 
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa do Master Vacation Homes encontrada.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa do Master Vacation Homes encontrada.</td></tr>';
   return;
  }
 
@@ -11617,18 +11655,33 @@ function jobsRender(){
   var jobDone=jobsHasActionFor(r.id,'job');
   var vendorDisplay=typeof gaapSanitizeDesc==='function'?gaapSanitizeDesc(jobsVendorSourceStr(r)):(jobsVendorSourceStr(r)||'—');
   var baseVal=Number(r.value||0)||0;
-  var netTotal=jobsExpenseTotalWithFees(r);
   var dateDisp=(r.due||r.paid||r.month||'—');
+  var unit=jobsResolveAddress(r);
+  var unitEsc=String(unit).replace(/"/g,'&quot;');
 
  var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
  var isCancelled=String(r.status||'').toLowerCase()==='cancelled';
- var btnVendor=vendorDone
-  ? '<button disabled style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
-  : '<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnVendorClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Vendor +$120</button>';
- var btnJob=jobDone
-  ? '<button disabled style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
-  : '<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnJobClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Job +$200</button>';
  var idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+ // Mutualmente exclusivo: vendor e job nao podem estar ambos applied
+ var btnVendor;
+ if(vendorDone){
+  btnVendor='<button disabled title="Vendor fee aplicado" style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.85">&#10003; Applied</button>';
+ } else if(jobDone){
+  btnVendor='<button disabled title="Bloqueado: Job fee ja aplicado. Use Retornar para reverter." style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff;cursor:not-allowed;opacity:.35">Vendor +$120</button>';
+ } else {
+  btnVendor='<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnVendorClick(\''+idAttr+'\')" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Vendor +$120</button>';
+ }
+
+ var btnJob;
+ if(jobDone){
+  btnJob='<button disabled title="Job fee aplicado" style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.85">&#10003; Applied</button>';
+ } else if(vendorDone){
+  btnJob='<button disabled title="Bloqueado: Vendor fee ja aplicado. Use Retornar para reverter." style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a;cursor:not-allowed;opacity:.35">Job +$200</button>';
+ } else {
+  btnJob='<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnJobClick(\''+idAttr+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Job +$200</button>';
+ }
+
  var hasActions=vendorDone||jobDone;
  var btnReturn=hasActions
   ? '<button type="button" onclick="jobsReturn(\''+idAttr+'\')" title="Remover acoes Vendor/Job aplicadas e voltar a pendente" style="'+btnStyleBase+';background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)">Retornar</button>'
@@ -11647,13 +11700,12 @@ function jobsRender(){
  }
 
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
-  +'<td style="padding:9px 12px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink3)">'+String(r.id)+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink)">'+vendorDisplay+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
-  +'<td style="padding:9px 12px;text-align:right;color:var(--ink2)">'+jobsMoney(baseVal)+'</td>'
-  +'<td style="padding:9px 12px;text-align:right;font-weight:700;color:'+(netTotal>baseVal?'#c47b28':'var(--ink)')+'">'+jobsMoney(netTotal)+'</td>'
+  +'<td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
   +'</tr>';
