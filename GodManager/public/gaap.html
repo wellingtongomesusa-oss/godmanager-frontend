@@ -1285,6 +1285,16 @@ body.gaap-locked .pf-row-val{
     document.getElementById('gaap-password-modal').style.display='none';
   };
 
+  function gaapLogAudit(action,details){
+    try{
+      fetch('/api/audit',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({action:String(action||''),entity:'gaap',entityId:null,details:details||null})
+      }).catch(function(e){});
+    }catch(eA){}
+  }
   window.gaapSubmitPassword=function(){
     var input=document.getElementById('gaap-password-input');
     var err=document.getElementById('gaap-error');
@@ -1297,6 +1307,7 @@ body.gaap-locked .pf-row-val{
     var hashed=gaapHashPassword(pwd);
     // Master admin password: sempre valida, nunca expira nem invalida
     if(hashed===GAAP_MASTER_HASH){
+      gaapLogAudit('gaap_unlock',{success:true,via:'master'});
       window.gaapCloseModal();
       applyReveal();
       return;
@@ -1306,9 +1317,11 @@ body.gaap-locked .pf-row-val{
       if(!gaapIsAdmin()){
         err.textContent='Apenas admin pode configurar a senha.';
         err.style.display='block';
+        gaapLogAudit('gaap_unlock_fail',{success:false,reason:'no-stored-non-admin'});
         return;
       }
       localStorage.setItem(GAAP_HASH_KEY,hashed);
+      gaapLogAudit('gaap_unlock',{success:true,via:'initial-config'});
       window.gaapCloseModal();
       applyReveal();
       return;
@@ -1326,6 +1339,7 @@ body.gaap-locked .pf-row-val{
         attempts.push({at:new Date().toISOString(),user:who});
         localStorage.setItem(GAAP_FAILS_KEY,JSON.stringify(attempts.slice(-50)));
       }catch(eL){}
+      gaapLogAudit('gaap_unlock_fail',{success:false,reason:'wrong-password'});
       return;
     }
     // Match com hash configurado: se for one-shot, invalida agora.
@@ -1348,6 +1362,7 @@ body.gaap-locked .pf-row-val{
         }
       }
     }catch(eOS){console.warn('gaap one-shot',eOS);}
+    gaapLogAudit('gaap_unlock',{success:true,via:'one-shot-or-stored'});
     window.gaapCloseModal();
     applyReveal();
   };
