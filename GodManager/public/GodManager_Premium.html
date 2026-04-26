@@ -2163,6 +2163,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div id="ltp-err-deposit" class="ltp-err-msg"></div>
 </div>
 <div style="grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-guarantee-limit">Limite Conta Garantida (USD)</label>
+<input id="ltp-f-guarantee-limit" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Limite Conta Garantida" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div style="font-size:10px;color:var(--ink3);margin-top:3px">Limite máximo de saldo da conta garantida do owner.</div>
+</div>
+<div style="grid-column:1/-1">
 <label style="font-size:11px;font-weight:600;color:var(--blue);display:block;margin-bottom:4px" for="ltp-f-net">Net Owner (USD)</label>
 <input id="ltp-f-net" type="number" step="0.01" oninput="ltpOnNetInput()" aria-label="Valor líquido para o owner" style="width:100%;padding:9px 12px;border:1px solid var(--blue-bd);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
 <div style="font-size:10px;color:var(--ink3);margin-top:3px">Preenchido automaticamente com o aluguel; edite para ajustar manualmente.</div>
@@ -2182,6 +2187,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-month">Mês de referência *</label>
 <input id="ltp-f-month" type="month" aria-label="Mês de referência" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
 <div id="ltp-err-month" class="ltp-err-msg"></div>
+</div>
+<div style="grid-column:1/-1">
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-movein">Move In Date</label>
+<input id="ltp-f-movein" type="date" aria-label="Move In Date" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+<div style="font-size:10px;color:var(--ink3);margin-top:3px">Data de entrada do inquilino na propriedade.</div>
 </div>
 </div>
 <div class="ltp-sec">5. Fotos do imóvel</div>
@@ -2258,9 +2268,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Garantida</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGM %</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
- <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
- <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Dia 15</th>
- <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>
+<th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
+<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Acoes</th>
  </tr></thead>
@@ -8239,6 +8248,8 @@ window.gmPropertiesFetchFromApi=async function(){
     status:p.status||'active',
     source:meta.source||'api',
     deposit:Number(p.deposit)||0,
+    guaranteeLimit:p.guaranteeLimit!=null?Number(p.guaranteeLimit):(meta.guaranteeLimit!=null?Number(meta.guaranteeLimit):0),
+    moveInDate:p.moveInDate||meta.moveInDate||'',
     bedrooms:p.bedrooms!=null?Number(p.bedrooms):(meta.bedrooms!=null?Number(meta.bedrooms):0),
     bathrooms:p.bathrooms!=null?Number(p.bathrooms):(meta.bathrooms!=null?Number(meta.bathrooms):0),
     garage:Number(meta.garage)||0,
@@ -8332,7 +8343,9 @@ window.gmPropertiesToUi=function(p){
   owner:p.owner||'—',
   tenant:p.tenant||'',
   baths:p.baths||(p.units?(p.units+' unit'+(p.units>1?'s':'')):''),
-  moveIn:p.moveIn||'',
+  moveIn:p.moveIn||(p.moveInDate?String(p.moveInDate).split('T')[0]:''),
+  moveInDate:p.moveInDate||'',
+  guaranteeLimit:Number(p.guaranteeLimit)||0,
   occupancy:p.occupancy||occ,
   rent:rent,
  deposit:Number(p.deposit)||0,
@@ -8449,13 +8462,7 @@ function ltpRowNetExpDia15(r, expByProp){
  var netColor=netDisplay>=0?'var(--blue)':'var(--red)';
  var expStr=(ev>0)?ltFmt(ev):'—';
  var colX=(ev>0)?'var(--red)':'var(--ink3)';
- var sum=window._pmSummaryByCode && window._pmSummaryByCode[r.id];
- if(sum){
-  var btxt=sum.payStatus==='paid'?'Pago':(sum.payStatus==='overdue'?'Atrasado':'A pagar dia 15');
-  var bc=sum.payStatus==='paid'?'var(--green)':(sum.payStatus==='overdue'?'var(--red)':'var(--amber)');
-  return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+netColor+'" title="NET: Rent - MGM% - EXP mês (PM)">'+ltFmt(netDisplay)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid '+bc+';color:'+bc+'">'+btxt+'</span></td>';
- }
- return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+netColor+'" title="NET: Rent - MGM% - EXP mês (PM)">'+ltFmt(netDisplay)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">—</td>';
+ return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+netColor+'" title="NET: Rent - MGM% - EXP mês (PM)">'+ltFmt(netDisplay)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td>';
 }
 
 async function ltpRender(){
@@ -9954,6 +9961,8 @@ function ltpBuildRecord(){
  month:v('ltp-f-month'),
  rent,deposit,
  net:isNaN(net)?rent:net,
+ guaranteeLimit:n('ltp-f-guarantee-limit'),
+ moveInDate:v('ltp-f-movein')||null,
  hoa:n('ltp-f-hoa'),
  mgmpct:n('ltp-f-mgmpct'),
  guarantee:n('ltp-f-guarantee'),
@@ -9996,6 +10005,8 @@ async function ltpSaveNewProperty(){
   rent:Number(rec.rent)||0,
   deposit:Number(rec.deposit)||0,
   mgmtFeePct:Number(rec.mgmpct)||0,
+  guaranteeLimit:Number(rec.guaranteeLimit)>0?Number(rec.guaranteeLimit):null,
+  moveInDate:rec.moveInDate||null,
   bedrooms:Number(rec.bedrooms)||0,
   bathrooms:Number(rec.bathrooms)||0,
   unitType:rec.propertyType||'house',
@@ -10108,6 +10119,8 @@ function ltpOpenNewPropertyModal(){
  document.getElementById('ltp-f-deposit-toggle').checked=false;
  document.getElementById('ltp-f-deposit-amt').value='';
  ltpToggleDepositWrap();
+ var glEl=document.getElementById('ltp-f-guarantee-limit');if(glEl)glEl.value='';
+ var miEl=document.getElementById('ltp-f-movein');if(miEl)miEl.value='';
  document.getElementById('ltp-f-occ').value='rented';
  const ym=new Date();
  document.getElementById('ltp-f-month').value=ym.getFullYear()+'-'+String(ym.getMonth()+1).padStart(2,'0');
@@ -10171,6 +10184,8 @@ window.ltpOpenEditProperty._populate=function(r){
  c('ltp-f-deposit-toggle',dep>0);
  var dw=document.getElementById('ltp-deposit-wrap');if(dw)dw.style.display=dep>0?'block':'none';
  s('ltp-f-deposit-amt',dep>0?dep:'');
+ s('ltp-f-guarantee-limit',Number(r.guaranteeLimit)>0?r.guaranteeLimit:'');
+ s('ltp-f-movein',r.moveInDate?String(r.moveInDate).split('T')[0]:(r.moveIn||''));
  s('ltp-f-hoa',r.hoa);s('ltp-f-mgmpct',r.mgmpct);s('ltp-f-guarantee',r.guarantee);
  s('ltp-f-owner-fullname',r.ownerFullName);s('ltp-f-owner-taxid',r.ownerTaxId);
  s('ltp-f-owner-dob',r.ownerDob);s('ltp-f-owner-email',r.ownerEmail);
