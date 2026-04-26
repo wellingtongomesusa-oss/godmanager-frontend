@@ -5,7 +5,7 @@ import { getCurrentAdminFromSession } from '@/lib/authServer';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Contact Leads | GodManager Admin',
+  title: 'Leads de contato | GodManager Admin',
   robots: { index: false, follow: false },
 };
 
@@ -27,7 +27,7 @@ export default async function AdminContactLeadsPage() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold text-gm-ink">Contact leads</h1>
+        <h1 className="font-heading text-2xl font-semibold text-gm-ink">Leads de contato</h1>
         <p className="mt-1 text-[13px] text-gm-ink-secondary">
           {leads.length} mensagens recebidas (mais recentes primeiro, max. 200)
         </p>

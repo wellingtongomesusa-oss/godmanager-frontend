@@ -95,7 +95,7 @@ export function SiteHeader({ active }: { active: Active }) {
           Sobre nos
         </Link>
         <Link href="/contacto" style={navStyle(active === 'contact')}>
-          Contacto
+          Contato
         </Link>
         <Link
           href="/request-demo"

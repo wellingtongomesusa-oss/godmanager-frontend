@@ -114,7 +114,7 @@ export default function ContactForm() {
           Mensagem enviada
         </h2>
         <p style={{ color: 'var(--ink2)', fontSize: 14 }}>
-          Vamos contactar-te em menos de 24h.
+          Vamos contatar você em menos de 24h.
         </p>
       </div>
     );
@@ -174,7 +174,7 @@ export default function ContactForm() {
           />
         </div>
         <div style={{ marginBottom: 14 }}>
-          <span style={labelStyle}>Sou contacto</span>
+          <span style={labelStyle}>Sou contato</span>
           <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
             <label
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}
