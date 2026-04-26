@@ -12050,8 +12050,10 @@ var JOBS_FEES={vendor:120,job:200};
 })();
 
 /* Jobs: leitura multi-user via /api/pm/expenses (cache 30s + fallback localStorage) */
+/* __jobsExpensesCache alias a __jobsApiRowsCache (compostos por ltExpMapApiToRow — shape real API) */
 window.__jobsExpensesCacheAt=0;
 window.__jobsApiRowsCache=undefined;
+window.__jobsExpensesCache=null;
 window.__jobsApiFetchInFlight=null;
 window.jobsInvalidateApiCache=function(){
  window.__jobsExpensesCacheAt=0;
@@ -12059,14 +12061,14 @@ window.jobsInvalidateApiCache=function(){
 window.jobsIsPmExpenseId=function(expenseId){
  if(!expenseId)return false;
  var id=String(expenseId);
- var arr=window.__jobsApiRowsCache;
+ var arr=window.__jobsApiRowsCache||window.__jobsExpensesCache;
  if(!arr||!arr.length)return false;
  return arr.some(function(r){return r&&String(r.id)===id;});
 };
 window.jobsFetchFromApi=function(){
  var now=Date.now();
- if(window.__jobsApiRowsCache&&Array.isArray(window.__jobsApiRowsCache)&&(now-window.__jobsExpensesCacheAt)<30000){
-  return Promise.resolve(window.__jobsApiRowsCache);
+ if((window.__jobsApiRowsCache||window.__jobsExpensesCache)&&Array.isArray(window.__jobsApiRowsCache||window.__jobsExpensesCache)&&(now-window.__jobsExpensesCacheAt)<30000){
+  return Promise.resolve(window.__jobsApiRowsCache||window.__jobsExpensesCache);
  }
  if(window.__jobsApiFetchInFlight)return window.__jobsApiFetchInFlight;
  window.__jobsApiFetchInFlight=fetch('/api/pm/expenses',{credentials:'include'})
@@ -12083,12 +12085,14 @@ window.jobsFetchFromApi=function(){
    else mapped.push(e);
   }
   window.__jobsApiRowsCache=mapped;
+  window.__jobsExpensesCache=mapped;
   window.__jobsExpensesCacheAt=Date.now();
   return mapped;
  })
  .catch(function(err){
   console.warn('[jobs] /api/pm/expenses failed, fallback local',err);
   window.__jobsApiRowsCache=null;
+  window.__jobsExpensesCache=null;
   return null;
  })
  .finally(function(){
@@ -12099,6 +12103,7 @@ window.jobsFetchFromApi=function(){
 function jobsMergeForJobs(){
  var local=(typeof ltExpGetRecords==='function')?(ltExpGetRecords()||[]):[];
  var api=window.__jobsApiRowsCache;
+ if(api==null)api=window.__jobsExpensesCache;
  if(api===null||api===undefined){
   if(typeof ltExpMergeAll==='function')return ltExpMergeAll();
   return local;
@@ -12283,10 +12288,12 @@ function jobsResolveAddress(r){
  return '-';
 }
 
-function jobsRender(){
+async function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
- var paint=function(){
+ if(typeof window.jobsFetchFromApi==='function'){
+  try{await window.jobsFetchFromApi();}catch(err){console.warn('jobsFetchFromApi',err);}
+ }
  var rows=jobsFilteredExpenses();
  var user=jobsGetCurrentUser();
  var badge=document.getElementById('jobs-user-badge');
@@ -12375,12 +12382,6 @@ function jobsRender(){
   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
   +'</tr>';
 }).join('');
-};
- if(typeof window.jobsFetchFromApi==='function'){
-  window.jobsFetchFromApi().then(function(){paint();}).catch(function(err){console.warn('jobsFetchFromApi',err);paint();});
- }else{
-  paint();
- }
 }
 
 window.jobsReturn=function(id){
@@ -12499,6 +12500,7 @@ window.jobsCancel=function(id){
   var ret=_origNav.apply(this,arguments);
   try{
    if(route==='jobs'){
+    window.__jobsExpensesCacheAt=0;
     if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
     setTimeout(function(){if(typeof jobsRender==='function')jobsRender();},10);
    }
@@ -12565,6 +12567,7 @@ async function jobsApplyRoleGate(){
 document.addEventListener('DOMContentLoaded',function(){
  /* jobsApplyRoleGate substituido por jobsApplyRoleGateV2 no orchestrador */
 });
+window.jobsFilteredExpenses=jobsFilteredExpenses;
 window.jobsRender=jobsRender;
 window.jobsOnVendorClick=jobsOnVendorClick;
 window.jobsOnJobClick=jobsOnJobClick;
