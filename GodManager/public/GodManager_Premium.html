@@ -1453,7 +1453,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <div id="ltd-all-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;flex-wrap:wrap;gap:12px;justify-content:space-between">
- <div style="font-size:13px;font-weight:700;color:var(--ink)">Todas as Propriedades</div>
+ <div style="font-size:13px;font-weight:700;color:var(--ink)">Propriedades Vagas</div>
  <input type="search" id="ltd-all-search" placeholder="Buscar endereco ou owner..." autocomplete="off" style="min-width:200px;flex:1;max-width:320px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none" />
  </div>
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px">
@@ -1503,14 +1503,14 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <!-- Bottom 2-col -->
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
- <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Resumo por Propriedade</div>
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Move In</div>
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
- <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereço</th>
- <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Owner</th>
+ <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
+ <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
  <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--green)">Rent</th>
- <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Ocupação</th>
- <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
+ <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Move In</th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--blue)">Deposito</th>
  </tr></thead>
  <tbody id="ltd-prop-tbody"></tbody>
  </table></div>
@@ -7868,6 +7868,10 @@ function ltDashRenderAllPropsTable(){
  var q=(qEl&&qEl.value)?String(qEl.value).toLowerCase().trim():'';
  var filtered=recs.filter(function(r){
   if(!r)return false;
+  // Propriedades Vagas: sem tenant ou occupancy=vacant
+  var hasTenant=r.tenant&&String(r.tenant).trim()!=='';
+  var occVacant=String(r.occupancy||'').toLowerCase()==='vacant';
+  if(hasTenant&&!occVacant)return false;
   if(!q)return true;
   var blob=(String(r.address||'')+' '+String(r.owner||'')+' '+String(r.tenant||'')).toLowerCase();
   return blob.indexOf(q)>=0;
@@ -7884,7 +7888,7 @@ function ltDashRenderAllPropsTable(){
  var more=document.getElementById('ltd-all-more');
  if(!tb) return;
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- if(!filtered.length){ tb.innerHTML=''; if(em) em.style.display='block'; if(more) more.style.display='none'; return; }
+ if(!filtered.length){ tb.innerHTML=''; if(em){em.textContent='Nenhuma propriedade vaga.';em.style.display='block';} if(more) more.style.display='none'; return; }
  if(em) em.style.display='none';
  var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
  var occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
@@ -7982,28 +7986,60 @@ function ltDashRender(){
  }
  }
 
- // Property summary: todos, ordenar NET desc, exibir no maximo 20
+ // Move In: casas com tenant + moveIn date (ordenado por moveIn desc, max 20)
  const ptbody=document.getElementById('ltd-prop-tbody');
  const pfoot=document.getElementById('ltd-prop-footer');
  if(ptbody){
- const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
- const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
- const byNet=records.slice().sort(function(a,b){return (Number(b&&b.net)||0)-(Number(a&&a.net)||0);});
- const top20=byNet.slice(0,20);
- ptbody.innerHTML=top20.map(function(r){
-  var o=r&&r.occupancy;
-  return '<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'">'
-  +'<td style="padding:7px 12px;font-size:11px;color:var(--ink);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r&&r.address?String(r.address).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'):'')+'">'+(r&&r.address?String(r.address).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</td>'
-  +'<td style="padding:7px 12px;font-size:11px;color:var(--ink2)">'+(r&&r.owner?String(r.owner).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</td>'
-  +'<td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(r&&r.rent)+'</td>'
-  +'<td style="padding:7px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;'+(occStyle[o]||'')+'">'+(occLabel[o]||'—')+'</span></td>'
-  +'<td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:'+((Number(r&&r.net)||0)>=0?'var(--blue)':'var(--red)')+'">'+ltFmt((r&&r.net)||0)+'</td>'
-  +'</tr>';
- }).join('');
+ var moveInRecords=records.filter(function(r){
+  return r&&r.tenant&&String(r.tenant).trim()!==''&&r.moveIn&&String(r.moveIn).trim()!=='';
+ }).sort(function(a,b){
+  var da=Date.parse(a&&a.moveIn)||0;
+  var db=Date.parse(b&&b.moveIn)||0;
+  return db-da;
+ });
+ // Também incluir tenants do GM_TENANTS_SEED para contemplar carteira CSV
+ try{
+  var seed=window.GM_TENANTS_SEED||[];
+  var seenAddr={};
+  records.forEach(function(rr){if(rr&&rr.address)seenAddr[String(rr.address).toLowerCase()]=1;});
+  seed.forEach(function(t){
+   if(!t||!t.moveIn)return;
+   var addr=String(t.propertyCsv||t.unit||'').split(' - ')[0]||t.unit||'';
+   if(!addr)return;
+   moveInRecords.push({
+    address:addr,
+    tenant:t.name||'',
+    rent:Number(t.rent)||0,
+    moveIn:t.moveIn,
+    deposit:Number(t.deposit)||0,
+    _seed:true
+   });
+  });
+  moveInRecords.sort(function(a,b){
+   var da=Date.parse(a&&a.moveIn)||0;
+   var db=Date.parse(b&&b.moveIn)||0;
+   return db-da;
+  });
+ }catch(e){console.warn('moveIn seed merge',e);}
+ var topMI=moveInRecords.slice(0,20);
+ var escMi=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+ if(!topMI.length){
+  ptbody.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;font-size:12px;color:var(--ink3);font-style:italic">Nenhum move-in registrado.</td></tr>';
+ }else{
+  ptbody.innerHTML=topMI.map(function(r){
+   return '<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'">'
+    +'<td style="padding:7px 12px;font-size:11px;color:var(--ink);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escMi(r.address||'')+'">'+escMi(r.address||'-')+'</td>'
+    +'<td style="padding:7px 12px;font-size:11px;color:var(--ink2)">'+escMi(r.tenant||'-')+'</td>'
+    +'<td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green);font-weight:600">'+ltFmt(Number(r.rent)||0)+'</td>'
+    +'<td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+escMi(r.moveIn||'-')+'</td>'
+    +'<td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--blue);font-weight:600">'+ltFmt(Number(r.deposit)||0)+'</td>'
+    +'</tr>';
+  }).join('');
+ }
  if(pfoot){
-  if(records.length>20){
+  if(moveInRecords.length>20){
    pfoot.style.display='block';
-   pfoot.innerHTML='<a href="javascript:void(0)" onclick="nav(\'ltproperties\')" style="font-size:11px;font-weight:600;color:var(--amber);text-decoration:underline;cursor:pointer">Ver todas em Properties</a>';
+   pfoot.innerHTML='<a href="javascript:void(0)" onclick="nav(\'tenantportal\')" style="font-size:11px;font-weight:600;color:var(--amber);text-decoration:underline;cursor:pointer">Ver todos no Tenant Portal</a>';
   }else{
    pfoot.style.display='none';
    pfoot.innerHTML='';
@@ -8011,57 +8047,123 @@ function ltDashRender(){
  }
  }
 
- // Alertas: disputed + pending + contratos (vencimento)
- const stName={disputed:'Disputa',pending:'Pendente'};
- const alertItems=[];
+ // Alertas e Pendencias: chamados + jobs pendentes + move in 30d + move out 60d
+ var alertItemsAll=[];
+ var hojeAl=new Date(); hojeAl.setHours(0,0,0,0);
+ var d30atras=new Date(hojeAl.getTime()-30*86400*1000);
+ var d60adiante=new Date(hojeAl.getTime()+60*86400*1000);
+
+ // 1. Chamados (records de lt_records com type='chamado')
  records.forEach(function(r){
-  if(!r) return;
-  if(r.status==='disputed'){alertItems.push({type:'stmt',r:r,urgent:true,label:stName.disputed||'Disputa'});}
-  else if(r.status==='pending'){alertItems.push({type:'stmt',r:r,urgent:false,label:stName.pending||'Pendente'});}
+  if(!r||r.type!=='chamado')return;
+  var st=String(r.status||'').toLowerCase();
+  if(st==='resolvido'||st==='cancelled'||st==='fechado')return;
+  var dt=r.createdAt?new Date(r.createdAt):null;
+  alertItemsAll.push({
+   kind:'chamado',
+   urgent:String(r.chamadoTipo||'').toLowerCase()==='manutencao',
+   label:'CHAMADO '+(String(r.chamadoTipo||'').toUpperCase()||'OUTRO'),
+   color:'#dc2626',bg:'#fee2e2',
+   primary:r.tenantName||r.tenant||'-',
+   detail:r.descricao||'',
+   date:dt?dt.toLocaleDateString('pt-BR'):'-',
+   sortTs:dt?dt.getTime():0
+  });
  });
- var caPre=[];
- if(typeof checkTenantContractAlerts==='function') checkTenantContractAlerts();
- var taskPre=[];
- if(typeof getLtTaskDashboardAlerts==='function'){
-  (getLtTaskDashboardAlerts()||[]).forEach(function(ta){ taskPre.push({type:'task',ta:ta,urgent:!!ta.urgent}); });
- }
- (window._tnContractAlerts||[]).forEach(function(ca){ caPre.push({type:'contract',ca:ca,urgent:!!ca.urgent}); });
- var alertItemsAll=taskPre.concat(caPre).concat(alertItems);
+
+ // 2. Jobs pendentes (vendor master)
+ try{
+  var expArr=(typeof ltExpMergeAll==='function')?ltExpMergeAll():(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]);
+  (expArr||[]).forEach(function(e){
+   if(!e||e.isJob!==true)return;
+   var st=String(e.status||'').toLowerCase();
+   if(st==='paid'||st==='applied'||st==='cancelled')return;
+   var dStr=e.due||e.serviceDate||e.month||'';
+   var ts=Date.parse(dStr)||0;
+   alertItemsAll.push({
+    kind:'job',
+    urgent:false,
+    label:'JOB PENDENTE',
+    color:'#92400e',bg:'#fef3c7',
+    primary:e.vendor||e.vendorName||'-',
+    detail:e.desc||e.description||'',
+    date:dStr||'-',
+    sortTs:ts
+   });
+  });
+ }catch(e){console.warn('alerts jobs',e);}
+
+ // 3. Move In recentes (ultimos 30 dias) - records + seed
+ var moveInRecAll=records.filter(function(r){return r&&r.moveIn&&r.tenant;}).slice();
+ try{
+  var seedT=window.GM_TENANTS_SEED||[];
+  seedT.forEach(function(t){
+   if(!t||!t.moveIn)return;
+   moveInRecAll.push({
+    address:String(t.propertyCsv||t.unit||'').split(' - ')[0]||t.unit||'',
+    tenant:t.name||'',
+    moveIn:t.moveIn,
+    leaseTo:t.leaseTo||'',
+    _seed:true
+   });
+  });
+ }catch(e){}
+ moveInRecAll.forEach(function(r){
+  if(!r.moveIn)return;
+  var d=new Date(r.moveIn);
+  if(isNaN(d.getTime()))return;
+  if(d>=d30atras&&d<=hojeAl){
+   alertItemsAll.push({
+    kind:'movein',
+    urgent:false,
+    label:'MOVE IN RECENTE',
+    color:'#166534',bg:'#dcfce7',
+    primary:r.address||'-',
+    detail:r.tenant||'',
+    date:r.moveIn,
+    sortTs:d.getTime()
+   });
+  }
+  // 4. Move Out previstos (proximos 60 dias)
+  var lt=r.leaseTo||r.moveOut;
+  if(lt){
+   var dl=new Date(lt);
+   if(!isNaN(dl.getTime())&&dl>=hojeAl&&dl<=d60adiante){
+    var diasRest=Math.ceil((dl.getTime()-hojeAl.getTime())/86400000);
+    alertItemsAll.push({
+     kind:'moveout',
+     urgent:diasRest<=30,
+     label:'MOVE OUT EM '+diasRest+'D',
+     color:'#1e40af',bg:'#dbeafe',
+     primary:r.address||'-',
+     detail:r.tenant||'',
+     date:lt,
+     sortTs:dl.getTime()
+    });
+   }
+  }
+ });
+
+ // Ordenar: urgente primeiro, depois por data desc
  alertItemsAll.sort(function(a,b){
   if(!!a.urgent!==!!b.urgent) return (b.urgent?1:0)-(a.urgent?1:0);
-  var ta=Date.parse((a.r&&a.r.savedAt)||'')||0;
-  var tb=Date.parse((b.r&&b.r.savedAt)||'')||0;
-  if(tb!==ta) return tb-ta;
-  return String(b.r&&b.r.id).localeCompare(String(a.r&&a.r.id));
+  return (b.sortTs||0)-(a.sortTs||0);
  });
- const alertTop=alertItemsAll.slice(0,10);
- const alertEl=document.getElementById('ltd-alerts-list');
+ var alertTop=alertItemsAll.slice(0,15);
+ var alertEl=document.getElementById('ltd-alerts-list');
  if(alertEl){
  if(!alertTop.length){
-  alertEl.innerHTML='<div style="padding:14px 18px;font-size:12px;color:var(--ink2)">Nenhuma pendencia no momento.</div>';
+  alertEl.innerHTML='<div style="padding:14px 18px;font-size:12px;color:var(--ink2);font-style:italic">Nenhum alerta no momento.</div>';
  } else {
-  const stylesU='background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)';
-  const stylesA='background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)';
+  var escA=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
   alertEl.innerHTML=alertTop.map(function(it){
-   if(it.type==='task'&&it.ta){
-    var x=it.ta;
-    var line2='<span style="font-size:11px;font-weight:600;color:var(--ink)">'+(x.title||'').replace(/</g,'&lt;')+'</span>';
-    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 18px;border-bottom:1px solid var(--border)">'
-     +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;'+(it.urgent?stylesU:stylesA)+'">'+(it.urgent?'URGENTE':'ATEN\u00C7\u00C3O')+'</span>'
-     +'<div style="flex:1;min-width:0">'+line2+' <a href="javascript:void(0)" onclick="nav(\'tasks\')" style="font-size:10px;color:var(--amber);text-decoration:underline;cursor:pointer">Ver tarefas</a></div></div>';
-   }
-   if(it.type==='contract'&&it.ca){
-    var c=it.ca;
-    var line2='<span style="font-size:11px;font-weight:600;color:var(--ink)">'+(c.title||'').replace(/</g,'&lt;')+'</span> <span style="font-size:11px;color:var(--ink2)">'+(c.detail||'').replace(/</g,'&lt;')+'</span>';
-    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 18px;border-bottom:1px solid var(--border)">'
-     +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;'+(it.urgent?stylesU:stylesA)+'">'+(it.urgent?'URGENTE':'ATEN\u00C7\u00C3O')+'</span>'
-     +'<div style="flex:1;min-width:0">'+line2+' <a href="javascript:void(0)" onclick="nav(\'tenants\')" style="font-size:10px;color:var(--amber);text-decoration:underline;cursor:pointer">Ver tenants</a></div></div>';
-   }
-   var ad=(it.r&&it.r.address)?String(it.r.address).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
-   var line='<span style="font-size:11px;font-weight:600;color:var(--ink)">'+ad+'</span> — <span style="font-size:11px;color:var(--ink2)">Status: '+it.label+'</span>';
-   return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 18px;border-bottom:1px solid var(--border)">'
-   +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;'+(it.urgent?stylesU:stylesA)+'">'+(it.urgent?'URGENTE':'ATEN\u00C7\u00C3O')+'</span>'
-   +'<div style="flex:1;min-width:0">'+line+'</div></div>';
+   var primary='<span style="font-size:11px;font-weight:600;color:var(--ink)">'+escA(it.primary||'-')+'</span>';
+   var detail=it.detail?'<span style="font-size:11px;color:var(--ink2);margin-left:6px">'+escA(it.detail).slice(0,80)+'</span>':'';
+   return '<div style="display:flex;align-items:center;gap:10px;padding:9px 18px;border-bottom:1px solid var(--border)">'
+    +'<span style="font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;background:'+it.bg+';color:'+it.color+'">'+escA(it.label)+'</span>'
+    +'<div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+primary+detail+'</div>'
+    +'<div style="font-size:11px;color:var(--ink3);font-family:\'JetBrains Mono\',monospace;flex-shrink:0">'+escA(it.date||'-')+'</div>'
+    +'</div>';
   }).join('');
  }
  }
