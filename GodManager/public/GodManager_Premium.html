@@ -9989,10 +9989,62 @@ function ltpBuildRecord(){
  files:[],savedAt:new Date().toLocaleString('pt-BR')
  };
 }
+function ltpNormalizeAddress(s){
+ if(!s)return '';
+ return String(s).trim().toLowerCase().replace(/\s+/g,' ');
+}
+async function ltpIsDuplicateAddress(address, excludeId){
+ var norm=ltpNormalizeAddress(address);
+ if(!norm)return false;
+ var exId=excludeId!=null?String(excludeId):'';
+ try{
+  var lts=(typeof ltGetRecords==='function')?(ltGetRecords()||[]):[];
+  var hit1=lts.find(function(r){
+   return r && ltpNormalizeAddress(r.address)===norm && String(r.id)!==exId;
+  });
+  if(hit1)return true;
+ }catch(e){}
+ try{
+  var gm=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  var hit2=gm.find(function(p){
+   if(!p)return false;
+   if(ltpNormalizeAddress(p.address)!==norm)return false;
+   if(String(p.id)===exId)return false;
+   if(String(p.code||'')===exId)return false;
+   if(String(p._apiId||'')===exId)return false;
+   return true;
+  });
+  if(hit2)return true;
+ }catch(e){}
+ try{
+  var res=await fetch('/api/properties',{credentials:'include'});
+  if(res.ok){
+   var data=await res.json();
+   var arr=(data&&data.properties)||[];
+   var hit3=arr.find(function(p){
+    if(!p)return false;
+    if(ltpNormalizeAddress(p.address)!==norm)return false;
+    if(String(p.code||'')===exId)return false;
+    if(String(p.id||'')===exId)return false;
+    return true;
+   });
+   if(hit3)return true;
+  }
+ }catch(e){console.warn('ltpIsDuplicateAddress API',e);}
+ return false;
+}
 async function ltpSaveNewProperty(){
  if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
  const rec=ltpBuildRecord();
  const isEdit=!!ltEditingId;
+ var addrCheck=(document.getElementById('ltp-f-address')&&document.getElementById('ltp-f-address').value)||rec.address||'';
+ var dupExcludeId=isEdit?ltEditingId:null;
+ var dup=await ltpIsDuplicateAddress(addrCheck,dupExcludeId);
+ if(dup){
+  if(typeof showToast==='function')showToast('Propriedade Duplicada','error');
+  alert('Propriedade Duplicada\n\nJa existe uma propriedade cadastrada com este endereco:\n'+addrCheck);
+  return;
+ }
  var gmArrCur=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  const newCode=isEdit?ltEditingId:((typeof window.gmPropertiesNextId==='function')?window.gmPropertiesNextId():(rec.id||('P'+String(gmArrCur.length+1).padStart(4,'0'))));
  var apiPayload={
