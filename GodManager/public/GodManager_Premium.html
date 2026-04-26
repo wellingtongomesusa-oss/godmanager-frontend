@@ -2092,6 +2092,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-nexp-month" type="month" value="2026-04" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div id="lt-nexp-legacy-value-wrap"><label style="font-size:11px;font-weight:600;color:var(--red);display:block;margin-bottom:4px">VALOR ($) *</label><input id="lt-nexp-value" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--red-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div id="lt-nexp-optional-pm-vendor-wrap" style="grid-column:1/-1">
+  <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (opcional) — cadastrado</label>
+  <select id="lt-nexp-optional-pm-vendor" onchange="if(typeof ltNexpOptionalPmVendorChange==='function')ltNexpOptionalPmVendorChange()" class="lt-nexp-optional-pm-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer"></select>
+  <p style="font-size:10px;color:var(--ink3);margin:6px 0 0;line-height:1.45">Ligue um fornecedor da lista; deixe em branco se nao aplicavel.</p>
+ </div>
  </div>
  <div id="lt-nexp-pm-block" style="display:none;margin-bottom:16px;border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:16px;background:rgba(20,20,22,.35)">
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">Despesa com vendor (Postgres, markup, NET owner)</div>
@@ -7431,20 +7436,24 @@ function ltNexpOnCatChange(){
  var c=(document.getElementById('lt-nexp-cat')||{}).value;
  var pm=document.getElementById('lt-nexp-pm-block');
  var leg=document.getElementById('lt-nexp-legacy-value-wrap');
+ var optWrap=document.getElementById('lt-nexp-optional-pm-vendor-wrap');
  if(pm)pm.style.display=(c==='Vendor')?'block':'none';
  if(leg)leg.style.display=(c==='Vendor')?'none':'block';
+ if(optWrap)optWrap.style.display=(c==='Vendor')?'none':'block';
  if(c==='Vendor'){ltNexpPopulatePmVendorSelect();ltNexpPmRecalc();}
+ else{ltNexpPopulatePmVendorSelect();}
 }
 function ltNexpPopulatePmVendorSelect(){
- var sel=document.getElementById('lt-nexp-pm-vendor');
- if(!sel)return;
  var list=(typeof gvLoad==='function')?gvLoad():[];
  var opts=['<option value="">— Selecionar —</option>'];
  list.forEach(function(v){
   if(!v||!v.id)return;
   opts.push('<option value="'+String(v.id).replace(/"/g,'&quot;')+'" data-pkg="'+(v.default_package||'PACOTE_1')+'">'+String(v.company_name||'').replace(/</g,'&lt;')+'</option>');
  });
- sel.innerHTML=opts.join('');
+ [document.getElementById('lt-nexp-pm-vendor'),document.getElementById('lt-nexp-optional-pm-vendor')].forEach(function(sel){
+  if(!sel)return;
+  sel.innerHTML=opts.join('');
+ });
 }
 function ltNexpGetPmPackageValue(){
  var m=document.getElementById('lt-newexp-modal');
@@ -7504,6 +7513,14 @@ function ltNexpPmVendorChange(){
  if(dp) ltNexpSetBothPacoteSelects(dp);
  ltNexpPmRecalc();
 }
+function ltNexpOptionalPmVendorChange(){
+ var sel=document.getElementById('lt-nexp-optional-pm-vendor');
+ if(!sel) return;
+ var o=sel.options[sel.selectedIndex];
+ var dp=o && o.getAttribute('data-pkg');
+ var d=document.getElementById('lt-pacote-sel-detalhe');
+ if(dp && d) d.value=dp;
+}
 function ltNexpPmRecalc(){
  var vc=parseFloat((document.getElementById('lt-nexp-pm-vendor-cost')||{}).value)||0;
  var pkg=ltNexpGetPmPackageValue();
@@ -7530,6 +7547,8 @@ function ltNexpPmRecalc(){
   });
   var v=document.getElementById('lt-nexp-pm-vendor');
   if(v) v.addEventListener('change', function(){ if(typeof ltNexpPmVendorChange==='function') ltNexpPmVendorChange(); });
+  var vo=document.getElementById('lt-nexp-optional-pm-vendor');
+  if(vo) vo.addEventListener('change', function(){ if(typeof ltNexpOptionalPmVendorChange==='function') ltNexpOptionalPmVendorChange(); });
  }
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
  else wire();
@@ -7548,7 +7567,7 @@ function ltExpPmStatusToUi(st){
 }
 function ltExpMapApiToRow(e){
  var hasVendor=!!(e.vendorId && String(e.vendorId).trim());
- var cat=hasVendor ? 'Vendor (API)' : String(e.serviceType || 'Despesa').trim() || 'Despesa';
+ var cat=String(e.serviceType || 'Despesa').trim() || 'Despesa';
  var pSrc=(e.pmPackage != null && String(e.pmPackage) !== '') ? e.pmPackage : (e.packageApplied != null ? e.packageApplied : '');
  var pa=String(pSrc || '').trim();
  var pkgL, mLab, mk;
@@ -7571,7 +7590,7 @@ function ltExpMapApiToRow(e){
   category:cat,
   desc:e.description || '',
   month:e.monthRef,
-  vendorName:hasVendor ? (e.vendorName || '\u2014') : '\u2014',
+  vendorName:String(e.vendorName||'').trim(),
   vendorCost:vc,
   ownerCharged:oc,
   packageApplied:pa,
@@ -7584,7 +7603,7 @@ function ltExpMapApiToRow(e){
   statusPm:e.status,
   value:oc,
   status:ui,
-  vendor:hasVendor ? (e.vendorName || '') : '',
+  vendor:String(e.vendorName||'').trim(),
   _apiRaw:e
  };
 }
@@ -7731,6 +7750,7 @@ function ltOpenNewExpense(){
  var pst=document.getElementById('lt-nexp-pm-status');if(pst)pst.value='PENDING';
  if(typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects('');
  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
+ var ovn=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn)ovn.value='';
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
@@ -7739,7 +7759,10 @@ function ltCloseNewExpense(){document.getElementById('lt-newexp-modal').style.di
 function ltOpenEditExpense(id){
  id=String(id);
  var e=(window._pmExpenseRows || []).find(function(x){ return String(x.id) === id; });
- if(e && e.vendorId) {
+ var nexpFixedCatList=['HOA','Água','Luz / Electric','Manutenção'];
+ var stNexp0=String((e&&e.serviceType)?e.serviceType:'').trim();
+ var nexpUseFullVendorBlock=!!(e && e.vendorId && nexpFixedCatList.indexOf(stNexp0)<0);
+ if(nexpUseFullVendorBlock) {
   ltExpEditingId = null; ltExpEditingPmId = id; ltPopulatePropertyDropdowns();
   document.getElementById('lt-newexp-title').textContent = 'Editar Despesa (vendor)';
   document.getElementById('lt-nexp-cat').value = 'Vendor';
@@ -7785,7 +7808,7 @@ function ltOpenEditExpense(id){
    });
    if(op) propSel2.value=op.value; else propSel2.value=pC||pI||'';
   }
-  document.getElementById('lt-nexp-cat').value = e.serviceType || 'HOA';
+  document.getElementById('lt-nexp-cat').value = nexpFixedCatList.indexOf(stNexp0) >= 0 ? stNexp0 : (e.serviceType || 'HOA');
   if(typeof ltNexpOnCatChange==='function') ltNexpOnCatChange();
   document.getElementById('lt-nexp-month').value = e.monthRef || '2026-04';
   document.getElementById('lt-nexp-value').value = e.vendorCost != null ? String(e.vendorCost) : '';
@@ -7795,6 +7818,12 @@ function ltOpenEditExpense(id){
   document.getElementById('lt-nexp-paid').value = '';
   document.getElementById('lt-nexp-status').value = ltExpPmStatusToUi(e.status);
   try{ ltNexpPopulateVendorSelect(''); }catch(err){}
+  if(typeof ltNexpPopulatePmVendorSelect==='function')ltNexpPopulatePmVendorSelect();
+  setTimeout(function(){
+   var ov=document.getElementById('lt-nexp-optional-pm-vendor');
+   if(ov && e.vendorId) ov.value=String(e.vendorId);
+  },0);
+  if(e.packageApplied && typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects(e.packageApplied);
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
@@ -7870,11 +7899,15 @@ function ltSaveExpense(){
   : (month && month.length >= 7 ? (month + '-01') : '');
  if(!sDate) sDate = new Date().toISOString().slice(0, 10);
  (async function(){
+  var optVid=String((document.getElementById('lt-nexp-optional-pm-vendor')||{}).value||'').trim();
+  var pDet=document.getElementById('lt-pacote-sel-detalhe');
+  var pkgStr=String((pDet&&pDet.value)||'').trim();
+  var pmPkg=pkgStr?pkgStr:'PACOTE_4';
   var body = {
    propertyCode: propId,
-   vendorId: null,
-   packageApplied: 'PACOTE_4',
-   pmPackage: 'PACOTE_4',
+   vendorId: optVid?optVid:null,
+   packageApplied: pmPkg,
+   pmPackage: pmPkg,
    vendorCost: value,
    serviceType: category,
    monthRef: month,
@@ -7982,7 +8015,8 @@ function ltExpRender(){
  const esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
  tbody.innerHTML=filtered.map((r,i)=>{
   const isPm=!!r._isPm;
-  const ven=esc(isPm?r.vendorName:(r.vendor||'—'));
+  const venRaw=isPm?String(r.vendorName||r.vendor||'').trim():String(r.vendor||'').trim();
+  const ven=esc(venRaw||'\u2014');
   var svcRaw=isPm ? (r._isVendorPm ? (r.serviceType || r.desc) : (r.desc || r.serviceType)) : (r.desc || '—');
   const svc=esc(svcRaw || '—');
   const vVend=isPm?ltFmt(r.vendorCost):ltFmt(ltExpValueWithExtras(r));
