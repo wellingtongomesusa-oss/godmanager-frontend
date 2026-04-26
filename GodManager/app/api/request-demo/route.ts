@@ -39,6 +39,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Email invalido.' }, { status: 400 });
     }
 
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentCount = await prisma.demoLead.count({
+      where: {
+        email,
+        createdAt: { gte: oneDayAgo },
+      },
+    });
+    if (recentCount >= 3) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Limite de 3 acessos por 24h atingido para este email. Para acesso prolongado, fale connosco em /contacto.',
+        },
+        { status: 429 },
+      );
+    }
+
     const ip = ipFromHeaders(req);
     const userAgent = req.headers.get('user-agent');
 
