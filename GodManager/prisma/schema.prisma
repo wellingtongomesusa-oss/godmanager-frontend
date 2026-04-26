@@ -106,8 +106,8 @@ model AppSetting {
 }
 
 model Property {
-  id                String             @id @default(cuid())
-  code              String             @unique
+  id                String                  @id @default(cuid())
+  code              String                  @unique
   address           String
   city              String?
   state             String?
@@ -115,23 +115,25 @@ model Property {
   unitType          String?
   bedrooms          Int?
   bathrooms         Float?
-  rent              Decimal            @default(0) @db.Decimal(10, 2)
-  deposit           Decimal            @default(0) @db.Decimal(10, 2)
-  guaranteeLimit    Decimal?           @db.Decimal(10, 2)
+  rent              Decimal                 @default(0) @db.Decimal(10, 2)
+  deposit           Decimal                 @default(0) @db.Decimal(10, 2)
+  guaranteeLimit    Decimal?                @db.Decimal(10, 2)
   moveInDate        DateTime?
   ownerName         String?
   ownerEmail        String?
   ownerPhone        String?
-  mgmtFeePct        Decimal            @default(0) @db.Decimal(5, 2)
-  status            String             @default("active")
-  notes             String?            @db.Text
+  mgmtFeePct        Decimal                 @default(0) @db.Decimal(5, 2)
+  status            String                  @default("active")
+  notes             String?                 @db.Text
   metadata          Json?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
   createdBy         String?
   tenants           Tenant[]
   pmExpenses        PmExpense[]
   ownerMonthPayouts OwnerMonthPayout[]
+  maintenanceCalls  MaintenanceCall[]
+  statusHistory     PropertyStatusHistory[]
 
   @@index([code])
   @@index([status])
@@ -139,33 +141,94 @@ model Property {
 }
 
 model Tenant {
-  id         String    @id @default(cuid())
-  code       String    @unique
-  name       String
-  email      String?
-  phone      String?
-  unit       String?
-  propertyId String?
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  moveIn     DateTime?
-  leaseTo    DateTime?
-  rent       Decimal   @default(0) @db.Decimal(10, 2)
-  deposit    Decimal   @default(0) @db.Decimal(10, 2)
-  tenantType String?
-  status     String    @default("active")
-  ssn        String?
-  itin       String?
-  tags       String[]
-  notes      String?   @db.Text
-  metadata   Json?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  createdBy  String?
+  id               String            @id @default(cuid())
+  code             String            @unique
+  name             String
+  email            String?
+  phone            String?
+  unit             String?
+  propertyId       String?
+  property         Property?         @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  moveIn           DateTime?
+  leaseTo          DateTime?
+  rent             Decimal           @default(0) @db.Decimal(10, 2)
+  deposit          Decimal           @default(0) @db.Decimal(10, 2)
+  tenantType       String?
+  status           String            @default("active")
+  ssn              String?
+  itin             String?
+  tags             String[]
+  notes            String?           @db.Text
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdBy        String?
+  maintenanceCalls MaintenanceCall[]
 
   @@index([code])
   @@index([propertyId])
   @@index([status])
   @@map("tenants")
+}
+
+model MaintenanceCall {
+  id         String    @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  tipo       String
+  descricao  String    @db.Text
+  fotoUrl    String?   @db.Text
+  status     String    @default("aberto")
+  isAlert    Boolean   @default(true)
+  createdBy  String?
+  resolvedAt DateTime?
+  resolvedBy String?
+  notes      String?   @db.Text
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("maintenance_calls")
+}
+
+model JobAction {
+  id         String   @id @default(cuid())
+  jobId      String
+  jobType    String   @default("expense")
+  action     String
+  reason     String?  @db.Text
+  actorId    String?
+  actorEmail String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([jobId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("job_actions")
+}
+
+model PropertyStatusHistory {
+  id             String   @id @default(cuid())
+  propertyId     String
+  property       Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  fromStatus     String?
+  toStatus       String
+  changedBy      String?
+  changedByEmail String?
+  reason         String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([createdAt])
+  @@map("property_status_history")
 }
 
 enum PmPackage {

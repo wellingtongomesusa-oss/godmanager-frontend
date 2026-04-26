@@ -10341,6 +10341,14 @@ async function ltpSaveNewProperty(){
  if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
  const rec=ltpBuildRecord();
  const isEdit=!!ltEditingId;
+ var __prevStatus=null;
+ if(isEdit){
+  try{
+   var __arrPrev=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+   var __mPrev=__arrPrev.find(function(p){return p&&(String(p.id)===String(ltEditingId)||String(p.code)===String(ltEditingId));});
+   if(__mPrev&&__mPrev.status)__prevStatus=String(__mPrev.status);
+  }catch(ePs){}
+ }
  var addrCheck=(document.getElementById('ltp-f-address')&&document.getElementById('ltp-f-address').value)||rec.address||'';
  var dupExcludeId=isEdit?ltEditingId:null;
  var dup=await ltpIsDuplicateAddress(addrCheck,dupExcludeId);
@@ -10446,6 +10454,19 @@ async function ltpSaveNewProperty(){
  ltpRender();ltRender();ltDashRender();
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  try{if(typeof window.gmLogAudit==='function')window.gmLogAudit(isEdit?'update':'create','property',newCode,{address:rec.address||'',rent:Number(rec.rent)||0,owner:rec.owner||'',apiOk:apiOk});}catch(eAud){}
+ try{
+  if(isEdit){
+   var __newStatus=String(rec.status||'pending');
+   if(__prevStatus&&__prevStatus!==__newStatus&&apiId){
+    fetch('/api/property-status-history',{
+     method:'POST',
+     headers:{'Content-Type':'application/json'},
+     credentials:'include',
+     body:JSON.stringify({propertyId:apiId,fromStatus:__prevStatus,toStatus:__newStatus,reason:'ui_edit',metadata:{code:newCode}})
+    }).catch(function(eH){console.warn('property-status-history',eH);});
+   }
+  }
+ }catch(ePsh){console.warn('status hist outer',ePsh);}
  showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Propriedade actualizada (sync pendente)'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),'success');
 }
 function ltpTrapTab(e){
@@ -12261,9 +12282,10 @@ window.jobsReturn=function(id){
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
   if(idx<0){alert('Despesa nao encontrada');return;}
   var rec=arr[idx];
+  var prevStatus=String(rec.status||'').toLowerCase();
   rec.extraFees=[];
   rec.jobActions=[];
-  if(String(rec.status||'').toLowerCase()==='cancelled'){
+  if(prevStatus==='cancelled'){
    rec.status='pending';
    rec.cancelReason=null;
    rec.cancelledAt=null;
@@ -12276,6 +12298,16 @@ window.jobsReturn=function(id){
    var actions=jobsLoadActions().filter(function(a){return String(a.expenseId)!==String(id);});
    jobsSaveActions(actions);
   }catch(e){}
+  try{
+   var apiId=rec._apiId||(typeof rec.id==='string'&&rec.id.length>=20?rec.id:null);
+   var jobIdAud=apiId||String(id);
+   fetch('/api/job-actions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({jobId:jobIdAud,action:'return',jobType:'expense',metadata:{prevStatus:prevStatus,localId:String(id)}})
+   }).catch(function(e){console.warn('jobAction return',e);});
+  }catch(eApi){console.warn('jobsReturn.api',eApi);}
   if(typeof jobsRender==='function')jobsRender();
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
   if(typeof showToast==='function')showToast('Acoes removidas. Despesa retornada a pendente.','success');
@@ -12300,6 +12332,7 @@ window.jobsCancel=function(id){
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
   if(idx<0){alert('Despesa nao encontrada');return;}
   var rec=arr[idx];
+  var prevStatus=String(rec.status||'').toLowerCase();
   rec.status='cancelled';
   rec.cancelReason=motivo.trim();
   rec.cancelledAt=new Date().toISOString();
@@ -12307,6 +12340,16 @@ window.jobsCancel=function(id){
   rec.savedAt=new Date().toLocaleString('pt-BR');
   arr[idx]=rec;
   ltExpSaveRecords(arr);
+  try{
+   var apiId=rec._apiId||(typeof rec.id==='string'&&rec.id.length>=20?rec.id:null);
+   var jobIdAud=apiId||String(id);
+   fetch('/api/job-actions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({jobId:jobIdAud,action:'cancel',reason:motivo.trim(),jobType:'expense',metadata:{prevStatus:prevStatus,localId:String(id)}})
+   }).catch(function(e){console.warn('jobAction cancel',e);});
+  }catch(eApi){console.warn('jobsCancel.api',eApi);}
   if(typeof jobsRender==='function')jobsRender();
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
   if(typeof showToast==='function')showToast('Despesa cancelada.','success');
@@ -12695,17 +12738,47 @@ window.tenantCloseChamado=function(){
  window.tenantCurrentChamadoId=null;
 };
 
-window.tenantSaveChamado=function(){
+window.tenantSaveChamado=async function(){
  var ctx=window.tenantCurrentChamadoId;
  if(!ctx){alert('Erro: sem contexto');return;}
  var tipo=(document.getElementById('tch-f-type')||{}).value||'outro';
  var desc=String((document.getElementById('tch-f-desc')||{}).value||'').trim();
  if(!desc){alert('Descricao e obrigatoria.');return;}
  var photoEl=document.getElementById('tch-f-photo');
- var saveAndShow=function(fotoStr){
+ var saveAndShow=async function(fotoStr){
+  var apiOk=false;var apiId=null;
+  try{
+   var tenantApiId=ctx.tenantApiId||(typeof ctx.tenantId==='string'&&ctx.tenantId.length>=20?ctx.tenantId:null);
+   var propApiId=ctx.propertyApiId||(typeof ctx.propertyId==='string'&&ctx.propertyId.length>=20?ctx.propertyId:null);
+   var payload={
+    tenantId:tenantApiId||null,
+    propertyId:propApiId||null,
+    tipo:tipo,
+    descricao:desc,
+    fotoUrl:fotoStr||null,
+    isAlert:true,
+    metadata:{
+     tenantCode:ctx.tenantId||'',
+     tenantName:ctx.tenantName||'',
+     propertyCode:ctx.propertyId||'',
+     source:'tenant_portal'
+    }
+   };
+   var res=await fetch('/api/maintenance-calls',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify(payload)
+   });
+   if(res.ok){
+    var jr=await res.json().catch(function(){return{};});
+    apiOk=!!(jr&&jr.ok);
+    apiId=apiOk&&jr.call?jr.call.id:null;
+   }
+  }catch(eApi){console.warn('tenantSaveChamado.api',eApi);}
   try{
    var rec={
-    id:'cha_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    id:apiId||('cha_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)),
     type:'chamado',
     isAlert:true,
     status:'aberto',
@@ -12716,8 +12789,10 @@ window.tenantSaveChamado=function(){
     descricao:desc,
     foto:fotoStr,
     createdAt:new Date().toISOString(),
-    createdBy:(window.gmAuthUser&&window.gmAuthUser.email)||'tenant',
-    savedAt:new Date().toLocaleString('pt-BR')
+    createdBy:(window.gmAuthUser&&window.gmAuthUser.email)||(window.__gmCurrentUser&&window.__gmCurrentUser.email)||'tenant',
+    savedAt:new Date().toLocaleString('pt-BR'),
+    _apiId:apiId,
+    _persisted:apiOk
    };
    if(typeof ltGetRecords==='function'&&typeof ltSaveRecords==='function'){
     var all=ltGetRecords()||[];
@@ -12729,7 +12804,7 @@ window.tenantSaveChamado=function(){
     arr.push(rec);
     localStorage.setItem('lt_records',JSON.stringify(arr));
    }
-   if(typeof showToast==='function')showToast('Chamado criado: '+tipo,'success');else alert('Chamado criado.');
+   if(typeof showToast==='function')showToast('Chamado criado: '+tipo+(apiOk?'':' (local — sync pendente)'),'success');else alert('Chamado criado.');
    tenantCloseChamado();
    if(typeof tpRender==='function')tpRender();
    if(typeof gmHomeRender==='function')gmHomeRender();
