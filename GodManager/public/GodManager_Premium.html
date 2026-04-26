@@ -1543,6 +1543,32 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="ltd-alerts-list" style="padding:4px 0"></div>
  </div>
  </div>
+ <!-- Tarefas (espelho do menu OPERATIONS > Tasks) -->
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden;margin-top:20px">
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;flex-wrap:wrap;gap:12px;justify-content:space-between">
+   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">Tarefas</div>
+    <span id="dash-tasks-pending-badge" style="font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">0 pendentes</span>
+   </div>
+   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Filtro</span>
+    <select id="dash-tasks-filter-status" onchange="if(typeof dashTasksRender==='function')dashTasksRender();" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:11.5px;background:var(--sand);color:var(--ink)">
+     <option value="all" selected>Todas</option>
+     <option value="pending">Pendentes</option>
+     <option value="completed">Concluídas</option>
+    </select>
+    <select id="dash-tasks-filter-cat" onchange="if(typeof dashTasksRender==='function')dashTasksRender();" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:11.5px;background:var(--sand);color:var(--ink)">
+     <option value="">Todas as categorias</option>
+     <option value="listing">Listing</option>
+     <option value="moveout">Move Out</option>
+     <option value="inspection">Inspeção</option>
+    </select>
+    <a href="javascript:void(0)" onclick="if(typeof nav==='function')nav('tasks')" style="font-size:11px;font-weight:600;color:var(--amber);text-decoration:underline;cursor:pointer">Ver todas</a>
+   </div>
+  </div>
+  <div id="dash-tasks-list" style="padding:14px 18px"></div>
+  <div id="dash-tasks-empty" style="display:none;padding:24px;text-align:center;font-size:12px;color:var(--ink3);font-style:italic">Nenhuma tarefa a mostrar com este filtro.</div>
+ </div>
 </div>
 
 <div class="page" id="page-ltstatements">
@@ -8291,6 +8317,7 @@ function ltDashRender(){
  }
  ltDashRenderAllPropsTable();
  if(typeof ltUpdateTaskNavBadge==='function') ltUpdateTaskNavBadge();
+ if(typeof dashTasksRender==='function')try{dashTasksRender();}catch(eDT){console.warn('dashTasksRender',eDT);}
 }
 
 // 
@@ -9391,9 +9418,14 @@ function ltTasksLabelCat(c){
  if(c==='inspection') return 'Inspeção';
  return c||'';
 }
-function ltTasksRender(){
- var st=(document.getElementById('lt-tasks-filter-status')||{}).value||'all';
- var fc=(document.getElementById('lt-tasks-filter-cat')||{}).value||'';
+function ltTasksRenderTo(o){
+ o=o||{};
+ var listEl=o.listEl||(o.listElId&&document.getElementById(o.listElId));
+ if(!listEl) return;
+ var emptyEl=o.emptyEl||(o.emptyElId&&document.getElementById(o.emptyElId));
+ var badgeEl=o.badgeEl||(o.badgeElId&&document.getElementById(o.badgeElId));
+ var st=String(o.statusFilter||'all');
+ var fc=String(o.catFilter||'');
  var all=ltTaskGetRecords();
  var f=all.filter(function(t){
   if(!t) return false;
@@ -9403,11 +9435,7 @@ function ltTasksRender(){
   return true;
  });
  var pendCount=all.filter(function(t){return t&&t.status==='pending';}).length;
- var pb=document.getElementById('lt-tasks-pending-badge');
- if(pb)pb.textContent=String(pendCount)+' pendente'+(pendCount!==1?'s':'');
- var listEl=document.getElementById('lt-tasks-list');
- var emptyEl=document.getElementById('lt-tasks-empty');
- if(!listEl) return;
+ if(badgeEl)badgeEl.textContent=String(pendCount)+' pendente'+(pendCount!==1?'s':'');
  if(!f.length){ listEl.innerHTML='';if(emptyEl)emptyEl.style.display='block';return; }
  if(emptyEl)emptyEl.style.display='none';
  var by={};
@@ -9439,8 +9467,28 @@ function ltTasksRender(){
   }).join('')+'</div>';
  }).join('');
  listEl.innerHTML=html;
+}
+function ltTasksRender(){
+ ltTasksRenderTo({
+  listElId:'lt-tasks-list',
+  emptyElId:'lt-tasks-empty',
+  badgeElId:'lt-tasks-pending-badge',
+  statusFilter:(document.getElementById('lt-tasks-filter-status')||{}).value||'all',
+  catFilter:(document.getElementById('lt-tasks-filter-cat')||{}).value||''
+ });
  if(typeof ltUpdateTaskNavBadge==='function') ltUpdateTaskNavBadge();
 }
+function dashTasksRender(){
+ ltTasksRenderTo({
+  listElId:'dash-tasks-list',
+  emptyElId:'dash-tasks-empty',
+  badgeElId:'dash-tasks-pending-badge',
+  statusFilter:(document.getElementById('dash-tasks-filter-status')||{}).value||'all',
+  catFilter:(document.getElementById('dash-tasks-filter-cat')||{}).value||''
+ });
+}
+window.ltTasksRenderTo=ltTasksRenderTo;
+window.dashTasksRender=dashTasksRender;
 function tenantNameForTask(tid){
  if(!tid) return '—';
  var p=(typeof tpAllProfiles==='function'?tpAllProfiles():[]).find(function(x){return x&&String(x.id)===String(tid);});
