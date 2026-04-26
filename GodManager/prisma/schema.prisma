@@ -89,32 +89,32 @@ model AuditEntry {
 }
 
 model Property {
-  id         String   @id @default(cuid())
-  code       String   @unique
-  address    String
-  city       String?
-  state      String?
-  zip        String?
-  unitType   String?
-  bedrooms   Int?
-  bathrooms  Float?
-  rent       Decimal  @default(0) @db.Decimal(10, 2)
-  deposit    Decimal  @default(0) @db.Decimal(10, 2)
-  guaranteeLimit Decimal? @db.Decimal(10, 2)
-  moveInDate     DateTime?
-  ownerName  String?
-  ownerEmail String?
-  ownerPhone String?
-  mgmtFeePct Decimal  @default(0) @db.Decimal(5, 2)
-  status     String   @default("active")
-  notes      String?  @db.Text
-  metadata   Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  createdBy  String?
-  tenants    Tenant[]
-  pmExpenses         PmExpense[]
-  ownerMonthPayouts  OwnerMonthPayout[]
+  id                String             @id @default(cuid())
+  code              String             @unique
+  address           String
+  city              String?
+  state             String?
+  zip               String?
+  unitType          String?
+  bedrooms          Int?
+  bathrooms         Float?
+  rent              Decimal            @default(0) @db.Decimal(10, 2)
+  deposit           Decimal            @default(0) @db.Decimal(10, 2)
+  guaranteeLimit    Decimal?           @db.Decimal(10, 2)
+  moveInDate        DateTime?
+  ownerName         String?
+  ownerEmail        String?
+  ownerPhone        String?
+  mgmtFeePct        Decimal            @default(0) @db.Decimal(5, 2)
+  status            String             @default("active")
+  notes             String?            @db.Text
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  createdBy         String?
+  tenants           Tenant[]
+  pmExpenses        PmExpense[]
+  ownerMonthPayouts OwnerMonthPayout[]
 
   @@index([code])
   @@index([status])
@@ -167,7 +167,7 @@ enum PmExpenseStatus {
 
 /// Fornecedores internos (markup / Owner Payment)
 model PmVendor {
-  id             String    @id @default(cuid())
+  id             String          @id @default(cuid())
   companyName    String
   contactName    String?
   email          String
@@ -179,41 +179,59 @@ model PmVendor {
   trade          String?
   /// Tipo de serviço (texto livre)
   serviceType    String?
-  defaultPackage PmPackage @default(PACOTE_1)
+  defaultPackage PmPackage       @default(PACOTE_1)
   bankName       String?
   routingNumber  String?
   accountNumber  String?
   accountType    String?
   paymentType    String?
-  commissionMp   Boolean   @default(false)
-  send1099       Boolean   @default(true)
-  status         String    @default("Active")
-  notes          String?   @db.Text
+  commissionMp   Boolean         @default(false)
+  send1099       Boolean         @default(true)
+  status         String          @default("Active")
+  notes          String?         @db.Text
+  source         String?
+  reviewedAt     DateTime?
   metadata       Json?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   expenses       PmExpense[]
+  payments       VendorPayment[]
 
   @@index([companyName])
   @@map("pm_vendors")
 }
 
+model VendorPayment {
+  id       String   @id @default(cuid())
+  vendorId String
+  vendor   PmVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amount   Decimal  @db.Decimal(10, 2)
+  count    Int      @default(0)
+  paidAt   DateTime @default(now())
+  paidBy   String?
+  metadata Json?
+
+  @@index([vendorId])
+  @@index([paidAt])
+  @@map("vendor_payments")
+}
+
 model PmExpense {
-  id              String          @id @default(cuid())
-  propertyId      String
-  property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  vendorId        String?
-  vendor          PmVendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  serviceType     String?
-  packageApplied  PmPackage
-  vendorCost      Decimal         @db.Decimal(12, 2)
-  ownerCharged    Decimal         @db.Decimal(12, 2)
-  serviceDate     DateTime?
-  monthRef        String
-  status          PmExpenseStatus @default(PENDING)
-  description     String?         @db.Text
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  propertyId     String
+  property       Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  vendorId       String?
+  vendor         PmVendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  serviceType    String?
+  packageApplied PmPackage
+  vendorCost     Decimal         @db.Decimal(12, 2)
+  ownerCharged   Decimal         @db.Decimal(12, 2)
+  serviceDate    DateTime?
+  monthRef       String
+  status         PmExpenseStatus @default(PENDING)
+  description    String?         @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([propertyId, monthRef])
   @@index([monthRef])
