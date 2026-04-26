@@ -2255,12 +2255,15 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div id="ltp-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
  <div style="overflow-x:auto">
- <table style="width:100%;border-collapse:collapse;min-width:1400px">
+ <table style="width:100%;border-collapse:collapse;min-width:1600px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Owner</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Quartos</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Banheiros</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Sqft</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MOVE IN</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ocupacao</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
@@ -8522,12 +8525,15 @@ async function ltpRender(){
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.baths||'—'}</div></td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${r.owner}</td>
- <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
- <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${ltFormatMoveIn(r.moveIn)}</td>
- <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
- <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
- <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
- <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.guarantee?ltFmt(r.guarantee):'—'}</td>
+<td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
+<td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.bedrooms?r.bedrooms:'—'}</td>
+<td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.bathrooms?r.bathrooms:'—'}</td>
+<td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.sqft?r.sqft:'—'}</td>
+<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${ltFormatMoveIn(r.moveIn)}</td>
+<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
+<td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
+<td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
+<td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${(r.guaranteeLimit||r.guarantee)?ltFmt(r.guaranteeLimit||r.guarantee):'—'}</td>
  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.mgmpct?r.mgmpct+'%':'—'}</td>
  ${ltpRowNetExpDia15(r, expByProp)}
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
@@ -10236,7 +10242,8 @@ window.ltpOpenEditProperty._populate=function(r){
  c('ltp-f-deposit-toggle',dep>0);
  var dw=document.getElementById('ltp-deposit-wrap');if(dw)dw.style.display=dep>0?'block':'none';
  s('ltp-f-deposit-amt',dep>0?dep:'');
- s('ltp-f-guarantee-limit',Number(r.guaranteeLimit)>0?r.guaranteeLimit:'');
+ var __gl=Number(r.guaranteeLimit)>0?Number(r.guaranteeLimit):(Number(r.guarantee)>0?Number(r.guarantee):0);
+ s('ltp-f-guarantee-limit',__gl>0?__gl:'');
  s('ltp-f-movein',r.moveInDate?String(r.moveInDate).split('T')[0]:(r.moveIn||''));
  s('ltp-f-hoa',r.hoa);s('ltp-f-mgmpct',r.mgmpct);s('ltp-f-guarantee',r.guarantee);
  s('ltp-f-owner-fullname',r.ownerFullName);s('ltp-f-owner-taxid',r.ownerTaxId);
