@@ -41,27 +41,7 @@ export default function LoginPage() {
           className="absolute inset-0 bg-gradient-to-t from-login-navy/92 via-login-navy/55 to-login-navy/35"
           aria-hidden
         />
-        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between p-10 xl:p-14">
-          <Link
-            href="/dashboard"
-            className="flex max-w-md items-start gap-4 outline-none focus-visible:ring-2 focus-visible:ring-login-gold focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-          >
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#dfc08a] to-login-gold font-playfair text-2xl font-semibold text-white shadow-lg"
-              aria-hidden
-            >
-              G
-            </div>
-            <div className="leading-tight">
-              <span className="block font-playfair text-2xl font-semibold tracking-tight text-white md:text-3xl">
-                GodManager
-              </span>
-              <span className="mt-1 block font-inter text-[10px] font-semibold uppercase tracking-[0.35em] text-login-gold">
-                Financial Operations
-              </span>
-            </div>
-          </Link>
-
+        <div className="relative z-10 flex min-h-screen w-full flex-col justify-end p-10 pt-24 xl:p-14 xl:pt-28">
           <div className="flex flex-1 flex-col justify-end pb-6 pt-10">
             <div className="max-w-xl space-y-6">
               <h2 className="font-playfair text-[42px] font-semibold leading-[1.08] text-white md:text-[56px] lg:text-[64px]">

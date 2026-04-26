@@ -57,17 +57,32 @@ export function SiteHeader({ active }: { active: Active }) {
         >
           G
         </div>
-        <span
-          style={{
-            color: '#fff',
-            fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: '0.5px',
-          }}
-        >
-          GodManager
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+          <span
+            style={{
+              color: '#fff',
+              fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
+              fontSize: 20,
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+            }}
+          >
+            GodManager
+          </span>
+          <span
+            style={{
+              color: '#c9a96e',
+              fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: '2px',
+              marginTop: 4,
+              textTransform: 'uppercase',
+            }}
+          >
+            Financial Operations
+          </span>
+        </div>
       </Link>
       <nav style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
         <Link href="/login" style={navStyle(active === 'home')}>
