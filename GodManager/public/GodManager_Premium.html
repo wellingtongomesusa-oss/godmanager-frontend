@@ -11579,9 +11579,24 @@ var JOBS_KEY='gm_job_actions';
 var JOBS_MASTER_VENDOR_NAMES=['master vacation homes llc','master vacation homes','manager prop'];
 var JOBS_FEES={vendor:120,job:200};
 
+(function jobsMigrateMarkIsJob(){
+ try{
+  if(typeof ltExpGetRecords!=='function'||typeof ltExpSaveRecords!=='function')return;
+  var arr=ltExpGetRecords()||[];
+  var changed=false;
+  arr.forEach(function(r){
+   if(!r||r.isJob===true)return;
+   var v=String((r.vendor!=null&&String(r.vendor).trim())?r.vendor:(r.vendorname||r.vendorName||r.desc||'')).toLowerCase();
+   if(v.indexOf('master')>=0){r.isJob=true;changed=true;}
+  });
+  if(changed)ltExpSaveRecords(arr);
+ }catch(e){console.warn('jobs migrate isJob',e);}
+})();
+
 function jobsIsMasterVendor(vendorName){
  var s=String(vendorName||'').trim().toLowerCase();
  if(!s)return false;
+ if(s.indexOf('master')>=0)return true;
  return JOBS_MASTER_VENDOR_NAMES.some(function(n){return s===n||s.indexOf(n)>=0;});
 }
 
@@ -11675,7 +11690,12 @@ function jobsMoney(n){
 }
 
 function jobsFilteredExpenses(){
- return ltExpGetRecords().filter(function(r){return jobsIsMasterVendor(jobsVendorSourceStr(r));});
+ var arr=(typeof ltExpMergeAll==='function')?ltExpMergeAll():ltExpGetRecords();
+ return (arr||[]).filter(function(r){
+  if(!r)return false;
+  if(r.isJob===true)return true;
+  return jobsIsMasterVendor(jobsVendorSourceStr(r));
+ });
 }
 
 function jobsRender(){
