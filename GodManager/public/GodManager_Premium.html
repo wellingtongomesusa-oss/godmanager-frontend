@@ -12520,9 +12520,90 @@ window.tenantSaveChamado=function(){
  }
 };
 
+window.tenantEditingId=null;
+
+function tenantClearEditForm(){
+ ['code','name','email','phone','movein','leaseto','rent','deposit','unit','notes'].forEach(function(f){
+  var el=document.getElementById('ten-f-'+f);if(el)el.value='';
+ });
+ var st=document.getElementById('ten-f-status');if(st)st.value='active';
+ var cd=document.getElementById('ten-f-code');if(cd)cd.disabled=false;
+}
+
 window.tenantOpenNew=function(){
- if(typeof showToast==='function')showToast('Novo tenant: em breve','info');
- else alert('Novo tenant: em breve');
+ window.tenantEditingId=null;
+ var modal=document.getElementById('tenant-edit-modal');
+ if(!modal){alert('Modal indisponivel');return;}
+ var ttl=document.getElementById('ten-modal-title');if(ttl)ttl.textContent='Novo Tenant';
+ tenantClearEditForm();
+ try{
+  var arr=ltExpGetRecords?[]:[];
+  fetch('/api/tenants',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+   var max=0;(d&&d.tenants||[]).forEach(function(t){var n=parseInt(String(t.code||'').replace(/\D/g,''),10)||0;if(n>max)max=n;});
+   var nextCode='T'+String(max+1).padStart(4,'0');
+   var cd=document.getElementById('ten-f-code');if(cd)cd.value=nextCode;
+  }).catch(function(){});
+ }catch(e){}
+ modal.style.display='flex';
+};
+
+window.tenantOpenEdit=function(id){
+ if(!id){alert('ID em falta');return;}
+ fetch('/api/tenants/'+encodeURIComponent(id),{credentials:'include'}).then(function(r){return r.json();}).then(function(data){
+  var t=data&&data.tenant;
+  if(!t){alert('Tenant nao encontrado');return;}
+  window.tenantEditingId=id;
+  var ttl=document.getElementById('ten-modal-title');if(ttl)ttl.textContent='Editar Tenant';
+  document.getElementById('ten-f-code').value=t.code||'';
+  document.getElementById('ten-f-code').disabled=true;
+  document.getElementById('ten-f-name').value=t.name||'';
+  document.getElementById('ten-f-email').value=t.email||'';
+  document.getElementById('ten-f-phone').value=t.phone||'';
+  document.getElementById('ten-f-movein').value=t.moveIn?String(t.moveIn).split('T')[0]:'';
+  document.getElementById('ten-f-leaseto').value=t.leaseTo?String(t.leaseTo).split('T')[0]:'';
+  document.getElementById('ten-f-rent').value=t.rent||'';
+  document.getElementById('ten-f-deposit').value=t.deposit||'';
+  document.getElementById('ten-f-status').value=t.status||'active';
+  document.getElementById('ten-f-unit').value=t.unit||'';
+  document.getElementById('ten-f-notes').value=t.notes||'';
+  document.getElementById('tenant-edit-modal').style.display='flex';
+ }).catch(function(e){alert('Erro: '+e.message);});
+};
+
+window.tenantEditRow=window.tenantOpenEdit;
+
+window.tenantCloseEdit=function(){
+ var md=document.getElementById('tenant-edit-modal');if(md)md.style.display='none';
+ window.tenantEditingId=null;
+};
+
+window.tenantSaveEdit=async function(){
+ var code=String((document.getElementById('ten-f-code')||{}).value||'').trim();
+ var name=String((document.getElementById('ten-f-name')||{}).value||'').trim();
+ if(!code||!name){alert('Code e Nome sao obrigatorios');return;}
+ var payload={
+  code:code,
+  name:name,
+  email:String((document.getElementById('ten-f-email')||{}).value||'').trim()||null,
+  phone:String((document.getElementById('ten-f-phone')||{}).value||'').trim()||null,
+  moveIn:(document.getElementById('ten-f-movein')||{}).value||null,
+  leaseTo:(document.getElementById('ten-f-leaseto')||{}).value||null,
+  rent:Number((document.getElementById('ten-f-rent')||{}).value)||0,
+  deposit:Number((document.getElementById('ten-f-deposit')||{}).value)||0,
+  status:(document.getElementById('ten-f-status')||{}).value||'active',
+  unit:String((document.getElementById('ten-f-unit')||{}).value||'').trim()||null,
+  notes:String((document.getElementById('ten-f-notes')||{}).value||'').trim()||null,
+ };
+ try{
+  var url=window.tenantEditingId?('/api/tenants/'+encodeURIComponent(window.tenantEditingId)):'/api/tenants';
+  var method=window.tenantEditingId?'PATCH':'POST';
+  var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+  if(!res.ok){var eb={};try{eb=await res.json();}catch(e){}throw new Error(eb.error||('HTTP '+res.status));}
+  if(typeof showToast==='function')showToast(window.tenantEditingId?'Tenant actualizado':'Tenant criado','success');
+  else alert(window.tenantEditingId?'Tenant actualizado':'Tenant criado');
+  tenantCloseEdit();
+  if(typeof tpRender==='function')tpRender();
+ }catch(e){console.warn('tenantSaveEdit',e);alert('Erro ao salvar: '+e.message);}
 };
 
 window.tenantViewDetails=function(tid){
@@ -12530,13 +12611,75 @@ window.tenantViewDetails=function(tid){
  else alert('Detalhes em breve');
 };
 
-window.tenantEditRow=function(tid){
- if(typeof showToast==='function')showToast('Edit tenant '+tid+' em breve','info');
- else alert('Edit em breve');
-};
-
 (function(){
  var __origTpRender=window.tpRender;
+
+ function tpRenderInternal(container,tenants){
+  var fmt=function(v){try{return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(v)||0);}catch(e){return '$'+(Number(v)||0);}};
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');};
+
+  tenants.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''));});
+
+  var totTenants=tenants.length;
+  var totAtivos=tenants.filter(function(t){return t.status==='active'||t.status==='aprovado'||t.status==='notice';}).length;
+  var hoje=new Date();var d60=new Date(hoje.getTime()+60*86400*1000);
+  var totMoveOut60=tenants.filter(function(t){
+   if(!t.leaseTo)return false;
+   var d=new Date(t.leaseTo);
+   if(isNaN(d.getTime()))return false;
+   return d>=hoje&&d<=d60;
+  }).length;
+
+  var html='';
+  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 22px">';
+  html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--amber)"><div class="lbl">TOTAL TENANTS</div><div class="val">'+totTenants+'</div></div>';
+  html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--green)"><div class="lbl">ATIVOS</div><div class="val" style="color:var(--green)">'+totAtivos+'</div></div>';
+  html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--red)"><div class="lbl">MOVE-OUT 60D</div><div class="val" style="color:var(--red)">'+totMoveOut60+'</div></div>';
+  html+='</div>';
+
+  html+='<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--paper);box-shadow:0 1px 4px rgba(30,22,12,.04)">';
+  html+='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:1080px">';
+  html+='<thead><tr>';
+  html+='<th class="tp-th">Nome</th>';
+  html+='<th class="tp-th">Propriedade</th>';
+  html+='<th class="tp-th">Phone</th>';
+  html+='<th class="tp-th">Email</th>';
+  html+='<th class="tp-th" style="text-align:center">Move In</th>';
+  html+='<th class="tp-th" style="text-align:right">Rent</th>';
+  html+='<th class="tp-th" style="text-align:center">Status</th>';
+  html+='<th class="tp-th" style="text-align:center">Acoes</th>';
+  html+='</tr></thead><tbody>';
+
+  if(tenants.length===0){
+   html+='<tr><td class="tp-td" colspan="8" style="padding:32px;text-align:center;color:var(--ink3);font-style:italic">Nenhum tenant cadastrado</td></tr>';
+  }else{
+   tenants.forEach(function(t){
+    var stCls='inv';
+    if(t.status==='active'||t.status==='aprovado')stCls='act';
+    else if(t.status==='notice')stCls='not';
+    var stLabel=t.status?t.status.toUpperCase():'-';
+    html+='<tr class="tp-row">';
+    html+='<td class="tp-td" style="font-weight:600">'+esc(t.name)+'</td>';
+    html+='<td class="tp-td" style="color:var(--ink2)">'+esc(t.property)+'</td>';
+    html+='<td class="tp-td" style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'+esc(t.phone||'-')+'</td>';
+    html+='<td class="tp-td" style="font-size:11px;color:var(--ink2)">'+esc(t.email||'-')+'</td>';
+    html+='<td class="tp-td" style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px">'+esc(t.moveIn||'-')+'</td>';
+    html+='<td class="tp-td" style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+fmt(t.rent)+'</td>';
+    html+='<td class="tp-td" style="text-align:center"><span class="tp-pill '+stCls+'">'+esc(stLabel)+'</span></td>';
+    html+='<td class="tp-td" style="text-align:center;white-space:nowrap">';
+    html+='<button class="tp-act-btn" onclick="tenantViewDetails(\''+esc(t.id)+'\')">Ver</button>';
+    html+='<button class="tp-act-btn" onclick="tenantOpenEdit(\''+esc(t.id)+'\')">Editar</button>';
+    var nmEsc=String(t.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html+='<button class="tp-act-btn primary" onclick="tenantOpenChamado(\''+esc(t.id)+'\',\''+nmEsc+'\',\''+esc(t.propertyId||'')+'\')">Criar Chamado</button>';
+    html+='</td>';
+    html+='</tr>';
+   });
+  }
+
+  html+='</tbody></table></div></div>';
+  container.innerHTML=html;
+ }
+
  window.tpRender=function(){
   try{
    var container=document.getElementById('tp-render');
@@ -12544,122 +12687,36 @@ window.tenantEditRow=function(tid){
     if(typeof __origTpRender==='function')return __origTpRender();
     return;
    }
-   var fmt=function(v){try{return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(v)||0);}catch(e){return '$'+(Number(v)||0);}};
-   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');};
-
-   var tenants=[];
-   var seenKey={};
-   var addTenant=function(t){
-    if(!t)return;
-    var k=(t.id||'')+'|'+(t.name||'').toLowerCase()+'|'+(t.property||'');
-    if(seenKey[k])return;
-    seenKey[k]=1;
-    tenants.push(t);
-   };
-
-   try{
-    var seed=window.GM_TENANTS_SEED||[];
-    if(Array.isArray(seed)){
-     seed.forEach(function(t){
-      addTenant({
-       id:t.id||t.tenantId||('tn_'+Math.random().toString(36).slice(2,8)),
-       name:t.name||t.fullName||'-',
-       property:t.propertyCsv||t.property||t.address||'-',
-       propertyId:t.propId||t.propertyId||'',
-       phone:t.phone||'-',
-       email:t.email||'-',
-       moveIn:t.moveIn||'',
-       leaseTo:t.leaseTo||'',
-       rent:Number(t.rent)||0,
-       status:String(t.status||'active').toLowerCase(),
-       source:'seed'
-      });
-     });
-    }
-   }catch(e){console.warn('tp seed',e);}
-
-   try{
-    if(typeof ltGetRecords==='function'){
-     var lts=ltGetRecords()||[];
-     lts.forEach(function(r){
-      if(!r||!r.tenant||r.type==='chamado')return;
-      addTenant({
-       id:r.id||('tn_'+Math.random().toString(36).slice(2,8)),
-       name:r.tenant,
-       property:r.address||'-',
-       propertyId:r.propId||r.propertyId||r.id||'',
-       phone:r.tenantPhone||r.phone||'-',
-       email:r.tenantEmail||r.email||'-',
-       moveIn:r.moveIn||'',
-       leaseTo:r.leaseTo||'',
-       rent:Number(r.rent)||0,
-       status:String(r.status||'active').toLowerCase(),
-       source:'lt_records'
-      });
-     });
-    }
-   }catch(e){console.warn('tp lts',e);}
-
-   tenants.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''));});
-
-   var totTenants=tenants.length;
-   var totAtivos=tenants.filter(function(t){return t.status==='active'||t.status==='aprovado'||t.status==='notice';}).length;
-   var hoje=new Date();var d60=new Date(hoje.getTime()+60*86400*1000);
-   var totMoveOut60=tenants.filter(function(t){
-    if(!t.leaseTo)return false;
-    var d=new Date(t.leaseTo);
-    if(isNaN(d.getTime()))return false;
-    return d>=hoje&&d<=d60;
-   }).length;
-
-   var html='';
-   html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 22px">';
-   html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--amber)"><div class="lbl">TOTAL TENANTS</div><div class="val">'+totTenants+'</div></div>';
-   html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--green)"><div class="lbl">ATIVOS</div><div class="val" style="color:var(--green)">'+totAtivos+'</div></div>';
-   html+='<div class="tp-kpi-card" style="border-bottom:3px solid var(--red)"><div class="lbl">MOVE-OUT 60D</div><div class="val" style="color:var(--red)">'+totMoveOut60+'</div></div>';
-   html+='</div>';
-
-   html+='<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--paper);box-shadow:0 1px 4px rgba(30,22,12,.04)">';
-   html+='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:1080px">';
-   html+='<thead><tr>';
-   html+='<th class="tp-th">Nome</th>';
-   html+='<th class="tp-th">Propriedade</th>';
-   html+='<th class="tp-th">Phone</th>';
-   html+='<th class="tp-th">Email</th>';
-   html+='<th class="tp-th" style="text-align:center">Move In</th>';
-   html+='<th class="tp-th" style="text-align:right">Rent</th>';
-   html+='<th class="tp-th" style="text-align:center">Status</th>';
-   html+='<th class="tp-th" style="text-align:center">Acoes</th>';
-   html+='</tr></thead><tbody>';
-
-   if(tenants.length===0){
-    html+='<tr><td class="tp-td" colspan="8" style="padding:32px;text-align:center;color:var(--ink3);font-style:italic">Nenhum tenant cadastrado</td></tr>';
-   }else{
-    tenants.forEach(function(t){
-     var stCls='inv';
-     if(t.status==='active'||t.status==='aprovado')stCls='act';
-     else if(t.status==='notice')stCls='not';
-     var stLabel=t.status?t.status.toUpperCase():'-';
-     html+='<tr class="tp-row">';
-     html+='<td class="tp-td" style="font-weight:600">'+esc(t.name)+'</td>';
-     html+='<td class="tp-td" style="color:var(--ink2)">'+esc(t.property)+'</td>';
-     html+='<td class="tp-td" style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'+esc(t.phone||'-')+'</td>';
-     html+='<td class="tp-td" style="font-size:11px;color:var(--ink2)">'+esc(t.email||'-')+'</td>';
-     html+='<td class="tp-td" style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px">'+esc(t.moveIn||'-')+'</td>';
-     html+='<td class="tp-td" style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">'+fmt(t.rent)+'</td>';
-     html+='<td class="tp-td" style="text-align:center"><span class="tp-pill '+stCls+'">'+esc(stLabel)+'</span></td>';
-     html+='<td class="tp-td" style="text-align:center;white-space:nowrap">';
-     html+='<button class="tp-act-btn" onclick="tenantViewDetails(\''+esc(t.id)+'\')">Ver</button>';
-     html+='<button class="tp-act-btn" onclick="tenantEditRow(\''+esc(t.id)+'\')">Editar</button>';
-     var nmEsc=String(t.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-     html+='<button class="tp-act-btn primary" onclick="tenantOpenChamado(\''+esc(t.id)+'\',\''+nmEsc+'\',\''+esc(t.propertyId||'')+'\')">Criar Chamado</button>';
-     html+='</td>';
-     html+='</tr>';
+   container.innerHTML='<div style="padding:48px;text-align:center;color:var(--ink3);font-style:italic">A carregar tenants...</div>';
+   fetch('/api/tenants',{credentials:'include'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+   }).then(function(data){
+    var arr=(data&&data.tenants)||[];
+    var tenants=arr.map(function(t){
+     var prop=t.property||{};
+     var meta=t.metadata||{};
+     return {
+      id:t.id,
+      code:t.code||'',
+      name:t.name||'-',
+      property:(prop&&prop.address)||meta.propertyCsv||t.unit||'-',
+      propertyId:t.propertyId||'',
+      phone:t.phone||'-',
+      email:t.email||'-',
+      moveIn:t.moveIn?String(t.moveIn).split('T')[0]:'',
+      leaseTo:t.leaseTo?String(t.leaseTo).split('T')[0]:'',
+      rent:Number(t.rent)||0,
+      deposit:Number(t.deposit)||0,
+      status:String(t.status||'active').toLowerCase(),
+      source:meta.source||t.createdBy||'manual'
+     };
     });
-   }
-
-   html+='</tbody></table></div></div>';
-   container.innerHTML=html;
+    tpRenderInternal(container,tenants);
+   }).catch(function(e){
+    console.warn('tpRender fetch',e);
+    container.innerHTML='<div style="padding:48px;text-align:center;color:var(--red)">Erro ao carregar tenants: '+String(e.message||e)+' <button onclick="tpRender()" style="margin-left:12px;padding:6px 12px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Recarregar</button></div>';
+   });
   }catch(err){
    console.warn('tpRender rebuild error',err);
    try{if(typeof __origTpRender==='function')__origTpRender();}catch(e){}
@@ -12700,6 +12757,70 @@ window.tenantEditRow=function(tid){
   <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:14px">
    <button type="button" onclick="tenantCloseChamado()" style="padding:9px 18px;border:1px solid var(--border2);background:transparent;color:var(--ink2);border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px">Cancelar</button>
    <button type="button" onclick="tenantSaveChamado()" style="padding:9px 18px;border:none;background:var(--amber);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;font-size:12px;box-shadow:0 2px 8px rgba(201,169,110,.25)">Salvar Chamado</button>
+  </div>
+ </div>
+</div>
+
+<div id="tenant-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+ <div style="background:var(--paper);border-radius:14px;padding:22px 24px;width:620px;max-width:92vw;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.22);border:1px solid var(--border)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+   <h2 id="ten-modal-title" style="margin:0;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink)">Novo Tenant</h2>
+   <button type="button" onclick="tenantCloseEdit()" style="border:none;background:none;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1">&times;</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Code *</label>
+    <input id="ten-f-code" type="text" placeholder="T0156" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Nome *</label>
+    <input id="ten-f-name" type="text" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Email</label>
+    <input id="ten-f-email" type="email" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Phone</label>
+    <input id="ten-f-phone" type="text" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Move In</label>
+    <input id="ten-f-movein" type="date" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Lease To</label>
+    <input id="ten-f-leaseto" type="date" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Rent (USD)</label>
+    <input id="ten-f-rent" type="number" step="0.01" min="0" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Deposit (USD)</label>
+    <input id="ten-f-deposit" type="number" step="0.01" min="0" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)"/>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Status</label>
+    <select id="ten-f-status" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)">
+     <option value="active">Active</option>
+     <option value="notice">Notice</option>
+     <option value="moved-out">Moved Out</option>
+     <option value="inactive">Inactive</option>
+    </select>
+   </div>
+   <div>
+    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Unit</label>
+    <input id="ten-f-unit" type="text" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)"/>
+   </div>
+  </div>
+  <div style="margin-top:12px">
+   <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Notes</label>
+   <textarea id="ten-f-notes" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);resize:vertical"></textarea>
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:14px;margin-top:16px">
+   <button type="button" onclick="tenantCloseEdit()" style="padding:9px 18px;border:1px solid var(--border2);background:transparent;color:var(--ink2);border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px">Cancelar</button>
+   <button type="button" onclick="tenantSaveEdit()" style="padding:9px 18px;border:none;background:var(--amber);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;font-size:12px;box-shadow:0 2px 8px rgba(201,169,110,.25)">Salvar Tenant</button>
   </div>
  </div>
 </div>
