@@ -1696,7 +1696,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start">
   <div>
    <div class="pt">Jobs</div>
-   <div class="ps">Acoes de manutencao sobre expenses do Master Vacation Homes</div>
+   <div class="ps">Acoes de manutencao sobre expenses abertos</div>
   </div>
   <div id="jobs-user-badge" style="font-size:12px;color:var(--ink3);padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"></div>
  </div>
@@ -1713,6 +1713,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
    <div id="jobs-kpi-job" style="font-size:22px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div>
+  </div>
+  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper);position:relative">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Expenses Abertos</div>
+   <div id="jobs-kpi-expenses-abertos" style="font-size:22px;font-weight:700;color:#92400e;margin-top:4px">0</div>
+   <div style="font-size:10px;color:var(--ink3);margin-top:2px">aguardam acao</div>
   </div>
  </div>
 
@@ -3036,6 +3041,7 @@ const CARDS=[
  {id:'security-deposits',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb bg',value:'—',sub1:'Total deposits held in trust',sub2:'',cd:[100],cc:['#2a6e4e'],ctr:'—',pills:[{t:'Trust Account',c:'pg'}],r:'ltstatements',empty:true,labels:[]},
  {id:'total-net-owner',label:'TOTAL NET OWNER',badge:'NET',barClass:'bb bb',value:'—',sub1:'Soma a repassar aos owners',sub2:'',cd:[1],cc:['#22558c'],ctr:'—',pills:[{t:'Net Mensal',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
  {id:'total-exp-pm',label:'TOTAL EXP MES (PM)',badge:'EXP',barClass:'bb br',value:'—',sub1:'Soma despesas do mes (PM)',sub2:'',cd:[1],cc:['#b83030'],ctr:'—',pills:[{t:'Atual',c:'pr'}],r:'ltexpenses',empty:true,labels:[]},
+ {id:'expenses-calls',label:'EXPENSES CALLS',badge:'EXP',barClass:'bb ba',value:'0',sub1:'Total de chamados abertos no mes',sub2:'Aguardam acao do tecnico',cd:[1],cc:['#92400e'],ctr:'0',pills:[{t:'Abertos',c:'pa'}],r:'jobs',empty:true,labels:[]},
  {id:'rent-receivable',label:'RENT RECEIVABLE',badge:'RCV',barClass:'bb ba',value:'—',sub1:'Active rents due this month',sub2:'',cd:[65,25,10],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Collected',c:'pg'},{t:'Pending',c:'pa'},{t:'Late',c:'pr'}],r:'ltstatements',empty:true,labels:[]},
  {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'—',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'cleaning-spend',label:'CLEANING SPEND',badge:'CLN',barClass:'bb ba',value:'—',sub1:'Total spent with cleaners',sub2:'Current period',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Turnover',c:'pa'},{t:'Deep Clean',c:'pb'},{t:'Routine',c:'pg'}],r:'ltcleanings',empty:true,labels:[]},
@@ -3249,6 +3255,17 @@ function applyHomeDashboardFromApi(d){
   c.ctr=gmHomeMoneyCtr(tep);
   break;
  }
+ case 'expenses-calls':{
+  var qec=gmHomeNum(d.qty_expenses_calls,0);
+  var nec=Math.round(Number(qec)||0);
+  c.value=String(nec);
+  c.cd=[Math.max(0.01,nec),1];
+  c.cc=['#92400e','#e2ddd4'];
+  c.ctr=String(nec);
+  c.empty=nec===0;
+  if(c.pills&&c.pills[0])c.pills[0].t='Abertos ('+nec+')';
+  break;
+ }
   case 'rent-receivable':
    c.value=gmHomeMoney(pr);
    var pend=Math.max(0,pr-oc);
@@ -3372,6 +3389,28 @@ function gmHomeBuildDashboardFromLocal(){
  var qp=arr.length;
  var qo=Object.keys(owners).length;
  var occRate=qp>0?((ql/qp)*100):0;
+ // Expenses Calls: qty de expenses abertos no mes corrente
+ var qExpCalls=0;
+ try{
+  var expArr=(typeof ltExpMergeAll==='function')?ltExpMergeAll():(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]);
+  var hoje=new Date();
+  var ymCur=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  var inicioMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  (expArr||[]).forEach(function(e){
+   if(!e)return;
+   if(e.type==='chamado')return;
+   var st=String(e.status||'').toLowerCase();
+   if(st==='paid'||st==='applied'||st==='cancelled')return;
+   var v=String(e.vendor||e.vendorname||e.vendorName||'').trim();
+   if(!v&&e.type!=='expense'&&e.isJob!==true)return;
+   var mm=String(e.month||'').slice(0,7);
+   if(mm){if(mm===ymCur)qExpCalls++;return;}
+   var dStr=e.due||e.serviceDate||e.savedAt||e.createdAt||'';
+   if(!dStr){qExpCalls++;return;}
+   var d=new Date(dStr);
+   if(!isNaN(d.getTime())&&d>=inicioMes)qExpCalls++;
+  });
+ }catch(e){console.warn('home expenses calls',e);}
  return{
   qty_properties:qp,qty_leases_active:ql,qty_vacant:qv,qty_owners:qo,
   qty_future:qf,qty_notice:qnot,
@@ -3380,6 +3419,7 @@ function gmHomeBuildDashboardFromLocal(){
   total_deposit_sum:totDepSum,
   total_net_owner_sum:totNetOwnerSum,
   total_exp_pm_sum:(typeof window.__gmHomeExpPmCached==='number'?window.__gmHomeExpPmCached:0),
+  qty_expenses_calls:qExpCalls,
   operating_cash:0,unpaid_balance:0,
   _source:'local'
  };
@@ -11594,7 +11634,13 @@ function jobsIsMasterVendor(vendorName){
 }
 
 function jobsVendorSourceStr(r){
- return String((r&&r.vendor!=null&&String(r.vendor).trim())?r.vendor:((r&&r.desc)||'')).trim();
+ if(!r)return '';
+ var cands=[r.vendor,r.vendorname,r.vendorName,r.vendorBusinessName,r.desc];
+ for(var i=0;i<cands.length;i++){
+  var s=String(cands[i]==null?'':cands[i]).trim();
+  if(s)return s;
+ }
+ return '';
 }
 
 function jobsLoadActions(){
@@ -11696,8 +11742,16 @@ function jobsFilteredExpenses(){
  var arr=(typeof ltExpMergeAll==='function')?ltExpMergeAll():ltExpGetRecords();
  return (arr||[]).filter(function(r){
   if(!r)return false;
+  // Mostra todos os expenses (chamados ao tecnico).
+  // Exclui apenas chamados de tenant (type=chamado) e statements puros sem vendor.
+  if(r.type==='chamado')return false;
+  if(r.type==='statement'){
+   var vs=jobsVendorSourceStr(r);
+   if(!vs)return false;
+  }
   if(r.isJob===true)return true;
-  return jobsIsMasterVendor(jobsVendorSourceStr(r));
+  if(r.type==='expense')return true;
+  return !!jobsVendorSourceStr(r);
  });
 }
 
@@ -11746,9 +11800,16 @@ function jobsRender(){
  var k1=document.getElementById('jobs-kpi-total'); if(k1)k1.textContent=String(rows.length);
  var k2=document.getElementById('jobs-kpi-vendor'); if(k2)k2.textContent=jobsMoney(totalVendorFees);
  var k3=document.getElementById('jobs-kpi-job'); if(k3)k3.textContent=jobsMoney(totalJobFees);
+ var abertos=rows.filter(function(r){
+  var st=String(r&&r.status||'').toLowerCase();
+  if(st==='paid'||st==='applied'||st==='cancelled')return false;
+  if(jobsHasActionFor(r&&r.id,'vendor')||jobsHasActionFor(r&&r.id,'job'))return false;
+  return true;
+ }).length;
+ var k4=document.getElementById('jobs-kpi-expenses-abertos'); if(k4)k4.textContent=String(abertos);
 
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa do Master Vacation Homes encontrada.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa encontrada.</td></tr>';
   return;
  }
 
