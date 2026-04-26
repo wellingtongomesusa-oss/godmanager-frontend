@@ -13094,27 +13094,48 @@ window.tenantViewDetails=function(tid){
   for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h=h&h;}
   return 'gh_'+(h>>>0).toString(36)+'_'+s.length;
  }
- window.adminGenerateGaapPassword=function(){
+ window.adminGenerateGaapPassword=async function(){
   var pwd='';
   for(var i=0;i<6;i++)pwd+=Math.floor(Math.random()*10);
+  var hash=gaapHash(pwd);
+  var by=(window.gmAuthUser&&window.gmAuthUser.email)||(window.__gmCurrentUser&&window.__gmCurrentUser.email)||'admin';
   try{
-   localStorage.setItem('gaap_password_hash',gaapHash(pwd));
-   localStorage.setItem('gaap_password_one_shot','true');
-   var hist=[];
-   try{hist=JSON.parse(localStorage.getItem('gaap_password_history')||'[]');if(!Array.isArray(hist))hist=[];}catch(eP){hist=[];}
+   var rPut=await fetch('/api/admin/settings/gaap_password_hash',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({value:{hash:hash,oneShot:true,generatedAt:new Date().toISOString(),generatedBy:by}})
+   });
+   if(!rPut.ok){
+    var err=await rPut.json().catch(function(){return{};});
+    throw new Error(err.error||('HTTP '+rPut.status));
+   }
+   var rH=await fetch('/api/admin/settings/gaap_password_history',{credentials:'include',cache:'no-store'});
+   var dH=await rH.json().catch(function(){return{setting:null};});
+   var hist=Array.isArray(dH&&dH.setting&&dH.setting.value)?dH.setting.value.slice():[];
    hist.unshift({
     at:new Date().toISOString(),
-    by:(window.gmAuthUser&&window.gmAuthUser.email)||'admin',
+    by:by,
     used:false,
     maskedPwd:pwd.substring(0,2)+'\u2022\u2022\u2022\u2022'
    });
    hist=hist.slice(0,10);
-   localStorage.setItem('gaap_password_history',JSON.stringify(hist));
-  }catch(e){console.warn('adminGenerateGaapPassword',e);}
-  var disp=document.getElementById('admin-gaap-pwd-display');
-  if(disp){disp.value=pwd;disp.select();}
-  if(typeof showToast==='function')showToast('Senha gerada. Copie agora — não será mostrada novamente.','success');
-  adminRenderGaapHistory();
+   await fetch('/api/admin/settings/gaap_password_history',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({value:hist})
+   });
+   var disp=document.getElementById('admin-gaap-pwd-display');
+   if(disp){disp.value=pwd;disp.select();}
+   if(typeof showToast==='function')showToast('Senha gerada (banco). Copie agora — uso unico.','success');
+   try{if(typeof window.gmLogAudit==='function')window.gmLogAudit('gaap_password_generate','gaap',null,{by:by,oneShot:true});}catch(eAud){}
+   adminRenderGaapHistory();
+  }catch(e){
+   console.warn('adminGenerateGaapPassword',e);
+   if(typeof showToast==='function')showToast('Erro ao gerar senha: '+(e.message||'desconhecido'),'error');
+   else alert('Erro ao gerar senha: '+(e.message||''));
+  }
  };
  window.adminCopyGaapPassword=function(){
   var disp=document.getElementById('admin-gaap-pwd-display');
@@ -13133,11 +13154,19 @@ window.tenantViewDetails=function(tid){
    try{disp.select();document.execCommand('copy');ok();}catch(eC){}
   }
  };
- window.adminRenderGaapHistory=function(){
+ window.adminRenderGaapHistory=async function(){
   var box=document.getElementById('admin-gaap-pwd-history');
   if(!box)return;
+  box.innerHTML='<div style="color:var(--ink3);font-style:italic;padding:6px 0">A carregar...</div>';
   var hist=[];
-  try{hist=JSON.parse(localStorage.getItem('gaap_password_history')||'[]');if(!Array.isArray(hist))hist=[];}catch(e){hist=[];}
+  try{
+   var r=await fetch('/api/admin/settings/gaap_password_history',{credentials:'include',cache:'no-store'});
+   if(r.status===403){box.innerHTML='<div style="color:var(--red);padding:6px 0">Apenas administradores.</div>';return;}
+   if(r.ok){
+    var d=await r.json();
+    if(d&&d.setting&&Array.isArray(d.setting.value))hist=d.setting.value;
+   }
+  }catch(eF){console.warn('adminRenderGaapHistory',eF);}
   if(hist.length===0){box.innerHTML='<div style="color:var(--ink3);font-style:italic;padding:6px 0">Sem senhas geradas.</div>';return;}
   box.innerHTML=hist.map(function(h){
    var d=h.at?new Date(h.at):null;

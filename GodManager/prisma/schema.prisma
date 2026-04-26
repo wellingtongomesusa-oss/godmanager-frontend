@@ -94,6 +94,17 @@ model AuditEntry {
   @@map("audit_entries")
 }
 
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@index([key])
+  @@map("app_settings")
+}
+
 model Property {
   id                String             @id @default(cuid())
   code              String             @unique

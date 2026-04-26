@@ -1254,7 +1254,7 @@ body.gaap-locked .pf-row-val{
     revealTimer=setTimeout(function(){applyHide();},GAAP_REVEAL_MIN*60*1000);
   }
 
-  window.gaapUnlock=function(){
+  window.gaapUnlock=async function(){
     var modal=document.getElementById('gaap-password-modal');
     var input=document.getElementById('gaap-password-input');
     var err=document.getElementById('gaap-error');
@@ -1263,14 +1263,45 @@ body.gaap-locked .pf-row-val{
     var title=document.getElementById('gaap-modal-title');
     if(input)input.value='';
     if(err)err.style.display='none';
-    var stored=localStorage.getItem(GAAP_HASH_KEY);
-    if(!stored){
+
+    // 1) Status da senha no banco (multi-user)
+    var hasPwd=false;
+    try{
+      var resSt=await fetch('/api/gaap/password-status',{credentials:'include',cache:'no-store'});
+      if(resSt.ok){var dSt=await resSt.json();hasPwd=!!(dSt&&dSt.hasPassword);}
+    }catch(eS){console.warn('gaap status',eS);}
+
+    // 2) Migration: se localStorage tem hash legacy mas banco nao, oferecer migrar (admin)
+    if(!hasPwd&&gaapIsAdmin()){
+      var legacy=null;try{legacy=localStorage.getItem(GAAP_HASH_KEY);}catch(eLg){}
+      if(legacy){
+        if(confirm('Senha local detectada neste navegador. Migrar para o banco (multi-utilizador)?')){
+          try{
+            var legacyOneShot=false;
+            try{legacyOneShot=localStorage.getItem(GAAP_ONESHOT_KEY)==='true';}catch(eOS){}
+            var rPut=await fetch('/api/admin/settings/gaap_password_hash',{
+              method:'PUT',
+              headers:{'Content-Type':'application/json'},
+              credentials:'include',
+              body:JSON.stringify({value:{hash:legacy,oneShot:legacyOneShot,migratedFrom:'localStorage',migratedAt:new Date().toISOString()}})
+            });
+            if(rPut.ok){
+              try{localStorage.removeItem(GAAP_HASH_KEY);localStorage.removeItem(GAAP_ONESHOT_KEY);}catch(eC){}
+              hasPwd=true;
+              try{if(window.opener&&typeof window.opener.showToast==='function')window.opener.showToast('Senha GAAP migrada para o banco','success');}catch(eT){}
+            }
+          }catch(eMig){console.warn('gaap migrate',eMig);}
+        }
+      }
+    }
+
+    if(!hasPwd){
       if(!gaapIsAdmin()){
         alert('Senha nao configurada. Contacte o administrador.');
         return;
       }
       if(title)title.textContent='Configurar Senha';
-      if(msg)msg.textContent='Defina uma senha de 6 digitos para proteger o GAAP.';
+      if(msg)msg.textContent='Defina uma senha de 6 digitos. Sera guardada no banco e valida para todos os utilizadores.';
       if(configBtn)configBtn.style.display='none';
     }else{
       if(title)title.textContent='Senha de Acesso';
@@ -1285,17 +1316,7 @@ body.gaap-locked .pf-row-val{
     document.getElementById('gaap-password-modal').style.display='none';
   };
 
-  function gaapLogAudit(action,details){
-    try{
-      fetch('/api/audit',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body:JSON.stringify({action:String(action||''),entity:'gaap',entityId:null,details:details||null})
-      }).catch(function(e){});
-    }catch(eA){}
-  }
-  window.gaapSubmitPassword=function(){
+  window.gaapSubmitPassword=async function(){
     var input=document.getElementById('gaap-password-input');
     var err=document.getElementById('gaap-error');
     var pwd=String((input&&input.value)||'').trim();
@@ -1304,73 +1325,72 @@ body.gaap-locked .pf-row-val{
       err.style.display='block';
       return;
     }
-    var hashed=gaapHashPassword(pwd);
-    // Master admin password: sempre valida, nunca expira nem invalida
-    if(hashed===GAAP_MASTER_HASH){
-      gaapLogAudit('gaap_unlock',{success:true,via:'master'});
-      window.gaapCloseModal();
-      applyReveal();
-      return;
-    }
-    var stored=localStorage.getItem(GAAP_HASH_KEY);
-    if(!stored){
-      if(!gaapIsAdmin()){
-        err.textContent='Apenas admin pode configurar a senha.';
+    try{
+      var res=await fetch('/api/gaap/verify-password',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({password:pwd})
+      });
+      if(res.status===401){
+        var d401=await res.json().catch(function(){return{};});
+        // 401 pode ser unauthorized OU senha errada. A API devolve "Unauthorized" se nao houver sessao.
+        if(d401&&d401.error==='Unauthorized'){
+          err.textContent='Sessao expirada. Faca login novamente.';
+        }else{
+          err.textContent=(d401&&d401.error)||'Senha incorrecta.';
+        }
         err.style.display='block';
-        gaapLogAudit('gaap_unlock_fail',{success:false,reason:'no-stored-non-admin'});
         return;
       }
-      localStorage.setItem(GAAP_HASH_KEY,hashed);
-      gaapLogAudit('gaap_unlock',{success:true,via:'initial-config'});
+      if(res.status===404){
+        // Sem senha definida: configurar (admin) gravando hash directo no banco
+        if(!gaapIsAdmin()){
+          err.textContent='Senha nao configurada. Contacte o administrador.';
+          err.style.display='block';
+          return;
+        }
+        var newHash=gaapHashPassword(pwd);
+        var rPut=await fetch('/api/admin/settings/gaap_password_hash',{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body:JSON.stringify({value:{hash:newHash,oneShot:false,configuredAt:new Date().toISOString()}})
+        });
+        if(!rPut.ok){
+          err.textContent='Erro ao gravar senha no banco.';
+          err.style.display='block';
+          return;
+        }
+        try{localStorage.removeItem(GAAP_HASH_KEY);localStorage.removeItem(GAAP_ONESHOT_KEY);}catch(eC){}
+        try{if(window.opener&&typeof window.opener.showToast==='function')window.opener.showToast('Senha GAAP configurada no banco','success');}catch(eT){}
+        window.gaapCloseModal();
+        applyReveal();
+        return;
+      }
+      if(!res.ok){
+        var dErr=await res.json().catch(function(){return{};});
+        err.textContent=(dErr&&dErr.error)||('Erro HTTP '+res.status);
+        err.style.display='block';
+        return;
+      }
+      try{localStorage.removeItem(GAAP_HASH_KEY);localStorage.removeItem(GAAP_ONESHOT_KEY);}catch(eC){}
       window.gaapCloseModal();
       applyReveal();
-      return;
-    }
-    if(hashed!==stored){
-      err.textContent='Senha incorrecta.';
+    }catch(eF){
+      console.warn('gaap verify',eF);
+      err.textContent='Erro de rede: '+(eF.message||'desconhecido');
       err.style.display='block';
-      try{
-        var attempts=JSON.parse(localStorage.getItem(GAAP_FAILS_KEY)||'[]');
-        if(!Array.isArray(attempts))attempts=[];
-        var who='unknown';
-        try{
-          if(window.opener&&window.opener.gmAuthUser&&window.opener.gmAuthUser.email)who=window.opener.gmAuthUser.email;
-        }catch(eu){}
-        attempts.push({at:new Date().toISOString(),user:who});
-        localStorage.setItem(GAAP_FAILS_KEY,JSON.stringify(attempts.slice(-50)));
-      }catch(eL){}
-      gaapLogAudit('gaap_unlock_fail',{success:false,reason:'wrong-password'});
-      return;
     }
-    // Match com hash configurado: se for one-shot, invalida agora.
-    try{
-      var oneShot=localStorage.getItem(GAAP_ONESHOT_KEY);
-      if(oneShot==='true'){
-        localStorage.removeItem(GAAP_HASH_KEY);
-        localStorage.removeItem(GAAP_ONESHOT_KEY);
-        var hist=[];
-        try{hist=JSON.parse(localStorage.getItem(GAAP_HISTORY_KEY)||'[]');if(!Array.isArray(hist))hist=[];}catch(eP){hist=[];}
-        if(hist.length>0&&!hist[0].used){
-          hist[0].used=true;
-          hist[0].usedAt=new Date().toISOString();
-          try{
-            var byUsed='unknown';
-            if(window.opener&&window.opener.gmAuthUser&&window.opener.gmAuthUser.email)byUsed=window.opener.gmAuthUser.email;
-            hist[0].usedBy=byUsed;
-          }catch(eUb){}
-          localStorage.setItem(GAAP_HISTORY_KEY,JSON.stringify(hist));
-        }
-      }
-    }catch(eOS){console.warn('gaap one-shot',eOS);}
-    gaapLogAudit('gaap_unlock',{success:true,via:'one-shot-or-stored'});
-    window.gaapCloseModal();
-    applyReveal();
   };
 
-  window.gaapConfigPassword=function(){
+  window.gaapConfigPassword=async function(){
     if(!gaapIsAdmin()){alert('Apenas admin pode reconfigurar a senha.');return;}
     if(!confirm('Reconfigurar a senha do GAAP? A senha actual sera substituida.'))return;
-    localStorage.removeItem(GAAP_HASH_KEY);
+    try{
+      await fetch('/api/admin/settings/gaap_password_hash',{method:'DELETE',credentials:'include'});
+    }catch(eD){console.warn('gaap delete',eD);}
+    try{localStorage.removeItem(GAAP_HASH_KEY);localStorage.removeItem(GAAP_ONESHOT_KEY);}catch(eL){}
     var msg=document.getElementById('gaap-modal-msg');
     var title=document.getElementById('gaap-modal-title');
     var configBtn=document.getElementById('gaap-config-btn');
