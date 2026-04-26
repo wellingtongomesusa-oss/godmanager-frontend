@@ -12129,6 +12129,7 @@ function jobsVendorSourceStr(r){
  var ar=(r._apiRaw&&typeof r._apiRaw==='object')?r._apiRaw:null;
  var cands=[
   r.vendor,r.vendorname,r.vendorName,r.companyName,r.vendorBusinessName,
+  r.vendorEntity&&r.vendorEntity.name,
   ar&&ar.vendorName,ar&&ar.companyName,ar&&ar.vendor&&(ar.vendor.companyName),
   r.desc
  ];
@@ -12496,7 +12497,12 @@ window.jobsCancel=function(id){
  var _origNav=window.nav;
  window.nav=function(route){
   var ret=_origNav.apply(this,arguments);
-  try{if(route==='jobs')setTimeout(jobsRender,10);}catch(e){}
+  try{
+   if(route==='jobs'){
+    if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+    setTimeout(function(){if(typeof jobsRender==='function')jobsRender();},10);
+   }
+  }catch(e){}
   return ret;
  };
 })();
