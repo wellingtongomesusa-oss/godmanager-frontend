@@ -12,6 +12,8 @@ function serialize(p: Property) {
     rent: p.rent.toString(),
     deposit: p.deposit.toString(),
     mgmtFeePct: p.mgmtFeePct.toString(),
+    guaranteeLimit: p.guaranteeLimit != null ? p.guaranteeLimit.toString() : null,
+    moveInDate: p.moveInDate ? p.moveInDate.toISOString() : null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -56,6 +58,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (body.rent !== undefined) data.rent = String(body.rent);
     if (body.deposit !== undefined) data.deposit = String(body.deposit);
+    if (body.guaranteeLimit !== undefined) {
+      data.guaranteeLimit = body.guaranteeLimit != null && body.guaranteeLimit !== ''
+        ? String(body.guaranteeLimit)
+        : null;
+    }
+    if (body.moveInDate !== undefined) {
+      data.moveInDate = body.moveInDate ? new Date(String(body.moveInDate)) : null;
+    }
     if (body.ownerName !== undefined) data.ownerName = (body.ownerName as string) || null;
     if (body.ownerEmail !== undefined) data.ownerEmail = (body.ownerEmail as string) || null;
     if (body.ownerPhone !== undefined) data.ownerPhone = (body.ownerPhone as string) || null;

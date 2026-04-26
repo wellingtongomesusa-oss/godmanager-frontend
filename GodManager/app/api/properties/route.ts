@@ -19,6 +19,8 @@ export async function GET() {
         rent: p.rent.toString(),
         deposit: p.deposit.toString(),
         mgmtFeePct: p.mgmtFeePct.toString(),
+        guaranteeLimit: p.guaranteeLimit != null ? p.guaranteeLimit.toString() : null,
+        moveInDate: p.moveInDate ? p.moveInDate.toISOString() : null,
       })),
     });
   } catch (e) {
@@ -60,6 +62,10 @@ export async function POST(req: Request) {
         bathrooms: body.bathrooms != null ? Number(body.bathrooms) : null,
         rent: body.rent != null ? String(body.rent) : '0',
         deposit: body.deposit != null ? String(body.deposit) : '0',
+        guaranteeLimit: body.guaranteeLimit != null && body.guaranteeLimit !== ''
+          ? String(body.guaranteeLimit)
+          : null,
+        moveInDate: body.moveInDate ? new Date(String(body.moveInDate)) : null,
         ownerName: body.ownerName || body.owner || null,
         ownerEmail: body.ownerEmail || null,
         ownerPhone: body.ownerPhone || null,
@@ -78,6 +84,8 @@ export async function POST(req: Request) {
         rent: created.rent.toString(),
         deposit: created.deposit.toString(),
         mgmtFeePct: created.mgmtFeePct.toString(),
+        guaranteeLimit: created.guaranteeLimit != null ? created.guaranteeLimit.toString() : null,
+        moveInDate: created.moveInDate ? created.moveInDate.toISOString() : null,
       },
     });
   } catch (e) {
