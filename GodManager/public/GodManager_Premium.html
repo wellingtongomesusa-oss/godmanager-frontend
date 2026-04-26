@@ -12049,6 +12049,74 @@ var JOBS_FEES={vendor:120,job:200};
  }catch(e){console.warn('jobs migrate isJob',e);}
 })();
 
+/* Jobs: leitura multi-user via /api/pm/expenses (cache 30s + fallback localStorage) */
+window.__jobsExpensesCacheAt=0;
+window.__jobsApiRowsCache=undefined;
+window.__jobsApiFetchInFlight=null;
+window.jobsInvalidateApiCache=function(){
+ window.__jobsExpensesCacheAt=0;
+};
+window.jobsIsPmExpenseId=function(expenseId){
+ if(!expenseId)return false;
+ var id=String(expenseId);
+ var arr=window.__jobsApiRowsCache;
+ if(!arr||!arr.length)return false;
+ return arr.some(function(r){return r&&String(r.id)===id;});
+};
+window.jobsFetchFromApi=function(){
+ var now=Date.now();
+ if(window.__jobsApiRowsCache&&Array.isArray(window.__jobsApiRowsCache)&&(now-window.__jobsExpensesCacheAt)<30000){
+  return Promise.resolve(window.__jobsApiRowsCache);
+ }
+ if(window.__jobsApiFetchInFlight)return window.__jobsApiFetchInFlight;
+ window.__jobsApiFetchInFlight=fetch('/api/pm/expenses',{credentials:'include'})
+ .then(function(res){
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  return res.json();
+ })
+ .then(function(data){
+  var list=(data&&(data.expenses||data.items||data.records))||[];
+  var mapped=[];
+  for(var i=0;i<list.length;i++){
+   var e=list[i];
+   if(typeof ltExpMapApiToRow==='function')mapped.push(ltExpMapApiToRow(e));
+   else mapped.push(e);
+  }
+  window.__jobsApiRowsCache=mapped;
+  window.__jobsExpensesCacheAt=Date.now();
+  return mapped;
+ })
+ .catch(function(err){
+  console.warn('[jobs] /api/pm/expenses failed, fallback local',err);
+  window.__jobsApiRowsCache=null;
+  return null;
+ })
+ .finally(function(){
+  window.__jobsApiFetchInFlight=null;
+ });
+ return window.__jobsApiFetchInFlight;
+};
+function jobsMergeForJobs(){
+ var local=(typeof ltExpGetRecords==='function')?(ltExpGetRecords()||[]):[];
+ var api=window.__jobsApiRowsCache;
+ if(api===null||api===undefined){
+  if(typeof ltExpMergeAll==='function')return ltExpMergeAll();
+  return local;
+ }
+ var byId=Object.create(null);
+ (api||[]).forEach(function(r){
+  if(r&&r.id)byId[String(r.id)]=r;
+ });
+ local.forEach(function(r){
+  if(!r||r.id==null||r.id==='')return;
+  var id=String(r.id);
+  if(byId[id])return;
+  if(r._isPm)return;
+  byId[id]=r;
+ });
+ return Object.keys(byId).map(function(k){return byId[k];});
+}
+
 function jobsIsMasterVendor(vendorName){
  var s=String(vendorName||'').trim().toLowerCase();
  if(!s)return false;
@@ -12058,7 +12126,12 @@ function jobsIsMasterVendor(vendorName){
 
 function jobsVendorSourceStr(r){
  if(!r)return '';
- var cands=[r.vendor,r.vendorname,r.vendorName,r.vendorBusinessName,r.desc];
+ var ar=(r._apiRaw&&typeof r._apiRaw==='object')?r._apiRaw:null;
+ var cands=[
+  r.vendor,r.vendorname,r.vendorName,r.companyName,r.vendorBusinessName,
+  ar&&ar.vendorName,ar&&ar.companyName,ar&&ar.vendor&&(ar.vendor.companyName),
+  r.desc
+ ];
  for(var i=0;i<cands.length;i++){
   var s=String(cands[i]==null?'':cands[i]).trim();
   if(s)return s;
@@ -12088,7 +12161,10 @@ function jobsGetCurrentUser(){
 function jobsApplyFeeToExpense(expenseId,type,amount,actionObj){
  var arr=ltExpGetRecords();
  var idx=arr.findIndex(function(r){return String(r.id)===String(expenseId);});
- if(idx<0)return false;
+ if(idx<0){
+  if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(expenseId))return true;
+  return false;
+ }
  var rec=arr[idx];
  if(!rec.extraFees)rec.extraFees=[];
  if(!rec.jobActions)rec.jobActions=[];
@@ -12162,11 +12238,10 @@ function jobsMoney(n){
 }
 
 function jobsFilteredExpenses(){
- var arr=(typeof ltExpMergeAll==='function')?ltExpMergeAll():ltExpGetRecords();
+ var arr=jobsMergeForJobs();
  return (arr||[]).filter(function(r){
   if(!r)return false;
-  // Mostra todos os expenses (chamados ao tecnico).
-  // Exclui apenas chamados de tenant (type=chamado) e statements puros sem vendor.
+  if(r._isPm)return true;
   if(r.type==='chamado')return false;
   if(r.type==='statement'){
    var vs=jobsVendorSourceStr(r);
@@ -12210,6 +12285,7 @@ function jobsResolveAddress(r){
 function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
+ var paint=function(){
  var rows=jobsFilteredExpenses();
  var user=jobsGetCurrentUser();
  var badge=document.getElementById('jobs-user-badge');
@@ -12224,6 +12300,8 @@ function jobsRender(){
  var k2=document.getElementById('jobs-kpi-vendor'); if(k2)k2.textContent=jobsMoney(totalVendorFees);
  var k3=document.getElementById('jobs-kpi-job'); if(k3)k3.textContent=jobsMoney(totalJobFees);
  var abertos=rows.filter(function(r){
+  if(r&&r.statusPm==='CANCELLED')return false;
+  if(r&&r.statusPm==='PAID')return false;
   var st=String(r&&r.status||'').toLowerCase();
   if(st==='paid'||st==='applied'||st==='cancelled')return false;
   if(jobsHasActionFor(r&&r.id,'vendor')||jobsHasActionFor(r&&r.id,'job'))return false;
@@ -12241,12 +12319,12 @@ function jobsRender(){
   var jobDone=jobsHasActionFor(r.id,'job');
   var vendorDisplay=typeof gaapSanitizeDesc==='function'?gaapSanitizeDesc(jobsVendorSourceStr(r)):(jobsVendorSourceStr(r)||'—');
   var baseVal=Number(r.value||0)||0;
-  var dateDisp=(r.due||r.paid||r.month||'—');
+  var dateDisp=(r.serviceDate||r.due||r.paid||r.month||'—');
   var unit=jobsResolveAddress(r);
   var unitEsc=String(unit).replace(/"/g,'&quot;');
 
  var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
- var isCancelled=String(r.status||'').toLowerCase()==='cancelled';
+ var isCancelled=(String(r.status||'').toLowerCase()==='cancelled')||(r.statusPm==='CANCELLED');
  var idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
  // Mutualmente exclusivo: vendor e job nao podem estar ambos applied
@@ -12279,10 +12357,10 @@ function jobsRender(){
 
  var statusLow=String(r.status||'').toLowerCase();
  var statusBadge;
- if(statusLow==='cancelled'){
+ if((r.statusPm==='CANCELLED')||statusLow==='cancelled'){
   statusBadge='<span title="'+String(r.cancelReason||'').replace(/"/g,'&quot;')+'" style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-weight:600">Cancelado</span>';
  } else {
-  statusBadge='<span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.status||'—')+'</span>';
+  statusBadge='<span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.statusPm||(r.status||'—'))+'</span>';
  }
 
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
@@ -12296,6 +12374,12 @@ function jobsRender(){
   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
   +'</tr>';
 }).join('');
+};
+ if(typeof window.jobsFetchFromApi==='function'){
+  window.jobsFetchFromApi().then(function(){paint();}).catch(function(err){console.warn('jobsFetchFromApi',err);paint();});
+ }else{
+  paint();
+ }
 }
 
 window.jobsReturn=function(id){
@@ -12303,7 +12387,20 @@ window.jobsReturn=function(id){
  try{
   var arr=ltExpGetRecords()||[];
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
-  if(idx<0){alert('Despesa nao encontrada');return;}
+  if(idx<0){
+   if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+    try{
+     var act=jobsLoadActions().filter(function(a){return String(a.expenseId)!==String(id);});
+     jobsSaveActions(act);
+    }catch(e0){}
+    if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+    if(typeof jobsRender==='function')jobsRender();
+    if(typeof ltExpRender==='function')try{ltExpRender();}catch(e1){}
+    if(typeof showToast==='function')showToast('Acoes removidas.','success');
+    return;
+   }
+   alert('Despesa nao encontrada');return;
+  }
   var rec=arr[idx];
   var prevStatus=String(rec.status||'').toLowerCase();
   rec.extraFees=[];
@@ -12353,7 +12450,22 @@ window.jobsCancel=function(id){
  try{
   var arr=ltExpGetRecords()||[];
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
-  if(idx<0){alert('Despesa nao encontrada');return;}
+  if(idx<0){
+   if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+    fetch('/api/pm/expenses/'+encodeURIComponent(id),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'CANCELLED'})})
+    .then(function(r){if(!r.ok)throw new Error('HTTP');return r.json();})
+    .then(function(){
+     try{var act2=jobsLoadActions().filter(function(a){return String(a.expenseId)!==String(id);});jobsSaveActions(act2);}catch(e2){}
+     if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+     if(typeof jobsRender==='function')jobsRender();
+     if(typeof ltExpRender==='function')try{ltExpRender();}catch(e3){}
+     if(typeof showToast==='function')showToast('Despesa cancelada.','success');
+    })
+    .catch(function(e4){console.warn('jobsCancel PM',e4);alert('Falha ao cancelar no servidor.');});
+    return;
+   }
+   alert('Despesa nao encontrada');return;
+  }
   var rec=arr[idx];
   var prevStatus=String(rec.status||'').toLowerCase();
   rec.status='cancelled';
