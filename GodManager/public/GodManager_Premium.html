@@ -11562,27 +11562,104 @@ function jobsRender(){
   var netTotal=jobsExpenseTotalWithFees(r);
   var dateDisp=(r.due||r.paid||r.month||'—');
 
-  var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
-  var btnVendor=vendorDone
-   ? '<button disabled style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
-   : '<button type="button" onclick="jobsOnVendorClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff">Vendor +$120</button>';
-  var btnJob=jobDone
-   ? '<button disabled style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
-   : '<button type="button" onclick="jobsOnJobClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a">Job +$200</button>';
+ var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
+ var isCancelled=String(r.status||'').toLowerCase()==='cancelled';
+ var btnVendor=vendorDone
+  ? '<button disabled style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
+  : '<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnVendorClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Vendor +$120</button>';
+ var btnJob=jobDone
+  ? '<button disabled style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.8">✓ Applied</button>'
+  : '<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnJobClick(\''+String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Job +$200</button>';
+ var idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+ var hasActions=vendorDone||jobDone;
+ var btnReturn=hasActions
+  ? '<button type="button" onclick="jobsReturn(\''+idAttr+'\')" title="Remover acoes Vendor/Job aplicadas e voltar a pendente" style="'+btnStyleBase+';background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)">Retornar</button>'
+  : '';
+ var btnEdit='<button type="button" onclick="jobsEdit(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--slate-bg);border-color:#c8d0dc;color:var(--slate)">Editar</button>';
+ var btnCancel=isCancelled
+  ? ''
+  : '<button type="button" onclick="jobsCancel(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--red-bg);border-color:var(--red-bd);color:var(--red)">Cancelar</button>';
 
-  return '<tr style="border-bottom:1px solid var(--border)">'
-   +'<td style="padding:9px 12px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink3)">'+String(r.id)+'</td>'
-   +'<td style="padding:9px 12px;color:var(--ink)">'+vendorDisplay+'</td>'
-   +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
-   +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
-   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
-   +'<td style="padding:9px 12px;text-align:right;color:var(--ink2)">'+jobsMoney(baseVal)+'</td>'
-   +'<td style="padding:9px 12px;text-align:right;font-weight:700;color:'+(netTotal>baseVal?'#c47b28':'var(--ink)')+'">'+jobsMoney(netTotal)+'</td>'
-   +'<td style="padding:9px 12px"><span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.status||'—')+'</span></td>'
-   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+'</div></td>'
-   +'</tr>';
- }).join('');
+ var statusLow=String(r.status||'').toLowerCase();
+ var statusBadge;
+ if(statusLow==='cancelled'){
+  statusBadge='<span title="'+String(r.cancelReason||'').replace(/"/g,'&quot;')+'" style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-weight:600">Cancelado</span>';
+ } else {
+  statusBadge='<span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.status||'—')+'</span>';
+ }
+
+ return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
+  +'<td style="padding:9px 12px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink3)">'+String(r.id)+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink)">'+vendorDisplay+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+  +'<td style="padding:9px 12px;text-align:right;color:var(--ink2)">'+jobsMoney(baseVal)+'</td>'
+  +'<td style="padding:9px 12px;text-align:right;font-weight:700;color:'+(netTotal>baseVal?'#c47b28':'var(--ink)')+'">'+jobsMoney(netTotal)+'</td>'
+  +'<td style="padding:9px 12px">'+statusBadge+'</td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
+  +'</tr>';
+}).join('');
 }
+
+window.jobsReturn=function(id){
+ if(!confirm('Remover as acoes Vendor/Job aplicadas a esta despesa e voltar a pendente?'))return;
+ try{
+  var arr=ltExpGetRecords()||[];
+  var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+  if(idx<0){alert('Despesa nao encontrada');return;}
+  var rec=arr[idx];
+  rec.extraFees=[];
+  rec.jobActions=[];
+  if(String(rec.status||'').toLowerCase()==='cancelled'){
+   rec.status='pending';
+   rec.cancelReason=null;
+   rec.cancelledAt=null;
+   rec.cancelledBy=null;
+  }
+  rec.savedAt=new Date().toLocaleString('pt-BR');
+  arr[idx]=rec;
+  ltExpSaveRecords(arr);
+  try{
+   var actions=jobsLoadActions().filter(function(a){return String(a.expenseId)!==String(id);});
+   jobsSaveActions(actions);
+  }catch(e){}
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Acoes removidas. Despesa retornada a pendente.','success');
+ }catch(e){console.warn('jobsReturn',e);alert('Erro: '+e.message);}
+};
+
+window.jobsEdit=function(id){
+ try{
+  if(typeof ltOpenEditExpense==='function'){
+   ltOpenEditExpense(id);
+  } else {
+   alert('Funcao de edicao indisponivel');
+  }
+ }catch(e){console.warn('jobsEdit',e);alert('Erro: '+e.message);}
+};
+
+window.jobsCancel=function(id){
+ var motivo=prompt('Motivo do cancelamento (obrigatorio):');
+ if(!motivo||!motivo.trim()){alert('Motivo obrigatorio.');return;}
+ try{
+  var arr=ltExpGetRecords()||[];
+  var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+  if(idx<0){alert('Despesa nao encontrada');return;}
+  var rec=arr[idx];
+  rec.status='cancelled';
+  rec.cancelReason=motivo.trim();
+  rec.cancelledAt=new Date().toISOString();
+  rec.cancelledBy=(typeof jobsGetCurrentUser==='function')?jobsGetCurrentUser():'admin';
+  rec.savedAt=new Date().toLocaleString('pt-BR');
+  arr[idx]=rec;
+  ltExpSaveRecords(arr);
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Despesa cancelada.','success');
+ }catch(e){console.warn('jobsCancel',e);alert('Erro: '+e.message);}
+};
 
 (function(){
  if(typeof window.nav!=='function')return;
