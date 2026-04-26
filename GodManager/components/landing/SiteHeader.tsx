@@ -1,9 +1,11 @@
-import Link from 'next/link';
+'use client';
 
-type Active = 'home' | 'services' | 'about' | 'contact';
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 const linkBase = {
-  textDecoration: 'none',
+  textDecoration: 'none' as const,
   fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
   fontSize: 13,
   letterSpacing: '0.5px',
@@ -17,7 +19,13 @@ function navStyle(isActive: boolean): React.CSSProperties {
   };
 }
 
-export function SiteHeader({ active }: { active: Active }) {
+export function SiteHeader({
+  active: activeNav,
+}: {
+  active: 'home' | 'services' | 'about' | 'contact' | 'request';
+}) {
+  const t = useTranslations();
+
   return (
     <header
       style={{
@@ -67,7 +75,7 @@ export function SiteHeader({ active }: { active: Active }) {
               letterSpacing: '0.5px',
             }}
           >
-            GodManager
+            {t('site.name')}
           </span>
           <span
             style={{
@@ -80,22 +88,22 @@ export function SiteHeader({ active }: { active: Active }) {
               textTransform: 'uppercase',
             }}
           >
-            Financial Operations
+            {t('site.tagline')}
           </span>
         </div>
       </Link>
-      <nav style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
-        <Link href="/login" style={navStyle(active === 'home')}>
-          Home
+      <nav style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+        <Link href="/login" style={navStyle(activeNav === 'home')}>
+          {t('nav.home')}
         </Link>
-        <Link href="/services" style={navStyle(active === 'services')}>
-          Servicos
+        <Link href="/services" style={navStyle(activeNav === 'services')}>
+          {t('nav.services')}
         </Link>
-        <Link href="/about" style={navStyle(active === 'about')}>
-          Sobre nos
+        <Link href="/about" style={navStyle(activeNav === 'about')}>
+          {t('nav.about')}
         </Link>
-        <Link href="/contacto" style={navStyle(active === 'contact')}>
-          Contato
+        <Link href="/contacto" style={navStyle(activeNav === 'contact')}>
+          {t('nav.contact')}
         </Link>
         <Link
           href="/request-demo"
@@ -109,13 +117,13 @@ export function SiteHeader({ active }: { active: Active }) {
             fontSize: 13,
             fontWeight: 600,
             letterSpacing: '0.5px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(201,169,110,0.3)',
             textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(201,169,110,0.3)',
           }}
         >
-          Solicite o Demo
+          {t('nav.requestDemo')}
         </Link>
+        <LanguageSwitcher />
       </nav>
     </header>
   );

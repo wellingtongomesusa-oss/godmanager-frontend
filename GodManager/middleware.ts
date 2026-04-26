@@ -1,7 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-
+import createMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
 import { AUTH_COOKIE } from '@/lib/constants';
+
+const intl = createMiddleware(routing);
 
 function parseAuthCookie(value: string | undefined): { exp: number; role: string } | null {
   if (!value) return null;
@@ -15,10 +18,59 @@ function parseAuthCookie(value: string | undefined): { exp: number; role: string
   }
 }
 
+function preferredLoginLocale(request: NextRequest): string {
+  const c = request.cookies.get('NEXT_LOCALE')?.value;
+  if (c && (routing.locales as readonly string[]).includes(c)) {
+    return c;
+  }
+  return routing.defaultLocale;
+}
+
+/**
+ * Rotas do App Router fora de [locale] — sem prefixo de idioma.
+ */
+function isNonIntlPath(pathname: string): boolean {
+  if (pathname.includes('.')) {
+    return true;
+  }
+  const prefixes: string[] = [
+    '/api',
+    '/_next',
+    '/_vercel',
+    '/dashboard',
+    '/admin',
+    '/account',
+    '/register',
+    '/auth-by-token',
+    '/manager-pro',
+    '/gm',
+    '/gm-premium',
+    '/form-owner',
+    '/form-tenant',
+    '/resultado',
+    '/crm',
+    '/static',
+  ];
+  for (const pre of prefixes) {
+    if (pathname === pre || pathname.startsWith(`${pre}/`)) {
+      return true;
+    }
+  }
+  if (pathname === '/GodManager_Premium' || pathname.startsWith('/GodManager_Premium/')) {
+    return true;
+  }
+  if (pathname === '/GodManager_Premium.html') {
+    return true;
+  }
+  return false;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const raw = request.cookies.get(AUTH_COOKIE)?.value;
+  const session = parseAuthCookie(raw);
+  const authed = session && Date.now() <= session.exp;
 
-  /** Formulários públicos (HTML em public/) — nunca exigir login. */
   if (
     pathname === '/form-owner.html' ||
     pathname === '/form-tenant.html' ||
@@ -29,21 +81,9 @@ export function middleware(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
-
-  /** Páginas públicas de resultados mensais (HTML em public/resultado/) — nunca exigir login. */
-  if (
-    pathname === '/resultado' ||
-    pathname === '/resultado/' ||
-    pathname.startsWith('/resultado/')
-  ) {
+  if (pathname === '/resultado' || pathname === '/resultado/' || pathname.startsWith('/resultado/')) {
     return NextResponse.next();
   }
-
-  /**
-   * Consola Premium em public/: quando o dev server perde watchers (ex.: EMFILE no macOS),
-   * o App Router pode deixar de registar rotas e devolver 404 em tudo excepto ficheiros estáticos.
-   * O rewrite para o .html garante /gm e /gm-premium mesmo nesse estado.
-   */
   if (
     pathname === '/gm' ||
     pathname === '/gm/' ||
@@ -55,73 +95,52 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  const raw = request.cookies.get(AUTH_COOKIE)?.value;
-  const session = parseAuthCookie(raw);
-  const authed = session && Date.now() <= session.exp;
+  if (pathname === '/' || pathname === '') {
+    const loc = preferredLoginLocale(request);
+    return NextResponse.redirect(new URL(`/${loc}/login`, request.url));
+  }
+  if (pathname === '/login' || (pathname.startsWith('/login/') && !pathname.match(/^\/(en|pt-br|es)\//))) {
+    const loc = preferredLoginLocale(request);
+    const u = new URL(`/${loc}/login`, request.url);
+    u.search = request.nextUrl.search;
+    return NextResponse.redirect(u);
+  }
 
-  if (pathname === '/login' || pathname.startsWith('/login/')) {
-    if (authed) {
+  if (isNonIntlPath(pathname)) {
+    if (pathname === '/register' || pathname.startsWith('/register/')) {
+      if (authed) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+      return NextResponse.next();
+    }
+    const isProtected =
+      pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/account') ||
+      pathname === '/GodManager_Premium.html' ||
+      pathname.startsWith('/GodManager_Premium');
+    if (!isProtected) {
+      return NextResponse.next();
+    }
+    if (!authed || !session) {
+      const loc = preferredLoginLocale(request);
+      const login = new URL(`/${loc}/login`, request.url);
+      login.searchParams.set('from', pathname);
+      return NextResponse.redirect(login);
+    }
+    if (pathname.startsWith('/admin') && session.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();
   }
 
-  if (pathname === '/register' || pathname.startsWith('/register/')) {
-    if (authed) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    return NextResponse.next();
-  }
-
-  /** HTML estático em public/ — não exigir cookie aqui (evita redirecionar para /login ao abrir o URL direto). */
-  const isProtected =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/account') ||
-    pathname === '/GodManager_Premium.html' ||
-    pathname.startsWith('/GodManager_Premium');
-
-  if (!isProtected) {
-    return NextResponse.next();
-  }
-
-  if (!authed || !session) {
-    const login = new URL('/login', request.url);
-    login.searchParams.set('from', pathname);
-    return NextResponse.redirect(login);
-  }
-
-  if (pathname.startsWith('/admin') && session.role !== 'admin') {
+  if (pathname.match(/^\/(en|pt-br|es)\/login\/?$/) && authed) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  return NextResponse.next();
+  return intl(request);
 }
 
 export const config = {
-  matcher: [
-    '/gm',
-    '/gm/',
-    '/gm-premium',
-    '/gm-premium/',
-    '/form-owner',
-    '/form-owner.html',
-    '/form-owner/:path*',
-    '/form-tenant',
-    '/form-tenant.html',
-    '/form-tenant/:path*',
-    '/resultado',
-    '/resultado/:path*',
-    '/login',
-    '/login/:path*',
-    '/register',
-    '/register/:path*',
-    '/dashboard',
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/account',
-    '/account/:path*',
-    '/GodManager_Premium.html',
-    '/GodManager_Premium',
-  ],
+  matcher: ['/', '/((?!api|_next|_vercel|.*\\..*).*)'],
 };

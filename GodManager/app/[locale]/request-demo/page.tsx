@@ -1,13 +1,21 @@
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { RequestDemoForm } from './RequestDemoForm';
 
-export const metadata = {
-  title: 'Solicite o Demo | GodManager',
-  description:
-    'Aceda a um ambiente demo do GodManager com dados realistas. Sem cartao de credito.',
-};
+const BULLET_KEYS = ['b1', 'b2', 'b3', 'b4'] as const;
 
-export default function RequestDemoPage() {
+type PageProps = { params: { locale: string } };
+
+export async function generateMetadata({ params: { locale } }: PageProps) {
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: 'demo' });
+  return { title: `GodManager — ${t('title')}`, description: t('subtitle') };
+}
+
+export default async function RequestDemoPage({ params: { locale } }: PageProps) {
+  setRequestLocale(locale);
+  const t = await getTranslations('demo');
+
   return (
     <div
       style={{
@@ -15,9 +23,10 @@ export default function RequestDemoPage() {
         background: '#0f172a',
         color: '#fff',
         fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
+        WebkitFontSmoothing: 'antialiased' as const,
       }}
     >
-      <SiteHeader active="home" />
+      <SiteHeader active="request" />
       <main
         style={{
           maxWidth: 1080,
@@ -39,7 +48,7 @@ export default function RequestDemoPage() {
               marginBottom: 16,
             }}
           >
-            Solicite o Demo
+            {t('kicker')}
           </p>
           <h1
             style={{
@@ -50,12 +59,9 @@ export default function RequestDemoPage() {
               marginBottom: 20,
             }}
           >
-            Veja o GodManager em acao
+            {t('lead')}
           </h1>
-          <p style={{ color: '#cbd5e1', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
-            Aceda a um ambiente demo isolado com dados realistas (20 properties, 10 tenants, 10
-            vendors). Sem instalacao, sem cartao de credito, sem compromisso.
-          </p>
+          <p style={{ color: '#cbd5e1', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>{t('leadP')}</p>
           <ul
             style={{
               listStyle: 'none',
@@ -66,14 +72,9 @@ export default function RequestDemoPage() {
               gap: 12,
             }}
           >
-            {[
-              'Demonstrativos de owners e tenants',
-              'Reconciliacao bancaria GAAP',
-              'Audit log multi-utilizador',
-              'Relatorios 1099 / IRS',
-            ].map((it) => (
+            {BULLET_KEYS.map((k) => (
               <li
-                key={it}
+                key={k}
                 style={{
                   color: '#e5e7eb',
                   fontSize: 14,
@@ -90,7 +91,7 @@ export default function RequestDemoPage() {
                     background: '#c9a96e',
                   }}
                 />
-                {it}
+                {t(`bullets.${k}`)}
               </li>
             ))}
           </ul>

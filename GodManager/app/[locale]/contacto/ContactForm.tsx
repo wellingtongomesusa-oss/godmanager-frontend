@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -25,6 +26,8 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function ContactForm() {
+  const t = useTranslations('contact');
+  const tCommon = useTranslations('common');
   const [form, setForm] = useState({
     nome: '',
     email: '',
@@ -39,6 +42,26 @@ export default function ContactForm() {
 
   const update = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  function mapApiError(
+    d: { code?: string; error?: string },
+    _status: number,
+  ): string {
+    switch (d.code) {
+      case 'MISSING_FIELDS':
+        return t('errors.required');
+      case 'INVALID_EMAIL':
+        return t('errors.email');
+      case 'COMPANY_REQUIRED':
+        return t('errors.company');
+      case 'INVALID_TIPO':
+        return t('errors.required');
+      case 'INTERNAL':
+        return tCommon('error');
+      default:
+        return d.error && !d.code ? d.error : tCommon('error');
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -49,16 +72,16 @@ export default function ContactForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      const d = (await r.json().catch(() => ({}))) as { code?: string; error?: string };
       if (!r.ok) {
-        setError(d.error || 'Erro');
+        setError(mapApiError(d, r.status));
         setLoading(false);
         return;
       }
       setSuccess(true);
       setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro');
+      setError(err instanceof Error ? err.message : tCommon('error'));
       setLoading(false);
     }
   }
@@ -111,11 +134,9 @@ export default function ContactForm() {
             fontWeight: 600,
           }}
         >
-          Mensagem enviada
+          {t('success.title')}
         </h2>
-        <p style={{ color: 'var(--ink2)', fontSize: 14 }}>
-          Vamos contatar você em menos de 24h.
-        </p>
+        <p style={{ color: 'var(--ink2)', fontSize: 14 }}>{t('success.text')}</p>
       </div>
     );
   }
@@ -139,11 +160,11 @@ export default function ContactForm() {
           fontWeight: 600,
         }}
       >
-        Envie-nos uma mensagem
+        {t('formTitle')}
       </h2>
       <form onSubmit={submit} noValidate>
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Nome *</label>
+          <label style={labelStyle}>{t('form.name')}</label>
           <input
             style={inputStyle}
             required
@@ -153,7 +174,7 @@ export default function ContactForm() {
           />
         </div>
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Email *</label>
+          <label style={labelStyle}>{t('form.email')}</label>
           <input
             style={inputStyle}
             type="email"
@@ -164,7 +185,7 @@ export default function ContactForm() {
           />
         </div>
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Telefone *</label>
+          <label style={labelStyle}>{t('form.phone')}</label>
           <input
             style={inputStyle}
             required
@@ -174,7 +195,7 @@ export default function ContactForm() {
           />
         </div>
         <div style={{ marginBottom: 14 }}>
-          <span style={labelStyle}>Sou contato</span>
+          <span style={labelStyle}>{t('form.tipoLabel')}</span>
           <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
             <label
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}
@@ -186,7 +207,7 @@ export default function ContactForm() {
                 checked={form.tipoContacto === 'pessoal'}
                 onChange={() => update('tipoContacto', 'pessoal')}
               />{' '}
-              Pessoal
+              {t('form.personal')}
             </label>
             <label
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}
@@ -198,13 +219,13 @@ export default function ContactForm() {
                 checked={form.tipoContacto === 'empresa'}
                 onChange={() => update('tipoContacto', 'empresa')}
               />{' '}
-              Empresa
+              {t('form.company')}
             </label>
           </div>
         </div>
         {form.tipoContacto === 'empresa' && (
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Empresa *</label>
+            <label style={labelStyle}>{t('form.companyField')}</label>
             <input
               style={inputStyle}
               required
@@ -215,7 +236,7 @@ export default function ContactForm() {
           </div>
         )}
         <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Mensagem (opcional)</label>
+          <label style={labelStyle}>{t('form.message')}</label>
           <textarea
             rows={4}
             style={{
@@ -247,7 +268,7 @@ export default function ContactForm() {
             boxShadow: '0 2px 8px rgba(201,169,110,.25)',
           }}
         >
-          {loading ? 'A enviar...' : 'Enviar mensagem'}
+          {loading ? t('form.submitting') : t('form.submit')}
         </button>
       </form>
     </div>
