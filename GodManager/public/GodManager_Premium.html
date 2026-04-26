@@ -973,6 +973,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
      <th style="padding:9px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Orders</th>
      <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Checklist</th>
      <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Status</th>
+     <th style="padding:9px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Total a Pagar</th>
      <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Actions</th>
     </tr></thead>
     <tbody id="gv-tbody"></tbody>
@@ -10685,9 +10686,157 @@ function gvWireMonths(){const host=document.getElementById('gv-months');if(!host
 function gvSetMonth(m){gvMonth=m;gvPage=1;gvRender()}
 function gvTopRows(vendors){const rows=vendors.map(v=>{const o=gvOrdersFor(v.id);return{v,o}}).sort((a,b)=>b.o.qty-a.o.qty||b.o.total-a.o.total).slice(0,5);const tb=document.getElementById('gv-top-body');if(!tb)return;tb.innerHTML=rows.map((r,i)=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px">${i+1}</td><td style="padding:8px 10px">${r.v.company_name||'—'}</td><td style="padding:8px 10px">${r.v.trade||'—'}</td><td style="padding:8px 10px;text-align:right">${r.o.qty}</td><td style="padding:8px 10px;text-align:right">${ltFmt(r.o.total)}</td></tr>`).join('')||'<tr><td colspan="5" style="padding:12px;color:var(--ink3)">No data</td></tr>'}
 function gvRenderKpis(vendors){const total=vendors.length;const active=vendors.filter(v=>gvStatus(v)==='Active/Complete').length;const orders=vendors.reduce((s,v)=>s+gvOrdersFor(v.id).qty,0);const pending=vendors.filter(v=>gvChecklistCount(v)<7).length;const el=document.getElementById('gv-kpis');if(!el)return;el.innerHTML=(function(){var com18=vendors.filter(function(v){return v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true);}).length;return[['COM 18%',com18,'vendors com commission fee','#c47b28'],[gvT('total_vendors'),total,gvT('registered_vendors'),'var(--blue)'],['ACTIVE',active,gvT('items_complete'),'#2d7252'],[gvT('work_orders'),orders,`${gvT('service_requests')} in ${gvMonthLabel()}`,'var(--amber)'],[gvT('pending_payment'),pending,gvT('incomplete_setup'),'#b83030']];})().map(k=>`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative"><div style="font-size:9px;color:var(--ink3);font-weight:700;letter-spacing:.8px;text-transform:uppercase">${k[0]}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${k[3]};margin-top:3px">${k[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${k[2]}</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:${k[3]}"></div></div>`).join('')}
-function gvRenderTable(){const v=gvLoad();const q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();const filtered=v.filter(x=>!q||(`${x.company_name} ${x.contact_name} ${x.trade} ${x.email} ${x.phone}`).toLowerCase().includes(q));const totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));if(gvPage>totalPages)gvPage=totalPages;const pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);const tb=document.getElementById('gv-tbody');if(tb)tb.innerHTML=pageRows.map(v=>{const o=gvOrdersFor(v.id);const done=gvChecklistCount(v);const pct=Math.round((done/7)*100);const c=pct===100?'#2d7252':pct>50?'#c47b28':'#b83030';const st=gvStatus(v);const bs=st==='Active/Complete'?'background:var(--green-bg);color:var(--green)':(st==='Pending'?'background:var(--amber-bg);color:var(--amber)':'background:var(--red-bg);color:var(--red)');const _pkgLab=(function(){var p=v.default_package||'PACOTE_1';if(p==='PACOTE_2')return'P2 18%';if(p==='PACOTE_3')return'P3 25%';if(p==='PACOTE_4')return'P4 — 0%';return'P1 15%';})();
-const _mk=v.markup_pct!=null?v.markup_pct+'%':((v.default_package==='PACOTE_2')?'18%':(v.default_package==='PACOTE_3')?'25%':(v.default_package==='PACOTE_4')?'0%':'15%');
-return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 10px">${v.company_name||'—'}${(v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true))?' <span style="display:inline-block;padding:1px 6px;margin-left:4px;background:#c47b28;color:#fff;border-radius:3px;font-size:9px;font-weight:700;vertical-align:middle" title="Commission MP 18%">18%</span>':''}</td><td style="padding:9px 10px">${v.contact_name||'—'}</td><td style="padding:9px 10px">${v.trade||'—'}</td><td style="padding:9px 10px">${v.phone||'—'}</td><td style="padding:9px 10px">${v.email||'—'}</td><td style="padding:9px 10px;font-size:11px;color:var(--ink2)">${v.service_type||'—'}</td><td style="padding:9px 10px;text-align:center;font-size:10px;font-weight:600;color:var(--ink)">${_pkgLab}</td><td style="padding:9px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${_mk}</td><td style="padding:9px 10px;text-align:right">${o.qty}</td><td style="padding:9px 10px"><div style="background:#eee;height:8px;border-radius:999px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${c}"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px;text-align:center">${done}/7</div></td><td style="padding:9px 10px;text-align:center"><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;${bs}">${st}</span></td><td style="padding:9px 10px;text-align:center"><button type="button" data-gm-eid="${gmHtmlEscAttr(v.id)}" onclick="gvView(this.getAttribute('data-gm-eid'))" style="padding:4px 7px">Ver</button> <button type="button" data-gm-eid="${gmHtmlEscAttr(v.id)}" onclick="gvEdit(this.getAttribute('data-gm-eid'))" style="padding:4px 7px">Editar</button> <button type="button" data-gm-eid="${gmHtmlEscAttr(v.id)}" onclick="gvDelete(this.getAttribute('data-gm-eid'))" style="padding:4px 7px">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="12" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';const pi=document.getElementById('gv-page-info');if(pi)pi.textContent=`Page ${gvPage}/${totalPages} · ${filtered.length} vendor(s)`}
+function vendorPaymentExpenses(vendorName){
+ var vN=String(vendorName||'').trim().toLowerCase();
+ if(!vN)return [];
+ var arr=[];
+ try{arr=(typeof ltExpMergeAll==='function')?ltExpMergeAll():(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]);}catch(e){arr=[];}
+ return (arr||[]).filter(function(r){
+  if(!r)return false;
+  var v=String(r.vendor||r.vendorname||r.vendorName||r.vendorBusinessName||'').trim().toLowerCase();
+  if(v!==vN)return false;
+  var st=String(r.status||'').toLowerCase();
+  if(r.paid===true||st==='paid'||st==='applied'||st==='cancelled')return false;
+  return true;
+ });
+}
+function vendorTotalPendente(vendorName){
+ return vendorPaymentExpenses(vendorName).reduce(function(s,r){
+  var n=Number(r.value||r.amount||r.original||r.vendorValue||0)||0;
+  return s+n;
+ },0);
+}
+function vendorIsOwnerType(v){
+ if(!v)return false;
+ var s=String(v.service_type||v.tipoServico||v.type||'').trim().toLowerCase();
+ return s==='owner';
+}
+function vendorBuildHistHtml(vendorName){
+ try{
+  var hist=JSON.parse(localStorage.getItem('gm_vendor_payment_history')||'{}');
+  var arr=hist[vendorName]||[];
+  if(!arr.length)return '<div style="color:var(--ink3);font-size:12px;font-style:italic">Nenhum pagamento registado.</div>';
+  arr=arr.slice().sort(function(a,b){return Date.parse(b.date||0)-Date.parse(a.date||0);});
+  var rows=arr.map(function(h){
+   var d=new Date(h.date);
+   var dStr=isNaN(d.getTime())?(h.date||'-'):d.toLocaleString('pt-BR');
+   return '<div style="display:grid;grid-template-columns:1.6fr 1fr 0.8fr 1.2fr;gap:14px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'
+    +'<div style="color:var(--ink2);font-family:JetBrains Mono,monospace">'+dStr+'</div>'
+    +'<div style="color:#16a34a;font-weight:700;font-family:JetBrains Mono,monospace">'+ltFmt(Number(h.amount)||0)+'</div>'
+    +'<div style="color:var(--ink2)">'+(Number(h.count)||0)+' chamados</div>'
+    +'<div style="color:var(--ink3);font-size:11px">'+(h.paidBy||'-')+'</div>'
+    +'</div>';
+  }).join('');
+  var header='<div style="display:grid;grid-template-columns:1.6fr 1fr 0.8fr 1.2fr;gap:14px;padding:6px 0;border-bottom:1px solid var(--border);font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">'
+   +'<div>Data</div><div>Valor</div><div>Chamados</div><div>Pago Por</div></div>';
+  return header+rows;
+ }catch(e){return '<div style="color:var(--red);font-size:12px">Erro ao carregar historico.</div>';}
+}
+window.vendorToggleHist=function(eid){
+ var el=document.getElementById('vendor-hist-'+eid);
+ if(!el)return;
+ var btn=document.getElementById('vendor-tg-'+eid);
+ var open=el.style.display==='none'||!el.style.display;
+ el.style.display=open?'table-row':'none';
+ if(btn)btn.textContent=open?'\u25BC':'\u25B6';
+};
+window.vendorMarcarPago=function(vendorId,vendorName){
+ try{
+  var name=String(vendorName||'').trim();
+  if(!name){alert('Vendor sem nome');return;}
+  var pend=vendorPaymentExpenses(name);
+  if(!pend.length){
+   if(typeof showToast==='function')showToast('Sem valores pendentes para '+name,'info');
+   else alert('Sem valores pendentes para '+name);
+   return;
+  }
+  var total=pend.reduce(function(s,r){return s+(Number(r.value||r.amount||r.original||r.vendorValue||0)||0);},0);
+  if(!confirm('Marcar como PAGO o total de '+ltFmt(total)+' ('+pend.length+' chamados) para '+name+'?'))return;
+  var local=(typeof ltExpGetRecords==='function')?(ltExpGetRecords()||[]):[];
+  var pendIds={};pend.forEach(function(r){if(r&&r.id!=null)pendIds[String(r.id)]=true;});
+  var nowIso=new Date().toISOString();
+  var changed=0;
+  for(var i=0;i<local.length;i++){
+   var rec=local[i];
+   if(!rec||rec.id==null)continue;
+   if(!pendIds[String(rec.id)])continue;
+   rec.paid=true;
+   rec.paidAt=nowIso;
+   rec.paidVia='vendor_pay';
+   rec.status='paid';
+   changed++;
+  }
+  if(typeof ltExpSaveRecords==='function')ltExpSaveRecords(local);
+  try{
+   var histKey='gm_vendor_payment_history';
+   var hist={};try{hist=JSON.parse(localStorage.getItem(histKey)||'{}')||{};}catch(eh){hist={};}
+   if(!hist[name])hist[name]=[];
+   var paidBy='-';
+   try{
+    if(window.gmAuthUser&&window.gmAuthUser.email)paidBy=window.gmAuthUser.email;
+    else{var un=document.querySelector('.sb-un-n');if(un&&un.textContent)paidBy=un.textContent.trim();}
+   }catch(eu){}
+   hist[name].push({date:nowIso,amount:total,count:pend.length,paidBy:paidBy});
+   localStorage.setItem(histKey,JSON.stringify(hist));
+  }catch(eHist){console.warn('vendorHist',eHist);}
+  if(typeof showToast==='function')showToast('Pagamento registado: '+ltFmt(total)+' ('+changed+' chamados)','success');
+  else alert('Pagamento registado: '+ltFmt(total));
+  if(typeof gvRender==='function')try{gvRender();}catch(eR){}
+  if(typeof jobsRender==='function')try{jobsRender();}catch(eJ){}
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(eL){}
+ }catch(err){console.warn('vendorMarcarPago',err);alert('Erro: '+err.message);}
+};
+function gvRenderTable(){
+ var v=gvLoad();
+ var q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();
+ var filtered=v.filter(function(x){return !q||((x.company_name+' '+x.contact_name+' '+x.trade+' '+x.email+' '+x.phone)+'').toLowerCase().indexOf(q)>=0;});
+ var totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));
+ if(gvPage>totalPages)gvPage=totalPages;
+ var pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);
+ var tb=document.getElementById('gv-tbody');
+ if(tb){
+  var html=pageRows.map(function(v){
+   var o=gvOrdersFor(v.id);
+   var done=gvChecklistCount(v);
+   var pct=Math.round((done/7)*100);
+   var c=pct===100?'#2d7252':pct>50?'#c47b28':'#b83030';
+   var st=gvStatus(v);
+   var bs=st==='Active/Complete'?'background:var(--green-bg);color:var(--green)':(st==='Pending'?'background:var(--amber-bg);color:var(--amber)':'background:var(--red-bg);color:var(--red)');
+   var _pkgLab=(function(){var p=v.default_package||'PACOTE_1';if(p==='PACOTE_2')return 'P2 18%';if(p==='PACOTE_3')return 'P3 25%';if(p==='PACOTE_4')return 'P4 \u2014 0%';return 'P1 15%';})();
+   var _mk=v.markup_pct!=null?v.markup_pct+'%':((v.default_package==='PACOTE_2')?'18%':(v.default_package==='PACOTE_3')?'25%':(v.default_package==='PACOTE_4')?'0%':'15%');
+   var totPag=vendorTotalPendente(v.company_name);
+   var totCol=totPag>0?'#dc2626':'#16a34a';
+   var eid=gmHtmlEscAttr(v.id||v.company_name||'');
+   var nameAttr=gmHtmlEscAttr(v.company_name||'');
+   var isOwner=vendorIsOwnerType(v);
+   var btnPago=(totPag>0&&!isOwner)
+    ? ' <button type="button" data-gm-eid="'+eid+'" data-gm-vname="'+nameAttr+'" onclick="vendorMarcarPago(this.getAttribute(\'data-gm-eid\'),this.getAttribute(\'data-gm-vname\'))" title="Marcar todos os chamados pendentes como pagos" style="padding:4px 9px;border:1px solid #16a34a;background:#dcfce7;color:#166534;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">Pago</button>'
+    : '';
+   var commissionPill=(v.commission_mp===true||(v.commission_mp===undefined&&v.charge_18_percent===true))?' <span style="display:inline-block;padding:1px 6px;margin-left:4px;background:#c47b28;color:#fff;border-radius:3px;font-size:9px;font-weight:700;vertical-align:middle" title="Commission MP 18%">18%</span>':'';
+   var rowHtml='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:9px 10px"><button type="button" id="vendor-tg-'+eid+'" onclick="vendorToggleHist(\''+eid+'\')" style="border:none;background:none;cursor:pointer;font-size:11px;margin-right:6px;color:var(--ink3);padding:0 4px" title="Historico">\u25B6</button>'+(v.company_name||'\u2014')+commissionPill+'</td>'
+    +'<td style="padding:9px 10px">'+(v.contact_name||'\u2014')+'</td>'
+    +'<td style="padding:9px 10px">'+(v.trade||'\u2014')+'</td>'
+    +'<td style="padding:9px 10px">'+(v.phone||'\u2014')+'</td>'
+    +'<td style="padding:9px 10px">'+(v.email||'\u2014')+'</td>'
+    +'<td style="padding:9px 10px;font-size:11px;color:var(--ink2)">'+(v.service_type||'\u2014')+'</td>'
+    +'<td style="padding:9px 10px;text-align:center;font-size:10px;font-weight:600;color:var(--ink)">'+_pkgLab+'</td>'
+    +'<td style="padding:9px 10px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+_mk+'</td>'
+    +'<td style="padding:9px 10px;text-align:right">'+o.qty+'</td>'
+    +'<td style="padding:9px 10px"><div style="background:#eee;height:8px;border-radius:999px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+c+'"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px;text-align:center">'+done+'/7</div></td>'
+    +'<td style="padding:9px 10px;text-align:center"><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;'+bs+'">'+st+'</span></td>'
+    +'<td style="padding:9px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:'+totCol+'">'+ltFmt(totPag)+'</td>'
+    +'<td style="padding:9px 10px;text-align:center;white-space:nowrap"><button type="button" data-gm-eid="'+eid+'" onclick="gvView(this.getAttribute(\'data-gm-eid\'))" style="padding:4px 7px">Ver</button> <button type="button" data-gm-eid="'+eid+'" onclick="gvEdit(this.getAttribute(\'data-gm-eid\'))" style="padding:4px 7px">Editar</button> <button type="button" data-gm-eid="'+eid+'" onclick="gvDelete(this.getAttribute(\'data-gm-eid\'))" style="padding:4px 7px">Excluir</button>'+btnPago+'</td>'
+    +'</tr>';
+   var histHtml=vendorBuildHistHtml(v.company_name||'');
+   var histRow='<tr id="vendor-hist-'+eid+'" style="display:none;background:var(--cream)"><td colspan="13" style="padding:14px 24px"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px">Historico de pagamentos \u2014 '+(v.company_name||'')+'</div>'+histHtml+'</td></tr>';
+   return rowHtml+histRow;
+  }).join('');
+  tb.innerHTML=html||'<tr><td colspan="13" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';
+ }
+ var pi=document.getElementById('gv-page-info');
+ if(pi)pi.textContent='Page '+gvPage+'/'+totalPages+' \u00B7 '+filtered.length+' vendor(s)';
+}
 function gvRender(){const vendors=gvLoad();const t=document.getElementById('gv-title');if(t)t.textContent=`${gvT('vendors_title')} — ${(gvMonth==='all'?gvT('all_months'):GV_MONTHS[+gvMonth])} 2026`;const s=document.getElementById('gv-subtitle');if(s)s.textContent=gvT('vendors_subtitle');const n=document.getElementById('gv-btn-new');if(n)n.textContent=gvT('new_vendor');const tt=document.getElementById('gv-top-title');if(tt)tt.textContent=gvT('top_vendors');gvWireMonths();gvRenderKpis(vendors);gvTopRows(vendors);gvRenderTable()}
 function gvBuildBills(vendors){const m=['1','2','3','4','5','6','7','8','9','10','11','12'];if(!vendors.length)return[];const out=[];vendors.forEach((v,idx)=>{for(let i=0;i<6;i++){const mm=m[(idx+i)%12];out.push({vendor_id:v.id,month:mm,amount:Math.round(180+Math.random()*2400)})}});return out}
 function gvLoadBills(){fetch('/api/appfolio/bills').then(r=>r.ok?r.json():Promise.reject()).then(j=>{const arr=Array.isArray(j)?j:(j.bills||[]);gvBills=arr.map((b,i)=>({vendor_id:String(b.vendor_id||b.vendor||b.vendor_name||('v'+i)),month:String(new Date(b.bill_date||b.date||Date.now()).getMonth()+1),amount:+(b.amount||b.total||0)}));gvRender();}).catch(()=>{const v=gvLoad();gvBills=gvBuildBills(v);gvRender();});}
