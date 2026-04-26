@@ -331,6 +331,16 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
     </div>
   </header>
 
+  <!-- LOCK STATUS BAR -->
+  <div id="gaap-status-bar" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--navy-pale,#e8edf3);border:1px solid var(--navy-paler,#7a95b5);border-radius:8px;margin-bottom:16px;font-family:Inter,sans-serif">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg id="gaap-lock-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span id="gaap-lock-msg" style="font-weight:600;color:#1e3a5f;font-size:13px;letter-spacing:.3px">Numeros protegidos</span>
+      <span id="gaap-lock-timer" style="font-weight:500;color:#4a6b8c;font-size:12px;font-family:'IBM Plex Mono',monospace;display:none"></span>
+    </div>
+    <button id="gaap-unlock-btn" type="button" onclick="gaapUnlock()" style="padding:8px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;font-family:Inter,sans-serif;letter-spacing:.3px">Unhide</button>
+  </div>
+
   <!-- TABS -->
   <nav class="tabs">
     <button class="tab active" data-tab="t1"><span class="num">01</span>Demonstrativo</button>
@@ -1089,5 +1099,272 @@ new Chart(document.getElementById('barPhases'),{type:'bar',
     y:{grid:{color:'rgba(30,58,95,0.06)'},ticks:{color:'#4a5260',callback:(v)=>v+'%',font:{weight:'500'}},beginAtZero:true,max:60}
   }}});
 </script>
+
+<!-- ========== GAAP HIDE/UNHIDE LOCK ========== -->
+<style>
+.gaap-num{display:inline-block;min-width:40px}
+body.gaap-locked .gaap-num{
+  letter-spacing:2px;
+  color:#1e3a5f !important;
+  font-feature-settings:normal;
+}
+body.gaap-locked canvas,
+body.gaap-locked .chart-wrap,
+body.gaap-locked .big-chart-wrap,
+body.gaap-locked .split-donut-wrap,
+body.gaap-locked .sens-bar,
+body.gaap-locked .pf-bar{
+  filter:blur(10px);
+  pointer-events:none;
+  user-select:none;
+  transition:filter .25s ease;
+}
+body.gaap-locked table tbody td:not(:first-child),
+body.gaap-locked .kpi-sub,
+body.gaap-locked .pf-tag-val,
+body.gaap-locked .pf-row-val{
+  filter:blur(5px);
+  user-select:none;
+  transition:filter .25s ease;
+}
+#gaap-password-modal input::placeholder{color:#bbb;letter-spacing:6px}
+</style>
+
+<div id="gaap-password-modal" style="display:none;position:fixed;inset:0;background:rgba(15,22,42,0.55);z-index:9999;align-items:center;justify-content:center;font-family:Inter,sans-serif">
+  <div style="background:#fff;border-radius:14px;padding:26px;width:400px;max-width:92vw;box-shadow:0 30px 80px rgba(0,0,0,.35)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 id="gaap-modal-title" style="margin:0;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.2px">Senha de Acesso</h2>
+      <button type="button" onclick="gaapCloseModal()" aria-label="Fechar" style="border:none;background:none;font-size:24px;cursor:pointer;color:#7a95b5;line-height:1;padding:0 4px">&times;</button>
+    </div>
+    <p id="gaap-modal-msg" style="color:#4a5260;font-size:13px;margin:0 0 14px;line-height:1.5">Digite a senha de 6 digitos para visualizar os numeros.</p>
+    <input id="gaap-password-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="" autocomplete="off"
+      style="width:100%;padding:14px 12px;border:1px solid #d8dde6;border-radius:9px;font-size:22px;text-align:center;letter-spacing:14px;font-family:'IBM Plex Mono',monospace;color:#1e3a5f;outline:none;box-sizing:border-box" />
+    <div id="gaap-error" style="color:#b91c1c;font-size:12.5px;margin-top:8px;display:none;font-weight:500">Senha incorrecta.</div>
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:18px;align-items:center">
+      <button id="gaap-config-btn" type="button" onclick="gaapConfigPassword()" style="padding:9px 13px;border:1px solid #d8dde6;background:#fff;border-radius:8px;cursor:pointer;font-size:12px;color:#4a5260;display:none;font-family:Inter,sans-serif">Reconfigurar senha</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button type="button" onclick="gaapCloseModal()" style="padding:10px 16px;border:1px solid #d8dde6;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;color:#4a5260;font-family:Inter,sans-serif">Cancelar</button>
+        <button type="button" onclick="gaapSubmitPassword()" style="padding:10px 18px;border:none;background:#1e3a5f;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;font-family:Inter,sans-serif">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var GAAP_HASH_KEY='gaap_password_hash';
+  var GAAP_FAILS_KEY='gaap_failed_attempts';
+  var GAAP_REVEAL_MIN=5;
+  var GAAP_OBFUSCATED='\u2022\u2022\u2022\u2022\u2022';
+  var revealTimer=null;
+  var revealCountdown=null;
+
+  function gaapHashPassword(pwd){
+    var s=String(pwd);
+    var h=0;
+    for(var i=0;i<s.length;i++){
+      h=((h<<5)-h)+s.charCodeAt(i);
+      h=h&h;
+    }
+    return 'gh_'+(h>>>0).toString(36)+'_'+s.length;
+  }
+
+  function gaapIsAdmin(){
+    try{
+      var u=null;
+      try{if(window.opener&&window.opener.gmAuthUser)u=window.opener.gmAuthUser;}catch(eo){}
+      if(!u){
+        try{u=JSON.parse(localStorage.getItem('gm_auth_user')||'null');}catch(el){}
+      }
+      if(!u)return false;
+      if(String(u.role||'').toLowerCase()==='admin')return true;
+      var e=String(u.email||'').toLowerCase();
+      if(!e)return false;
+      if(e.indexOf('admin')>=0)return true;
+      if(e==='wellington.gomes@godmanager.com')return true;
+      if(e==='wellingtongomesusa@gmail.com')return true;
+      return false;
+    }catch(e){return false;}
+  }
+
+  function markNumbers(){
+    try{
+      var sels=['.kpi-val','.hdr-period','.sens-bar-seg .seg-val','.pf-row-val','.pf-tag-val'];
+      sels.forEach(function(sel){
+        document.querySelectorAll(sel).forEach(function(el){
+          if(!el.classList.contains('gaap-num'))el.classList.add('gaap-num');
+        });
+      });
+    }catch(e){console.warn('markNumbers',e);}
+  }
+
+  function snapshotOriginals(){
+    document.querySelectorAll('.gaap-num').forEach(function(el){
+      if(!el.dataset.gaapOriginal){
+        el.dataset.gaapOriginal=el.textContent;
+      }
+    });
+  }
+
+  function applyHide(){
+    snapshotOriginals();
+    document.body.classList.add('gaap-locked');
+    document.querySelectorAll('.gaap-num').forEach(function(el){
+      el.textContent=GAAP_OBFUSCATED;
+    });
+    var msg=document.getElementById('gaap-lock-msg');
+    var btn=document.getElementById('gaap-unlock-btn');
+    var tmr=document.getElementById('gaap-lock-timer');
+    if(msg)msg.textContent='Numeros protegidos';
+    if(tmr){tmr.style.display='none';tmr.textContent='';}
+    if(btn){btn.textContent='Unhide';btn.onclick=gaapUnlock;btn.style.background='#1e3a5f';}
+    if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
+    if(revealCountdown){clearInterval(revealCountdown);revealCountdown=null;}
+  }
+
+  function applyReveal(){
+    snapshotOriginals();
+    document.body.classList.remove('gaap-locked');
+    document.querySelectorAll('.gaap-num').forEach(function(el){
+      if(el.dataset.gaapOriginal!=null)el.textContent=el.dataset.gaapOriginal;
+    });
+    var msg=document.getElementById('gaap-lock-msg');
+    var btn=document.getElementById('gaap-unlock-btn');
+    var tmr=document.getElementById('gaap-lock-timer');
+    if(msg)msg.textContent='Numeros visiveis';
+    if(btn){btn.textContent='Hide';btn.onclick=gaapHide;btn.style.background='#b91c1c';}
+    sessionStorage.setItem('gaap_unlocked_at',Date.now().toString());
+    if(revealTimer)clearTimeout(revealTimer);
+    if(revealCountdown)clearInterval(revealCountdown);
+    var endsAt=Date.now()+GAAP_REVEAL_MIN*60*1000;
+    function paintTimer(){
+      var rem=Math.max(0,endsAt-Date.now());
+      if(!tmr)return;
+      tmr.style.display='inline-block';
+      var m=Math.floor(rem/60000);
+      var s=Math.floor((rem%60000)/1000);
+      tmr.textContent=' \u00B7 auto-hide em '+m+':'+(s<10?'0':'')+s;
+    }
+    paintTimer();
+    revealCountdown=setInterval(paintTimer,1000);
+    revealTimer=setTimeout(function(){applyHide();},GAAP_REVEAL_MIN*60*1000);
+  }
+
+  window.gaapUnlock=function(){
+    var modal=document.getElementById('gaap-password-modal');
+    var input=document.getElementById('gaap-password-input');
+    var err=document.getElementById('gaap-error');
+    var configBtn=document.getElementById('gaap-config-btn');
+    var msg=document.getElementById('gaap-modal-msg');
+    var title=document.getElementById('gaap-modal-title');
+    if(input)input.value='';
+    if(err)err.style.display='none';
+    var stored=localStorage.getItem(GAAP_HASH_KEY);
+    if(!stored){
+      if(!gaapIsAdmin()){
+        alert('Senha nao configurada. Contacte o administrador.');
+        return;
+      }
+      if(title)title.textContent='Configurar Senha';
+      if(msg)msg.textContent='Defina uma senha de 6 digitos para proteger o GAAP.';
+      if(configBtn)configBtn.style.display='none';
+    }else{
+      if(title)title.textContent='Senha de Acesso';
+      if(msg)msg.textContent='Digite a senha de 6 digitos para visualizar os numeros (5 minutos).';
+      if(configBtn)configBtn.style.display=gaapIsAdmin()?'inline-block':'none';
+    }
+    modal.style.display='flex';
+    setTimeout(function(){if(input)input.focus();},80);
+  };
+
+  window.gaapCloseModal=function(){
+    document.getElementById('gaap-password-modal').style.display='none';
+  };
+
+  window.gaapSubmitPassword=function(){
+    var input=document.getElementById('gaap-password-input');
+    var err=document.getElementById('gaap-error');
+    var pwd=String((input&&input.value)||'').trim();
+    if(!/^\d{6}$/.test(pwd)){
+      err.textContent='A senha deve ter exactamente 6 digitos numericos.';
+      err.style.display='block';
+      return;
+    }
+    var stored=localStorage.getItem(GAAP_HASH_KEY);
+    if(!stored){
+      if(!gaapIsAdmin()){
+        err.textContent='Apenas admin pode configurar a senha.';
+        err.style.display='block';
+        return;
+      }
+      localStorage.setItem(GAAP_HASH_KEY,gaapHashPassword(pwd));
+      window.gaapCloseModal();
+      applyReveal();
+      return;
+    }
+    if(gaapHashPassword(pwd)!==stored){
+      err.textContent='Senha incorrecta.';
+      err.style.display='block';
+      try{
+        var attempts=JSON.parse(localStorage.getItem(GAAP_FAILS_KEY)||'[]');
+        if(!Array.isArray(attempts))attempts=[];
+        var who='unknown';
+        try{
+          if(window.opener&&window.opener.gmAuthUser&&window.opener.gmAuthUser.email)who=window.opener.gmAuthUser.email;
+        }catch(eu){}
+        attempts.push({at:new Date().toISOString(),user:who});
+        localStorage.setItem(GAAP_FAILS_KEY,JSON.stringify(attempts.slice(-50)));
+      }catch(eL){}
+      return;
+    }
+    window.gaapCloseModal();
+    applyReveal();
+  };
+
+  window.gaapConfigPassword=function(){
+    if(!gaapIsAdmin()){alert('Apenas admin pode reconfigurar a senha.');return;}
+    if(!confirm('Reconfigurar a senha do GAAP? A senha actual sera substituida.'))return;
+    localStorage.removeItem(GAAP_HASH_KEY);
+    var msg=document.getElementById('gaap-modal-msg');
+    var title=document.getElementById('gaap-modal-title');
+    var configBtn=document.getElementById('gaap-config-btn');
+    var input=document.getElementById('gaap-password-input');
+    var err=document.getElementById('gaap-error');
+    if(title)title.textContent='Configurar Senha';
+    if(msg)msg.textContent='Defina uma nova senha de 6 digitos.';
+    if(configBtn)configBtn.style.display='none';
+    if(input)input.value='';
+    if(err)err.style.display='none';
+  };
+
+  window.gaapHide=applyHide;
+  window.gaapReveal=applyReveal;
+
+  function init(){
+    markNumbers();
+    snapshotOriginals();
+    applyHide();
+    var input=document.getElementById('gaap-password-input');
+    if(input){
+      input.addEventListener('input',function(){
+        this.value=this.value.replace(/\D/g,'').slice(0,6);
+      });
+      input.addEventListener('keydown',function(e){
+        if(e.key==='Enter'){e.preventDefault();window.gaapSubmitPassword();}
+        else if(e.key==='Escape'){window.gaapCloseModal();}
+      });
+    }
+    var modal=document.getElementById('gaap-password-modal');
+    if(modal){
+      modal.addEventListener('click',function(ev){
+        if(ev.target===modal)window.gaapCloseModal();
+      });
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+
 </body>
 </html>
