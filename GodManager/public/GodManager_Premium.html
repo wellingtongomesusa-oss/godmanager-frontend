@@ -2153,6 +2153,16 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <input id="ltp-f-rent" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Aluguel mensal em dólares" oninput="ltpOnRentInput()" style="width:100%;padding:9px 12px;border:1px solid var(--green-bd);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
 <div id="ltp-err-rent" class="ltp-err-msg"></div>
 </div>
+<div style="grid-column:1/-1;display:flex;gap:14px;align-items:flex-end">
+<div style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding-bottom:9px">
+<input type="checkbox" id="ltp-f-hoa-toggle" onchange="ltpRecalcMgm()" aria-label="HOA adiciona +2% ao MGM Fee" style="width:18px;height:18px;accent-color:var(--amber);cursor:pointer">
+<label for="ltp-f-hoa-toggle" style="font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer">HOA <span style="color:var(--ink3);font-weight:400">(+2%)</span></label>
+</div>
+<div style="flex:1">
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-mgmpct">MGM Fee (%) <span style="font-weight:400;color:var(--ink3);font-size:10px">— padrão 8%, com HOA 10%</span></label>
+<input id="ltp-f-mgmpct" type="number" min="0" step="0.01" placeholder="8.00" value="8" aria-label="Management Fee em percentual" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+</div>
+</div>
 <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px">
 <input type="checkbox" id="ltp-f-deposit-toggle" onchange="ltpToggleDepositWrap()" aria-label="Possui depósito de segurança" style="width:18px;height:18px;accent-color:var(--amber);cursor:pointer">
 <label for="ltp-f-deposit-toggle" style="font-size:12px;color:var(--ink2);cursor:pointer">Possui depósito de segurança?</label>
@@ -8534,7 +8544,7 @@ async function ltpRender(){
 <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
 <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
 <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${(r.guaranteeLimit||r.guarantee)?ltFmt(r.guaranteeLimit||r.guarantee):'—'}</td>
- <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.mgmpct?r.mgmpct+'%':'—'}</td>
+ <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${(r.mgmpct||r.mgmtFeePct)?(Number(r.mgmpct||r.mgmtFeePct).toFixed(0)+'%'):'—'}</td>
  ${ltpRowNetExpDia15(r, expByProp)}
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-ltp-st-toggle data-ltp-id="${esc(r.id)}" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''};cursor:pointer;font-family:'Inter',sans-serif;border-width:1px;border-style:solid">${stLabel[r.status]||'—'}</button></td>
@@ -9869,6 +9879,13 @@ function ltpToggleDepositWrap(){
  const w=document.getElementById('ltp-deposit-wrap');
  if(w)w.style.display=on?'block':'none';
 }
+window.ltpRecalcMgm=function(){
+ var hoa=document.getElementById('ltp-f-hoa-toggle');
+ var mgm=document.getElementById('ltp-f-mgmpct');
+ if(!hoa||!mgm)return;
+ var newVal=hoa.checked?10:8;
+ mgm.value=newVal.toFixed(2);
+};
 function ltpFormatBaths(n){
  const x=parseFloat(n);
  if(isNaN(x)||x<=0)return'—';
@@ -9969,8 +9986,8 @@ function ltpBuildRecord(){
  net:isNaN(net)?rent:net,
  guaranteeLimit:n('ltp-f-guarantee-limit'),
  moveInDate:v('ltp-f-movein')||null,
- hoa:n('ltp-f-hoa'),
- mgmpct:n('ltp-f-mgmpct'),
+ hoa:c('ltp-f-hoa-toggle'),
+ mgmpct:(function(){var e=document.getElementById('ltp-f-mgmpct');var nv=e?parseFloat(e.value):NaN;if(isNaN(nv))return 8;return nv;})(),
  guarantee:n('ltp-f-guarantee'),
  ownerFullName:v('ltp-f-owner-fullname'),
  ownerTaxId:v('ltp-f-owner-taxid'),
@@ -10060,10 +10077,10 @@ async function ltpSaveNewProperty(){
   ownerName:rec.owner||'',
   ownerEmail:rec.ownerEmail||'',
   ownerPhone:rec.ownerPhone||'',
-  rent:Number(rec.rent)||0,
-  deposit:Number(rec.deposit)||0,
-  mgmtFeePct:Number(rec.mgmpct)||0,
-  guaranteeLimit:Number(rec.guaranteeLimit)>0?Number(rec.guaranteeLimit):null,
+ rent:Number(rec.rent)||0,
+ deposit:Number(rec.deposit)||0,
+ mgmtFeePct:Number(rec.mgmpct)||(rec.hoa?10:8),
+ guaranteeLimit:Number(rec.guaranteeLimit)>0?Number(rec.guaranteeLimit):null,
   moveInDate:rec.moveInDate||null,
   bedrooms:Number(rec.bedrooms)||0,
   bathrooms:Number(rec.bathrooms)||0,
@@ -10080,9 +10097,10 @@ async function ltpSaveNewProperty(){
    propertyType:rec.propertyType||'house',
    tenant:rec.tenant||'',
    occupancy:rec.occupancy||'',
-   month:rec.month||'',
-   hoa:Number(rec.hoa)||0,
-   guarantee:Number(rec.guarantee)||0,
+  month:rec.month||'',
+  hoa:!!rec.hoa,
+  mgmpct:Number(rec.mgmpct)||(rec.hoa?10:8),
+  guarantee:Number(rec.guarantee)||0,
    ownerFullName:rec.ownerFullName||'',
    ownerTaxId:rec.ownerTaxId||'',
    ownerDob:rec.ownerDob||'',
@@ -10177,6 +10195,8 @@ function ltpOpenNewPropertyModal(){
  document.getElementById('ltp-f-deposit-toggle').checked=false;
  document.getElementById('ltp-f-deposit-amt').value='';
  ltpToggleDepositWrap();
+ var hoaCb=document.getElementById('ltp-f-hoa-toggle');if(hoaCb)hoaCb.checked=false;
+ var mgmIn=document.getElementById('ltp-f-mgmpct');if(mgmIn)mgmIn.value='8';
  var glEl=document.getElementById('ltp-f-guarantee-limit');if(glEl)glEl.value='';
  var miEl=document.getElementById('ltp-f-movein');if(miEl)miEl.value='';
  document.getElementById('ltp-f-occ').value='rented';
@@ -10245,7 +10265,13 @@ window.ltpOpenEditProperty._populate=function(r){
  var __gl=Number(r.guaranteeLimit)>0?Number(r.guaranteeLimit):(Number(r.guarantee)>0?Number(r.guarantee):0);
  s('ltp-f-guarantee-limit',__gl>0?__gl:'');
  s('ltp-f-movein',r.moveInDate?String(r.moveInDate).split('T')[0]:(r.moveIn||''));
- s('ltp-f-hoa',r.hoa);s('ltp-f-mgmpct',r.mgmpct);s('ltp-f-guarantee',r.guarantee);
+ s('ltp-f-hoa',r.hoa);s('ltp-f-guarantee',r.guarantee);
+ var hoaVal=!!r.hoa||Number(r.hoa)>0;
+ var hoaCb2=document.getElementById('ltp-f-hoa-toggle');if(hoaCb2)hoaCb2.checked=hoaVal;
+ var mgmVal=(r.mgmpct!=null && r.mgmpct!=='')?r.mgmpct
+            :((r.mgmtFeePct!=null && r.mgmtFeePct!=='')?r.mgmtFeePct:(hoaVal?10:8));
+ var mgmIn2=document.getElementById('ltp-f-mgmpct');
+ if(mgmIn2){var nv=Number(mgmVal);mgmIn2.value=isNaN(nv)?'':nv.toFixed(2);}
  s('ltp-f-owner-fullname',r.ownerFullName);s('ltp-f-owner-taxid',r.ownerTaxId);
  s('ltp-f-owner-dob',r.ownerDob);s('ltp-f-owner-email',r.ownerEmail);
  s('ltp-f-owner-phone',r.ownerPhone);s('ltp-f-owner-mailingaddr',r.ownerMailingAddr);
