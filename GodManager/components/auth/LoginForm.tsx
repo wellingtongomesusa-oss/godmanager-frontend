@@ -86,7 +86,8 @@ export function LoginForm() {
     const destination = from.startsWith('/') ? from : '/dashboard';
     const normalized = destination.replace(/\/$/, '') || '/';
     if (normalized === '/dashboard') {
-      window.location.replace('/GodManager_Premium.html#longterm');
+      /* Sem hash: GodManager_Premium inicia em HOME > Home (page-home) */
+      window.location.replace('/GodManager_Premium.html');
       return;
     }
     router.replace(destination);
