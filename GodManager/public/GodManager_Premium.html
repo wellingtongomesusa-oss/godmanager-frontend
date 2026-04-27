@@ -1837,16 +1837,24 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <div id="jobs-user-badge" style="font-size:12px;color:var(--ink3);padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"></div>
  </div>
 
+ <div id="jobs-filter-row" style="display:flex;gap:12px;align-items:center;margin:16px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
+  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap">Filtrar por mes (fechamento):</label>
+  <select id="jobs-filter-month" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;min-width:200px;background:var(--sand);color:var(--ink)">
+   <option value="">Todos os meses</option>
+  </select>
+  <button type="button" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
+ </div>
+
  <div style="padding:0 32px;margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
   <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Total Jobs</div>
    <div id="jobs-kpi-total" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
   </div>
-  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="fees-vendor" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Vendor Fees Applied</div>
    <div id="jobs-kpi-vendor" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div>
   </div>
-  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="fees-job" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
    <div id="jobs-kpi-job" style="font-size:22px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div>
   </div>
@@ -1854,6 +1862,16 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Expenses Abertos</div>
    <div id="jobs-kpi-expenses-abertos" style="font-size:22px;font-weight:700;color:#92400e;margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">aguardam acao</div>
+  </div>
+  <div data-jobs-card="kpi-open" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs abertos</div>
+   <div id="jobs-kpi-open" style="font-size:22px;font-weight:700;color:var(--red);margin-top:4px">0</div>
+   <div style="font-size:10px;color:var(--ink3);margin-top:2px">sem applied e sem cancelado</div>
+  </div>
+  <div data-jobs-card="kpi-closed" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs fechados</div>
+   <div id="jobs-kpi-closed" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">0</div>
+   <div style="font-size:10px;color:var(--ink3);margin-top:2px">mes do applied ou cancelamento</div>
   </div>
  </div>
 
@@ -1867,7 +1885,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Categoria</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Descricao</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data</th>
-      <th style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Valor</th>
+      <th data-jobs-col="amount" style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Valor</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
       <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Acoes</th>
      </tr>
@@ -12382,6 +12400,79 @@ function jobsResolveAddress(r){
  return '-';
 }
 
+function jobsYmFromDateStr(d){
+ if(d==null||d==='')return '';
+ var s=String(d);
+ if(s.length>=7){
+  var ym0=s.substring(0,7);
+  if(/^\d{4}-\d{2}$/.test(ym0))return ym0;
+ }
+ try{
+  var t=new Date(s).getTime();
+  if(isNaN(t))return '';
+  var x=new Date(t);
+  var y=x.getUTCFullYear();
+  var mo=String(x.getUTCMonth()+1).padStart(2,'0');
+  return y+'-'+mo;
+ }catch(e){return '';}
+}
+function jobsLatestAppliedAtForExpense(eid){
+ var best=0;
+ jobsLoadActions().forEach(function(a){
+  if(String(a.expenseId)!==String(eid))return;
+  if(a.type!=='vendor'&&a.type!=='job')return;
+  if(!a.at)return;
+  var t=new Date(a.at).getTime();
+  if(isFinite(t)&&t>best)best=t;
+ });
+ return best>0?new Date(best).toISOString():'';
+}
+function jobsRowClosingMonthYm(r){
+ if(!r)return '';
+ var hasV=jobsHasActionFor(r.id,'vendor');
+ var hasJ=jobsHasActionFor(r.id,'job');
+ var st=String(r.status||'').toLowerCase();
+ var canc=(st==='cancelled'||r.statusPm==='CANCELLED');
+ var hasApplied=hasV||hasJ;
+ if(hasApplied){
+  var at0=jobsLatestAppliedAtForExpense(r.id);
+  if(at0)return jobsYmFromDateStr(at0)||jobsYmFromDateStr(r.serviceDate||r.month);
+ }
+ if(canc){
+  if(r.cancelledAt)return jobsYmFromDateStr(r.cancelledAt);
+  var ar=r._apiRaw;
+  if(ar&&ar.updatedAt)return jobsYmFromDateStr(ar.updatedAt);
+  if(ar&&ar.serviceDate)return jobsYmFromDateStr(ar.serviceDate);
+  return jobsYmFromDateStr(r.serviceDate||r.month);
+ }
+ return '';
+}
+function jobsBuildMonthSetFromCache(rows0){
+ var set={};
+ (rows0||[]).forEach(function(r){
+  var y=jobsRowClosingMonthYm(r);
+  if(y)set[y]=1;
+ });
+ return Object.keys(set);
+}
+
+window.jobsUpdateJobsPageRoleKpis=function(){
+ try{
+  var u=window.__gmCurrentUser;
+  if(!u)return;
+  var isAdmin=String(u.role||'').toLowerCase()==='admin';
+  var isMaint=String(u.role||'').toLowerCase()==='maintenance';
+  var ev=document.querySelector('#page-jobs [data-jobs-card="fees-vendor"]');
+  var ej=document.querySelector('#page-jobs [data-jobs-card="fees-job"]');
+  if(ev)ev.style.display=isAdmin?'':'none';
+  if(ej)ej.style.display=isAdmin?'':'none';
+  var colDisp=isMaint?'none':'';
+  document.querySelectorAll('#page-jobs #jobs-table [data-jobs-col="amount"]').forEach(function(el){
+   el.style.display=colDisp;
+  });
+ }catch(e){console.warn('jobsUpdateJobsPageRoleKpis',e);}
+};
+
 async function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
@@ -12392,6 +12483,27 @@ async function jobsRender(){
  var user=jobsGetCurrentUser();
  var badge=document.getElementById('jobs-user-badge');
  if(badge)badge.textContent='Utilizador: '+user;
+
+ var monthFilter='';
+ var sel=document.getElementById('jobs-filter-month');
+ if(sel){
+  var prev=String(sel.value||'');
+  var pool=typeof jobsMergeForJobs==='function'?jobsMergeForJobs():(rows||[]);
+  var sorted=jobsBuildMonthSetFromCache(pool).sort().reverse();
+  while(sel.options.length>1)sel.remove(1);
+  sorted.forEach(function(ym){
+   var o=document.createElement('option');
+   o.value=ym;
+   o.textContent=new Date(ym+'-15T12:00:00Z').toLocaleDateString('pt-BR',{year:'numeric',month:'long'});
+   sel.appendChild(o);
+  });
+  if(Array.prototype.some.call(sel.options||[],function(o){return o.value===prev;}))sel.value=prev;
+  monthFilter=String(sel.value||'');
+  if(!window.__jobsMonthSelectWired){
+   sel.addEventListener('change',function(){if(typeof jobsRender==='function')jobsRender();});
+   window.__jobsMonthSelectWired=true;
+  }
+ }
 
  var totalVendorFees=0, totalJobFees=0;
  jobsLoadActions().forEach(function(a){
@@ -12410,6 +12522,33 @@ async function jobsRender(){
   return true;
  }).length;
  var k4=document.getElementById('jobs-kpi-expenses-abertos'); if(k4)k4.textContent=String(abertos);
+
+ var jobsOpen=0;
+ var jobsClosed=0;
+ var mf=monthFilter;
+ rows.forEach(function(r){
+  if(!r)return;
+  var hasV=jobsHasActionFor(r.id,'vendor');
+  var hasJ=jobsHasActionFor(r.id,'job');
+  var st0=String(r.status||'').toLowerCase();
+  var canc=(st0==='cancelled'||r.statusPm==='CANCELLED');
+  var isClosed=(hasV||hasJ)||canc;
+  if(!isClosed){
+   jobsOpen++;
+   return;
+  }
+  if(mf){
+   var cym=jobsRowClosingMonthYm(r);
+   if(cym!==mf)return;
+  }
+  jobsClosed++;
+ });
+ var kOpen=document.getElementById('jobs-kpi-open');
+ var kCl=document.getElementById('jobs-kpi-closed');
+ if(kOpen)kOpen.textContent=String(jobsOpen);
+ if(kCl)kCl.textContent=String(jobsClosed);
+
+ if(typeof window.jobsUpdateJobsPageRoleKpis==='function')try{window.jobsUpdateJobsPageRoleKpis();}catch(eK){}
 
  if(!rows.length){
   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa encontrada.</td></tr>';
@@ -12471,7 +12610,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
-  +'<td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
+  +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
   +'</tr>';
@@ -12780,6 +12919,9 @@ async function jobsApplyRoleGateV2(){
    }
    if(typeof nav==='function')setTimeout(function(){try{nav('jobs');}catch(e){}},50);
   }
+  if(typeof window.jobsUpdateJobsPageRoleKpis==='function')setTimeout(function(){
+   try{window.jobsUpdateJobsPageRoleKpis();}catch(e1){}
+  },0);
  }catch(e){console.warn('jobsApplyRoleGateV2',e);}
 }
 
