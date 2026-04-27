@@ -11104,6 +11104,18 @@ var ltpPrevFocus=null;
 var ltpEscHandler=null;
 var ltpTabHandler=null;
 
+function ltpResolveRent(r){
+ if(!r)return 0;
+ var candidates=[r.rent,r.currentRent,r.marketRent,r.monthlyRent,r.aluguel];
+ for(var i=0;i<candidates.length;i++){
+  var v=candidates[i];
+  if(v===null||v===undefined||v==='')continue;
+  var num=(typeof v==='number')?v:parseFloat(String(v).replace(',','.'));
+  if(!isNaN(num)&&num>0)return num;
+ }
+ return 0;
+}
+
 function ltpModalBackdropClick(e){/* lock: clique fora nao fecha o modal Property */}
 function ltpOnNetInput(){ltpNetManual=true;}
 function ltpOnRentInput(){
@@ -11185,7 +11197,16 @@ function ltpValidate(){
  var owner=(document.getElementById('ltp-f-owner')&&document.getElementById('ltp-f-owner').value||'').trim();
  var br=document.getElementById('ltp-f-bedrooms');
  var ba=document.getElementById('ltp-f-bathrooms');
- var rent=parseFloat(document.getElementById('ltp-f-rent')&&document.getElementById('ltp-f-rent').value);
+ var rentIn=document.getElementById('ltp-f-rent');
+ var rentRaw=(rentIn&&rentIn.value!=null)?String(rentIn.value).replace(',','.'):'';
+ var rent=parseFloat(rentRaw)||0;
+ if(rent<=0&&window.__ltpEditingRecord){
+  var fromRec=ltpResolveRent(window.__ltpEditingRecord);
+  if(fromRec>0&&rentIn){
+   rentIn.value=String(fromRec);
+   rent=fromRec;
+  }
+ }
  var month=document.getElementById('ltp-f-month')&&document.getElementById('ltp-f-month').value;
  if(!addr){var a=document.getElementById('ltp-f-address');if(a)a.classList.add('ltp-field-err');var e=document.getElementById('ltp-err-address');if(e)e.textContent='Obrigatório.';ok=false;}
  if(!owner){var o=document.getElementById('ltp-f-owner');if(o)o.classList.add('ltp-field-err');var e2=document.getElementById('ltp-err-owner');if(e2)e2.textContent='Obrigatório.';ok=false;}
@@ -11201,7 +11222,8 @@ function ltpValidate(){
 }
 function ltpBuildRecord(){
  const br=parseFloat(document.getElementById('ltp-f-bathrooms').value);
- const rent=parseFloat(document.getElementById('ltp-f-rent').value)||0;
+ var rentEl=document.getElementById('ltp-f-rent');
+ const rentValue=rentEl?(parseFloat(String(rentEl.value||'').replace(',','.'))||0):0;
  const net=parseFloat(document.getElementById('ltp-f-net').value);
  const depOn=document.getElementById('ltp-f-deposit-toggle').checked;
  const deposit=depOn?(parseFloat(document.getElementById('ltp-f-deposit-amt').value)||0):0;
@@ -11224,8 +11246,8 @@ function ltpBuildRecord(){
  baths:ltpFormatBaths(br),
  occupancy:v('ltp-f-occ')||'rented',
  month:v('ltp-f-month'),
- rent,deposit,
- net:isNaN(net)?rent:net,
+ rent:rentValue,currentRent:rentValue,deposit,
+ net:isNaN(net)?rentValue:net,
  guaranteeLimit:n('ltp-f-guarantee-limit'),
  moveInDate:v('ltp-f-movein')||null,
  hoa:c('ltp-f-hoa-toggle'),
@@ -11443,6 +11465,7 @@ function ltpTrapTab(e){
 }
 function ltpEscClose(e){/* lock: tecla Esc nao fecha o modal Property */}
 function ltpOpenNewPropertyModal(){
+ window.__ltpEditingRecord=null;
  ltpPrevFocus=document.activeElement;
  ltpStagedPhotos=[];ltpPrimaryIdx=0;ltpNetManual=false;
  ltpClearFieldErrors();
@@ -11475,6 +11498,7 @@ function ltpOpenNewPropertyModal(){
  setTimeout(function(){var a=document.getElementById('ltp-f-address');if(a)a.focus();},80);
 }
 function ltpCloseNewPropertyModal(){
+ window.__ltpEditingRecord=null;
  const m=document.getElementById('ltp-property-modal');
  if(!m)return;
  m.style.display='none';
@@ -11513,6 +11537,7 @@ window.ltpOpenEditProperty=function(id){
  window.ltpOpenEditProperty._populate(r);
 };
 window.ltpOpenEditProperty._populate=function(r){
+ window.__ltpEditingRecord=r;
  ltEditingId=r.id||r.code;
  var s=function(k,v){var e=document.getElementById(k);if(e)e.value=(v!=null?v:'');};
  var c=function(k,v){var e=document.getElementById(k);if(e)e.checked=!!v;};
@@ -11520,7 +11545,7 @@ window.ltpOpenEditProperty._populate=function(r){
  s('ltp-f-month',r.month);s('ltp-f-type',r.propertyType||'house');
  s('ltp-f-bedrooms',r.bedrooms);s('ltp-f-bathrooms',r.bathrooms);
  s('ltp-f-garage',r.garage);c('ltp-f-pool',r.pool);s('ltp-f-sqft',r.sqft);
- s('ltp-f-rent',r.rent);s('ltp-f-occ',r.occupancy||'rented');
+ s('ltp-f-rent',ltpResolveRent(r));s('ltp-f-occ',r.occupancy||'rented');
  var dep=Number(r.deposit)||0;
  c('ltp-f-deposit-toggle',dep>0);
  var dw=document.getElementById('ltp-deposit-wrap');if(dw)dw.style.display=dep>0?'block':'none';
