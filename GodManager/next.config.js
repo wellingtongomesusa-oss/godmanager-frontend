@@ -6,12 +6,28 @@ const crmBackend =
   process.env.CRM_BACKEND_URL || process.env.NEXT_PUBLIC_CRM_BACKEND_URL || 'http://127.0.0.1:5001';
 
 const nextConfig = {
+  /**
+   * Inlined em client: query ?v= em redirects para o HTML estatico (cache-bust no primeiro load apos deploy).
+   */
+  env: {
+    NEXT_PUBLIC_APP_BUILD:
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      process.env.SOURCE_VERSION ||
+      process.env.NEXT_PUBLIC_APP_BUILD ||
+      '',
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
     ],
   },
   async headers() {
+    const noStoreHtml = [
+      { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+      { key: 'Pragma', value: 'no-cache' },
+      { key: 'Expires', value: '0' },
+    ];
     return [
       {
         source: '/manager-pro/:path*',
@@ -21,9 +37,11 @@ const nextConfig = {
       },
       {
         source: '/GodManager_Premium.html',
-        headers: [
-          { key: 'Cache-Control', value: 'no-store, must-revalidate, max-age=0' },
-        ],
+        headers: noStoreHtml,
+      },
+      {
+        source: '/gaap.html',
+        headers: noStoreHtml,
       },
     ];
   },

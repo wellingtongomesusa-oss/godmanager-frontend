@@ -10,6 +10,7 @@ import { appendAudit } from '@/lib/audit';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 function validEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -87,7 +88,7 @@ export function LoginForm() {
     const normalized = destination.replace(/\/$/, '') || '/';
     if (normalized === '/dashboard') {
       /* Sem hash: GodManager_Premium inicia em HOME > Home (page-home) */
-      window.location.replace('/GodManager_Premium.html');
+      window.location.replace(getGodManagerPremiumUrl());
       return;
     }
     router.replace(destination);
