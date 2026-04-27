@@ -8689,7 +8689,12 @@ window.gmPropertiesToUi=function(p){
   rent:rent,
  deposit:Number(p.deposit)||0,
  guarantee:Number(p.guarantee!=null?p.guarantee:0),
- mgmpct:Number(p.mgmFee != null ? p.mgmFee : (p.mgmpct!=null?p.mgmpct:(p.mgmtPct||0))),
+ mgmpct:Number(
+  p.mgmtFeePct != null ? p.mgmtFeePct :
+  (p.mgmFee != null ? p.mgmFee :
+  (p.mgmpct != null ? p.mgmpct :
+  (p.mgmtPct != null ? p.mgmtPct : 0)))
+ ),
  mgmFeeUsd:Number(p.mgmFeeUsd!=null?p.mgmFeeUsd:(p.mgmtFeeUsd||0)),
  net:Number(p.netOwner!=null?p.netOwner:(p.net||0)),
   month:p.month||'',
@@ -8843,8 +8848,12 @@ async function ltpRender(){
  const totNetAtual=totR;
  /* Total Net Owner: soma (rent - fee MGM em $) = soma coluna NET OWNER sem despesas PM */
  const ltpKpiMgmPct=function(r){
-  var m=Number(r.mgmpct!=null?r.mgmpct:r.mgmtFeePct);
-  return isNaN(m)?0:m;
+  var v = r.mgmpct != null ? r.mgmpct :
+         (r.mgmtFeePct != null ? r.mgmtFeePct :
+         (r.mgmFee != null ? r.mgmFee :
+         (r.mgmtPct != null ? r.mgmtPct : 0)));
+  var m = Number(v);
+  return isFinite(m) ? m : 0;
  };
  const totTotalNetOwner=filtered.reduce((s,r)=>{
   var rent=Number(r.rent)||0;
