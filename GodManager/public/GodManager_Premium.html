@@ -3402,10 +3402,21 @@ function applyHomeDashboardFromApi(d){
   c.ctr=gmHomeMoneyCtr(tsd);
   break;
  case 'total-net-owner':{
-  var tno=gmHomeNum(d.total_net_owner_sum,0);
-  c.value=gmHomeMoney(tno);
-  c.cd=[Math.max(0.01,tno)];
-  c.ctr=gmHomeMoneyCtr(tno);
+  // Forcar uso da formula local (mesma de Properties), nao da API:
+  try{
+   var local=gmHomeBuildDashboardFromLocal();
+   if(!local)throw new Error('no local');
+   var tno=Number(local.total_net_owner_sum);
+   if(!isFinite(tno))throw new Error('invalid tno');
+   c.value=gmHomeMoney(tno);
+   c.cd=[Math.max(0.01,tno)];
+   c.ctr=gmHomeMoneyCtr(tno);
+  }catch(e){
+   var tnoFallback=gmHomeNum(d.total_net_owner_sum,0);
+   c.value=gmHomeMoney(tnoFallback);
+   c.cd=[Math.max(0.01,tnoFallback)];
+   c.ctr=gmHomeMoneyCtr(tnoFallback);
+  }
   break;
  }
  case 'total-exp-pm':{
@@ -3532,7 +3543,13 @@ function gmHomeBuildDashboardFromLocal(){
   var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
   var mrent=Number(p.marketRent!=null?p.marketRent:rent)||0;
   var dep=Number(p.deposit)||0;
-  var mPct=Number(p.mgmFee!=null?p.mgmFee:(p.mgmpct!=null?p.mgmpct:(p.mgmtFeePct||0)))||0;
+  // Mesma prioridade de Properties (ltpKpiMgmPct):
+  // mgmpct -> mgmtFeePct -> mgmFee -> mgmtPct
+  var mPctRaw=p.mgmpct != null ? p.mgmpct :
+   (p.mgmtFeePct != null ? p.mgmtFeePct :
+   (p.mgmFee != null ? p.mgmFee :
+   (p.mgmtPct != null ? p.mgmtPct : 0)));
+  var mPct=Number(mPctRaw)||0;
   var occ=String(p.occupancy||'').toLowerCase();
   var stt=String(p.status||'').toLowerCase();
   var isRented=(occ==='rented')||(rent>0&&occ!=='vacant'&&occ!=='renovation'&&occ!=='inprogress');
