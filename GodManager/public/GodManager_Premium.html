@@ -12199,13 +12199,28 @@ function jobsIsMasterVendor(vendorName){
  return JOBS_MASTER_VENDOR_NAMES.some(function(n){return s===n||s.indexOf(n)>=0;});
 }
 
-function jobsVendorSourceStr(r){
+window.jobsVendorSourceStr=function(r){
  if(!r)return '';
- var ar=(r._apiRaw&&typeof r._apiRaw==='object')?r._apiRaw:null;
+ // Tentar TODOS os locais possiveis incluindo _apiRaw
+ var raw=r._apiRaw||r._raw||{};
+ var ar=r.actions||{};
  var cands=[
-  r.vendor,r.vendorname,r.vendorName,r.companyName,r.vendorBusinessName,
+  // Campos directos do mapping
+  r.vendorName,
+  r.vendor,
+  r.vendorname,
+  r.companyName,
+  r.vendorBusinessName,
+  // _apiRaw - bate com Expenses
+  raw.vendorName,
+  raw.vendor&&raw.vendor.companyName,
+  raw.companyName,
+  // Actions cache
   r.vendorEntity&&r.vendorEntity.name,
-  ar&&ar.vendorName,ar&&ar.companyName,ar&&ar.vendor&&(ar.vendor.companyName),
+  ar&&ar.vendorName,
+  ar&&ar.companyName,
+  ar&&ar.vendor&&ar.vendor.companyName,
+  // Fallback: descricao se tiver pinta de vendor
   r.desc
  ];
  for(var i=0;i<cands.length;i++){
@@ -12213,7 +12228,7 @@ function jobsVendorSourceStr(r){
   if(s)return s;
  }
  return '';
-}
+};
 
 function jobsLoadActions(){
  try{var a=JSON.parse(localStorage.getItem(JOBS_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}
@@ -13959,6 +13974,15 @@ window.adminAuditRender=async function(){
  }
 };
 /* ========== /AUDIT LOG ========== */
+
+// Forcar limpeza do cache antigo de Jobs ao carregar a pagina
+(function(){
+ try{
+  window.__jobsExpensesCache=null;
+  window.__jobsExpensesCacheAt=0;
+  window.__jobsApiRowsCache=null;
+ }catch(e){}
+})();
 
 </script>
 
