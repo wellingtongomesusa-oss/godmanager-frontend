@@ -48,6 +48,7 @@ export function LoginForm() {
   }, []);
 
   const from = searchParams.get('from') || '/dashboard';
+  const idleBanner = searchParams.get('reason') === 'idle';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +98,14 @@ export function LoginForm() {
 
   return (
     <form onSubmit={submit} className="mx-auto w-full max-w-[400px] space-y-5 font-inter" noValidate>
+      {idleBanner ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2.5 text-center text-[13px] leading-snug text-amber-950"
+        >
+          {t('idleBanner')}
+        </div>
+      ) : null}
       <div className="text-center">
         <h1 className="font-playfair text-[32px] font-semibold leading-tight text-login-navy sm:text-[36px]">
           {t('welcome')}

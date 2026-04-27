@@ -13831,7 +13831,156 @@ window.gmAdminUsersModalOpen=gmAdminUsersModalOpen;
 window.gmAdminUsersModalClose=gmAdminUsersModalClose;
 window.gmAuthLogout=gmAuthLogout;
 window.gmAuthHydrateUserBadge=gmAuthHydrateUserBadge;
-/* ========== /ADMIN USERS MODAL ========== */
+
+/* ========== IDLE SESSION (auto-logout 20 min, aviso 18 min) ========== */
+(function(){
+ if(window.__gmIdleSessionBound)return;
+ var IDLE_KEY='gm_last_activity';
+ var IDLE_TIMEOUT_MS=20*60*1000;
+ var IDLE_WARNING_MS=18*60*1000;
+ var CHECK_MS=30000;
+ var SCROLL_THROTTLE_MS=5000;
+ var st={warning:false,countdownT:null,root:null,scrollLast:0,loggingOut:false};
+ function pathSkip(){
+  try{
+   var p=(window.location.pathname||'').toLowerCase();
+   if(p.indexOf('login')>=0)return true;
+  }catch(e){}
+  return false;
+ }
+ function iframeSkip(){try{return window.self!==window.top;}catch(e){return true;}}
+ function getLast(){
+  try{
+   var v=parseInt(localStorage.getItem(IDLE_KEY)||'0',10);
+   return isNaN(v)||v<=0?0:v;
+  }catch(e){return 0;}
+ }
+ function ensureKey(){
+  try{
+   if(!localStorage.getItem(IDLE_KEY))localStorage.setItem(IDLE_KEY,String(Date.now()));
+  }catch(e){}
+ }
+ function shouldSkipEvent(ev){
+  if(!st.root||st.root.style.display!=='flex')return false;
+  try{var t=ev&&ev.target;return t&&st.root.contains(t);}catch(e){return false;}
+ }
+ function onUserActivity(ev){
+  if(shouldSkipEvent(ev))return;
+  touchActivity();
+ }
+ function touchActivity(){
+  try{localStorage.setItem(IDLE_KEY,String(Date.now()));}catch(e){}
+  if(st.warning)closeWarning();
+ }
+ function closeWarning(){
+  st.warning=false;
+  if(st.countdownT){clearInterval(st.countdownT);st.countdownT=null;}
+  if(st.root)st.root.style.display='none';
+ }
+ function fmtRem(ms){
+  if(ms<0)ms=0;
+  var s=Math.max(0,Math.ceil(ms/1000));
+  var m=Math.floor(s/60);
+  var r=s%60;
+  return m+':'+(r<10?'0':'')+r;
+ }
+ function buildUi(){
+  if(st.root)return;
+  var root=document.createElement('div');
+  root.id='gm-idle-warning-overlay';
+  root.setAttribute('role','dialog');
+  root.setAttribute('aria-modal','true');
+  root.setAttribute('aria-labelledby','gm-idle-warn-title');
+  root.style.cssText='display:none;position:fixed;inset:0;z-index:999999;align-items:center;justify-content:center;background:rgba(0,0,0,.45);font-family:\'DM Sans\',sans-serif;-webkit-font-smoothing:antialiased';
+  root.innerHTML='<div style="width:min(420px,92vw);border-radius:14px;background:var(--paper);border:1px solid var(--border);box-shadow:0 24px 64px rgba(0,0,0,.35);padding:22px 24px 20px;margin:16px">'+
+   '<h2 id="gm-idle-warn-title" style="font-family:\'Cormorant Garamond\',serif;font-size:22px;font-weight:600;color:var(--ink);margin:0 0 10px">Sessao prestes a expirar</h2>'+
+   '<p style="font-size:13px;line-height:1.45;color:var(--ink2);margin:0 0 14px">Por seguranca, vais ser desconectado em 2 minutos por inatividade.</p>'+
+   '<p id="gm-idle-warn-count" style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:var(--amber);margin:0 0 18px">Tempo restante: 2:00</p>'+
+   '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">'+
+   '<button type="button" id="gm-idle-btn-exit" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Sair Agora</button>'+
+   '<button type="button" id="gm-idle-btn-cont" style="padding:10px 18px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(42,110,78,.25)">Continuar Sessao</button>'+
+   '</div></div>';
+  document.body.appendChild(root);
+  st.root=root;
+  document.getElementById('gm-idle-btn-cont').onclick=function(){touchActivity();};
+  document.getElementById('gm-idle-btn-exit').onclick=function(){gmIdleSessionLogout();};
+ }
+ function openWarning(){
+  buildUi();
+  st.warning=true;
+  st.root.style.display='flex';
+  if(st.countdownT)clearInterval(st.countdownT);
+  var lbl=document.getElementById('gm-idle-warn-count');
+  st.countdownT=setInterval(function(){
+   var last=getLast();
+   var rem=last+IDLE_TIMEOUT_MS-Date.now();
+   if(lbl)lbl.textContent='Tempo restante: '+fmtRem(rem);
+   if(rem<=0){clearInterval(st.countdownT);st.countdownT=null;gmIdleSessionLogout();}
+  },1000);
+  if(lbl){
+   var last0=getLast();
+   lbl.textContent='Tempo restante: '+fmtRem(last0+IDLE_TIMEOUT_MS-Date.now());
+  }
+ }
+ async function gmIdleSessionLogout(){
+  if(st.loggingOut)return;
+  st.loggingOut=true;
+  closeWarning();
+  try{
+   var u=window.__gmCurrentUser||{};
+   if(typeof window.gmLogAudit==='function')window.gmLogAudit('logout','session',null,{email:u.email||'',reason:'idle_timeout'});
+  }catch(e){}
+  try{await fetch('/api/auth/logout',{method:'POST',credentials:'include'});}catch(e){console.warn('[idle] logout',e);}
+  try{localStorage.removeItem('gm_auth_token_v1');localStorage.removeItem(IDLE_KEY);}catch(e){}
+  window.location.href='/login?reason=idle';
+ }
+ function tick(){
+  if(st.loggingOut)return;
+  var last=getLast();
+  if(!last)return;
+  var idle=Date.now()-last;
+  if(idle>=IDLE_TIMEOUT_MS){gmIdleSessionLogout();return;}
+  if(idle>=IDLE_WARNING_MS&&!st.warning)openWarning();
+ }
+ function onVis(){
+  if(document.visibilityState!=='visible')return;
+  var last=getLast();
+  if(!last)return;
+  var idle=Date.now()-last;
+  if(idle>=IDLE_TIMEOUT_MS){gmIdleSessionLogout();return;}
+  touchActivity();
+ }
+ function init(){
+  if(window.__gmIdleSessionBound)return;
+  if(iframeSkip()||pathSkip())return;
+  window.__gmIdleSessionBound=1;
+  ensureKey();
+  document.addEventListener('click',onUserActivity,true);
+  document.addEventListener('touchstart',onUserActivity,{passive:true,capture:true});
+  document.addEventListener('keydown',onUserActivity,true);
+  window.addEventListener('scroll',function(){
+   var n=Date.now();
+   if(n-st.scrollLast<SCROLL_THROTTLE_MS)return;
+   st.scrollLast=n;
+   touchActivity();
+  },{passive:true});
+  document.addEventListener('visibilitychange',onVis);
+  window.addEventListener('storage',function(e){
+   if(e.key!==IDLE_KEY)return;
+   if(e.newValue==null){
+    try{
+     if(!st.loggingOut)window.location.href='/login?reason=idle';
+    }catch(e2){}
+    return;
+   }
+   if(st.warning)closeWarning();
+  });
+  setInterval(tick,CHECK_MS);
+  setTimeout(tick,2000);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+/* ========== /IDLE SESSION ========== */
 
 /* ========== BACKUP & RESTORE MODULE ========== */
 const GM_BACKUP_VERSION='1.0';
