@@ -3610,6 +3610,7 @@ function loadHomeDashboardFromApi(){
   // API tem dados reais, sobrescreve
   applyHomeDashboardFromApi(o.j);
   renderCards();
+  try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
   try{
    var now=new Date().toISOString();
    var ts=getCardTimestamps();
@@ -3620,10 +3621,12 @@ function loadHomeDashboardFromApi(){
  .catch(function(){
   // Falha de rede - mantem o que ja esta (local ou vazio)
   if(!local){applyHomeDashboardFromApi(null);renderCards();}
+  try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
  });
  try{ if(typeof gmHomeFetchPmMarkupMonth==='function') gmHomeFetchPmMarkupMonth(); }catch(e){}
  try{ if(typeof gmHomeFetchExpPmTotal==='function') gmHomeFetchExpPmTotal(); }catch(e){}
  try{ if(typeof gmHomeFetchExpensesCalls==='function') gmHomeFetchExpensesCalls(); }catch(e){}
+ try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
 }
 function gmHomeFetchExpPmTotal(){
  try{
@@ -3705,6 +3708,72 @@ window.gmHomeFetchExpensesCalls=function(){
    .catch(function(){gmHomeExpensesCallsFallback();});
  }catch(e){console.warn('gmHomeFetchExpensesCalls',e);gmHomeExpensesCallsFallback();}
 };
+
+window.gmCountTotalJobs=async function(){
+ try{
+  if(typeof window.jobsFetchFromApi==='function'){
+   await window.jobsFetchFromApi();
+  }
+  var rows=(typeof window.jobsFilteredExpenses==='function')?window.jobsFilteredExpenses():(window.__jobsExpensesCache||[]);
+  return Array.isArray(rows)?rows.length:0;
+ }catch(e){
+  console.warn('gmCountTotalJobs',e);
+  return 0;
+ }
+};
+
+window.gmHomeApplyMaintenanceTicketsFromJobs=async function(){
+ try{
+  if(typeof window.jobsFetchFromApi==='function'){
+   await window.jobsFetchFromApi();
+  }
+  var rows=(typeof window.jobsFilteredExpenses==='function')?window.jobsFilteredExpenses():([]);
+  if(!Array.isArray(rows))rows=[];
+  var total=rows.length;
+  var nOpen=0;
+  var nClosed=0;
+  var nInProg=0;
+  rows.forEach(function(r){
+   if(!r)return;
+   var hasV=jobsHasActionFor(r.id,'vendor');
+   var hasJ=jobsHasActionFor(r.id,'job');
+   var st0=String(r.status||'').toLowerCase();
+   var canc=(st0==='cancelled'||r.statusPm==='CANCELLED');
+   var isClosed=(hasV||hasJ)||canc;
+   if(!isClosed){
+    nOpen++;
+   }else{
+    nClosed++;
+   }
+  });
+  try{
+   nInProg=rows.filter(function(r){
+    if(!r)return false;
+    if(r&&r.statusPm==='CANCELLED')return false;
+    if(r&&r.statusPm==='PAID')return false;
+    var st=String(r&&r.status||'').toLowerCase();
+    if(st==='paid'||st==='applied'||st==='cancelled')return false;
+    if(jobsHasActionFor(r&&r.id,'vendor')||jobsHasActionFor(r&&r.id,'job'))return false;
+    return true;
+   }).length;
+  }catch(e2){nInProg=0;}
+  var c=CARDS.find(function(x){return x.id==='maintenance-tickets';});
+  if(!c)return;
+  c.value=String(Math.round(total));
+  c.ctr=String(Math.round(total));
+  c.sub1='Total maintenance requests';
+  c.sub2='Alinhado com Total Jobs (pagina Jobs)';
+  c.cd=[Math.max(0.01,nClosed),Math.max(0.01,nInProg),Math.max(0.01,nOpen)];
+  c.empty=total===0;
+  if(c.pills&&c.pills[0]){
+   c.pills[0].t='Resolved ('+Math.round(nClosed)+')';
+   c.pills[1].t='In Progress ('+Math.round(nInProg)+')';
+   c.pills[2].t='Open ('+Math.round(nOpen)+')';
+  }
+  if(typeof renderCards==='function')renderCards();
+ }catch(e){console.warn('gmHomeApplyMaintenanceTicketsFromJobs',e);}
+};
+
 function saveAllData(){
  var now=new Date().toISOString();
  try{localStorage.setItem('gm_last_saved',now);}catch(e){}
@@ -12476,6 +12545,7 @@ window.jobsUpdateJobsPageRoleKpis=function(){
 async function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
+ try{
  if(typeof window.jobsFetchFromApi==='function'){
   try{await window.jobsFetchFromApi();}catch(err){console.warn('jobsFetchFromApi',err);}
  }
@@ -12615,6 +12685,14 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
   +'</tr>';
 }).join('');
+ }finally{
+ try{
+  var phH=document.getElementById('page-home');
+  if(phH&&phH.classList.contains('active')&&typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function'){
+   setTimeout(function(){window.gmHomeApplyMaintenanceTicketsFromJobs();},0);
+  }
+ }catch(eF){}
+ }
 }
 
 window.jobsReturn=function(id){
