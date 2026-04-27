@@ -9,12 +9,19 @@
 <meta http-equiv="Expires" content="0">
 <meta name="build-date" content="2026-04-26">
 <title>GodManager — Financial Operations</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GodManager">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#0f172a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='16' fill='%231a3a5c'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='%23ffffff' font-family='system-ui' font-size='18' font-weight='700'%3EG%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
  /* GodManager Premium — FINANCIAL OPERATIONS */
@@ -1877,6 +1884,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs fechados</div>
    <div id="jobs-kpi-closed" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">mes do applied ou cancelamento</div>
+  </div>
+  <div id="kpi-invoices-generated" data-jobs-card="kpi-invoices" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Invoices Geradas</div>
+   <div id="jobs-kpi-invoices-qty" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
+   <div id="jobs-kpi-invoices-total" style="font-size:10px;color:var(--ink3);margin-top:2px">Total: USD 0.00</div>
   </div>
  </div>
 
@@ -7859,6 +7871,744 @@ async function ltExpMigrateLocalToDb(){
  if(typeof ltExpRenderWithPm==='function' && ok>0) await ltExpRenderWithPm();
 }
 
+/* ========== JOBS row: foto / comentario (localStorage + compressao imagem) ========== */
+function newexpDataUrlApproxBytes(d){
+ if(!d||typeof d!=='string')return 0;
+ var i=d.indexOf(',');
+ var b64=i>=0?d.slice(i+1):d;
+ return Math.ceil(b64.length*0.75);
+}
+function newexpCompressImageFile(file, cb){
+ if(!file||!file.type||file.type.indexOf('image/')!==0){cb(new Error('not image'));return;}
+ var reader=new FileReader();
+ reader.onload=function(){
+  var img=new Image();
+  img.onload=function(){
+   var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,maxSide=1280;
+   if(w<=0||h<=0){cb(new Error('dims'));return;}
+   var nw=w,nh=h;
+   if(nw>=nh){if(nw>maxSide){nh=Math.round(nh*maxSide/nw);nw=maxSide;}}else{if(nh>maxSide){nw=Math.round(nw*maxSide/nh);nh=maxSide;}}
+   var c=document.createElement('canvas');
+   c.width=nw;c.height=nh;
+   var ctx=c.getContext('2d');
+   ctx.drawImage(img,0,0,nw,nh);
+   var q=0.7,maxB=Math.floor(1.5*1024*1024),dataUrl='',attempt,gw=nw,gh=nh;
+   for(attempt=0;attempt<10;attempt++){
+    dataUrl=c.toDataURL('image/jpeg',q);
+    if(newexpDataUrlApproxBytes(dataUrl)<=maxB)break;
+    q-=0.07;if(q<0.32)q=0.32;
+    if(attempt>=4){
+     gw=Math.max(480,Math.round(gw*0.88));
+     gh=Math.max(360,Math.round(gh*0.88));
+     c.width=gw;c.height=gh;
+     ctx.drawImage(img,0,0,gw,gh);
+    }
+   }
+   cb(null,dataUrl);
+  };
+  img.onerror=function(){cb(new Error('load'))};
+  img.src=reader.result;
+ };
+ reader.onerror=function(){cb(reader.error||new Error('read'))};
+ reader.readAsDataURL(file);
+}
+function getJobExtras(id){
+ var sid=String(id||'');
+ try{
+  if(typeof ltExpGetRecords==='function'){
+   var expenses=ltExpGetRecords();
+   var local=expenses.find(function(e){return e&&String(e.id)===sid;});
+   if(local&&(local.photo_base64||local.executor_comment)){
+    return{photo_base64:local.photo_base64||'',executor_comment:local.executor_comment||''};
+   }
+  }
+ }catch(e){}
+ try{
+  var extras=JSON.parse(localStorage.getItem('gm_job_expense_extras')||'{}');
+  var x=(extras&&extras[sid])?extras[sid]:{};
+  return{photo_base64:x.photo_base64||'',executor_comment:x.executor_comment||''};
+ }catch(e2){
+  return{photo_base64:'',executor_comment:''};
+ }
+}
+function setJobExtras(id, patch){
+ var sid=String(id||'');
+ if(!sid||!patch||typeof patch!=='object')return;
+ if(typeof ltExpGetRecords==='function'&&typeof ltExpSaveRecords==='function'){
+  var expenses=ltExpGetRecords();
+  var localIdx=expenses.findIndex(function(e){return e&&String(e.id)===sid;});
+  if(localIdx>=0){
+   expenses[localIdx]=Object.assign({},expenses[localIdx],patch);
+   ltExpSaveRecords(expenses);
+   try{
+    var ex0=JSON.parse(localStorage.getItem('gm_job_expense_extras')||'{}');
+    if(ex0&&ex0[sid]){delete ex0[sid];localStorage.setItem('gm_job_expense_extras',JSON.stringify(ex0));}
+   }catch(e0){}
+   return;
+  }
+ }
+ try{
+  var extras=JSON.parse(localStorage.getItem('gm_job_expense_extras')||'{}');
+  if(!extras||typeof extras!=='object')extras={};
+  extras[sid]=Object.assign({},extras[sid]||{},patch);
+  localStorage.setItem('gm_job_expense_extras',JSON.stringify(extras));
+ }catch(e1){}
+}
+window.getJobExtras=getJobExtras;
+window.setJobExtras=setJobExtras;
+function gmJobCloseJobPopups(){
+ var o=document.getElementById('gm-job-pop-overlay');
+ if(o)o.remove();
+}
+window.gmJobCloseJobPopups=gmJobCloseJobPopups;
+function gmJobOpenPhotoPopup(id){
+ id=String(id);
+ gmJobCloseJobPopups();
+ var rows=(typeof jobsFilteredExpenses==='function')?jobsFilteredExpenses():[];
+ var row=rows.find(function(r){return r&&String(r.id)===id;});
+ var addrShort=(row&&typeof jobsResolveAddress==='function')?String(jobsResolveAddress(row)):'-';
+ if(addrShort.length>44)addrShort=addrShort.slice(0,42)+'\u2026';
+ var ex=getJobExtras(id);
+ var state={b64:(ex.photo_base64&&String(ex.photo_base64).trim())?ex.photo_base64:null};
+
+ var ov=document.createElement('div');
+ ov.id='gm-job-pop-overlay';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9010;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto';
+ ov.addEventListener('click',function(e){if(e.target===ov)gmJobCloseJobPopups();});
+ var box=document.createElement('div');
+ box.style.cssText='background:var(--paper);border-radius:12px;width:100%;max-width:360px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin-top:8vh;border:1px solid var(--border)';
+ var h=document.createElement('div');
+ h.style.cssText='font-size:14px;font-weight:700;color:var(--ink);margin-bottom:14px;line-height:1.35';
+ h.textContent='Foto do Trabalho — '+addrShort;
+ var prev=document.createElement('div');
+ prev.style.cssText='min-height:24px;margin-bottom:12px;text-align:center';
+ var fi=document.createElement('input');
+ fi.type='file';
+ fi.accept='image/*';
+ fi.capture='environment';
+ fi.style.display='none';
+ var imgEl=null;
+ function renderPrev(){
+  prev.innerHTML='';
+  if(!state.b64)return;
+  imgEl=document.createElement('img');
+  imgEl.src=state.b64;
+  imgEl.alt='';
+  imgEl.style.maxWidth='280px';
+  imgEl.style.maxHeight='220px';
+  imgEl.style.borderRadius='8px';
+  imgEl.style.border='1px solid var(--border2)';
+  imgEl.style.objectFit='contain';
+  prev.appendChild(imgEl);
+  var kb=document.createElement('div');
+  kb.style.cssText='font-size:10px;color:var(--ink3);margin-top:6px';
+  kb.textContent=Math.round(newexpDataUrlApproxBytes(state.b64)/1024)+' KB';
+  prev.appendChild(kb);
+ }
+ renderPrev();
+ fi.addEventListener('change',function(){
+  var f=fi.files&&fi.files[0];
+  if(!f)return;
+  newexpCompressImageFile(f,function(err,dataUrl){
+   if(err||!dataUrl){fi.value='';return;}
+   state.b64=dataUrl;
+   renderPrev();
+   fi.value='';
+  });
+ });
+ var btnPick=document.createElement('button');
+ btnPick.type='button';
+ btnPick.style.cssText='width:100%;padding:12px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--sand);color:var(--ink2);font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:10px';
+ btnPick.textContent=state.b64?'Substituir Foto':'Tirar / Escolher Foto';
+ btnPick.addEventListener('click',function(){fi.click();});
+ var rowBtn=document.createElement('div');
+ rowBtn.style.cssText='display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap';
+ var btnCa=document.createElement('button');
+ btnCa.type='button';
+ btnCa.style.cssText='padding:9px 18px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:Inter,sans-serif;font-size:12px';
+ btnCa.textContent='Cancelar';
+ btnCa.addEventListener('click',gmJobCloseJobPopups);
+ var btnOk=document.createElement('button');
+ btnOk.type='button';
+ btnOk.style.cssText='padding:9px 20px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;font-weight:700';
+ btnOk.textContent='Salvar';
+ btnOk.addEventListener('click',function(){
+  setJobExtras(id,{photo_base64:state.b64||''});
+  gmJobCloseJobPopups();
+  if(typeof jobsRender==='function')jobsRender();
+ });
+ rowBtn.appendChild(btnCa);
+ rowBtn.appendChild(btnOk);
+ box.appendChild(h);
+ box.appendChild(prev);
+ box.appendChild(fi);
+ box.appendChild(btnPick);
+ box.appendChild(rowBtn);
+ ov.appendChild(box);
+ document.body.appendChild(ov);
+}
+window.gmJobOpenPhotoPopup=gmJobOpenPhotoPopup;
+function gmJobOpenCommentPopup(id){
+ id=String(id);
+ gmJobCloseJobPopups();
+ var ex=getJobExtras(id);
+ var ov=document.createElement('div');
+ ov.id='gm-job-pop-overlay';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9010;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto';
+ ov.addEventListener('click',function(e){if(e.target===ov)gmJobCloseJobPopups();});
+ var box=document.createElement('div');
+ box.style.cssText='background:var(--paper);border-radius:12px;width:100%;max-width:360px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin-top:10vh;border:1px solid var(--border)';
+ var h=document.createElement('div');
+ h.style.cssText='font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px';
+ h.textContent='Comentario do Executor';
+ var hint=document.createElement('div');
+ hint.style.cssText='font-size:10px;color:var(--ink3);margin-bottom:8px;line-height:1.4';
+ hint.textContent='Descreve o servico realizado';
+ var ta=document.createElement('textarea');
+ ta.rows=5;
+ ta.style.cssText='width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;font-family:Inter,sans-serif;font-size:12px;background:var(--sand);color:var(--ink);resize:vertical;box-sizing:border-box';
+ ta.value=ex.executor_comment||'';
+ setTimeout(function(){try{ta.focus();}catch(e){}},50);
+ var rowBtn=document.createElement('div');
+ rowBtn.style.cssText='display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap';
+ var btnCa=document.createElement('button');
+ btnCa.type='button';
+ btnCa.style.cssText='padding:9px 18px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:Inter,sans-serif;font-size:12px';
+ btnCa.textContent='Cancelar';
+ btnCa.addEventListener('click',gmJobCloseJobPopups);
+ var btnOk=document.createElement('button');
+ btnOk.type='button';
+ btnOk.style.cssText='padding:9px 20px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;font-weight:700';
+ btnOk.textContent='Salvar';
+ btnOk.addEventListener('click',function(){
+  setJobExtras(id,{executor_comment:String(ta.value||'')});
+  gmJobCloseJobPopups();
+  if(typeof jobsRender==='function')jobsRender();
+ });
+ rowBtn.appendChild(btnCa);
+ rowBtn.appendChild(btnOk);
+ box.appendChild(h);
+ box.appendChild(hint);
+ box.appendChild(ta);
+ box.appendChild(rowBtn);
+ ov.appendChild(box);
+ document.body.appendChild(ov);
+}
+window.gmJobOpenCommentPopup=gmJobOpenCommentPopup;
+
+window.gerarNumeroInvoice=function(){
+ var d=new Date();
+ var key=String(d.getFullYear())+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+ var store={};
+ try{store=JSON.parse(localStorage.getItem('gm_invoice_counter')||'{}');}catch(e){store={};}
+ if(!store||typeof store!=='object')store={};
+ var prev=parseInt(store[key],10)||0;
+ var n=prev+1;
+ store[key]=n;
+ try{localStorage.setItem('gm_invoice_counter',JSON.stringify(store));}catch(e2){}
+ return 'INV-'+key+'-'+String(n).padStart(3,'0');
+};
+
+function getInvoice(expenseId){
+ try{
+  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  return all[String(expenseId)]||null;
+ }catch(e){return null;}
+}
+function setInvoice(expenseId,invoiceObj){
+ try{
+  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  if(!all||typeof all!=='object')all={};
+  all[String(expenseId)]=invoiceObj;
+  localStorage.setItem('gm_job_invoices',JSON.stringify(all));
+ }catch(e){}
+}
+function listInvoices(){
+ try{
+  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  return Object.keys(all).map(function(id){return Object.assign({expenseId:id},all[id]);});
+ }catch(e){return [];}
+}
+function removeInvoice(expenseId){
+ try{
+  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  delete all[String(expenseId)];
+  localStorage.setItem('gm_job_invoices',JSON.stringify(all));
+ }catch(e){}
+}
+window.getInvoice=getInvoice;
+window.setInvoice=setInvoice;
+window.listInvoices=listInvoices;
+function blobToBase64(blob){
+ return new Promise(function(resolve,reject){
+  var r=new FileReader();
+  r.onloadend=function(){resolve(r.result);};
+  r.onerror=reject;
+  r.readAsDataURL(blob);
+ });
+}
+function base64ToBlob(b64,mime){
+ mime=mime||'application/pdf';
+ var s=String(b64||'');
+ var i=s.indexOf(',');
+ var raw=i>=0?s.slice(i+1):s;
+ try{
+  var bin=atob(raw);
+  var len=bin.length;
+  var u8=new Uint8Array(len);
+  var j;
+  for(j=0;j<len;j++)u8[j]=bin.charCodeAt(j);
+  return new Blob([u8],{type:mime});
+ }catch(e){
+  return new Blob([],{type:mime});
+ }
+}
+function slugify(str){
+ var t=String(str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+ return(t&&t.length)?t.slice(0,48):'property';
+}
+window.blobToBase64=blobToBase64;
+window.base64ToBlob=base64ToBlob;
+window.slugify=slugify;
+window.baixarInvoice=function(expenseId){
+ var inv=getInvoice(expenseId);
+ if(!inv||!inv.pdf_base64)return;
+ var blob=base64ToBlob(inv.pdf_base64,'application/pdf');
+ var url=URL.createObjectURL(blob);
+ var a=document.createElement('a');
+ a.href=url;
+ a.download=(inv.invoice_number||'INV')+'_'+slugify(inv.property_address)+'.pdf';
+ document.body.appendChild(a);
+ a.click();
+ document.body.removeChild(a);
+ setTimeout(function(){try{URL.revokeObjectURL(url);}catch(e){}},1000);
+};
+window.verPdfInvoice=function(expenseId){
+ var inv=getInvoice(expenseId);
+ if(!inv||!inv.pdf_base64){
+  if(typeof showToast==='function')showToast('PDF nao encontrado.','error');
+  return;
+ }
+ var blob=base64ToBlob(inv.pdf_base64,'application/pdf');
+ var url=URL.createObjectURL(blob);
+ var w=window.open(url,'_blank');
+ if(!w&&typeof showToast==='function')showToast('Popup bloqueado.','warning');
+ setTimeout(function(){try{URL.revokeObjectURL(url);}catch(e){}},120000);
+};
+window.partilharInvoiceWhatsApp=function(expenseId){
+ return (async function(){
+  var inv=getInvoice(expenseId);
+  if(!inv||!inv.pdf_base64){
+   if(typeof showToast==='function')showToast('Invoice nao disponivel.','error');
+   return;
+  }
+  var pdfBlob=base64ToBlob(inv.pdf_base64,'application/pdf');
+  var filename=(inv.invoice_number||'invoice')+'.pdf';
+  var file=new File([pdfBlob],filename,{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+   try{
+    await navigator.share({
+     files:[file],
+     title:'Invoice '+inv.invoice_number,
+     text:'Invoice '+inv.invoice_number+' - '+(inv.property_address||'')
+    });
+    return;
+   }catch(e){
+    if(e&&e.name==='AbortError')return;
+   }
+  }
+  if(typeof window.baixarInvoice==='function')window.baixarInvoice(expenseId);
+  var msg=encodeURIComponent(
+   'Invoice '+inv.invoice_number+'\n'+
+   (inv.property_address||'')+'\n'+
+   'Valor: USD '+(Number(inv.amount)||0).toFixed(2)+'\n\n'+
+   '(PDF baixado, anexa manualmente)'
+  );
+  window.open('https://wa.me/?text='+msg,'_blank');
+ })();
+};
+function gmJobCloseInvoicePop(){
+ var o=document.getElementById('gm-job-invoice-overlay');
+ if(o)o.remove();
+}
+function jobsFindRowById(id){
+ id=String(id);
+ var arr=(typeof ltExpGetRecords==='function')?ltExpGetRecords():[];
+ var i,lo=arr.length;
+ for(i=0;i<lo;i++){
+  if(arr[i]&&String(arr[i].id)===id)return arr[i];
+ }
+ var api=window.__jobsApiRowsCache||window.__jobsExpensesCache;
+ if(api&&Array.isArray(api)){
+  for(i=0;i<api.length;i++){
+   if(api[i]&&String(api[i].id)===id)return api[i];
+  }
+ }
+ return null;
+}
+function jobsUpdateInvoicesKpi(){
+ var list=(typeof listInvoices==='function')?listInvoices():[];
+ var qty=list.length;
+ var total=list.reduce(function(s,x){return s+(Number(x.amount)||0);},0);
+ var el1=document.getElementById('jobs-kpi-invoices-qty');
+ var el2=document.getElementById('jobs-kpi-invoices-total');
+ if(el1)el1.textContent=String(qty);
+ if(el2)el2.textContent='Total: USD '+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+window.jobsUpdateInvoicesKpi=jobsUpdateInvoicesKpi;
+async function jobsJobInvoiceGenerateAndSave(jid){
+ jid=String(jid);
+ var r=jobsFindRowById(jid);
+ if(!r){
+  if(typeof showToast==='function')showToast('Despesa nao encontrada.','error');
+  else alert('Despesa nao encontrada');
+  return;
+ }
+ if(!window.jspdf||!window.jspdf.jsPDF){
+  if(typeof showToast==='function')showToast('Biblioteca PDF indisponivel.','error');
+  return;
+ }
+ var extras=(typeof getJobExtras==='function')?getJobExtras(jid):{photo_base64:'',executor_comment:''};
+ var num=(typeof window.gerarNumeroInvoice==='function')?window.gerarNumeroInvoice():('INV-'+Date.now());
+ var isoNow=new Date().toISOString();
+ var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(r):'-';
+ var desc=String(r.desc||r.description||'').trim()||'\u2014';
+ var vend=(typeof jobsVendorSourceStr==='function')?jobsVendorSourceStr(r):'';
+ var svcRaw=r.serviceDate||r.due||r.month||'';
+ var svcD=String(svcRaw).slice(0,10);
+ var amt=Number(r.value||r.vendorCost||r.ownerCharged||0)||0;
+ var data={
+  invoice_number:num,
+  invoice_date:isoNow.slice(0,10),
+  property_address:addr,
+  description:desc,
+  vendor_name:vend||'-',
+  service_date:svcD,
+  amount:amt,
+  photo_base64:extras.photo_base64||'',
+  executor_comment:extras.executor_comment||''
+ };
+ var blob=(typeof window.gerarInvoicePDF==='function')?window.gerarInvoicePDF(data,{openInNewTab:false}):null;
+ if(!blob){
+  if(typeof showToast==='function')showToast('Falha ao gerar PDF.','error');
+  return;
+ }
+ var pdfBase64=await blobToBase64(blob);
+ setInvoice(jid,{
+  invoice_number:num,
+  invoice_date:isoNow,
+  pdf_base64:pdfBase64,
+  amount:amt,
+  property_address:addr,
+  description:desc
+ });
+ jobsUpdateInvoicesKpi();
+ if(typeof jobsRender==='function')await jobsRender();
+ if(typeof showToast==='function')showToast('Invoice gerada.','success');
+}
+async function jobsJobInvoiceClick(jid){
+ jid=String(jid);
+ if(getInvoice(jid)){
+  gmJobOpenInvoiceOptionsPopup(jid);
+  return;
+ }
+ await jobsJobInvoiceGenerateAndSave(jid);
+ gmJobOpenInvoiceOptionsPopup(jid);
+}
+function gmJobOpenInvoiceOptionsPopup(eid){
+ eid=String(eid);
+ gmJobCloseInvoicePop();
+ var inv=getInvoice(eid);
+ if(!inv)return;
+ var ov=document.createElement('div');
+ ov.id='gm-job-invoice-overlay';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9012;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto';
+ ov.addEventListener('click',function(e){if(e.target===ov)gmJobCloseInvoicePop();});
+ var box=document.createElement('div');
+ box.style.cssText='background:var(--paper);border-radius:12px;width:100%;max-width:400px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin-top:10vh;border:1px solid var(--border)';
+ var h=document.createElement('div');
+ h.style.cssText='font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px';
+ h.textContent='Invoice '+inv.invoice_number;
+ var sub=document.createElement('div');
+ sub.style.cssText='font-size:12px;color:var(--ink2);margin-bottom:10px;line-height:1.4';
+ sub.textContent=inv.property_address||'';
+ var l1=document.createElement('div');
+ l1.style.cssText='font-size:12px;color:var(--ink);margin-bottom:4px';
+ l1.textContent='Valor: USD '+(Number(inv.amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+ var l2=document.createElement('div');
+ l2.style.cssText='font-size:11px;color:var(--ink3);margin-bottom:16px';
+ try{
+  l2.textContent='Gerada em: '+new Date(inv.invoice_date).toLocaleString('pt-BR');
+ }catch(e2){
+  l2.textContent='Gerada em: '+(inv.invoice_date||'');
+ }
+ var row=document.createElement('div');
+ row.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px';
+ function mkBtn(label,primary){
+  var b=document.createElement('button');
+  b.type='button';
+  b.textContent=label;
+  if(primary){
+   b.style.cssText='flex:1 1 auto;min-width:100px;padding:10px 12px;background:var(--amber);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:700';
+  }else{
+   b.style.cssText='flex:1 1 auto;min-width:100px;padding:10px 12px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600';
+  }
+  return b;
+ }
+ var bVer=mkBtn('Ver PDF',true);
+ bVer.addEventListener('click',function(){if(typeof verPdfInvoice==='function')verPdfInvoice(eid);});
+ var bDown=mkBtn('Baixar',false);
+ bDown.addEventListener('click',function(){if(typeof baixarInvoice==='function')baixarInvoice(eid);});
+ var bWa=mkBtn('WhatsApp',false);
+ bWa.addEventListener('click',function(){if(typeof partilharInvoiceWhatsApp==='function')partilharInvoiceWhatsApp(eid);});
+ row.appendChild(bVer);
+ row.appendChild(bDown);
+ row.appendChild(bWa);
+ var bReg=document.createElement('button');
+ bReg.type='button';
+ bReg.textContent='Regenerar Invoice';
+ bReg.style.cssText='width:100%;padding:9px 12px;margin-top:4px;background:transparent;color:var(--red);border:1px solid var(--red-bd);border-radius:8px;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600';
+ bReg.addEventListener('click',async function(){
+  if(!confirm('Regenerar invoice? O PDF atual sera substituido.'))return;
+  removeInvoice(eid);
+  gmJobCloseInvoicePop();
+  await jobsJobInvoiceGenerateAndSave(eid);
+  if(getInvoice(eid))gmJobOpenInvoiceOptionsPopup(eid);
+ });
+ var bClose=document.createElement('button');
+ bClose.type='button';
+ bClose.textContent='Fechar';
+ bClose.style.cssText='width:100%;padding:8px 12px;margin-top:8px;background:transparent;color:var(--ink3);border:1px solid var(--border2);border-radius:8px;cursor:pointer;font-family:Inter,sans-serif;font-size:11px';
+ bClose.addEventListener('click',gmJobCloseInvoicePop);
+ box.appendChild(h);
+ box.appendChild(sub);
+ box.appendChild(l1);
+ box.appendChild(l2);
+ box.appendChild(row);
+ box.appendChild(bReg);
+ box.appendChild(bClose);
+ ov.appendChild(box);
+ document.body.appendChild(ov);
+}
+
+function gmInvoiceFmtMDY(iso){
+ if(iso==null||iso==='')return'\u2014';
+ var p=String(iso).slice(0,10).split('-');
+ if(p.length!==3)return String(iso);
+ return p[1]+'/'+p[2]+'/'+p[0];
+}
+function gmInvoiceImgFormatFromDataUrl(u){
+ if(!u||typeof u!=='string')return'JPEG';
+ var h=u.indexOf(',')>=0?u.slice(0,u.indexOf(',')):'';
+ if(h.indexOf('png')>=0)return'PNG';
+ return'JPEG';
+}
+function gmInvoiceApplyFooters(doc,ts){
+ var total=doc.getNumberOfPages();
+ var i;
+ for(i=1;i<=total;i++){
+  doc.setPage(i);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(107,114,128);
+  doc.text('Generated by GodManager on '+ts,105,282,{align:'center'});
+  doc.text('Page '+i+' of '+total,105,287,{align:'center'});
+ }
+}
+window.gerarInvoicePDF=function(data,opts){
+ data=data||{};
+ opts=opts||{};
+ if(!window.jspdf||!window.jspdf.jsPDF){
+  if(typeof showToast==='function')showToast('Biblioteca PDF indisponivel. Recarregue a pagina.','error');
+  else alert('jsPDF nao carregado');
+  return null;
+ }
+ var JsPDF=window.jspdf.jsPDF;
+ var doc=new JsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+ var primary=[26,58,92];
+ var gray=[107,114,128];
+ var ts=new Date().toLocaleString('en-US',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+ var invNo=String(data.invoice_number||'INV-DEMO');
+ var invDateStr=gmInvoiceFmtMDY(data.invoice_date||new Date().toISOString().slice(0,10));
+ var y=18;
+
+ doc.setTextColor.apply(doc,gray);
+ doc.setFont('helvetica','normal');
+ doc.setFontSize(9);
+ doc.text('FROM',15,y);
+ doc.text('BILL TO',120,y);
+ y+=7;
+ doc.setTextColor.apply(doc,primary);
+ doc.setFont('helvetica','bold');
+ doc.setFontSize(14);
+ doc.text('Master Vacation Homes LLC',15,y);
+ doc.text('Manager Prop LLC',120,y);
+ y+=7;
+ doc.setFont('helvetica','normal');
+ doc.setFontSize(10);
+ doc.setTextColor(40,40,40);
+ doc.text('N Poinciana Blvd',15,y);
+ y+=5;
+ doc.text('Kissimmee, FL 34747',15,y);
+ y+=12;
+ doc.setDrawColor(gray[0],gray[1],gray[2]);
+ doc.line(15,y,195,y);
+ y+=12;
+ doc.setTextColor.apply(doc,primary);
+ doc.setFont('helvetica','bold');
+ doc.setFontSize(24);
+ doc.text('INVOICE',105,y,{align:'center'});
+ y+=10;
+ doc.setFont('helvetica','normal');
+ doc.setFontSize(11);
+ doc.setTextColor(40,40,40);
+ doc.text('Invoice Number: '+invNo,105,y,{align:'center'});
+ y+=6;
+ doc.text('Date: '+invDateStr,105,y,{align:'center'});
+ y+=10;
+ doc.line(15,y,195,y);
+ y+=10;
+
+ var propA=String(data.property_address||'\u2014');
+ var desc=String(data.description||'\u2014');
+ var vend=String(data.vendor_name||'').trim()||'\u2014';
+ var svcD=gmInvoiceFmtMDY(data.service_date||'');
+ var labelX=15,valX=65,lineH=7;
+ doc.setFont('helvetica','normal');
+ doc.setFontSize(10);
+ doc.setTextColor.apply(doc,gray);
+ doc.text('Property Address:',labelX,y);
+ doc.setTextColor(40,40,40);
+ var propLines=doc.splitTextToSize(propA,125);
+ doc.text(propLines,valX,y);
+ y+=Math.max(lineH,(propLines.length||1)*lineH);
+ doc.setTextColor.apply(doc,gray);
+ doc.text('Description:',labelX,y);
+ doc.setTextColor(40,40,40);
+ var descLines=doc.splitTextToSize(desc,125);
+ doc.text(descLines,valX,y);
+ y+=Math.max(lineH,(descLines.length||1)*lineH);
+ doc.setTextColor.apply(doc,gray);
+ doc.text('Vendor:',labelX,y);
+ doc.setTextColor(40,40,40);
+ doc.text(vend,valX,y);
+ y+=lineH;
+ doc.setTextColor.apply(doc,gray);
+ doc.text('Date of Service:',labelX,y);
+ doc.setTextColor(40,40,40);
+ doc.text(svcD,valX,y);
+ y+=12;
+ doc.line(15,y,195,y);
+ y+=10;
+
+ var amt=Number(data.amount)||0;
+ var amtStr='USD '+amt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+ var boxW=72,boxH=22,boxX=195-boxW,boxY=y-2;
+ doc.setFillColor(248,246,242);
+ doc.setDrawColor(226,221,212);
+ doc.roundedRect(boxX,boxY,boxW,boxH,2,2,'FD');
+ doc.setFont('helvetica','bold');
+ doc.setFontSize(12);
+ doc.setTextColor.apply(doc,primary);
+ doc.text('AMOUNT DUE',boxX+boxW-4,boxY+8,{align:'right'});
+ doc.setFontSize(18);
+ doc.text(amtStr,boxX+boxW-4,boxY+17,{align:'right'});
+
+ var photo=String(data.photo_base64||'').trim();
+ var comment=String(data.executor_comment||'').trim();
+ if(photo||comment){
+  doc.addPage();
+  y=20;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.setTextColor.apply(doc,primary);
+  doc.text('Service Documentation',15,y);
+  y+=12;
+  if(photo){
+   doc.setFont('helvetica','normal');
+   doc.setFontSize(10);
+   doc.setTextColor.apply(doc,gray);
+   doc.text('Photo:',15,y);
+   y+=6;
+   try{
+    var fmt=gmInvoiceImgFormatFromDataUrl(photo);
+    var prop=doc.getImageProperties(photo);
+    var imgW=150;
+    var imgH=(prop.height/prop.width)*imgW;
+    if(imgH>120)imgH=120;
+    var ix=(210-imgW)/2;
+    doc.addImage(photo,fmt,ix,y,imgW,imgH);
+    y+=imgH+10;
+   }catch(imgErr){
+    doc.setTextColor(180,50,50);
+    doc.setFontSize(9);
+    doc.text('(Imagem nao pôde ser incluida)',15,y);
+    y+=8;
+   }
+  }
+  if(comment){
+   doc.setFont('helvetica','normal');
+   doc.setFontSize(10);
+   doc.setTextColor.apply(doc,gray);
+   doc.text('Executor Comment:',15,y);
+   y+=6;
+   doc.setDrawColor(226,221,212);
+   doc.setFillColor(252,251,248);
+   var cLines=doc.splitTextToSize(comment,170);
+   var pad=5;
+   var boxH2=Math.max(12,(cLines.length*5)+pad*2);
+   doc.roundedRect(15,y,180,boxH2,2,2,'FD');
+   doc.setTextColor(40,40,40);
+   doc.text(cLines,15+pad,y+pad+4);
+  }
+ }
+
+ gmInvoiceApplyFooters(doc,ts);
+ try{
+  var blob=doc.output('blob');
+  if(opts.openInNewTab!==false){
+   var url=URL.createObjectURL(blob);
+   var w=window.open(url,'_blank');
+   if(!w){
+    if(typeof showToast==='function')showToast('Popup bloqueado. Permita janelas para ver o PDF.','warning');
+   }
+   setTimeout(function(){try{URL.revokeObjectURL(url);}catch(e){}},120000);
+  }
+  return blob;
+ }catch(outErr){
+  if(typeof showToast==='function')showToast('Falha ao gerar PDF','error');
+  else alert('Falha ao gerar PDF');
+  return null;
+ }
+};
+
+(function gmJobRowActionsInit(){
+ if(window.__gmJobRowActionsWired)return;
+ window.__gmJobRowActionsWired=true;
+ document.addEventListener('click',function(ev){
+  var btn=ev.target.closest&&ev.target.closest('.btn-job-photo,.btn-job-comment,.btn-job-invoice');
+  if(!btn)return;
+  var jid=btn.getAttribute('data-id');
+  if(jid==null||jid==='')return;
+  if(btn.classList.contains('btn-job-photo')){
+   ev.preventDefault();
+   if(typeof gmJobOpenPhotoPopup==='function')gmJobOpenPhotoPopup(jid);
+   return;
+  }
+  if(btn.classList.contains('btn-job-comment')){
+   ev.preventDefault();
+   if(typeof gmJobOpenCommentPopup==='function')gmJobOpenCommentPopup(jid);
+   return;
+  }
+  if(btn.classList.contains('btn-job-invoice')){
+   ev.preventDefault();
+   if(typeof jobsJobInvoiceClick==='function'){
+    jobsJobInvoiceClick(jid).catch(function(e){console.warn('jobsJobInvoiceClick',e);});
+   }
+  }
+ });
+})();
+
 function ltOpenNewExpense(){
  try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
  ltExpEditingId=null;ltExpEditingPmId=null;ltPopulatePropertyDropdowns();
@@ -12640,6 +13390,8 @@ async function jobsRender(){
  if(kOpen)kOpen.textContent=String(jobsOpen);
  if(kCl)kCl.textContent=String(jobsClosed);
 
+ if(typeof window.jobsUpdateInvoicesKpi==='function')try{window.jobsUpdateInvoicesKpi();}catch(eI){}
+
  if(typeof window.jobsUpdateJobsPageRoleKpis==='function')try{window.jobsUpdateJobsPageRoleKpis();}catch(eK){}
 
  if(!rows.length){
@@ -12659,6 +13411,22 @@ async function jobsRender(){
  var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
  var isCancelled=(String(r.status||'').toLowerCase()==='cancelled')||(r.statusPm==='CANCELLED');
  var idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+ var jx=(typeof getJobExtras==='function')?getJobExtras(r.id):{photo_base64:'',executor_comment:''};
+ var hasPhoto=!!(jx.photo_base64&&String(jx.photo_base64).trim());
+ var hasComment=!!(jx.executor_comment&&String(jx.executor_comment).trim());
+ var idData=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr(String(r.id==null?'':r.id)):String(r.id==null?'':r.id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+ var svgCam='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+ var svgChat='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+ var svgDoc='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+ var jobTick=function(on){return on?'<span style="color:#2d7252;font-weight:700;font-size:12px;margin-left:1px" aria-hidden="true">&#10003;</span>':'';};
+ var btnJobPhoto='<button type="button" class="btn-job-photo" data-id="'+idData+'" title="Foto do trabalho" style="'+btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)">'+svgCam+jobTick(hasPhoto)+'</button>';
+ var btnJobComment='<button type="button" class="btn-job-comment" data-id="'+idData+'" title="Comentario" style="'+btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)">'+svgChat+jobTick(hasComment)+'</button>';
+ var hasInv=!!(typeof getInvoice==='function'&&getInvoice(r.id));
+ var invTitle=hasInv?'Invoice gerada - clicar para ver opcoes':'Gerar invoice';
+ var invBtnStyle=hasInv
+  ?(btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--green-bg);border-color:var(--green-bd);color:var(--green)')
+  :(btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)');
+ var btnJobInv='<button type="button" class="btn-job-invoice" data-id="'+idData+'" title="'+invTitle.replace(/"/g,'&quot;')+'" style="'+invBtnStyle+'">'+svgDoc+jobTick(hasInv)+'</button>';
 
  // Mutualmente exclusivo: vendor e job nao podem estar ambos applied
  var btnVendor;
@@ -12704,7 +13472,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
   +'</tr>';
 }).join('');
  }finally{
