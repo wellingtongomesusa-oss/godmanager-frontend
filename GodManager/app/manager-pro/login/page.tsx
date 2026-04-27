@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 /**
  * Abre o painel GodManager Premium (HTML estático) — não o legado manager-pro-dashboard.html.
  */
 export default function ManagerProLoginPage() {
   useEffect(() => {
-    window.location.replace('/GodManager_Premium.html');
+    window.location.replace(getGodManagerPremiumUrl());
   }, []);
   return (
     <div

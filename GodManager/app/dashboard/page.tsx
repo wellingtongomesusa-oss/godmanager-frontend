@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 export default function DashboardPage() {
   useEffect(() => {
-    window.location.replace('/GodManager_Premium.html');
+    window.location.replace(getGodManagerPremiumUrl());
   }, []);
 
   return (
