@@ -268,6 +268,61 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .gm-ix-kpi.k2 .k-bar{background:var(--navy)}
 .gm-ix-kpi.k3 .k-bar{background:var(--green)}
 .gm-ix-kpi.k4 .k-bar{background:var(--blue)}
+/* Premium — KPI strips responsivas (mobile scroll horizontal + snap; tablet/desktop grelha) */
+.gm-kpis-shell{position:relative;-webkit-overflow-scrolling:touch}
+.gm-kpis-shell--hint{margin-bottom:20px}
+@media (max-width:767px){
+ .gm-kpis-shell--hint::after{
+ content:'>';
+ position:absolute;right:10px;top:50%;transform:translateY(-50%);
+ font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink3);opacity:.4;pointer-events:none;line-height:1;}
+ .gm-kpis-shell--hint .gm-kpis-row--strip,.gm-kpis-shell--hint .gm-kpis-row--jobs,.gm-kpis-shell--hint .gm-kpis-row--floating{padding-right:28px}}
+.gm-kpis-row--strip{
+ display:flex;flex-wrap:nowrap;gap:0;overflow-x:auto;overflow-y:hidden;
+ scroll-snap-type:x mandatory;padding-bottom:8px}
+.gm-kpis-row--strip > *{flex:0 0 auto;min-width:140px;scroll-snap-align:start;box-sizing:border-box}
+@media (min-width:768px) and (max-width:1023px){
+ .gm-kpis-row--strip{
+ display:grid;grid-template-columns:repeat(var(--gm-kpi-cols-tablet,5),minmax(0,1fr));
+ overflow:visible;padding-bottom:0;scroll-snap-type:none;}
+ .gm-kpis-row--strip > *{min-width:0;width:100%}
+}
+@media (min-width:1024px){
+ .gm-kpis-row--strip{
+ display:grid;grid-template-columns:repeat(var(--gm-kpi-cols-desktop,10),minmax(0,1fr));
+ overflow:visible;padding-bottom:0;scroll-snap-type:none;}
+ .gm-kpis-row--strip > *{min-width:0;width:100%}
+}
+.gm-kpis-shell--floating{margin-bottom:16px}
+@media (max-width:767px){ .gm-kpis-shell--floating:last-child{margin-bottom:20px}}
+.gm-kpis-row--floating{
+ display:flex;flex-wrap:nowrap;gap:16px;overflow-x:auto;
+ scroll-snap-type:x mandatory;padding-bottom:10px}
+.gm-kpis-row--floating > *{
+ flex:0 0 auto;min-width:min(260px,calc(100vw - 64px));max-width:min(320px,92vw);scroll-snap-align:start}
+@media (min-width:768px){
+ .gm-kpis-row--floating{
+ display:grid;
+ grid-template-columns:repeat(var(--gm-kpi-cols-tablet,4),minmax(0,1fr));
+ gap:16px;overflow:visible;padding-bottom:0;scroll-snap-type:none}
+ .gm-kpis-row--floating > *{max-width:none;min-width:0;width:auto}
+}
+@media (min-width:1024px){
+ .gm-kpis-row--floating{
+ grid-template-columns:repeat(var(--gm-kpi-cols-desktop,4),minmax(0,1fr))}}
+.gm-kpis-row--jobs{
+ display:flex;flex-wrap:nowrap;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+ padding-bottom:10px;-webkit-overflow-scrolling:touch}
+.gm-kpis-row--jobs > *{flex:0 0 auto;min-width:200px;max-width:min(340px,90vw);scroll-snap-align:start}
+@media (min-width:768px) and (max-width:1023px){
+ .gm-kpis-row--jobs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;
+ overflow:visible;padding-bottom:0;scroll-snap-type:none}
+ .gm-kpis-row--jobs > *{max-width:none;min-width:0;width:100%}
+}
+@media (min-width:1024px){
+ .gm-kpis-row--jobs{flex-wrap:wrap;overflow:visible;padding-bottom:0;scroll-snap-type:none}
+ .gm-kpis-row--jobs > *{flex:1 1 200px!important;max-width:none;min-width:200px}
+}
 .gm-ix-panel{background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 3px rgba(26,26,28,.04),0 4px 12px rgba(26,26,28,.03)}
 .gm-ix-panel h3{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--navy);padding:16px 18px;border-bottom:1px solid var(--border);background:var(--cream)}
 .gm-ix-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -1521,7 +1576,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div class="pt">Dashboard</div>
  <div class="ps">Visao geral do portfolio de alugueis · GodManager.com</div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
+ <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--floating" style="margin-bottom:16px">
+ <div class="gm-kpis-row gm-kpis-row--floating" style="--gm-kpi-cols-desktop:4;--gm-kpi-cols-tablet:4">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">TOTAL DE CASAS</div>
  <div id="ltd-total-houses" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--ink);margin:6px 0 4px">0</div>
@@ -1546,8 +1602,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="font-size:11px;color:var(--ink2)">security deposit total</div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div>
  </div>
- </div>
- <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px">
+ </div></div>
+ <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--floating" style="margin-bottom:20px">
+ <div class="gm-kpis-row gm-kpis-row--floating" style="--gm-kpi-cols-desktop:4;--gm-kpi-cols-tablet:4">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">CONTAS ABERTAS</div>
  <div id="ltd-open-statements" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--amber);margin:6px 0 4px">0</div>
@@ -1572,7 +1629,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="font-size:11px;color:var(--ink2)">em reforma ou transição</div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div>
  </div>
- </div>
+ </div></div>
  <div id="ltd-all-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;flex-wrap:wrap;gap:12px;justify-content:space-between">
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Propriedades Vagas</div>
@@ -1698,7 +1755,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
 
  <!-- KPI STRIP -->
- <div style="display:grid;grid-template-columns:repeat(6,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:6;--gm-kpi-cols-tablet:3">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div>
  <div id="lt-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div>
@@ -1735,7 +1793,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="font-size:10px;color:var(--ink3);margin-top:3px">Requer atenção</div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div>
  </div>
- </div>
+ </div></div>
 
  <!-- PAYMENT AUDIT TABLE -->
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px">
@@ -1802,14 +1860,15 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(6,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:6;--gm-kpi-cols-tablet:3">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DESPESAS</div><div id="lt-exp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">todas as categorias</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">HOA</div><div id="lt-exp-kpi-hoa" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">taxas de condomínio</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ÁGUA</div><div id="lt-exp-kpi-water" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#2980b9">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">consumo hídrico</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#6baed6"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">LUZ</div><div id="lt-exp-kpi-luz" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">energia elétrica</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MANUT + VENDOR</div><div id="lt-exp-kpi-mv" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">serviços e fornecedores</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
  <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">APPROVED</div><div id="lt-exp-kpi-approved" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#b83030">0 of 0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">fully approved</div><div style="margin-top:7px;height:4px;background:rgba(180,48,48,.12);border-radius:999px;overflow:hidden"><div id="lt-exp-kpi-approved-bar" style="width:0%;height:100%;background:#2d7252"></div></div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#2d7252"></div></div>
- </div>
+ </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Registro de Despesas</div>
@@ -1857,40 +1916,40 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <button type="button" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
  </div>
 
- <div style="padding:0 32px;margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
-  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+ <div class="gm-kpis-shell gm-kpis-shell--hint" style="padding:0 32px;margin-top:16px"><div class="gm-kpis-row gm-kpis-row--jobs">
+  <div style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Total Jobs</div>
    <div id="jobs-kpi-total" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
   </div>
-  <div data-jobs-card="fees-vendor" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="fees-vendor" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Vendor Fees Applied</div>
    <div id="jobs-kpi-vendor" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div>
   </div>
-  <div data-jobs-card="fees-job" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="fees-job" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
    <div id="jobs-kpi-job" style="font-size:22px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div>
   </div>
-  <div style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper);position:relative">
+  <div style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper);position:relative">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Expenses Abertos</div>
    <div id="jobs-kpi-expenses-abertos" style="font-size:22px;font-weight:700;color:#92400e;margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">aguardam acao</div>
   </div>
-  <div data-jobs-card="kpi-open" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="kpi-open" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs abertos</div>
    <div id="jobs-kpi-open" style="font-size:22px;font-weight:700;color:var(--red);margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">sem applied e sem cancelado</div>
   </div>
-  <div data-jobs-card="kpi-closed" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="kpi-closed" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs fechados</div>
    <div id="jobs-kpi-closed" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">mes do applied ou cancelamento</div>
   </div>
-  <div id="kpi-invoices-generated" data-jobs-card="kpi-invoices" style="flex:1 1 200px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div id="kpi-invoices-generated" data-jobs-card="kpi-invoices" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Invoices Geradas</div>
    <div id="jobs-kpi-invoices-qty" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
    <div id="jobs-kpi-invoices-total" style="font-size:10px;color:var(--ink3);margin-top:2px">Total: USD 0.00</div>
   </div>
- </div>
+ </div></div>
 
  <div style="padding:24px 32px 32px">
   <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
@@ -2431,7 +2490,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(10,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:10;--gm-kpi-cols-tablet:5">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">ocupadas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">disponiveis</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
@@ -2441,8 +2500,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DEPOSIT</div><div id="ltp-kpi-total-deposit" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma deposits</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL NET OWNER</div><div id="ltp-kpi-total-netowner" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma a repassar</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL EXP MES (PM)</div><div id="ltp-kpi-total-exppm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma despesas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
- <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MEDIA MGM FEE</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">0%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">media coluna MGM%</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
- </div>
+ <div id="ltp-kpi-wrap-avgmgm" tabindex="0" title="" style="padding:14px 14px 10px;position:relative;outline:none;cursor:help;touch-action:manipulation">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MEDIA MGM FEE</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">0%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">media coluna MGM%</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
+ </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Todas as Propriedades</div>
@@ -2685,11 +2745,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   </div>
   <div id="op-filter-count" style="font-size:11px;color:var(--ink3);margin-top:6px;letter-spacing:.02em">Exibindo 0 de 0 owners</div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;max-width:900px">
+ <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--floating" style="margin-bottom:22px;max-width:900px"><div class="gm-kpis-row gm-kpis-row--floating" style="--gm-kpi-cols-desktop:3;--gm-kpi-cols-tablet:3">
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Total a pagar (OUTstanding NET)</div><div id="ltop-kpi-due" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Propriedades pagas</div><div id="ltop-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--green);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Pendentes</div><div id="ltop-kpi-pend" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ink2);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--ink2)"></div></div>
- </div>
+ </div></div>
  <div id="ltop-host" style="display:flex;flex-direction:column;gap:16px"></div>
 </div>
 
@@ -2720,12 +2780,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  </div>
  <!-- Panel: Properties -->
  <div id="op-panel-properties">
- <div style="display:grid;grid-template-columns:repeat(4,1fr);background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
+ <div class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:4;--gm-kpi-cols-tablet:2">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">PROPRIEDADES</div><div id="op-kpi-props" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT BRUTO</div><div id="op-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">DESPESAS</div><div id="op-kpi-exp" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">NET A RECEBER</div><div id="op-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- </div>
+ </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Propriedades</div>
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px">
@@ -9668,6 +9729,36 @@ function ltpRowNetExpDia15(r, expByProp){
  return '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:'+netColor+'" title="NET: Rent - MGM% - EXP mês (PM)">'+ltFmt(netDisplay)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+colX+'">'+expStr+'</td>';
 }
 
+function ltpPropIsCancelled(r){
+ if(!r)return true;
+ var s=String(r.status!=null?r.status:'').trim().toLowerCase();
+ if(s==='cancelled')return true;
+ if(String(r.statusPm||'').trim().toUpperCase()==='CANCELLED')return true;
+ return false;
+}
+function ltpExtractRawMgmtPct(r){
+ if(!r)return null;
+ var v=r.mgmpct != null ? r.mgmpct :
+   (r.mgmtFeePct != null ? r.mgmtFeePct :
+   (r.mgmFee != null ? r.mgmFee :
+   (r.mgmtPct != null ? r.mgmtPct : null)));
+ if(v===null||v==='')return null;
+ var m=Number(v);
+ return isFinite(m)?m:null;
+}
+function ltpKpiMgmPct(r){
+ var raw=ltpExtractRawMgmtPct(r);
+ if(raw===null||!isFinite(raw))return 8;
+ if(raw<0||raw>30)return 8;
+ return raw;
+}
+function ltpMgmtPctInvalidUsesDefault(r){
+ var raw=ltpExtractRawMgmtPct(r);
+ if(raw===null||!isFinite(raw))return true;
+ if(raw<0||raw>30)return true;
+ return false;
+}
+
 async function ltpRender(){
  ltpBindTbodyActionDelegationOnce();
  var curMonth=new Date().toISOString().slice(0,7);
@@ -9706,14 +9797,6 @@ async function ltpRender(){
  /* Net Atual: soma da coluna RENT (igual a totR) */
  const totNetAtual=totR;
  /* Total Net Owner: soma (rent - fee MGM em $) = soma coluna NET OWNER sem despesas PM */
- const ltpKpiMgmPct=function(r){
-  var v = r.mgmpct != null ? r.mgmpct :
-         (r.mgmtFeePct != null ? r.mgmtFeePct :
-         (r.mgmFee != null ? r.mgmFee :
-         (r.mgmtPct != null ? r.mgmtPct : 0)));
-  var m = Number(v);
-  return isFinite(m) ? m : 0;
- };
  const totTotalNetOwner=filtered.reduce((s,r)=>{
   var rent=Number(r.rent)||0;
   var mPct=ltpKpiMgmPct(r);
@@ -9722,11 +9805,14 @@ async function ltpRender(){
  },0);
  const totDeposit=filtered.reduce((s,r)=>s+(Number(r.deposit)||0),0);
  const totExpPM=filtered.reduce((s,r)=>{var ev=0;if(expByProp&&typeof expByProp.get==='function')ev=expByProp.get(String(r.id))||0;return s+ev;},0);
- const withMgm=filtered.filter(function(r){return ltpKpiMgmPct(r)>0;});
- var avgMgm=0;
- if(withMgm.length>0){
-  avgMgm=withMgm.reduce(function(s,r){return s+ltpKpiMgmPct(r);},0)/withMgm.length;
- }
+ const cancelledKmgm=filtered.filter(ltpPropIsCancelled).length;
+ const poolMgm=filtered.filter(function(r){return !ltpPropIsCancelled(r);});
+ var invalidMgmtL=0;
+ poolMgm.forEach(function(pr){ if(ltpMgmtPctInvalidUsesDefault(pr))invalidMgmtL++; });
+ var sumMgmPct=poolMgm.reduce(function(s,r){return s+ltpKpiMgmPct(r);},0);
+ var nActiveMgm=poolMgm.length;
+ var avgMgmStr=nActiveMgm===0?'—':((sumMgmPct/nActiveMgm).toFixed(2)+'%');
+ var tipAvgMgm='Calculado sobre '+nActiveMgm+' propriedades ativas (default 8% quando nao definido). Excluidas: '+cancelledKmgm+' canceladas, '+invalidMgmtL+' sem dados validos.';
  [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
  ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
  ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
@@ -9735,12 +9821,10 @@ async function ltpRender(){
  ['ltp-kpi-total-deposit',ltFmt(totDeposit)],
  ['ltp-kpi-total-netowner',ltFmt(totTotalNetOwner)],
  ['ltp-kpi-total-exppm',ltFmt(totExpPM)],
- ['ltp-kpi-avg-mgm',avgMgm.toFixed(1)+'%']
+ ['ltp-kpi-avg-mgm',avgMgmStr]
  ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
- (function(){
-  var elAvg=document.getElementById('ltp-kpi-avg-mgm');
-  if(elAvg) elAvg.title=withMgm.length+' casas com MGM cadastrado';
- })();
+ var wrapAvg=document.getElementById('ltp-kpi-wrap-avgmgm');
+ if(wrapAvg){wrapAvg.title=tipAvgMgm;wrapAvg.setAttribute('aria-label',tipAvgMgm);}
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody)return;
