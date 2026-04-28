@@ -11270,6 +11270,45 @@ function ltpPhotoRender(){
  <button type="button" onclick="ltpPhotoRemove(${i})" aria-label="Remover foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:var(--red);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;font-weight:700;line-height:1">×</button>
  </div>`).join('');
 }
+function ltpResetPhotoStaging(){
+ ltpStagedPhotos=[];
+ ltpPrimaryIdx=0;
+ var fi=document.getElementById('ltp-photo-input');
+ if(fi)fi.value='';
+ var err=document.getElementById('ltp-err-photos');
+ if(err)err.textContent='';
+ ltpPhotoRender();
+}
+function ltpLoadPhotosFromRecord(r){
+ if(!r){ltpResetPhotoStaging();return;}
+ var photos=r.photos;
+ ltpStagedPhotos=[];
+ ltpPrimaryIdx=0;
+ if(Array.isArray(photos)&&photos.length){
+  ltpStagedPhotos=photos.map(function(p){
+   return{
+    dataUrl:(p&&p.dataUrl)?String(p.dataUrl):'',
+    name:(p&&p.name)?String(p.name):'photo',
+    type:(p&&p.type)?String(p.type):'image/jpeg',
+    size:(p&&typeof p.size==='number')?p.size:0
+   };
+  });
+  var pri=(typeof r.primaryPhotoIndex==='number'&&!isNaN(r.primaryPhotoIndex))?r.primaryPhotoIndex:0;
+  if(pri<0||pri>=ltpStagedPhotos.length){
+   var ix=-1;
+   for(var j=0;j<photos.length;j++){
+    if(photos[j]&&photos[j].isPrimary){ix=j;break;}
+   }
+   pri=ix>=0?ix:0;
+  }
+  ltpPrimaryIdx=Math.min(Math.max(0,pri),Math.max(0,ltpStagedPhotos.length-1));
+ }
+ var fi2=document.getElementById('ltp-photo-input');
+ if(fi2)fi2.value='';
+ var err2=document.getElementById('ltp-err-photos');
+ if(err2)err2.textContent='';
+ ltpPhotoRender();
+}
 function ltpClearFieldErrors(){
  document.querySelectorAll('#ltp-property-modal input, #ltp-property-modal select').forEach(function(el){el.classList.remove('ltp-field-err');});
  document.querySelectorAll('[id^="ltp-err-"]').forEach(function(el){if(el)el.textContent='';});
@@ -11551,7 +11590,8 @@ function ltpEscClose(e){/* lock: tecla Esc nao fecha o modal Property */}
 function ltpOpenNewPropertyModal(){
  window.__ltpEditingRecord=null;
  ltpPrevFocus=document.activeElement;
- ltpStagedPhotos=[];ltpPrimaryIdx=0;ltpNetManual=false;
+ ltpResetPhotoStaging();
+ ltpNetManual=false;
  ltpClearFieldErrors();
  const m=document.getElementById('ltp-property-modal');
  if(!m)return;
@@ -11573,7 +11613,6 @@ function ltpOpenNewPropertyModal(){
  document.getElementById('ltp-f-occ').value='rented';
  const ym=new Date();
  document.getElementById('ltp-f-month').value=ym.getFullYear()+'-'+String(ym.getMonth()+1).padStart(2,'0');
- ltpPhotoRender();
  document.body.style.overflow='hidden';
  m.style.display='flex';
  ltpEscHandler=null;
@@ -11583,6 +11622,7 @@ function ltpOpenNewPropertyModal(){
 }
 function ltpCloseNewPropertyModal(){
  window.__ltpEditingRecord=null;
+ ltpResetPhotoStaging();
  const m=document.getElementById('ltp-property-modal');
  if(!m)return;
  m.style.display='none';
@@ -11652,8 +11692,10 @@ window.ltpOpenEditProperty._populate=function(r){
  s('ltp-f-bank-holder',r.bankHolder);s('ltp-f-bank-address',r.bankAddress);
  s('ltp-f-bank-method',r.bankMethod||'ach');
  s('ltp-f-status',r.status||'pending');s('ltp-f-approver',r.approver);s('ltp-f-notes',r.notes);
+ ltpLoadPhotosFromRecord(r);
  if(typeof ltpCalcNet==='function')ltpCalcNet();
  var t=document.getElementById('ltp-modal-title');if(t)t.textContent='Editar Propriedade';
+ document.body.style.overflow='hidden';
  document.getElementById('ltp-property-modal').style.display='flex';
 };
 
