@@ -13832,13 +13832,13 @@ window.gmAdminUsersModalClose=gmAdminUsersModalClose;
 window.gmAuthLogout=gmAuthLogout;
 window.gmAuthHydrateUserBadge=gmAuthHydrateUserBadge;
 
-/* ========== IDLE SESSION (auto-logout 20 min, aviso 18 min) ========== */
+/* ========== IDLE SESSION (auto-logout 15 min, aviso aos 13 min) ========== */
 (function(){
  if(window.__gmIdleSessionBound)return;
  var IDLE_KEY='gm_last_activity';
- var IDLE_TIMEOUT_MS=20*60*1000;
- var IDLE_WARNING_MS=18*60*1000;
- var CHECK_MS=30000;
+ var IDLE_TIMEOUT_MS=15*60*1000;
+ var IDLE_WARNING_MS=13*60*1000;
+ var CHECK_MS=30*1000;
  var SCROLL_THROTTLE_MS=5000;
  var st={warning:false,countdownT:null,root:null,scrollLast:0,loggingOut:false};
  function pathSkip(){
