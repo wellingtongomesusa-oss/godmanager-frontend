@@ -3,6 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 
 const SESSION_KEY = 'gm_calc_email_dismissed';
 
@@ -137,161 +138,190 @@ export function SavingsCalculator() {
     { key: 'none', label: t('software.none') },
   ];
 
+  const labelUpperStyle: CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--ink3)',
+    display: 'block',
+    marginBottom: 8,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    fontFamily: 'var(--font-body)',
+  };
+
   return (
     <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
-          gap: 32,
-          alignItems: 'flex-start',
-        }}
-        className="gm-savings-grid"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 8 }}>
-              {t('properties')} · {properties}
-            </label>
-            <input
-              type="range"
-              min={1}
-              max={500}
-              step={5}
-              value={properties}
-              onChange={(e) => {
-                setProperties(Number(e.target.value));
-              }}
-              style={{ width: '100%', accentColor: '#2d7252' }}
-            />
-          </div>
-
-          <div>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 8 }}>
-              {t('currentSoftware')}
-            </span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {swatches.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    setSoftware(key);
-                    setOverrideSoftware('');
-                  }}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: software === key ? '2px solid #2d7252' : '1px solid #e5e7eb',
-                    background: software === key ? 'rgba(45,114,82,0.08)' : '#fff',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: '#374151',
-                    fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 6 }}>
-              {t('softwareCostOverride')}
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={overrideSoftware}
-              onChange={(e) => {
-                setOverrideSoftware(e.target.value);
-              }}
-              placeholder={String(defaultSoft)}
-              style={{
-                width: '100%',
-                maxWidth: 200,
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: '1px solid #e5e7eb',
-                fontSize: 14,
-                fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
-              }}
-            />
-          </div>
-
-          <ToggleRow
-            label={t('bookkeeperToggle')}
-            on={bookkeeper}
-            setOn={setBookkeeper}
-            onLabel={t('toggleOn')}
-            offLabel={t('toggleOff')}
-          />
-          {bookkeeper && (
-            <MoneyInput label={t('salaryAnnual')} value={salaryAnnual} setValue={setSalaryAnnual} />
-          )}
-
-          <ToggleRow
-            label={t('auditorToggle')}
-            on={auditor}
-            setOn={setAuditor}
-            onLabel={t('toggleOn')}
-            offLabel={t('toggleOff')}
-          />
-          {auditor && (
-            <MoneyInput label={t('auditorAnnual')} value={auditorAnnual} setValue={setAuditorAnnual} />
-          )}
-
-          <ToggleRow
-            label={t('auditMonthlyToggle')}
-            on={monthlyAudit}
-            setOn={setMonthlyAudit}
-            onLabel={t('toggleOn')}
-            offLabel={t('toggleOff')}
-          />
-          {monthlyAudit && (
-            <div>
-              <MoneyInput
-                label={t('auditMonthlyCost')}
-                value={monthlyAuditCostMonthly}
-                setValue={setMonthlyAuditCostMonthly}
-              />
-              <p style={{ fontSize: 11, color: '#9ca3af', margin: '6px 0 0', lineHeight: 1.45 }}>
-                {t('auditMonthlyHelp')}
-              </p>
-            </div>
-          )}
-
-          <ToggleRow
-            label={t('eoToggle')}
-            on={eo}
-            setOn={setEo}
-            onLabel={t('toggleOn')}
-            offLabel={t('toggleOff')}
-          />
-          {eo && <MoneyInput label={t('eoAnnual')} value={eoAnnual} setValue={setEoAnnual} />}
-        </div>
-
+      <div className="gm-savings-root" style={{ maxWidth: 1100, margin: '0 auto', width: '100%' }}>
         <div
           style={{
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: 12,
-            padding: 24,
-            position: 'sticky',
-            top: 100,
-            boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 0.45fr) minmax(0, 0.55fr)',
+            gap: 32,
+            alignItems: 'flex-start',
           }}
+          className="gm-savings-grid"
         >
-          <style>{`
+          <div className="gm-savings-form" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <label style={labelUpperStyle}>
+                {t('properties')} · {properties}
+              </label>
+              <input
+                type="range"
+                className="gm-calc-range"
+                min={1}
+                max={500}
+                step={5}
+                value={properties}
+                onChange={(e) => {
+                  setProperties(Number(e.target.value));
+                }}
+                style={
+                  {
+                    width: '100%',
+                    '--gm-range-pct': `${((properties - 1) / (500 - 1)) * 100}%`,
+                  } as CSSProperties
+                }
+              />
+            </div>
+
+            <div>
+              <span style={labelUpperStyle}>{t('currentSoftware')}</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {swatches.map(({ key, label }) => {
+                  const selected = software === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setSoftware(key);
+                        setOverrideSoftware('');
+                      }}
+                      className="gm-calc-software-btn"
+                      style={{
+                        position: 'relative',
+                        padding: '12px 18px',
+                        paddingRight: selected ? 36 : 18,
+                        borderRadius: 8,
+                        border: selected ? '1.5px solid var(--green)' : '1px solid var(--border)',
+                        background: selected ? 'rgba(45, 114, 82, 0.06)' : 'var(--paper)',
+                        boxShadow: selected ? undefined : 'none',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: 'var(--ink2)',
+                        fontFamily: 'var(--font-body)',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }}
+                    >
+                      {label}
+                      {selected ? <SoftwareCheckIcon /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ ...labelUpperStyle, marginBottom: 6 }}>{t('softwareCostOverride')}</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={overrideSoftware}
+                onChange={(e) => {
+                  setOverrideSoftware(e.target.value);
+                }}
+                placeholder={String(defaultSoft)}
+                style={{
+                  width: '100%',
+                  maxWidth: 240,
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border)',
+                  background: 'rgba(0,0,0,0.02)',
+                  fontSize: 14,
+                  color: 'var(--ink)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              />
+            </div>
+
+            <ToggleRow
+              label={t('bookkeeperToggle')}
+              on={bookkeeper}
+              setOn={setBookkeeper}
+              onLabel={t('toggleOn')}
+              offLabel={t('toggleOff')}
+            />
+            {bookkeeper && (
+              <MoneyInput label={t('salaryAnnual')} value={salaryAnnual} setValue={setSalaryAnnual} />
+            )}
+
+            <ToggleRow
+              label={t('auditorToggle')}
+              on={auditor}
+              setOn={setAuditor}
+              onLabel={t('toggleOn')}
+              offLabel={t('toggleOff')}
+            />
+            {auditor && (
+              <MoneyInput label={t('auditorAnnual')} value={auditorAnnual} setValue={setAuditorAnnual} />
+            )}
+
+            <ToggleRow
+              label={t('auditMonthlyToggle')}
+              on={monthlyAudit}
+              setOn={setMonthlyAudit}
+              onLabel={t('toggleOn')}
+              offLabel={t('toggleOff')}
+            />
+            {monthlyAudit && (
+              <div>
+                <MoneyInput
+                  label={t('auditMonthlyCost')}
+                  value={monthlyAuditCostMonthly}
+                  setValue={setMonthlyAuditCostMonthly}
+                />
+                <p style={{ fontSize: 11, color: 'var(--ink3)', margin: '6px 0 0', lineHeight: 1.45 }}>
+                  {t('auditMonthlyHelp')}
+                </p>
+              </div>
+            )}
+
+            <ToggleRow
+              label={t('eoToggle')}
+              on={eo}
+              setOn={setEo}
+              onLabel={t('toggleOn')}
+              offLabel={t('toggleOff')}
+            />
+            {eo && <MoneyInput label={t('eoAnnual')} value={eoAnnual} setValue={setEoAnnual} />}
+          </div>
+
+          <div
+            style={{
+              background: 'var(--sand)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: 24,
+              position: 'sticky',
+              top: 100,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}
+            className="gm-savings-result-card"
+          >
+            <style>{`
             .gm-save-hero-num {
               font-size: 72px;
               line-height: 1.05;
-              font-weight: 600;
-              letter-spacing: -1px;
+              font-weight: 500;
+              letter-spacing: -0.02em;
               margin: 0;
-              font-family: var(--font-playfair, "Cormorant Garamond"), Georgia, serif;
+              font-family: var(--font-heading);
+            }
+            .gm-save-hero-num--neg {
+              color: #8b6f2a;
             }
             @media (max-width: 640px) {
               .gm-save-hero-num {
@@ -300,201 +330,414 @@ export function SavingsCalculator() {
             }
           `}</style>
 
-          <section
-            style={{
-              marginBottom: 24,
-              padding: 32,
-              borderRadius: 12,
-              border: !showPositive
-                ? '1px solid rgba(217,119,6,0.35)'
-                : '1px solid rgba(45,114,82,0.22)',
-              background: !showPositive ? 'rgba(251,191,36,0.12)' : 'rgba(45,114,82,0.08)',
-              animation: 'gmFadeHero 0.35s ease',
-            }}
-          >
-            <style>{`@keyframes gmFadeHero { from { opacity: 0.92 } to { opacity: 1 } }`}</style>
-            {!showPositive ? (
-              <>
-                <p style={{ margin: '0 0 8px', fontSize: 11, letterSpacing: '0.08em', fontWeight: 600, textTransform: 'uppercase', color: '#92400e' }}>
-                  {t('annualGapNegative')}
-                </p>
-                <p className="gm-save-hero-num" style={{ color: '#92400e' }}>
-                  {formatAnnualUsd(-poupancaAnual)}
-                </p>
-                <p style={{ marginTop: 16, fontSize: 13, color: '#57534e', lineHeight: 1.65 }}>
-                  {t('worthItExplanation')}
-                </p>
-              </>
-            ) : (
-              <>
-                <p style={{ margin: '0 0 8px', fontSize: 11, letterSpacing: '0.08em', fontWeight: 600, textTransform: 'uppercase', color: '#6b7280' }}>
-                  {t('youSaveAnually')}
-                </p>
-                <p className="gm-save-hero-num" style={{ color: 'var(--green, #2d7252)' }}>
-                  {formatAnnualUsd(poupancaAnual)}
-                </p>
-                {showPositive && custoAtualAnual > 0 && (
-                  <div
-                    role="presentation"
+            <section
+              style={{
+                marginBottom: 24,
+                padding: 'clamp(24px, 4vw, 40px) clamp(20px, 3vw, 32px)',
+                borderRadius: 16,
+                border: '1px solid var(--border)',
+                background: !showPositive ? '#fbf6e8' : 'var(--paper)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                animation: 'gmFadeHero 0.35s ease',
+              }}
+            >
+              <style>{`@keyframes gmFadeHero { from { opacity: 0.92 } to { opacity: 1 } }`}</style>
+              {!showPositive ? (
+                <>
+                  <p
                     style={{
-                      marginTop: 16,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      background: 'var(--green, #2d7252)',
-                      color: '#fff',
-                      padding: '6px 14px',
-                      borderRadius: 999,
-                      fontSize: 14,
+                      margin: '0 0 8px',
+                      fontSize: 11,
+                      letterSpacing: '0.1em',
                       fontWeight: 600,
-                      fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
+                      textTransform: 'uppercase',
+                      color: 'var(--ink2)',
+                      fontFamily: 'var(--font-body)',
                     }}
                   >
-                    <ArrowDownBadge />
-                    <span>{t('discountBadge', { percent: descontoPct })}</span>
-                  </div>
-                )}
-                <p style={{ marginTop: 14, marginBottom: 0, fontSize: 14, color: '#4b5563', fontFamily: 'var(--font-inter, "DM Sans"), sans-serif' }}>
-                  {t('youSaveMonthly', { amount: formatMoneyPrecise(Math.abs(poupancaMensal)) })}
-                </p>
-              </>
-            )}
-          </section>
+                    {t('annualGapNegative')}
+                  </p>
+                  <p className="gm-save-hero-num gm-save-hero-num--neg">{formatAnnualUsd(-poupancaAnual)}</p>
+                  <p
+                    style={{
+                      marginTop: 16,
+                      fontSize: 14,
+                      color: 'var(--ink2)',
+                      lineHeight: 1.65,
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    {t('worthItExplanation')}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p
+                    style={{
+                      margin: '0 0 8px',
+                      fontSize: 11,
+                      letterSpacing: '0.1em',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      color: 'var(--ink2)',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    {t('youSaveAnually')}
+                  </p>
+                  <p className="gm-save-hero-num" style={{ color: 'var(--green)' }}>
+                    {formatAnnualUsd(poupancaAnual)}
+                  </p>
+                  {showPositive && custoAtualAnual > 0 && (
+                    <div
+                      role="presentation"
+                      style={{
+                        marginTop: 16,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: 'rgba(45, 114, 82, 0.08)',
+                        color: 'var(--green)',
+                        padding: '6px 14px',
+                        borderRadius: 999,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-body)',
+                      }}
+                    >
+                      <ArrowDownBadge />
+                      <span>{t('discountBadge', { percent: descontoPct })}</span>
+                    </div>
+                  )}
+                  <p
+                    style={{
+                      marginTop: 14,
+                      marginBottom: 0,
+                      fontSize: 14,
+                      color: 'var(--ink2)',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    {t('youSaveMonthly', { amount: formatMoneyPrecise(Math.abs(poupancaMensal)) })}
+                  </p>
+                </>
+              )}
+            </section>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 4, fontSize: 12 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ textAlign: 'left', padding: '8px 4px', color: '#9ca3af', fontWeight: 600 }}>
-                  {t('table.cost')}
-                </th>
-                <th style={{ textAlign: 'right', padding: '8px 4px', color: '#9ca3af', fontWeight: 600 }}>
-                  {t('table.today')}
-                </th>
-                <th style={{ textAlign: 'right', padding: '8px 4px', color: '#9ca3af', fontWeight: 600 }}>
-                  {t('table.withGodManager')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ padding: '8px 4px' }}>{t('table.software')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {formatMoney(softwareMensal)}/{t('perMonthShort')}
-                </td>
-                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '8px 4px' }}>{t('table.bookkeeper')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {bookkeeper ? `${formatMoney(bookkeeperMensal)}/${t('perMonthShort')}` : formatMoney(0)}
-                </td>
-                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '8px 4px' }}>{t('table.auditor')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {auditor ? `${formatMoney(auditorMensal)}/${t('perMonthShort')}` : formatMoney(0)}
-                </td>
-                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '8px 4px' }}>{t('table.auditMonthly')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {monthlyAudit
-                    ? `${formatMoney(monthlyAuditCostMonthly)}/${t('perMonthShort')}`
-                    : formatMoney(0)}
-                </td>
-                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '8px 4px' }}>{t('table.insurance')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {eo ? `${formatMoney(seguroMensal)}/${t('perMonthShort')}` : formatMoney(0)}
-                </td>
-                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)', fontSize: 11 }}>{t('table.includedEo')}</td>
-              </tr>
+            <div className="gm-calc-table-wrap">
+              <table className="gm-calc-table">
+                <thead>
+                  <tr>
+                    <th>{t('table.cost')}</th>
+                    <th>{t('table.today')}</th>
+                    <th>{t('table.withGodManager')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="gm-calc-data-row">
+                    <td>{t('table.software')}</td>
+                    <td className="gm-calc-mono">
+                      {formatMoney(softwareMensal)}/{t('perMonthShort')}
+                    </td>
+                    <td className="gm-calc-cell-right">
+                      <span className="gm-calc-included">{t('table.included')}</span>
+                    </td>
+                  </tr>
+                  <tr className="gm-calc-data-row">
+                    <td>{t('table.bookkeeper')}</td>
+                    <td className="gm-calc-mono">
+                      {bookkeeper ? `${formatMoney(bookkeeperMensal)}/${t('perMonthShort')}` : formatMoney(0)}
+                    </td>
+                    <td className="gm-calc-cell-right">
+                      <span className="gm-calc-included">{t('table.included')}</span>
+                    </td>
+                  </tr>
+                  <tr className="gm-calc-data-row">
+                    <td>{t('table.auditor')}</td>
+                    <td className="gm-calc-mono">
+                      {auditor ? `${formatMoney(auditorMensal)}/${t('perMonthShort')}` : formatMoney(0)}
+                    </td>
+                    <td className="gm-calc-cell-right">
+                      <span className="gm-calc-included">{t('table.included')}</span>
+                    </td>
+                  </tr>
+                  <tr className="gm-calc-data-row">
+                    <td>{t('table.auditMonthly')}</td>
+                    <td className="gm-calc-mono">
+                      {monthlyAudit
+                        ? `${formatMoney(monthlyAuditCostMonthly)}/${t('perMonthShort')}`
+                        : formatMoney(0)}
+                    </td>
+                    <td className="gm-calc-cell-right">
+                      <span className="gm-calc-included">{t('table.included')}</span>
+                    </td>
+                  </tr>
+                  <tr className="gm-calc-data-row">
+                    <td>{t('table.insurance')}</td>
+                    <td className="gm-calc-mono">
+                      {eo ? `${formatMoney(seguroMensal)}/${t('perMonthShort')}` : formatMoney(0)}
+                    </td>
+                    <td className="gm-calc-cell-right">
+                      <span className="gm-calc-included gm-calc-included--sm">{t('table.includedEo')}</span>
+                    </td>
+                  </tr>
 
-              <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700, background: 'rgba(15,23,42,0.02)' }}>
-                <td style={{ padding: '10px 4px' }}>{t('totalMonthly')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {formatMoneyPrecise(custoAtualMensal)}/{t('perMonthShort')}
-                </td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {formatMoneyPrecise(godmanagerMensal)}/{t('perMonthShort')}
-                </td>
-              </tr>
-              <tr style={{ fontWeight: 700, background: 'rgba(15,23,42,0.02)' }}>
-                <td style={{ padding: '10px 4px' }}>{t('totalAnnual')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>{formatAnnualUsd(custoAtualAnual)}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>{formatAnnualUsd(godmanagerAnual)}</td>
-              </tr>
-              <tr style={{ borderTop: '1px dashed #e5e7eb', background: 'rgba(45,114,82,0.06)' }}>
-                <td style={{ padding: '10px 4px', fontWeight: 700 }}>{t('annualSavings')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace', color: '#9ca3af', fontWeight: 600 }}>
-                  —
-                </td>
-                <td
-                  style={{
-                    textAlign: 'right',
-                    fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
-                    fontWeight: 700,
-                    color: showPositive ? 'var(--green, #2d7252)' : '#b91c1c',
-                  }}
-                >
-                  {showPositive ? formatAnnualUsd(poupancaAnual) : formatAnnualUsd(-poupancaAnual)}
-                </td>
-              </tr>
-              <tr style={{ background: 'rgba(45,114,82,0.06)' }}>
-                <td style={{ padding: '10px 4px', fontWeight: 700 }}>{t('monthlySavings')}</td>
-                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace', color: '#9ca3af', fontWeight: 600 }}>
-                  —
-                </td>
-                <td
-                  style={{
-                    textAlign: 'right',
-                    fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
-                    fontWeight: 700,
-                    color: showPositive ? 'var(--green, #2d7252)' : '#b91c1c',
-                  }}
-                >
-                  {showPositive ? `${formatMoneyPrecise(poupancaMensal)}/${t('perMonthShort')}` : `${formatMoneyPrecise(-poupancaMensal)}/${t('perMonthShort')}`}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <tr className="gm-calc-total-row">
+                    <td>{t('totalMonthly')}</td>
+                    <td className="gm-calc-mono">
+                      {formatMoneyPrecise(custoAtualMensal)}/{t('perMonthShort')}
+                    </td>
+                    <td className="gm-calc-mono">
+                      {formatMoneyPrecise(godmanagerMensal)}/{t('perMonthShort')}
+                    </td>
+                  </tr>
+                  <tr className="gm-calc-total-row">
+                    <td>{t('totalAnnual')}</td>
+                    <td className="gm-calc-mono">{formatAnnualUsd(custoAtualAnual)}</td>
+                    <td className="gm-calc-mono">{formatAnnualUsd(godmanagerAnual)}</td>
+                  </tr>
+                  <tr className="gm-calc-savings-row">
+                    <td>{t('annualSavings')}</td>
+                    <td className="gm-calc-mono gm-calc-dash">—</td>
+                    <td
+                      className={`gm-calc-savings-val ${showPositive ? 'gm-calc-savings-val--pos' : 'gm-calc-savings-val--neg'}`}
+                    >
+                      {showPositive ? formatAnnualUsd(poupancaAnual) : formatAnnualUsd(-poupancaAnual)}
+                    </td>
+                  </tr>
+                  <tr className="gm-calc-savings-row">
+                    <td>{t('monthlySavings')}</td>
+                    <td className="gm-calc-mono gm-calc-dash">—</td>
+                    <td
+                      className={`gm-calc-savings-val ${showPositive ? 'gm-calc-savings-val--pos' : 'gm-calc-savings-val--neg'}`}
+                    >
+                      {showPositive
+                        ? `${formatMoneyPrecise(poupancaMensal)}/${t('perMonthShort')}`
+                        : `${formatMoneyPrecise(-poupancaMensal)}/${t('perMonthShort')}`}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-          <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 16, lineHeight: 1.55 }}>{t('footerDisclaimer')}</p>
+            <p className="gm-calc-footer-note">{t('footerDisclaimer')}</p>
 
-          <Link
-            href="/contacto?source=calculator"
-            style={{
-              display: 'inline-block',
-              marginTop: 16,
-              padding: '12px 22px',
-              background: '#2d7252',
-              color: '#fff',
-              borderRadius: 8,
-              fontWeight: 600,
-              fontSize: 13,
-              textDecoration: 'none',
-              boxShadow: '0 2px 8px rgba(45,114,82,0.25)',
-              fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
-            }}
-          >
-            {ctaKey === 'ctaHigh'
-              ? t('ctaHigh')
-              : ctaKey === 'ctaConsultor'
-                ? t('ctaConsultor')
-                : t('ctaNormal')}
-          </Link>
+            <Link href="/contacto?source=calculator" className="gm-calc-cta">
+              <span>
+                {ctaKey === 'ctaHigh'
+                  ? t('ctaHigh')
+                  : ctaKey === 'ctaConsultor'
+                    ? t('ctaConsultor')
+                    : t('ctaNormal')}
+              </span>
+              <ArrowRightIcon />
+            </Link>
+          </div>
         </div>
       </div>
 
       <style jsx global>{`
+        .gm-calc-software-btn:hover {
+          border-color: var(--green) !important;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        }
         @media (max-width: 900px) {
           .gm-savings-grid {
             grid-template-columns: 1fr !important;
           }
+          .gm-savings-result-card {
+            position: relative !important;
+            top: auto !important;
+          }
+        }
+        .gm-calc-range {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 6px;
+          border-radius: 3px;
+          accent-color: var(--green);
+          background: linear-gradient(
+            to right,
+            var(--green) 0%,
+            var(--green) var(--gm-range-pct, 10%),
+            rgba(0, 0, 0, 0.08) var(--gm-range-pct, 10%),
+            rgba(0, 0, 0, 0.08) 100%
+          );
+        }
+        .gm-calc-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #fff;
+          border: 2px solid var(--green);
+          box-shadow: 0 2px 8px rgba(45, 114, 82, 0.2);
+          cursor: pointer;
+          margin-top: -7px;
+        }
+        .gm-calc-range::-moz-range-track {
+          height: 6px;
+          border-radius: 3px;
+          background: rgba(0, 0, 0, 0.08);
+        }
+        .gm-calc-range::-moz-range-progress {
+          height: 6px;
+          border-radius: 3px;
+          background: var(--green);
+        }
+        .gm-calc-range::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #fff;
+          border: 2px solid var(--green);
+          box-shadow: 0 2px 8px rgba(45, 114, 82, 0.2);
+          cursor: pointer;
+        }
+        .gm-calc-table-wrap {
+          margin-top: 24px;
+          background: var(--paper);
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          overflow: hidden;
+        }
+        .gm-calc-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+          font-family: var(--font-body);
+          color: var(--ink2);
+        }
+        .gm-calc-table thead tr {
+          background: rgba(45, 114, 82, 0.04);
+          border-bottom: 1px solid var(--border);
+        }
+        .gm-calc-table th {
+          text-align: left;
+          padding: 14px 20px;
+          color: var(--ink2);
+          font-weight: 600;
+          font-size: 11px;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+        .gm-calc-table th:nth-child(2),
+        .gm-calc-table th:nth-child(3) {
+          text-align: right;
+        }
+        .gm-calc-table td {
+          padding: 14px 20px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .gm-calc-data-row:hover {
+          background: rgba(45, 114, 82, 0.02);
+        }
+        .gm-calc-mono {
+          text-align: right;
+          font-family: var(--font-mono);
+          font-size: 13px;
+        }
+        .gm-calc-cell-right {
+          text-align: right;
+        }
+        .gm-calc-included {
+          display: inline-block;
+          background: rgba(45, 114, 82, 0.1);
+          color: var(--green);
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        .gm-calc-included--sm {
+          font-size: 11px;
+        }
+        .gm-calc-total-row {
+          font-weight: 600;
+          background: rgba(45, 114, 82, 0.06);
+          border-top: 1px solid var(--border);
+        }
+        .gm-calc-total-row td {
+          border-bottom: 1px solid var(--border);
+        }
+        .gm-calc-savings-row {
+          background: rgba(45, 114, 82, 0.1);
+          font-weight: 700;
+        }
+        .gm-calc-savings-row td {
+          border-bottom: none;
+          color: var(--green);
+        }
+        .gm-calc-savings-val {
+          text-align: right;
+          font-family: var(--font-heading);
+          font-size: 18px;
+          font-weight: 600;
+        }
+        .gm-calc-savings-val--neg {
+          color: var(--amber);
+        }
+        .gm-calc-dash {
+          color: var(--ink3);
+          font-weight: 600;
+        }
+        .gm-calc-footer-note {
+          font-size: 12px;
+          color: var(--ink3);
+          line-height: 1.6;
+          margin-top: 20px;
+          margin-bottom: 0;
+          max-width: 600px;
+        }
+        .gm-calc-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 20px;
+          padding: 14px 28px;
+          background: var(--green);
+          color: #fff !important;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 15px;
+          text-decoration: none !important;
+          font-family: var(--font-body);
+          box-shadow: 0 2px 8px rgba(45, 114, 82, 0.25);
+          transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .gm-calc-cta:hover {
+          background: #245c43 !important;
+          box-shadow: 0 4px 12px rgba(45, 114, 82, 0.3);
+        }
+        .gm-calc-cta svg {
+          flex-shrink: 0;
+        }
+        .gm-calc-toggle-ui {
+          position: relative;
+          width: 44px;
+          height: 24px;
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.15);
+          transition: background 0.2s ease;
+          flex-shrink: 0;
+        }
+        .gm-calc-toggle-ui[data-on='1'] {
+          background: var(--green);
+        }
+        .gm-calc-toggle-knob {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          transition: transform 0.2s ease;
+        }
+        .gm-calc-toggle-ui[data-on='1'] .gm-calc-toggle-knob {
+          transform: translateX(20px);
         }
       `}</style>
 
@@ -506,11 +749,11 @@ export function SavingsCalculator() {
             right: 24,
             maxWidth: 360,
             zIndex: 300,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
+            background: 'var(--paper)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             padding: 16,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+            boxShadow: '0 12px 40px rgba(26, 26, 28, 0.12)',
           }}
           role="dialog"
           aria-label={t('emailPrompt')}
@@ -527,12 +770,22 @@ export function SavingsCalculator() {
               background: 'transparent',
               fontSize: 18,
               cursor: 'pointer',
-              color: '#9ca3af',
+              color: 'var(--ink3)',
             }}
           >
             ×
           </button>
-          <p style={{ margin: '0 28px 12px 0', fontSize: 14, fontWeight: 600 }}>{t('emailPrompt')}</p>
+          <p
+            style={{
+              margin: '0 28px 12px 0',
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--ink)',
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            {t('emailPrompt')}
+          </p>
           <input
             type="email"
             value={email}
@@ -542,9 +795,12 @@ export function SavingsCalculator() {
               width: '100%',
               padding: '10px 12px',
               borderRadius: 8,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border2)',
+              background: 'var(--sand)',
               marginBottom: 10,
               fontSize: 14,
+              color: 'var(--ink)',
+              fontFamily: 'var(--font-body)',
             }}
           />
           <button
@@ -553,12 +809,13 @@ export function SavingsCalculator() {
             style={{
               width: '100%',
               padding: '10px',
-              background: '#2d7252',
+              background: 'var(--amber)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
               fontWeight: 600,
               cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
             }}
           >
             {t('emailSend')}
@@ -588,24 +845,43 @@ function ToggleRow({
       onClick={() => {
         setOn(!on);
       }}
+      className="gm-calc-toggle-row"
       style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        padding: '12px 14px',
-        borderRadius: 8,
-        border: '1px solid #e5e7eb',
-        background: on ? 'rgba(45,114,82,0.06)' : '#fff',
+        padding: '16px 0',
+        margin: 0,
+        border: 'none',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        borderRadius: 0,
+        background: 'transparent',
         cursor: 'pointer',
         fontSize: 14,
         fontWeight: 600,
-        color: '#374151',
-        fontFamily: 'inherit',
+        color: 'var(--ink2)',
+        fontFamily: 'var(--font-body)',
+        textAlign: 'left',
       }}
     >
-      {label}
-      <span style={{ color: '#2d7252', fontSize: 12 }}>{on ? onLabel : offLabel}</span>
+      <span style={{ paddingRight: 16 }}>{label}</span>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          flexShrink: 0,
+          fontSize: 12,
+          fontWeight: 600,
+          color: on ? 'var(--green)' : 'var(--ink3)',
+        }}
+      >
+        <span className="gm-calc-toggle-ui" data-on={on ? '1' : '0'}>
+          <span className="gm-calc-toggle-knob" />
+        </span>
+        {on ? onLabel : offLabel}
+      </span>
     </button>
   );
 }
@@ -620,26 +896,62 @@ function MoneyInput({
   setValue: (n: number) => void;
 }) {
   return (
-    <label style={{ display: 'block' }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 6 }}>
+    <label style={{ display: 'block', marginTop: 8 }}>
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'var(--ink3)',
+          display: 'block',
+          marginBottom: 6,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          fontFamily: 'var(--font-body)',
+        }}
+      >
         {label}
       </span>
-      <input
-        type="number"
-        min={0}
-        value={value}
-        onChange={(e) => {
-          setValue(Number(e.target.value || 0));
-        }}
+      <div
         style={{
-          width: '100%',
-          maxWidth: 220,
-          padding: '10px 12px',
-          borderRadius: 8,
-          border: '1px solid #e5e7eb',
-          fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
+          display: 'flex',
+          alignItems: 'center',
+          maxWidth: 240,
+          borderRadius: 6,
+          border: '1px solid var(--border)',
+          background: 'rgba(0,0,0,0.02)',
+          overflow: 'hidden',
         }}
-      />
+      >
+        <span
+          style={{
+            padding: '10px 0 10px 12px',
+            fontSize: 14,
+            color: 'var(--ink3)',
+            fontFamily: 'var(--font-mono)',
+            userSelect: 'none',
+          }}
+        >
+          $
+        </span>
+        <input
+          type="number"
+          min={0}
+          value={value}
+          onChange={(e) => {
+            setValue(Number(e.target.value || 0));
+          }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '10px 12px 10px 4px',
+            border: 'none',
+            background: 'transparent',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 14,
+            color: 'var(--ink)',
+          }}
+        />
+      </div>
     </label>
   );
 }
@@ -648,6 +960,35 @@ function ArrowDownBadge() {
   return (
     <svg width={14} height={14} viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0 }} fill="none">
       <path d="M12 15.5 5.25 8.75h13.5L12 15.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SoftwareCheckIcon() {
+  return (
+    <svg
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      aria-hidden
+      style={{ position: 'absolute', top: 10, right: 12 }}
+      fill="none"
+    >
+      <path
+        d="M20 6L9 17l-5-5"
+        stroke="var(--green)"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
