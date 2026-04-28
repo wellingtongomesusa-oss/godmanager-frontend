@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SESSION_KEY = 'gm_calc_email_dismissed';
 
@@ -16,6 +16,9 @@ const DEFAULT_SOFTWARE: Record<SoftwareKey, number> = {
   none: 0,
 };
 
+const GM_PRICE_PER_PROPERTY = 19.9;
+const ANNUAL_SAVINGS_HIGHLIGHT_USD = 30_000;
+
 function formatMoney(n: number): string {
   const abs = Math.abs(Math.round(n));
   return new Intl.NumberFormat('en-US', {
@@ -25,49 +28,67 @@ function formatMoney(n: number): string {
   }).format(abs);
 }
 
+/** USD with up to 2 decimals (for per-property × count). */
+function formatMoneyPrecise(n: number): string {
+  const v = Math.round(Math.abs(n) * 100) / 100;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(v);
+}
+
+function formatAnnualUsd(n: number): string {
+  return formatMoney(Math.round(Math.abs(n)));
+}
+
 export function SavingsCalculator() {
   const t = useTranslations('savingsCalculator');
   const [properties, setProperties] = useState(50);
   const [software, setSoftware] = useState<SoftwareKey>('appfolio');
   const [overrideSoftware, setOverrideSoftware] = useState('');
-  const [bookkeeper, setBookkeeper] = useState(false);
+  const [bookkeeper, setBookkeeper] = useState(true);
   const [salaryAnnual, setSalaryAnnual] = useState(54_000);
-  const [auditor, setAuditor] = useState(false);
+  const [auditor, setAuditor] = useState(true);
   const [auditorAnnual, setAuditorAnnual] = useState(5000);
-  const [eo, setEo] = useState(false);
+  const [monthlyAudit, setMonthlyAudit] = useState(false);
+  const [monthlyAuditCostMonthly, setMonthlyAuditCostMonthly] = useState(2500);
+  const [eo, setEo] = useState(true);
   const [eoAnnual, setEoAnnual] = useState(3500);
-  const [period, setPeriod] = useState<'month' | 'year'>('month');
-  const [headlineFade, setHeadlineFade] = useState(0);
   const [emailOpen, setEmailOpen] = useState(false);
   const [email, setEmail] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const defaultSoft = DEFAULT_SOFTWARE[software];
-  const softwareMensal = useMemo(() => {
+  const softwareMensal = (() => {
     const trimmed = overrideSoftware.trim();
     if (trimmed === '') return defaultSoft;
     const n = Number.parseFloat(trimmed.replace(/[^0-9.-]/g, ''));
     return Number.isFinite(n) ? Math.max(0, n) : defaultSoft;
-  }, [overrideSoftware, defaultSoft, software]);
+  })();
 
   const bookkeeperMensal = bookkeeper ? (salaryAnnual / 12) * 1.3 : 0;
   const auditorMensal = auditor ? auditorAnnual / 12 : 0;
+  const auditoriaMensalExterna = monthlyAudit ? monthlyAuditCostMonthly : 0;
   const seguroMensal = eo ? eoAnnual / 12 : 0;
-  const custoAtualMensal = softwareMensal + bookkeeperMensal + auditorMensal + seguroMensal;
-  const godmanagerMensal = properties * 15;
+  const custoAtualMensal =
+    softwareMensal + bookkeeperMensal + auditorMensal + auditoriaMensalExterna + seguroMensal;
+  const custoAtualAnual = custoAtualMensal * 12;
+  const godmanagerMensal = Math.round(properties * GM_PRICE_PER_PROPERTY * 100) / 100;
+  const godmanagerAnual = godmanagerMensal * 12;
   const poupancaMensal = custoAtualMensal - godmanagerMensal;
-  const poupancaAnual = poupancaMensal * 12;
+  const poupancaAnual = custoAtualAnual - godmanagerAnual;
 
-  const prevHeadline = useRef(poupancaMensal);
-  useEffect(() => {
-    if (prevHeadline.current !== poupancaMensal) {
-      prevHeadline.current = poupancaMensal;
-      setHeadlineFade((k) => k + 1);
-    }
-  }, [poupancaMensal]);
+  const descontoPct =
+    custoAtualAnual > 0 ? Math.round((poupancaAnual / custoAtualAnual) * 100) : 0;
+  const showPositive = poupancaAnual >= 0;
 
-  const displayAmount = period === 'month' ? poupancaMensal : poupancaAnual;
-  const positive = displayAmount >= 0;
+  const ctaKey: 'ctaHigh' | 'ctaNormal' | 'ctaConsultor' = !showPositive
+    ? 'ctaConsultor'
+    : poupancaAnual > ANNUAL_SAVINGS_HIGHLIGHT_USD
+      ? 'ctaHigh'
+      : 'ctaNormal';
 
   useEffect(() => {
     if (typeof sessionStorage === 'undefined') return;
@@ -138,7 +159,9 @@ export function SavingsCalculator() {
               max={500}
               step={5}
               value={properties}
-              onChange={(e) => setProperties(Number(e.target.value))}
+              onChange={(e) => {
+                setProperties(Number(e.target.value));
+              }}
               style={{ width: '100%', accentColor: '#2d7252' }}
             />
           </div>
@@ -182,7 +205,9 @@ export function SavingsCalculator() {
               type="text"
               inputMode="decimal"
               value={overrideSoftware}
-              onChange={(e) => setOverrideSoftware(e.target.value)}
+              onChange={(e) => {
+                setOverrideSoftware(e.target.value);
+              }}
               placeholder={String(defaultSoft)}
               style={{
                 width: '100%',
@@ -219,6 +244,26 @@ export function SavingsCalculator() {
           )}
 
           <ToggleRow
+            label={t('auditMonthlyToggle')}
+            on={monthlyAudit}
+            setOn={setMonthlyAudit}
+            onLabel={t('toggleOn')}
+            offLabel={t('toggleOff')}
+          />
+          {monthlyAudit && (
+            <div>
+              <MoneyInput
+                label={t('auditMonthlyCost')}
+                value={monthlyAuditCostMonthly}
+                setValue={setMonthlyAuditCostMonthly}
+              />
+              <p style={{ fontSize: 11, color: '#9ca3af', margin: '6px 0 0', lineHeight: 1.45 }}>
+                {t('auditMonthlyHelp')}
+              </p>
+            </div>
+          )}
+
+          <ToggleRow
             label={t('eoToggle')}
             on={eo}
             setOn={setEo}
@@ -229,7 +274,6 @@ export function SavingsCalculator() {
         </div>
 
         <div
-          key={headlineFade}
           style={{
             background: '#fff',
             border: '1px solid #e5e7eb',
@@ -238,89 +282,86 @@ export function SavingsCalculator() {
             position: 'sticky',
             top: 100,
             boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
-            animation: 'gmFadeIn 0.35s ease',
           }}
         >
-          <style>{`@keyframes gmFadeIn { from { opacity: 0.65 } to { opacity: 1 } }`}</style>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={() => setPeriod('month')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: 8,
-                border: period === 'month' ? '1px solid #2d7252' : '1px solid #e5e7eb',
-                background: period === 'month' ? 'rgba(45,114,82,0.1)' : 'transparent',
-                fontWeight: 600,
-                fontSize: 12,
-                cursor: 'pointer',
-              }}
-            >
-              {t('monthlyToggle')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPeriod('year')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: 8,
-                border: period === 'year' ? '1px solid #2d7252' : '1px solid #e5e7eb',
-                background: period === 'year' ? 'rgba(45,114,82,0.1)' : 'transparent',
-                fontWeight: 600,
-                fontSize: 12,
-                cursor: 'pointer',
-              }}
-            >
-              {t('annualToggle')}
-            </button>
-          </div>
+          <style>{`
+            .gm-save-hero-num {
+              font-size: 72px;
+              line-height: 1.05;
+              font-weight: 600;
+              letter-spacing: -1px;
+              margin: 0;
+              font-family: var(--font-playfair, "Cormorant Garamond"), Georgia, serif;
+            }
+            @media (max-width: 640px) {
+              .gm-save-hero-num {
+                font-size: 48px;
+              }
+            }
+          `}</style>
 
-          {positive ? (
-            <>
-              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#6b7280' }}>
-                {t('youSave')}
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 36,
-                  fontWeight: 700,
-                  fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
-                  color: 'var(--green, #2d7252)',
-                }}
-              >
-                {formatMoney(period === 'month' ? poupancaMensal : poupancaAnual)}
-                <span style={{ fontSize: 16, fontWeight: 600 }}>
-                  {' '}
-                  / {period === 'month' ? t('perMonth') : t('perYear')}
-                </span>
-              </p>
-            </>
-          ) : (
-            <>
-              <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 600, color: '#b91c1c' }}>
-                {t('godmanagerCostsMore')}
-              </p>
-              <p
-                style={{
-                  margin: '0 0 12px',
-                  fontSize: 28,
-                  fontWeight: 700,
-                  fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
-                  color: '#b91c1c',
-                }}
-              >
-                {formatMoney(period === 'month' ? -poupancaMensal : -poupancaAnual)}
-                <span style={{ fontSize: 14 }}>
-                  {' '}
-                  / {period === 'month' ? t('perMonth') : t('perYear')}
-                </span>
-              </p>
-              <p style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5, margin: 0 }}>{t('negativeExplainer')}</p>
-            </>
-          )}
+          <section
+            style={{
+              marginBottom: 24,
+              padding: 32,
+              borderRadius: 12,
+              border: !showPositive
+                ? '1px solid rgba(217,119,6,0.35)'
+                : '1px solid rgba(45,114,82,0.22)',
+              background: !showPositive ? 'rgba(251,191,36,0.12)' : 'rgba(45,114,82,0.08)',
+              animation: 'gmFadeHero 0.35s ease',
+            }}
+          >
+            <style>{`@keyframes gmFadeHero { from { opacity: 0.92 } to { opacity: 1 } }`}</style>
+            {!showPositive ? (
+              <>
+                <p style={{ margin: '0 0 8px', fontSize: 11, letterSpacing: '0.08em', fontWeight: 600, textTransform: 'uppercase', color: '#92400e' }}>
+                  {t('annualGapNegative')}
+                </p>
+                <p className="gm-save-hero-num" style={{ color: '#92400e' }}>
+                  {formatAnnualUsd(-poupancaAnual)}
+                </p>
+                <p style={{ marginTop: 16, fontSize: 13, color: '#57534e', lineHeight: 1.65 }}>
+                  {t('worthItExplanation')}
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 8px', fontSize: 11, letterSpacing: '0.08em', fontWeight: 600, textTransform: 'uppercase', color: '#6b7280' }}>
+                  {t('youSaveAnually')}
+                </p>
+                <p className="gm-save-hero-num" style={{ color: 'var(--green, #2d7252)' }}>
+                  {formatAnnualUsd(poupancaAnual)}
+                </p>
+                {showPositive && custoAtualAnual > 0 && (
+                  <div
+                    role="presentation"
+                    style={{
+                      marginTop: 16,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: 'var(--green, #2d7252)',
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: 999,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
+                    }}
+                  >
+                    <ArrowDownBadge />
+                    <span>{t('discountBadge', { percent: descontoPct })}</span>
+                  </div>
+                )}
+                <p style={{ marginTop: 14, marginBottom: 0, fontSize: 14, color: '#4b5563', fontFamily: 'var(--font-inter, "DM Sans"), sans-serif' }}>
+                  {t('youSaveMonthly', { amount: formatMoneyPrecise(Math.abs(poupancaMensal)) })}
+                </p>
+              </>
+            )}
+          </section>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, fontSize: 12 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 4, fontSize: 12 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <th style={{ textAlign: 'left', padding: '8px 4px', color: '#9ca3af', fontWeight: 600 }}>
@@ -340,49 +381,83 @@ export function SavingsCalculator() {
                 <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
                   {formatMoney(softwareMensal)}/{t('perMonthShort')}
                 </td>
-                <td style={{ textAlign: 'right', color: '#2d7252' }}>{t('table.included')}</td>
+                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
               </tr>
               <tr>
                 <td style={{ padding: '8px 4px' }}>{t('table.bookkeeper')}</td>
                 <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
                   {bookkeeper ? `${formatMoney(bookkeeperMensal)}/${t('perMonthShort')}` : formatMoney(0)}
                 </td>
-                <td style={{ textAlign: 'right', color: '#2d7252' }}>{t('table.included')}</td>
+                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
               </tr>
               <tr>
                 <td style={{ padding: '8px 4px' }}>{t('table.auditor')}</td>
                 <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
                   {auditor ? `${formatMoney(auditorMensal)}/${t('perMonthShort')}` : formatMoney(0)}
                 </td>
-                <td style={{ textAlign: 'right', color: '#2d7252' }}>{t('table.included')}</td>
+                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px 4px' }}>{t('table.auditMonthly')}</td>
+                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
+                  {monthlyAudit
+                    ? `${formatMoney(monthlyAuditCostMonthly)}/${t('perMonthShort')}`
+                    : formatMoney(0)}
+                </td>
+                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)' }}>{t('table.included')}</td>
               </tr>
               <tr>
                 <td style={{ padding: '8px 4px' }}>{t('table.insurance')}</td>
                 <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
                   {eo ? `${formatMoney(seguroMensal)}/${t('perMonthShort')}` : formatMoney(0)}
                 </td>
-                <td style={{ textAlign: 'right', color: '#2d7252', fontSize: 11 }}>{t('table.includedEo')}</td>
+                <td style={{ textAlign: 'right', color: 'rgba(45,114,82,0.95)', fontSize: 11 }}>{t('table.includedEo')}</td>
               </tr>
-              <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
-                <td style={{ padding: '10px 4px' }}>{t('table.total')}</td>
+
+              <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700, background: 'rgba(15,23,42,0.02)' }}>
+                <td style={{ padding: '10px 4px' }}>{t('totalMonthly')}</td>
                 <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {formatMoney(custoAtualMensal)}/{t('perMonthShort')}
+                  {formatMoneyPrecise(custoAtualMensal)}/{t('perMonthShort')}
                 </td>
                 <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>
-                  {formatMoney(godmanagerMensal)}/{t('perMonthShort')}
+                  {formatMoneyPrecise(godmanagerMensal)}/{t('perMonthShort')}
                 </td>
               </tr>
-              <tr style={{ background: 'rgba(45,114,82,0.06)' }}>
-                <td style={{ padding: '10px 4px', color: '#2d7252' }}>{t('table.savings')}</td>
-                <td />
+              <tr style={{ fontWeight: 700, background: 'rgba(15,23,42,0.02)' }}>
+                <td style={{ padding: '10px 4px' }}>{t('totalAnnual')}</td>
+                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>{formatAnnualUsd(custoAtualAnual)}</td>
+                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace' }}>{formatAnnualUsd(godmanagerAnual)}</td>
+              </tr>
+              <tr style={{ borderTop: '1px dashed #e5e7eb', background: 'rgba(45,114,82,0.06)' }}>
+                <td style={{ padding: '10px 4px', fontWeight: 700 }}>{t('annualSavings')}</td>
+                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace', color: '#9ca3af', fontWeight: 600 }}>
+                  —
+                </td>
                 <td
                   style={{
                     textAlign: 'right',
                     fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
-                    color: positive ? '#2d7252' : '#b91c1c',
+                    fontWeight: 700,
+                    color: showPositive ? 'var(--green, #2d7252)' : '#b91c1c',
                   }}
                 >
-                  {formatMoney(poupancaMensal)}/{t('perMonthShort')}
+                  {showPositive ? formatAnnualUsd(poupancaAnual) : formatAnnualUsd(-poupancaAnual)}
+                </td>
+              </tr>
+              <tr style={{ background: 'rgba(45,114,82,0.06)' }}>
+                <td style={{ padding: '10px 4px', fontWeight: 700 }}>{t('monthlySavings')}</td>
+                <td style={{ textAlign: 'right', fontFamily: 'ui-monospace, "JetBrains Mono", monospace', color: '#9ca3af', fontWeight: 600 }}>
+                  —
+                </td>
+                <td
+                  style={{
+                    textAlign: 'right',
+                    fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
+                    fontWeight: 700,
+                    color: showPositive ? 'var(--green, #2d7252)' : '#b91c1c',
+                  }}
+                >
+                  {showPositive ? `${formatMoneyPrecise(poupancaMensal)}/${t('perMonthShort')}` : `${formatMoneyPrecise(-poupancaMensal)}/${t('perMonthShort')}`}
                 </td>
               </tr>
             </tbody>
@@ -403,9 +478,14 @@ export function SavingsCalculator() {
               fontSize: 13,
               textDecoration: 'none',
               boxShadow: '0 2px 8px rgba(45,114,82,0.25)',
+              fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
             }}
           >
-            {t('ctaButton')}
+            {ctaKey === 'ctaHigh'
+              ? t('ctaHigh')
+              : ctaKey === 'ctaConsultor'
+                ? t('ctaConsultor')
+                : t('ctaNormal')}
           </Link>
         </div>
       </div>
@@ -505,7 +585,9 @@ function ToggleRow({
   return (
     <button
       type="button"
-      onClick={() => setOn(!on)}
+      onClick={() => {
+        setOn(!on);
+      }}
       style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -546,7 +628,9 @@ function MoneyInput({
         type="number"
         min={0}
         value={value}
-        onChange={(e) => setValue(Number(e.target.value || 0))}
+        onChange={(e) => {
+          setValue(Number(e.target.value || 0));
+        }}
         style={{
           width: '100%',
           maxWidth: 220,
@@ -557,5 +641,13 @@ function MoneyInput({
         }}
       />
     </label>
+  );
+}
+
+function ArrowDownBadge() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0 }} fill="none">
+      <path d="M12 15.5 5.25 8.75h13.5L12 15.5Z" fill="currentColor" />
+    </svg>
   );
 }
