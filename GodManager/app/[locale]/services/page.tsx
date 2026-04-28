@@ -1,4 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/navigation';
+import { FaqSection } from '@/components/marketing/FaqSection';
+import { SavingsCalculator } from '@/components/marketing/SavingsCalculator';
+import { SectionDivider } from '@/components/marketing/SectionDivider';
+import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 
 const GROUPS: { categoryKey: 'bookkeeping' | 'consulting' | '1099'; itemKeys: string[] }[] = [
@@ -129,6 +134,58 @@ export default async function ServicesPage({ params: { locale } }: PageProps) {
             </div>
           </section>
         ))}
+
+        <SectionDivider />
+
+        <section id="calculator" style={{ marginBottom: 48 }}>
+          <h2
+            style={{
+              fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
+              fontSize: 28,
+              fontWeight: 600,
+              color: '#c9a96e',
+              marginBottom: 20,
+              letterSpacing: '0.5px',
+            }}
+          >
+            {t('calculatorSectionTitle')}
+          </h2>
+          <SavingsCalculator />
+        </section>
+
+        <SectionDivider />
+
+        <section id="faq-preview" style={{ marginBottom: 48 }}>
+          <h2
+            style={{
+              fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
+              fontSize: 28,
+              fontWeight: 600,
+              color: '#c9a96e',
+              marginBottom: 20,
+              letterSpacing: '0.5px',
+            }}
+          >
+            {t('previewFaqTitle')}
+          </h2>
+          <FaqSection limit={8} hideSearch hideCategoryFilter />
+          <Link
+            href="/faq"
+            style={{
+              display: 'inline-block',
+              marginTop: 20,
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#2d7252',
+              textDecoration: 'none',
+              borderBottom: '1px solid rgba(45,114,82,0.35)',
+              paddingBottom: 2,
+            }}
+          >
+            {t('seeAllFaqs')}
+          </Link>
+        </section>
+
         <section
           style={{
             marginTop: 32,
@@ -175,6 +232,7 @@ export default async function ServicesPage({ params: { locale } }: PageProps) {
           </a>
         </section>
       </div>
+      <SiteFooter />
     </div>
   );
 }

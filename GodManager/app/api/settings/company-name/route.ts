@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_NAME = 'Manager Prop LLC';
+const DEFAULT_NAME = 'Your Company';
 
 export async function GET() {
   try {

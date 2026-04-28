@@ -22,7 +22,7 @@ function navStyle(isActive: boolean): React.CSSProperties {
 export function SiteHeader({
   active: activeNav,
 }: {
-  active: 'home' | 'services' | 'about' | 'contact' | 'request';
+  active: 'home' | 'services' | 'faq' | 'about' | 'contact' | 'request';
 }) {
   const t = useTranslations();
 
@@ -98,6 +98,9 @@ export function SiteHeader({
         </Link>
         <Link href="/services" style={navStyle(activeNav === 'services')}>
           {t('nav.services')}
+        </Link>
+        <Link href="/faq" style={navStyle(activeNav === 'faq')}>
+          {t('nav.faq')}
         </Link>
         <Link href="/about" style={navStyle(activeNav === 'about')}>
           {t('nav.about')}
