@@ -9532,6 +9532,8 @@ window.gmPropertiesFetchFromApi=async function(){
     bankAddress:meta.bankAddress||'',
     bankMethod:meta.bankMethod||'',
     approver:meta.approver||'',
+    photos:Array.isArray(meta.photos)?meta.photos.filter(function(ph){return ph&&ph.publicUrl;}).map(function(ph){return{publicUrl:String(ph.publicUrl||''),key:String(ph.key||''),name:String(ph.name||''),type:String(ph.type||'image/jpeg'),size:Number(ph.size)||0,isPrimary:!!ph.isPrimary};}):[],
+    primaryPhotoIndex:typeof meta.primaryPhotoIndex==='number'?meta.primaryPhotoIndex:0,
     _apiId:p.id
    };
   });
@@ -11234,41 +11236,129 @@ function ltpDzOver(e){e.preventDefault();const z=document.getElementById('ltp-ph
 function ltpDzLeave(e){const z=document.getElementById('ltp-photo-dropzone');if(z){z.classList.remove('ltp-dz-drag');}}
 function ltpDzDrop(e){e.preventDefault();ltpDzLeave(e);ltpPhotoAddFiles(e.dataTransfer.files);}
 function ltpPhotoFromInput(files){ltpPhotoAddFiles(files);}
-function ltpPhotoAddFiles(fileList){
- const maxN=20,maxB=5*1024*1024;
- const err=document.getElementById('ltp-err-photos');
- if(err)err.textContent='';
- Array.from(fileList||[]).forEach(f=>{
-  if(ltpStagedPhotos.length>=maxN){if(err)err.textContent='Máximo de 20 fotos.';return;}
-  const ok=/\.(jpe?g|png|webp)$/i.test(f.name)||/^image\/(jpeg|png|webp)$/i.test(f.type||'');
-  if(!ok){if(err)err.textContent='Use apenas .jpg, .jpeg, .png ou .webp.';return;}
-  if(f.size>maxB){if(err)err.textContent='Cada foto deve ter no máximo 5 MB.';return;}
-  const reader=new FileReader();
-  reader.onload=function(ev){
-   ltpStagedPhotos.push({dataUrl:ev.target.result,name:f.name,type:f.type||'image/jpeg',size:f.size});
-   if(ltpStagedPhotos.length===1)ltpPrimaryIdx=0;
-   ltpPhotoRender();
+function ltpCompressImage(file, maxDim, quality){
+ maxDim = maxDim || 1600;
+ quality = quality || 0.85;
+ return new Promise(function(resolve, reject){
+  var img = new Image();
+  var url = URL.createObjectURL(file);
+  img.onload = function(){
+   try{
+    var w = img.width, h = img.height;
+    if(w > maxDim || h > maxDim){
+     if(w >= h){ h = Math.round(h * maxDim / w); w = maxDim; }
+     else { w = Math.round(w * maxDim / h); h = maxDim; }
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    canvas.toBlob(function(blob){
+     URL.revokeObjectURL(url);
+     if(!blob){ reject(new Error('compress failed')); return; }
+     resolve(blob);
+    }, 'image/jpeg', quality);
+   }catch(e){ URL.revokeObjectURL(url); reject(e); }
   };
-  reader.readAsDataURL(f);
+  img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+  img.src = url;
  });
 }
+
+async function ltpUploadToR2(blob, propertyId, originalName){
+ var contentType = 'image/jpeg';
+ var presignRes = await fetch('/api/properties/photos/presigned-url', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  credentials: 'include',
+  body: JSON.stringify({
+   propertyId: String(propertyId || 'tmp'),
+   contentType: contentType,
+   sizeBytes: blob.size,
+   originalFilename: originalName || 'photo.jpg'
+  })
+ });
+ if(!presignRes.ok){ throw new Error('presigned-url HTTP '+presignRes.status); }
+ var presign = await presignRes.json();
+ if(!presign || !presign.ok){ throw new Error('presigned-url returned !ok'); }
+ var putRes = await fetch(presign.uploadUrl, {
+  method: 'PUT',
+  headers: {'Content-Type': contentType},
+  body: blob
+ });
+ if(!putRes.ok){ throw new Error('R2 PUT HTTP '+putRes.status); }
+ return { publicUrl: presign.publicUrl, key: presign.key };
+}
+async function ltpPhotoAddFiles(fileList){
+ const maxN=20, maxBOriginal=15*1024*1024;
+ const err=document.getElementById('ltp-err-photos');
+ if(err) err.textContent='';
+ var files = Array.from(fileList||[]);
+ var propertyIdForUpload = (typeof ltEditingId!=='undefined' && ltEditingId) ? ltEditingId : ('tmp_'+Date.now());
+ for (var i=0; i<files.length; i++){
+  var f = files[i];
+  if(ltpStagedPhotos.length>=maxN){ if(err) err.textContent='Máximo de 20 fotos.'; break; }
+  var ok=/\.(jpe?g|png|webp)$/i.test(f.name)||/^image\/(jpeg|png|webp)$/i.test(f.type||'');
+  if(!ok){ if(err) err.textContent='Use apenas .jpg, .jpeg, .png ou .webp.'; continue; }
+  if(f.size>maxBOriginal){ if(err) err.textContent='Cada foto deve ter no máximo 15 MB antes de comprimir.'; continue; }
+  var placeholder = { uploading: true, name: f.name, type: f.type||'image/jpeg', size: f.size, publicUrl: '', key: '' };
+  ltpStagedPhotos.push(placeholder);
+  var idx = ltpStagedPhotos.length - 1;
+  if(ltpStagedPhotos.length===1) ltpPrimaryIdx=0;
+  ltpPhotoRender();
+  try{
+   var blob = await ltpCompressImage(f, 1600, 0.85);
+   var up = await ltpUploadToR2(blob, propertyIdForUpload, f.name);
+   ltpStagedPhotos[idx] = {
+    publicUrl: up.publicUrl,
+    key: up.key,
+    name: f.name,
+    type: 'image/jpeg',
+    size: blob.size,
+    uploading: false
+   };
+   ltpPhotoRender();
+  }catch(e){
+   console.error('Upload R2 falhou:', e);
+   if(err) err.textContent='Erro ao subir foto: '+(e.message||e);
+   ltpStagedPhotos.splice(idx, 1);
+   if(ltpPrimaryIdx>=ltpStagedPhotos.length) ltpPrimaryIdx=Math.max(0, ltpStagedPhotos.length-1);
+   ltpPhotoRender();
+  }
+ }
+}
 function ltpPhotoRemove(i){
+ var photo = ltpStagedPhotos[i];
  ltpStagedPhotos.splice(i,1);
- if(ltpPrimaryIdx>=ltpStagedPhotos.length)ltpPrimaryIdx=Math.max(0,ltpStagedPhotos.length-1);
+ if(ltpPrimaryIdx>=ltpStagedPhotos.length) ltpPrimaryIdx=Math.max(0, ltpStagedPhotos.length-1);
  ltpPhotoRender();
+ if(photo && photo.key){
+  fetch('/api/properties/photos/delete', {
+   method: 'POST',
+   headers: {'Content-Type':'application/json'},
+   credentials: 'include',
+   body: JSON.stringify({ key: photo.key })
+  }).catch(function(e){ console.warn('R2 delete falhou (foto local removida):', e); });
+ }
 }
 function ltpSetPrimary(i){ltpPrimaryIdx=i;ltpPhotoRender();}
 function ltpPhotoRender(){
  const c=document.getElementById('ltp-photo-preview');
- if(!c)return;
- if(!ltpStagedPhotos.length){c.innerHTML='';return;}
- c.innerHTML=ltpStagedPhotos.map((p,i)=>`
+ if(!c) return;
+ if(!ltpStagedPhotos.length){ c.innerHTML=''; return; }
+ c.innerHTML=ltpStagedPhotos.map((p,i)=>{
+  var src = p.uploading ? '' : (p.publicUrl||p.dataUrl||'');
+  var overlay = p.uploading ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);color:#fff;font-size:9px;border-radius:8px">A subir...</div>' : '';
+  var imgTag = src ? `<img src="${src}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block">` : `<div style="width:96px;height:72px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)"></div>`;
+  return `
  <div style="position:relative;width:96px">
- <img src="${p.dataUrl}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block">
- ${i===ltpPrimaryIdx?'<span style="position:absolute;bottom:20px;left:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--amber);color:#fff">Principal</span>':''}
- <button type="button" onclick="ltpSetPrimary(${i})" aria-label="Marcar como foto principal" style="position:absolute;bottom:20px;right:4px;width:22px;height:22px;border:none;border-radius:4px;background:var(--blue);color:#fff;font-size:10px;cursor:pointer;line-height:1">★</button>
- <button type="button" onclick="ltpPhotoRemove(${i})" aria-label="Remover foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:var(--red);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;font-weight:700;line-height:1">×</button>
- </div>`).join('');
+ ${imgTag}
+ ${overlay}
+ ${i===ltpPrimaryIdx&&!p.uploading?'<span style="position:absolute;bottom:20px;left:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--amber);color:#fff">Principal</span>':''}
+ ${!p.uploading?`<button type="button" onclick="ltpSetPrimary(${i})" aria-label="Marcar como foto principal" style="position:absolute;bottom:20px;right:4px;width:22px;height:22px;border:none;border-radius:4px;background:var(--blue);color:#fff;font-size:10px;cursor:pointer;line-height:1">★</button>`:''}
+ ${!p.uploading?`<button type="button" onclick="ltpPhotoRemove(${i})" aria-label="Remover foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:var(--red);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;font-weight:700;line-height:1">×</button>`:''}
+ </div>`;
+ }).join('');
 }
 function ltpResetPhotoStaging(){
  ltpStagedPhotos=[];
@@ -11287,10 +11377,12 @@ function ltpLoadPhotosFromRecord(r){
  if(Array.isArray(photos)&&photos.length){
   ltpStagedPhotos=photos.map(function(p){
    return{
-    dataUrl:(p&&p.dataUrl)?String(p.dataUrl):'',
+    publicUrl:(p&&p.publicUrl)?String(p.publicUrl):((p&&p.dataUrl)?String(p.dataUrl):''),
+    key:(p&&p.key)?String(p.key):'',
     name:(p&&p.name)?String(p.name):'photo',
     type:(p&&p.type)?String(p.type):'image/jpeg',
-    size:(p&&typeof p.size==='number')?p.size:0
+    size:(p&&typeof p.size==='number')?p.size:0,
+    uploading:false
    };
   });
   var pri=(typeof r.primaryPhotoIndex==='number'&&!isNaN(r.primaryPhotoIndex))?r.primaryPhotoIndex:0;
@@ -11390,7 +11482,7 @@ function ltpBuildRecord(){
  bankAddress:v('ltp-f-bank-address'),
  bankMethod:v('ltp-f-bank-method')||'ach',
  water:0,electric:0,maint:0,vendor:0,
- photos:ltpStagedPhotos.map((p,i)=>({dataUrl:p.dataUrl,name:p.name,type:p.type,size:p.size,isPrimary:i===ltpPrimaryIdx})),
+ photos:ltpStagedPhotos.filter(p=>!p.uploading&&p.publicUrl).map((p,i,arr)=>({publicUrl:p.publicUrl,key:p.key,name:p.name,type:p.type||'image/jpeg',size:p.size||0,isPrimary:i===Math.min(ltpPrimaryIdx,arr.length-1)})),
  primaryPhotoIndex:ltpPrimaryIdx,
  status:(statusEl&&statusEl.value)||'pending',
  desc:'',vendorname:'',vendordate:'',
@@ -11510,7 +11602,9 @@ async function ltpSaveNewProperty(){
    bankAddress:rec.bankAddress||'',
    bankMethod:rec.bankMethod||'',
    approver:rec.approver||'',
-   source:'manual_ui'
+   source:'manual_ui',
+   photos:Array.isArray(rec.photos)?rec.photos.filter(function(p){return p&&p.publicUrl;}).map(function(p){return{publicUrl:String(p.publicUrl||''),key:String(p.key||''),name:String(p.name||''),type:String(p.type||'image/jpeg'),size:Number(p.size)||0,isPrimary:!!p.isPrimary};}):[],
+   primaryPhotoIndex:typeof rec.primaryPhotoIndex==='number'?rec.primaryPhotoIndex:0
   }
  };
  var apiId=null;

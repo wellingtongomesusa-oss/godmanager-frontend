@@ -3,6 +3,7 @@ import type { Property } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { normalizePropertyMetadata } from '@/lib/photoMetadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.mgmtFeePct !== undefined) data.mgmtFeePct = String(body.mgmtFeePct);
     if (body.status !== undefined) data.status = String(body.status);
     if (body.notes !== undefined) data.notes = (body.notes as string) || null;
-    if (body.metadata !== undefined) data.metadata = body.metadata as Prisma.InputJsonValue;
+    if (body.metadata !== undefined) {
+      const normalized = normalizePropertyMetadata(body.metadata);
+      data.metadata = (normalized ?? Prisma.JsonNull) as Prisma.InputJsonValue;
+    }
 
     const updated = await prisma.property.update({ where: { id: params.id }, data });
     return NextResponse.json({ ok: true, property: serialize(updated) });
