@@ -2575,15 +2575,21 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button type="button" onclick="nav('tenantportal')" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Tenant Portal</button>
  <button type="button" onclick="if(typeof tenantOpenNew==='function')tenantOpenNew();" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">+ Novo Tenant</button>
  </div>
- <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+ <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">TOTAL TENANTS</div><div id="tn-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">FROM PROPERTIES</div><div id="tn-kpi-lt" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">IMPORTED</div><div id="tn-kpi-af" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);margin-top:6px">0</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
  </div>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PAGOS (MES)</div><div id="tn-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green);margin-top:6px">0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">Income registado este mes (AppFolio)</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">EM ATRASO</div><div id="tn-kpi-overdue" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red);margin-top:6px">0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">Dia 5+ sem income no mes corrente</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PET FEE TOTAL</div><div id="tn-kpi-pet-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">400 USD/mes x inquilinos com pet fee</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">RECEITA MP PETS</div><div id="tn-kpi-pet-mp" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">200 USD/mes (split 50/50 do pet fee)</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
+ </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(30,22,12,.06)">
  <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Directory</div>
  <div style="overflow-x:auto">
- <table style="width:100%;border-collapse:collapse;min-width:1200px">
+ <table style="width:100%;border-collapse:collapse;min-width:1320px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Property / Unit</th>
@@ -2593,6 +2599,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Dias</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Contrato</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Monthly Rent</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Pet Fee</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status pgto</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Source</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Actions</th>
  </tr></thead>
@@ -2653,6 +2661,10 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">RENEWAL FEE ($)</label>
    <input id="tn-f-renewalfee" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink)">
    <div style="font-size:10px;color:var(--ink3);margin-top:6px">Tarifa cobrada na renovação do contrato</div>
+  </div>
+  <div style="grid-column:1/-1;display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand)">
+   <input type="checkbox" id="tn-f-petfee" style="margin-top:3px;width:16px;height:16px;cursor:pointer;accent-color:var(--amber)">
+   <div><label for="tn-f-petfee" style="font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;display:block">Pet fee ativo (400 USD/mes)</label><div style="font-size:10px;color:var(--ink3);margin-top:4px;line-height:1.45">Valor fixo 400/mes no modelo de negocio; reparticao implícita 200 proprietario + 200 gestao (MP).</div></div>
   </div>
  </div>
  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
@@ -10672,7 +10684,8 @@ function tpRowToProfile(r,idx){
   leaseStart:tc.leaseStart||ld.leaseStart,leaseEnd:moveOut,moveIn:moveIn,
   monthlyRent:rent,securityDeposit:+r.deposit||0,petDeposit:+r.petDeposit||0,petRent:+r.petRent||0,lateFee:+r.lateFee||150,property:r.address||'',occupancy:r.occupancy||'',
   contractDuration:tc.contractDuration!=null?tc.contractDuration:'',renewalFee:tc.renewalFee!=null?Number(tc.renewalFee):0,contractStatus:tc.contractStatus||'active',renewalHistory:Array.isArray(tc.renewalHistory)?tc.renewalHistory:[],pendingRenewalFee:tc.pendingRenewalFee,
-  moveOutProcessed:!!tc.moveOutProcessed,nonRenewal:!!tc.nonRenewal,leaseTenantStatus:tc.leaseTenantStatus||'active'
+  moveOutProcessed:!!tc.moveOutProcessed,nonRenewal:!!tc.nonRenewal,leaseTenantStatus:tc.leaseTenantStatus||'active',
+  petFee:tc.petFee===true
  };
 }
 function tpImportRowToProfile(row,i){
@@ -10691,6 +10704,7 @@ function tpImportRowToProfile(row,i){
   if(tc.pendingRenewalFee!=null) p.pendingRenewalFee=tc.pendingRenewalFee;
   p.moveOutProcessed=!!tc.moveOutProcessed;p.nonRenewal=!!tc.nonRenewal;
   p.leaseTenantStatus=tc.leaseTenantStatus||'active';
+  p.petFee=tc.petFee===true;
  }
  return p;
 }
@@ -10786,6 +10800,7 @@ function tnOpenTenantModal(profileId){
  var dc=document.getElementById('tn-f-duration-custom');
  if(dc) dc.value=(du&&!([6,12,18,24]).includes(Number(du)))?String(du):'12';
  document.getElementById('tn-f-renewalfee').value=tc.renewalFee!=null?tc.renewalFee:(p.renewalFee||0);
+ if(petEl) petEl.checked=tc.petFee===true;
  if(!document.getElementById('tn-f-moveout').value&&document.getElementById('tn-f-movein').value) tnSyncContractOut();
 }
 function tnCloseTenantModal(){var m=document.getElementById('tenant-modal');if(m) m.style.display='none';_tnEditingProfileId=null;}
@@ -10794,8 +10809,9 @@ function tnSaveTenantContract(){
  var moveIn=(document.getElementById('tn-f-movein')||{}).value||'';
  var moveOut=(document.getElementById('tn-f-moveout')||{}).value||'';
  var rf=parseFloat((document.getElementById('tn-f-renewalfee')||{}).value)||0;
+ var petFee=!!((document.getElementById('tn-f-petfee')||{}).checked);
  var moM=tnDurationMonthsVal();
- tnContractSet(_tnEditingProfileId,{moveIn:moveIn,moveOut:moveOut,contractDuration:moM,renewalFee:rf,contractStatus:tnContractGet(_tnEditingProfileId)&&tnContractGet(_tnEditingProfileId).contractStatus==='renewed'?'renewed':'active'});
+ tnContractSet(_tnEditingProfileId,{moveIn:moveIn,moveOut:moveOut,contractDuration:moM,renewalFee:rf,petFee:petFee,contractStatus:tnContractGet(_tnEditingProfileId)&&tnContractGet(_tnEditingProfileId).contractStatus==='renewed'?'renewed':'active'});
  if(typeof showToast==='function') showToast('Contrato guardado.','success');
  tnCloseTenantModal();
  if(typeof checkTenantContractAlerts==='function') checkTenantContractAlerts();
@@ -10871,9 +10887,15 @@ function tnRender(){
  const all=typeof tpAllProfiles==='function'?tpAllProfiles():[];
  const filtered=!q?all:all.filter(p=>{const blob=(p.name||'')+' '+(p.address||p.property||'')+' '+(p.email||'')+' '+(p.phone||'');return blob.toLowerCase().includes(q);});
  const ktot=document.getElementById('tn-kpi-total');const klt=document.getElementById('tn-kpi-lt');const kaf=document.getElementById('tn-kpi-af');
+ const kpaid=document.getElementById('tn-kpi-paid');const kovd=document.getElementById('tn-kpi-overdue');const kpet=document.getElementById('tn-kpi-pet-total');const kmp=document.getElementById('tn-kpi-pet-mp');
  if(ktot)ktot.textContent=String(all.length);
  if(klt)klt.textContent=String(all.filter(p=>p.source==='statement').length);
  if(kaf)kaf.textContent=String(all.filter(p=>p.source==='appfolio').length);
+ const nPet=all.filter(function(p){return typeof gmTenantHasPetFee==='function'&&gmTenantHasPetFee(p);}).length;
+ if(kpaid)kpaid.textContent=String(all.filter(function(p){return typeof gmTenantPaidThisMonth==='function'&&gmTenantPaidThisMonth(p);}).length);
+ if(kovd)kovd.textContent=String(all.filter(function(p){return typeof gmTenantPaymentStatus==='function'&&gmTenantPaymentStatus(p)==='overdue';}).length);
+ if(kpet)kpet.textContent=typeof ltFmt==='function'?ltFmt(nPet*400):('$'+(nPet*400));
+ if(kmp)kmp.textContent=typeof ltFmt==='function'?ltFmt(nPet*200):('$'+(nPet*200));
  const tb=document.getElementById('tn-tbody');const empty=document.getElementById('tn-empty');
  if(!tb)return;
  if(!filtered.length){tb.innerHTML='';if(empty)empty.style.display='block';return;}
@@ -10888,7 +10910,12 @@ function tnRender(){
   const showRen=tnShowRenewIf(p);
   const showNoRen=typeof tnShowNonRenewIf==='function'&&tnShowNonRenewIf(p);
   const idJs=String(p.id).replace(/'/g, "\\'");
-  return`<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">${tnEsc(p.name)}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${tnEsc(p.address||p.property)}${p.unit&&String(p.unit)!=='—'?' · Unit '+tnEsc(p.unit):''}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${tnEsc(contact)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.moveIn)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.leaseEnd||p.moveOut)}</td><td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink)">${dtxt}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;${bd.s}">${bd.l}</span></td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${ltFmt(p.monthlyRent||0)}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${sb}">${src}</span></td><td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top"><button type="button" onclick="tnOpenTenantModal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Editar</button>${showNoRen?'<button type="button" onclick="tnConfirmNonRenewalPrompt(\''+idJs+'\')" style="padding:4px 6px;border-radius:6px;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:9px;font-weight:600;margin:2px 4px 2px 0">N\u00E3o Vai Renovar</button>':''}${showRen?'<button type="button" onclick="tnOpenRenewModal(\''+idJs+'\')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--amber);background:rgba(201,169,110,.1);color:var(--amber);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Renovar</button>':''}<button type="button" onclick="tnOpenInPortal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 0">Portal</button></td></tr>`;
+  const hasPet=typeof gmTenantHasPetFee==='function'&&gmTenantHasPetFee(p);
+  const petTxt=hasPet?('Sim · '+ltFmt(400)):'\u2014';
+  const pst=typeof gmTenantPaymentStatus==='function'?gmTenantPaymentStatus(p):'pending';
+  const plab=pst==='paid'?'Pago':pst==='pending'?'Pendente':'Atraso';
+  const payB=typeof tpPayStatusBadge==='function'?tpPayStatusBadge(plab):plab;
+  return`<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">${tnEsc(p.name)}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${tnEsc(p.address||p.property)}${p.unit&&String(p.unit)!=='—'?' · Unit '+tnEsc(p.unit):''}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${tnEsc(contact)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.moveIn)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.leaseEnd||p.moveOut)}</td><td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink)">${dtxt}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;${bd.s}">${bd.l}</span></td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${ltFmt(p.monthlyRent||0)}</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${petTxt}</td><td style="padding:9px 12px;text-align:center">${payB}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${sb}">${src}</span></td><td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top"><button type="button" onclick="tnOpenTenantModal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Editar</button>${showNoRen?'<button type="button" onclick="tnConfirmNonRenewalPrompt(\''+idJs+'\')" style="padding:4px 6px;border-radius:6px;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:9px;font-weight:600;margin:2px 4px 2px 0">N\u00E3o Vai Renovar</button>':''}${showRen?'<button type="button" onclick="tnOpenRenewModal(\''+idJs+'\')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--amber);background:rgba(201,169,110,.1);color:var(--amber);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Renovar</button>':''}<button type="button" onclick="tnOpenInPortal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 0">Portal</button></td></tr>`;
  }).join('');
 }
 function tnOpenInPortal(id){tpCurrentId=id;nav('tenantportal');}
@@ -10899,6 +10926,42 @@ function tpLeaseStatus(p){const today=new Date();today.setHours(0,0,0,0);const e
  return{label:'Active',cls:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)'};
 }
 function tpCountOpenReqs(p){const open=['open','in progress','waiting parts','scheduled'];return tpSrLoad().filter(x=>String(x.tenant_id)===String(p.tenant_id)&&open.includes(String(x.status||'').toLowerCase()));}
+function gmCurrentYearMonth(){
+ var d=new Date();
+ return { year:d.getFullYear(), month:d.getMonth()+1, day:d.getDate() };
+}
+
+function gmTenantPaidThisMonth(t){
+ if(!t||!t.name) return false;
+ var rows=(typeof tpAfIncomeRows==='function')?tpAfIncomeRows():[];
+ if(!rows.length) return false;
+ var ym=gmCurrentYearMonth();
+ var tag=String(ym.year)+'-'+String(ym.month).padStart(2,'0');
+ var name=(typeof tpNorm==='function')?tpNorm(t.name):String(t.name).toLowerCase();
+ for(var i=0;i<rows.length;i++){
+  var ir=rows[i];
+  var dt=ir.Date||ir.date||ir['Posted']||ir['Payment Date']||'';
+  if(String(dt).slice(0,7)!==tag) continue;
+  var tn=(typeof tpNorm==='function')?tpNorm(ir.Tenant||ir.tenant||''):String(ir.Tenant||ir.tenant||'').toLowerCase();
+  if(!tn) continue;
+  if(name.indexOf(tn)!==-1||tn.indexOf(name)!==-1) return true;
+ }
+ return false;
+}
+
+function gmTenantPaymentStatus(t){
+ if(gmTenantPaidThisMonth(t)) return 'paid';
+ var ym=gmCurrentYearMonth();
+ if(ym.day<=4) return 'pending';
+ return 'overdue';
+}
+
+function gmTenantHasPetFee(t){
+ if(!t) return false;
+ if(t.petFee===true) return true;
+ if(t.metadata&&t.metadata.petFee===true) return true;
+ return false;
+}
 function tpPaymentsForYear(p){const rent=p.monthlyRent||0;const late=p.lateFee||150;const income=tpAfIncomeRows();const rows=[];const today=new Date();for(let m=1;m<=12;m++){const due=`2026-${String(m).padStart(2,'0')}-01`;const dueD=new Date(due);let paid=0;if(income.length){income.forEach(ir=>{const dt=ir.Date||ir.date||'';if(String(dt).slice(0,7)===`2026-${String(m).padStart(2,'0')}`){const tn=tpNorm(ir.Tenant||ir.tenant||'');if(tn&&(tpNorm(p.name).includes(tn)||tn.includes(tpNorm(p.name))))paid+=parseFloat(String(ir.Amount||ir.amount||0).replace(/[^0-9.-]/g,''))||0;}});}
  let bal=Math.round((rent-paid)*100)/100;let status='Upcoming';let lf='$0.00';if(dueD>today){const days=(dueD-today)/864e5;if(days<=15&&days>=0)status='Due';}else if(dueD<=today){if(bal<=0.009&&paid>=rent-0.01)status='Paid';else if(paid>0&&paid<rent-0.01){status='Partial';bal=rent-paid;}else if(bal>0){status='Overdue';lf=ltFmt(late);}}
  if(dueD>today&&bal<=0&&paid>=rent)status='Paid';if(status==='Upcoming'&&dueD<=today&&bal<=0&&paid>=rent)status='Paid';
@@ -10912,7 +10975,7 @@ function tpSrTypeBadge(t){const k=String(t||'').toLowerCase();const map={mainten
  const key=k.split(/[\s_]/)[0];return map[key]||map.general;}
 function tpSrPrioBadge(pr){const p=String(pr||'').toLowerCase();const b={emergency:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',high:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',medium:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',low:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc'};const pulse=p==='emergency'?' tp-em-pulse':'';return`<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;${b[p]||b.medium}${pulse}">${(pr||'').charAt(0).toUpperCase()+(pr||'').slice(1)}</span>`;}
 function tpSrStatusBadge(st){const s=String(st||'').toLowerCase();const map={open:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)','in progress':'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)','waiting parts':'background:rgba(59,130,246,.12);color:#2563eb;border:1px solid rgba(59,130,246,.35)',scheduled:'background:rgba(125,211,252,.25);color:#0369a1;border:1px solid rgba(56,189,248,.45)',completed:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',closed:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',cancelled:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;text-decoration:line-through'};const lab=s==='in progress'?'In Progress':(st||'').charAt(0).toUpperCase()+(st||'').slice(1);return`<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;${map[s]||map.open}">${lab}</span>`;}
-function tpPayStatusBadge(st){const s=String(st||'').toLowerCase();const map={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',partial:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',due:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',overdue:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',upcoming:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc'};return`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;${map[s]||map.upcoming}">${st}</span>`;}
+function tpPayStatusBadge(st){const s=String(st||'').toLowerCase();const g='background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)';const amb='background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)';const r='background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)';const sl='background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc';const map={paid:g,pago:g,partial:amb,due:amb,overdue:r,atraso:r,upcoming:sl,pending:sl,pendente:sl};return`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;${map[s]||map.upcoming}">${st}</span>`;}
 function tpNextRef(){const reqs=tpSrLoad();let max=0;reqs.forEach(r=>{const m=String(r.ref||'').match(/SR-(\d+)-(\d+)/);if(m){const n=+m[2];if(n>max)max=n;}});const y=new Date().getFullYear();return'SR-'+y+'-'+String(max+1).padStart(4,'0');}
 function tpProfile(){return tpAllProfiles().find(x=>x.id===tpCurrentId)||null;}
 function tpApplyI18n(){const t=tpT;document.getElementById('tp-page-title').textContent=t('tenant_portal');document.getElementById('tp-page-subtitle').textContent=t('tenant_portal_subtitle');const ls=document.getElementById('tp-lbl-select');if(ls)ls.textContent=t('select_tenant');document.getElementById('tp-btn-req-update').textContent=t('request_update');document.getElementById('tp-btn-new-req').textContent=t('new_request');document.getElementById('tp-modal-sr-title').textContent=t('new_request').replace('+ ','');}
