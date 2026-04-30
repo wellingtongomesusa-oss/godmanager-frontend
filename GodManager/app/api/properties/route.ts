@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { normalizePropertyMetadata } from '@/lib/photoMetadata';
@@ -73,7 +74,8 @@ export async function POST(req: Request) {
         mgmtFeePct: body.mgmtFeePct != null ? String(body.mgmtFeePct) : '0',
         status: body.status || 'active',
         notes: body.notes || null,
-        metadata: normalizePropertyMetadata(body.metadata) ?? undefined,
+        metadata: (normalizePropertyMetadata(body.metadata) ??
+          undefined) as Prisma.InputJsonValue | undefined,
         createdBy: user.id,
       },
     });
