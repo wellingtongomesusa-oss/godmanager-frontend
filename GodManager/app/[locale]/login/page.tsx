@@ -86,7 +86,7 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
         <div className="relative z-[1] flex min-h-screen w-full flex-1 flex-col items-center justify-center px-6 py-12 lg:w-1/2 lg:px-12">
           <div className="w-full max-w-[440px] rounded-2xl border border-black/[0.06] bg-white p-10 shadow-[0_1px_3px_rgba(10,22,40,0.06),0_12px_32px_rgba(10,22,40,0.08)] sm:p-12">
             <div className="mb-8 flex justify-center">
-              <GodManagerLogo size="sm" surface="light" loginBrand />
+              <GodManagerLogo size="sm" surface="light" loginBrand slogan={tLogin('brandSlogan')} />
             </div>
             <Suspense fallback={<LoginFormFallback />}>
               <LoginForm />

@@ -6,11 +6,13 @@ export function GodManagerLogo({
   surface = 'light',
   /** Tipografia Playfair + Inter (ex.: card /login) */
   loginBrand = false,
+  slogan,
   className,
 }: {
   size?: 'sm' | 'md' | 'lg';
   surface?: 'light' | 'dark';
   loginBrand?: boolean;
+  slogan?: string;
   className?: string;
 }) {
   const iconSz =
@@ -60,6 +62,16 @@ export function GodManagerLogo({
         <span className={cn('text-[9px] font-semibold uppercase tracking-[0.2em]', subFont, subCls)}>
           Financial Operations
         </span>
+        {slogan ? (
+          <span
+            className={cn(
+              'mt-1 block text-[10px] italic',
+              loginBrand && surface === 'light' ? 'text-login-navy/70' : surface === 'dark' ? 'text-white/70' : 'text-slate-500',
+            )}
+          >
+            {slogan}
+          </span>
+        ) : null}
       </div>
     </Link>
   );
