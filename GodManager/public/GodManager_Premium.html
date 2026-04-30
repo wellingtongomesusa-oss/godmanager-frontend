@@ -1174,6 +1174,10 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
     <div><label style="font-size:10px;color:var(--ink3)">Company Name *</label><input id="gv-company_name" oninput="gvRefreshChecklist()" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
     <div><label style="font-size:10px;color:var(--ink3)">Contact Name</label><input id="gv-contact_name" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
     <div><label style="font-size:10px;color:var(--ink3)">Email *</label><input id="gv-email" oninput="gvRefreshChecklist()" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
+   <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:10px;grid-column:1/-1">
+    <div><label style="font-size:10px;color:var(--ink3)">Sigla (opcional)</label><input id="gv-acronym" maxlength="6" placeholder="MVH" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.5px"></div>
+    <div style="display:flex;align-items:flex-end;font-size:10px;color:var(--ink3);font-style:italic">Se vazio, será calculada automaticamente a partir do nome.</div>
+   </div>
     <div><label style="font-size:10px;color:var(--ink3)">Phone *</label><input id="gv-phone" oninput="gvRefreshChecklist()" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
     <div><label style="font-size:10px;color:var(--ink3)">Street Address *</label><input id="gv-address_street" oninput="gvRefreshChecklist()" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
     <div><label style="font-size:10px;color:var(--ink3)">City</label><input id="gv-address_city" oninput="gvRefreshChecklist()" style="width:100%;padding:8px;border:1px solid var(--border2);border-radius:6px"></div>
@@ -8092,6 +8096,42 @@ function gmRenderCommentsList(comments, opts){
   +'</div>';
  }).join('')+'</div>';
 }
+function gmComputeVendorAcronym(vendorName){
+ if(!vendorName||typeof vendorName!=='string') return '';
+ var stop=['llc','inc','corp','corporation','co','company','ltd','services','service','homes','home','group','holdings','the','of','and','for'];
+ var clean=vendorName.replace(/[.,&]/g,' ').toLowerCase().split(/\s+/).filter(function(w){
+  return w.length>0 && stop.indexOf(w)===-1;
+ });
+ if(!clean.length) return vendorName.replace(/[^a-z0-9]/gi,'').slice(0,3).toUpperCase();
+ if(clean.length===1){
+  return clean[0].slice(0,3).toUpperCase();
+ }
+ return clean.slice(0,4).map(function(w){return w.charAt(0).toUpperCase();}).join('');
+}
+
+function gmGetVendorByName(name){
+ try{
+  var raw=localStorage.getItem('gm_vendors');
+  if(!raw) return null;
+  var arr=JSON.parse(raw);
+  if(!Array.isArray(arr)) return null;
+  var lc=String(name||'').toLowerCase().trim();
+  return arr.find(function(v){
+   if(!v) return false;
+   var n=String(v.company_name||v.name||'').toLowerCase().trim();
+   return n===lc;
+  })||null;
+ }catch(e){return null;}
+}
+
+function gmGetVendorAcronymByName(vendorName){
+ if(!vendorName) return '';
+ var v=gmGetVendorByName(vendorName);
+ if(v && v.acronym && typeof v.acronym==='string' && v.acronym.trim()){
+  return v.acronym.trim().toUpperCase();
+ }
+ return gmComputeVendorAcronym(vendorName);
+}
 function gmJobCloseJobPopups(){
  var o=document.getElementById('gm-job-pop-overlay');
  if(o)o.remove();
@@ -8839,7 +8879,13 @@ function ltOpenEditExpense(id){
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
- var r=ltExpGetRecords().find(x=>String(x.id)===String(id)); if(!r) return;
+ var r=ltExpGetRecords().find(x=>String(x.id)===String(id));
+ if(!r){
+  console.warn('ltOpenEditExpense: id not found in _pmExpenseRows nor ltExpGetRecords:',id);
+  if(typeof showToast==='function') showToast('Despesa não encontrada. Recarregue a página e tente novamente.','error');
+  else alert('Despesa não encontrada. Recarregue a página e tente novamente.');
+  return;
+ }
  ltExpEditingId=id;ltExpEditingPmId=null; ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Editar Despesa (local legado)';
  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
@@ -12312,7 +12358,7 @@ function gvMapApiToLocal(a){
  var dp=a.default_package||'PACOTE_1';
  var mk=a.markup_pct!=null?a.markup_pct:((dp==='PACOTE_2')?18:((dp==='PACOTE_3')?25:((dp==='PACOTE_4')?0:15)));
  return{
-  id:a.id,company_name:a.company_name,contact_name:a.contact_name||'',email:a.email,phone:a.phone,
+  id:a.id,company_name:a.company_name,acronym:a.acronym||'',contact_name:a.contact_name||'',email:a.email,phone:a.phone,
   address_street:a.address_street,address_city:a.address_city||'',address_state:a.address_state||'',address_zip:a.address_zip||'',
   trade:a.trade||'',service_type:a.service_type||'',default_package:dp,markup_pct:mk,
   bank_name:a.bank_name||'',routing_number:a.routing_number||'',account_number:a.account_number||'',account_type:a.account_type||'',payment_type:a.payment_type||'',
@@ -12558,16 +12604,16 @@ function gvLoadBills(){fetch('/api/appfolio/bills').then(r=>r.ok?r.json():Promis
 function gvOpenModal(){gvEditingId=null;gvFillForm({rating:5,status:'Active',send_1099:true,commission_mp:false,checklist:{}});document.getElementById('gv-modal-title').textContent='New Vendor';document.getElementById('gv-modal').style.display='flex';}
 function gvCloseModal(){document.getElementById('gv-modal').style.display='none';}
 function gvTradeChanged(){const v=document.getElementById('gv-trade').value;document.getElementById('gv-trade-new').style.display=v==='+ Add New Trade...'?'block':'none';}
-function gvFillForm(v){['company_name','contact_name','email','phone','address_street','address_city','address_state','address_zip','trade','service_type','bank_name','routing_number','account_number','account_type','payment_type','notes','rating','status'].forEach(k=>{const el=document.getElementById('gv-'+k);if(el)el.value=v[k]??''});var dpEl=document.getElementById('gv-default_package');if(dpEl)dpEl.value=v.default_package||v.defaultPackage||'PACOTE_1';gvRefreshPackageMarkup();document.getElementById('gv-send_1099').value=(v.send_1099===false?'false':'true');var cbCom=document.getElementById('gv-commission_mp');if(cbCom){var val=(v.commission_mp===true)||(v.commission_mp===undefined&&v.charge_18_percent===true);cbCom.checked=val;}gvRefreshChecklist(v)}
+function gvFillForm(v){['company_name','acronym','contact_name','email','phone','address_street','address_city','address_state','address_zip','trade','service_type','bank_name','routing_number','account_number','account_type','payment_type','notes','rating','status'].forEach(k=>{const el=document.getElementById('gv-'+k);if(el)el.value=v[k]??''});var dpEl=document.getElementById('gv-default_package');if(dpEl)dpEl.value=v.default_package||v.defaultPackage||'PACOTE_1';gvRefreshPackageMarkup();document.getElementById('gv-send_1099').value=(v.send_1099===false?'false':'true');var cbCom=document.getElementById('gv-commission_mp');if(cbCom){var val=(v.commission_mp===true)||(v.commission_mp===undefined&&v.charge_18_percent===true);cbCom.checked=val;}gvRefreshChecklist(v)}
 function gvChecklistState(v){const c=v||{company_name:document.getElementById('gv-company_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),documents:(gvEditingId?((gvLoad().find(x=>x.id===gvEditingId)||{}).documents||[]):[]),workers_comp_na:false};return{name:!!c.company_name,address:!!(c.address_street&&c.address_city&&c.address_state&&c.address_zip),email:!!(c.email&&c.email.includes('@')),phone:!!c.phone,w9:(c.documents||[]).some(d=>d.kind==='w9'),bank_info:(c.documents||[]).some(d=>d.kind==='bank_info'),workers_comp:!!(c.workers_comp_na||(c.documents||[]).some(d=>d.kind==='workers_comp'))}}
 function gvRefreshChecklist(vx){const v=vx||null;const c=gvChecklistState(v||undefined);const done=Object.values(c).filter(Boolean).length;const pct=Math.round(done/7*100);const bar=document.getElementById('gv-check-progress-bar');if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'#2d7252':(pct>50?'#c47b28':'#b83030')}const cp=document.getElementById('gv-check-progress');if(cp)cp.textContent=`${done} of 7 ${gvT('items_complete')}`;const cc=document.getElementById('gv-cl-company');if(cc)cc.textContent=(document.getElementById('gv-company_name').value||'—');const grid=document.getElementById('gv-check-grid');if(!grid)return;const miss='MISSING',ok='COMPLETE';const addrMissing=[];if(!document.getElementById('gv-address_city').value.trim())addrMissing.push('City');if(!document.getElementById('gv-address_state').value.trim())addrMissing.push('State');if(!document.getElementById('gv-address_zip').value.trim())addrMissing.push('ZIP');const cards=[['name',gvT('vendor_name_card'),c.name,miss,ok,''],['address',gvT('complete_address'),c.address,addrMissing.length?('Missing: '+addrMissing.join(', ')):'',ok,''],['email','Email',c.email,miss,ok,''],['phone','Phone',c.phone,miss,ok,''],['w9',gvT('w9_form'),c.w9,gvT('upload_w9'),ok,'w9'],['bank_info',gvT('bank_info'),c.bank_info,gvT('voided_check'),ok,'bank_info'],['workers_comp',gvT('workers_comp'),c.workers_comp,gvT('workers_comp_cert'),ok,'workers_comp']];grid.innerHTML=cards.map(x=>{const on=x[2];const border=on?'#2d7252':'#b83030';const text=on?ok:miss;const helper=on?x[4]:x[3];const upload=x[5]?`<div style="margin-top:8px"><input type="file" onchange="gvUploadDoc('${x[5]}',this)" accept=".pdf,.jpg,.jpeg,.png" style="font-size:10px"></div>`:'';return `<div style="border:1px solid var(--border);border-left:3px solid ${border};border-radius:8px;padding:10px;background:var(--paper);transition:all .3s ease"><div style="font-size:22px;color:${border};line-height:1">${on?'✓':'✕'}</div><div style="font-size:12px;font-weight:700;margin-top:6px">${x[1]}</div><div style="font-size:10px;color:var(--ink3);margin-top:4px">${helper||''}</div>${upload}<div style="margin-top:8px;font-size:10px;font-weight:700;color:${border}">${text}</div></div>`;}).join('')}
 function gvUploadDoc(kind,input){const f=input.files&&input.files[0];if(!f)return;if(f.size>10*1024*1024){alert('Max 10MB');input.value='';return;}const rd=new FileReader();rd.onload=()=>{const arr=gvLoad();if(!gvEditingId){gvEditingId='gv_tmp_'+Date.now();}const rec=arr.find(x=>x.id===gvEditingId)||{id:gvEditingId,documents:[]};rec.documents=(rec.documents||[]).filter(d=>d.kind!==kind);rec.documents.push({kind,name:f.name,type:f.type,size:f.size,data_url:String(rd.result),uploaded_at:new Date().toISOString()});const others=arr.filter(x=>x.id!==gvEditingId);others.push(rec);gvSave(others);gvRefreshChecklist(rec);};rd.readAsDataURL(f);}
-function gvCollect(){const tradeSel=document.getElementById('gv-trade').value;let trade=tradeSel;if(tradeSel==='+ Add New Trade...'){const nv=document.getElementById('gv-trade-new').value.trim();if(nv)trade=nv;}const arr=gvLoad();const prev=gvEditingId?arr.find(x=>x.id===gvEditingId):null;var dpEl=document.getElementById('gv-default_package');var default_package=(dpEl&&dpEl.value)?dpEl.value:'PACOTE_1';var mk=(default_package==='PACOTE_2')?18:((default_package==='PACOTE_3')?25:((default_package==='PACOTE_4')?0:15));const obj={id:gvEditingId||('gv_'+Date.now()),company_name:document.getElementById('gv-company_name').value.trim(),contact_name:document.getElementById('gv-contact_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),trade:trade,service_type:document.getElementById('gv-service_type')?document.getElementById('gv-service_type').value.trim():'',default_package:default_package,markup_pct:mk,bank_name:document.getElementById('gv-bank_name').value.trim(),routing_number:document.getElementById('gv-routing_number').value.trim(),account_number:document.getElementById('gv-account_number').value.trim(),account_type:document.getElementById('gv-account_type').value,payment_type:document.getElementById('gv-payment_type').value,commission_mp:!!(document.getElementById('gv-commission_mp')&&document.getElementById('gv-commission_mp').checked),send_1099:document.getElementById('gv-send_1099').value==='true',notes:document.getElementById('gv-notes').value.trim(),rating:+document.getElementById('gv-rating').value||0,status:document.getElementById('gv-status').value,workers_comp_expiration:'',workers_comp_na:false,documents:(prev&&prev.documents)||[],created_at:(prev&&prev.created_at)||new Date().toISOString(),updated_at:new Date().toISOString()};obj.checklist=gvChecklistState(obj);return obj;}
+function gvCollect(){const tradeSel=document.getElementById('gv-trade').value;let trade=tradeSel;if(tradeSel==='+ Add New Trade...'){const nv=document.getElementById('gv-trade-new').value.trim();if(nv)trade=nv;}const arr=gvLoad();const prev=gvEditingId?arr.find(x=>x.id===gvEditingId):null;var dpEl=document.getElementById('gv-default_package');var default_package=(dpEl&&dpEl.value)?dpEl.value:'PACOTE_1';var mk=(default_package==='PACOTE_2')?18:((default_package==='PACOTE_3')?25:((default_package==='PACOTE_4')?0:15));const obj={id:gvEditingId||('gv_'+Date.now()),company_name:document.getElementById('gv-company_name').value.trim(),acronym:String((document.getElementById('gv-acronym')&&document.getElementById('gv-acronym').value)||'').trim().toUpperCase(),contact_name:document.getElementById('gv-contact_name').value.trim(),email:document.getElementById('gv-email').value.trim(),phone:document.getElementById('gv-phone').value.trim(),address_street:document.getElementById('gv-address_street').value.trim(),address_city:document.getElementById('gv-address_city').value.trim(),address_state:document.getElementById('gv-address_state').value.trim(),address_zip:document.getElementById('gv-address_zip').value.trim(),trade:trade,service_type:document.getElementById('gv-service_type')?document.getElementById('gv-service_type').value.trim():'',default_package:default_package,markup_pct:mk,bank_name:document.getElementById('gv-bank_name').value.trim(),routing_number:document.getElementById('gv-routing_number').value.trim(),account_number:document.getElementById('gv-account_number').value.trim(),account_type:document.getElementById('gv-account_type').value,payment_type:document.getElementById('gv-payment_type').value,commission_mp:!!(document.getElementById('gv-commission_mp')&&document.getElementById('gv-commission_mp').checked),send_1099:document.getElementById('gv-send_1099').value==='true',notes:document.getElementById('gv-notes').value.trim(),rating:+document.getElementById('gv-rating').value||0,status:document.getElementById('gv-status').value,workers_comp_expiration:'',workers_comp_na:false,documents:(prev&&prev.documents)||[],created_at:(prev&&prev.created_at)||new Date().toISOString(),updated_at:new Date().toISOString()};obj.checklist=gvChecklistState(obj);return obj;}
 async function gvSaveVendor(){
  const v=gvCollect();
  if(!v.company_name||!v.email||!v.phone||!v.address_street){alert('Fill required fields.');return;}
  var payload={
-  company_name:v.company_name,contact_name:v.contact_name,email:v.email,phone:v.phone,
+  company_name:v.company_name,acronym:v.acronym||'',contact_name:v.contact_name,email:v.email,phone:v.phone,
   address_street:v.address_street,address_city:v.address_city,address_state:v.address_state,address_zip:v.address_zip,
   trade:v.trade,service_type:v.service_type,default_package:v.default_package,
   bank_name:v.bank_name,routing_number:v.routing_number,account_number:v.account_number,account_type:v.account_type,payment_type:v.payment_type,
@@ -13974,7 +14020,7 @@ async function jobsRender(){
 
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
   +'<td style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
-  +'<td style="padding:9px 12px;color:var(--ink)">'+vendorDisplay+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
