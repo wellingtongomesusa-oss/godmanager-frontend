@@ -204,8 +204,8 @@ export function SavingsCalculator() {
                         padding: '12px 18px',
                         paddingRight: selected ? 36 : 18,
                         borderRadius: 8,
-                        border: selected ? '1.5px solid var(--green)' : '1px solid var(--border)',
-                        background: selected ? 'rgba(45, 114, 82, 0.06)' : 'var(--paper)',
+                        border: selected ? '1.5px solid #1e2b3d' : '1px solid var(--border)',
+                        background: selected ? 'rgba(30, 43, 61, 0.06)' : 'var(--paper)',
                         boxShadow: selected ? undefined : 'none',
                         cursor: 'pointer',
                         fontSize: 12,
@@ -385,7 +385,7 @@ export function SavingsCalculator() {
                   >
                     {t('youSaveAnually')}
                   </p>
-                  <p className="gm-save-hero-num" style={{ color: 'var(--green)' }}>
+                  <p className="gm-save-hero-num" style={{ color: '#1e2b3d' }}>
                     {formatAnnualUsd(poupancaAnual)}
                   </p>
                   {showPositive && custoAtualAnual > 0 && (
@@ -396,8 +396,8 @@ export function SavingsCalculator() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 8,
-                        background: 'rgba(45, 114, 82, 0.08)',
-                        color: 'var(--green)',
+                        background: 'rgba(201, 169, 97, 0.12)',
+                        color: '#8a6f3d',
                         padding: '6px 14px',
                         borderRadius: 999,
                         fontSize: 14,
@@ -538,7 +538,7 @@ export function SavingsCalculator() {
 
       <style jsx global>{`
         .gm-calc-software-btn:hover {
-          border-color: var(--green) !important;
+          border-color: #1e2b3d !important;
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
         }
         @media (max-width: 900px) {
@@ -555,11 +555,11 @@ export function SavingsCalculator() {
           appearance: none;
           height: 6px;
           border-radius: 3px;
-          accent-color: var(--green);
+          accent-color: #1e2b3d;
           background: linear-gradient(
             to right,
-            var(--green) 0%,
-            var(--green) var(--gm-range-pct, 10%),
+            #1e2b3d 0%,
+            #1e2b3d var(--gm-range-pct, 10%),
             rgba(0, 0, 0, 0.08) var(--gm-range-pct, 10%),
             rgba(0, 0, 0, 0.08) 100%
           );
@@ -571,8 +571,8 @@ export function SavingsCalculator() {
           height: 20px;
           border-radius: 50%;
           background: #fff;
-          border: 2px solid var(--green);
-          box-shadow: 0 2px 8px rgba(45, 114, 82, 0.2);
+          border: 2px solid #1e2b3d;
+          box-shadow: 0 2px 8px rgba(30, 43, 61, 0.2);
           cursor: pointer;
           margin-top: -7px;
         }
@@ -584,15 +584,15 @@ export function SavingsCalculator() {
         .gm-calc-range::-moz-range-progress {
           height: 6px;
           border-radius: 3px;
-          background: var(--green);
+          background: #1e2b3d;
         }
         .gm-calc-range::-moz-range-thumb {
           width: 20px;
           height: 20px;
           border-radius: 50%;
           background: #fff;
-          border: 2px solid var(--green);
-          box-shadow: 0 2px 8px rgba(45, 114, 82, 0.2);
+          border: 2px solid #1e2b3d;
+          box-shadow: 0 2px 8px rgba(30, 43, 61, 0.2);
           cursor: pointer;
         }
         .gm-calc-table-wrap {
@@ -610,7 +610,7 @@ export function SavingsCalculator() {
           color: var(--ink2);
         }
         .gm-calc-table thead tr {
-          background: rgba(45, 114, 82, 0.04);
+          background: rgba(30, 43, 61, 0.04);
           border-bottom: 1px solid var(--border);
         }
         .gm-calc-table th {
@@ -631,20 +631,28 @@ export function SavingsCalculator() {
           border-bottom: 1px solid rgba(0, 0, 0, 0.04);
         }
         .gm-calc-data-row:hover {
-          background: rgba(45, 114, 82, 0.02);
+          background: rgba(30, 43, 61, 0.02);
         }
         .gm-calc-mono {
           text-align: right;
           font-family: var(--font-mono);
           font-size: 13px;
         }
+        .gm-calc-data-row td:nth-child(2).gm-calc-mono {
+          color: #dc2626;
+          font-weight: 600;
+        }
+        .gm-calc-total-row td:nth-child(2).gm-calc-mono {
+          color: #dc2626;
+          font-weight: 700;
+        }
         .gm-calc-cell-right {
           text-align: right;
         }
         .gm-calc-included {
           display: inline-block;
-          background: rgba(45, 114, 82, 0.1);
-          color: var(--green);
+          background: rgba(5, 150, 105, 0.1);
+          color: #059669;
           padding: 4px 10px;
           border-radius: 6px;
           font-size: 12px;
@@ -655,19 +663,25 @@ export function SavingsCalculator() {
         }
         .gm-calc-total-row {
           font-weight: 600;
-          background: rgba(45, 114, 82, 0.06);
+          background: rgba(30, 43, 61, 0.06);
           border-top: 1px solid var(--border);
         }
         .gm-calc-total-row td {
           border-bottom: 1px solid var(--border);
         }
         .gm-calc-savings-row {
-          background: rgba(45, 114, 82, 0.1);
+          background: rgba(30, 43, 61, 0.1);
           font-weight: 700;
         }
         .gm-calc-savings-row td {
           border-bottom: none;
-          color: var(--green);
+          color: #1e2b3d;
+        }
+        .gm-calc-savings-row td.gm-calc-dash {
+          color: var(--ink3);
+        }
+        .gm-calc-savings-row td.gm-calc-savings-val--neg {
+          color: var(--amber);
         }
         .gm-calc-savings-val {
           text-align: right;
@@ -696,19 +710,19 @@ export function SavingsCalculator() {
           gap: 10px;
           margin-top: 20px;
           padding: 14px 28px;
-          background: var(--green);
+          background: #c9a961;
           color: #fff !important;
           border-radius: 8px;
           font-weight: 600;
           font-size: 15px;
           text-decoration: none !important;
           font-family: var(--font-body);
-          box-shadow: 0 2px 8px rgba(45, 114, 82, 0.25);
+          box-shadow: 0 2px 8px rgba(201, 169, 97, 0.3);
           transition: background 0.2s ease, box-shadow 0.2s ease;
         }
         .gm-calc-cta:hover {
-          background: #245c43 !important;
-          box-shadow: 0 4px 12px rgba(45, 114, 82, 0.3);
+          background: #b08f4a !important;
+          box-shadow: 0 4px 12px rgba(201, 169, 97, 0.35);
         }
         .gm-calc-cta svg {
           flex-shrink: 0;
@@ -723,7 +737,7 @@ export function SavingsCalculator() {
           flex-shrink: 0;
         }
         .gm-calc-toggle-ui[data-on='1'] {
-          background: var(--green);
+          background: #1e2b3d;
         }
         .gm-calc-toggle-knob {
           position: absolute;
@@ -874,7 +888,7 @@ function ToggleRow({
           flexShrink: 0,
           fontSize: 12,
           fontWeight: 600,
-          color: on ? 'var(--green)' : 'var(--ink3)',
+          color: on ? '#1e2b3d' : 'var(--ink3)',
         }}
       >
         <span className="gm-calc-toggle-ui" data-on={on ? '1' : '0'}>
@@ -984,7 +998,7 @@ function SoftwareCheckIcon() {
     >
       <path
         d="M20 6L9 17l-5-5"
-        stroke="var(--green)"
+        stroke="#1e2b3d"
         strokeWidth={2.2}
         strokeLinecap="round"
         strokeLinejoin="round"
