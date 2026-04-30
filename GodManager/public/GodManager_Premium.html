@@ -2814,6 +2814,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Propriedades</div>
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:9px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Foto</th>
  <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
  <th style="padding:9px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Baths</th>
  <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
@@ -10173,8 +10174,12 @@ function opSelectOwner(name){
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
  const tbody=document.getElementById('op-detail-tbody');
- if(tbody) tbody.innerHTML=records.map(r=>`
+ if(tbody) tbody.innerHTML=records.map(function(r){
+  var capa=(typeof listingsPhotoUrl==='function')?listingsPhotoUrl(r):'';
+  var capaStyle=capa?('background:url("'+String(capa).replace(/"/g,'%22')+'") center/cover no-repeat;'):'background:#e5e7eb;';
+  return `
  <tr data-op-prop-id="${String(r.id).replace(/"/g,'&quot;')}" style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+ <td style="padding:8px;text-align:center"><div style="width:42px;height:42px;border-radius:6px;${capaStyle}border:1px solid var(--border);margin:0 auto"></div></td>
  <td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">${r.address}</td>
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${r.baths||'—'}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${r.tenant||'—'}</td>
@@ -10183,7 +10188,8 @@ function opSelectOwner(name){
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${(r.net||0)>=0?'var(--blue)':'var(--red)'}">${ltFmt(r.net||0)}</td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''}">${r.status||'—'}</span></td>
  <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
- </tr>`).join('');
+ </tr>`;
+ }).join('');
  if(!window._opDetailRowBound){
   window._opDetailRowBound=1;
   var tbBind=document.getElementById('op-detail-tbody');
@@ -11009,9 +11015,11 @@ function listingsPhotoUrl(r){
  if(!r) return null;
  var photos=r.photos;
  if((!photos||!photos.length)&&r._src&&r._src.photos) photos=r._src.photos;
+ if((!photos||!photos.length)&&r.metadata&&r.metadata.photos) photos=r.metadata.photos;
  if(!photos||!photos.length) return null;
  var p0=photos[0];
  if(typeof p0==='string'&&p0) return p0;
+ if(p0&&typeof p0.publicUrl==='string'&&p0.publicUrl) return p0.publicUrl;
  if(p0&&typeof p0.dataUrl==='string'&&p0.dataUrl) return p0.dataUrl;
  if(p0&&typeof p0.data_url==='string'&&p0.data_url) return p0.data_url;
  return null;
@@ -11397,7 +11405,7 @@ async function ltpPhotoAddFiles(fileList){
    console.error('Upload R2 falhou:', e);
    if(err) err.textContent='Erro ao subir foto: '+(e.message||e);
    ltpStagedPhotos.splice(idx, 1);
-   if(ltpPrimaryIdx>=ltpStagedPhotos.length) ltpPrimaryIdx=Math.max(0, ltpStagedPhotos.length-1);
+   ltpPrimaryIdx=0;
    ltpPhotoRender();
   }
  }
@@ -11405,7 +11413,7 @@ async function ltpPhotoAddFiles(fileList){
 function ltpPhotoRemove(i){
  var photo = ltpStagedPhotos[i];
  ltpStagedPhotos.splice(i,1);
- if(ltpPrimaryIdx>=ltpStagedPhotos.length) ltpPrimaryIdx=Math.max(0, ltpStagedPhotos.length-1);
+ ltpPrimaryIdx=0;
  ltpPhotoRender();
  if(photo && photo.key){
   fetch('/api/properties/photos/delete', {
@@ -11416,22 +11424,55 @@ function ltpPhotoRemove(i){
   }).catch(function(e){ console.warn('R2 delete falhou (foto local removida):', e); });
  }
 }
-function ltpSetPrimary(i){ltpPrimaryIdx=i;ltpPhotoRender();}
+var ltpDragSrcIdx=-1;
+function ltpPhotoDragStart(e,i){
+ ltpDragSrcIdx=i;
+ if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',String(i));}catch(_){} }
+ if(e.currentTarget&&e.currentTarget.style) e.currentTarget.style.opacity='0.4';
+}
+function ltpPhotoDragEnd(e){
+ if(e.currentTarget&&e.currentTarget.style) e.currentTarget.style.opacity='1';
+ ltpDragSrcIdx=-1;
+}
+function ltpPhotoDragOver(e){
+ e.preventDefault();
+ if(e.dataTransfer) e.dataTransfer.dropEffect='move';
+ return false;
+}
+function ltpPhotoDrop(e,i){
+ e.preventDefault();
+ e.stopPropagation();
+ if(ltpDragSrcIdx<0||ltpDragSrcIdx===i) return false;
+ var arr=ltpStagedPhotos.slice();
+ var moved=arr.splice(ltpDragSrcIdx,1)[0];
+ arr.splice(i,0,moved);
+ ltpStagedPhotos=arr;
+ ltpPrimaryIdx=0;
+ ltpDragSrcIdx=-1;
+ ltpPhotoRender();
+ return false;
+}
+function ltpSetPrimary(i){ /* deprecated: capa = primeira foto (índice 0). Use drag-and-drop. */ }
 function ltpPhotoRender(){
  const c=document.getElementById('ltp-photo-preview');
  if(!c) return;
  if(!ltpStagedPhotos.length){ c.innerHTML=''; return; }
+ ltpPrimaryIdx=0;
  c.innerHTML=ltpStagedPhotos.map((p,i)=>{
   var src = p.uploading ? '' : (p.publicUrl||p.dataUrl||'');
+  var isCover = (i===0);
+  var borderColor = isCover ? '#22c55e' : 'var(--border)';
+  var borderWidth = isCover ? '2px' : '1px';
   var overlay = p.uploading ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);color:#fff;font-size:9px;border-radius:8px">A subir...</div>' : '';
-  var imgTag = src ? `<img src="${src}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block">` : `<div style="width:96px;height:72px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)"></div>`;
+  var imgTag = src ? `<img src="${src}" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;border:${borderWidth} solid ${borderColor};display:block;pointer-events:none">` : `<div style="width:96px;height:72px;border-radius:8px;border:${borderWidth} solid ${borderColor};background:var(--bg2)"></div>`;
+  var dragAttrs = p.uploading ? '' : `draggable="true" ondragstart="ltpPhotoDragStart(event,${i})" ondragend="ltpPhotoDragEnd(event)" ondragover="ltpPhotoDragOver(event)" ondrop="ltpPhotoDrop(event,${i})"`;
+  var dragCursor = p.uploading ? 'default' : 'grab';
   return `
- <div style="position:relative;width:96px">
+ <div ${dragAttrs} style="position:relative;width:96px;cursor:${dragCursor}" title="${p.uploading?'A subir...':'Arrasta para reordenar'}">
  ${imgTag}
  ${overlay}
- ${i===ltpPrimaryIdx&&!p.uploading?'<span style="position:absolute;bottom:20px;left:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--amber);color:#fff">Principal</span>':''}
- ${!p.uploading?`<button type="button" onclick="ltpSetPrimary(${i})" aria-label="Marcar como foto principal" style="position:absolute;bottom:20px;right:4px;width:22px;height:22px;border:none;border-radius:4px;background:var(--blue);color:#fff;font-size:10px;cursor:pointer;line-height:1">★</button>`:''}
- ${!p.uploading?`<button type="button" onclick="ltpPhotoRemove(${i})" aria-label="Remover foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:var(--red);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;font-weight:700;line-height:1">×</button>`:''}
+ ${isCover&&!p.uploading?'<span style="position:absolute;top:4px;left:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;background:#22c55e;color:#fff;letter-spacing:0.5px">CAPA</span>':''}
+ ${!p.uploading?`<button type="button" onclick="ltpPhotoRemove(${i})" aria-label="Remover foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:var(--red);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;font-weight:700;line-height:1;z-index:2">×</button>`:''}
  </div>`;
  }).join('');
 }
@@ -11460,7 +11501,7 @@ function ltpLoadPhotosFromRecord(r){
     uploading:false
    };
   });
-  var pri=(typeof r.primaryPhotoIndex==='number'&&!isNaN(r.primaryPhotoIndex))?r.primaryPhotoIndex:0;
+  var pri=(typeof r.primaryPhotoIndex==='number'&&!isNaN(r.primaryPhotoIndex))?Math.floor(r.primaryPhotoIndex):0;
   if(pri<0||pri>=ltpStagedPhotos.length){
    var ix=-1;
    for(var j=0;j<photos.length;j++){
@@ -11468,8 +11509,13 @@ function ltpLoadPhotosFromRecord(r){
    }
    pri=ix>=0?ix:0;
   }
-  ltpPrimaryIdx=Math.min(Math.max(0,pri),Math.max(0,ltpStagedPhotos.length-1));
+  pri=Math.min(Math.max(0,pri),ltpStagedPhotos.length-1);
+  if(pri>0){
+   var moved=ltpStagedPhotos.splice(pri,1)[0];
+   ltpStagedPhotos.unshift(moved);
+  }
  }
+ ltpPrimaryIdx=0;
  var fi2=document.getElementById('ltp-photo-input');
  if(fi2)fi2.value='';
  var err2=document.getElementById('ltp-err-photos');
@@ -12021,9 +12067,16 @@ function opPhotosRenderGallery(recordId){
  const r=ltGetRecords().find(x=>x.id===recordId);
  if(!r){gallery.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink3)">Property not found.</div>';return;}
 
- const photos=(r.photos||[]).map(function(p,i){
+ var rawPhotos=r.photos;
+ if((!rawPhotos||!rawPhotos.length)&&r.metadata&&r.metadata.photos) rawPhotos=r.metadata.photos;
+ const photos=(rawPhotos||[]).map(function(p,i){
   if(typeof p==='string') return { dataUrl: p, name: 'foto_'+(i+1) };
-  if(p && p.dataUrl) return p;
+  if(p && (p.publicUrl || p.dataUrl)){
+   return {
+    dataUrl: p.publicUrl || p.dataUrl,
+    name: p.name || ('foto_'+(i+1))
+   };
+  }
   return { dataUrl: '', name: 'foto_'+(i+1) };
  }).filter(function(p){ return p && p.dataUrl; });
  if(!photos.length){
