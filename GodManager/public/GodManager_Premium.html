@@ -2447,8 +2447,17 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <div class="ltp-sec">5b. Status & Manutenção</div>
 <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px">
  <div style="flex:1;min-width:200px">
-  <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">Status calculado</div>
-  <div id="ltp-status-auto-display" style="display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:4px;color:#fff;background:#94a3b8">—</div>
+  <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">Status</div>
+  <select id="ltp-f-status-override" onchange="ltpUpdateStatusAutoDisplay()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:100%;max-width:240px">
+   <option value="">Auto (calcular)</option>
+   <option value="ALG">Alugada (ALG)</option>
+   <option value="VG">Vaga (VG)</option>
+   <option value="ADM">Adm HOA (ADM)</option>
+   <option value="WTC">Watching (WTC)</option>
+   <option value="INT">Intermediação (INT)</option>
+  </select>
+  <div id="ltp-status-auto-display" style="display:inline-block;margin-top:6px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;color:#fff;background:#94a3b8">—</div>
+  <div id="ltp-status-help" style="margin-top:4px;font-size:10px;color:var(--ink3)">Quando "Auto (calcular)" o status é calculado pelos campos.</div>
  </div>
  <div style="flex:1;min-width:200px">
   <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">Manutenção feita por</div>
@@ -9549,6 +9558,7 @@ window.gmPropertiesFetchFromApi=async function(){
     photos:Array.isArray(meta.photos)?meta.photos.filter(function(ph){return ph&&ph.publicUrl;}).map(function(ph){return{publicUrl:String(ph.publicUrl||''),key:String(ph.key||''),name:String(ph.name||''),type:String(ph.type||'image/jpeg'),size:Number(ph.size)||0,isPrimary:!!ph.isPrimary};}):[],
     primaryPhotoIndex:typeof meta.primaryPhotoIndex==='number'?meta.primaryPhotoIndex:0,
     maintenanceBy:meta.maintenanceBy||'mp',
+    statusOverride:meta.statusOverride||null,
     _apiId:p.id
    };
   });
@@ -9658,6 +9668,7 @@ window.gmPropertiesToUi=function(p){
   bankMethod:p.bankMethod||'',
   approver:p.approver||'',
   notes:p.notes||'',
+  statusOverride:(typeof p.statusOverride==='string'&&['ALG','VG','ADM','WTC','INT'].indexOf(p.statusOverride)!==-1)?p.statusOverride:null,
   _src:p
  };
 };
@@ -9805,7 +9816,7 @@ async function ltpRender(){
  const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
  const filtered=records.filter(r=>{
  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch))return false;
- if(fStatusCode&&gmComputeStatus(r)!==fStatusCode)return false;
+ if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode)return false;
  if(fMonth&&r.month!==fMonth)return false;
  return true;
  });
@@ -9853,10 +9864,9 @@ async function ltpRender(){
  const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
  tbody.innerHTML=filtered.map((r,i)=>{
- const _auto=gmComputeStatus(r);
+ const _auto=gmGetEffectiveStatus(r);
  const _lab=GM_STATUS_LABEL[_auto]||_auto;
- const _bg=GM_STATUS_COLOR[_auto]||'#94a3b8';
- const _ttl=String(_lab).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+ const _isManual=gmHasOverride(r);
  return `
  <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="ltOpenDetail('${r.id}')">
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
@@ -9868,7 +9878,7 @@ async function ltpRender(){
 <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${r.sqft?r.sqft:'—'}</td>
 <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${ltFormatMoveIn(r.moveIn)}</td>
 <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${occStyle[r.occupancy]||''}">${occLabel[r.occupancy]||'—'}</span></td>
-<td style="padding:9px 12px;text-align:center"><span title="${_ttl}" style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;color:#fff;background:${_bg}">${_auto}</span></td>
+<td style="padding:9px 12px;text-align:center"><span title="${esc(_lab+(_isManual?' (manual)':''))}" style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;color:#fff;background:${GM_STATUS_COLOR[_auto]||'#94a3b8'}">${_auto}${_isManual?'*':''}</span></td>
 <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${ltFmt(r.rent)}</td>
 <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">${r.deposit?ltFmt(r.deposit):'—'}</td>
 <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2)">${(r.guaranteeLimit||r.guarantee)?ltFmt(r.guaranteeLimit||r.guarantee):'—'}</td>
@@ -11217,18 +11227,36 @@ function gmComputeStatus(p){
  if(tenant) return 'ALG';
  return 'VG';
 }
+function gmGetEffectiveStatus(p){
+ if(p && typeof p.statusOverride === 'string' && ['ALG','VG','ADM','WTC','INT'].indexOf(p.statusOverride) !== -1) return p.statusOverride;
+ return gmComputeStatus(p);
+}
+function gmHasOverride(p){
+ return !!(p && typeof p.statusOverride === 'string' && ['ALG','VG','ADM','WTC','INT'].indexOf(p.statusOverride) !== -1);
+}
 var GM_STATUS_LABEL={WTC:'Watching',ADM:'Adm HOA',INT:'Intermediação',ALG:'Alugada',VG:'Vaga'};
 var GM_STATUS_COLOR={ALG:'#22c55e',VG:'#94a3b8',ADM:'#3b82f6',WTC:'#f59e0b',INT:'#a855f7'};
 function ltpUpdateStatusAutoDisplay(){
+ var sel=document.getElementById('ltp-f-status-override');
+ var override=sel?sel.value:'';
  var partial={
   tenant:(document.getElementById('ltp-f-tenant')||{}).value||'',
   rent:parseFloat(((document.getElementById('ltp-f-rent')||{}).value||'').replace(',','.'))||0,
   deposit:(document.getElementById('ltp-f-deposit-toggle')&&document.getElementById('ltp-f-deposit-toggle').checked)?(parseFloat((document.getElementById('ltp-f-deposit-amt')||{}).value)||0):0,
   mgmpct:parseFloat((document.getElementById('ltp-f-mgmpct')||{}).value)||0
  };
- var code=gmComputeStatus(partial);
+ var auto=gmComputeStatus(partial);
+ var effective=override||auto;
  var el=document.getElementById('ltp-status-auto-display');
- if(el){ el.textContent=GM_STATUS_LABEL[code]+' ('+code+')'; el.style.background=GM_STATUS_COLOR[code]||'#94a3b8'; }
+ if(el){
+  if(override){
+   el.textContent='Manual: '+GM_STATUS_LABEL[effective]+' ('+effective+')';
+   el.style.background=GM_STATUS_COLOR[effective]||'#94a3b8';
+  } else {
+   el.textContent='Auto: '+GM_STATUS_LABEL[auto]+' ('+auto+')';
+   el.style.background=GM_STATUS_COLOR[auto]||'#94a3b8';
+  }
+ }
 }
 
 var ltpNetManual=false;
@@ -11531,6 +11559,7 @@ function ltpBuildRecord(){
  water:0,electric:0,maint:0,vendor:0,
  photos:ltpStagedPhotos.filter(p=>!p.uploading&&p.publicUrl).map((p,i,arr)=>({publicUrl:p.publicUrl,key:p.key,name:p.name,type:p.type||'image/jpeg',size:p.size||0,isPrimary:i===Math.min(ltpPrimaryIdx,arr.length-1)})),
  primaryPhotoIndex:ltpPrimaryIdx,
+ statusOverride:(function(){var s=document.getElementById('ltp-f-status-override');var v=s?s.value:'';return ['ALG','VG','ADM','WTC','INT'].indexOf(v)!==-1?v:null;})(),
  maintenanceBy:(function(){var mp=document.getElementById('ltp-f-maintenance-mp');return mp&&mp.checked?'mp':'owner';})(),
  status:(statusEl&&statusEl.value)||'pending',
  desc:'',vendorname:'',vendordate:'',
@@ -11653,7 +11682,8 @@ async function ltpSaveNewProperty(){
    source:'manual_ui',
    photos:Array.isArray(rec.photos)?rec.photos.filter(function(p){return p&&p.publicUrl;}).map(function(p){return{publicUrl:String(p.publicUrl||''),key:String(p.key||''),name:String(p.name||''),type:String(p.type||'image/jpeg'),size:Number(p.size)||0,isPrimary:!!p.isPrimary};}):[],
    primaryPhotoIndex:typeof rec.primaryPhotoIndex==='number'?rec.primaryPhotoIndex:0,
-   maintenanceBy:rec.maintenanceBy||'mp'
+   maintenanceBy:rec.maintenanceBy||'mp',
+   statusOverride:rec.statusOverride||null
   }
  };
  var apiId=null;
@@ -11755,6 +11785,7 @@ function ltpOpenNewPropertyModal(){
  var miEl=document.getElementById('ltp-f-movein');if(miEl)miEl.value='';
  document.getElementById('ltp-f-occ').value='rented';
  var rtp=document.getElementById('ltp-f-maintenance-mp');var rto=document.getElementById('ltp-f-maintenance-owner');if(rtp){rtp.checked=true;}if(rto){rto.checked=false;}
+ var soNew=document.getElementById('ltp-f-status-override');if(soNew)soNew.value='';
  const ym=new Date();
  document.getElementById('ltp-f-month').value=ym.getFullYear()+'-'+String(ym.getMonth()+1).padStart(2,'0');
  document.body.style.overflow='hidden';
@@ -11763,7 +11794,7 @@ function ltpOpenNewPropertyModal(){
  ltpTabHandler=ltpTrapTab;
  document.addEventListener('keydown',ltpTabHandler);
  if(!window._ltpStatusAutoInputsBound){window._ltpStatusAutoInputsBound=true;
- ['ltp-f-tenant','ltp-f-rent','ltp-f-deposit-toggle','ltp-f-deposit-amt','ltp-f-mgmpct','ltp-f-hoa-toggle'].forEach(function(id){
+ ['ltp-f-tenant','ltp-f-rent','ltp-f-deposit-toggle','ltp-f-deposit-amt','ltp-f-mgmpct','ltp-f-hoa-toggle','ltp-f-status-override'].forEach(function(id){
  var el=document.getElementById(id);
  if(el){ el.addEventListener('input',ltpUpdateStatusAutoDisplay); el.addEventListener('change',ltpUpdateStatusAutoDisplay); }
  });
@@ -11805,7 +11836,7 @@ window.ltpOpenEditProperty=function(id){
    var match=(data&&data.properties||[]).find(function(p){return String(p.id)===String(id)||String(p.code)===String(id);});
    if(match){
     var meta=match.metadata||{};
-    var rApi={id:match.code,code:match.code,_apiId:match.id,address:match.address,owner:match.ownerName,rent:Number(match.rent)||0,deposit:Number(match.deposit)||0,mgmpct:Number(match.mgmtFeePct)||0,status:match.status,notes:match.notes,bedrooms:meta.bedrooms,bathrooms:meta.bathrooms,garage:meta.garage,pool:!!meta.pool,sqft:meta.sqft,propertyType:meta.propertyType||'house',tenant:meta.tenant,occupancy:meta.occupancy,month:meta.month,hoa:meta.hoa,guarantee:meta.guarantee,ownerFullName:meta.ownerFullName,ownerTaxId:meta.ownerTaxId,ownerDob:meta.ownerDob,ownerEmail:meta.ownerEmail,ownerPhone:meta.ownerPhone,ownerMailingAddr:meta.ownerMailingAddr,bankName:meta.bankName,bankType:meta.bankType,bankRouting:meta.bankRouting,bankAccount:meta.bankAccount,bankHolder:meta.bankHolder,bankAddress:meta.bankAddress,bankMethod:meta.bankMethod,approver:meta.approver,photos:Array.isArray(meta.photos)?meta.photos:[],primaryPhotoIndex:typeof meta.primaryPhotoIndex==='number'?meta.primaryPhotoIndex:0,maintenanceBy:meta.maintenanceBy||'mp'};
+    var rApi={id:match.code,code:match.code,_apiId:match.id,address:match.address,owner:match.ownerName,rent:Number(match.rent)||0,deposit:Number(match.deposit)||0,mgmpct:Number(match.mgmtFeePct)||0,status:match.status,notes:match.notes,bedrooms:meta.bedrooms,bathrooms:meta.bathrooms,garage:meta.garage,pool:!!meta.pool,sqft:meta.sqft,propertyType:meta.propertyType||'house',tenant:meta.tenant,occupancy:meta.occupancy,month:meta.month,hoa:meta.hoa,guarantee:meta.guarantee,ownerFullName:meta.ownerFullName,ownerTaxId:meta.ownerTaxId,ownerDob:meta.ownerDob,ownerEmail:meta.ownerEmail,ownerPhone:meta.ownerPhone,ownerMailingAddr:meta.ownerMailingAddr,bankName:meta.bankName,bankType:meta.bankType,bankRouting:meta.bankRouting,bankAccount:meta.bankAccount,bankHolder:meta.bankHolder,bankAddress:meta.bankAddress,bankMethod:meta.bankMethod,approver:meta.approver,photos:Array.isArray(meta.photos)?meta.photos:[],primaryPhotoIndex:typeof meta.primaryPhotoIndex==='number'?meta.primaryPhotoIndex:0,maintenanceBy:meta.maintenanceBy||'mp',statusOverride:meta.statusOverride||null};
     window.ltpOpenEditProperty._populate(rApi);
    } else {
     alert('Casa nao encontrada (id='+id+')');
@@ -11854,6 +11885,11 @@ window.ltpOpenEditProperty._populate=function(r){
  if(mb!=='owner')mb='mp';
  var rmp=document.getElementById('ltp-f-maintenance-mp');var rown=document.getElementById('ltp-f-maintenance-owner');
  if(rmp&&rown){ if(mb==='owner'){rown.checked=true;rmp.checked=false;}else{rmp.checked=true;rown.checked=false;} }
+ var soSel=document.getElementById('ltp-f-status-override');
+ if(soSel){
+  var so=(r&&r.statusOverride)||(r&&r.metadata&&r.metadata.statusOverride)||'';
+  soSel.value=['ALG','VG','ADM','WTC','INT'].indexOf(so)!==-1?so:'';
+ }
  setTimeout(function(){if(typeof ltpUpdateStatusAutoDisplay==='function')ltpUpdateStatusAutoDisplay();},0);
  var t=document.getElementById('ltp-modal-title');if(t)t.textContent='Editar Propriedade';
  document.body.style.overflow='hidden';
