@@ -8053,6 +8053,45 @@ function setJobExtras(id, patch){
 }
 window.getJobExtras=getJobExtras;
 window.setJobExtras=setJobExtras;
+function gmGenCommentId(){
+ return 'c_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+}
+function gmCurrentUserInfo(){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ return {
+  author: u.name||u.email||u.username||'admin',
+  authorRole: String(u.role||'admin').toLowerCase()
+ };
+}
+function gmAddComment(metadataObj, text){
+ var trimmed=String(text||'').trim();
+ if(!trimmed) return null;
+ var info=gmCurrentUserInfo();
+ var comment={
+  id: gmGenCommentId(),
+  author: info.author,
+  authorRole: info.authorRole,
+  text: trimmed,
+  createdAt: new Date().toISOString()
+ };
+ if(!metadataObj.comments||!Array.isArray(metadataObj.comments)) metadataObj.comments=[];
+ metadataObj.comments.push(comment);
+ return comment;
+}
+function gmRenderCommentsList(comments, opts){
+ var arr=Array.isArray(comments)?comments:[];
+ if(!arr.length) return '<div style="font-size:11px;color:var(--ink3);font-style:italic;padding:8px 0">Sem comentários ainda.</div>';
+ var sorted=arr.slice().sort(function(a,b){return String(b.createdAt).localeCompare(String(a.createdAt));});
+ return '<div style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto">'+sorted.map(function(c){
+  var dt=c.createdAt?new Date(c.createdAt).toLocaleString('pt-PT'):'';
+  var roleColor=(c.authorRole==='admin')?'#1e2b3d':(c.authorRole==='maintenance'?'#a855f7':'#94a3b8');
+  return '<div style="border-left:3px solid '+roleColor+';padding:8px 12px;background:#f8fafc;border-radius:4px">'
+   +'<div style="font-size:11px;font-weight:600;color:var(--ink)">'+(c.author||'—')+' <span style="font-size:9px;color:'+roleColor+';font-weight:700;text-transform:uppercase;margin-left:4px">'+(c.authorRole||'').toUpperCase()+'</span></div>'
+   +'<div style="font-size:10px;color:var(--ink3);margin:2px 0 4px">'+dt+'</div>'
+   +'<div style="font-size:12px;color:var(--ink);white-space:pre-wrap">'+String(c.text||'').replace(/</g,'&lt;')+'</div>'
+  +'</div>';
+ }).join('')+'</div>';
+}
 function gmJobCloseJobPopups(){
  var o=document.getElementById('gm-job-pop-overlay');
  if(o)o.remove();
@@ -13863,6 +13902,7 @@ async function jobsRender(){
   return;
  }
 
+ var isAdmin=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase()==='admin';
  tbody.innerHTML=rows.map(function(r){
   var vendorDone=jobsHasActionFor(r.id,'vendor');
   var jobDone=jobsHasActionFor(r.id,'job');
@@ -13920,6 +13960,10 @@ async function jobsRender(){
   ? ''
   : '<button type="button" onclick="jobsCancel(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--red-bg);border-color:var(--red-bd);color:var(--red)">Cancelar</button>';
 
+ var btnReactivate=(isCancelled&&isAdmin)
+  ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="Reverter cancelamento (volta a pendente)" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">Reativar</button>'
+  : '';
+
  var statusLow=String(r.status||'').toLowerCase();
  var statusBadge;
  if((r.statusPm==='CANCELLED')||statusLow==='cancelled'){
@@ -13936,7 +13980,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+'</div></td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+btnReactivate+'</div></td>'
   +'</tr>';
 }).join('');
  }finally{
@@ -14056,6 +14100,54 @@ window.jobsCancel=function(id){
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
   if(typeof showToast==='function')showToast('Despesa cancelada.','success');
  }catch(e){console.warn('jobsCancel',e);alert('Erro: '+e.message);}
+};
+
+window.jobsReactivate=function(id){
+ try{
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var role=String(u.role||'').toLowerCase();
+  if(role!=='admin'){alert('Apenas administradores podem reativar.');return;}
+  if(!confirm('Reativar este job? Volta ao estado pendente.')) return;
+  var arr=ltExpGetRecords()||[];
+  var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+  if(idx<0){
+   if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+    fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+     method:'PATCH',
+     credentials:'include',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({status:'PENDING'})
+    }).then(function(r){
+     if(!r.ok){alert('Erro ao reativar (API).');return;}
+     if(typeof jobsRender==='function')jobsRender();
+     if(typeof showToast==='function')showToast('Job reativado.','success');
+    }).catch(function(e){console.warn('jobsReactivate.api',e);alert('Erro de rede.');});
+    return;
+   }
+   alert('Despesa não encontrada');return;
+  }
+  var rec=arr[idx];
+  rec.status='pending';
+  delete rec.cancelReason;
+  delete rec.cancelledAt;
+  delete rec.cancelledBy;
+  rec.reactivatedAt=new Date().toISOString();
+  rec.reactivatedBy=u.name||u.email||'admin';
+  rec.savedAt=new Date().toLocaleString('pt-BR');
+  arr[idx]=rec;
+  ltExpSaveRecords(arr);
+  try{
+   fetch('/api/job-actions',{
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({jobId:id,action:'reactivate',reactivatedBy:rec.reactivatedBy})
+   });
+  }catch(eApi){console.warn('jobsReactivate.api',eApi);}
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Job reativado.','success');
+ }catch(e){console.warn('jobsReactivate',e);alert('Erro: '+e.message);}
 };
 
 (function(){
