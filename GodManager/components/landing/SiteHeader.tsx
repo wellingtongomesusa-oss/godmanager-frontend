@@ -22,7 +22,7 @@ function navStyle(isActive: boolean): React.CSSProperties {
 export function SiteHeader({
   active: activeNav,
 }: {
-  active: 'home' | 'services' | 'faq' | 'about' | 'contact' | 'request';
+  active: 'home' | 'services' | 'savings' | 'faq' | 'about' | 'contact' | 'request';
 }) {
   const t = useTranslations();
 
@@ -98,6 +98,24 @@ export function SiteHeader({
         </Link>
         <Link href="/services" style={navStyle(activeNav === 'services')}>
           {t('nav.services')}
+        </Link>
+        <Link
+          href="/savings"
+          style={{
+            background: activeNav === 'savings' ? '#c9a96e' : 'rgba(201,169,110,0.15)',
+            color: activeNav === 'savings' ? '#fff' : '#c9a96e',
+            padding: '6px 14px',
+            border: '1px solid #c9a96e',
+            borderRadius: 6,
+            fontFamily: 'var(--font-inter, "DM Sans"), sans-serif',
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.3px',
+            textDecoration: 'none',
+            transition: 'all 0.2s',
+          }}
+        >
+          {t('savingsWizard.menuItem')}
         </Link>
         <Link href="/faq" style={navStyle(activeNav === 'faq')}>
           {t('nav.faq')}
