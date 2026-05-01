@@ -13999,6 +13999,8 @@ async function jobsRender(){
  }
 
  var isAdmin=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase()==='admin';
+ var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ var canFinalize=(userRole==='admin'||userRole==='maintenance');
  tbody.innerHTML=rows.map(function(r){
   var vendorDone=jobsHasActionFor(r.id,'vendor');
   var jobDone=jobsHasActionFor(r.id,'job');
@@ -14010,6 +14012,9 @@ async function jobsRender(){
 
  var btnStyleBase='padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;border:1px solid transparent';
  var isCancelled=(String(r.status||'').toLowerCase()==='cancelled')||(r.statusPm==='CANCELLED');
+ var statusLow_check=String(r.status||'').toLowerCase();
+ var isFinalized=statusLow_check==='finalized';
+ var canBeFinalized=!isCancelled && !isFinalized && (statusLow_check==='pending' || statusLow_check==='scheduled' || r.statusPm==='PENDING' || r.statusPm==='SCHEDULED');
  var idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
  var jx=(typeof getJobExtras==='function')?getJobExtras(r.id):{photo_base64:'',executor_comment:''};
  var hasPhoto=!!(jx.photo_base64&&String(jx.photo_base64).trim());
@@ -14056,14 +14061,19 @@ async function jobsRender(){
   ? ''
   : '<button type="button" onclick="jobsCancel(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--red-bg);border-color:var(--red-bd);color:var(--red)">Cancelar</button>';
 
- var btnReactivate=(isCancelled&&isAdmin)
-  ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="Reverter cancelamento (volta a pendente)" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">Reativar</button>'
+ var btnFinalize=(canFinalize&&canBeFinalized)
+  ? '<button type="button" onclick="jobsFinalize(\''+idAttr+'\')" title="Marcar trabalho como concluído" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff;font-weight:600">Finalizar</button>'
+  : '';
+ var btnReactivate=((isCancelled||isFinalized)&&isAdmin)
+  ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="Reverter (volta a pendente)" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">Reativar</button>'
   : '';
 
  var statusLow=String(r.status||'').toLowerCase();
  var statusBadge;
  if((r.statusPm==='CANCELLED')||statusLow==='cancelled'){
   statusBadge='<span title="'+String(r.cancelReason||'').replace(/"/g,'&quot;')+'" style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-weight:600">Cancelado</span>';
+ } else if(statusLow==='finalized'){
+  statusBadge='<span title="'+String(r.finalizedNote||'').replace(/"/g,'&quot;')+'" style="padding:2px 8px;border-radius:3px;font-size:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">Finalizado</span>';
  } else {
   statusBadge='<span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.statusPm||(r.status||'—'))+'</span>';
  }
@@ -14076,7 +14086,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnCancel+btnReactivate+'</div></td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnFinalize+btnCancel+btnReactivate+'</div></td>'
   +'</tr>';
 }).join('');
  }finally{
@@ -14227,6 +14237,9 @@ window.jobsReactivate=function(id){
   delete rec.cancelReason;
   delete rec.cancelledAt;
   delete rec.cancelledBy;
+  delete rec.finalizedAt;
+  delete rec.finalizedBy;
+  delete rec.finalizedNote;
   rec.reactivatedAt=new Date().toISOString();
   rec.reactivatedBy=u.name||u.email||'admin';
   rec.savedAt=new Date().toLocaleString('pt-BR');
@@ -14244,6 +14257,53 @@ window.jobsReactivate=function(id){
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
   if(typeof showToast==='function')showToast('Job reativado.','success');
  }catch(e){console.warn('jobsReactivate',e);alert('Erro: '+e.message);}
+};
+
+window.jobsFinalize=function(id){
+ try{
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var role=String(u.role||'').toLowerCase();
+  if(role!=='admin'&&role!=='maintenance'){alert('Apenas admin ou técnicos podem finalizar.');return;}
+  var nota=prompt('Observação do trabalho concluído (opcional):','');
+  if(nota===null) return;
+  var arr=ltExpGetRecords()||[];
+  var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+  if(idx<0){
+   if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+    fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+     method:'PATCH',
+     credentials:'include',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({status:'FINALIZED',finalizedNote:String(nota||'').trim()})
+    }).then(function(r){
+     if(!r.ok){alert('Erro ao finalizar (API).');return;}
+     if(typeof jobsRender==='function')jobsRender();
+     if(typeof showToast==='function')showToast('Job finalizado.','success');
+    }).catch(function(e){console.warn('jobsFinalize.api',e);alert('Erro de rede.');});
+    return;
+   }
+   alert('Despesa não encontrada');return;
+  }
+  var rec=arr[idx];
+  rec.status='finalized';
+  rec.finalizedAt=new Date().toISOString();
+  rec.finalizedBy=u.name||u.email||'admin';
+  rec.finalizedNote=String(nota||'').trim();
+  rec.savedAt=new Date().toLocaleString('pt-BR');
+  arr[idx]=rec;
+  ltExpSaveRecords(arr);
+  try{
+   fetch('/api/job-actions',{
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({jobId:id,action:'finalize',finalizedBy:rec.finalizedBy,note:rec.finalizedNote})
+   });
+  }catch(eApi){console.warn('jobsFinalize.api',eApi);}
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Job finalizado.','success');
+ }catch(e){console.warn('jobsFinalize',e);alert('Erro: '+e.message);}
 };
 
 (function(){
@@ -14387,6 +14447,15 @@ async function gmAuthHydrateUserBadge(){
   if(roleEl)roleEl.textContent=roleLabel||u.email||'';
   // Cache rapido
   window.__gmCurrentUser=u;
+  // Re-render Jobs se for a página atual (resolve race condition do botão Finalizar/Reativar)
+  // Verifica DOM page-jobs visível em vez de location.hash (a app usa nav() não hash)
+  try{
+   var jobsPage=document.getElementById('page-jobs');
+   var jobsVisible=jobsPage && (jobsPage.classList.contains('active') || jobsPage.offsetParent!==null);
+   if(jobsVisible && typeof jobsRender==='function'){
+    jobsRender();
+   }
+  }catch(eRender){console.warn('[gmAuth] re-render after hydrate failed',eRender);}
   return u;
  }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
 }
