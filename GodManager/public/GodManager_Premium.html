@@ -14218,21 +14218,35 @@ window.jobsReactivate=function(id){
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
   if(idx<0){
    if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+    // Optimistic UI: atualiza cache local imediatamente
+    try{
+     var cachesR=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+     cachesR.forEach(function(arr){
+      if(Array.isArray(arr)){
+       var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+       if(ix>=0){
+        arr[ix].status='pending';
+        if(arr[ix].statusPm) arr[ix].statusPm='PENDING';
+        delete arr[ix].cancelReason;
+        delete arr[ix].cancelledAt;
+        delete arr[ix].cancelledBy;
+        delete arr[ix].finalizedAt;
+        delete arr[ix].finalizedBy;
+        delete arr[ix].finalizedNote;
+       }
+      }
+     });
+    }catch(eOpt){console.warn('optimistic update failed',eOpt);}
+    if(typeof jobsRender==='function')jobsRender();
+    if(typeof showToast==='function')showToast('Job reativado.','success');
     fetch('/api/pm/expenses/'+encodeURIComponent(id),{
      method:'PATCH',
      credentials:'include',
      headers:{'Content-Type':'application/json'},
      body:JSON.stringify({status:'PENDING'})
     }).then(function(r){
-     if(!r.ok){alert('Erro ao reativar (API). Status: '+r.status);return;}
-     try{
-      window.__jobsApiRowsCache=null;
-      window.__jobsExpensesCache=null;
-      window.__jobsExpensesCacheAt=0;
-     }catch(eCache){console.warn('cache invalidation failed',eCache);}
-     if(typeof jobsRender==='function')jobsRender();
-     if(typeof showToast==='function')showToast('Job reativado.','success');
-    }).catch(function(e){console.warn('jobsReactivate.api',e);alert('Erro de rede.');});
+     if(!r.ok){console.warn('jobsReactivate backend status',r.status);}
+    }).catch(function(e){console.warn('jobsReactivate.api',e);});
     return;
    }
    alert('Despesa não encontrada');return;
@@ -14275,21 +14289,32 @@ window.jobsFinalize=function(id){
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
   if(idx<0){
    if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+    // Optimistic UI: atualiza cache local imediatamente
+    try{
+     var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+     caches.forEach(function(arr){
+      if(Array.isArray(arr)){
+       var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+       if(ix>=0){
+        arr[ix].status='finalized';
+        arr[ix].finalizedAt=new Date().toISOString();
+        arr[ix].finalizedBy=u.name||u.email||'admin';
+        arr[ix].finalizedNote=String(nota||'').trim();
+       }
+      }
+     });
+    }catch(eOpt){console.warn('optimistic update failed',eOpt);}
+    if(typeof jobsRender==='function')jobsRender();
+    if(typeof showToast==='function')showToast('Job finalizado.','success');
+    // Persistir no backend em background (não bloqueia UI)
     fetch('/api/pm/expenses/'+encodeURIComponent(id),{
      method:'PATCH',
      credentials:'include',
      headers:{'Content-Type':'application/json'},
      body:JSON.stringify({status:'FINALIZED',finalizedNote:String(nota||'').trim()})
     }).then(function(r){
-     if(!r.ok){alert('Erro ao finalizar (API). Status: '+r.status);return;}
-     try{
-      window.__jobsApiRowsCache=null;
-      window.__jobsExpensesCache=null;
-      window.__jobsExpensesCacheAt=0;
-     }catch(eCache){console.warn('cache invalidation failed',eCache);}
-     if(typeof jobsRender==='function')jobsRender();
-     if(typeof showToast==='function')showToast('Job finalizado.','success');
-    }).catch(function(e){console.warn('jobsFinalize.api',e);alert('Erro de rede.');});
+     if(!r.ok){console.warn('jobsFinalize backend status',r.status);}
+    }).catch(function(e){console.warn('jobsFinalize.api',e);});
     return;
    }
    alert('Despesa não encontrada');return;
