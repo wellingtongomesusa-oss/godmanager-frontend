@@ -14017,6 +14017,7 @@ async function jobsRender(){
  var statusLow_check=String(r.status||'').toLowerCase();
  var isFinalized=statusLow_check==='finalized';
  var canBeFinalized=!isCancelled && !isFinalized && (statusLow_check==='pending' || statusLow_check==='scheduled' || r.statusPm==='PENDING' || r.statusPm==='SCHEDULED');
+ var canReschedule=!isCancelled && !isFinalized && (statusLow_check==='pending' || statusLow_check==='scheduled' || r.statusPm==='PENDING' || r.statusPm==='SCHEDULED');
  var idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
  var jx=(typeof getJobExtras==='function')?getJobExtras(r.id):{photo_base64:'',executor_comment:''};
  var hasPhoto=!!(jx.photo_base64&&String(jx.photo_base64).trim());
@@ -14066,6 +14067,9 @@ async function jobsRender(){
  var btnFinalize=(canFinalize&&canBeFinalized)
   ? '<button type="button" onclick="jobsFinalize(\''+idAttr+'\')" title="Marcar trabalho como concluído" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff;font-weight:600">Finalizar</button>'
   : '';
+ var btnReschedule=canReschedule
+  ? '<button type="button" onclick="jobsReschedule(\''+idAttr+'\')" title="Reagendar para nova data" style="'+btnStyleBase+';background:#fef3c7;border-color:#fbbf24;color:#92400e;font-weight:600">Reagendar</button>'
+  : '';
  var btnReactivate=((isCancelled||isFinalized)&&isAdmin)
   ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="Reverter (volta a pendente)" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">Reativar</button>'
   : '';
@@ -14088,7 +14092,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnFinalize+btnCancel+btnReactivate+'</div></td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnFinalize+btnReschedule+btnCancel+btnReactivate+'</div></td>'
   +'</tr>';
 }).join('');
  }finally{
@@ -14352,6 +14356,86 @@ window.jobsFinalize=function(id){
   if(typeof showToast==='function')showToast('Job finalizado.','success');
  }catch(e){console.warn('jobsFinalize',e);alert('Erro: '+e.message);}
 };
+
+window.jobsReschedule=function(id){
+ try{
+  var arr=window.__jobsApiRowsCache||[];
+  var rec=arr.find(function(x){return x&&String(x.id)===String(id);});
+  // Calcular data atual do job para mostrar no modal
+  var currentDate='';
+  if(rec){
+   currentDate=rec.serviceDate||rec.date||'';
+   if(currentDate && typeof currentDate==='string') currentDate=currentDate.slice(0,10);
+  }
+  // Modal simples: criar overlay com input date
+  var existing=document.getElementById('gm-job-reschedule-modal');
+  if(existing) existing.remove();
+  var overlay=document.createElement('div');
+  overlay.id='gm-job-reschedule-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var card=document.createElement('div');
+  card.style.cssText='background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
+  card.innerHTML='<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px">Reagendar trabalho</div>'
+   +'<label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px">NOVA DATA DO SERVIÇO</label>'
+   +'<input type="date" id="gm-job-resched-date" value="'+currentDate+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;margin-bottom:18px">'
+   +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+   +'<button type="button" id="gm-job-resched-cancel" style="padding:8px 16px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>'
+   +'<button type="button" id="gm-job-resched-ok" style="padding:8px 18px;border:1px solid #1e2b3d;border-radius:6px;background:#1e2b3d;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Reagendar</button>'
+   +'</div>';
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  document.getElementById('gm-job-resched-cancel').onclick=function(){overlay.remove();};
+  document.getElementById('gm-job-resched-ok').onclick=function(){
+   var newDate=document.getElementById('gm-job-resched-date').value;
+   if(!newDate){alert('Selecione uma data.');return;}
+   overlay.remove();
+   gmJobApplyReschedule(id,newDate);
+  };
+ }catch(e){console.warn('jobsReschedule',e);alert('Erro: '+e.message);}
+};
+
+function gmJobApplyReschedule(id,newDate){
+ try{
+  var monthRef=String(newDate).slice(0,7); // YYYY-MM
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  // Optimistic UI: atualiza cache
+  try{
+   var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+   caches.forEach(function(arr){
+    if(Array.isArray(arr)){
+     var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+     if(ix>=0){
+      arr[ix].serviceDate=newDate;
+      arr[ix].monthRef=monthRef;
+      arr[ix].status='SCHEDULED';
+      if(arr[ix].statusPm!==undefined) arr[ix].statusPm='SCHEDULED';
+     }
+    }
+   });
+  }catch(eOpt){console.warn('reschedule optimistic failed',eOpt);}
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof showToast==='function')showToast('Trabalho reagendado para '+newDate,'success');
+  // Persistir no backend em background
+  fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+   method:'PATCH',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({status:'SCHEDULED',serviceDate:newDate,monthRef:monthRef})
+  }).then(function(r){
+   if(!r.ok){console.warn('jobsReschedule backend status',r.status);}
+  }).catch(function(e){console.warn('jobsReschedule.api',e);});
+  // Audit
+  try{
+   fetch('/api/job-actions',{
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({jobId:id,action:'reschedule',newDate:newDate,by:u.name||u.email||'admin'})
+   });
+  }catch(eApi){console.warn('jobsReschedule.audit',eApi);}
+ }catch(e){console.warn('gmJobApplyReschedule',e);alert('Erro: '+e.message);}
+}
 
 (function(){
  if(typeof window.nav!=='function')return;
