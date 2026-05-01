@@ -1926,6 +1926,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <button type="button" id="jobs-df-week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
   <button type="button" id="jobs-df-custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
   <input type="date" id="jobs-df-custom-input" onchange="gmJobsSetDateFilter('custom',this.value)" style="display:none;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-left:4px">
+  <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
+  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vendor:</label>
+  <select id="jobs-vendor-filter" onchange="gmJobsSetVendorFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px">
+   <option value="">Todos os vendors</option>
+  </select>
   <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--ink3);font-weight:500;margin-left:auto">Todas as datas</button>
  </div>
 
@@ -13861,9 +13866,47 @@ window.gmJobsSetDateFilter=function(f,custom){
  if(typeof jobsRender==='function')jobsRender();
 };
 
+window.__jobsVendorFilter='';
+
+window.gmJobsSetVendorFilter=function(vendorName){
+ window.__jobsVendorFilter=String(vendorName||'').trim();
+ if(typeof jobsRender==='function')jobsRender();
+};
+
+function gmJobsRebuildVendorOptions(rows){
+ try{
+  var sel=document.getElementById('jobs-vendor-filter');
+  if(!sel) return;
+  var current=sel.value||'';
+  var seen={};
+  var vendors=[];
+  (rows||[]).forEach(function(r){
+   var v=jobsVendorSourceStr(r);
+   if(v && !seen[v]){
+    seen[v]=true;
+    vendors.push(v);
+   }
+  });
+  vendors.sort(function(a,b){return a.localeCompare(b);});
+  // Reconstruir options preservando seleção atual
+  var html='<option value="">Todos os vendors</option>';
+  vendors.forEach(function(v){
+   var label=(typeof gmGetVendorAcronymByName==='function')
+    ? (gmGetVendorAcronymByName(v)+' — '+v)
+    : v;
+   var sel_attr=(v===current)?' selected':'';
+   var safeV=v.replace(/"/g,'&quot;');
+   var safeLabel=label.replace(/</g,'&lt;');
+   html+='<option value="'+safeV+'"'+sel_attr+'>'+safeLabel+'</option>';
+  });
+  sel.innerHTML=html;
+ }catch(e){console.warn('gmJobsRebuildVendorOptions',e);}
+}
+
 function jobsFilteredExpenses(){
  var arr=jobsMergeForJobs();
  var range=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
+ var vendorFilter=String(window.__jobsVendorFilter||'').trim();
  return (arr||[]).filter(function(r){
   if(!r)return false;
   var passType=false;
@@ -13882,6 +13925,10 @@ function jobsFilteredExpenses(){
    if(!rd)return false;
    if(range.from && rd<range.from)return false;
    if(range.to && rd>range.to)return false;
+  }
+  if(vendorFilter){
+   var rv=jobsVendorSourceStr(r);
+   if(!rv || rv!==vendorFilter)return false;
   }
   return true;
  });
@@ -13996,6 +14043,30 @@ async function jobsRender(){
  if(typeof window.jobsFetchFromApi==='function'){
   try{await window.jobsFetchFromApi();}catch(err){console.warn('jobsFetchFromApi',err);}
  }
+ // Reconstruir dropdown vendor com dataset filtrado por tipo+data (sem filtro vendor)
+ try{
+  var rangeForOpts=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
+  var poolForOpts=(typeof jobsMergeForJobs==='function')?jobsMergeForJobs():[];
+  var rowsForOpts=(poolForOpts||[]).filter(function(r){
+   if(!r) return false;
+   var passType=false;
+   if(r._isPm){passType=true;}
+   else if(r.type==='chamado'){passType=false;}
+   else if(r.type==='statement'){if(jobsVendorSourceStr(r))passType=true;}
+   else if(r.isJob===true){passType=true;}
+   else if(r.type==='expense'){passType=true;}
+   else if(jobsVendorSourceStr(r)){passType=true;}
+   if(!passType) return false;
+   if(rangeForOpts.from || rangeForOpts.to){
+    var rd=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
+    if(!rd) return false;
+    if(rangeForOpts.from && rd<rangeForOpts.from) return false;
+    if(rangeForOpts.to && rd>rangeForOpts.to) return false;
+   }
+   return true;
+  });
+  if(typeof gmJobsRebuildVendorOptions==='function') gmJobsRebuildVendorOptions(rowsForOpts);
+ }catch(eOpts){console.warn('vendor options rebuild',eOpts);}
  var rows=jobsFilteredExpenses();
  var user=jobsGetCurrentUser();
  var badge=document.getElementById('jobs-user-badge');
