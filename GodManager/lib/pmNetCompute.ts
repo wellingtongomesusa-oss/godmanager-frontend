@@ -3,7 +3,7 @@ import { getEffectiveMonthlyRent, dec } from '@/lib/pmRent';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { monthRefQueryValues } from '@/lib/pmMonthRef';
 
-const PM_ACTIVE: PmExpenseStatus[] = ['SCHEDULED', 'PAID', 'PENDING'];
+const PM_ACTIVE: PmExpenseStatus[] = ['SCHEDULED', 'PAID', 'PENDING', 'FINALIZED'];
 
 export async function sumOwnerChargedForPropertyMonth(propertyId: string, yearMonth: string) {
   const months = monthRefQueryValues(yearMonth);
