@@ -13993,8 +13993,13 @@ function gmJobsRenderCalendar(rows){
  // Header
  var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">';
  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
- html+='<div style="font-size:18px;font-weight:700;color:var(--ink)">'+months[monthIdx]+' '+year+'</div>';
- html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+(rows||[]).filter(function(r){var d=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';return d&&d.slice(0,7)===ymStr;}).length+' jobs</div>';
+ html+='<div style="display:flex;align-items:center;gap:10px">';
+ html+='<button type="button" onclick="gmJobsCalendarPrevMonth()" title="Mês anterior" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">‹</button>';
+ html+='<button type="button" onclick="gmJobsCalendarToday()" title="Mês corrente" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:11px;font-weight:600;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">Hoje</button>';
+ html+='<button type="button" onclick="gmJobsCalendarNextMonth()" title="Mês seguinte" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">›</button>';
+ html+='<div style="font-size:18px;font-weight:700;color:var(--ink);margin-left:8px">'+months[monthIdx]+' '+year+'</div>';
+ html+='</div>';
+ html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+(rows||[]).filter(function(r){var d=gmJobsRowDateStr(r);return d&&d.slice(0,7)===ymStr;}).length+' jobs</div>';
  html+='</div>';
  // Cabeçalho dias da semana
  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">';
@@ -14033,6 +14038,37 @@ function gmJobsRenderCalendar(rows){
  html+='</div></div>';
  return html;
 }
+
+window.gmJobsCalendarPrevMonth=function(){
+ var pad=function(n){return n<10?'0'+n:''+n;};
+ var ymStr=window.__jobsCalendarMonth;
+ if(!ymStr){var n=new Date();ymStr=n.getFullYear()+'-'+pad(n.getMonth()+1);}
+ var parts=ymStr.split('-');
+ var y=parseInt(parts[0],10);
+ var m=parseInt(parts[1],10)-1;
+ m--;
+ if(m<0){m=11;y--;}
+ window.__jobsCalendarMonth=y+'-'+pad(m+1);
+ if(typeof jobsRender==='function')jobsRender();
+};
+
+window.gmJobsCalendarNextMonth=function(){
+ var pad=function(n){return n<10?'0'+n:''+n;};
+ var ymStr=window.__jobsCalendarMonth;
+ if(!ymStr){var n=new Date();ymStr=n.getFullYear()+'-'+pad(n.getMonth()+1);}
+ var parts=ymStr.split('-');
+ var y=parseInt(parts[0],10);
+ var m=parseInt(parts[1],10)-1;
+ m++;
+ if(m>11){m=0;y++;}
+ window.__jobsCalendarMonth=y+'-'+pad(m+1);
+ if(typeof jobsRender==='function')jobsRender();
+};
+
+window.gmJobsCalendarToday=function(){
+ window.__jobsCalendarMonth=null;
+ if(typeof jobsRender==='function')jobsRender();
+};
 
 window.gmJobsCalendarDayClick=function(dateStr){
  // Click no dia: muda filtro para customizado nessa data + volta a vista Tabela
