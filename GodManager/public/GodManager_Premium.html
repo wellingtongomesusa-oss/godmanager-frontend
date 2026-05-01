@@ -2245,7 +2245,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VALOR PAGO AO VENDOR ($) *</label><input id="lt-nexp-pm-vendor-cost" type="number" min="0" step="0.01" oninput="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--green);display:block;margin-bottom:4px">VALOR COBRADO AO OWNER ($)</label><input id="lt-nexp-pm-owner-charged" readonly tabindex="-1" style="width:100%;padding:8px 11px;border:1px solid var(--green-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;background:var(--green-bg);color:var(--green)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DO SERVIÇO *</label><input id="lt-nexp-pm-svc-date" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">STATUS *</label><select id="lt-nexp-pm-status" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="SCHEDULED">Agendado</option><option value="PENDING">Pendente</option><option value="PAID">Pago</option><option value="CANCELLED">Cancelado</option></select></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">STATUS *</label><select id="lt-nexp-pm-status" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="SCHEDULED">Agendado</option><option value="PENDING">Pendente</option><option value="PAID">Pago</option><option value="CANCELLED">Cancelado</option><option value="FINALIZED">Finalizado</option></select></div>
   </div>
   <p style="font-size:10px;color:var(--ink3);margin:12px 0 0;line-height:1.45">Rent do inquilino menos a soma destes valores (com markup) alimenta o NET do owner. Mesma lógica que Owner Payment e Properties.</p>
  </div>
@@ -9118,8 +9118,8 @@ function ltExpRender(){
  if(!tbody)return;
  if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
  if(empty)empty.style.display='none';
- const sLabel={paid:'Pago',unpaid:'Pendente',overdue:'Vencido',SCHEDULED:'Agendado',PENDING:'Pendente',PAID:'Pago',CANCELLED:'Cancelado'};
- const sStyle={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',unpaid:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',overdue:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',SCHEDULED:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',PENDING:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',PAID:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',CANCELLED:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ const sLabel={paid:'Pago',unpaid:'Pendente',overdue:'Vencido',SCHEDULED:'Agendado',PENDING:'Pendente',PAID:'Pago',CANCELLED:'Cancelado',FINALIZED:'Finalizado'};
+ const sStyle={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',unpaid:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',overdue:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',SCHEDULED:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',PENDING:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',PAID:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',CANCELLED:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',FINALIZED:'background:#dcfce7;color:#166534;border:1px solid #86efac'};
  const esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
  tbody.innerHTML=filtered.map((r,i)=>{
   const isPm=!!r._isPm;
@@ -9937,7 +9937,9 @@ function ltpMgmtPctInvalidUsesDefault(r){
 
 async function ltpRender(){
  ltpBindTbodyActionDelegationOnce();
- var curMonth=new Date().toISOString().slice(0,7);
+ // Usar filtro de mês selecionado, ou mês corrente como fallback
+ var fMonthSel=(document.getElementById('ltp-filter-month')||{}).value||'';
+ var curMonth=fMonthSel||new Date().toISOString().slice(0,7);
  var expByProp=new Map();
  try{
   var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include'});
@@ -14305,7 +14307,17 @@ window.jobsFinalize=function(id){
      });
     }catch(eOpt){console.warn('optimistic update failed',eOpt);}
     if(typeof jobsRender==='function')jobsRender();
-    if(typeof showToast==='function')showToast('Job finalizado.','success');
+    // Buscar valor da expense para mostrar no toast
+    var expValue=0;
+    try{
+     var arr0=window.__jobsApiRowsCache||[];
+     var rec0=arr0.find(function(x){return x&&String(x.id)===String(id);});
+     if(rec0) expValue=parseFloat(rec0.value||rec0.ownerCharged||rec0.amount||0)||0;
+    }catch(eVal){}
+    var msg=expValue>0
+     ? 'Job finalizado. Lançado no Statement: $'+expValue.toFixed(2)
+     : 'Job finalizado e lançado no Statement.';
+    if(typeof showToast==='function')showToast(msg,'success');
     // Persistir no backend em background (não bloqueia UI)
     fetch('/api/pm/expenses/'+encodeURIComponent(id),{
      method:'PATCH',
