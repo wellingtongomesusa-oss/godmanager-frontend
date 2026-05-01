@@ -1920,6 +1920,10 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <button type="button" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
  </div>
  <div id="jobs-date-filter-row" style="display:flex;gap:8px;align-items:center;margin:8px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
+  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vista:</label>
+  <button type="button" id="jobs-vm-table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Tabela</button>
+  <button type="button" id="jobs-vm-agenda" onclick="gmJobsSetViewMode('agenda')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Agenda</button>
+  <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
   <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Hoje</button>
   <button type="button" id="jobs-df-tomorrow" onclick="gmJobsSetDateFilter('tomorrow')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Amanhã</button>
@@ -13873,6 +13877,91 @@ window.gmJobsSetVendorFilter=function(vendorName){
  if(typeof jobsRender==='function')jobsRender();
 };
 
+window.__jobsViewMode='table';
+
+window.gmJobsSetViewMode=function(mode){
+ window.__jobsViewMode=(mode==='agenda')?'agenda':'table';
+ try{
+  var bT=document.getElementById('jobs-vm-table');
+  var bA=document.getElementById('jobs-vm-agenda');
+  if(bT && bA){
+   var aT=(window.__jobsViewMode==='table');
+   bT.style.background=aT?'#1e2b3d':'transparent';
+   bT.style.color=aT?'#fff':'#1e2b3d';
+   bT.style.fontWeight=aT?'700':'500';
+   bA.style.background=!aT?'#1e2b3d':'transparent';
+   bA.style.color=!aT?'#fff':'#1e2b3d';
+   bA.style.fontWeight=!aT?'700':'500';
+  }
+ }catch(e){}
+ if(typeof jobsRender==='function')jobsRender();
+};
+
+function gmJobsRenderAgenda(rows){
+ var groups={};
+ var dayOrder=[];
+ (rows||[]).forEach(function(r){
+  var d=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
+  var key=d||'__sem-data';
+  if(!groups[key]){groups[key]=[];dayOrder.push(key);}
+  groups[key].push(r);
+ });
+ dayOrder.sort(function(a,b){
+  if(a==='__sem-data')return 1;
+  if(b==='__sem-data')return -1;
+  return a.localeCompare(b);
+ });
+ var weekdays=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+ var months=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+ var html='';
+ dayOrder.forEach(function(key){
+  var arr=groups[key];
+  var label='';
+  if(key==='__sem-data'){
+   label='Sem data definida';
+  }else{
+   try{
+    var dt=new Date(key+'T12:00:00');
+    var wd=weekdays[dt.getDay()];
+    var dd=dt.getDate();
+    var mm=months[dt.getMonth()];
+    var yy=dt.getFullYear();
+    label=wd+' '+(dd<10?'0'+dd:dd)+' '+mm+' '+yy;
+   }catch(e){label=key;}
+  }
+  html+='<div style="margin-top:18px;padding:8px 14px;background:#1e2b3d;color:#fff;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.05em">'+label+' <span style="opacity:.6;font-weight:500;margin-left:8px">'+arr.length+' '+(arr.length===1?'job':'jobs')+'</span></div>';
+  html+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">';
+  arr.forEach(function(r){
+   var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(r):(r.unit||r.propertyAddress||'(sem endereço)');
+   var vendor=(typeof jobsVendorSourceStr==='function')?jobsVendorSourceStr(r):'';
+   var vendorAcr=(vendor && typeof gmGetVendorAcronymByName==='function')?gmGetVendorAcronymByName(vendor):vendor;
+   var desc=r.desc||r.description||r.serviceType||'';
+   var val=parseFloat(r.value||r.ownerCharged||r.amount||0)||0;
+   var st=String(r.status||r.statusPm||'').trim();
+   var stLabel=({SCHEDULED:'Agendado',PENDING:'Pendente',PAID:'Pago',CANCELLED:'Cancelado',FINALIZED:'Finalizado'})[st]||st;
+   var stStyle=({SCHEDULED:'background:#e2e8f0;color:#475569',PENDING:'background:#fef3c7;color:#92400e',PAID:'background:#dcfce7;color:#166534',CANCELLED:'background:#fee2e2;color:#991b1b',FINALIZED:'background:#dcfce7;color:#166534;font-weight:700'})[st]||'background:#f1f5f9;color:#475569';
+   var idAttr=String(r.id||'').replace(/'/g,"\\'");
+   var canEdit=(typeof ltOpenEditExpense==='function');
+   var clickAction=canEdit?'onclick="ltOpenEditExpense(\''+idAttr+'\')"':'';
+   var cursor=canEdit?'cursor:pointer':'';
+   html+='<div '+clickAction+' style="padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:8px;'+cursor+';transition:border-color 0.15s" onmouseover="this.style.borderColor=\'#1e2b3d\'" onmouseout="this.style.borderColor=\'\'">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--ink)">'+addr+'</div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +(vendorAcr?'<span style="font-size:10px;font-weight:700;color:var(--ink2);background:var(--sand);padding:3px 8px;border-radius:4px">'+vendorAcr+'</span>':'')
+    +'<span style="font-size:10px;padding:3px 8px;border-radius:4px;'+stStyle+'">'+stLabel+'</span>'
+    +'</div>'
+    +'</div>'
+    +(desc?'<div style="font-size:12px;color:var(--ink2);margin-bottom:8px">'+String(desc).slice(0,140)+(String(desc).length>140?'...':'')+'</div>':'')
+    +'<div style="font-size:11px;color:var(--ink3)">'+(vendor||'')+(val>0?' • $'+val.toFixed(2):'')+(canEdit?' • <span style="color:#1e2b3d;font-weight:600">Click para editar</span>':'')+'</div>'
+    +'</div>';
+  });
+  html+='</div>';
+ });
+ if(!html) html='<div style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job encontrado.</div>';
+ return html;
+}
+
 function gmJobsRebuildVendorOptions(rows){
  try{
   var sel=document.getElementById('jobs-vendor-filter');
@@ -14140,11 +14229,31 @@ async function jobsRender(){
 
  if(typeof window.jobsUpdateJobsPageRoleKpis==='function')try{window.jobsUpdateJobsPageRoleKpis();}catch(eK){}
 
+ // Modo Agenda: render alternativo
+ var viewMode=window.__jobsViewMode||'table';
+ var jobsTable=document.getElementById('jobs-table');
+ var agendaHost=document.getElementById('jobs-agenda-host');
+ if(!agendaHost){
+  agendaHost=document.createElement('div');
+  agendaHost.id='jobs-agenda-host';
+  agendaHost.style.cssText='padding:0 32px;margin-top:16px';
+  if(jobsTable && jobsTable.parentNode){
+   jobsTable.parentNode.insertBefore(agendaHost,jobsTable.nextSibling);
+  }
+ }
+ if(viewMode==='agenda'){
+  if(jobsTable) jobsTable.style.display='none';
+  agendaHost.style.display='block';
+  agendaHost.innerHTML=(typeof gmJobsRenderAgenda==='function')?gmJobsRenderAgenda(rows):'';
+  return;
+ }else{
+  if(jobsTable) jobsTable.style.display='';
+  agendaHost.style.display='none';
+ }
  if(!rows.length){
   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa encontrada.</td></tr>';
   return;
  }
-
  var isAdmin=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase()==='admin';
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
  var canFinalize=(userRole==='admin'||userRole==='maintenance');
