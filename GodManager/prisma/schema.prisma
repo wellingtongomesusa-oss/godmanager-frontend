@@ -293,6 +293,7 @@ enum PmExpenseStatus {
   PAID
   PENDING
   CANCELLED
+  FINALIZED
 }
 
 /// Fornecedores internos (markup / Owner Payment)
@@ -360,6 +361,9 @@ model PmExpense {
   monthRef       String
   status         PmExpenseStatus @default(PENDING)
   description    String?         @db.Text
+  finalizedAt    DateTime?
+  finalizedBy    String?
+  finalizedNote  String?         @db.Text
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 

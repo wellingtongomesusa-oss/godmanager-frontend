@@ -20,6 +20,9 @@ function toJson(e: {
   monthRef: string;
   status: PmExpenseStatus;
   description: string | null;
+  finalizedAt?: Date | null;
+  finalizedBy?: string | null;
+  finalizedNote?: string | null;
   property: { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
 }) {
@@ -40,10 +43,13 @@ function toJson(e: {
     monthRef: e.monthRef,
     status: e.status,
     description: e.description ?? '',
+    finalizedAt: e.finalizedAt ? e.finalizedAt.toISOString() : null,
+    finalizedBy: e.finalizedBy ?? null,
+    finalizedNote: e.finalizedNote ?? '',
   };
 }
 
-const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CANCELLED']);
+const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CANCELLED', 'FINALIZED']);
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
@@ -124,6 +130,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
     }
 
+    // Determinar campos de finalização baseado no novo status
+    const isFinalizingNow = st === 'FINALIZED' && cur.status !== 'FINALIZED';
+    const isReactivating = cur.status === 'FINALIZED' && st !== 'FINALIZED';
+
     const row = await prisma.pmExpense.update({
       where: { id: params.id },
       data: {
@@ -141,6 +151,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         status: st,
         description:
           body.description !== undefined ? String(body.description).trim() || null : cur.description,
+        finalizedAt: isFinalizingNow
+          ? new Date()
+          : isReactivating
+            ? null
+            : undefined,
+        finalizedBy: isFinalizingNow
+          ? body.finalizedBy
+            ? String(body.finalizedBy).trim()
+            : null
+          : isReactivating
+            ? null
+            : undefined,
+        finalizedNote: isFinalizingNow
+          ? body.finalizedNote
+            ? String(body.finalizedNote).trim()
+            : null
+          : isReactivating
+            ? null
+            : undefined,
       },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },

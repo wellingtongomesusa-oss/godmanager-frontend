@@ -14311,7 +14311,7 @@ window.jobsFinalize=function(id){
      method:'PATCH',
      credentials:'include',
      headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({status:'FINALIZED',finalizedNote:String(nota||'').trim()})
+     body:JSON.stringify({status:'FINALIZED',finalizedNote:String(nota||'').trim(),finalizedBy:(u.name||u.email||'admin')})
     }).then(function(r){
      if(!r.ok){console.warn('jobsFinalize backend status',r.status);}
     }).catch(function(e){console.warn('jobsFinalize.api',e);});
