@@ -13999,7 +13999,16 @@ function gmJobsRenderCalendar(rows){
  html+='<button type="button" onclick="gmJobsCalendarNextMonth()" title="Mês seguinte" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">›</button>';
  html+='<div style="font-size:18px;font-weight:700;color:var(--ink);margin-left:8px">'+months[monthIdx]+' '+year+'</div>';
  html+='</div>';
- html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+(rows||[]).filter(function(r){var d=gmJobsRowDateStr(r);return d&&d.slice(0,7)===ymStr;}).length+' jobs</div>';
+ var totalMes=(rows||[]).filter(function(r){var d=gmJobsRowDateStr(r);return d&&d.slice(0,7)===ymStr;}).length;
+ html+='<div style="display:flex;align-items:center;gap:14px">';
+ html+='<div style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--ink3)">';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #fbbf24"></span>Pendente</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#e2e8f0;border-radius:2px;border:1px solid #94a3b8"></span>Agendado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#166534;border-radius:2px"></span>Finalizado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid #fca5a5"></span>Cancelado</span>';
+ html+='</div>';
+ html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+totalMes+' jobs</div>';
+ html+='</div>';
  html+='</div>';
  // Cabeçalho dias da semana
  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">';
@@ -14024,10 +14033,19 @@ function gmJobsRenderCalendar(rows){
   html+='<div style="font-size:11px;font-weight:'+(isToday?'700':'600')+';color:'+(isToday?'#92400e':'var(--ink2)')+';margin-bottom:4px">'+d+'</div>';
   if(dayJobs.length>0){
    var maxShow=3;
+   var stColors={
+    PENDING:'background:#fef3c7;color:#92400e',
+    SCHEDULED:'background:#e2e8f0;color:#475569',
+    PAID:'background:#dcfce7;color:#166534',
+    FINALIZED:'background:#166534;color:#fff;font-weight:600',
+    CANCELLED:'background:#fee2e2;color:#991b1b'
+   };
    dayJobs.slice(0,maxShow).forEach(function(j){
     var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(j):(j.unit||'');
     var addrShort=String(addr).split(',')[0].slice(0,18);
-    html+='<div style="font-size:9px;color:var(--ink2);background:#e2e8f0;padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
+    var st=String(j.status||j.statusPm||'').trim().toUpperCase();
+    var chipStyle=stColors[st]||'background:#f1f5f9;color:#475569';
+    html+='<div title="'+String(st).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
    });
    if(dayJobs.length>maxShow){
     html+='<div style="font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px">+'+(dayJobs.length-maxShow)+' mais</div>';
