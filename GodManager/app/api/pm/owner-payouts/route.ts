@@ -103,7 +103,7 @@ export async function GET(req: Request) {
       prisma.pmExpense.findMany({
         where: {
           monthRef: { in: monthKeys },
-          status: { in: ['SCHEDULED', 'PAID', 'PENDING'] },
+          status: { in: ['SCHEDULED', 'PAID', 'PENDING', 'FINALIZED'] },
         },
         include: { vendor: { select: { companyName: true } } },
         orderBy: [{ serviceDate: 'asc' }, { createdAt: 'asc' }],
