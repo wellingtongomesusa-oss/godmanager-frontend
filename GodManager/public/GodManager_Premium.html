@@ -8096,6 +8096,56 @@ function gmRenderCommentsList(comments, opts){
   +'</div>';
  }).join('')+'</div>';
 }
+function gmJobOpenDescriptionPopup(text){
+ var existing=document.getElementById('gm-job-desc-popup');
+ if(existing) existing.remove();
+ var overlay=document.createElement('div');
+ overlay.id='gm-job-desc-popup';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;animation:gmFadeIn 0.2s ease';
+ overlay.onclick=function(e){if(e.target===overlay)gmJobCloseDescriptionPopup();};
+ var card=document.createElement('div');
+ card.style.cssText='background:#fff;border-radius:12px;padding:24px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
+ var head=document.createElement('div');
+ head.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)';
+ var title=document.createElement('div');
+ title.textContent='Descrição completa';
+ title.style.cssText='font-size:14px;font-weight:700;color:var(--ink)';
+ var closeBtn=document.createElement('button');
+ closeBtn.type='button';
+ closeBtn.innerHTML='&times;';
+ closeBtn.title='Fechar (ESC)';
+ closeBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:24px;line-height:1;color:var(--ink3);padding:0 4px';
+ closeBtn.onclick=gmJobCloseDescriptionPopup;
+ head.appendChild(title);
+ head.appendChild(closeBtn);
+ var body=document.createElement('div');
+ body.style.cssText='font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-wrap:break-word';
+ body.textContent=String(text||'').trim()||'(Sem descrição)';
+ var footer=document.createElement('div');
+ footer.style.cssText='margin-top:20px;text-align:right';
+ var okBtn=document.createElement('button');
+ okBtn.type='button';
+ okBtn.textContent='Fechar';
+ okBtn.style.cssText='padding:8px 18px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer';
+ okBtn.onclick=gmJobCloseDescriptionPopup;
+ footer.appendChild(okBtn);
+ card.appendChild(head);
+ card.appendChild(body);
+ card.appendChild(footer);
+ overlay.appendChild(card);
+ document.body.appendChild(overlay);
+ document.addEventListener('keydown',gmJobDescPopupEscHandler);
+}
+
+function gmJobDescPopupEscHandler(e){
+ if(e.key==='Escape') gmJobCloseDescriptionPopup();
+}
+
+function gmJobCloseDescriptionPopup(){
+ var p=document.getElementById('gm-job-desc-popup');
+ if(p) p.remove();
+ document.removeEventListener('keydown',gmJobDescPopupEscHandler);
+}
 function gmComputeVendorAcronym(vendorName){
  if(!vendorName||typeof vendorName!=='string') return '';
  var stop=['llc','inc','corp','corporation','co','company','ltd','services','service','homes','home','group','holdings','the','of','and','for'];
@@ -14022,7 +14072,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
   +'<td style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
-  +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||'').replace(/"/g,'&quot;')+'">'+(r.desc||'—')+'</td>'
+  +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||'')).replace(/"/g,'&quot;')+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
