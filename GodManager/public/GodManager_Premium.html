@@ -1923,6 +1923,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vista:</label>
   <button type="button" id="jobs-vm-table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Tabela</button>
   <button type="button" id="jobs-vm-agenda" onclick="gmJobsSetViewMode('agenda')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Agenda</button>
+  <button type="button" id="jobs-vm-calendar" onclick="gmJobsSetViewMode('calendar')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Calendário</button>
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
   <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Hoje</button>
@@ -13880,19 +13881,18 @@ window.gmJobsSetVendorFilter=function(vendorName){
 window.__jobsViewMode='table';
 
 window.gmJobsSetViewMode=function(mode){
- window.__jobsViewMode=(mode==='agenda')?'agenda':'table';
+ var allowed=['table','agenda','calendar'];
+ window.__jobsViewMode=(allowed.indexOf(mode)>=0)?mode:'table';
  try{
-  var bT=document.getElementById('jobs-vm-table');
-  var bA=document.getElementById('jobs-vm-agenda');
-  if(bT && bA){
-   var aT=(window.__jobsViewMode==='table');
-   bT.style.background=aT?'#1e2b3d':'transparent';
-   bT.style.color=aT?'#fff':'#1e2b3d';
-   bT.style.fontWeight=aT?'700':'500';
-   bA.style.background=!aT?'#1e2b3d':'transparent';
-   bA.style.color=!aT?'#fff':'#1e2b3d';
-   bA.style.fontWeight=!aT?'700':'500';
-  }
+  ['table','agenda','calendar'].forEach(function(m){
+   var btn=document.getElementById('jobs-vm-'+m);
+   if(btn){
+    var active=(m===window.__jobsViewMode);
+    btn.style.background=active?'#1e2b3d':'transparent';
+    btn.style.color=active?'#fff':'#1e2b3d';
+    btn.style.fontWeight=active?'700':'500';
+   }
+  });
  }catch(e){}
  if(typeof jobsRender==='function')jobsRender();
 };
@@ -13961,6 +13961,101 @@ function gmJobsRenderAgenda(rows){
  if(!html) html='<div style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job encontrado.</div>';
  return html;
 }
+
+window.__jobsCalendarMonth=null; // YYYY-MM, null = current month
+
+function gmJobsRenderCalendar(rows){
+ var months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+ var weekdaysShort=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+ var pad=function(n){return n<10?'0'+n:''+n;};
+ var todayStr=(function(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());})();
+ var ymStr=window.__jobsCalendarMonth;
+ if(!ymStr){
+  var now=new Date();
+  ymStr=now.getFullYear()+'-'+pad(now.getMonth()+1);
+ }
+ var parts=ymStr.split('-');
+ var year=parseInt(parts[0],10);
+ var monthIdx=parseInt(parts[1],10)-1;
+ var firstDay=new Date(year,monthIdx,1);
+ var lastDay=new Date(year,monthIdx+1,0);
+ var startWeekday=firstDay.getDay();
+ var daysInMonth=lastDay.getDate();
+ // Agrupar jobs por dia (apenas jobs do mês visível)
+ var jobsByDay={};
+ (rows||[]).forEach(function(r){
+  var d=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
+  if(!d) return;
+  if(d.slice(0,7)!==ymStr) return;
+  if(!jobsByDay[d]) jobsByDay[d]=[];
+  jobsByDay[d].push(r);
+ });
+ // Header
+ var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">';
+ html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+ html+='<div style="font-size:18px;font-weight:700;color:var(--ink)">'+months[monthIdx]+' '+year+'</div>';
+ html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+(rows||[]).filter(function(r){var d=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';return d&&d.slice(0,7)===ymStr;}).length+' jobs</div>';
+ html+='</div>';
+ // Cabeçalho dias da semana
+ html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">';
+ weekdaysShort.forEach(function(wd){
+  html+='<div style="text-align:center;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding:6px 0">'+wd+'</div>';
+ });
+ html+='</div>';
+ // Grid dias
+ html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
+ // Células vazias antes do dia 1
+ for(var i=0;i<startWeekday;i++){
+  html+='<div style="min-height:90px;border:1px dashed var(--border);border-radius:6px;background:transparent"></div>';
+ }
+ // Dias do mês
+ for(var d=1;d<=daysInMonth;d++){
+  var dStr=ymStr+'-'+pad(d);
+  var dayJobs=jobsByDay[dStr]||[];
+  var isToday=(dStr===todayStr);
+  var bgColor=isToday?'#fef3c7':'var(--paper)';
+  var borderColor=isToday?'#fbbf24':'var(--border)';
+  html+='<div onclick="gmJobsCalendarDayClick(\''+dStr+'\')" style="min-height:90px;border:1px solid '+borderColor+';border-radius:6px;background:'+bgColor+';padding:6px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor=\'#1e2b3d\'" onmouseout="this.style.borderColor=\''+borderColor+'\'">';
+  html+='<div style="font-size:11px;font-weight:'+(isToday?'700':'600')+';color:'+(isToday?'#92400e':'var(--ink2)')+';margin-bottom:4px">'+d+'</div>';
+  if(dayJobs.length>0){
+   var maxShow=3;
+   dayJobs.slice(0,maxShow).forEach(function(j){
+    var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(j):(j.unit||'');
+    var addrShort=String(addr).split(',')[0].slice(0,18);
+    html+='<div style="font-size:9px;color:var(--ink2);background:#e2e8f0;padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
+   });
+   if(dayJobs.length>maxShow){
+    html+='<div style="font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px">+'+(dayJobs.length-maxShow)+' mais</div>';
+   }
+  }
+  html+='</div>';
+ }
+ html+='</div></div>';
+ return html;
+}
+
+window.gmJobsCalendarDayClick=function(dateStr){
+ // Click no dia: muda filtro para customizado nessa data + volta a vista Tabela
+ if(typeof gmJobsSetDateFilter==='function'){
+  window.__jobsCustomDate=dateStr;
+  window.__jobsDateFilter='custom';
+  // Atualizar UI custom input
+  var custInput=document.getElementById('jobs-df-custom-input');
+  if(custInput) custInput.value=dateStr;
+  // Atualizar botão custom como ativo
+  ['today','tomorrow','week','custom','all'].forEach(function(k){
+   var b=document.getElementById('jobs-df-'+k);
+   if(b){
+    var act=(k==='custom');
+    b.style.background=act?'#1e2b3d':'transparent';
+    b.style.color=act?'#fff':(k==='all'?'var(--ink3)':'#1e2b3d');
+    b.style.fontWeight=act?'700':'500';
+   }
+  });
+  if(custInput) custInput.style.display='inline-block';
+ }
+ if(typeof gmJobsSetViewMode==='function') gmJobsSetViewMode('table');
+};
 
 function gmJobsRebuildVendorOptions(rows){
  try{
@@ -14241,14 +14336,31 @@ async function jobsRender(){
    jobsTable.parentNode.insertBefore(agendaHost,jobsTable.nextSibling);
   }
  }
+ var calendarHost=document.getElementById('jobs-calendar-host');
+ if(!calendarHost){
+  calendarHost=document.createElement('div');
+  calendarHost.id='jobs-calendar-host';
+  calendarHost.style.cssText='padding:0 32px;margin-top:16px';
+  if(jobsTable && jobsTable.parentNode){
+   jobsTable.parentNode.insertBefore(calendarHost,jobsTable.nextSibling);
+  }
+ }
  if(viewMode==='agenda'){
   if(jobsTable) jobsTable.style.display='none';
   agendaHost.style.display='block';
+  calendarHost.style.display='none';
   agendaHost.innerHTML=(typeof gmJobsRenderAgenda==='function')?gmJobsRenderAgenda(rows):'';
+  return;
+ }else if(viewMode==='calendar'){
+  if(jobsTable) jobsTable.style.display='none';
+  agendaHost.style.display='none';
+  calendarHost.style.display='block';
+  calendarHost.innerHTML=(typeof gmJobsRenderCalendar==='function')?gmJobsRenderCalendar(rows):'';
   return;
  }else{
   if(jobsTable) jobsTable.style.display='';
   agendaHost.style.display='none';
+  calendarHost.style.display='none';
  }
  if(!rows.length){
   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa encontrada.</td></tr>';
