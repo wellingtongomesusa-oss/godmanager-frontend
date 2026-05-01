@@ -14224,7 +14224,12 @@ window.jobsReactivate=function(id){
      headers:{'Content-Type':'application/json'},
      body:JSON.stringify({status:'PENDING'})
     }).then(function(r){
-     if(!r.ok){alert('Erro ao reativar (API).');return;}
+     if(!r.ok){alert('Erro ao reativar (API). Status: '+r.status);return;}
+     try{
+      window.__jobsApiRowsCache=null;
+      window.__jobsExpensesCache=null;
+      window.__jobsExpensesCacheAt=0;
+     }catch(eCache){console.warn('cache invalidation failed',eCache);}
      if(typeof jobsRender==='function')jobsRender();
      if(typeof showToast==='function')showToast('Job reativado.','success');
     }).catch(function(e){console.warn('jobsReactivate.api',e);alert('Erro de rede.');});
@@ -14276,7 +14281,12 @@ window.jobsFinalize=function(id){
      headers:{'Content-Type':'application/json'},
      body:JSON.stringify({status:'FINALIZED',finalizedNote:String(nota||'').trim()})
     }).then(function(r){
-     if(!r.ok){alert('Erro ao finalizar (API).');return;}
+     if(!r.ok){alert('Erro ao finalizar (API). Status: '+r.status);return;}
+     try{
+      window.__jobsApiRowsCache=null;
+      window.__jobsExpensesCache=null;
+      window.__jobsExpensesCacheAt=0;
+     }catch(eCache){console.warn('cache invalidation failed',eCache);}
      if(typeof jobsRender==='function')jobsRender();
      if(typeof showToast==='function')showToast('Job finalizado.','success');
     }).catch(function(e){console.warn('jobsFinalize.api',e);alert('Erro de rede.');});
