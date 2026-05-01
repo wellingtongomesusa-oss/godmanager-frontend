@@ -1919,6 +1919,15 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   </select>
   <button type="button" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
  </div>
+ <div id="jobs-date-filter-row" style="display:flex;gap:8px;align-items:center;margin:8px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
+  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
+  <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Hoje</button>
+  <button type="button" id="jobs-df-tomorrow" onclick="gmJobsSetDateFilter('tomorrow')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Amanhã</button>
+  <button type="button" id="jobs-df-week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
+  <button type="button" id="jobs-df-custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
+  <input type="date" id="jobs-df-custom-input" onchange="gmJobsSetDateFilter('custom',this.value)" style="display:none;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-left:4px">
+  <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--ink3);font-weight:500;margin-left:auto">Todas as datas</button>
+ </div>
 
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="padding:0 32px;margin-top:16px"><div class="gm-kpis-row gm-kpis-row--jobs">
   <div style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
@@ -13797,19 +13806,84 @@ function jobsMoney(n){
  return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
+window.__jobsDateFilter='today';
+window.__jobsCustomDate='';
+
+function gmJobsGetDateRange(){
+ var f=window.__jobsDateFilter||'today';
+ var custom=window.__jobsCustomDate||'';
+ var now=new Date();
+ var pad=function(n){return n<10?'0'+n:''+n;};
+ var fmt=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+ if(f==='all') return {from:null,to:null};
+ if(f==='today'){
+  var t=fmt(now);
+  return {from:t,to:t};
+ }
+ if(f==='tomorrow'){
+  var tm=new Date(now.getTime()+86400000);
+  var ts=fmt(tm);
+  return {from:ts,to:ts};
+ }
+ if(f==='week'){
+  var endW=new Date(now.getTime()+7*86400000);
+  return {from:fmt(now),to:fmt(endW)};
+ }
+ if(f==='custom' && custom){
+  return {from:custom,to:custom};
+ }
+ return {from:null,to:null};
+}
+
+function gmJobsRowDateStr(r){
+ if(!r) return '';
+ var d=r.serviceDate||r.date||r.createdAt||r.savedAt||'';
+ if(!d) return '';
+ return String(d).slice(0,10);
+}
+
+window.gmJobsSetDateFilter=function(f,custom){
+ window.__jobsDateFilter=f;
+ if(f==='custom' && custom!==undefined) window.__jobsCustomDate=custom;
+ try{
+  ['today','tomorrow','week','custom','all'].forEach(function(k){
+   var b=document.getElementById('jobs-df-'+k);
+   if(b){
+    var active=(k===f);
+    b.style.background=active?'#1e2b3d':'transparent';
+    b.style.color=active?'#fff':(k==='all'?'var(--ink3)':'#1e2b3d');
+    b.style.fontWeight=active?'700':'500';
+   }
+  });
+  var custInput=document.getElementById('jobs-df-custom-input');
+  if(custInput) custInput.style.display=(f==='custom')?'inline-block':'none';
+ }catch(e){}
+ if(typeof jobsRender==='function')jobsRender();
+};
+
 function jobsFilteredExpenses(){
  var arr=jobsMergeForJobs();
+ var range=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
  return (arr||[]).filter(function(r){
   if(!r)return false;
-  if(r._isPm)return true;
-  if(r.type==='chamado')return false;
-  if(r.type==='statement'){
+  var passType=false;
+  if(r._isPm){passType=true;}
+  else if(r.type==='chamado'){passType=false;}
+  else if(r.type==='statement'){
    var vs=jobsVendorSourceStr(r);
-   if(!vs)return false;
+   if(vs)passType=true;
   }
-  if(r.isJob===true)return true;
-  if(r.type==='expense')return true;
-  return !!jobsVendorSourceStr(r);
+  else if(r.isJob===true){passType=true;}
+  else if(r.type==='expense'){passType=true;}
+  else if(jobsVendorSourceStr(r)){passType=true;}
+  if(!passType)return false;
+  if(range.from || range.to){
+   var rd=gmJobsRowDateStr(r);
+   if(!rd)return false;
+   if(range.from && rd<range.from)return false;
+   if(range.to && rd>range.to)return false;
+  }
+  return true;
  });
 }
 
