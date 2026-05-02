@@ -2117,6 +2117,27 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <!-- /JOBS PAGE -->
 
+<!-- JOBS MANAGER MARKUP MODAL -->
+<div id="jobs-manager-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9400;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)jobsManagerClose()">
+  <div style="background:#fff;border-radius:10px;padding:24px;max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">Manager Markup</div>
+    <div id="jobs-manager-modal-context" style="font-size:12px;color:var(--ink2);margin-bottom:16px">—</div>
+
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">VALOR (USD)</label>
+    <input type="number" id="jobs-manager-amount" step="0.01" min="0" placeholder="0.00" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;font-family:'JetBrains Mono',monospace;margin-bottom:14px">
+
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">DESCRIcAO (OPCIONAL)</label>
+    <textarea id="jobs-manager-description" rows="3" placeholder="Justificacao do markup..." style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
+
+    <div id="jobs-manager-feedback" style="font-size:12px;margin-bottom:10px;min-height:16px"></div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" onclick="jobsManagerClose()" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>
+      <button type="button" id="jobs-manager-save-btn" onclick="jobsManagerSave()" style="padding:8px 16px;background:#6b46c1;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Confirmar e Registar</button>
+    </div>
+  </div>
+</div>
+
 <!-- 
  LONG TERM — MODAL: New / Edit Property
  -->
@@ -14098,6 +14119,103 @@ window.jobsVendorSourceStr=function(r){
 function jobsLoadActions(){
  try{var a=JSON.parse(localStorage.getItem(JOBS_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}
 }
+
+// ==================== MANAGER MARKUP MODAL ====================
+window.__jobsManagerActiveId=null;
+
+function jobsManagerOpen(expenseId){
+ var row=jobsFindRowById(expenseId);
+ if(!row)return;
+ window.__jobsManagerActiveId=expenseId;
+
+ var modal=document.getElementById('jobs-manager-modal');
+ var ctx=document.getElementById('jobs-manager-modal-context');
+ var amt=document.getElementById('jobs-manager-amount');
+ var desc=document.getElementById('jobs-manager-description');
+ var fb=document.getElementById('jobs-manager-feedback');
+
+ if(ctx)ctx.textContent=(typeof jobsResolveAddress==='function')
+  ?('Job: '+jobsResolveAddress(row))
+  :('Job ID: '+expenseId);
+ if(amt)amt.value='';
+ if(desc)desc.value='';
+ if(fb){fb.textContent='';fb.style.color='';}
+ var sbtn=document.getElementById('jobs-manager-save-btn');
+ if(sbtn){sbtn.disabled=false;sbtn.textContent='Confirmar e Registar';}
+ if(modal)modal.style.display='flex';
+}
+
+function jobsManagerClose(){
+ var modal=document.getElementById('jobs-manager-modal');
+ if(modal)modal.style.display='none';
+ window.__jobsManagerActiveId=null;
+ var btn=document.getElementById('jobs-manager-save-btn');
+ if(btn){btn.disabled=false;btn.textContent='Confirmar e Registar';}
+}
+
+async function jobsManagerSave(){
+ var btn=document.getElementById('jobs-manager-save-btn');
+ var fb=document.getElementById('jobs-manager-feedback');
+ var amtEl=document.getElementById('jobs-manager-amount');
+ var descEl=document.getElementById('jobs-manager-description');
+ var expenseId=window.__jobsManagerActiveId;
+
+ if(!expenseId){
+  if(fb){fb.style.color='var(--red)';fb.textContent='Erro interno: sem job ativo.';}
+  return;
+ }
+
+ var amount=parseFloat(amtEl?amtEl.value:'0');
+ if(isNaN(amount)||amount<=0){
+  if(fb){fb.style.color='var(--red)';fb.textContent='Valor deve ser maior que zero.';}
+  return;
+ }
+
+ var description=descEl?String(descEl.value||'').trim():'';
+
+ if(btn){btn.disabled=true;btn.textContent='Registando...';}
+ if(fb){fb.style.color='var(--ink2)';fb.textContent='Enviando...';}
+
+ try{
+  var resp=await fetch('/api/job-actions',{
+   method:'POST',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    jobId:String(expenseId),
+    jobType:'expense',
+    action:'manager_markup',
+    reason:description||null,
+    metadata:{
+     amount:amount,
+     currency:'USD',
+     markedAt:new Date().toISOString()
+    }
+   })
+  });
+
+  if(!resp.ok){
+   var errTxt=await resp.text().catch(function(){return '';});
+   if(fb){fb.style.color='var(--red)';fb.textContent='Erro: HTTP '+resp.status+(errTxt?' — '+errTxt.slice(0,100):'');}
+   if(btn){btn.disabled=false;btn.textContent='Confirmar e Registar';}
+   return;
+  }
+
+  if(fb){fb.style.color='var(--green)';fb.textContent='Markup registado: $'+amount.toFixed(2);}
+  setTimeout(function(){
+   jobsManagerClose();
+   if(typeof jobsRender==='function')jobsRender();
+  },800);
+ }catch(e){
+  if(fb){fb.style.color='var(--red)';fb.textContent='Erro: '+(e.message||String(e));}
+  if(btn){btn.disabled=false;btn.textContent='Confirmar e Registar';}
+ }
+}
+
+window.jobsManagerOpen=jobsManagerOpen;
+window.jobsManagerClose=jobsManagerClose;
+window.jobsManagerSave=jobsManagerSave;
+
 function jobsSaveActions(arr){
  try{localStorage.setItem(JOBS_KEY,JSON.stringify(arr||[]));}catch(e){}
 }
@@ -14859,6 +14977,16 @@ async function jobsRender(){
   btnJob='<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnJobClick(\''+idAttr+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">Job +$200</button>';
  }
 
+ var btnManager='';
+ if(isAdmin&&!isCancelled){
+  var st0m=String(r.status||'').toLowerCase();
+  var stPm=String(r.statusPm||'').toLowerCase();
+  var isPendingOrScheduled=(st0m==='pending'||st0m==='scheduled'||stPm==='pending'||stPm==='scheduled'||(!st0m&&!stPm));
+  if(isPendingOrScheduled){
+   btnManager='<button type="button" class="job-btn-manager" onclick="jobsManagerOpen(\''+idAttr+'\')" style="padding:4px 10px;background:#6b46c1;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;margin-left:4px">Manager</button>';
+  }
+ }
+
  var hasActions=vendorDone||jobDone;
  var btnReturn=hasActions
   ? '<button type="button" onclick="jobsReturn(\''+idAttr+'\')" title="Remover acoes Vendor/Job aplicadas e voltar a pendente" style="'+btnStyleBase+';background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)">Retornar</button>'
@@ -14896,7 +15024,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnReturn+btnEdit+btnFinalize+btnReschedule+btnCancel+btnReactivate+'</div></td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnEdit+btnFinalize+btnReschedule+btnCancel+btnReactivate+'</div></td>'
   +'</tr>';
 }).join('');
  }finally{
