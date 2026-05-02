@@ -511,6 +511,29 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 <script src="/properties_seed.js"></script>
 <script src="/tenants_seed.js"></script>
 <script src="/gm_clean_ghost_props.js"></script>
+<script>
+// Bootstrap i18n: ler NEXT_LOCALE (marketing) -> gm_lang (premium)
+// Mapeamento: en -> en, pt-br -> pt, es -> es
+(function gmI18nBootstrap(){
+  try {
+    var LOCALE_MAP = { 'en': 'en', 'pt-br': 'pt', 'es': 'es' };
+    var match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+    var nextLocale = match ? decodeURIComponent(match[1]).toLowerCase() : null;
+    if (nextLocale && LOCALE_MAP[nextLocale]) {
+      localStorage.setItem('gm_lang', LOCALE_MAP[nextLocale]);
+    }
+  } catch(e) {
+    // silent fail - mantem gm_lang existente ou default 'en'
+  }
+})();
+</script>
+<script src="/gm-i18n.js"></script>
+<script>
+// Garantir que UI traduz na carga inicial
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof applyTranslations === 'function') applyTranslations();
+});
+</script>
 </head>
 <body>
 <div id="ls" style="display:none" aria-hidden="true"></div>
@@ -660,7 +683,14 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  <button type="button" id="btn-exit-client" onclick="exitClientView()">Exit Client View</button>
  <span class="tsn">Sessão: admin</span>
  <button type="button" id="btn-topbar-clients" class="tb-clients" onclick="nav('clients')" style="display:none">Clients</button>
- <button class="tb">EN</button>
+ <div class="tb-lang-wrap" style="position:relative;display:inline-block">
+   <button type="button" class="tb" id="lang-current" onclick="gmLangToggle()" aria-haspopup="true" aria-expanded="false" title="Change language">EN</button>
+   <div id="lang-menu" style="position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.08);min-width:80px;display:none;z-index:1000">
+     <button type="button" onclick="gmSetLang('en')" style="display:block;width:100%;padding:8px 12px;background:none;border:none;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600">EN</button>
+     <button type="button" onclick="gmSetLang('pt')" style="display:block;width:100%;padding:8px 12px;background:none;border:none;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600">PT</button>
+     <button type="button" onclick="gmSetLang('es')" style="display:block;width:100%;padding:8px 12px;background:none;border:none;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600">ES</button>
+   </div>
+ </div>
  <button type="button" class="tb gm-allow-viewer" onclick="gmBackupExport()" title="Export backup JSON" style="padding:6px 12px;background:#22558c;color:#fff;border:1px solid #22558c;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;margin-right:8px">Backup</button>
  <button class="tb gm-allow-viewer" onclick="window.print()">Export PDF</button>
  </div>
@@ -3327,6 +3357,50 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 
 <script>
 var GM_BACKEND_RAILWAY_APP='https://godmanager-production.up.railway.app';
+
+// Dropdown de idioma na topbar
+function gmLangToggle(){
+  try {
+    var menu = document.getElementById('lang-menu');
+    var btn = document.getElementById('lang-current');
+    if (!menu) return;
+    var isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+    if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+  } catch(e){}
+}
+
+function gmSetLang(lang){
+  try {
+    // Mapeamento inverso para NEXT_LOCALE (marketing)
+    var REVERSE_MAP = { 'en': 'en', 'pt': 'pt-br', 'es': 'es' };
+    var nextLocale = REVERSE_MAP[lang] || 'en';
+
+    // Grava localmente para Premium
+    localStorage.setItem('gm_lang', lang);
+
+    // Sincroniza cookie NEXT_LOCALE para marketing (1 ano)
+    var maxAge = 60 * 60 * 24 * 365;
+    document.cookie = 'NEXT_LOCALE=' + nextLocale + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+
+    // Reload para aplicar 100% da UI traduzida
+    window.location.reload();
+  } catch(e){
+    console.error('gmSetLang error:', e);
+  }
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', function(ev){
+  var wrap = document.querySelector('.tb-lang-wrap');
+  var menu = document.getElementById('lang-menu');
+  if (!wrap || !menu) return;
+  if (!wrap.contains(ev.target)) {
+    menu.style.display = 'none';
+    var btn = document.getElementById('lang-current');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+});
 
 const CARDS=[
  {id:'total-houses',label:'TOTAL HOUSES',badge:'HSE',barClass:'bb bg',value:'—',sub1:'All properties in portfolio',sub2:'',cd:[60,25,15],cc:['#2a6e4e','#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Vacant',c:'pa'},{t:'Maintenance',c:'pr'}],r:'ltproperties',empty:true,labels:[]},
