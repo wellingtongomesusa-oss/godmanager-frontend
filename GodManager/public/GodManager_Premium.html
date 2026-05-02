@@ -1157,56 +1157,6 @@ document.addEventListener('DOMContentLoaded', function(){
   <button type="button" onclick="gvExportCsv()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer">Export CSV</button>
  </div>
  <div id="gv-months" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
- <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px" id="gv-kpis"></div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px">
-  <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)" id="gv-top-title">Top Vendors by Orders</div>
-  <div style="overflow:auto">
-   <table style="width:100%;border-collapse:collapse;min-width:640px">
-    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
-     <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">#</th>
-     <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Vendor Name</th>
-     <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Trade</th>
-     <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Orders</th>
-     <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Total $</th>
-    </tr></thead>
-    <tbody id="gv-top-body"></tbody>
-   </table>
-  </div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border)">
-   <div style="font-size:12px;font-weight:700;color:var(--ink)">Vendors</div>
-   <input id="gv-search" oninput="gvRenderTable()" placeholder="Search vendor..." style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);min-width:240px">
-  </div>
-  <div style="overflow:auto">
-   <table style="width:100%;border-collapse:collapse;min-width:1060px">
-    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
-     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Company Name</th>
-     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Contact</th>
-     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Trade</th>
-     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Phone</th>
-     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Email</th>
-     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Tipo Serviço</th>
-     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Pacote</th>
-     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Markup</th>
-     <th style="padding:9px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Orders</th>
-     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Checklist</th>
-     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Status</th>
-     <th style="padding:9px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Total a Pagar</th>
-     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Actions</th>
-    </tr></thead>
-    <tbody id="gv-tbody"></tbody>
-   </table>
-  </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border)">
-   <div id="gv-page-info" style="font-size:11px;color:var(--ink3)"></div>
-   <div style="display:flex;gap:6px">
-    <button type="button" onclick="gvPrevPage()" style="padding:5px 10px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Prev</button>
-    <button type="button" onclick="gvNextPage()" style="padding:5px 10px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Next</button>
-   </div>
-  </div>
- </div>
-
 <!-- VENDOR DETAILS — Jobs vs Invoices (FINALIZED) -->
 <div class="card" id="gv-details-card" style="margin-top:16px">
  <div class="ph">
@@ -1283,6 +1233,55 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
  </div>
 </div>
+ <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px" id="gv-kpis"></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px">
+  <div style="padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink)" id="gv-top-title">Top Vendors by Orders</div>
+  <div style="overflow:auto">
+   <table style="width:100%;border-collapse:collapse;min-width:640px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">#</th>
+     <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Vendor Name</th>
+     <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Trade</th>
+     <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Orders</th>
+     <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Total $</th>
+    </tr></thead>
+    <tbody id="gv-top-body"></tbody>
+   </table>
+  </div>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border)">
+   <div style="font-size:12px;font-weight:700;color:var(--ink)">Vendors</div>
+   <input id="gv-search" oninput="gvRenderTable()" placeholder="Search vendor..." style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);min-width:240px">
+  </div>
+  <div style="overflow:auto">
+   <table style="width:100%;border-collapse:collapse;min-width:1060px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Company Name</th>
+     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Contact</th>
+     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Trade</th>
+     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Phone</th>
+     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Email</th>
+     <th style="padding:9px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase">Tipo Serviço</th>
+     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Pacote</th>
+     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Markup</th>
+     <th style="padding:9px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Orders</th>
+     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Checklist</th>
+     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Status</th>
+     <th style="padding:9px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase">Total a Pagar</th>
+     <th style="padding:9px 10px;text-align:center;font-size:9px;color:var(--ink3);text-transform:uppercase">Actions</th>
+    </tr></thead>
+    <tbody id="gv-tbody"></tbody>
+   </table>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border)">
+   <div id="gv-page-info" style="font-size:11px;color:var(--ink3)"></div>
+   <div style="display:flex;gap:6px">
+    <button type="button" onclick="gvPrevPage()" style="padding:5px 10px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Prev</button>
+    <button type="button" onclick="gvNextPage()" style="padding:5px 10px;border:1px solid var(--border2);background:transparent;border-radius:6px;cursor:pointer">Next</button>
+   </div>
+  </div>
+ </div>
 
  <div id="gv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9300;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)gvCloseModal()">
   <div style="background:var(--paper);border-radius:12px;max-width:1060px;width:100%;max-height:92vh;overflow:auto;padding:18px;border:1px solid var(--border)" onclick="event.stopPropagation()">
