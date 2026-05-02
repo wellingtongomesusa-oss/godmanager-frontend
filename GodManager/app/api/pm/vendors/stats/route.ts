@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Prisma, PmExpenseStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 
 export const dynamic = 'force-dynamic';
 
-const PM_EXPENSE_STATUSES: PmExpenseStatus[] = [
-  'SCHEDULED',
-  'PAID',
-  'PENDING',
-  'CANCELLED',
-  'FINALIZED',
-];
-
-function isPmExpenseStatus(s: string): s is PmExpenseStatus {
-  return (PM_EXPENSE_STATUSES as readonly string[]).includes(s);
-}
-
-function sumToNumber(v: unknown): number {
+function sumToNum(v: unknown): number {
   if (v == null) return 0;
   if (typeof v === 'object' && v !== null && 'toString' in v) return Number((v as { toString(): string }).toString());
   return Number(v);
@@ -26,99 +14,118 @@ function sumToNumber(v: unknown): number {
 /**
  * GET /api/pm/vendors/stats
  *
- * Aggregated PmExpense per vendor (+ monthly breakdown by monthRef).
+ * Aggregated PmExpense per vendor: Jobs (all) vs Invoices (FINALIZED only).
  *
  * Query params:
  *   - vendorId — restrict to one vendor
- *   - status — PmExpenseStatus (omit or ALL for no filter)
  *   - monthsBack — max rows in monthlyBreakdown per vendor (default 12), most recent first
  */
 export async function GET(req: NextRequest) {
   const user = await getCurrentUserFromSession();
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
   try {
     const { searchParams } = new URL(req.url);
     const vendorIdFilter = searchParams.get('vendorId')?.trim() || null;
-    const statusFilterRaw = searchParams.get('status')?.trim() || null;
     const monthsBack = Math.min(60, Math.max(1, parseInt(searchParams.get('monthsBack') || '12', 10) || 12));
 
-    const where: Prisma.PmExpenseWhereInput = {};
-    if (vendorIdFilter) where.vendorId = vendorIdFilter;
-    if (statusFilterRaw && statusFilterRaw.toUpperCase() !== 'ALL' && isPmExpenseStatus(statusFilterRaw)) {
-      where.status = statusFilterRaw;
-    }
+    const baseWhere: Prisma.PmExpenseWhereInput = {};
+    if (vendorIdFilter) baseWhere.vendorId = vendorIdFilter;
 
-    const byVendor = await prisma.pmExpense.groupBy({
-      by: ['vendorId'],
-      where,
-      _count: { _all: true },
-      _sum: {
-        vendorCost: true,
-        ownerCharged: true,
-      },
+    const finalizedWhere: Prisma.PmExpenseWhereInput = { ...baseWhere, status: 'FINALIZED' };
+
+    const [byVendorAll, byVendorFin, byVendorMonthAll, byVendorMonthFin] = await Promise.all([
+      prisma.pmExpense.groupBy({
+        by: ['vendorId'],
+        where: baseWhere,
+        _count: { _all: true },
+        _sum: { vendorCost: true, ownerCharged: true },
+      }),
+      prisma.pmExpense.groupBy({
+        by: ['vendorId'],
+        where: finalizedWhere,
+        _count: { _all: true },
+        _sum: { vendorCost: true, ownerCharged: true },
+      }),
+      prisma.pmExpense.groupBy({
+        by: ['vendorId', 'monthRef'],
+        where: baseWhere,
+        _count: { _all: true },
+        _sum: { vendorCost: true, ownerCharged: true },
+        orderBy: [{ vendorId: 'asc' }, { monthRef: 'desc' }],
+      }),
+      prisma.pmExpense.groupBy({
+        by: ['vendorId', 'monthRef'],
+        where: finalizedWhere,
+        _count: { _all: true },
+        _sum: { vendorCost: true, ownerCharged: true },
+        orderBy: [{ vendorId: 'asc' }, { monthRef: 'desc' }],
+      }),
+    ]);
+
+    const finVendorMap = new Map<string | null, (typeof byVendorFin)[number]>();
+    byVendorFin.forEach((v) => finVendorMap.set(v.vendorId, v));
+
+    const finMonthMap = new Map<string, (typeof byVendorMonthFin)[number]>();
+    byVendorMonthFin.forEach((m) => {
+      const key = (m.vendorId ?? '__null__') + '|' + m.monthRef;
+      finMonthMap.set(key, m);
     });
 
-    const byVendorMonth = await prisma.pmExpense.groupBy({
-      by: ['vendorId', 'monthRef'],
-      where,
-      _count: { _all: true },
-      _sum: {
-        vendorCost: true,
-        ownerCharged: true,
-      },
-      orderBy: [{ vendorId: 'asc' }, { monthRef: 'desc' }],
-    });
-
-    const vendorIds = byVendor.map((v) => v.vendorId).filter((id): id is string => id != null && id !== '');
+    const vendorIds = byVendorAll.map((v) => v.vendorId).filter((id): id is string => !!id);
 
     const vendors = await prisma.pmVendor.findMany({
       where: { id: { in: vendorIds.length ? vendorIds : ['__none__'] } },
-      select: {
-        id: true,
-        companyName: true,
-        commissionMp: true,
-      },
+      select: { id: true, companyName: true, commissionMp: true },
     });
 
     const vendorMap = new Map(vendors.map((v) => [v.id, v]));
 
-    const stats = byVendor.map((v) => {
+    const stats = byVendorAll.map((v) => {
       const vendor = v.vendorId ? vendorMap.get(v.vendorId) : null;
-      const monthlyBreakdown = byVendorMonth
+      const fin = finVendorMap.get(v.vendorId);
+
+      const monthlyAll = byVendorMonthAll
         .filter((m) => m.vendorId === v.vendorId)
         .sort((a, b) => String(b.monthRef).localeCompare(String(a.monthRef)))
-        .slice(0, monthsBack)
-        .map((m) => ({
+        .slice(0, monthsBack);
+
+      const monthlyBreakdown = monthlyAll.map((m) => {
+        const key = (m.vendorId ?? '__null__') + '|' + m.monthRef;
+        const finM = finMonthMap.get(key);
+        return {
           monthRef: m.monthRef,
           count: m._count._all,
-          vendorCost: sumToNumber(m._sum.vendorCost),
-          ownerCharged: sumToNumber(m._sum.ownerCharged),
-        }));
+          countFinalized: finM ? finM._count._all : 0,
+          vendorCost: sumToNum(m._sum.vendorCost),
+          vendorCostFinalized: finM ? sumToNum(finM._sum.vendorCost) : 0,
+          ownerCharged: sumToNum(m._sum.ownerCharged),
+          ownerChargedFinalized: finM ? sumToNum(finM._sum.ownerCharged) : 0,
+        };
+      });
 
       return {
         vendorId: v.vendorId,
         companyName: vendor?.companyName ?? '(unknown vendor)',
         commissionMp: vendor?.commissionMp ?? false,
-        totalExpenses: v._count._all,
-        totalVendorCost: sumToNumber(v._sum.vendorCost),
-        totalOwnerCharged: sumToNumber(v._sum.ownerCharged),
+        totalJobs: v._count._all,
+        totalInvoices: fin ? fin._count._all : 0,
+        jobsVendorCost: sumToNum(v._sum.vendorCost),
+        jobsOwnerCharged: sumToNum(v._sum.ownerCharged),
+        invoicesVendorCost: fin ? sumToNum(fin._sum.vendorCost) : 0,
+        invoicesOwnerCharged: fin ? sumToNum(fin._sum.ownerCharged) : 0,
         monthlyBreakdown,
       };
     });
 
-    stats.sort((a, b) => b.totalOwnerCharged - a.totalOwnerCharged);
+    stats.sort((a, b) => b.jobsOwnerCharged - a.jobsOwnerCharged);
 
     return NextResponse.json({
       ok: true,
       stats,
-      filters: {
-        vendorId: vendorIdFilter,
-        status: statusFilterRaw,
-        monthsBack,
-      },
+      filters: { vendorId: vendorIdFilter, monthsBack },
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'internal_error';

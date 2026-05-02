@@ -1207,52 +1207,76 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
  </div>
 
-<!-- VENDOR DETAILS — Stats agregadas de PmExpense -->
+<!-- VENDOR DETAILS — Jobs vs Invoices (FINALIZED) -->
 <div class="card" id="gv-details-card" style="margin-top:16px">
  <div class="ph">
   <div class="pt">Vendor Details</div>
-  <div class="ps">Estatisticas agregadas de despesas por vendor (origem: Postgres pm_expenses)</div>
+  <div class="ps">Jobs (todos) vs Invoices (apenas FINALIZED) — origem: Postgres pm_expenses</div>
  </div>
  <div style="padding:14px;display:flex;flex-direction:column;gap:14px">
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
    <label for="gv-details-vendor-select" style="font-size:12px;font-weight:600;color:var(--ink2)">Vendor:</label>
-   <select id="gv-details-vendor-select" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);font-size:13px;min-width:240px;color:var(--ink)">
+   <select id="gv-details-vendor-select" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;min-width:240px;background:var(--sand);color:var(--ink)">
     <option value="">Carregando...</option>
    </select>
    <button type="button" id="gv-details-refresh" onclick="if(typeof gvDetailsLoad==='function')gvDetailsLoad()" style="padding:6px 12px;background:#22558c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif">Atualizar</button>
    <span id="gv-details-status" style="font-size:11px;color:var(--ink2)"></span>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-   <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
-    <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Jobs</div>
-    <div id="gv-details-total-count" style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--navy);margin-top:4px">—</div>
-    <div style="font-size:10px;color:var(--ink2);margin-top:2px">PmExpenses count</div>
+  <div>
+   <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.5px;margin-bottom:6px;text-transform:uppercase">Jobs (todos os status)</div>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
+     <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Jobs</div>
+     <div id="gv-details-jobs-count" style="font-size:24px;font-weight:700;color:var(--navy);margin-top:4px;font-family:'JetBrains Mono',monospace">—</div>
+    </div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
+     <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Vendor Cost</div>
+     <div id="gv-details-jobs-vc" style="font-size:24px;font-weight:700;color:var(--red);margin-top:4px;font-family:'JetBrains Mono',monospace">—</div>
+    </div>
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
+     <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Owner Charged</div>
+     <div id="gv-details-jobs-oc" style="font-size:24px;font-weight:700;color:var(--green);margin-top:4px;font-family:'JetBrains Mono',monospace">—</div>
+    </div>
    </div>
-   <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
-    <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Vendor Cost</div>
-    <div id="gv-details-total-vendor-cost" style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--red);margin-top:4px">—</div>
-    <div style="font-size:10px;color:var(--ink2);margin-top:2px">Pago aos vendors</div>
-   </div>
-   <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
-    <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Owner Charged</div>
-    <div id="gv-details-total-owner-charged" style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--green);margin-top:4px">—</div>
-    <div style="font-size:10px;color:var(--ink2);margin-top:2px">Cobrado aos owners</div>
+  </div>
+  <div>
+   <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.5px;margin-bottom:6px;text-transform:uppercase">Invoices (apenas FINALIZED)</div>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+    <div style="background:var(--green-bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+     <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Invoices</div>
+     <div id="gv-details-inv-count" style="font-size:24px;font-weight:700;color:var(--navy);margin-top:4px;font-family:'JetBrains Mono',monospace">—</div>
+    </div>
+    <div style="background:var(--green-bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+     <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Vendor Paid</div>
+     <div id="gv-details-inv-vc" style="font-size:24px;font-weight:700;color:var(--red);margin-top:4px;font-family:'JetBrains Mono',monospace">—</div>
+    </div>
+    <div style="background:var(--green-bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+     <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Owner Paid</div>
+     <div id="gv-details-inv-oc" style="font-size:24px;font-weight:700;color:var(--green);margin-top:4px;font-family:'JetBrains Mono',monospace">—</div>
+    </div>
    </div>
   </div>
   <div>
    <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px">Breakdown Mensal (ultimos 12 meses)</div>
-   <div style="overflow:auto">
-    <table style="width:100%;font-size:12px;border-collapse:collapse;min-width:520px">
+   <div style="overflow-x:auto">
+    <table style="width:100%;font-size:12px;border-collapse:collapse;min-width:760px">
      <thead>
-      <tr style="background:var(--cream);border-bottom:1px solid var(--border)">
-       <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Mes</th>
-       <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Jobs</th>
-       <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Vendor Cost</th>
-       <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Owner Charged</th>
+      <tr style="background:var(--cream)">
+       <th rowspan="2" style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:bottom;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Mes</th>
+       <th colspan="3" style="padding:6px 10px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);font-size:10px;color:var(--ink3);font-weight:700">Jobs (todos)</th>
+       <th colspan="3" style="padding:6px 10px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--green-bg);font-size:10px;color:var(--ink3);font-weight:700">Invoices (FINALIZED)</th>
+      </tr>
+      <tr style="background:var(--cream)">
+       <th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);border-left:1px solid var(--border);font-size:10px;color:var(--ink3);text-transform:uppercase">Qty</th>
+       <th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);font-size:10px;color:var(--ink3);text-transform:uppercase">Vendor</th>
+       <th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);font-size:10px;color:var(--ink3);text-transform:uppercase">Owner</th>
+       <th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--green-bg);font-size:10px;color:var(--ink3);text-transform:uppercase">Qty</th>
+       <th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);background:var(--green-bg);font-size:10px;color:var(--ink3);text-transform:uppercase">Vendor</th>
+       <th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);background:var(--green-bg);font-size:10px;color:var(--ink3);text-transform:uppercase">Owner</th>
       </tr>
      </thead>
      <tbody id="gv-details-monthly-tbody">
-      <tr><td colspan="4" style="padding:14px;text-align:center;color:var(--ink2)">Carregando...</td></tr>
+      <tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink2)">Carregando...</td></tr>
      </tbody>
     </table>
    </div>
@@ -12695,9 +12719,9 @@ function gvDetailsMonthLabel(monthRef){
 }
 
 async function gvDetailsLoad(){
- var status=document.getElementById('gv-details-status');
  if(gvDetailsLoading)return;
  gvDetailsLoading=true;
+ var status=document.getElementById('gv-details-status');
  if(status)status.textContent='A carregar...';
  try{
   var r=await fetch('/api/pm/vendors/stats',{credentials:'include'});
@@ -12711,14 +12735,13 @@ async function gvDetailsLoad(){
    return;
   }
   gvDetailsData=data.stats;
-
   var sel=document.getElementById('gv-details-vendor-select');
   if(sel){
    sel.innerHTML='<option value="">Todos os vendors ('+gvDetailsData.length+')</option>';
    gvDetailsData.forEach(function(s){
     var opt=document.createElement('option');
     opt.value=s.vendorId||'';
-    var label=s.companyName+' ('+s.totalExpenses+')';
+    var label=s.companyName+' ('+(s.totalJobs||0)+' jobs / '+(s.totalInvoices||0)+' inv)';
     if(s.commissionMp)label+=' — 18%';
     opt.textContent=label;
     sel.appendChild(opt);
@@ -12740,39 +12763,61 @@ function gvDetailsRender(){
  var sel=document.getElementById('gv-details-vendor-select');
  var selectedId=sel?sel.value:'';
  var pool=selectedId?gvDetailsData.filter(function(s){return s.vendorId===selectedId;}):gvDetailsData;
- var totalCount=0,totalVC=0,totalOC=0;
+ var jobsCount=0,jobsVC=0,jobsOC=0;
+ var invCount=0,invVC=0,invOC=0;
  var monthlyMap={};
  pool.forEach(function(s){
-  totalCount+=s.totalExpenses;
-  totalVC+=s.totalVendorCost;
-  totalOC+=s.totalOwnerCharged;
+  jobsCount+=s.totalJobs||0;
+  jobsVC+=s.jobsVendorCost||0;
+  jobsOC+=s.jobsOwnerCharged||0;
+  invCount+=s.totalInvoices||0;
+  invVC+=s.invoicesVendorCost||0;
+  invOC+=s.invoicesOwnerCharged||0;
   (s.monthlyBreakdown||[]).forEach(function(m){
-   if(!monthlyMap[m.monthRef])monthlyMap[m.monthRef]={count:0,vendorCost:0,ownerCharged:0};
-   monthlyMap[m.monthRef].count+=m.count;
-   monthlyMap[m.monthRef].vendorCost+=m.vendorCost;
-   monthlyMap[m.monthRef].ownerCharged+=m.ownerCharged;
+   if(!monthlyMap[m.monthRef]){
+    monthlyMap[m.monthRef]={
+     count:0,countFinalized:0,
+     vendorCost:0,vendorCostFinalized:0,
+     ownerCharged:0,ownerChargedFinalized:0
+    };
+   }
+   var x=monthlyMap[m.monthRef];
+   x.count+=m.count||0;
+   x.countFinalized+=m.countFinalized||0;
+   x.vendorCost+=m.vendorCost||0;
+   x.vendorCostFinalized+=m.vendorCostFinalized||0;
+   x.ownerCharged+=m.ownerCharged||0;
+   x.ownerChargedFinalized+=m.ownerChargedFinalized||0;
   });
  });
- var c=document.getElementById('gv-details-total-count');
- if(c)c.textContent=String(totalCount);
- var vc=document.getElementById('gv-details-total-vendor-cost');
- if(vc)vc.textContent=gvDetailsFmt(totalVC);
- var oc=document.getElementById('gv-details-total-owner-charged');
- if(oc)oc.textContent=gvDetailsFmt(totalOC);
+ var setText=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+ setText('gv-details-jobs-count',String(jobsCount));
+ setText('gv-details-jobs-vc',gvDetailsFmt(jobsVC));
+ setText('gv-details-jobs-oc',gvDetailsFmt(jobsOC));
+ setText('gv-details-inv-count',String(invCount));
+ setText('gv-details-inv-vc',gvDetailsFmt(invVC));
+ setText('gv-details-inv-oc',gvDetailsFmt(invOC));
  var tbody=document.getElementById('gv-details-monthly-tbody');
  if(!tbody)return;
  var sortedMonths=Object.keys(monthlyMap).sort().reverse().slice(0,12);
  if(!sortedMonths.length){
-  tbody.innerHTML='<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--ink2)">Sem dados para este vendor</td></tr>';
+  tbody.innerHTML='<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink2)">Sem dados para este vendor</td></tr>';
   return;
  }
+ var mono="font-family:'JetBrains Mono',monospace";
+ var brd='border-bottom:1px solid var(--border)';
+ var brdL='border-left:1px solid var(--border)';
+ var bgFin='background:var(--green-bg)';
  tbody.innerHTML=sortedMonths.map(function(mr){
-  var mm=monthlyMap[mr];
+  var m=monthlyMap[mr];
   return'<tr>'
-   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border)">'+gvDetailsMonthLabel(mr)+'</td>'
-   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:\'JetBrains Mono\',monospace">'+mm.count+'</td>'
-   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">'+gvDetailsFmt(mm.vendorCost)+'</td>'
-   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+gvDetailsFmt(mm.ownerCharged)+'</td>'
+   +'<td style="padding:8px 10px;'+brd+'">'+gvDetailsMonthLabel(mr)+'</td>'
+   +'<td style="padding:8px 10px;'+brd+';'+brdL+';text-align:right;'+mono+'">'+m.count+'</td>'
+   +'<td style="padding:8px 10px;'+brd+';text-align:right;'+mono+';color:var(--red)">'+gvDetailsFmt(m.vendorCost)+'</td>'
+   +'<td style="padding:8px 10px;'+brd+';text-align:right;'+mono+';color:var(--green)">'+gvDetailsFmt(m.ownerCharged)+'</td>'
+   +'<td style="padding:8px 10px;'+brd+';'+brdL+';'+bgFin+';text-align:right;'+mono+'">'+m.countFinalized+'</td>'
+   +'<td style="padding:8px 10px;'+brd+';'+bgFin+';text-align:right;'+mono+';color:var(--red)">'+gvDetailsFmt(m.vendorCostFinalized)+'</td>'
+   +'<td style="padding:8px 10px;'+brd+';'+bgFin+';text-align:right;'+mono+';color:var(--green)">'+gvDetailsFmt(m.ownerChargedFinalized)+'</td>'
    +'</tr>';
  }).join('');
 }
