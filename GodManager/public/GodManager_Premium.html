@@ -1207,6 +1207,59 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
  </div>
 
+<!-- VENDOR DETAILS — Stats agregadas de PmExpense -->
+<div class="card" id="gv-details-card" style="margin-top:16px">
+ <div class="ph">
+  <div class="pt">Vendor Details</div>
+  <div class="ps">Estatisticas agregadas de despesas por vendor (origem: Postgres pm_expenses)</div>
+ </div>
+ <div style="padding:14px;display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+   <label for="gv-details-vendor-select" style="font-size:12px;font-weight:600;color:var(--ink2)">Vendor:</label>
+   <select id="gv-details-vendor-select" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);font-size:13px;min-width:240px;color:var(--ink)">
+    <option value="">Carregando...</option>
+   </select>
+   <button type="button" id="gv-details-refresh" onclick="if(typeof gvDetailsLoad==='function')gvDetailsLoad()" style="padding:6px 12px;background:#22558c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif">Atualizar</button>
+   <span id="gv-details-status" style="font-size:11px;color:var(--ink2)"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
+    <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Jobs</div>
+    <div id="gv-details-total-count" style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--navy);margin-top:4px">—</div>
+    <div style="font-size:10px;color:var(--ink2);margin-top:2px">PmExpenses count</div>
+   </div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
+    <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Vendor Cost</div>
+    <div id="gv-details-total-vendor-cost" style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--red);margin-top:4px">—</div>
+    <div style="font-size:10px;color:var(--ink2);margin-top:2px">Pago aos vendors</div>
+   </div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:14px">
+    <div style="font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Total Owner Charged</div>
+    <div id="gv-details-total-owner-charged" style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--green);margin-top:4px">—</div>
+    <div style="font-size:10px;color:var(--ink2);margin-top:2px">Cobrado aos owners</div>
+   </div>
+  </div>
+  <div>
+   <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px">Breakdown Mensal (ultimos 12 meses)</div>
+   <div style="overflow:auto">
+    <table style="width:100%;font-size:12px;border-collapse:collapse;min-width:520px">
+     <thead>
+      <tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+       <th style="padding:8px 10px;text-align:left;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Mes</th>
+       <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Jobs</th>
+       <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Vendor Cost</th>
+       <th style="padding:8px 10px;text-align:right;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Owner Charged</th>
+      </tr>
+     </thead>
+     <tbody id="gv-details-monthly-tbody">
+      <tr><td colspan="4" style="padding:14px;text-align:center;color:var(--ink2)">Carregando...</td></tr>
+     </tbody>
+    </table>
+   </div>
+  </div>
+ </div>
+</div>
+
  <div id="gv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9300;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)gvCloseModal()">
   <div style="background:var(--paper);border-radius:12px;max-width:1060px;width:100%;max-height:92vh;overflow:auto;padding:18px;border:1px solid var(--border)" onclick="event.stopPropagation()">
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -5924,6 +5977,7 @@ function nav(r){
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
+ vendors:()=>{if(typeof gvRender==='function')gvRender();},
  settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var isAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase()==='admin';w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
@@ -12618,6 +12672,111 @@ async function gvFetchFromApi(){
   return true;
  }catch(e){window._pmVendorsList=null;return false;}
 }
+
+// Vendor Details — stats desde Postgres (/api/pm/vendors/stats)
+var gvDetailsData=null;
+var gvDetailsLoading=false;
+
+function gvDetailsFmt(n){
+ if(n==null)return'$0.00';
+ var v=Number(n);
+ if(isNaN(v))return'$0.00';
+ return'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function gvDetailsMonthLabel(monthRef){
+ if(!monthRef)return'\u2014';
+ var parts=String(monthRef).split('-');
+ if(parts.length!==2)return monthRef;
+ var months=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+ var m=parseInt(parts[1],10);
+ if(isNaN(m)||m<1||m>12)return monthRef;
+ return months[m-1]+'/'+parts[0];
+}
+
+async function gvDetailsLoad(){
+ var status=document.getElementById('gv-details-status');
+ if(gvDetailsLoading)return;
+ gvDetailsLoading=true;
+ if(status)status.textContent='A carregar...';
+ try{
+  var r=await fetch('/api/pm/vendors/stats',{credentials:'include'});
+  if(!r.ok){
+   if(status)status.textContent='Erro: HTTP '+r.status;
+   return;
+  }
+  var data=await r.json();
+  if(!data||!data.ok||!Array.isArray(data.stats)){
+   if(status)status.textContent='Resposta invalida';
+   return;
+  }
+  gvDetailsData=data.stats;
+
+  var sel=document.getElementById('gv-details-vendor-select');
+  if(sel){
+   sel.innerHTML='<option value="">Todos os vendors ('+gvDetailsData.length+')</option>';
+   gvDetailsData.forEach(function(s){
+    var opt=document.createElement('option');
+    opt.value=s.vendorId||'';
+    var label=s.companyName+' ('+s.totalExpenses+')';
+    if(s.commissionMp)label+=' — 18%';
+    opt.textContent=label;
+    sel.appendChild(opt);
+   });
+   sel.onchange=gvDetailsRender;
+  }
+  gvDetailsRender();
+  if(status)status.textContent='Atualizado: '+new Date().toLocaleTimeString();
+ }catch(e){
+  if(status)status.textContent='Erro: '+(e&&e.message?e.message:String(e));
+  console.error('gvDetailsLoad',e);
+ }finally{
+  gvDetailsLoading=false;
+ }
+}
+
+function gvDetailsRender(){
+ if(!gvDetailsData)return;
+ var sel=document.getElementById('gv-details-vendor-select');
+ var selectedId=sel?sel.value:'';
+ var pool=selectedId?gvDetailsData.filter(function(s){return s.vendorId===selectedId;}):gvDetailsData;
+ var totalCount=0,totalVC=0,totalOC=0;
+ var monthlyMap={};
+ pool.forEach(function(s){
+  totalCount+=s.totalExpenses;
+  totalVC+=s.totalVendorCost;
+  totalOC+=s.totalOwnerCharged;
+  (s.monthlyBreakdown||[]).forEach(function(m){
+   if(!monthlyMap[m.monthRef])monthlyMap[m.monthRef]={count:0,vendorCost:0,ownerCharged:0};
+   monthlyMap[m.monthRef].count+=m.count;
+   monthlyMap[m.monthRef].vendorCost+=m.vendorCost;
+   monthlyMap[m.monthRef].ownerCharged+=m.ownerCharged;
+  });
+ });
+ var c=document.getElementById('gv-details-total-count');
+ if(c)c.textContent=String(totalCount);
+ var vc=document.getElementById('gv-details-total-vendor-cost');
+ if(vc)vc.textContent=gvDetailsFmt(totalVC);
+ var oc=document.getElementById('gv-details-total-owner-charged');
+ if(oc)oc.textContent=gvDetailsFmt(totalOC);
+ var tbody=document.getElementById('gv-details-monthly-tbody');
+ if(!tbody)return;
+ var sortedMonths=Object.keys(monthlyMap).sort().reverse().slice(0,12);
+ if(!sortedMonths.length){
+  tbody.innerHTML='<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--ink2)">Sem dados para este vendor</td></tr>';
+  return;
+ }
+ tbody.innerHTML=sortedMonths.map(function(mr){
+  var mm=monthlyMap[mr];
+  return'<tr>'
+   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border)">'+gvDetailsMonthLabel(mr)+'</td>'
+   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:\'JetBrains Mono\',monospace">'+mm.count+'</td>'
+   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">'+gvDetailsFmt(mm.vendorCost)+'</td>'
+   +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+gvDetailsFmt(mm.ownerCharged)+'</td>'
+   +'</tr>';
+ }).join('');
+}
+
 function gvRefreshPackageMarkup(){
  var sel=document.getElementById('gv-default_package');
  var out=document.getElementById('gv-markup_display');
@@ -12829,7 +12988,7 @@ function gvRenderTable(){
  var pi=document.getElementById('gv-page-info');
  if(pi)pi.textContent='Page '+gvPage+'/'+totalPages+' \u00B7 '+filtered.length+' vendor(s)';
 }
-function gvRender(){const vendors=gvLoad();const t=document.getElementById('gv-title');if(t)t.textContent=`${gvT('vendors_title')} — ${(gvMonth==='all'?gvT('all_months'):GV_MONTHS[+gvMonth])} 2026`;const s=document.getElementById('gv-subtitle');if(s)s.textContent=gvT('vendors_subtitle');const n=document.getElementById('gv-btn-new');if(n)n.textContent=gvT('new_vendor');const tt=document.getElementById('gv-top-title');if(tt)tt.textContent=gvT('top_vendors');gvWireMonths();gvRenderKpis(vendors);gvTopRows(vendors);gvRenderTable()}
+function gvRender(){const vendors=gvLoad();const t=document.getElementById('gv-title');if(t)t.textContent=`${gvT('vendors_title')} — ${(gvMonth==='all'?gvT('all_months'):GV_MONTHS[+gvMonth])} 2026`;const s=document.getElementById('gv-subtitle');if(s)s.textContent=gvT('vendors_subtitle');const n=document.getElementById('gv-btn-new');if(n)n.textContent=gvT('new_vendor');const tt=document.getElementById('gv-top-title');if(tt)tt.textContent=gvT('top_vendors');gvWireMonths();gvRenderKpis(vendors);gvTopRows(vendors);gvRenderTable();var pg=document.getElementById('page-vendors');if(pg&&pg.classList.contains('active')){if(gvDetailsData==null&&!gvDetailsLoading){void gvDetailsLoad();}else if(gvDetailsData){gvDetailsRender();}}}
 function gvBuildBills(vendors){const m=['1','2','3','4','5','6','7','8','9','10','11','12'];if(!vendors.length)return[];const out=[];vendors.forEach((v,idx)=>{for(let i=0;i<6;i++){const mm=m[(idx+i)%12];out.push({vendor_id:v.id,month:mm,amount:Math.round(180+Math.random()*2400)})}});return out}
 function gvLoadBills(){fetch('/api/appfolio/bills').then(r=>r.ok?r.json():Promise.reject()).then(j=>{const arr=Array.isArray(j)?j:(j.bills||[]);gvBills=arr.map((b,i)=>({vendor_id:String(b.vendor_id||b.vendor||b.vendor_name||('v'+i)),month:String(new Date(b.bill_date||b.date||Date.now()).getMonth()+1),amount:+(b.amount||b.total||0)}));gvRender();}).catch(()=>{const v=gvLoad();gvBills=gvBuildBills(v);gvRender();});}
 function gvOpenModal(){gvEditingId=null;gvFillForm({rating:5,status:'Active',send_1099:true,commission_mp:false,checklist:{}});document.getElementById('gv-modal-title').textContent='New Vendor';document.getElementById('gv-modal').style.display='flex';}
@@ -12899,7 +13058,7 @@ async function gvInit(){
  gvLoadBills();
  gvRender();
 }
-window.gvOpenModal=gvOpenModal;window.gvCloseModal=gvCloseModal;window.gvSaveVendor=gvSaveVendor;window.gvRenderTable=gvRenderTable;window.gvDelete=gvDelete;window.gvEdit=gvEdit;window.gvView=gvView;window.gvSetMonth=gvSetMonth;window.gvPrevPage=gvPrevPage;window.gvNextPage=gvNextPage;window.gvTradeChanged=gvTradeChanged;window.gvRefreshChecklist=gvRefreshChecklist;window.gvUploadDoc=gvUploadDoc;window.gvExportCsv=gvExportCsv;
+window.gvOpenModal=gvOpenModal;window.gvCloseModal=gvCloseModal;window.gvSaveVendor=gvSaveVendor;window.gvRenderTable=gvRenderTable;window.gvDelete=gvDelete;window.gvEdit=gvEdit;window.gvView=gvView;window.gvSetMonth=gvSetMonth;window.gvPrevPage=gvPrevPage;window.gvNextPage=gvNextPage;window.gvTradeChanged=gvTradeChanged;window.gvRefreshChecklist=gvRefreshChecklist;window.gvUploadDoc=gvUploadDoc;window.gvExportCsv=gvExportCsv;window.gvDetailsLoad=gvDetailsLoad;window.gvDetailsRender=gvDetailsRender;
 
 // Expor funções (API global)
 window.saveAllData=saveAllData;
