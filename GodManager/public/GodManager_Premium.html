@@ -8657,6 +8657,20 @@ function jobsFindRowById(id){
 }
 function jobsUpdateInvoicesKpi(){
  var list=(typeof listInvoices==='function')?listInvoices():[];
+ var vf=window.__jobsVendorFilter||'';
+ if(vf){
+  list=list.filter(function(inv){
+   if(inv.expenseId&&typeof jobsFindRowById==='function'&&typeof jobsVendorSourceStr==='function'){
+    var row=jobsFindRowById(inv.expenseId);
+    if(row){
+     var rowVendor=jobsVendorSourceStr(row);
+     if(rowVendor===vf)return true;
+    }
+   }
+   if(inv.vendor_name&&String(inv.vendor_name).trim()===vf)return true;
+   return false;
+  });
+ }
  var qty=list.length;
  var total=list.reduce(function(s,x){return s+(Number(x.amount)||0);},0);
  var el1=document.getElementById('jobs-kpi-invoices-qty');
@@ -14695,7 +14709,14 @@ async function jobsRender(){
  }
 
  var totalVendorFees=0, totalJobFees=0;
+ var vf=window.__jobsVendorFilter||'';
  jobsLoadActions().forEach(function(a){
+  if(vf&&typeof jobsFindRowById==='function'&&typeof jobsVendorSourceStr==='function'){
+   var row=jobsFindRowById(a.expenseId);
+   if(!row)return;
+   var rowVendor=jobsVendorSourceStr(row);
+   if(rowVendor!==vf)return;
+  }
   if(a.type==='vendor')totalVendorFees+=Number(a.amount)||0;
   if(a.type==='job')totalJobFees+=Number(a.amount)||0;
  });
