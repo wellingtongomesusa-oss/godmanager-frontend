@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["cd GodManager && npm install --no-audit --no-fund"]
+
+[phases.build]
+cmds = [
+  "cd GodManager && npx prisma generate",
+  "cd GodManager && npm run build"
+]
+
+[start]
+cmd = "cd GodManager && npx prisma migrate deploy && npm start"
