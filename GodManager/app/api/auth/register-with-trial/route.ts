@@ -22,15 +22,22 @@ const VALID_SEGMENTS: BusinessSegment[] = [
  * POST /api/auth/register — that flow stays pending + no subscription.
  */
 export async function POST(req: NextRequest) {
-  // TEMP: guard disabled for end-to-end Stripe test (revert before commit)
-  // return NextResponse.json(
-  //   {
-  //     ok: false,
-  //     error: 'signup_paused',
-  //     message: 'Self-serve signup is launching soon. Please contact us to set up your account.',
-  //   },
-  //   { status: 503 },
-  // );
+  // GUARD: self-serve signup is paused until F3 multi-tenant
+  // sprint completes. Until then, all customers must go through
+  // manual onboarding so we can provision isolated workspaces.
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'signup_paused',
+      message: 'Self-serve signup is launching soon. Please contact us to set up your account.',
+    },
+    { status: 503 },
+  );
+
+  // Original logic preserved below — restore by removing the
+  // early return above. Multi-tenant gating must be in place
+  // before reactivating.
+  // eslint-disable-next-line no-unreachable
   try {
     const body = await req.json().catch(() => ({}));
 
