@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm install --no-audit --no-fund"]
+cmds = ["npm install --no-audit --no-fund --include=dev"]
 
 [phases.build]
 cmds = ["npx prisma generate", "npm run build"]
