@@ -536,6 +536,116 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 </head>
 <body>
+<script>
+/* ============ TRIAL BANNER (billing status) ============ */
+(function(){
+ function gmPricingLocalePath(){
+  try{
+   var m=document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+   var loc=m?decodeURIComponent(m[1]).toLowerCase():'en';
+   if(loc==='pt-br')return'/pt-br/pricing';
+   if(loc==='es')return'/es/pricing';
+   return'/en/pricing';
+  }catch(e){return'/en/pricing';}
+ }
+ async function gmTrialBannerInit(){
+  try{
+   var r=await fetch('/api/billing/status',{credentials:'include'});
+   if(!r.ok)return;
+   var data=await r.json();
+   if(!data||!data.ok)return;
+   var sub=data.subscription;
+   if(!sub)return;
+   if(sub.isGrandfathered)return;
+   if(sub.status==='TRIAL'){
+    gmTrialBannerShow(sub);
+   }else if(sub.status==='EXPIRED'){
+    gmTrialExpiredOverlay();
+   }else if(sub.status==='PAST_DUE'){
+    gmTrialPastDueBanner(sub);
+   }
+  }catch(e){
+   console.warn('gmTrialBannerInit',e);
+  }
+ }
+ function gmTrialBannerShow(sub){
+  if(!sub.trialEndsAt)return;
+  var endsAt=new Date(sub.trialEndsAt).getTime();
+  var msLeft=endsAt-Date.now();
+  var daysLeft=Math.ceil(msLeft/(1000*60*60*24));
+  if(daysLeft<0)return;
+  var pricingHref=gmPricingLocalePath();
+  var bgColor=daysLeft<=5?'#b83030':'#c9a96e';
+  var msg=daysLeft===1?'Last day of your free trial':daysLeft+' days left in your free trial';
+  var banner=document.createElement('div');
+  banner.id='gm-trial-banner';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:'+bgColor+';color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:\\'DM Sans\\',sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.1)';
+  var link=document.createElement('a');
+  link.href=pricingHref;
+  link.style.cssText='color:#fff;text-decoration:underline;font-weight:700';
+  link.textContent='Choose a plan';
+  banner.appendChild(document.createTextNode(msg+' · '));
+  banner.appendChild(link);
+  document.body.insertBefore(banner,document.body.firstChild);
+  document.body.style.paddingTop='36px';
+ }
+ function gmTrialExpiredOverlay(){
+  var pricingHref=gmPricingLocalePath();
+  var ov=document.createElement('div');
+  ov.id='gm-trial-expired';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,55,0.95);display:flex;align-items:center;justify-content:center;font-family:\\'DM Sans\\',sans-serif;color:#fff';
+  var inner=document.createElement('div');
+  inner.style.cssText='max-width:480px;text-align:center;padding:32px';
+  var mark=document.createElement('div');
+  mark.style.cssText='width:56px;height:56px;margin:0 auto 16px;border-radius:50%;border:2px solid #c9a96e;color:#c9a96e;font-family:monospace;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center';
+  mark.textContent='30';
+  var h=document.createElement('h2');
+  h.style.cssText='font-size:28px;font-weight:700;margin-bottom:12px;font-family:Georgia,serif';
+  h.textContent='Your trial has expired';
+  var p=document.createElement('p');
+  p.style.cssText='font-size:15px;opacity:0.85;margin-bottom:24px';
+  p.textContent='Your data is safe. Choose a plan to continue.';
+  var a=document.createElement('a');
+  a.href=pricingHref;
+  a.style.cssText='display:inline-block;padding:14px 32px;background:#fff;color:#22558c;border-radius:8px;text-decoration:none;font-weight:700';
+  a.textContent='Choose a plan';
+  inner.appendChild(mark);
+  inner.appendChild(h);
+  inner.appendChild(p);
+  inner.appendChild(a);
+  ov.appendChild(inner);
+  document.body.appendChild(ov);
+ }
+ function gmTrialPastDueBanner(){
+  var banner=document.createElement('div');
+  banner.id='gm-trial-banner-pastdue';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:#b83030;color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:\\'DM Sans\\',sans-serif';
+  banner.appendChild(document.createTextNode('Payment failed · '));
+  var btn=document.createElement('button');
+  btn.type='button';
+  btn.textContent='Update payment method';
+  btn.style.cssText='background:transparent;border:none;color:#fff;text-decoration:underline;font-weight:700;cursor:pointer;font:inherit;padding:0';
+  btn.onclick=function(){
+   fetch('/api/billing/portal',{
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:'{}'
+   }).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.url)window.location.href=d.url;
+   }).catch(function(){});
+  };
+  banner.appendChild(btn);
+  document.body.insertBefore(banner,document.body.firstChild);
+  document.body.style.paddingTop='36px';
+ }
+ if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',gmTrialBannerInit);
+ }else{
+  gmTrialBannerInit();
+ }
+})();
+</script>
 <div id="ls" style="display:none" aria-hidden="true"></div>
 
 <!-- SIDEBAR -->
