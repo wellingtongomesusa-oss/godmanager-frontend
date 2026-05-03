@@ -474,3 +474,28 @@ model BillingEvent {
   @@index([createdAt])
   @@map("billing_events")
 }
+
+model PricingLead {
+  id                        String           @id @default(cuid())
+  email                     String
+  businessType              String // wizard key: realtor | longterm | pm | insurance | maintenance | other | ...
+  segment                   BusinessSegment?
+  packageTier               Int?
+  avgRent                   Decimal?         @db.Decimal(12, 2)
+  avgVgv                    Decimal?         @db.Decimal(14, 2)
+  unitCount                 Int?
+  properties                Int?
+  systems                   String[]
+  pricePerUnit              Decimal?         @db.Decimal(10, 4)
+  monthlyTotal              Decimal?         @db.Decimal(12, 2)
+  annualTotal               Decimal?         @db.Decimal(14, 2)
+  source                    String           @default("savings_wizard")
+  ipAddress                 String?
+  userAgent                 String?
+  convertedToSubscription   Boolean          @default(false)
+  createdAt                 DateTime         @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("pricing_leads")
+}

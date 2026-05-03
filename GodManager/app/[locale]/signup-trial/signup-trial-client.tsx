@@ -97,7 +97,7 @@ function SignupTrialForm() {
         WebkitFontSmoothing: 'antialiased',
       }}
     >
-      <SiteHeader active="pricing" />
+      <SiteHeader active="savings" />
       <main style={{ maxWidth: 480, margin: '0 auto', padding: '96px 24px 48px' }}>
         <h1
           style={{

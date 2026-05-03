@@ -20,6 +20,28 @@ import { BusinessSegment } from '@prisma/client';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Savings wizard / UI segment keys → Prisma `BusinessSegment` (null = no self-serve signup). */
+export const UI_SEGMENT_MAP: Record<string, BusinessSegment | null> = {
+  realtor: 'REALTOR',
+  longterm: 'LONG_TERM',
+  insurance: 'INSURANCE',
+  pm: 'LONG_TERM',
+  short_term: 'SHORT_TERM',
+  hospitality: 'HOSPITALITY',
+  maintenance: null,
+  other: null,
+};
+
+export function mapUiToSegment(uiKey: string): BusinessSegment | null {
+  return UI_SEGMENT_MAP[uiKey] ?? null;
+}
+
+/** Dollar display helper: nearest whole dollar minus one cent (UI only). */
+export function roundTo99(n: number): number {
+  const rounded = Math.round(n);
+  return Math.max(0, rounded - 0.01);
+}
+
 export type PricingInput = {
   segment: BusinessSegment;
   packageTier?: number | null; // 1, 2, 3 — only for LONG_TERM
@@ -29,10 +51,13 @@ export type PricingInput = {
 };
 
 export type PricingResult = {
-  pricePerUnit: number; // for per-unit segments
+  pricePerUnit: number; // exact — Stripe / Subscription
+  pricePerUnitDisplay: number; // UI only (`roundTo99`)
   unitCount: number; // resolved
-  monthlyTotal: number; // total monthly USD
-  annualTotal: number; // monthly x 10 (2 months free)
+  monthlyTotal: number; // exact monthly USD
+  monthlyTotalDisplay: number; // UI only
+  annualTotal: number; // exact monthly x 10 (2 months free)
+  annualTotalDisplay: number; // UI only
   breakdown: {
     base?: number;
     p2Add?: number;
@@ -54,11 +79,17 @@ export function calculatePrice(input: PricingInput): PricingResult {
     }
     const ppu = 18.9;
     const monthly = round2(ppu * units);
+    const pricePerUnitDisplay = roundTo99(ppu);
+    const monthlyTotalDisplay = round2(pricePerUnitDisplay * units);
+    const annualTotalDisplay = round2(monthlyTotalDisplay * 10);
     return {
       pricePerUnit: ppu,
+      pricePerUnitDisplay,
       unitCount: units,
       monthlyTotal: monthly,
+      monthlyTotalDisplay,
       annualTotal: round2(monthly * 10),
+      annualTotalDisplay,
       breakdown: { base: ppu },
       ok: true,
     };
@@ -71,11 +102,18 @@ export function calculatePrice(input: PricingInput): PricingResult {
       return zeroResult({ ok: false, error: 'avgVgv must be > 0' });
     }
     const monthly = round2(vgv * 0.0088);
+    const resolvedUnitCount = 1;
+    const pricePerUnitDisplay = roundTo99(monthly);
+    const monthlyTotalDisplay = round2(pricePerUnitDisplay * resolvedUnitCount);
+    const annualTotalDisplay = round2(monthlyTotalDisplay * 10);
     return {
       pricePerUnit: monthly,
-      unitCount: 1,
+      pricePerUnitDisplay,
+      unitCount: resolvedUnitCount,
       monthlyTotal: monthly,
+      monthlyTotalDisplay,
       annualTotal: round2(monthly * 10),
+      annualTotalDisplay,
       breakdown: { base: monthly },
       ok: true,
     };
@@ -131,12 +169,18 @@ export function calculatePrice(input: PricingInput): PricingResult {
 
     ppu = round2(ppu);
     const monthly = round2(ppu * units);
+    const pricePerUnitDisplay = roundTo99(ppu);
+    const monthlyTotalDisplay = round2(pricePerUnitDisplay * units);
+    const annualTotalDisplay = round2(monthlyTotalDisplay * 10);
 
     return {
       pricePerUnit: ppu,
+      pricePerUnitDisplay,
       unitCount: units,
       monthlyTotal: monthly,
+      monthlyTotalDisplay,
       annualTotal: round2(monthly * 10),
+      annualTotalDisplay,
       breakdown,
       ok: true,
     };
@@ -148,9 +192,12 @@ export function calculatePrice(input: PricingInput): PricingResult {
 function zeroResult(opts: { ok: boolean; error?: string }): PricingResult {
   return {
     pricePerUnit: 0,
+    pricePerUnitDisplay: 0,
     unitCount: 0,
     monthlyTotal: 0,
+    monthlyTotalDisplay: 0,
     annualTotal: 0,
+    annualTotalDisplay: 0,
     breakdown: {},
     ...opts,
   };

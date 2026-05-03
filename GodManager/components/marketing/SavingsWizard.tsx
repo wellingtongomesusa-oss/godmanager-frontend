@@ -3,6 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useState, useMemo } from 'react';
+import { calculatePrice, mapUiToSegment } from '@/lib/billingPricing';
 
 type BusinessType = 'realtor' | 'longterm' | 'insurance' | 'pm' | 'maintenance' | 'other';
 type ClientRange = '1-10' | '11-30' | '31-100' | '101-200' | '200+';
@@ -36,7 +37,51 @@ export function SavingsWizard() {
   const [clientRange, setClientRange] = useState<ClientRange | null>(null);
   const [systems, setSystems] = useState<SystemKey[]>([]);
 
+  const [avgRent, setAvgRent] = useState<number>(1800);
+  const [avgVgv, setAvgVgv] = useState<number>(500000);
+  const [billingInterval] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
+  const [packageTier, setPackageTier] = useState<1 | 2 | 3>(1);
+  const [emailRevealed, setEmailRevealed] = useState<boolean>(false);
+  const [revealEmail, setRevealEmail] = useState<string>('');
+  const [revealLoading, setRevealLoading] = useState<boolean>(false);
+  const [revealError, setRevealError] = useState<string>('');
+
   const properties = clientRange ? RANGE_TO_PROPERTIES[clientRange] : 0;
+
+  const segment = businessType ? mapUiToSegment(businessType) : null;
+  const supportsPricing = segment !== null;
+
+  const pricing = useMemo(() => {
+    if (!segment || !supportsPricing) return null;
+    if (segment === 'LONG_TERM') {
+      return calculatePrice({
+        segment,
+        packageTier,
+        avgRent,
+        unitCount: properties,
+        avgVgv: null,
+      });
+    }
+    if (segment === 'SHORT_TERM' || segment === 'HOSPITALITY') {
+      return calculatePrice({
+        segment,
+        packageTier: null,
+        avgRent: null,
+        unitCount: properties,
+        avgVgv: null,
+      });
+    }
+    if (segment === 'REALTOR' || segment === 'INSURANCE') {
+      return calculatePrice({
+        segment,
+        packageTier: null,
+        avgRent: null,
+        unitCount: 1,
+        avgVgv,
+      });
+    }
+    return null;
+  }, [segment, supportsPricing, packageTier, avgRent, avgVgv, properties]);
 
   // Heuristic: if user uses multiple systems, costs add up
   const currentMonthlyCost = useMemo(() => {
@@ -74,6 +119,43 @@ export function SavingsWizard() {
   const handleBack = () => {
     if (step > 1) setStep((step - 1) as 1 | 2 | 3 | 4);
   };
+
+  async function handleRevealPricing() {
+    setRevealError('');
+    if (!revealEmail || !/^[^@]+@[^@]+\.[^@]+$/.test(revealEmail)) {
+      setRevealError('Please enter a valid email');
+      return;
+    }
+    setRevealLoading(true);
+    try {
+      const resp = await fetch('/api/savings/reveal-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: revealEmail,
+          businessType,
+          properties,
+          systems,
+          segment,
+          packageTier: segment === 'LONG_TERM' ? packageTier : null,
+          avgRent: segment === 'LONG_TERM' ? avgRent : null,
+          avgVgv: segment === 'REALTOR' || segment === 'INSURANCE' ? avgVgv : null,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) {
+        setRevealError(data.error || 'Failed to submit');
+        setRevealLoading(false);
+        return;
+      }
+      setEmailRevealed(true);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setRevealError(err?.message || 'Network error');
+    } finally {
+      setRevealLoading(false);
+    }
+  }
 
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
@@ -219,24 +301,167 @@ export function SavingsWizard() {
             )}
 
             {step === 4 && (
-              <div className="animate-fadeIn text-center py-8">
-                <p className="text-sm uppercase tracking-wider text-slate-500 mb-2">{t('resultTitle')}</p>
-                <p className="font-playfair text-6xl text-[#1e2b3d] mb-4">{fmt(annualSavings)}</p>
-                <p className="text-sm text-slate-600 mb-8">
-                  {fmt(monthlySavings)}/mo · {savingsPct}% less than today
-                </p>
-                <Link
-                  href="/contacto"
-                  className="inline-block px-8 py-4 rounded-lg bg-[#c9a961] text-white font-semibold hover:bg-[#b08f4a] transition-all"
-                >
-                  {t('resultCta')} →
-                </Link>
+              <div className="animate-fadeIn py-4">
+                <div className="text-center mb-8">
+                  <p className="text-sm uppercase tracking-wider text-slate-500 mb-2">{t('resultTitle')}</p>
+                  <p className="font-playfair text-5xl text-[#1e2b3d] mb-3">{fmt(annualSavings)}</p>
+                  <p className="text-sm text-slate-600">
+                    {fmt(monthlySavings)}/mo · {savingsPct}% less than today
+                  </p>
+                </div>
+
+                {!supportsPricing && (
+                  <div className="text-center">
+                    <p className="text-sm text-slate-600 mb-4">
+                      Let us discuss the right plan for your business.
+                    </p>
+                    <Link
+                      href="/contacto"
+                      className="inline-block px-8 py-4 rounded-lg bg-[#c9a961] text-white font-semibold hover:bg-[#b08f4a] transition-all"
+                    >
+                      Contact us →
+                    </Link>
+                  </div>
+                )}
+
+                {supportsPricing && (
+                  <div className="border-t border-slate-200 pt-6">
+                    <p className="text-xs uppercase tracking-wider text-slate-500 mb-4 text-center">
+                      Your GodManager plan
+                    </p>
+
+                    {segment === 'LONG_TERM' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        <div>
+                          <label className="text-xs text-slate-500 uppercase tracking-wider">
+                            Avg monthly rent
+                          </label>
+                          <input
+                            type="number"
+                            value={avgRent}
+                            onChange={(e) => setAvgRent(Math.max(0, Number(e.target.value || 0)))}
+                            className="w-full mt-1 px-3 py-2 border border-slate-300 rounded text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 uppercase tracking-wider">Package</label>
+                          <div className="flex gap-1 mt-1">
+                            {[1, 2, 3].map((tier) => (
+                              <button
+                                key={tier}
+                                type="button"
+                                onClick={() => setPackageTier(tier as 1 | 2 | 3)}
+                                className={`flex-1 py-2 rounded text-sm font-medium ${
+                                  packageTier === tier
+                                    ? 'bg-[#1e2b3d] text-white'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                P{tier}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(segment === 'REALTOR' || segment === 'INSURANCE') && (
+                      <div className="mb-4">
+                        <label className="text-xs text-slate-500 uppercase tracking-wider">
+                          Monthly VGV / sales volume (USD)
+                        </label>
+                        <input
+                          type="number"
+                          value={avgVgv}
+                          onChange={(e) => setAvgVgv(Math.max(0, Number(e.target.value || 0)))}
+                          className="w-full mt-1 px-3 py-2 border border-slate-300 rounded text-sm"
+                        />
+                      </div>
+                    )}
+
+                    {pricing && pricing.ok && (
+                      <div className="bg-[#1e2b3d]/5 rounded-xl p-6 mb-4 text-center">
+                        <p className="text-xs uppercase tracking-wider text-slate-500 mb-2">Estimated cost</p>
+                        {!emailRevealed ? (
+                          <>
+                            <p className="font-mono text-4xl text-slate-300 mb-1">$XX.XX</p>
+                            <p className="text-xs text-slate-500">per month - locked</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-mono text-4xl text-[#1e2b3d] mb-1">
+                              {fmt(pricing.monthlyTotalDisplay)}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              per month - {pricing.unitCount} units
+                            </p>
+                            {billingInterval === 'ANNUAL' && (
+                              <p className="text-xs text-slate-600 mt-1">
+                                or {fmt(pricing.annualTotalDisplay)} / year (2 months free)
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {!emailRevealed && pricing && pricing.ok && (
+                      <div className="bg-white border border-slate-200 rounded-xl p-5">
+                        <p className="text-sm text-slate-700 mb-3 text-center">
+                          Enter your email to see the price for your business
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            placeholder="you@company.com"
+                            value={revealEmail}
+                            onChange={(e) => setRevealEmail(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-300 rounded text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRevealPricing}
+                            disabled={revealLoading}
+                            className="px-4 py-2 rounded font-medium text-white bg-[#c9a961] hover:bg-[#b08f4a] disabled:opacity-50 text-sm whitespace-nowrap"
+                          >
+                            {revealLoading ? 'Loading...' : 'Reveal price'}
+                          </button>
+                        </div>
+                        {revealError && (
+                          <p className="text-xs text-red-600 mt-2">{revealError}</p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-2 text-center">
+                          We will only contact you about your plan.
+                        </p>
+                      </div>
+                    )}
+
+                    {emailRevealed && pricing && pricing.ok && (
+                      <div className="text-center">
+                        <Link
+                          href={`/signup-trial?segment=${segment}&tier=${packageTier}&avgRent=${avgRent}&avgVgv=${avgVgv}&unitCount=${segment === 'REALTOR' || segment === 'INSURANCE' ? 1 : properties}&interval=${billingInterval}&email=${encodeURIComponent(revealEmail)}`}
+                          className="inline-block px-8 py-4 rounded-lg bg-[#c9a961] text-white font-semibold hover:bg-[#b08f4a] transition-all"
+                        >
+                          Start 30-day free trial
+                        </Link>
+                        <p className="text-xs text-slate-500 mt-2">
+                          No credit card required for trial
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <button
                   onClick={() => {
                     setStep(1);
                     setBusinessType(null);
                     setClientRange(null);
                     setSystems([]);
+                    setEmailRevealed(false);
+                    setRevealEmail('');
+                    setRevealError('');
+                    setRevealLoading(false);
                   }}
                   className="block mx-auto mt-6 text-sm text-slate-500 hover:text-[#1e2b3d]"
                 >
