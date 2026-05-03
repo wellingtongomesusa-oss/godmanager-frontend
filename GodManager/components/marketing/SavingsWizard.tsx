@@ -439,14 +439,12 @@ export function SavingsWizard() {
                     {emailRevealed && pricing && pricing.ok && (
                       <div className="text-center">
                         <Link
-                          href={`/signup-trial?segment=${segment}&tier=${packageTier}&avgRent=${avgRent}&avgVgv=${avgVgv}&unitCount=${segment === 'REALTOR' || segment === 'INSURANCE' ? 1 : properties}&interval=${billingInterval}&email=${encodeURIComponent(revealEmail)}`}
+                          href={`/contacto?lead=true&email=${encodeURIComponent(revealEmail)}&segment=${segment || ''}`}
                           className="inline-block px-8 py-4 rounded-lg bg-[#c9a961] text-white font-semibold hover:bg-[#b08f4a] transition-all"
                         >
-                          Start 30-day free trial
+                          Request access
                         </Link>
-                        <p className="text-xs text-slate-500 mt-2">
-                          No credit card required for trial
-                        </p>
+                        <p className="text-xs text-slate-500 mt-2">We will reach out within 1 business day</p>
                       </div>
                     )}
                   </div>
