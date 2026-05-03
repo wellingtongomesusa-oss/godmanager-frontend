@@ -6132,7 +6132,7 @@ function nav(r){
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
  vendors:()=>{if(typeof gvRender==='function')gvRender();},
- settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var isAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase()==='admin';w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
+ settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
@@ -8402,7 +8402,7 @@ function gmRenderCommentsList(comments, opts){
  var sorted=arr.slice().sort(function(a,b){return String(b.createdAt).localeCompare(String(a.createdAt));});
  return '<div style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto">'+sorted.map(function(c){
   var dt=c.createdAt?new Date(c.createdAt).toLocaleString('pt-PT'):'';
-  var roleColor=(c.authorRole==='admin')?'#1e2b3d':(c.authorRole==='maintenance'?'#a855f7':'#94a3b8');
+  var roleColor=(c.authorRole==='admin'||c.authorRole==='super_admin')?'#1e2b3d':(c.authorRole==='maintenance'?'#a855f7':'#94a3b8');
   return '<div style="border-left:3px solid '+roleColor+';padding:8px 12px;background:#f8fafc;border-radius:4px">'
    +'<div style="font-size:11px;font-weight:600;color:var(--ink)">'+(c.author||'—')+' <span style="font-size:9px;color:'+roleColor+';font-weight:700;text-transform:uppercase;margin-left:4px">'+(c.authorRole||'').toUpperCase()+'</span></div>'
    +'<div style="font-size:10px;color:var(--ink3);margin:2px 0 4px">'+dt+'</div>'
@@ -14866,7 +14866,8 @@ window.jobsUpdateJobsPageRoleKpis=function(){
  try{
   var u=window.__gmCurrentUser;
   if(!u)return;
-  var isAdmin=String(u.role||'').toLowerCase()==='admin';
+  var rJb=String(u.role||'').toLowerCase();
+  var isAdmin=(rJb==='admin'||rJb==='super_admin');
   var isMaint=String(u.role||'').toLowerCase()==='maintenance';
   var ev=document.querySelector('#page-jobs [data-jobs-card="fees-vendor"]');
   var ej=document.querySelector('#page-jobs [data-jobs-card="fees-job"]');
@@ -15032,9 +15033,9 @@ async function jobsRender(){
   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa encontrada.</td></tr>';
   return;
  }
- var isAdmin=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase()==='admin';
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
- var canFinalize=(userRole==='admin'||userRole==='maintenance');
+ var isAdmin=(userRole==='admin'||userRole==='super_admin');
+ var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='maintenance');
  tbody.innerHTML=rows.map(function(r){
   var vendorDone=jobsHasActionFor(r.id,'vendor');
   var jobDone=jobsHasActionFor(r.id,'job');
@@ -15260,7 +15261,7 @@ window.jobsReactivate=function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
-  if(role!=='admin'){alert('Apenas administradores podem reativar.');return;}
+  if(role!=='admin'&&role!=='super_admin'){alert('Apenas administradores podem reativar.');return;}
   if(!confirm('Reativar este job? Volta ao estado pendente.')) return;
   var arr=ltExpGetRecords()||[];
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
@@ -15330,7 +15331,7 @@ window.jobsFinalize=function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
-  if(role!=='admin'&&role!=='maintenance'){alert('Apenas admin ou técnicos podem finalizar.');return;}
+  if(role!=='admin'&&role!=='super_admin'&&role!=='maintenance'){alert('Apenas admin ou técnicos podem finalizar.');return;}
   var nota=prompt('Observação do trabalho concluído (opcional):','');
   if(nota===null) return;
   var arr=ltExpGetRecords()||[];
@@ -15653,7 +15654,7 @@ async function jobsApplyRoleGateV2(){
   var role=String(user.role||'').toLowerCase();
 
   // Nao admin nao pode ver secção ADMIN (inteira)
-  if(role!=='admin'){
+  if(role!=='admin'&&role!=='super_admin'){
    var adminSec=document.querySelector('.sb-sec[data-sb-sec="admin"]');
    if(adminSec)adminSec.style.display='none';
   }
