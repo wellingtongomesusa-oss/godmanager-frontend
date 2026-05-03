@@ -22,6 +22,22 @@ const VALID_SEGMENTS: BusinessSegment[] = [
  * POST /api/auth/register — that flow stays pending + no subscription.
  */
 export async function POST(req: NextRequest) {
+  // GUARD: self-serve signup is paused until F3 multi-tenant
+  // sprint completes. Until then, all customers must go through
+  // manual onboarding so we can provision isolated workspaces.
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'signup_paused',
+      message: 'Self-serve signup is launching soon. Please contact us to set up your account.',
+    },
+    { status: 503 },
+  );
+
+  // Original logic preserved below — restore by removing the
+  // early return above. Multi-tenant gating must be in place
+  // before reactivating.
+  // eslint-disable-next-line no-unreachable
   try {
     const body = await req.json().catch(() => ({}));
 
@@ -159,9 +175,9 @@ export async function POST(req: NextRequest) {
       trialEndsAt: trialEndsAt.toISOString(),
       message: 'Trial signup successful. Please log in to start.',
     });
-  } catch (e: unknown) {
-    console.error('[/api/auth/register-with-trial]', e);
-    const msg = e instanceof Error ? e.message : 'internal_error';
+  } catch (raw: unknown) {
+    console.error('[/api/auth/register-with-trial]', raw);
+    const msg = raw instanceof Error ? (raw as Error).message : 'internal_error';
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
