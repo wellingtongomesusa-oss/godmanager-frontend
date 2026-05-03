@@ -24,7 +24,7 @@ export function AdminMobileNav() {
     { href: '/account/password', label: 'Password', icon: KeyRound },
   ] as const;
   const items =
-    user.role === 'admin' ? [...baseItems, ...adminItems] : [...baseItems];
+    user.role === 'admin' || user.role === 'super_admin' ? [...baseItems, ...adminItems] : [...baseItems];
 
   return (
     <nav

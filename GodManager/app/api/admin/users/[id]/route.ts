@@ -8,7 +8,8 @@ type SessionUser = NonNullable<Awaited<ReturnType<typeof getCurrentUserFromSessi
 async function requireAdmin(): Promise<{ error: string; status: number; user: null } | { error: null; status: number; user: SessionUser }> {
   const user = await getCurrentUserFromSession();
   if (!user) return { error: 'Nao autenticado', status: 401, user: null };
-  if (user.role !== 'admin') return { error: 'Apenas administradores', status: 403, user: null };
+  if (user.role !== 'admin' && user.role !== 'super_admin')
+    return { error: 'Apenas administradores', status: 403, user: null };
   return { error: null, status: 200, user };
 }
 

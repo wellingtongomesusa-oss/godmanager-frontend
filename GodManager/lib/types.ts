@@ -1,4 +1,11 @@
-export type UserRole = 'admin' | 'manager' | 'accountant' | 'leasing' | 'maintenance' | 'viewer';
+export type UserRole =
+  | 'super_admin'
+  | 'admin'
+  | 'manager'
+  | 'accountant'
+  | 'leasing'
+  | 'maintenance'
+  | 'viewer';
 
 export type UserStatus = 'active' | 'suspended' | 'pending';
 

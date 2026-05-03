@@ -127,7 +127,8 @@ export function isAuthenticated(): boolean {
 }
 
 export function isAdmin(): boolean {
-  return getAuthPayload()?.role === 'admin';
+  const r = getAuthPayload()?.role;
+  return r === 'admin' || r === 'super_admin';
 }
 
 /** No-op: sessão real é cookie HttpOnly definido pelo servidor. */

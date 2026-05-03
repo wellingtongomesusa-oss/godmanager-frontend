@@ -75,7 +75,7 @@ export function MainSidebar() {
           </ul>
         </div>
 
-        {user.role === 'admin'
+        {user.role === 'admin' || user.role === 'super_admin'
           ? adminSections.map((sec) => (
               <div key={sec.label}>
                 <p className="mb-2 px-3 text-[8.5px] font-semibold uppercase tracking-[1.6px] text-white/25">

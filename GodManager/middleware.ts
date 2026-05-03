@@ -128,7 +128,7 @@ export function middleware(request: NextRequest) {
       login.searchParams.set('from', pathname);
       return NextResponse.redirect(login);
     }
-    if (pathname.startsWith('/admin') && session.role !== 'admin') {
+    if (pathname.startsWith('/admin') && session.role !== 'admin' && session.role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();

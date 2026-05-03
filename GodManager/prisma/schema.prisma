@@ -12,6 +12,7 @@ datasource db {
 }
 
 enum UserRole {
+  super_admin
   admin
   manager
   accountant
@@ -70,6 +71,19 @@ model Client {
   updatedAt   DateTime   @updatedAt
   users       User[]
 
+  // Multi-tenant back-relations
+  properties            Property[]               @relation("Property_clientId")
+  tenantsScope          Tenant[]                 @relation("Tenant_clientId")
+  ownerPayouts          OwnerMonthPayout[]       @relation("OwnerMonthPayout_clientId")
+  expenses              PmExpense[]              @relation("PmExpense_clientId")
+  vendors               PmVendor[]               @relation("PmVendor_clientId")
+  vendorPayments        VendorPayment[]          @relation("VendorPayment_clientId")
+  maintenanceCalls      MaintenanceCall[]        @relation("MaintenanceCall_clientId")
+  jobActions            JobAction[]              @relation("JobAction_clientId")
+  propertyStatusHistory PropertyStatusHistory[]  @relation("PropertyStatusHistory_clientId")
+  auditEntries          AuditEntry[]             @relation("AuditEntry_clientId")
+  subscriptions         Subscription[]           @relation("Subscription_clientId")
+
   @@map("clients")
 }
 
@@ -110,12 +124,15 @@ model AuditEntry {
   ip           String?
   userAgent    String?
   timestamp    DateTime @default(now())
+  clientId     String?
+  client       Client?  @relation("AuditEntry_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([actorId])
   @@index([targetUserId])
   @@index([entity])
   @@index([action])
   @@index([timestamp])
+  @@index([clientId])
   @@map("audit_entries")
 }
 
@@ -204,6 +221,8 @@ model Property {
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
   createdBy         String?
+  clientId          String?
+  client            Client?                 @relation("Property_clientId", fields: [clientId], references: [id], onDelete: SetNull)
   tenants           Tenant[]
   pmExpenses        PmExpense[]
   ownerMonthPayouts OwnerMonthPayout[]
@@ -212,6 +231,7 @@ model Property {
 
   @@index([code])
   @@index([status])
+  @@index([clientId])
   @@map("properties")
 }
 
@@ -238,11 +258,14 @@ model Tenant {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   createdBy        String?
+  clientId         String?
+  client           Client?           @relation("Tenant_clientId", fields: [clientId], references: [id], onDelete: SetNull)
   maintenanceCalls MaintenanceCall[]
 
   @@index([code])
   @@index([propertyId])
   @@index([status])
+  @@index([clientId])
   @@map("tenants")
 }
 
@@ -264,11 +287,14 @@ model MaintenanceCall {
   metadata   Json?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  clientId   String?
+  client     Client?   @relation("MaintenanceCall_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([propertyId])
   @@index([status])
   @@index([createdAt])
+  @@index([clientId])
   @@map("maintenance_calls")
 }
 
@@ -282,10 +308,13 @@ model JobAction {
   actorEmail String?
   metadata   Json?
   createdAt  DateTime @default(now())
+  clientId   String?
+  client     Client?  @relation("JobAction_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([jobId])
   @@index([action])
   @@index([createdAt])
+  @@index([clientId])
   @@map("job_actions")
 }
 
@@ -300,9 +329,12 @@ model PropertyStatusHistory {
   reason         String?
   metadata       Json?
   createdAt      DateTime @default(now())
+  clientId       String?
+  client         Client?  @relation("PropertyStatusHistory_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
   @@index([createdAt])
+  @@index([clientId])
   @@map("property_status_history")
 }
 
@@ -352,8 +384,11 @@ model PmVendor {
   updatedAt      DateTime        @updatedAt
   expenses       PmExpense[]
   payments       VendorPayment[]
+  clientId       String?
+  client         Client?         @relation("PmVendor_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([companyName])
+  @@index([clientId])
   @@map("pm_vendors")
 }
 
@@ -366,9 +401,12 @@ model VendorPayment {
   paidAt   DateTime @default(now())
   paidBy   String?
   metadata Json?
+  clientId String?
+  client   Client?  @relation("VendorPayment_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([vendorId])
   @@index([paidAt])
+  @@index([clientId])
   @@map("vendor_payments")
 }
 
@@ -391,10 +429,13 @@ model PmExpense {
   finalizedNote  String?         @db.Text
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  clientId       String?
+  client         Client?         @relation("PmExpense_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([propertyId, monthRef])
   @@index([monthRef])
   @@index([vendorId])
+  @@index([clientId])
   @@map("pm_expenses")
 }
 
@@ -412,9 +453,12 @@ model OwnerMonthPayout {
   paidByEmail  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  clientId     String?
+  client       Client?   @relation("OwnerMonthPayout_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@unique([propertyId, yearMonth])
   @@index([yearMonth])
+  @@index([clientId])
   @@map("owner_month_payouts")
 }
 
@@ -451,10 +495,14 @@ model Subscription {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
+  clientId             String?
+  client               Client?            @relation("Subscription_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+
   events               BillingEvent[]
 
   @@index([status])
   @@index([trialEndsAt])
+  @@index([clientId])
   @@map("subscriptions")
 }
 

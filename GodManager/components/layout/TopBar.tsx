@@ -23,7 +23,9 @@ export function TopBar() {
   if (!user) return null;
 
   const roleBadge =
-    user.role === 'admin'
+    user.role === 'super_admin'
+      ? 'super_admin'
+      : user.role === 'admin'
       ? 'admin'
       : user.role === 'manager'
         ? 'manager'

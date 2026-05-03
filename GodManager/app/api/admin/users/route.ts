@@ -23,7 +23,8 @@ type SessionUser = NonNullable<Awaited<ReturnType<typeof getCurrentUserFromSessi
 async function requireAdmin(): Promise<{ error: string; status: number; user: null } | { error: null; status: number; user: SessionUser }> {
   const user = await getCurrentUserFromSession();
   if (!user) return { error: 'Nao autenticado', status: 401, user: null };
-  if (user.role !== 'admin') return { error: 'Apenas administradores', status: 403, user: null };
+  if (user.role !== 'admin' && user.role !== 'super_admin')
+    return { error: 'Apenas administradores', status: 403, user: null };
   return { error: null, status: 200, user };
 }
 
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Email ja existe.' }, { status: 409 });
     }
 
-    const validRoles = ['admin', 'manager', 'accountant', 'leasing', 'maintenance', 'viewer'];
+    const validRoles = ['super_admin', 'admin', 'manager', 'accountant', 'leasing', 'maintenance', 'viewer'];
     const validStatuses = ['active', 'suspended', 'pending'];
     if (!validRoles.includes(role)) return NextResponse.json({ ok: false, error: 'Role invalido.' }, { status: 400 });
     if (!validStatuses.includes(status)) return NextResponse.json({ ok: false, error: 'Status invalido.' }, { status: 400 });

@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 
 const variants = {
+  super_admin: 'bg-gm-amber-bg text-gm-amber border border-gm-amber/40',
   admin: 'bg-gm-amber-bg text-gm-amber border border-gm-amber/35',
   manager: 'bg-gm-blue-bg text-gm-blue border border-gm-blue/25',
   accountant: 'bg-purple-100 text-purple-800 border border-purple-200',

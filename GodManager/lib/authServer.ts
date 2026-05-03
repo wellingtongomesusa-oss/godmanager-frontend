@@ -78,7 +78,8 @@ const ADMIN_EMAILS = new Set([
 
 export function isAdminUser(user: { email?: string | null; role?: string | null } | null | undefined): boolean {
   if (!user) return false;
-  if (String(user.role || '').toLowerCase() === 'admin') return true;
+  const roleLower = String(user.role || '').toLowerCase();
+  if (roleLower === 'admin' || roleLower === 'super_admin') return true;
   const email = String(user.email || '').toLowerCase();
   if (!email) return false;
   if (ADMIN_EMAILS.has(email)) return true;
