@@ -54,10 +54,14 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
             className="absolute inset-0 bg-gradient-to-t from-login-navy/92 via-login-navy/55 to-login-navy/35"
             aria-hidden
           />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.6)_0%,rgba(0,0,0,0.3)_50%,transparent_100%)]"
+            aria-hidden
+          />
           <div className="relative z-10 flex min-h-screen w-full flex-col justify-end p-10 pt-24 xl:p-14 xl:pt-28">
             <div className="flex flex-1 flex-col justify-end pb-6 pt-10">
               <div className="max-w-xl space-y-6">
-                <h2 className="font-playfair text-[42px] font-semibold leading-[1.08] text-white md:text-[56px] lg:text-[64px]">
+                <h2 className="font-playfair text-[42px] font-semibold leading-[1.08] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.7),0_0_20px_rgba(0,0,0,0.5)] md:text-[56px] lg:text-[64px]">
                   {tHero('title')} {tHero('title2')} {tHero('title3')}
                 </h2>
                 <p className="font-inter text-[15px] leading-relaxed text-white/85">
