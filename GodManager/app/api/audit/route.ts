@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
+import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +85,10 @@ export async function POST(req: Request) {
       }
       if (detailsStr.length > 4000) detailsStr = detailsStr.slice(0, 4000);
     }
+    let clientId: string | null = null;
+    if (user) {
+      clientId = getClientScopeForCreate(toClientScopeUser(user));
+    }
     const created = await prisma.auditEntry.create({
       data: {
         actorId: user?.id ?? null,
@@ -94,6 +99,7 @@ export async function POST(req: Request) {
         details: detailsStr,
         ip,
         userAgent,
+        clientId,
       },
     });
     return NextResponse.json({ ok: true, entry: serialize(created) });
@@ -135,8 +141,11 @@ export async function GET(req: Request) {
       if (range.gte || range.lte) where.timestamp = range;
     }
 
+    const scopeUser = toClientScopeUser(user);
+    const scopeWhere = getClientScopeWhere(scopeUser);
+
     const entries = await prisma.auditEntry.findMany({
-      where,
+      where: { ...scopeWhere, ...where },
       orderBy: [{ timestamp: 'desc' }],
       take: limit,
     });

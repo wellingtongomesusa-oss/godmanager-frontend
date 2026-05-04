@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { normalizePropertyMetadata } from '@/lib/photoMetadata';
+import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   try {
     const p = await prisma.property.findUnique({ where: { id: params.id } });
-    if (!p) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    if (!p) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(user);
+    if (!canAccessClientId(scopeUser, p.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
     return NextResponse.json({ ok: true, property: serialize(p) });
   } catch (e) {
     console.error('[GET /api/properties/:id]', e);
@@ -41,7 +46,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const existing = await prisma.property.findUnique({ where: { id: params.id } });
-    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    if (!existing) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(user);
+    if (!canAccessClientId(scopeUser, existing.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
 
     const data: Prisma.PropertyUpdateInput = {};
     if (body.address !== undefined) data.address = String(body.address);
@@ -91,6 +100,13 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
+    const existing = await prisma.property.findUnique({ where: { id: params.id } });
+    if (!existing) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(user);
+    if (!canAccessClientId(scopeUser, existing.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
+
     await prisma.property.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e) {

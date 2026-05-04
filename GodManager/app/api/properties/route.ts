@@ -3,6 +3,11 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { normalizePropertyMetadata } from '@/lib/photoMetadata';
+import {
+  getClientScopeForCreate,
+  getClientScopeWhere,
+  toClientScopeUser,
+} from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +16,9 @@ export async function GET() {
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
+    const scopeUser = toClientScopeUser(user);
     const properties = await prisma.property.findMany({
+      where: getClientScopeWhere(scopeUser),
       orderBy: [{ code: 'asc' }],
     });
     return NextResponse.json({
@@ -52,6 +59,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'code already exists' }, { status: 409 });
     }
 
+    const scopeUser = toClientScopeUser(user);
+    const scopedCreate = getClientScopeForCreate(scopeUser);
+    let clientId: string | null = scopedCreate;
+    if (scopedCreate === null && user.role === 'super_admin') {
+      const raw = (body as { clientId?: unknown }).clientId;
+      clientId =
+        raw != null && String(raw).trim() !== '' ? String(raw).trim() : null;
+    }
+
     const created = await prisma.property.create({
       data: {
         code,
@@ -77,6 +93,7 @@ export async function POST(req: Request) {
         metadata: (normalizePropertyMetadata(body.metadata) ??
           undefined) as Prisma.InputJsonValue | undefined,
         createdBy: user.id,
+        clientId,
       },
     });
 

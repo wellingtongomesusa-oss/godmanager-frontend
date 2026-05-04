@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       where: { id: params.id },
       include: { property: { select: { id: true, code: true, address: true } } },
     });
-    if (!tenant) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    if (!tenant) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(user);
+    if (!canAccessClientId(scopeUser, tenant.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
     return NextResponse.json({ ok: true, tenant: serialize(tenant) });
   } catch (e) {
     console.error('[GET /api/tenants/[id]]', e);
@@ -35,6 +40,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
     const body = await req.json();
+    const existing = await prisma.tenant.findUnique({ where: { id: params.id } });
+    if (!existing) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(user);
+    if (!canAccessClientId(scopeUser, existing.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
+
+    if (body.propertyId !== undefined && body.propertyId) {
+      const prop = await prisma.property.findUnique({
+        where: { id: String(body.propertyId) },
+        select: { id: true, clientId: true },
+      });
+      if (!prop) {
+        return NextResponse.json({ ok: false, error: 'property not found' }, { status: 400 });
+      }
+      if (!canAccessClientId(scopeUser, prop.clientId)) {
+        return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+      }
+    }
+
     const data: any = {};
     if (body.name !== undefined) data.name = String(body.name);
     if (body.email !== undefined) data.email = body.email || null;
@@ -65,6 +90,13 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
+    const existing = await prisma.tenant.findUnique({ where: { id: params.id } });
+    if (!existing) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(user);
+    if (!canAccessClientId(scopeUser, existing.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
+
     await prisma.tenant.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e) {
