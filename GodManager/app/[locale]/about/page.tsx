@@ -206,15 +206,15 @@ export default async function AboutPage({ params: { locale } }: PageProps) {
             {t('contactTitle')}
           </h2>
           <p style={{ fontSize: 14, color: '#e5e7eb', margin: 0, lineHeight: 1.7 }}>
-            {t('contactInfo').split('w@godmanager.com').map((part, i, arr) => (
+            {t('contactInfo').split('w@godmanager.us').map((part, i, arr) => (
               <span key={i}>
                 {part}
                 {i < arr.length - 1 && (
                   <a
-                    href="mailto:w@godmanager.com"
+                    href="mailto:w@godmanager.us"
                     style={{ color: '#c9a96e', textDecoration: 'none', fontWeight: 600 }}
                   >
-                    w@godmanager.com
+                    w@godmanager.us
                   </a>
                 )}
               </span>

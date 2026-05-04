@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +65,36 @@ export async function POST(req: Request) {
         },
       })
       .catch(() => {});
+
+    const forwardTo = process.env.CONTACT_FORWARD_TO?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (forwardTo && forwardTo.length > 0) {
+      sendEmail({
+        to: forwardTo,
+        subject: `[GodManager] New contact lead from ${nome}`,
+        replyTo: email,
+        html: `
+      <h2>New contact lead</h2>
+      <p><strong>Name:</strong> ${nome}</p>
+      <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+      <p><strong>Phone:</strong> ${telefone || 'Not provided'}</p>
+      <p><strong>Type:</strong> ${tipoContacto}</p>
+      <p><strong>Company:</strong> ${empresa || 'N/A'}</p>
+      <p><strong>Message:</strong></p>
+      <p style="white-space: pre-wrap; padding: 12px; background: #f4f4f4; border-radius: 6px;">${mensagem || '(no message)'}</p>
+      <hr/>
+      <p style="font-size: 12px; color: #666;">
+        Lead ID: ${lead.id}<br/>
+        Submitted: ${new Date().toISOString()}<br/>
+        IP: ${ip}<br/>
+        User Agent: ${userAgent}
+      </p>
+    `,
+      }).catch((err) => {
+        console.error('[contacto] email forward failed:', err);
+      });
+    }
 
     return NextResponse.json({ ok: true, id: lead.id });
   } catch (e) {

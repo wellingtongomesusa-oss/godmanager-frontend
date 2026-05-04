@@ -71,10 +71,10 @@ export default async function ContactoPage({ params: { locale } }: PageProps) {
               {t('emailLabel')}
             </div>
             <a
-              href="mailto:w@godmanager.com"
+              href="mailto:w@godmanager.us"
               style={{ fontSize: 18, color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}
             >
-              w@godmanager.com
+              w@godmanager.us
             </a>
           </div>
           <div

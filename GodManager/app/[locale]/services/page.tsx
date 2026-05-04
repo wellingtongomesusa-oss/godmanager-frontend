@@ -215,7 +215,7 @@ export default async function ServicesPage({ params: { locale } }: PageProps) {
             <p style={{ fontSize: 14, color: '#e5e7eb', margin: 0 }}>{t('ctaSubtitle')}</p>
           </div>
           <a
-            href="mailto:w@godmanager.com?subject=GodManager%20Demo%20Request"
+            href="mailto:w@godmanager.us?subject=GodManager%20Demo%20Request"
             style={{
               background: '#c9a96e',
               color: '#fff',
