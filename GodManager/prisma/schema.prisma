@@ -87,6 +87,7 @@ model Client {
   auditEntries          AuditEntry[]             @relation("AuditEntry_clientId")
   subscriptions         Subscription[]           @relation("Subscription_clientId")
   statementLineItems    StatementLineItem[]      @relation("StatementLineItem_clientId")
+  userPermissions       UserPermission[]         @relation("UserPermission_clientId")
 
   @@map("clients")
 }
@@ -110,11 +111,31 @@ model User {
   auditEntries AuditEntry[] @relation("ActorAudit")
   targetAudits AuditEntry[] @relation("TargetAudit")
   subscription Subscription?
+  userPermissions UserPermission[] @relation("User_permissions")
 
   @@index([clientId])
   @@index([ownerId])
   @@index([email])
   @@map("users")
+}
+
+model UserPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("User_permissions", fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String?
+  client    Client?  @relation("UserPermission_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  resource  String   @db.VarChar(50)
+  action    String   @db.VarChar(20)
+  grantedBy String?
+  grantedAt DateTime @default(now())
+  notes     String?  @db.VarChar(300)
+
+  @@unique([userId, clientId, resource, action])
+  @@index([userId])
+  @@index([clientId])
+  @@index([resource])
+  @@map("user_permissions")
 }
 
 model AuditEntry {
