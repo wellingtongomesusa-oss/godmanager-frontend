@@ -23,6 +23,7 @@ export const MASTER_ONE_NAV: NavItem[] = [
     href: '/manager-pro/properties',
     children: [
       { labelKey: 'nav.propertiesAll', href: '/manager-pro/properties' },
+      { labelKey: 'nav.owners', href: '/manager-pro/owners' },
       { labelKey: 'nav.dp', href: '/manager-pro/dp' },
       { labelKey: 'nav.dpRanking', href: '/manager-pro/dp-ranking' },
       { labelKey: 'nav.rentRoll', href: '/manager-pro/rent-roll' },
