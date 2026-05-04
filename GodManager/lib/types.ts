@@ -5,7 +5,8 @@ export type UserRole =
   | 'accountant'
   | 'leasing'
   | 'maintenance'
-  | 'viewer';
+  | 'viewer'
+  | 'owner';
 
 export type UserStatus = 'active' | 'suspended' | 'pending';
 

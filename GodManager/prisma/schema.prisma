@@ -19,6 +19,7 @@ enum UserRole {
   leasing
   maintenance
   viewer
+  owner
 }
 
 enum UserStatus {
@@ -67,11 +68,13 @@ model Client {
   plan        ClientPlan @default(starter)
   accessLevel UserRole   @default(manager)
   active      Boolean    @default(true)
+  logoUrl     String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   users       User[]
 
   // Multi-tenant back-relations
+  owners                Owner[]                  @relation("Owner_clientId")
   properties            Property[]               @relation("Property_clientId")
   tenantsScope          Tenant[]                 @relation("Tenant_clientId")
   ownerPayouts          OwnerMonthPayout[]       @relation("OwnerMonthPayout_clientId")
@@ -83,6 +86,7 @@ model Client {
   propertyStatusHistory PropertyStatusHistory[]  @relation("PropertyStatusHistory_clientId")
   auditEntries          AuditEntry[]             @relation("AuditEntry_clientId")
   subscriptions         Subscription[]           @relation("Subscription_clientId")
+  statementLineItems    StatementLineItem[]      @relation("StatementLineItem_clientId")
 
   @@map("clients")
 }
@@ -100,12 +104,15 @@ model User {
   createdAt    DateTime     @default(now())
   lastActive   DateTime     @default(now())
   clientId     String?
+  ownerId      String?
   client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  owner        Owner?       @relation("User_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
   auditEntries AuditEntry[] @relation("ActorAudit")
   targetAudits AuditEntry[] @relation("TargetAudit")
   subscription Subscription?
 
   @@index([clientId])
+  @@index([ownerId])
   @@index([email])
   @@map("users")
 }
@@ -197,6 +204,26 @@ model ContactLead {
   @@map("contact_leads")
 }
 
+model Owner {
+  id         String     @id @default(cuid())
+  clientId   String
+  client     Client     @relation("Owner_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String?
+  notes      String?    @db.Text
+  active     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  properties Property[] @relation("Property_ownerId")
+  users      User[]     @relation("User_ownerId")
+
+  @@unique([clientId, email])
+  @@index([clientId])
+  @@index([email])
+  @@map("owners")
+}
+
 model Property {
   id                String                  @id @default(cuid())
   code              String                  @unique
@@ -214,6 +241,8 @@ model Property {
   ownerName         String?
   ownerEmail        String?
   ownerPhone        String?
+  ownerId           String?
+  owner             Owner?                  @relation("Property_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
   mgmtFeePct        Decimal                 @default(0) @db.Decimal(5, 2)
   status            String                  @default("active")
   notes             String?                 @db.Text
@@ -232,6 +261,7 @@ model Property {
   @@index([code])
   @@index([status])
   @@index([clientId])
+  @@index([ownerId])
   @@map("properties")
 }
 
@@ -456,10 +486,34 @@ model OwnerMonthPayout {
   clientId     String?
   client       Client?   @relation("OwnerMonthPayout_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
+  totalIncome        Decimal?            @db.Decimal(12, 2)
+  totalExpenses      Decimal?            @db.Decimal(12, 2)
+  netPayout          Decimal?            @db.Decimal(12, 2)
+  previousBalance    Decimal?            @default(0) @db.Decimal(12, 2)
+  statementLineItems StatementLineItem[]
+
   @@unique([propertyId, yearMonth])
   @@index([yearMonth])
   @@index([clientId])
   @@map("owner_month_payouts")
+}
+
+model StatementLineItem {
+  id                 String           @id @default(cuid())
+  ownerMonthPayoutId String
+  ownerMonthPayout   OwnerMonthPayout @relation(fields: [ownerMonthPayoutId], references: [id], onDelete: Cascade)
+  lineType           String           @db.VarChar(20)
+  description        String           @db.VarChar(300)
+  amount             Decimal          @db.Decimal(12, 2)
+  sortOrder          Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  clientId           String?
+  client             Client?          @relation("StatementLineItem_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([ownerMonthPayoutId])
+  @@index([clientId])
+  @@map("statement_line_items")
 }
 
 model Subscription {
