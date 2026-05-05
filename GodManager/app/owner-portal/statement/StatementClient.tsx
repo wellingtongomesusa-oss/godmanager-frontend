@@ -159,14 +159,20 @@ export default function StatementClient({
               >
                 Imprimir
               </button>
-              <button
-                type="button"
-                disabled
-                title="PDF generation chega em F4.4"
-                className="cursor-not-allowed rounded-[8px] border border-gm-border px-4 py-2 text-[12px] font-semibold text-gm-ink-tertiary opacity-70"
+              <a
+                href={`/api/owner/statement/pdf?propertyId=${encodeURIComponent(property.id)}&period=${encodeURIComponent(period)}&lang=pt`}
+                download
+                className="rounded-[8px] border border-gm-border-strong px-4 py-2 text-[12px] font-semibold text-gm-ink transition hover:border-gm-amber hover:text-gm-ink"
               >
-                PDF (em breve)
-              </button>
+                PDF (Portugues)
+              </a>
+              <a
+                href={`/api/owner/statement/pdf?propertyId=${encodeURIComponent(property.id)}&period=${encodeURIComponent(period)}&lang=en`}
+                download
+                className="rounded-[8px] border border-gm-border-strong px-4 py-2 text-[12px] font-semibold text-gm-ink transition hover:border-gm-amber hover:text-gm-ink"
+              >
+                PDF (English)
+              </a>
             </div>
           </div>
         </div>
