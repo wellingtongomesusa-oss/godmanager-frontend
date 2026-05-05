@@ -30,6 +30,144 @@ interface OwnerDrawerProps {
   onSaved: () => void;
 }
 
+function PasswordPanel({ ownerId, email }: { ownerId: string; email: string }) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    kind: 'ok' | 'err';
+    msg: string;
+  } | null>(null);
+
+  const handleSave = async () => {
+    setFeedback(null);
+    if (password.length < 8) {
+      setFeedback({ kind: 'err', msg: 'Senha deve ter pelo menos 8 caracteres.' });
+      return;
+    }
+    if (password !== confirm) {
+      setFeedback({ kind: 'err', msg: 'Senhas nao coincidem.' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/owners/${ownerId}/set-password`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        let msg: string = json.error || 'falha';
+        if (json.error === 'email_in_use') msg = json.message ?? msg;
+        if (json.error === 'owner_email_required')
+          msg = 'Owner sem email — preencha o email primeiro.';
+        if (json.error === 'validation') msg = 'Senha invalida (min 8 chars).';
+        setFeedback({ kind: 'err', msg });
+        setSaving(false);
+        return;
+      }
+      const action = json.action === 'created' ? 'criada' : 'actualizada';
+      setFeedback({
+        kind: 'ok',
+        msg: `Conta ${action}. Owner pode logar em /owner-portal/login com email ${json.email}.`,
+      });
+      setPassword('');
+      setConfirm('');
+      setSaving(false);
+    } catch (e) {
+      setFeedback({
+        kind: 'err',
+        msg: e instanceof Error ? e.message : 'erro',
+      });
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <div className="border-t border-gm-border pt-4 mt-2">
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gm-ink-secondary">
+          Acesso ao Portal
+        </h3>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-xs font-semibold text-gm-amber hover:underline"
+        >
+          Definir / redefinir senha
+        </button>
+        <p className="mt-1 text-xs text-gm-ink-secondary">
+          Permite ao proprietario logar em /owner-portal/login.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-gm-border pt-4 mt-2">
+      <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gm-ink-secondary">
+        Definir Senha do Portal
+      </h3>
+      <div className="space-y-2">
+        <input
+          type="password"
+          placeholder="Nova senha (min 8 chars)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-md border border-gm-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gm-amber"
+          autoComplete="new-password"
+        />
+        <input
+          type="password"
+          placeholder="Confirmar senha"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          className="w-full rounded-md border border-gm-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gm-amber"
+          autoComplete="new-password"
+        />
+
+        {feedback ? (
+          <div
+            className={`rounded-md border p-2 text-xs ${
+              feedback.kind === 'ok'
+                ? 'border-gm-amber-bd bg-gm-amber-bg text-gm-ink'
+                : 'border-gm-red-bg bg-gm-red-bg text-gm-red'
+            }`}
+          >
+            {feedback.msg}
+          </div>
+        ) : null}
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !password || !confirm}
+            className="rounded-md bg-gm-amber px-3 py-1.5 text-xs font-semibold text-white shadow-gm-amber hover:bg-gm-amber-light disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? 'Salvando...' : 'Salvar senha'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setPassword('');
+              setConfirm('');
+              setFeedback(null);
+            }}
+            className="rounded-md border border-gm-border px-3 py-1.5 text-xs text-gm-ink-secondary"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function OwnerDrawer({ mode, ownerId, onClose, onSaved }: OwnerDrawerProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -242,6 +380,10 @@ export default function OwnerDrawer({ mode, ownerId, onClose, onSaved }: OwnerDr
                   </label>
                 </div>
               )}
+
+              {mode === 'edit' && email.trim() !== '' && ownerId ? (
+                <PasswordPanel ownerId={ownerId} email={email} />
+              ) : null}
 
               {mode === 'edit' && properties.length > 0 && (
                 <div>

@@ -12,7 +12,7 @@ interface PageProps {
 export default async function StatementPage({ searchParams }: PageProps) {
   const user = await getCurrentUserFromSession();
   if (!user) {
-    redirect('/manager-pro/login');
+    redirect('/owner-portal/login');
   }
 
   const propertyId = searchParams.propertyId ?? '';
@@ -53,7 +53,7 @@ export default async function StatementPage({ searchParams }: PageProps) {
   });
 
   if (res.status === 401) {
-    redirect('/manager-pro/login');
+    redirect('/owner-portal/login');
   }
 
   if (res.status === 403) {
