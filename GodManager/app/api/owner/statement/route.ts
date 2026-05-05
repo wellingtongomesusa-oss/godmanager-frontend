@@ -29,6 +29,12 @@ export async function GET(req: NextRequest) {
       include: {
         owner: true,
         client: { select: { id: true, companyName: true, logoUrl: true } },
+        tenants: {
+          where: { status: { in: ['active', 'notice'] } },
+          orderBy: [{ moveIn: 'desc' }, { name: 'asc' }],
+          take: 5,
+          select: { id: true, name: true, status: true, moveIn: true, leaseTo: true },
+        },
       },
     });
 
@@ -72,6 +78,11 @@ export async function GET(req: NextRequest) {
         ownerEmail: property.owner?.email ?? property.ownerEmail,
         clientName: property.client?.companyName ?? null,
         clientLogoUrl: property.client?.logoUrl ?? null,
+        tenantNames:
+          property.tenants.length > 0
+            ? property.tenants.map((t) => t.name).join(' & ')
+            : null,
+        tenantsCount: property.tenants.length,
       },
       period,
       payout: payout

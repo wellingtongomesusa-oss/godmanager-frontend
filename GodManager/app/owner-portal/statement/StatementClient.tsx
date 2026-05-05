@@ -19,6 +19,8 @@ interface StatementData {
     ownerEmail: string | null;
     clientName: string | null;
     clientLogoUrl: string | null;
+    tenantNames: string | null;
+    tenantsCount: number;
   };
   period: string;
   payout: {
@@ -127,8 +129,7 @@ export default function StatementClient({
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="font-heading text-xl font-semibold text-gm-ink">
-                {property.bedrooms ?? '?'} BD / {property.bathrooms ?? '?'} BA ·{' '}
-                {property.code}
+                {property.tenantNames ?? 'Sem inquilino actual'}
               </h2>
               <p className="mt-1 text-[13px] text-gm-ink-secondary">
                 {property.address}
