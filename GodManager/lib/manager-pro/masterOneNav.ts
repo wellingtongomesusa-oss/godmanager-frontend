@@ -3,7 +3,12 @@
  */
 import type { MasterOneStringKey } from './masterOneStrings';
 
-export type NavLeaf = { labelKey: MasterOneStringKey; href: string; subtitleKey?: MasterOneStringKey };
+export type NavLeaf = {
+  labelKey: MasterOneStringKey;
+  href: string;
+  subtitleKey?: MasterOneStringKey;
+  target?: '_blank';
+};
 export type NavGroup = { labelKey: MasterOneStringKey; href?: string; children: NavLeaf[] };
 export type NavItem = NavLeaf | NavGroup;
 
@@ -24,6 +29,11 @@ export const MASTER_ONE_NAV: NavItem[] = [
     children: [
       { labelKey: 'nav.propertiesAll', href: '/manager-pro/properties' },
       { labelKey: 'nav.owners', href: '/manager-pro/owners' },
+      {
+        labelKey: 'nav.ownerPortal',
+        href: '/owner-portal',
+        target: '_blank',
+      },
       { labelKey: 'nav.dp', href: '/manager-pro/dp' },
       { labelKey: 'nav.dpRanking', href: '/manager-pro/dp-ranking' },
       { labelKey: 'nav.rentRoll', href: '/manager-pro/rent-roll' },

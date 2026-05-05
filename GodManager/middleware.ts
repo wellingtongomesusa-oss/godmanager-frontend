@@ -44,6 +44,7 @@ function isNonIntlPath(pathname: string): boolean {
     '/auth-by-token',
     '/manager-pro',
     '/owner-portal',
+    '/portal',
     '/gm',
     '/gm-premium',
     '/form-owner',

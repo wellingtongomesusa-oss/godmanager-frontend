@@ -106,9 +106,13 @@ function NavRow({
     const label = tMasterOne(locale, item.labelKey);
     const active = pathname === item.href;
     const sub = item.subtitleKey ? tMasterOne(locale, item.subtitleKey) : null;
+    const leafTarget = item.target === '_blank' ? '_blank' : undefined;
+    const leafRel = item.target === '_blank' ? 'noopener noreferrer' : undefined;
     return (
       <Link
         href={item.href}
+        target={leafTarget}
+        rel={leafRel}
         className={`group block rounded-lg px-3 py-2 text-xs font-medium transition ${
           active ? 'bg-[var(--amber)] text-white' : 'text-white/80 hover:bg-white/10'
         }`}
@@ -158,11 +162,15 @@ function NavRow({
         <div className="ml-2 mt-0.5 space-y-0.5 border-l border-white/15 pl-2">
           {item.children.map((child) => {
             const cl = tMasterOne(locale, child.labelKey);
-            const active = pathname === child.href;
+            const active = pathname === child.href && child.target !== '_blank';
+            const childTarget = child.target === '_blank' ? '_blank' : undefined;
+            const childRel = child.target === '_blank' ? 'noopener noreferrer' : undefined;
             return (
               <Link
                 key={child.href}
                 href={child.href}
+                target={childTarget}
+                rel={childRel}
                 className={`block rounded-lg px-2 py-1.5 text-[11px] transition ${
                   active ? 'bg-[var(--amber)]/90 text-white' : 'text-white/65 hover:bg-white/10 hover:text-white'
                 }`}
