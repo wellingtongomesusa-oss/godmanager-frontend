@@ -1,5 +1,7 @@
 'use client';
 
+import OwnerPortalHeader from '../_components/OwnerPortalHeader';
+
 interface LineItem {
   id: string;
   lineType: string;
@@ -64,21 +66,32 @@ const fmtPeriod = (yearMonth: string) => {
 
 export default function StatementClient({
   data,
+  userName,
 }: {
   data: { ok: boolean } & StatementData;
+  userName: string;
 }) {
   const { property, period, payout } = data;
 
   if (!payout) {
     return (
-      <div className="min-h-screen bg-gm-sand p-8 font-body">
-        <div className="mx-auto max-w-5xl rounded-gm border border-gm-border bg-gm-paper p-8 shadow-gm-card">
-          <h1 className="font-heading text-xl font-semibold text-gm-ink sm:text-[22px]">
-            {property.code} — {property.address}
-          </h1>
-          <p className="mt-2 text-[13px] text-gm-ink-tertiary">
-            Sem demonstrativo para {fmtPeriod(period)}.
-          </p>
+      <div className="flex min-h-screen flex-col bg-gm-sand font-body antialiased">
+        <OwnerPortalHeader
+          showBack
+          userName={userName}
+          subtitle="Demonstrativo Mensal"
+          rightLabel="Periodo"
+          rightValue={fmtPeriod(period)}
+        />
+        <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+          <div className="rounded-gm border border-gm-border bg-gm-paper p-8 shadow-gm-card">
+            <h1 className="font-heading text-xl font-semibold text-gm-ink sm:text-[22px]">
+              {property.code} — {property.address}
+            </h1>
+            <p className="mt-2 text-[13px] text-gm-ink-tertiary">
+              Sem demonstrativo para {fmtPeriod(period)}.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -94,37 +107,16 @@ export default function StatementClient({
   const expenses = payout.lineItems.filter((l) => l.lineType === 'expense');
 
   return (
-    <div className="min-h-screen bg-gm-sand font-body antialiased">
-      <div className="bg-gm-sidebar text-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-4">
-            {property.clientLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={property.clientLogoUrl}
-                alt=""
-                className="h-10 max-w-[120px] object-contain"
-              />
-            ) : null}
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gm-amber">
-                {property.clientName ?? 'Property Manager'}
-              </p>
-              <h1 className="mt-1 font-heading text-[22px] font-semibold sm:text-[26px]">
-                Demonstrativo do Proprietário
-              </h1>
-            </div>
-          </div>
-          <div className="text-right text-[13px]">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-gm-amber">
-              Período
-            </p>
-            <p className="font-medium">{fmtPeriod(period)}</p>
-          </div>
-        </div>
-      </div>
+    <div className="flex min-h-screen flex-col bg-gm-sand font-body antialiased">
+      <OwnerPortalHeader
+        showBack
+        userName={userName}
+        subtitle="Demonstrativo Mensal"
+        rightLabel="Periodo"
+        rightValue={fmtPeriod(period)}
+      />
 
-      <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+      <div className="mx-auto max-w-6xl flex-1 space-y-6 px-6 py-8">
         <div className="rounded-gm border border-gm-border bg-gm-paper p-6 shadow-gm-card">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>

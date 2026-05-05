@@ -99,5 +99,10 @@ export default async function StatementPage({ searchParams }: PageProps) {
     );
   }
 
-  return <StatementClient data={data} />;
+  const displayName =
+    `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() ||
+    user.email ||
+    'Owner';
+
+  return <StatementClient data={data} userName={displayName} />;
 }

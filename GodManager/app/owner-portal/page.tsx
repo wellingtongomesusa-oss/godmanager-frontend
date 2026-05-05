@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import OwnerPortalHeader from './_components/OwnerPortalHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,27 +100,16 @@ export default async function OwnerPortalIndex() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gm-cream font-body antialiased">
-      <div className="bg-gm-sidebar text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gm-amber">
-              Manager Prop
-            </p>
-            <h1 className="mt-1 font-heading text-2xl font-bold">
-              Portal do Proprietario
-            </h1>
-            {viewLabel ? (
-              <p className="mt-1 text-xs text-white/70">{viewLabel}</p>
-            ) : null}
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gm-amber">
-              Periodo
-            </p>
-            <p className="text-sm font-medium">{periodLabel(period)}</p>
-          </div>
-        </div>
-      </div>
+      <OwnerPortalHeader
+        userName={
+          `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() ||
+          user.email ||
+          'Owner'
+        }
+        subtitle={viewLabel || undefined}
+        rightLabel="Periodo"
+        rightValue={periodLabel(period)}
+      />
 
       <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         <h2 className="mb-4 font-heading text-lg font-semibold text-gm-ink">
