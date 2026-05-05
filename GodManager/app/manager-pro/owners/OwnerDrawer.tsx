@@ -30,15 +30,55 @@ interface OwnerDrawerProps {
   onSaved: () => void;
 }
 
-function PasswordPanel({ ownerId, email }: { ownerId: string; email: string }) {
+function PasswordPanel({
+  ownerId,
+  email,
+  ownerName,
+}: {
+  ownerId: string;
+  email: string;
+  ownerName: string;
+}) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<{
+    email: string;
+    password: string;
+    action: 'created' | 'updated';
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<{
     kind: 'ok' | 'err';
     msg: string;
   } | null>(null);
+
+  const handleCopy = async () => {
+    if (!lastSaved) return;
+    const firstName = ownerName.trim().split(/\s+/)[0] || 'proprietario';
+    const text = `Ola ${firstName},
+
+Seu acesso ao Portal do Proprietario Manager Prop:
+
+URL: https://www.godmanager.us/portal
+Email: ${lastSaved.email}
+Senha temporaria: ${lastSaved.password}
+
+Recomendamos alterar a senha apos o primeiro acesso.
+
+Em caso de duvida, entre em contato.
+
+Atenciosamente,
+Equipe Manager Prop`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setFeedback({ kind: 'err', msg: 'Falha ao copiar. Selecione manualmente o texto abaixo.' });
+    }
+  };
 
   const handleSave = async () => {
     setFeedback(null);
@@ -70,9 +110,15 @@ function PasswordPanel({ ownerId, email }: { ownerId: string; email: string }) {
         return;
       }
       const action = json.action === 'created' ? 'criada' : 'actualizada';
+      const actionTyped = json.action === 'created' ? 'created' : 'updated';
       setFeedback({
         kind: 'ok',
         msg: `Conta ${action}. Owner pode logar em /owner-portal/login com email ${json.email}.`,
+      });
+      setLastSaved({
+        email: json.email,
+        password,
+        action: actionTyped,
       });
       setPassword('');
       setConfirm('');
@@ -141,6 +187,35 @@ function PasswordPanel({ ownerId, email }: { ownerId: string; email: string }) {
           </div>
         ) : null}
 
+        {lastSaved ? (
+          <div className="mt-3 space-y-2 rounded-md border border-gm-amber bg-gm-amber/10 p-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gm-ink">
+              Compartilhar com proprietario
+            </h4>
+            <dl className="space-y-1 text-xs">
+              <div className="flex gap-2">
+                <dt className="w-16 font-semibold text-gm-ink-secondary">Portal:</dt>
+                <dd className="font-mono text-gm-ink">godmanager.us/portal</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="w-16 font-semibold text-gm-ink-secondary">Email:</dt>
+                <dd className="break-all font-mono text-gm-ink">{lastSaved.email}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="w-16 font-semibold text-gm-ink-secondary">Senha:</dt>
+                <dd className="font-mono text-gm-ink">{lastSaved.password}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="w-full rounded-md bg-gm-ink px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gm-ink/90"
+            >
+              {copied ? 'Copiado para a area de transferencia' : 'Copiar texto pronto para email / WhatsApp'}
+            </button>
+          </div>
+        ) : null}
+
         <div className="flex gap-2">
           <button
             type="button"
@@ -157,6 +232,7 @@ function PasswordPanel({ ownerId, email }: { ownerId: string; email: string }) {
               setPassword('');
               setConfirm('');
               setFeedback(null);
+              setLastSaved(null);
             }}
             className="rounded-md border border-gm-border px-3 py-1.5 text-xs text-gm-ink-secondary"
           >
@@ -382,7 +458,7 @@ export default function OwnerDrawer({ mode, ownerId, onClose, onSaved }: OwnerDr
               )}
 
               {mode === 'edit' && email.trim() !== '' && ownerId ? (
-                <PasswordPanel ownerId={ownerId} email={email} />
+                <PasswordPanel ownerId={ownerId!} email={email} ownerName={name} />
               ) : null}
 
               {mode === 'edit' && properties.length > 0 && (
