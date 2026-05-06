@@ -5,6 +5,7 @@ import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
+import { serviceDateToMonthRef } from '@/lib/pmCycleRef';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,9 +98,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'vendorCost must be a non-negative number' }, { status: 400 });
     }
 
-    const monthRef = normalizeYearMonthForWrite(String(body.monthRef || '').trim());
-    if (!monthRef) {
-      return NextResponse.json({ ok: false, error: 'monthRef must be YYYY-M(M)' }, { status: 400 });
+    // Derive monthRef from serviceDate if not explicitly provided (15-15 cycle)
+    let monthRef: string | null = null;
+    const explicitMonthRef = String(body.monthRef || '').trim();
+
+    if (explicitMonthRef) {
+      monthRef = normalizeYearMonthForWrite(explicitMonthRef);
+      if (!monthRef) {
+        return NextResponse.json({ ok: false, error: 'monthRef must be YYYY-M(M)' }, { status: 400 });
+      }
+    } else if (body.serviceDate) {
+      monthRef = serviceDateToMonthRef(String(body.serviceDate));
+      if (!monthRef) {
+        return NextResponse.json({ ok: false, error: 'invalid serviceDate' }, { status: 400 });
+      }
+    } else {
+      return NextResponse.json(
+        { ok: false, error: 'monthRef or serviceDate required' },
+        { status: 400 }
+      );
     }
 
     let st: PmExpenseStatus = 'PENDING';

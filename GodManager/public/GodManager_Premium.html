@@ -9310,6 +9310,32 @@ window.gerarInvoicePDF=function(data,opts){
  });
 })();
 
+(function ltNexpServiceDateMonthRefInit(){
+ if(window.__ltNexpSvcDateMonthRefWired)return;
+ window.__ltNexpSvcDateMonthRefWired=true;
+ var svcEl=document.getElementById('lt-nexp-pm-svc-date');
+ if(!svcEl)return;
+ svcEl.addEventListener('change',function(){
+  var monthRefInput=document.getElementById('lt-nexp-month');
+  if(!monthRefInput)return;
+  if(monthRefInput.value&&String(monthRefInput.value).trim())return;
+  var d=new Date(this.value);
+  if(Number.isNaN(d.getTime()))return;
+  var year=d.getUTCFullYear();
+  var month=d.getUTCMonth()+1;
+  var day=d.getUTCDate();
+  if(day<15){
+   if(month===1){
+    year=year-1;
+    month=12;
+   }else{
+    month=month-1;
+   }
+  }
+  monthRefInput.value=year+'-'+String(month).padStart(2,'0');
+ });
+})();
+
 function ltOpenNewExpense(prefill){
  var pf=(prefill&&typeof prefill==='object')?prefill:{};
  if(!pf.vendorFreeClone){try{window.__lastVendorFreeFrom=null;}catch(eClr){}}
