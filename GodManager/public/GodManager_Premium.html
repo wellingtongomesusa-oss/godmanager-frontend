@@ -2128,8 +2128,11 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Registro de Despesas</div>
  <div id="lt-exp-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
- <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1200px">
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1240px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 8px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:36px" title="Selecionar despesas PM">
+  <input type="checkbox" id="lt-exp-select-all" onchange="if(this.disabled)return;if(typeof ltExpToggleAllSelection===&#39;function&#39;)ltExpToggleAllSelection(this.checked)" style="cursor:pointer">
+ </th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vendor</th>
@@ -8322,6 +8325,227 @@ window.ltExpStatusChange=function(id,newStatus){
  });
 };
 
+window.ltExpBulkRoleOk=function(){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var role=String(u.role||'').toLowerCase();
+ return role==='admin'||role==='super_admin'||role==='manager';
+};
+
+window.ltExpNormalizeYm=function(m){
+ var t=String(m||'').trim();
+ var x=/^(\d{4})-(\d{1,2})$/.exec(t);
+ if(!x)return t;
+ return x[1]+'-'+String(parseInt(x[2],10)).padStart(2,'0');
+};
+
+window.ltExpPaidPropsFromOwnerPayouts=function(data){
+ var o={};
+ var owners=(data&&data.owners)||[];
+ owners.forEach(function(g){
+  (g.properties||[]).forEach(function(p){
+   if(p.paidAt)o[p.propertyId]=true;
+  });
+ });
+ return o;
+};
+
+window.__ltExpSelectedIds=new Set();
+
+window.ltExpToggleAllSelection=function(checked){
+ document.querySelectorAll('.lt-exp-row-cb:not(:disabled)').forEach(function(cb){
+  cb.checked=checked;
+  var id=cb.getAttribute('data-id');
+  if(id==null||id==='')return;
+  if(checked)window.__ltExpSelectedIds.add(id);
+  else window.__ltExpSelectedIds.delete(id);
+ });
+ if(!checked)window.__ltExpSelectedIds.clear();
+ if(typeof ltExpUpdateBulkBar==='function')ltExpUpdateBulkBar();
+};
+
+window.ltExpUpdateBulkBar=function(){
+ if(!window.ltExpBulkRoleOk()){
+  var bar0=document.getElementById('lt-exp-bulk-bar');
+  if(bar0)bar0.style.display='none';
+  return;
+ }
+ window.__ltExpSelectedIds.clear();
+ document.querySelectorAll('.lt-exp-row-cb:checked:not(:disabled)').forEach(function(cb){
+  var id=cb.getAttribute('data-id');
+  if(id)window.__ltExpSelectedIds.add(id);
+ });
+ var count=window.__ltExpSelectedIds.size;
+ var bar=document.getElementById('lt-exp-bulk-bar');
+ var label=document.getElementById('lt-exp-bulk-count');
+ if(bar)bar.style.display=count>0?'flex':'none';
+ if(label)label.textContent=count+(count===1?' selecionada':' selecionadas');
+ var allCb=document.getElementById('lt-exp-select-all');
+ var rowCbs=document.querySelectorAll('.lt-exp-row-cb:not(:disabled)');
+ if(allCb&&rowCbs.length>0){
+  allCb.checked=(count===rowCbs.length&&count>0);
+  allCb.indeterminate=(count>0&&count<rowCbs.length);
+ }
+};
+
+window.ltExpBulkClearSelection=function(){
+ document.querySelectorAll('.lt-exp-row-cb').forEach(function(cb){cb.checked=false;});
+ var allCb=document.getElementById('lt-exp-select-all');
+ if(allCb){allCb.checked=false;allCb.indeterminate=false;}
+ window.__ltExpSelectedIds.clear();
+ if(typeof ltExpUpdateBulkBar==='function')ltExpUpdateBulkBar();
+};
+
+window.ltExpBulkAssignCycleOpen=function(){
+ if(!window.ltExpBulkRoleOk()){
+  alert('Apenas admin ou manager podem atribuir ciclos em lote.');
+  return;
+ }
+ var count=window.__ltExpSelectedIds.size;
+ if(count===0)return;
+ var sel=document.getElementById('lt-exp-bulk-cycle-select');
+ if(sel){
+  sel.innerHTML='<option value="">Selecionar ciclo...</option>';
+  var now=new Date();
+  var curYear=now.getUTCFullYear();
+  var curMonth=now.getUTCMonth()+1;
+  var months=[];
+  for(var offset=-6;offset<=3;offset++){
+   var m=curMonth+offset;
+   var y=curYear;
+   while(m<1){m+=12;y-=1;}
+   while(m>12){m-=12;y+=1;}
+   var monthRef=y+'-'+String(m).padStart(2,'0');
+   var monthName=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1];
+   var nextM=m===12?1:m+1;
+   var nextY=m===12?y+1:y;
+   var nextName=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][nextM-1];
+   var label='15 '+monthName+' '+y+' a 14 '+nextName+' '+nextY+' ('+monthRef+')';
+   months.push({value:monthRef,label:label});
+  }
+  months.forEach(function(mo){
+   var opt=document.createElement('option');
+   opt.value=mo.value;
+   opt.textContent=mo.label;
+   sel.appendChild(opt);
+  });
+ }
+ var modalCount=document.getElementById('lt-exp-bulk-modal-count');
+ if(modalCount)modalCount.textContent=String(count);
+ var modal=document.getElementById('lt-exp-bulk-modal');
+ if(modal)modal.style.display='flex';
+ var warn=document.getElementById('lt-exp-bulk-warning');
+ if(warn){warn.style.display='none';warn.textContent='';}
+};
+
+window.ltExpBulkAssignCycleClose=function(){
+ var modal=document.getElementById('lt-exp-bulk-modal');
+ if(modal)modal.style.display='none';
+};
+
+window.ltExpBulkAssignCycleConfirm=function(){
+ var sel=document.getElementById('lt-exp-bulk-cycle-select');
+ var newMonthRef=sel?sel.value:'';
+ if(!newMonthRef){alert('Selecionar um ciclo.');return;}
+ var ids=Array.from(window.__ltExpSelectedIds);
+ if(ids.length===0)return;
+ var rows=window._pmExpenseRows||[];
+ var byId={};
+ rows.forEach(function(e){if(e&&e.id)byId[e.id]=e;});
+ var meta=ids.map(function(id){
+  var e=byId[id];
+  if(!e||!e.propertyId)return null;
+  return{id:id,propertyId:e.propertyId,srcMonth:window.ltExpNormalizeYm(e.monthRef)};
+ }).filter(Boolean);
+ if(meta.length===0){
+  alert('Nenhuma despesa PM valida na selecao.');
+  return;
+ }
+ var btn=document.getElementById('lt-exp-bulk-confirm-btn');
+ if(btn){btn.disabled=true;btn.textContent='A processar...';}
+ var normDest=window.ltExpNormalizeYm(newMonthRef);
+ var srcMonths=Array.from(new Set(meta.map(function(m){return m.srcMonth;})));
+ var monthsToFetch=Array.from(new Set([normDest].concat(srcMonths)));
+ Promise.all(monthsToFetch.map(function(m){
+  return fetch('/api/pm/owner-payouts?month='+encodeURIComponent(m),{credentials:'include'})
+   .then(function(r){return r.json().then(function(j){return{month:m,ok:r.ok,j:j};});});
+ })).then(function(results){
+  var bad=results.find(function(x){return !x.ok||!x.j||!x.j.ok;});
+  if(bad){
+   var warn=document.getElementById('lt-exp-bulk-warning');
+   if(warn){
+    warn.innerHTML='<strong>Atencao:</strong> Nao foi possivel validar Owner Payouts ('+(bad.j&&bad.j.error?String(bad.j.error):'erro de rede')+').';
+    warn.style.display='block';
+   }
+   return null;
+  }
+  var byMonth={};
+  results.forEach(function(r){byMonth[r.month]=r.j;});
+  function paidMap(month){
+   return window.ltExpPaidPropsFromOwnerPayouts(byMonth[month]||{});
+  }
+  var destPaid=paidMap(normDest);
+  var blockMsg=[];
+  meta.forEach(function(m){
+   if(destPaid[m.propertyId])blockMsg.push('ciclo destino '+normDest+' tem repasse ao owner ja marcado como pago (propriedade '+m.propertyId.slice(0,8)+'…).');
+   var sp=paidMap(m.srcMonth);
+   if(sp[m.propertyId])blockMsg.push('ciclo origem '+m.srcMonth+' tem repasse ao owner ja pago (propriedade '+m.propertyId.slice(0,8)+'…).');
+  });
+  if(blockMsg.length>0){
+   var warn2=document.getElementById('lt-exp-bulk-warning');
+   if(warn2){
+    warn2.innerHTML='<strong>Operacao bloqueada.</strong> '+blockMsg.filter(function(v,i,a){return a.indexOf(v)===i;}).join(' ');
+    warn2.style.display='block';
+   }
+   return null;
+  }
+  return meta;
+ }).then(function(ready){
+  if(!ready)return null;
+  return Promise.all(ready.map(function(m){
+   return fetch('/api/pm/expenses/'+encodeURIComponent(m.id),{
+    method:'PATCH',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({monthRef:normDest})
+   }).then(function(r){return r.json().then(function(j){return{id:m.id,ok:r.ok&&j&&j.ok};});});
+  }));
+ }).then(function(results){
+  if(!results)return;
+  var ok=results.filter(function(r){return r.ok;}).length;
+  var fail=results.length-ok;
+  fetch('/api/audit',{
+   method:'POST',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    action:'bulk_monthref_change',
+    entity:'expense',
+    entityId:'bulk_'+Date.now(),
+    details:JSON.stringify({
+     newMonthRef:normDest,
+     count:ids.length,
+     success:ok,
+     failures:fail,
+     ids:ids
+    })
+   })
+  }).catch(function(){});
+  var msg=ok+' despesa(s) movida(s) para ciclo '+normDest+'.';
+  if(fail>0)msg+=' '+fail+' falhou(aram).';
+  if(typeof ltExpBulkAssignCycleClose==='function')ltExpBulkAssignCycleClose();
+  if(typeof ltExpBulkClearSelection==='function')ltExpBulkClearSelection();
+  alert(msg);
+  if(typeof ltExpRenderWithPm==='function')return ltExpRenderWithPm();
+ }).then(function(){
+  if(typeof loadHomeDashboardFromApi==='function')try{loadHomeDashboardFromApi();}catch(eH){}
+ }).catch(function(err){
+  console.error('ltExpBulkAssignCycleConfirm error:',err);
+  alert('Erro ao mover despesas. Verifica a consola.');
+ }).finally(function(){
+  if(btn){btn.disabled=false;btn.textContent='Confirmar';}
+ });
+};
+
 function ltExpGetRawLocalStorageArray(){
  try{
   var s=localStorage.getItem('mp_lt_expenses_v1');
@@ -9692,7 +9916,11 @@ function ltExpRender(){
    '<option value="CANCELLED"'+(stNorm==='CANCELLED'?' selected':'')+'>Cancelado</option>'+
    '<option value="FINALIZED"'+(stNorm==='FINALIZED'?' selected':'')+' disabled>Finalizado</option>'+
    '</select></td>';
+  const cbTd=isPm
+   ? `<td style="padding:9px 8px;text-align:center"><input type="checkbox" class="lt-exp-row-cb" data-id="${gmHtmlEscAttr(String(r.id))}" onchange="if(typeof ltExpUpdateBulkBar===&#39;function&#39;)ltExpUpdateBulkBar()"`+(typeof ltExpBulkRoleOk==='function'&&!ltExpBulkRoleOk()?' disabled':'')+` style="cursor:pointer"></td>`
+   : '<td style="padding:9px 8px"></td>';
   return `<tr class="lt-exp-row status-${String(stNorm).toLowerCase()}" data-status="${stNorm}" style="border-bottom:1px solid var(--border)">
+ `+cbTd+`
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:9px 12px;font-size:12px;color:var(--ink)">${esc(r.propAddress||'—')}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${ven}</td>
@@ -9713,6 +9941,12 @@ function ltExpRender(){
  </tr>`;
  }).join('');
  if(typeof ltExpUpdateMigrateButtonVisibility==='function')ltExpUpdateMigrateButtonVisibility();
+ var hcb=document.getElementById('lt-exp-select-all');
+ if(hcb){
+  hcb.disabled=typeof ltExpBulkRoleOk==='function'&&!ltExpBulkRoleOk();
+  if(hcb.disabled){ hcb.checked=false; hcb.indeterminate=false; }
+ }
+ if(typeof ltExpUpdateBulkBar==='function')ltExpUpdateBulkBar();
 }
 
 function ltExpExportCSV(){
@@ -17460,6 +17694,31 @@ window.adminAuditRender=async function(){
   <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:14px;margin-top:16px">
    <button type="button" onclick="tenantCloseEdit()" style="padding:9px 18px;border:1px solid var(--border2);background:transparent;color:var(--ink2);border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px">Cancelar</button>
    <button type="button" onclick="tenantSaveEdit()" style="padding:9px 18px;border:none;background:var(--amber);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;font-size:12px;box-shadow:0 2px 8px rgba(201,169,110,.25)">Salvar Tenant</button>
+  </div>
+ </div>
+</div>
+
+<div id="lt-exp-bulk-bar" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.25);z-index:9999;align-items:center;gap:16px;font-size:13px;font-family:'DM Sans',sans-serif">
+ <span id="lt-exp-bulk-count" style="font-weight:600">0 selecionadas</span>
+ <button type="button" onclick="if(typeof ltExpBulkAssignCycleOpen==='function')ltExpBulkAssignCycleOpen()" style="background:var(--amber);color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">Atribuir Ciclo</button>
+ <button type="button" onclick="if(typeof ltExpBulkClearSelection==='function')ltExpBulkClearSelection()" style="background:transparent;color:#fff;border:1px solid #4b5563;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px">Limpar</button>
+</div>
+
+<div id="lt-exp-bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif">
+ <div style="background:var(--paper);padding:24px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid var(--border)">
+  <h3 style="margin:0 0 8px 0;font-size:18px;font-weight:700;font-family:'Cormorant Garamond',serif;color:var(--ink)">Atribuir Ciclo de Fechamento</h3>
+  <p style="margin:0 0 16px 0;font-size:13px;color:var(--ink2)">
+   Selecionar para qual ciclo as <span id="lt-exp-bulk-modal-count" style="font-weight:600">0</span>
+   despesas serao movidas. Cada ciclo vai do dia 15 ao dia 14 do mes seguinte.
+  </p>
+  <label style="display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Ciclo</label>
+  <select id="lt-exp-bulk-cycle-select" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;font-size:14px;margin-bottom:16px;background:var(--sand);color:var(--ink)">
+   <option value="">Selecionar ciclo...</option>
+  </select>
+  <div id="lt-exp-bulk-warning" style="display:none;background:var(--red-bg);border-left:3px solid var(--red);padding:12px;border-radius:4px;margin-bottom:16px;font-size:13px;color:var(--red)"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px">
+   <button type="button" onclick="if(typeof ltExpBulkAssignCycleClose==='function')ltExpBulkAssignCycleClose()" style="background:var(--cream);color:var(--ink2);border:1px solid var(--border2);padding:10px 16px;border-radius:6px;cursor:pointer;font-size:13px">Cancelar</button>
+   <button type="button" id="lt-exp-bulk-confirm-btn" onclick="if(typeof ltExpBulkAssignCycleConfirm==='function')ltExpBulkAssignCycleConfirm()" style="background:var(--amber);color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Confirmar</button>
   </div>
  </div>
 </div>
