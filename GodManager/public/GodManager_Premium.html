@@ -38,6 +38,27 @@
  --slate:#4a5568;--slate-bg:#edf0f4;--sw:240px;--th:54px
 }
 
+/* Long Term — Expenses table row + status dropdown (F3) */
+#lt-exp-tbody tr.lt-exp-row.status-finalized,
+#lt-exp-tbody tr.lt-exp-row[data-status="FINALIZED"]{
+ background:rgba(45,114,82,.1);
+ border-left:3px solid var(--green);
+}
+#lt-exp-tbody tr.lt-exp-row.status-paid,
+#lt-exp-tbody tr.lt-exp-row[data-status="PAID"]{
+ background:rgba(45,114,82,.05);
+}
+#lt-exp-tbody tr.lt-exp-row.status-cancelled,
+#lt-exp-tbody tr.lt-exp-row[data-status="CANCELLED"]{
+ opacity:.55;
+}
+#lt-exp-tbody tr.lt-exp-row:hover{background:var(--cream)}
+.lt-exp-status-select.status-scheduled{background:var(--slate-bg);color:var(--slate)}
+.lt-exp-status-select.status-pending{background:var(--amber-bg);color:var(--amber)}
+.lt-exp-status-select.status-paid{background:var(--green-bg);color:var(--green)}
+.lt-exp-status-select.status-cancelled{background:var(--red-bg);color:var(--red)}
+.lt-exp-status-select.status-finalized{background:#dcfce7;color:#166534}
+
 /* Mobile sidebar toggle */
 .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:400;width:36px;height:36px;background:var(--amber);border:none;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px;padding:0}
 .sb-toggle span{display:block;width:16px;height:2px;background:#fff;border-radius:2px;transition:all .2s}
@@ -8221,6 +8242,86 @@ async function ltExpRenderWithPm(){
  if(typeof ltExpRender==='function')ltExpRender();
 }
 
+function ltExpRowNormPmStatus(r){
+ var isPm=!!r._isPm;
+ var raw=isPm?(r.statusPm||r.status||'PENDING'):(r.status||'unpaid');
+ if(isPm){
+  var u=String(raw).toUpperCase();
+  if(['SCHEDULED','PENDING','PAID','CANCELLED','FINALIZED'].indexOf(u)>=0)return u;
+  return 'PENDING';
+ }
+ var l=String(raw).toLowerCase();
+ if(l==='paid')return 'PAID';
+ if(l==='cancelled'||l==='canceled')return 'CANCELLED';
+ if(l==='finalized')return 'FINALIZED';
+ if(l==='overdue')return 'PENDING';
+ return 'SCHEDULED';
+}
+
+window.ltExpStatusChange=function(id,newStatus){
+ var validStatuses=['SCHEDULED','PENDING','PAID','CANCELLED'];
+ if(validStatuses.indexOf(newStatus)<0)return;
+ id=String(id);
+ if(newStatus==='PAID'){
+  if(!confirm('Marcar esta despesa como PAGA?\n\nIsto vai atualizar o Net Owner do proprietario imediatamente.')){
+   if(typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+   return;
+  }
+ }
+ if(newStatus==='CANCELLED'){
+  if(!confirm('Cancelar esta despesa?\n\nA despesa fica registada mas nao entra no calculo do Net Owner.')){
+   if(typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+   return;
+  }
+ }
+ var arr=ltExpGetRecords()||[];
+ var idx=arr.findIndex(function(x){return x&&String(x.id)===id;});
+ if(idx>=0){
+  var mapLoc={SCHEDULED:'unpaid',PENDING:'overdue',PAID:'paid',CANCELLED:'cancelled'};
+  arr[idx].status=mapLoc[newStatus]||'unpaid';
+  ltExpSaveRecords(arr);
+  if(typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+  if(typeof jobsRender==='function')try{jobsRender();}catch(eJ){}
+  return;
+ }
+ fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+  method:'PATCH',
+  credentials:'include',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({status:newStatus})
+ })
+ .then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};});})
+ .then(function(res){
+  if(!res.ok||!res.j||!res.j.ok){
+   alert('Erro ao atualizar status: '+(res.j&&res.j.error?res.j.error:('HTTP '+res.status)));
+   if(typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+   return;
+  }
+  if(typeof jobsInvalidateApiCache==='function')try{jobsInvalidateApiCache();}catch(eI){}
+  (typeof ltExpRenderWithPm==='function'?ltExpRenderWithPm():Promise.resolve())
+  .then(function(){
+   if(typeof jobsRender==='function')try{jobsRender();}catch(eJr){}
+   if(typeof ltpRenderNetFromApi==='function')return ltpRenderNetFromApi();
+  })
+  .then(function(){
+   if(typeof ltOwnerPayRender==='function')return ltOwnerPayRender();
+  })
+  .then(function(){
+   if(typeof ltDashRender==='function')ltDashRender();
+   if(typeof ltpRender==='function')try{ltpRender();}catch(eLt){}
+   if(typeof loadHomeDashboardFromApi==='function')try{loadHomeDashboardFromApi();}catch(eH){}
+  })
+  .catch(function(e){
+   console.error('ltExpStatusChange follow-up',e);
+  });
+ })
+ .catch(function(err){
+  console.error('ltExpStatusChange error:',err);
+  alert('Erro ao atualizar status. Tenta de novo.');
+  if(typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+ });
+};
+
 function ltExpGetRawLocalStorageArray(){
  try{
   var s=localStorage.getItem('mp_lt_expenses_v1');
@@ -9542,8 +9643,6 @@ function ltExpRender(){
  if(!tbody)return;
  if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
  if(empty)empty.style.display='none';
- const sLabel={paid:'Pago',unpaid:'Pendente',overdue:'Vencido',SCHEDULED:'Agendado',PENDING:'Pendente',PAID:'Pago',CANCELLED:'Cancelado',FINALIZED:'Finalizado'};
- const sStyle={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',unpaid:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',overdue:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',SCHEDULED:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',PENDING:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',PAID:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',CANCELLED:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',FINALIZED:'background:#dcfce7;color:#166534;border:1px solid #86efac'};
  const esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
  tbody.innerHTML=filtered.map((r,i)=>{
   const isPm=!!r._isPm;
@@ -9556,9 +9655,18 @@ function ltExpRender(){
   const mk=esc(isPm?(r.markupLabel!=null&&r.markupLabel!==''?r.markupLabel:(!isNaN(r.markupPct)?String(r.markupPct)+'%':'\u2014')):'\u2014');
   const vOwn=esc(ltFmt(isPm?r.ownerCharged:ltExpValueWithExtras(r)));
   const dStr=isPm?String(r.serviceDate||'').slice(0,10):(r.due||r.paid||'—');
-  const stK=isPm?(r.statusPm||r.status):r.status;
   const catShow=esc(r.category);
-  return `<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+  const idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const stNorm=ltExpRowNormPmStatus(r);
+  const selDis=stNorm==='FINALIZED'?'disabled':'';
+  const statusTd='<td style="padding:9px 12px;text-align:center"><select '+selDis+' onchange="if(typeof ltExpStatusChange===\'function\')ltExpStatusChange(\''+idAttr+'\',this.value)" class="lt-exp-status-select status-'+String(stNorm).toLowerCase()+'" style="padding:4px 8px;border-radius:4px;font-size:12px;border:1px solid var(--border);cursor:pointer;max-width:140px">'+
+   '<option value="SCHEDULED"'+(stNorm==='SCHEDULED'?' selected':'')+'>Agendado</option>'+
+   '<option value="PENDING"'+(stNorm==='PENDING'?' selected':'')+'>Pendente</option>'+
+   '<option value="PAID"'+(stNorm==='PAID'?' selected':'')+'>Pago</option>'+
+   '<option value="CANCELLED"'+(stNorm==='CANCELLED'?' selected':'')+'>Cancelado</option>'+
+   '<option value="FINALIZED"'+(stNorm==='FINALIZED'?' selected':'')+' disabled>Finalizado</option>'+
+   '</select></td>';
+  return `<tr class="lt-exp-row status-${String(stNorm).toLowerCase()}" data-status="${stNorm}" style="border-bottom:1px solid var(--border)">
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:9px 12px;font-size:12px;color:var(--ink)">${esc(r.propAddress||'—')}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${ven}</td>
@@ -9570,7 +9678,7 @@ function ltExpRender(){
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;font-size:10px;color:var(--ink3)">${catShow}</td>
  <td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">${esc(dStr)}</td>
- <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;${sStyle[stK]||''}">${sLabel[stK]||stK}</span></td>
+ `+statusTd+`
  ${isPm?'<td style="padding:9px 8px;text-align:center;font-size:10px;color:var(--ink3)">—</td>':ltExpApprovalCell(r)}
  <td style="padding:9px 10px;text-align:center"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap">
  <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltOpenEditExpense==='function')ltOpenEditExpense(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
