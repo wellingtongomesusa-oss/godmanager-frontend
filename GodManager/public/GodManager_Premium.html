@@ -2138,7 +2138,10 @@ document.addEventListener('DOMContentLoaded', function(){
    <div class="pt">Jobs</div>
    <div class="ps">Acoes de manutencao sobre expenses abertos</div>
   </div>
-  <div id="jobs-user-badge" style="font-size:12px;color:var(--ink3);padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"></div>
+  <div style="display:flex;gap:12px;align-items:center">
+   <button id="jobs-new-btn" type="button" style="padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:none;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(45,114,82,.22)" onclick="if(typeof jobsOpenNewModal==='function')jobsOpenNewModal();else if(typeof ltExpOpenNewModal==='function')ltExpOpenNewModal();else if(typeof openExpenseModal==='function')openExpenseModal();else if(typeof ltOpenNewExpense==='function')ltOpenNewExpense();">+ Novo Job</button>
+   <div id="jobs-user-badge" style="font-size:12px;color:var(--ink3);padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"></div>
+  </div>
  </div>
 
  <div id="jobs-filter-row" style="display:flex;gap:12px;align-items:center;margin:16px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
@@ -2150,9 +2153,9 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div id="jobs-date-filter-row" style="display:flex;gap:8px;align-items:center;margin:8px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vista:</label>
-  <button type="button" id="jobs-vm-table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Tabela</button>
+  <button type="button" id="jobs-vm-table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Tabela</button>
   <button type="button" id="jobs-vm-agenda" onclick="gmJobsSetViewMode('agenda')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Agenda</button>
-  <button type="button" id="jobs-vm-calendar" onclick="gmJobsSetViewMode('calendar')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Calendário</button>
+  <button type="button" id="jobs-vm-calendar" onclick="gmJobsSetViewMode('calendar')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Calendário</button>
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
   <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Hoje</button>
@@ -14526,11 +14529,20 @@ window.gmJobsSetVendorFilter=function(vendorName){
  if(typeof jobsRender==='function')jobsRender();
 };
 
-window.__jobsViewMode='table';
+(function(){
+ try{
+  var allowed=['table','agenda','calendar'];
+  var s=localStorage.getItem('gm_jobs_view');
+  window.__jobsViewMode=(s&&allowed.indexOf(s)>=0)?s:'calendar';
+ }catch(e){
+  window.__jobsViewMode='calendar';
+ }
+})();
 
 window.gmJobsSetViewMode=function(mode){
  var allowed=['table','agenda','calendar'];
- window.__jobsViewMode=(allowed.indexOf(mode)>=0)?mode:'table';
+ window.__jobsViewMode=(allowed.indexOf(mode)>=0)?mode:'calendar';
+ try{localStorage.setItem('gm_jobs_view',window.__jobsViewMode);}catch(eLs){}
  try{
   ['table','agenda','calendar'].forEach(function(m){
    var btn=document.getElementById('jobs-vm-'+m);
@@ -15035,7 +15047,7 @@ async function jobsRender(){
  if(typeof window.jobsUpdateJobsPageRoleKpis==='function')try{window.jobsUpdateJobsPageRoleKpis();}catch(eK){}
 
  // Modo Agenda: render alternativo
- var viewMode=window.__jobsViewMode||'table';
+ var viewMode=window.__jobsViewMode||'calendar';
  var jobsTable=document.getElementById('jobs-table');
  var agendaHost=document.getElementById('jobs-agenda-host');
  if(!agendaHost){
@@ -15725,6 +15737,11 @@ async function jobsApplyRoleGateV2(){
    }
    if(typeof nav==='function')setTimeout(function(){try{nav('jobs');}catch(e){}},50);
   }
+  var btnNew=document.getElementById('jobs-new-btn');
+  if(btnNew){
+   var canCreate=(role==='admin'||role==='super_admin'||role==='manager');
+   btnNew.style.display=canCreate?'inline-flex':'none';
+  }
   if(typeof window.jobsUpdateJobsPageRoleKpis==='function')setTimeout(function(){
    try{window.jobsUpdateJobsPageRoleKpis();}catch(e1){}
   },0);
@@ -15735,6 +15752,11 @@ async function jobsApplyRoleGateV2(){
 document.addEventListener('DOMContentLoaded',function(){
  setTimeout(async function(){
   await gmAuthHydrateUserBadge();
+  try{
+   if(typeof gmJobsSetViewMode==='function'&&window.__jobsViewMode){
+    gmJobsSetViewMode(window.__jobsViewMode);
+   }
+  }catch(eV){}
   await jobsApplyRoleGateV2();
  },100);
 });
