@@ -9209,7 +9209,9 @@ window.gerarInvoicePDF=function(data,opts){
  });
 })();
 
-function ltOpenNewExpense(){
+function ltOpenNewExpense(prefill){
+ var pf=(prefill&&typeof prefill==='object')?prefill:{};
+ if(!pf.vendorFreeClone){try{window.__lastVendorFreeFrom=null;}catch(eClr){}}
  try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
  ltExpEditingId=null;ltExpEditingPmId=null;ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Nova Despesa';
@@ -9228,6 +9230,54 @@ function ltOpenNewExpense(){
  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
  var ovn=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn)ovn.value='';
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
+
+ if(pf.vendorFreeClone){
+  try{if(pf._vendorFreeFrom!=null&&pf._vendorFreeFrom!=='')window.__lastVendorFreeFrom=String(pf._vendorFreeFrom);}catch(eVF){}
+  document.getElementById('lt-nexp-cat').value='Vendor';
+  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
+  var propSel=document.getElementById('lt-nexp-prop');
+  if(propSel){
+   var pCode=String(pf.propertyCode||'').trim();
+   var pId=String(pf.propertyId||'').trim();
+   var pLeg=String(pf.propId||'').trim();
+   var look=pCode||pId||pLeg;
+   var opt=look?Array.from(propSel.options).find(function(o){
+    var v=o.value?String(o.value):'';
+    return v===look||v===pId||v===pCode||v===pLeg;
+   }):null;
+   if(opt)propSel.value=opt.value;
+   else if(look)propSel.value=look;
+  }
+  var mo=String(pf.monthRef||'').trim();
+  if(!mo&&pf.serviceDate)mo=String(pf.serviceDate).trim().slice(0,7);
+  var monEl=document.getElementById('lt-nexp-month');
+  if(monEl&&mo){
+   if(/^\d{4}-\d{2}$/.test(mo))monEl.value=mo;
+   else if(/^\d{4}-\d{1,2}$/.test(mo)){
+    var parts=mo.split('-');
+    monEl.value=parts[0]+'-'+((parts[1].length===1?'0':'')+parts[1]);
+   }
+  }
+  var dEl=document.getElementById('lt-nexp-desc');if(dEl)dEl.value=String(pf.description||pf.desc||'').trim();
+  var psvc=document.getElementById('lt-nexp-pm-svc');if(psvc)psvc.value=String(pf.serviceType||'').trim();
+  var sdt=String(pf.serviceDate||pf.dueDate||pf.due||'').trim().slice(0,10);
+  var pdt2=document.getElementById('lt-nexp-pm-svc-date');if(pdt2&&sdt)pdt2.value=sdt;
+  var pst2=document.getElementById('lt-nexp-pm-status');if(pst2)pst2.value='PENDING';
+  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
+  var pkg=String(pf.packageApplied||pf.pmPackage||'PACOTE_1').trim();
+  if(!pkg||pkg==='null')pkg='PACOTE_1';
+  if(['PACOTE_1','PACOTE_2','PACOTE_3','PACOTE_4'].indexOf(pkg)<0)pkg='PACOTE_1';
+  if(typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects(pkg);
+  var vcost=parseFloat(pf.vendorCost);
+  if(!Number.isFinite(vcost))vcost=parseFloat(pf.ownerCharged);
+  if(!Number.isFinite(vcost))vcost=parseFloat(pf.value);
+  if(!Number.isFinite(vcost))vcost=0;
+  var pvc2=document.getElementById('lt-nexp-pm-vendor-cost');if(pvc2)pvc2.value=String(vcost);
+  var vsel=document.getElementById('lt-nexp-pm-vendor');if(vsel)vsel.value='';
+  var ovn2=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn2)ovn2.value='';
+  if(typeof ltNexpPmRecalc==='function')ltNexpPmRecalc();
+ }
+
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
 function ltCloseNewExpense(){document.getElementById('lt-newexp-modal').style.display='none';}
@@ -15090,6 +15140,7 @@ async function jobsRender(){
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
  var isAdmin=(userRole==='admin'||userRole==='super_admin');
+ var canVendorFree=(userRole==='admin'||userRole==='super_admin'||userRole==='manager');
  var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='maintenance');
  tbody.innerHTML=rows.map(function(r){
   var vendorDone=jobsHasActionFor(r.id,'vendor');
@@ -15171,6 +15222,9 @@ async function jobsRender(){
  var btnReactivate=((isCancelled||isFinalized)&&isAdmin)
   ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="Reverter (volta a pendente)" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">Reativar</button>'
   : '';
+ var btnVendorFree=canVendorFree
+  ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="Criar novo Job clonado, escolher novo vendor" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">Vendor Free</button>'
+  : '';
 
  var statusLow=String(r.status||'').toLowerCase();
  var statusBadge;
@@ -15190,7 +15244,7 @@ async function jobsRender(){
   +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
   +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnEdit+btnFinalize+btnReschedule+btnCancel+btnReactivate+'</div></td>'
+  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnEdit+btnFinalize+btnReschedule+btnCancel+btnReactivate+btnVendorFree+'</div></td>'
   +'</tr>';
 }).join('');
  }finally{
@@ -15453,6 +15507,70 @@ window.jobsFinalize=function(id){
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
   if(typeof showToast==='function')showToast('Job finalizado.','success');
  }catch(e){console.warn('jobsFinalize',e);alert('Erro: '+e.message);}
+};
+
+window.jobsVendorFree=function(id){
+ try{
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var role=String(u.role||'').toLowerCase();
+  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'){
+   alert('Apenas admin ou manager podem criar Vendor Free.');
+   return;
+  }
+  id=String(id);
+  var arr=ltExpGetRecords()||[];
+  var idx=arr.findIndex(function(x){return x&&String(x.id)===id;});
+  if(idx>=0){
+   var orig=arr[idx];
+   if(typeof ltOpenNewExpense!=='function')return;
+   ltOpenNewExpense({
+    vendorFreeClone:true,
+    propertyId:orig.propertyId||orig.property_id||'',
+    propertyCode:orig.propertyCode||orig.property_code||'',
+    propId:orig.propId||'',
+    monthRef:orig.monthRef||orig.month||'',
+    description:orig.description||orig.desc||'',
+    serviceType:orig.serviceType||orig.category||'',
+    serviceDate:(orig.serviceDate||orig.dueDate||orig.due||'').toString().slice(0,10),
+    vendorCost:orig.vendorCost,
+    ownerCharged:orig.ownerCharged||orig.amount||orig.value,
+    value:orig.value,
+    packageApplied:orig.packageApplied||orig.pmPackage,
+    _vendorFreeFrom:id
+   });
+   return;
+  }
+  fetch('/api/pm/expenses',{credentials:'include'})
+   .then(function(r){return r.json();})
+   .then(function(j){
+    var list=(j&&j.expenses)||[];
+    var e=list.find(function(x){return x&&String(x.id)===id;});
+    if(!e){
+     alert('Job nao encontrado.');
+     return;
+    }
+    if(typeof ltOpenNewExpense!=='function')return;
+    ltOpenNewExpense({
+     vendorFreeClone:true,
+     propertyId:String(e.propertyId||''),
+     propertyCode:String(e.propertyCode||''),
+     monthRef:String(e.monthRef||''),
+     description:String(e.description||''),
+     serviceType:String(e.serviceType||''),
+     serviceDate:(e.serviceDate||'').toString().slice(0,10),
+     vendorCost:parseFloat(e.vendorCost)||0,
+     ownerCharged:parseFloat(e.ownerCharged)||0,
+     packageApplied:String(e.packageApplied||e.pmPackage||'PACOTE_1'),
+     _vendorFreeFrom:id
+    });
+   })
+   .catch(function(err){
+    console.error('jobsVendorFree fetch error:',err);
+    alert('Erro ao carregar o Job. Tenta de novo.');
+   });
+ }catch(e){
+  console.error('jobsVendorFree error:',e);
+ }
 };
 
 window.jobsReschedule=function(id){
