@@ -32,6 +32,22 @@ export function similarity(a: string, b: string): number {
   return (longer.length - distance) / longer.length;
 }
 
+export function tokenSimilarity(a: string, b: string): number {
+  const split = (s: string) =>
+    new Set(
+      s
+        .toLowerCase()
+        .split(/[\s,.\-#]+/)
+        .filter((t) => t.length > 0),
+    );
+  const tokensA = split(a);
+  const tokensB = split(b);
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+  let intersection = 0;
+  for (const t of tokensA) if (tokensB.has(t)) intersection++;
+  return intersection / (tokensA.size + tokensB.size - intersection);
+}
+
 export interface PropertyLite {
   id: string;
   address: string;
@@ -46,14 +62,22 @@ export interface TenantLite {
 export function matchProperty(paymentAddress: string, properties: PropertyLite[]): string | null {
   const parts = paymentAddress
     .split(' - ')
-    .map((p) => p.trim())
+    .map((x) => x.trim())
     .filter(Boolean);
   for (const part of parts) {
     const normalizedPart = normalizeAddress(part);
-    const matches = properties.filter((p) => normalizeAddress(p.address) === normalizedPart);
+    const matches = properties.filter((pr) => normalizeAddress(pr.address) === normalizedPart);
     if (matches.length === 1) return matches[0]!.id;
   }
-  return null;
+
+  let best: { id: string; score: number } | null = null;
+  for (const prop of properties) {
+    const score = tokenSimilarity(paymentAddress, prop.address);
+    if (score >= 0.6 && (!best || score > best.score)) {
+      best = { id: prop.id, score };
+    }
+  }
+  return best ? best.id : null;
 }
 
 export function matchTenant(
@@ -64,11 +88,13 @@ export function matchTenant(
   if (!propertyId) return null;
   const candidates = tenants.filter((t) => t.propertyId === propertyId);
   if (candidates.length === 0) return null;
-  const normalizedPayer = payerName.toLowerCase().trim();
+
   let best: { id: string; score: number } | null = null;
   for (const c of candidates) {
-    const score = similarity(normalizedPayer, c.name.toLowerCase().trim());
-    if (score >= 0.85 && (!best || score > best.score)) {
+    const tokenScore = tokenSimilarity(payerName, c.name);
+    const charScore = similarity(payerName.toLowerCase().trim(), c.name.toLowerCase().trim());
+    const score = Math.max(tokenScore, charScore);
+    if (score >= 0.75 && (!best || score > best.score)) {
       best = { id: c.id, score };
     }
   }

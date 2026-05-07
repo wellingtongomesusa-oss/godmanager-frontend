@@ -45,7 +45,7 @@ export async function POST() {
   let newPropertyMatches = 0;
   let newTenantMatches = 0;
   let stillUnmatched = 0;
-  const sampleUnmatched: {
+  type SampleRow = {
     payerName: string;
     propertyAddress: string;
     candidatesCount: number;
@@ -53,7 +53,9 @@ export async function POST() {
     matchedPropertyAddress: string | null;
     tenantsInProperty: string[];
     bestNameScore: number;
-  }[] = [];
+  };
+  const samplesWithProp: SampleRow[] = [];
+  const samplesNoProp: SampleRow[] = [];
 
   const updates: { id: string; propertyId: string | null; tenantId: string | null }[] = [];
 
@@ -81,39 +83,43 @@ export async function POST() {
 
       if (newTenantId == null) {
         stillUnmatched++;
-        if (sampleUnmatched.length < 5) {
-          const matchedPropertyId = matchedProp;
-          const candidatesCount = matchedPropertyId
-            ? tenants.filter((t) => t.propertyId === matchedPropertyId).length
-            : 0;
+        const matchedPropertyId = matchedProp;
+        const candidatesCount = matchedPropertyId
+          ? tenants.filter((t) => t.propertyId === matchedPropertyId).length
+          : 0;
 
-          const payerNorm = p.payerName.toLowerCase().trim();
-          let bestNameScore = 0;
-          for (const t of tenants) {
-            const sc = similarity(payerNorm, t.name.toLowerCase().trim());
-            if (sc > bestNameScore) bestNameScore = sc;
-          }
+        const payerNorm = p.payerName.toLowerCase().trim();
+        let bestNameScore = 0;
+        for (const t of tenants) {
+          const sc = similarity(payerNorm, t.name.toLowerCase().trim());
+          if (sc > bestNameScore) bestNameScore = sc;
+        }
 
-          const matchedPropertyAddress = matchedProp
-            ? properties.find((pr) => pr.id === matchedProp)?.address ?? null
-            : null;
+        const matchedPropertyAddress = matchedProp
+          ? properties.find((pr) => pr.id === matchedProp)?.address ?? null
+          : null;
 
-          const tenantsInProperty = matchedPropertyId
-            ? tenants
-                .filter((t) => t.propertyId === matchedPropertyId)
-                .slice(0, 5)
-                .map((t) => t.name)
-            : [];
+        const tenantsInProperty = matchedPropertyId
+          ? tenants
+              .filter((t) => t.propertyId === matchedPropertyId)
+              .slice(0, 5)
+              .map((t) => t.name)
+          : [];
 
-          sampleUnmatched.push({
-            payerName: p.payerName,
-            propertyAddress: p.propertyAddress,
-            candidatesCount,
-            propertyMatched: !!matchedPropertyId,
-            matchedPropertyAddress,
-            tenantsInProperty,
-            bestNameScore,
-          });
+        const sample: SampleRow = {
+          payerName: p.payerName,
+          propertyAddress: p.propertyAddress,
+          candidatesCount,
+          propertyMatched: !!matchedPropertyId,
+          matchedPropertyAddress,
+          tenantsInProperty,
+          bestNameScore,
+        };
+
+        if (newPropertyId != null) {
+          if (samplesWithProp.length < 5) samplesWithProp.push(sample);
+        } else {
+          if (samplesNoProp.length < 5) samplesNoProp.push(sample);
         }
       }
 
@@ -134,6 +140,11 @@ export async function POST() {
       ),
     );
   }
+
+  const sampleUnmatched = [
+    ...samplesWithProp,
+    ...samplesNoProp.slice(0, Math.max(0, 5 - samplesWithProp.length)),
+  ];
 
   let totalTenantsInClient = 0;
   let tenantsWithPropertyId = 0;
