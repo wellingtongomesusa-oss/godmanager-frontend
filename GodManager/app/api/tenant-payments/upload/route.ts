@@ -11,7 +11,7 @@ import {
   sha256Hex,
 } from '@/lib/incomeRegisterParser';
 import { resolveTenantPaymentClientId } from '@/lib/tenantPaymentScope';
-import { matchProperty, matchTenant } from '@/lib/tenantPaymentMatcher';
+import { matchProperty, matchTenantByDate } from '@/lib/tenantPaymentMatcher';
 
 export const dynamic = 'force-dynamic';
 
@@ -132,17 +132,17 @@ export async function POST(req: Request) {
     }),
     prisma.tenant.findMany({
       where: { clientId },
-      select: { id: true, name: true, propertyId: true },
+      select: { id: true, name: true, propertyId: true, moveIn: true, leaseTo: true, status: true },
     }),
     prisma.tenantPayment.findMany({
       where: { csvBatchId: batch.id },
-      select: { id: true, propertyAddress: true, payerName: true },
+      select: { id: true, propertyAddress: true, payerName: true, paymentDate: true },
     }),
   ]);
 
   const matchUpdates = createdPayments.map((p) => {
     const propertyId = matchProperty(p.propertyAddress, properties);
-    const tenantId = matchTenant(p.payerName, tenants, propertyId);
+    const tenantId = matchTenantByDate(p.paymentDate, tenants, propertyId);
     return { id: p.id, propertyId, tenantId };
   });
 

@@ -3,7 +3,12 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { toClientScopeUser } from '@/lib/clientScope';
 import { tenantPaymentAndBatchWhere } from '@/lib/tenantPaymentScope';
-import { matchProperty, matchTenant, similarity } from '@/lib/tenantPaymentMatcher';
+import {
+  countActiveTenantsAtDate,
+  matchProperty,
+  matchTenantByDate,
+  similarity,
+} from '@/lib/tenantPaymentMatcher';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +24,11 @@ export async function POST() {
   const scopeUser = toClientScopeUser(user);
   const tpWhere = tenantPaymentAndBatchWhere(scopeUser);
 
+  await prisma.tenantPayment.updateMany({
+    where: tpWhere,
+    data: { propertyId: null, tenantId: null },
+  });
+
   const payments = await prisma.tenantPayment.findMany({
     where: {
       ...tpWhere,
@@ -29,6 +39,7 @@ export async function POST() {
       clientId: true,
       propertyAddress: true,
       payerName: true,
+      paymentDate: true,
       propertyId: true,
       tenantId: true,
     },
@@ -53,6 +64,7 @@ export async function POST() {
     matchedPropertyAddress: string | null;
     tenantsInProperty: string[];
     bestNameScore: number;
+    activeTenantsAtDate: number;
   };
   const samplesWithProp: SampleRow[] = [];
   const samplesNoProp: SampleRow[] = [];
@@ -67,7 +79,7 @@ export async function POST() {
       }),
       prisma.tenant.findMany({
         where: { clientId },
-        select: { id: true, name: true, propertyId: true },
+        select: { id: true, name: true, propertyId: true, moveIn: true, leaseTo: true, status: true },
       }),
     ]);
 
@@ -75,7 +87,7 @@ export async function POST() {
       totalProcessed++;
       const matchedProp = matchProperty(p.propertyAddress, properties);
       const newPropertyId = matchedProp ?? p.propertyId;
-      const matchedT = matchTenant(p.payerName, tenants, newPropertyId);
+      const matchedT = matchTenantByDate(p.paymentDate, tenants, newPropertyId);
       const newTenantId = matchedT ?? p.tenantId;
 
       if (p.propertyId == null && newPropertyId != null) newPropertyMatches++;
@@ -106,6 +118,8 @@ export async function POST() {
               .map((t) => t.name)
           : [];
 
+        const activeTenantsAtDate = countActiveTenantsAtDate(p.paymentDate, tenants, newPropertyId);
+
         const sample: SampleRow = {
           payerName: p.payerName,
           propertyAddress: p.propertyAddress,
@@ -114,6 +128,7 @@ export async function POST() {
           matchedPropertyAddress,
           tenantsInProperty,
           bestNameScore,
+          activeTenantsAtDate,
         };
 
         if (newPropertyId != null) {

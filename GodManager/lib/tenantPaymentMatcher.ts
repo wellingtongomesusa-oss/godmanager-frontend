@@ -57,6 +57,9 @@ export interface TenantLite {
   id: string;
   name: string;
   propertyId: string | null;
+  moveIn?: Date | null;
+  leaseTo?: Date | null;
+  status?: string | null;
 }
 
 export function matchProperty(paymentAddress: string, properties: PropertyLite[]): string | null {
@@ -99,4 +102,46 @@ export function matchTenant(
     }
   }
   return best ? best.id : null;
+}
+
+export function countActiveTenantsAtDate(
+  paymentDate: Date,
+  tenants: TenantLite[],
+  propertyId: string | null,
+): number {
+  if (!propertyId) return 0;
+  const candidates = tenants.filter((t) => t.propertyId === propertyId);
+  return candidates.filter((t) => {
+    const moveInOk = !t.moveIn || t.moveIn <= paymentDate;
+    const leaseOk = !t.leaseTo || t.leaseTo >= paymentDate;
+    const statusOk = !t.status || t.status === 'active';
+    return moveInOk && leaseOk && statusOk;
+  }).length;
+}
+
+export function matchTenantByDate(
+  paymentDate: Date,
+  tenants: TenantLite[],
+  propertyId: string | null,
+): string | null {
+  if (!propertyId) return null;
+  const candidates = tenants.filter((t) => t.propertyId === propertyId);
+  if (candidates.length === 0) return null;
+
+  const active = candidates.filter((t) => {
+    const moveInOk = !t.moveIn || t.moveIn <= paymentDate;
+    const leaseOk = !t.leaseTo || t.leaseTo >= paymentDate;
+    const statusOk = !t.status || t.status === 'active';
+    return moveInOk && leaseOk && statusOk;
+  });
+
+  const pick = (list: TenantLite[]) => {
+    const sorted = [...list].sort(
+      (a, b) => (b.moveIn?.getTime() ?? 0) - (a.moveIn?.getTime() ?? 0),
+    );
+    return sorted[0]?.id ?? null;
+  };
+
+  if (active.length > 0) return pick(active);
+  return pick(candidates);
 }
