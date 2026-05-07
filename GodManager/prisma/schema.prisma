@@ -668,6 +668,7 @@ model CsvBatch {
   rowCount    Int
   totalAmount Decimal? @db.Decimal(14, 2)
   uploadedBy  String?
+  r2Key       String?
   uploadedAt  DateTime @default(now())
 
   client         Client          @relation("CsvBatch_clientId", fields: [clientId], references: [id])

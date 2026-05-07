@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { getR2Bucket, getR2Client } from '@/lib/r2';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { toClientScopeUser } from '@/lib/clientScope';
 import {
@@ -122,11 +124,34 @@ export async function POST(req: Request) {
     return b;
   });
 
+  const safeFilename = name.replace(/[/\\]/g, '_');
+  const r2ObjectKey = `csv-batches/${batch.id}/${safeFilename}`;
+  let r2Warning: string | undefined;
+
+  try {
+    await getR2Client().send(
+      new PutObjectCommand({
+        Bucket: getR2Bucket(),
+        Key: r2ObjectKey,
+        Body: Buffer.from(text, 'utf-8'),
+        ContentType: 'text/csv',
+      }),
+    );
+    await prisma.csvBatch.update({
+      where: { id: batch.id },
+      data: { r2Key: r2ObjectKey },
+    });
+  } catch (err) {
+    console.error('[tenant-payments/upload] R2 audit upload failed', err);
+    r2Warning = 'CSV stored in DB but R2 audit upload failed';
+  }
+
   return NextResponse.json({
     batchId: batch.id,
     rowsInserted: rows.length,
     totalReceiptAmount,
     distinctPayers,
     parserErrors,
+    ...(r2Warning ? { r2Warning } : {}),
   });
 }
