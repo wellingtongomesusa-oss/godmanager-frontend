@@ -10960,8 +10960,9 @@ async function ltpRender(){
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-ltp-st-toggle data-ltp-id="${esc(r.id)}" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''};cursor:pointer;font-family:'Inter',sans-serif;border-width:1px;border-style:solid">${stLabel[r.status]||'—'}</button></td>
  <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
- <div style="display:flex;gap:4px;justify-content:center">
+ <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
  <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
+ <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen==='function')gmPropertyPaymentsOpen('${esc(r.id)}');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>
  <button type="button" data-ltp-a="edit" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
  <button type="button" data-ltp-a="del" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  </div>
@@ -17869,6 +17870,20 @@ window.adminAuditRender=async function(){
  </div>
 </div>
 
+<div id="modal-property-payments" class="gm-modal" style="display:none">
+ <div class="gm-modal-backdrop" onclick="gmPropertyPaymentsClose()"></div>
+ <div class="gm-modal-content" style="max-width:900px">
+  <div class="gm-modal-header">
+   <h3 id="pp-modal-title">Pagamentos</h3>
+   <button type="button" onclick="gmPropertyPaymentsClose()" class="gm-modal-close" aria-label="Fechar">&times;</button>
+  </div>
+  <div class="gm-modal-body">
+   <div id="pp-modal-summary" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px"></div>
+   <div id="pp-modal-list"></div>
+  </div>
+ </div>
+</div>
+
 <script>
 (function(){
 window.gmTenantPaymentsOpen=function(tenantId){
@@ -17933,6 +17948,76 @@ window.gmTenantPaymentsOpen=function(tenantId){
 };
 window.gmTenantPaymentsClose=function(){
  var m=document.getElementById('modal-tenant-payments');
+ if(m)m.style.display='none';
+};
+window.gmPropertyPaymentsOpen=function(propertyId){
+ var modal=document.getElementById('modal-property-payments');
+ var summary=document.getElementById('pp-modal-summary');
+ var list=document.getElementById('pp-modal-list');
+ var title=document.getElementById('pp-modal-title');
+ if(!modal||!summary||!list)return;
+ modal.style.display='block';
+ summary.innerHTML='<div style="padding:12px;color:var(--ink2)">A carregar...</div>';
+ list.innerHTML='';
+ if(title)title.textContent='Pagamentos';
+ var escCell=function(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ };
+ try{
+  fetch('/api/tenant-payments/by-property/'+encodeURIComponent(propertyId),{credentials:'same-origin'}).then(function(res){
+   if(!res.ok){
+    summary.innerHTML='<div style="color:var(--red);padding:8px">Erro '+res.status+'</div>';
+    return null;
+   }
+   return res.json();
+  }).then(function(data){
+   if(!data)return;
+   var fmt=function(n){return '$'+Number(n||0).toFixed(2);};
+   var fmtDate=function(d){return d?new Date(d).toLocaleDateString('pt-PT'):'\u2014';};
+   summary.innerHTML=
+    '<div class="gm-ix-kpi"><div class="k-l">Total recebido (sempre)</div><div class="k-v">'+fmt(data.summary.totalAllTime)+'</div><div class="k-bar"></div></div>'+
+    '<div class="gm-ix-kpi k3"><div class="k-l">\u00daltimos 12 meses</div><div class="k-v">'+fmt(data.summary.totalLast12Months)+'</div><div class="k-bar"></div></div>'+
+    '<div class="gm-ix-kpi k4"><div class="k-l">\u00daltimo pagamento</div><div class="k-v">'+fmt(data.summary.lastPaymentAmount)+'</div><div class="k-s">'+fmtDate(data.summary.lastPaymentDate)+'</div><div class="k-bar"></div></div>'+
+    '<div class="gm-ix-kpi k2"><div class="k-l">Tenants com pagamentos</div><div class="k-v">'+(data.summary.distinctTenantsCount||0)+'</div><div class="k-bar"></div></div>';
+   if(!data.payments||data.payments.length===0){
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--ink3)">Sem pagamentos registados.</div>';
+    return;
+   }
+   var rows=data.payments.map(function(p){
+    var tn=(p.tenant&&p.tenant.name)?escCell(p.tenant.name):'<span style="color:var(--ink3)">\u2014 sem tenant</span>';
+    var ac=(p.cashAccount||'\u2014').replace(/^\d+\s*-\s*/,'');
+    return '<tr>'+
+      '<td style="padding:8px">'+fmtDate(p.paymentDate)+'</td>'+
+      '<td style="padding:8px;font-weight:600;font-family:\'JetBrains Mono\',monospace">'+fmt(p.receiptAmount)+'</td>'+
+      '<td style="padding:8px;font-size:12px">'+tn+'</td>'+
+      '<td style="padding:8px;font-size:11px;color:var(--ink3)">'+(p.reference?escCell(p.reference):'\u2014')+'</td>'+
+      '<td style="padding:8px;font-size:11px">'+(p.type?escCell(p.type):'\u2014')+'</td>'+
+      '<td style="padding:8px;font-size:11px">'+escCell(ac)+'</td>'+
+      '<td style="padding:8px;font-size:11px;color:var(--ink3)">'+(p.payerName?escCell(p.payerName):'\u2014')+'</td>'+
+    '</tr>';
+   }).join('');
+   list.innerHTML=
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+      '<thead><tr style="background:var(--cream);text-align:left">'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Data</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Valor</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Tenant</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Ref</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Tipo</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Conta</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Pagador</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>';
+  }).catch(function(e){
+   summary.innerHTML='<div style="color:var(--red);padding:8px">Erro de rede: '+(e.message||e)+'</div>';
+  });
+ }catch(e){
+  summary.innerHTML='<div style="color:var(--red);padding:8px">Erro de rede: '+(e.message||e)+'</div>';
+ }
+};
+window.gmPropertyPaymentsClose=function(){
+ var m=document.getElementById('modal-property-payments');
  if(m)m.style.display='none';
 };
 })();
