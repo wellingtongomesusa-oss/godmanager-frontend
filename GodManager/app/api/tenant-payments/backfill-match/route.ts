@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { toClientScopeUser } from '@/lib/clientScope';
 import { tenantPaymentAndBatchWhere } from '@/lib/tenantPaymentScope';
-import { matchProperty, matchTenant } from '@/lib/tenantPaymentMatcher';
+import { matchProperty, matchTenant, similarity } from '@/lib/tenantPaymentMatcher';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +50,9 @@ export async function POST() {
     propertyAddress: string;
     candidatesCount: number;
     propertyMatched: boolean;
+    matchedPropertyAddress: string | null;
+    tenantsInProperty: string[];
+    bestNameScore: number;
   }[] = [];
 
   const updates: { id: string; propertyId: string | null; tenantId: string | null }[] = [];
@@ -83,11 +86,33 @@ export async function POST() {
           const candidatesCount = matchedPropertyId
             ? tenants.filter((t) => t.propertyId === matchedPropertyId).length
             : 0;
+
+          const payerNorm = p.payerName.toLowerCase().trim();
+          let bestNameScore = 0;
+          for (const t of tenants) {
+            const sc = similarity(payerNorm, t.name.toLowerCase().trim());
+            if (sc > bestNameScore) bestNameScore = sc;
+          }
+
+          const matchedPropertyAddress = matchedProp
+            ? properties.find((pr) => pr.id === matchedProp)?.address ?? null
+            : null;
+
+          const tenantsInProperty = matchedPropertyId
+            ? tenants
+                .filter((t) => t.propertyId === matchedPropertyId)
+                .slice(0, 5)
+                .map((t) => t.name)
+            : [];
+
           sampleUnmatched.push({
             payerName: p.payerName,
             propertyAddress: p.propertyAddress,
             candidatesCount,
             propertyMatched: !!matchedPropertyId,
+            matchedPropertyAddress,
+            tenantsInProperty,
+            bestNameScore,
           });
         }
       }

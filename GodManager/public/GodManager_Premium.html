@@ -5765,7 +5765,9 @@ window.gmTenantPayerRunBackfill = async function() {
   var samples=(data.sampleUnmatched||[]).slice(0,3)
    .map(function(s){
     var cc=s.candidatesCount!=null?s.candidatesCount:0;
-    return '- '+(s.payerName||'?')+' ('+cc+' candidatos) / '+(String(s.propertyAddress||'?')).slice(0,40);
+    var scoreStr=(typeof s.bestNameScore==='number'&&!isNaN(s.bestNameScore))?s.bestNameScore.toFixed(2):'n/a';
+    var names=(Array.isArray(s.tenantsInProperty)&&s.tenantsInProperty.length)?s.tenantsInProperty.join(', ').slice(0,60):'nenhum';
+    return '- '+(s.payerName||'?')+' [score: '+scoreStr+'] / property: '+(s.matchedPropertyAddress||'NÃO MATCHED')+' ('+cc+' tenants nessa property: '+names+')';
    })
    .join('\n');
   alert(
