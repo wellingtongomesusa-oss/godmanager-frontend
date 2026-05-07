@@ -15,11 +15,15 @@ export async function GET(_req: Request, { params }: { params: { propertyId: str
 
   const scopeUser = toClientScopeUser(user);
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true, clientId: true },
+  const property = await prisma.property.findFirst({
+    where: {
+      OR: [{ id: propertyId }, { code: propertyId }],
+    },
+    select: { id: true, clientId: true, address: true, code: true },
   });
-  if (!property) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+  if (!property) {
+    return NextResponse.json({ ok: false, error: 'Property não encontrada' }, { status: 404 });
+  }
   if (!canAccessClientId(scopeUser, property.clientId)) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
@@ -28,7 +32,7 @@ export async function GET(_req: Request, { params }: { params: { propertyId: str
 
   const payments = await prisma.tenantPayment.findMany({
     where: {
-      propertyId,
+      propertyId: property.id,
       ...scopeWhere,
     },
     orderBy: { paymentDate: 'desc' },
@@ -69,6 +73,7 @@ export async function GET(_req: Request, { params }: { params: { propertyId: str
   const lastPaymentAmount = latest ? Number(latest.receiptAmount) : 0;
 
   return NextResponse.json({
+    property: { id: property.id, code: property.code, address: property.address },
     payments: payments.map((p) => ({
       id: p.id,
       tenantId: p.tenantId,

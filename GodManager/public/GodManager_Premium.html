@@ -17972,6 +17972,10 @@ window.gmPropertyPaymentsOpen=function(propertyId){
    return res.json();
   }).then(function(data){
    if(!data)return;
+   var titleEl=document.getElementById('pp-modal-title');
+   if(titleEl&&data.property){
+    titleEl.textContent='Pagamentos — '+(data.property.code||'')+' · '+(data.property.address||'');
+   }
    var fmt=function(n){return '$'+Number(n||0).toFixed(2);};
    var fmtDate=function(d){return d?new Date(d).toLocaleDateString('pt-PT'):'\u2014';};
    summary.innerHTML=
