@@ -1715,8 +1715,9 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="pt" style="font-family:'Sora',sans-serif">AppFolio — Importar Dados</div>
  <div class="ps" id="af-subtitle">Envie os CSVs exportados do AppFolio para atualizar o dashboard</div>
  </div>
- <div class="gm-ix-actions">
+ <div class="gm-ix-actions" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
  <button type="button" class="btn-gm-ix" id="af-btn-refresh-dash" onclick="gmAppfolioRefreshDashboard()">Atualizar Dashboard</button>
+ <button type="button" class="btn-gm-ix sec" id="btn-tp-backfill" onclick="gmTenantPayerRunBackfill()">Re-fazer matching</button>
  </div>
  </div>
  <div class="gm-ix-panel">
@@ -5739,6 +5740,40 @@ async function gmAppfolioDoImport(){
 }
 window.gmAppfolioRefreshDashboard=gmAppfolioRefreshDashboard;
 window.gmAppfolioDoImport=gmAppfolioDoImport;
+
+window.gmTenantPayerRunBackfill = async function() {
+ var btn=document.getElementById('btn-tp-backfill');
+ if(btn){btn.disabled=true;btn.textContent='A processar...';}
+ try{
+  var res=await fetch('/api/tenant-payments/backfill-match',{
+   method:'POST',
+   credentials:'same-origin',
+   headers:{'Content-Type':'application/json'}
+  });
+  if(!res.ok){
+   var errBody=await res.text();
+   alert('Erro '+res.status+': '+errBody.slice(0,200));
+   return;
+  }
+  var data=await res.json();
+  var samples=(data.sampleUnmatched||[]).slice(0,3)
+   .map(function(s){return '- '+(s.payerName||'?')+' / '+(String(s.propertyAddress||'?')).slice(0,40);})
+   .join('\n');
+  alert(
+   'Matching concluído.\n\n'+
+   'Total processados: '+data.totalProcessed+'\n'+
+   'Novas ligações a property: '+data.newPropertyMatches+'\n'+
+   'Novas ligações a tenant: '+data.newTenantMatches+'\n'+
+   'Ainda sem match: '+data.stillUnmatched+'\n\n'+
+   (samples?'Exemplos sem match:\n'+samples:'')
+  );
+  if(typeof gmTenantPayerRefreshSummary==='function')gmTenantPayerRefreshSummary();
+ }catch(e){
+  alert('Erro de rede: '+(e&&e.message?e.message:e));
+ }finally{
+  if(btn){btn.disabled=false;btn.textContent='Re-fazer matching';}
+ }
+};
 
 // Gross & Expenses (AppFolio API)
 var _geItems=[];
