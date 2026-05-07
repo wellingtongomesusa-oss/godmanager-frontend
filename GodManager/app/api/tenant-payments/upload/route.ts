@@ -11,6 +11,7 @@ import {
   sha256Hex,
 } from '@/lib/incomeRegisterParser';
 import { resolveTenantPaymentClientId } from '@/lib/tenantPaymentScope';
+import { matchProperty, matchTenant } from '@/lib/tenantPaymentMatcher';
 
 export const dynamic = 'force-dynamic';
 
@@ -124,6 +125,48 @@ export async function POST(req: Request) {
     return b;
   });
 
+  const [properties, tenants, createdPayments] = await Promise.all([
+    prisma.property.findMany({
+      where: { clientId },
+      select: { id: true, address: true },
+    }),
+    prisma.tenant.findMany({
+      where: { clientId },
+      select: { id: true, name: true, propertyId: true },
+    }),
+    prisma.tenantPayment.findMany({
+      where: { csvBatchId: batch.id },
+      select: { id: true, propertyAddress: true, payerName: true },
+    }),
+  ]);
+
+  const matchUpdates = createdPayments.map((p) => {
+    const propertyId = matchProperty(p.propertyAddress, properties);
+    const tenantId = matchTenant(p.payerName, tenants, propertyId);
+    return { id: p.id, propertyId, tenantId };
+  });
+
+  const matchedProperty = matchUpdates.filter((u) => u.propertyId != null).length;
+  const matched = matchUpdates.filter((u) => u.tenantId != null).length;
+  const unmatched = matchUpdates.filter((u) => u.tenantId == null).length;
+
+  const persist = matchUpdates.filter((u) => u.propertyId != null || u.tenantId != null);
+  const CHUNK = 100;
+  for (let i = 0; i < persist.length; i += CHUNK) {
+    const slice = persist.slice(i, i + CHUNK);
+    await prisma.$transaction(
+      slice.map((u) =>
+        prisma.tenantPayment.update({
+          where: { id: u.id },
+          data: {
+            ...(u.propertyId != null ? { propertyId: u.propertyId } : {}),
+            ...(u.tenantId != null ? { tenantId: u.tenantId } : {}),
+          },
+        }),
+      ),
+    );
+  }
+
   const safeFilename = name.replace(/[/\\]/g, '_');
   const r2ObjectKey = `csv-batches/${batch.id}/${safeFilename}`;
   let r2Warning: string | undefined;
@@ -152,6 +195,9 @@ export async function POST(req: Request) {
     totalReceiptAmount,
     distinctPayers,
     parserErrors,
+    matchedProperty,
+    matched,
+    unmatched,
     ...(r2Warning ? { r2Warning } : {}),
   });
 }
