@@ -289,6 +289,15 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .gm-ix-kpi.k2 .k-bar{background:var(--navy)}
 .gm-ix-kpi.k3 .k-bar{background:var(--green)}
 .gm-ix-kpi.k4 .k-bar{background:var(--blue)}
+/* F2.2 — modal histórico pagamentos por tenant */
+.gm-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9300}
+.gm-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4)}
+.gm-modal-content{position:relative;background:var(--paper);margin:5% auto;max-width:900px;width:min(900px,94vw);max-height:85vh;overflow:auto;border-radius:12px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.2);border:1px solid var(--border)}
+.gm-modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.gm-modal-header h3{margin:0;font-size:18px;font-weight:700;font-family:'Cormorant Garamond',serif;color:var(--ink)}
+.gm-modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink3);line-height:1;padding:0}
+.gm-modal-body{padding:20px}
+#tp-modal-summary .gm-ix-kpi{min-width:140px;flex:1}
 /* Premium — KPI strips responsivas (mobile scroll horizontal + snap; tablet/desktop grelha) */
 .gm-kpis-shell{position:relative;-webkit-overflow-scrolling:touch}
 .gm-kpis-shell--hint{margin-bottom:20px}
@@ -17092,6 +17101,7 @@ window.tenantViewDetails=function(tid){
     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+fmt$(p.monthlyRent||0)+'</td>'
     +'<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+sb+'">'+src+'</span></td>'
     +'<td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top">'
+     +'<button type="button" onclick="if(typeof gmTenantPaymentsOpen===\'function\')gmTenantPaymentsOpen(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Pagamentos</button>'
      +'<button type="button" onclick="if(typeof tenantOpenEdit===\'function\')tenantOpenEdit(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Editar</button>'
      +(showNoRen?'<button type="button" onclick="if(typeof tnConfirmNonRenewalPrompt===\'function\')tnConfirmNonRenewalPrompt(\''+idJs+'\');" style="padding:4px 6px;border-radius:6px;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:9px;font-weight:600;margin:2px 4px 2px 0">N\u00E3o Vai Renovar</button>':'')
      +(showRen?'<button type="button" onclick="if(typeof tnOpenRenewModal===\'function\')tnOpenRenewModal(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--amber);background:rgba(201,169,110,.1);color:var(--amber);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Renovar</button>':'')
@@ -17844,6 +17854,89 @@ window.adminAuditRender=async function(){
   </div>
  </div>
 </div>
+
+<div id="modal-tenant-payments" class="gm-modal" style="display:none">
+ <div class="gm-modal-backdrop" onclick="gmTenantPaymentsClose()"></div>
+ <div class="gm-modal-content" style="max-width:900px">
+  <div class="gm-modal-header">
+   <h3 id="tp-modal-title">Pagamentos</h3>
+   <button type="button" onclick="gmTenantPaymentsClose()" class="gm-modal-close" aria-label="Fechar">&times;</button>
+  </div>
+  <div class="gm-modal-body">
+   <div id="tp-modal-summary" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px"></div>
+   <div id="tp-modal-list"></div>
+  </div>
+ </div>
+</div>
+
+<script>
+(function(){
+window.gmTenantPaymentsOpen=function(tenantId){
+ var modal=document.getElementById('modal-tenant-payments');
+ var summary=document.getElementById('tp-modal-summary');
+ var list=document.getElementById('tp-modal-list');
+ var title=document.getElementById('tp-modal-title');
+ if(!modal||!summary||!list)return;
+ modal.style.display='block';
+ summary.innerHTML='<div style="padding:12px;color:var(--ink2)">A carregar...</div>';
+ list.innerHTML='';
+ if(title)title.textContent='Pagamentos';
+ try{
+  fetch('/api/tenant-payments/by-tenant/'+encodeURIComponent(tenantId),{credentials:'same-origin'}).then(function(res){
+   if(!res.ok){
+    summary.innerHTML='<div style="color:var(--red);padding:8px">Erro '+res.status+'</div>';
+    return null;
+   }
+   return res.json();
+  }).then(function(data){
+   if(!data)return;
+   var fmt=function(n){return '$'+Number(n||0).toFixed(2);};
+   var fmtDate=function(d){return d?new Date(d).toLocaleDateString('pt-PT'):'\u2014';};
+   summary.innerHTML=
+    '<div class="gm-ix-kpi"><div class="k-l">Total pago (sempre)</div><div class="k-v">'+fmt(data.summary.totalAllTime)+'</div><div class="k-bar"></div></div>'+
+    '<div class="gm-ix-kpi k3"><div class="k-l">\u00daltimos 12 meses</div><div class="k-v">'+fmt(data.summary.totalLast12Months)+'</div><div class="k-bar"></div></div>'+
+    '<div class="gm-ix-kpi k4"><div class="k-l">\u00daltimo pagamento</div><div class="k-v">'+fmt(data.summary.lastPaymentAmount)+'</div><div class="k-s">'+fmtDate(data.summary.lastPaymentDate)+'</div><div class="k-bar"></div></div>'+
+    '<div class="gm-ix-kpi k2"><div class="k-l">Total pagamentos</div><div class="k-v">'+(data.summary.paymentCount||0)+'</div><div class="k-bar"></div></div>';
+   if(!data.payments||data.payments.length===0){
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--ink3)">Sem pagamentos registados.</div>';
+    return;
+   }
+   var rows=data.payments.map(function(p){
+    var ac=(p.cashAccount||'\u2014').replace(/^\d+\s*-\s*/,'');
+    return '<tr>'+
+      '<td style="padding:8px">'+fmtDate(p.paymentDate)+'</td>'+
+      '<td style="padding:8px;font-weight:600;font-family:\'JetBrains Mono\',monospace">'+fmt(p.receiptAmount)+'</td>'+
+      '<td style="padding:8px;font-size:11px;color:var(--ink3)">'+(p.reference||'\u2014')+'</td>'+
+      '<td style="padding:8px;font-size:11px">'+(p.type||'\u2014')+'</td>'+
+      '<td style="padding:8px;font-size:11px">'+ac+'</td>'+
+      '<td style="padding:8px;font-size:11px;color:var(--ink3)">'+(p.payerName||'\u2014')+'</td>'+
+    '</tr>';
+   }).join('');
+   list.innerHTML=
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+      '<thead><tr style="background:var(--cream);text-align:left">'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Data</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Valor</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Ref</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Tipo</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Conta</th>'+
+        '<th style="padding:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Pagador</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>';
+  }).catch(function(e){
+   summary.innerHTML='<div style="color:var(--red);padding:8px">Erro de rede: '+(e.message||e)+'</div>';
+  });
+ }catch(e){
+  summary.innerHTML='<div style="color:var(--red);padding:8px">Erro de rede: '+(e.message||e)+'</div>';
+ }
+};
+window.gmTenantPaymentsClose=function(){
+ var m=document.getElementById('modal-tenant-payments');
+ if(m)m.style.display='none';
+};
+})();
+</script>
 
 <div id="gm-build-stamp" style="position:fixed;bottom:6px;right:6px;z-index:2;font-size:10px;letter-spacing:0.04em;font-family:JetBrains Mono,monospace;color:rgba(201,169,110,0.35);pointer-events:none" title="Build identifier"></div>
 <script>
