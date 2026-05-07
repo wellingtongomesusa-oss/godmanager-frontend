@@ -45,7 +45,12 @@ export async function POST() {
   let newPropertyMatches = 0;
   let newTenantMatches = 0;
   let stillUnmatched = 0;
-  const sampleUnmatched: { payerName: string; propertyAddress: string }[] = [];
+  const sampleUnmatched: {
+    payerName: string;
+    propertyAddress: string;
+    candidatesCount: number;
+    propertyMatched: boolean;
+  }[] = [];
 
   const updates: { id: string; propertyId: string | null; tenantId: string | null }[] = [];
 
@@ -74,9 +79,15 @@ export async function POST() {
       if (newTenantId == null) {
         stillUnmatched++;
         if (sampleUnmatched.length < 5) {
+          const matchedPropertyId = matchedProp;
+          const candidatesCount = matchedPropertyId
+            ? tenants.filter((t) => t.propertyId === matchedPropertyId).length
+            : 0;
           sampleUnmatched.push({
             payerName: p.payerName,
             propertyAddress: p.propertyAddress,
+            candidatesCount,
+            propertyMatched: !!matchedPropertyId,
           });
         }
       }
@@ -99,11 +110,33 @@ export async function POST() {
     );
   }
 
+  let totalTenantsInClient = 0;
+  let tenantsWithPropertyId = 0;
+  let totalPropertiesInClient = 0;
+  for (const clientId of byClient.keys()) {
+    const [totalTenants, tenantsWithProperty, totalProperties] = await Promise.all([
+      prisma.tenant.count({ where: { clientId } }),
+      prisma.tenant.count({ where: { clientId, propertyId: { not: null } } }),
+      prisma.property.count({ where: { clientId } }),
+    ]);
+    totalTenantsInClient += totalTenants;
+    tenantsWithPropertyId += tenantsWithProperty;
+    totalPropertiesInClient += totalProperties;
+  }
+
+  const debug = {
+    totalTenantsInClient,
+    tenantsWithPropertyId,
+    tenantsWithoutPropertyId: totalTenantsInClient - tenantsWithPropertyId,
+    totalPropertiesInClient,
+  };
+
   return NextResponse.json({
     totalProcessed,
     newPropertyMatches,
     newTenantMatches,
     stillUnmatched,
     sampleUnmatched,
+    debug,
   });
 }

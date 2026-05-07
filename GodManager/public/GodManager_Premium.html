@@ -5756,8 +5756,17 @@ window.gmTenantPayerRunBackfill = async function() {
    return;
   }
   var data=await res.json();
+  var dbg=data.debug||{};
+  var diagnostico='\nDiagnóstico:\n'+
+   '- Total tenants do cliente: '+(dbg.totalTenantsInClient||0)+'\n'+
+   '- Tenants COM propertyId: '+(dbg.tenantsWithPropertyId||0)+'\n'+
+   '- Tenants SEM propertyId: '+(dbg.tenantsWithoutPropertyId||0)+'\n'+
+   '- Total properties: '+(dbg.totalPropertiesInClient||0);
   var samples=(data.sampleUnmatched||[]).slice(0,3)
-   .map(function(s){return '- '+(s.payerName||'?')+' / '+(String(s.propertyAddress||'?')).slice(0,40);})
+   .map(function(s){
+    var cc=s.candidatesCount!=null?s.candidatesCount:0;
+    return '- '+(s.payerName||'?')+' ('+cc+' candidatos) / '+(String(s.propertyAddress||'?')).slice(0,40);
+   })
    .join('\n');
   alert(
    'Matching concluído.\n\n'+
@@ -5765,7 +5774,8 @@ window.gmTenantPayerRunBackfill = async function() {
    'Novas ligações a property: '+data.newPropertyMatches+'\n'+
    'Novas ligações a tenant: '+data.newTenantMatches+'\n'+
    'Ainda sem match: '+data.stillUnmatched+'\n\n'+
-   (samples?'Exemplos sem match:\n'+samples:'')
+   (samples?'Exemplos sem match:\n'+samples+'\n':'')+
+   diagnostico
   );
   if(typeof gmTenantPayerRefreshSummary==='function')gmTenantPayerRefreshSummary();
  }catch(e){
