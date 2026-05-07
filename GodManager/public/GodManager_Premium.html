@@ -1742,7 +1742,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="gm-ix-kpi k3"><div class="k-l">Owners</div><div class="k-v" id="af-sum-own">—</div><div class="k-s">owner_directory</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k4"><div class="k-l">Vendors</div><div class="k-v" id="af-sum-ven">—</div><div class="k-s">vendor_directory</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k2"><div class="k-l">Bills</div><div class="k-v" id="af-sum-bill">—</div><div class="k-s">bill_detail (sem grupos)</div><div class="k-bar"></div></div>
- <div class="gm-ix-kpi"><div class="k-l">Income</div><div class="k-v" id="af-sum-inc">—</div><div class="k-s">income_register</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi"><div class="k-l">Tenant Payer</div><div class="k-v" id="af-sum-inc">—</div><div class="k-s">tenant_payments</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k3"><div class="k-l">Unpaid</div><div class="k-v" id="af-sum-unp">—</div><div class="k-s">saldos em aberto</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k4"><div class="k-l">Leases ativos</div><div class="k-v" id="af-sum-lease">—</div><div class="k-s">após import</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k2"><div class="k-l">1099 owners</div><div class="k-v" id="af-sum-1099">—</div><div class="k-s">com valor &gt; 0</div><div class="k-bar"></div></div>
@@ -5572,6 +5572,16 @@ function gmAppfolioPageInit(){
  gmAfSetNote('');
  gmAppfolioRefreshDashboard(true);
 }
+function gmTenantPayerRefreshSummary(){
+ fetch('/api/tenant-payments/summary',{credentials:'same-origin'})
+ .then(function(r){return r.json().then(function(j){return{ok:r.ok,status:r.status,j:j};});})
+ .then(function(o){
+  if(!o.ok||!o.j)return;
+  var el=document.getElementById('af-sum-inc');
+  if(el&&o.j.totalPayments!=null)el.textContent=String(o.j.totalPayments);
+ })
+ .catch(function(){});
+}
 function gmAppfolioApplySummaryFromImported(im){
  if(!im)return;
  var map=[['af-sum-prop','properties'],['af-sum-own','owners'],['af-sum-ven','vendors'],['af-sum-bill','bills'],['af-sum-inc','income'],['af-sum-unp','unpaid'],['af-sum-lease','leases_active'],['af-sum-1099','owners_1099']];
@@ -5592,6 +5602,7 @@ function gmAppfolioApplySummaryFromImported(im){
  }
  var grid=document.getElementById('af-summary-grid');
  if(grid)grid.style.display='grid';
+ gmTenantPayerRefreshSummary();
 }
 function gmAppfolioRefreshDashboard(silent){
  var url=GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard';
@@ -5632,59 +5643,100 @@ function gmAppfolioRefreshDashboard(silent){
   if(!silent)gmAfSetErr('Ligação à API AppFolio falhou (godmanager-production.up.railway.app).');
  });
 }
-function gmAppfolioDoImport(){
+async function gmAppfolioDetectIncomeRegisterFiles(queue){
+ var incomeRegisterFiles=[];
+ var otherFiles=[];
+ var hdr='Type,Reference,Property,Unit,Payer,Received Date / Invoice Date,Cash Account / Income Account,Receipt Amount,Charge Amount,Description';
+ for(var i=0;i<queue.length;i++){
+  var f=queue[i];
+  var head=await f.slice(0,512).text();
+  var firstLine=head.split(/\r?\n/)[0].trim();
+  if(firstLine===hdr){incomeRegisterFiles.push(f);}
+  else{otherFiles.push(f);}
+ }
+ return {incomeRegisterFiles:incomeRegisterFiles,otherFiles:otherFiles};
+}
+async function gmAppfolioDoImport(){
  var q=window.afUploadQueue||[];
  if(!q.length){gmAfSetErr('Selecione pelo menos um ficheiro CSV.');return;}
  gmAfSetErr('');
  gmAfSetNote('');
- var fd=new FormData();
- q.forEach(function(f){fd.append('files',f,f.name);});
  var wrap=document.getElementById('af-prog-wrap');
  var bar=document.getElementById('af-prog-bar');
  var btn=document.getElementById('af-btn-import');
  if(wrap){wrap.classList.add('on');}
- if(bar)bar.style.width='0%';
+ if(bar)bar.style.width='10%';
  if(btn)btn.disabled=true;
- var xhr=new XMLHttpRequest();
- xhr.open('POST',GM_BACKEND_RAILWAY_APP+'/api/appfolio/upload');
- xhr.upload.onprogress=function(ev){
-  if(!bar||!ev.lengthComputable)return;
-  var p=Math.round(ev.loaded/ev.total*100);
-  bar.style.width=p+'%';
- };
- xhr.onreadystatechange=function(){
-  if(xhr.readyState!==4)return;
+ var uploadErrs=[];
+ try{
+  var split=await gmAppfolioDetectIncomeRegisterFiles(q);
+  var incomeRegisterFiles=split.incomeRegisterFiles;
+  var otherFiles=split.otherFiles;
+  var j=0;
+  for(j=0;j<incomeRegisterFiles.length;j++){
+   var f=incomeRegisterFiles[j];
+   var fd=new FormData();
+   fd.append('file',f,f.name);
+   var res=await fetch('/api/tenant-payments/upload',{method:'POST',body:fd,credentials:'same-origin'});
+   var body={};
+   try{body=await res.json();}catch(eParse){body={};}
+   if(res.status===409){uploadErrs.push((body&&body.message)||'Ficheiro duplicado.');}
+   else if(!res.ok){uploadErrs.push((body&&(body.error||body.message))||('Erro HTTP '+res.status));}
+   if(bar){bar.style.width=String(Math.min(90,10+Math.round((j+1)/Math.max(1,incomeRegisterFiles.length)*40)))+'%';}
+  }
+  if(otherFiles.length>0){
+   await new Promise(function(resolve,reject){
+    var fd2=new FormData();
+    otherFiles.forEach(function(f2){fd2.append('files',f2,f2.name);});
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST',GM_BACKEND_RAILWAY_APP+'/api/appfolio/upload');
+    xhr.upload.onprogress=function(ev){
+     if(!bar||!ev.lengthComputable)return;
+     var base=incomeRegisterFiles.length?50:0;
+     var p=base+Math.round(ev.loaded/ev.total*(100-base));
+     bar.style.width=p+'%';
+    };
+    xhr.onreadystatechange=function(){
+     if(xhr.readyState!==4)return;
+     if(xhr.status>=200&&xhr.status<300){
+      try{
+       var data=JSON.parse(xhr.responseText||'{}');
+       if(data.last_upload){
+        var el=document.getElementById('af-last-upload');
+        if(el)el.textContent='Último upload (servidor): '+data.last_upload;
+        try{localStorage.setItem('gm_appfolio_last_upload',data.last_upload);}catch(eLu){}
+       }
+       if(data.imported){
+        try{localStorage.setItem('gm_appfolio_import_summary',JSON.stringify(data.imported));}catch(eIm){}
+        gmAppfolioApplySummaryFromImported(data.imported);
+       }
+      }catch(eJson){}
+      resolve(null);
+     }else{
+      reject(new Error('HTTP '+xhr.status));
+     }
+    };
+    xhr.onerror=function(){reject(new Error('network'));};
+    xhr.send(fd2);
+   }).catch(function(){uploadErrs.push('Upload AppFolio (CSV) falhou.');});
+  }
+  if(uploadErrs.length)gmAfSetErr(uploadErrs.join(' | '));
+  else if(incomeRegisterFiles.length||otherFiles.length){
+   gmAfSetNote('Importação concluída.');
+   setTimeout(function(){gmAfSetNote('');},5000);
+  }
+  window.afUploadQueue=[];
+  gmAfRenderFileList();
+  gmTenantPayerRefreshSummary();
+  gmAppfolioRefreshDashboard(true);
+ }catch(e){
+  gmAfSetErr('Erro no import.');
+ }finally{
   if(btn)btn.disabled=false;
   if(wrap)wrap.classList.remove('on');
   if(bar)bar.style.width='0%';
-   if(xhr.status>=200&&xhr.status<300){
-   try{
-    var data=JSON.parse(xhr.responseText||'{}');
-    if(data.last_upload){
-     var el=document.getElementById('af-last-upload');
-     if(el)el.textContent='Último upload (servidor): '+data.last_upload;
-     try{localStorage.setItem('gm_appfolio_last_upload',data.last_upload);}catch(e){}
-    }
-    if(data.imported){
-     try{localStorage.setItem('gm_appfolio_import_summary',JSON.stringify(data.imported));}catch(e){}
-     gmAppfolioApplySummaryFromImported(data.imported);
-    }
-    gmAfSetNote('Importação concluída.');
-    setTimeout(function(){gmAfSetNote('');},5000);
-    window.afUploadQueue=[];
-    gmAfRenderFileList();
-    gmAppfolioRefreshDashboard(true);
-   }catch(e){
-    gmAfSetErr('Resposta inválida do servidor.');
-   }
-  }else{
-   gmAfSetErr('Upload falhou (HTTP '+xhr.status+').');
-  }
- };
- xhr.onerror=function(){if(btn)btn.disabled=false;if(wrap)wrap.classList.remove('on');gmAfSetErr('Erro de rede no upload.');};
- xhr.send(fd);
+ }
 }
-window.gmAppfolioPageInit=gmAppfolioPageInit;
 window.gmAppfolioRefreshDashboard=gmAppfolioRefreshDashboard;
 window.gmAppfolioDoImport=gmAppfolioDoImport;
 

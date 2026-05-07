@@ -74,43 +74,45 @@ model Client {
   users       User[]
 
   // Multi-tenant back-relations
-  owners                Owner[]                  @relation("Owner_clientId")
-  properties            Property[]               @relation("Property_clientId")
-  tenantsScope          Tenant[]                 @relation("Tenant_clientId")
-  ownerPayouts          OwnerMonthPayout[]       @relation("OwnerMonthPayout_clientId")
-  expenses              PmExpense[]              @relation("PmExpense_clientId")
-  vendors               PmVendor[]               @relation("PmVendor_clientId")
-  vendorPayments        VendorPayment[]          @relation("VendorPayment_clientId")
-  maintenanceCalls      MaintenanceCall[]        @relation("MaintenanceCall_clientId")
-  jobActions            JobAction[]              @relation("JobAction_clientId")
-  propertyStatusHistory PropertyStatusHistory[]  @relation("PropertyStatusHistory_clientId")
-  auditEntries          AuditEntry[]             @relation("AuditEntry_clientId")
-  subscriptions         Subscription[]           @relation("Subscription_clientId")
-  statementLineItems    StatementLineItem[]      @relation("StatementLineItem_clientId")
-  userPermissions       UserPermission[]         @relation("UserPermission_clientId")
+  owners                Owner[]                 @relation("Owner_clientId")
+  properties            Property[]              @relation("Property_clientId")
+  tenantsScope          Tenant[]                @relation("Tenant_clientId")
+  ownerPayouts          OwnerMonthPayout[]      @relation("OwnerMonthPayout_clientId")
+  expenses              PmExpense[]             @relation("PmExpense_clientId")
+  vendors               PmVendor[]              @relation("PmVendor_clientId")
+  vendorPayments        VendorPayment[]         @relation("VendorPayment_clientId")
+  maintenanceCalls      MaintenanceCall[]       @relation("MaintenanceCall_clientId")
+  jobActions            JobAction[]             @relation("JobAction_clientId")
+  propertyStatusHistory PropertyStatusHistory[] @relation("PropertyStatusHistory_clientId")
+  auditEntries          AuditEntry[]            @relation("AuditEntry_clientId")
+  subscriptions         Subscription[]          @relation("Subscription_clientId")
+  statementLineItems    StatementLineItem[]     @relation("StatementLineItem_clientId")
+  userPermissions       UserPermission[]        @relation("UserPermission_clientId")
+  tenantPayments        TenantPayment[]         @relation("TenantPayment_clientId")
+  csvBatches            CsvBatch[]              @relation("CsvBatch_clientId")
 
   @@map("clients")
 }
 
 model User {
-  id           String       @id @default(cuid())
-  firstName    String
-  lastName     String
-  email        String       @unique
-  phone        String?
-  role         UserRole     @default(viewer)
-  status       UserStatus   @default(pending)
-  permissions  String[]     @default([])
-  passwordHash String
-  createdAt    DateTime     @default(now())
-  lastActive   DateTime     @default(now())
-  clientId     String?
-  ownerId      String?
-  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  owner        Owner?       @relation("User_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
-  auditEntries AuditEntry[] @relation("ActorAudit")
-  targetAudits AuditEntry[] @relation("TargetAudit")
-  subscription Subscription?
+  id              String           @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String           @unique
+  phone           String?
+  role            UserRole         @default(viewer)
+  status          UserStatus       @default(pending)
+  permissions     String[]         @default([])
+  passwordHash    String
+  createdAt       DateTime         @default(now())
+  lastActive      DateTime         @default(now())
+  clientId        String?
+  ownerId         String?
+  client          Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  owner           Owner?           @relation("User_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
+  auditEntries    AuditEntry[]     @relation("ActorAudit")
+  targetAudits    AuditEntry[]     @relation("TargetAudit")
+  subscription    Subscription?
   userPermissions UserPermission[] @relation("User_permissions")
 
   @@index([clientId])
@@ -278,6 +280,7 @@ model Property {
   ownerMonthPayouts OwnerMonthPayout[]
   maintenanceCalls  MaintenanceCall[]
   statusHistory     PropertyStatusHistory[]
+  tenantPayments    TenantPayment[]         @relation("TenantPayment_propertyId")
 
   @@index([code])
   @@index([status])
@@ -312,6 +315,7 @@ model Tenant {
   clientId         String?
   client           Client?           @relation("Tenant_clientId", fields: [clientId], references: [id], onDelete: SetNull)
   maintenanceCalls MaintenanceCall[]
+  tenantPayments   TenantPayment[]   @relation("TenantPayment_tenantId")
 
   @@index([code])
   @@index([propertyId])
@@ -491,21 +495,21 @@ model PmExpense {
 }
 
 model OwnerMonthPayout {
-  id           String    @id @default(cuid())
-  propertyId   String
-  property     Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  yearMonth    String
-  paidAt       DateTime?
-  paidAmount   Decimal?  @db.Decimal(12, 2)
-  method       String?   @db.VarChar(40)
-  reference    String?   @db.VarChar(120)
-  notes        String?   @db.Text
-  paidById     String?
-  paidByEmail  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  clientId     String?
-  client       Client?   @relation("OwnerMonthPayout_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+  id          String    @id @default(cuid())
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  yearMonth   String
+  paidAt      DateTime?
+  paidAmount  Decimal?  @db.Decimal(12, 2)
+  method      String?   @db.VarChar(40)
+  reference   String?   @db.VarChar(120)
+  notes       String?   @db.Text
+  paidById    String?
+  paidByEmail String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  clientId    String?
+  client      Client?   @relation("OwnerMonthPayout_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   totalIncome        Decimal?            @db.Decimal(12, 2)
   totalExpenses      Decimal?            @db.Decimal(12, 2)
@@ -538,42 +542,42 @@ model StatementLineItem {
 }
 
 model Subscription {
-  id                   String             @id @default(cuid())
-  userId               String             @unique
-  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  stripeCustomerId     String?            @unique
-  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
   stripePriceId        String?
 
-  trialStartsAt        DateTime?          @default(now())
-  trialEndsAt          DateTime?
+  trialStartsAt DateTime? @default(now())
+  trialEndsAt   DateTime?
 
-  status               SubscriptionStatus @default(TRIAL)
-  segment              BusinessSegment?
-  packageTier          Int?
-  interval             BillingInterval?   @default(MONTHLY)
+  status      SubscriptionStatus @default(TRIAL)
+  segment     BusinessSegment?
+  packageTier Int?
+  interval    BillingInterval?   @default(MONTHLY)
 
-  avgRent              Decimal?           @db.Decimal(12, 2)
-  avgVgv               Decimal?           @db.Decimal(14, 2)
-  unitCount            Int?
-  pricePerUnit         Decimal?           @db.Decimal(10, 2)
-  totalMonthly         Decimal?           @db.Decimal(12, 2)
+  avgRent      Decimal? @db.Decimal(12, 2)
+  avgVgv       Decimal? @db.Decimal(14, 2)
+  unitCount    Int?
+  pricePerUnit Decimal? @db.Decimal(10, 2)
+  totalMonthly Decimal? @db.Decimal(12, 2)
 
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean            @default(false)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
 
-  isGrandfathered      Boolean            @default(false)
-  grandfatheredNote    String?            @db.Text
+  isGrandfathered   Boolean @default(false)
+  grandfatheredNote String? @db.Text
 
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  clientId             String?
-  client               Client?            @relation("Subscription_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client? @relation("Subscription_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
-  events               BillingEvent[]
+  events BillingEvent[]
 
   @@index([status])
   @@index([trialEndsAt])
@@ -587,11 +591,11 @@ model BillingEvent {
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   eventType       String
-  stripeEventId   String?      @unique
+  stripeEventId   String?  @unique
   stripeEventType String?
-  amount         Decimal?     @db.Decimal(12, 2)
-  metadata       Json?
-  createdAt      DateTime     @default(now())
+  amount          Decimal? @db.Decimal(12, 2)
+  metadata        Json?
+  createdAt       DateTime @default(now())
 
   @@index([subscriptionId])
   @@index([createdAt])
@@ -599,26 +603,77 @@ model BillingEvent {
 }
 
 model PricingLead {
-  id                        String           @id @default(cuid())
-  email                     String
-  businessType              String // wizard key: realtor | longterm | pm | insurance | maintenance | other | ...
-  segment                   BusinessSegment?
-  packageTier               Int?
-  avgRent                   Decimal?         @db.Decimal(12, 2)
-  avgVgv                    Decimal?         @db.Decimal(14, 2)
-  unitCount                 Int?
-  properties                Int?
-  systems                   String[]
-  pricePerUnit              Decimal?         @db.Decimal(10, 4)
-  monthlyTotal              Decimal?         @db.Decimal(12, 2)
-  annualTotal               Decimal?         @db.Decimal(14, 2)
-  source                    String           @default("savings_wizard")
-  ipAddress                 String?
-  userAgent                 String?
-  convertedToSubscription   Boolean          @default(false)
-  createdAt                 DateTime         @default(now())
+  id                      String           @id @default(cuid())
+  email                   String
+  businessType            String // wizard key: realtor | longterm | pm | insurance | maintenance | other | ...
+  segment                 BusinessSegment?
+  packageTier             Int?
+  avgRent                 Decimal?         @db.Decimal(12, 2)
+  avgVgv                  Decimal?         @db.Decimal(14, 2)
+  unitCount               Int?
+  properties              Int?
+  systems                 String[]
+  pricePerUnit            Decimal?         @db.Decimal(10, 4)
+  monthlyTotal            Decimal?         @db.Decimal(12, 2)
+  annualTotal             Decimal?         @db.Decimal(14, 2)
+  source                  String           @default("savings_wizard")
+  ipAddress               String?
+  userAgent               String?
+  convertedToSubscription Boolean          @default(false)
+  createdAt               DateTime         @default(now())
 
   @@index([email])
   @@index([createdAt])
   @@map("pricing_leads")
+}
+
+model TenantPayment {
+  id                 String   @id @default(cuid())
+  clientId           String
+  propertyId         String?
+  tenantId           String?
+  payerName          String
+  propertyAddress    String
+  unit               String?
+  paymentDate        DateTime
+  type               String?
+  reference          String?
+  receiptAmount      Decimal  @db.Decimal(12, 2)
+  cashAccount        String
+  counterpartAccount String?
+  description        String?
+  csvBatchId         String
+  createdAt          DateTime @default(now())
+
+  client   Client    @relation("TenantPayment_clientId", fields: [clientId], references: [id])
+  property Property? @relation("TenantPayment_propertyId", fields: [propertyId], references: [id], onDelete: SetNull)
+  tenant   Tenant?   @relation("TenantPayment_tenantId", fields: [tenantId], references: [id], onDelete: SetNull)
+  csvBatch CsvBatch  @relation(fields: [csvBatchId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([payerName])
+  @@index([paymentDate])
+  @@index([csvBatchId])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@map("tenant_payments")
+}
+
+model CsvBatch {
+  id          String   @id @default(cuid())
+  clientId    String
+  type        String
+  filename    String
+  contentHash String   @unique
+  rowCount    Int
+  totalAmount Decimal? @db.Decimal(14, 2)
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+
+  client         Client          @relation("CsvBatch_clientId", fields: [clientId], references: [id])
+  tenantPayments TenantPayment[]
+
+  @@index([clientId])
+  @@index([type])
+  @@map("csv_batches")
 }
