@@ -2915,7 +2915,7 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PAGOS (MES)</div><div id="tn-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green);margin-top:6px">0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">Income registado este mes (AppFolio)</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">EM ATRASO</div><div id="tn-kpi-overdue" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red);margin-top:6px">0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">Dia 5+ sem income no mes corrente</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">EM ATRASO</div><div id="tn-kpi-overdue" data-tenants-kpi="late" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red);margin-top:6px">0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">Dia 5+ sem income no mes corrente</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">PET FEE TOTAL</div><div id="tn-kpi-pet-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">400 USD/mes x inquilinos com pet fee</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">RECEITA MP PETS</div><div id="tn-kpi-pet-mp" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);margin-top:6px">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">200 USD/mes (split 50/50 do pet fee)</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div></div>
  </div>
@@ -11941,6 +11941,36 @@ function tnConfirmRenewal(){
  if(typeof ltExpRenderWithPm==='function') ltExpRenderWithPm(); else if(typeof ltExpRender==='function') ltExpRender();
  tnRender();
 }
+window.gmTenantPaymentStatusCache=null;
+window.gmTenantPaymentStatusLoad=async function(){
+ try{
+  var res=await fetch('/api/tenants/payment-status',{credentials:'same-origin'});
+  if(!res.ok)return;
+  var data=await res.json();
+  window.gmTenantPaymentStatusCache=data.statusByTenantId||{};
+  if(data.summary&&data.summary.late!=null){
+   var el=document.querySelector('[data-tenants-kpi="late"]')||document.getElementById('tn-kpi-overdue');
+   if(el)el.textContent=String(data.summary.late);
+  }
+  if(typeof gmTenantPaymentStatusApplyToTable==='function'){gmTenantPaymentStatusApplyToTable();}
+ }catch(e){}
+};
+window.gmTenantPaymentStatusApplyToTable=function(){
+ var cache=window.gmTenantPaymentStatusCache||{};
+ document.querySelectorAll('[data-tenant-status-cell]').forEach(function(cell){
+  var tid=cell.getAttribute('data-tenant-id');
+  var status=cache[tid]||'na';
+  var html='';
+  if(status==='late'){
+   html='<span style="display:inline-block;padding:3px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:11px;font-weight:600">Em Atraso</span>';
+  }else if(status==='paid'){
+   html='<span style="display:inline-block;padding:3px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:4px;font-size:11px;font-weight:600">Em Dia</span>';
+  }else if(status==='pending'){
+   html='<span style="display:inline-block;padding:3px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:11px;font-weight:600">Aguarda</span>';
+  }
+  cell.innerHTML=html;
+ });
+};
 function tnRender(){
  if(typeof checkTenantContractAlerts==='function'){checkTenantContractAlerts();tnUpdateContractBanner();}
  if(typeof ltUpdateTaskNavBadge==='function') ltUpdateTaskNavBadge();
@@ -11948,13 +11978,12 @@ function tnRender(){
  const all=typeof tpAllProfiles==='function'?tpAllProfiles():[];
  const filtered=!q?all:all.filter(p=>{const blob=(p.name||'')+' '+(p.address||p.property||'')+' '+(p.email||'')+' '+(p.phone||'');return blob.toLowerCase().includes(q);});
  const ktot=document.getElementById('tn-kpi-total');const klt=document.getElementById('tn-kpi-lt');const kaf=document.getElementById('tn-kpi-af');
- const kpaid=document.getElementById('tn-kpi-paid');const kovd=document.getElementById('tn-kpi-overdue');const kpet=document.getElementById('tn-kpi-pet-total');const kmp=document.getElementById('tn-kpi-pet-mp');
+ const kpaid=document.getElementById('tn-kpi-paid');const kpet=document.getElementById('tn-kpi-pet-total');const kmp=document.getElementById('tn-kpi-pet-mp');
  if(ktot)ktot.textContent=String(all.length);
  if(klt)klt.textContent=String(all.filter(p=>p.source==='statement').length);
  if(kaf)kaf.textContent=String(all.filter(p=>p.source==='appfolio').length);
  const nPet=all.filter(function(p){return typeof gmTenantHasPetFee==='function'&&gmTenantHasPetFee(p);}).length;
  if(kpaid)kpaid.textContent=String(all.filter(function(p){return typeof gmTenantPaidThisMonth==='function'&&gmTenantPaidThisMonth(p);}).length);
- if(kovd)kovd.textContent=String(all.filter(function(p){return typeof gmTenantPaymentStatus==='function'&&gmTenantPaymentStatus(p)==='overdue';}).length);
  if(kpet)kpet.textContent=typeof ltFmt==='function'?ltFmt(nPet*400):('$'+(nPet*400));
  if(kmp)kmp.textContent=typeof ltFmt==='function'?ltFmt(nPet*200):('$'+(nPet*200));
  const tb=document.getElementById('tn-tbody');const empty=document.getElementById('tn-empty');
@@ -11973,11 +12002,10 @@ function tnRender(){
   const idJs=String(p.id).replace(/'/g, "\\'");
   const hasPet=typeof gmTenantHasPetFee==='function'&&gmTenantHasPetFee(p);
   const petTxt=hasPet?('Sim · '+ltFmt(400)):'\u2014';
-  const pst=typeof gmTenantPaymentStatus==='function'?gmTenantPaymentStatus(p):'pending';
-  const plab=pst==='paid'?'Pago':pst==='pending'?'Pendente':'Atraso';
-  const payB=typeof tpPayStatusBadge==='function'?tpPayStatusBadge(plab):plab;
-  return`<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">${tnEsc(p.name)}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${tnEsc(p.address||p.property)}${p.unit&&String(p.unit)!=='—'?' · Unit '+tnEsc(p.unit):''}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${tnEsc(contact)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.moveIn)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.leaseEnd||p.moveOut)}</td><td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink)">${dtxt}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;${bd.s}">${bd.l}</span></td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${ltFmt(p.monthlyRent||0)}</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${petTxt}</td><td style="padding:9px 12px;text-align:center">${payB}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${sb}">${src}</span></td><td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top"><button type="button" onclick="tnOpenTenantModal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Editar</button>${showNoRen?'<button type="button" onclick="tnConfirmNonRenewalPrompt(\''+idJs+'\')" style="padding:4px 6px;border-radius:6px;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:9px;font-weight:600;margin:2px 4px 2px 0">N\u00E3o Vai Renovar</button>':''}${showRen?'<button type="button" onclick="tnOpenRenewModal(\''+idJs+'\')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--amber);background:rgba(201,169,110,.1);color:var(--amber);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Renovar</button>':''}<button type="button" onclick="tnOpenInPortal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 0">Portal</button></td></tr>`;
+  return`<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">${tnEsc(p.name)}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${tnEsc(p.address||p.property)}${p.unit&&String(p.unit)!=='—'?' · Unit '+tnEsc(p.unit):''}</td><td style="padding:9px 12px;font-size:11px;color:var(--ink3)">${tnEsc(contact)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.moveIn)}</td><td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink2)">${tnFmtShort(p.leaseEnd||p.moveOut)}</td><td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink)">${dtxt}</td><td style="padding:9px 12px;text-align:center"><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;${bd.s}">${bd.l}</span></td><td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">${ltFmt(p.monthlyRent||0)}</td><td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">${petTxt}</td><td style="padding:9px 12px;text-align:center" data-tenant-status-cell data-tenant-id="${tnEsc(p.id)}"></td><td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${sb}">${src}</span></td><td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top"><button type="button" onclick="tnOpenTenantModal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Editar</button>${showNoRen?'<button type="button" onclick="tnConfirmNonRenewalPrompt(\''+idJs+'\')" style="padding:4px 6px;border-radius:6px;border:1px solid var(--red-bd);background:var(--red-bg);color:var(--red);cursor:pointer;font-size:9px;font-weight:600;margin:2px 4px 2px 0">N\u00E3o Vai Renovar</button>':''}${showRen?'<button type="button" onclick="tnOpenRenewModal(\''+idJs+'\')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--amber);background:rgba(201,169,110,.1);color:var(--amber);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Renovar</button>':''}<button type="button" onclick="tnOpenInPortal('${idJs}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 0">Portal</button></td></tr>`;
  }).join('');
+ if(typeof gmTenantPaymentStatusLoad==='function'){gmTenantPaymentStatusLoad();}
+ else if(typeof gmTenantPaymentStatusApplyToTable==='function'){gmTenantPaymentStatusApplyToTable();}
 }
 function tnOpenInPortal(id){tpCurrentId=id;nav('tenantportal');}
 function tpMatchUnpaid(p){const nu=tpNorm;const rows=tpAfUnpaidRows();if(!rows.length)return 0;let s=0;rows.forEach(row=>{const t=nu(row.Tenant||row.tenant||row.Name||row.name||'');const pr=nu(row.Property||row.property||row.Address||'');if((t&&nu(p.name).includes(t))||(t&&t.includes(nu(p.name)))){if(!pr||nu(p.address).includes(pr)||pr.includes(nu(p.address))){const raw=row.Total_Unpaid_Balance||row.total_unpaid_balance||row.Balance||row.balance||row.Amount||'0';s+=parseFloat(String(raw).replace(/[^0-9.-]/g,''))||0;}}});return Math.round(s*100)/100;}
@@ -17091,6 +17119,8 @@ window.tenantViewDetails=function(tid){
    var showRen=(typeof tnShowRenewIf==='function')&&tnShowRenewIf(p);
    var showNoRen=(typeof tnShowNonRenewIf==='function')&&tnShowNonRenewIf(p);
    var idJs=String(p.id||'').replace(/'/g,"\\'");
+   var hasPet=(typeof gmTenantHasPetFee==='function')&&gmTenantHasPetFee(p);
+   var petTxt=hasPet?(fmt$(400)):'\u2014';
    return '<tr style="border-bottom:1px solid var(--border)">'
     +'<td style="padding:9px 12px;font-size:12px;font-weight:600;color:var(--ink)">'+esc(p.name)+'</td>'
     +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+esc(p.address||p.property)+(p.unit&&String(p.unit)!=='\u2014'?' \u00B7 Unit '+esc(p.unit):'')+'</td>'
@@ -17100,6 +17130,8 @@ window.tenantViewDetails=function(tid){
     +'<td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink)">'+dtxt+'</td>'
     +'<td style="padding:9px 12px;text-align:center"><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;'+(bd.s||'')+'">'+(bd.l||'')+'</span></td>'
     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+fmt$(p.monthlyRent||0)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+petTxt+'</td>'
+    +'<td style="padding:9px 12px;text-align:center" data-tenant-status-cell data-tenant-id="'+esc(p.id)+'"></td>'
     +'<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+sb+'">'+src+'</span></td>'
     +'<td style="padding:9px 12px;text-align:center;max-width:220px;white-space:normal;vertical-align:top">'
      +'<button type="button" onclick="if(typeof gmTenantPaymentsOpen===\'function\')gmTenantPaymentsOpen(\''+idJs+'\');" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--cream);cursor:pointer;font-size:10px;margin:2px 4px 2px 0">Pagamentos</button>'
@@ -17120,15 +17152,17 @@ window.tenantViewDetails=function(tid){
    var tb=document.getElementById('tn-tbody');
    if(!tb){if(typeof __origTnRender==='function')return __origTnRender();return;}
    if(!window.__gmTenantsTnCache){
-    tb.innerHTML='<tr><td colspan="10" style="padding:32px;text-align:center;color:var(--ink3);font-style:italic">A carregar tenants...</td></tr>';
+    tb.innerHTML='<tr><td colspan="12" style="padding:32px;text-align:center;color:var(--ink3);font-style:italic">A carregar tenants...</td></tr>';
     var fetched=await fetchProfiles();
     if(!fetched){
-     tb.innerHTML='<tr><td colspan="10" style="padding:32px;text-align:center;color:var(--red)">Erro ao carregar tenants. <button onclick="window.__gmTenantsTnCache=null;tnRender()" style="margin-left:8px;padding:4px 10px;border:1px solid var(--border2);background:var(--cream);border-radius:6px;cursor:pointer">Recarregar</button></td></tr>';
+     tb.innerHTML='<tr><td colspan="12" style="padding:32px;text-align:center;color:var(--red)">Erro ao carregar tenants. <button onclick="window.__gmTenantsTnCache=null;tnRender()" style="margin-left:8px;padding:4px 10px;border:1px solid var(--border2);background:var(--cream);border-radius:6px;cursor:pointer">Recarregar</button></td></tr>';
      return;
     }
     window.__gmTenantsTnCache=fetched;
    }
    renderInternal(window.__gmTenantsTnCache);
+   if(typeof gmTenantPaymentStatusLoad==='function'){gmTenantPaymentStatusLoad();}
+   else if(typeof gmTenantPaymentStatusApplyToTable==='function'){gmTenantPaymentStatusApplyToTable();}
   }catch(err){
    console.warn('tnRender override',err);
    if(typeof __origTnRender==='function')try{__origTnRender();}catch(e){}
