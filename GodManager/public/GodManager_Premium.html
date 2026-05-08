@@ -6323,7 +6323,7 @@ function nav(r){
   try{
    if(typeof gmPropertiesFetchFromApi==='function'){
     var fresh=await gmPropertiesFetchFromApi();
-    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+    if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
    }
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
@@ -6339,7 +6339,7 @@ function nav(r){
   try{
    if(typeof gmPropertiesFetchFromApi==='function'){
     var fresh=await gmPropertiesFetchFromApi();
-    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+    if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
    }
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
@@ -10863,8 +10863,9 @@ window.gmPropertiesFetchFromApi=async function(){
  try{
   var res=await fetch('/api/properties',{credentials:'include'});
   if(!res.ok){console.warn('gmPropertiesFetchFromApi HTTP',res.status);return null;}
-  var data=await res.json();
-  if(!data||!data.ok||!Array.isArray(data.properties))return null;
+  var data=null;
+  try{data=await res.json();}catch(parseErr){console.warn('gmPropertiesFetchFromApi JSON',parseErr);return null;}
+  if(!data||typeof data!=='object'||data.ok!==true||!Array.isArray(data.properties))return null;
   // Mapear do formato API (Postgres) para formato UI (compatible com gm_properties local)
   return data.properties.map(function(p){
    var meta=p.metadata||{};
@@ -10950,7 +10951,7 @@ window.gmPropertiesPushToApi=async function(item){
 window.gmPropertiesRefresh=async function(opts){
  opts=opts||{};
  var fromApi=await window.gmPropertiesFetchFromApi();
- if(!fromApi)return false;
+ if(!fromApi||!Array.isArray(fromApi)||fromApi.length===0)return false;
  // Substitui localStorage com verdade do servidor
  try{window.gmPropertiesSave(fromApi);}catch(e){console.warn('gmPropertiesRefresh save',e);}
  // Re-render se houver funcao global de render da tabela Properties
