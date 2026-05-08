@@ -81,6 +81,12 @@ function rowStatementStatus(meta: Meta): 'approved' | 'pending' | 'disputed' {
   return 'approved';
 }
 
+function asStatementOverride(meta: Meta): Meta | null {
+  const raw = meta.statementOverride;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  return raw as Meta;
+}
+
 export async function GET() {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -215,8 +221,30 @@ export async function GET() {
       const propBest = paymentByProperty.get(p.id) ?? null;
       const best = pickLater(tenantBest, propBest);
 
-      const lastPaymentDate = best?.paymentDate ?? null;
-      const lastPaymentAmount = best != null ? Number(best.receiptAmount) : null;
+      let lastPaymentDate: Date | null = best?.paymentDate ?? null;
+      let lastPaymentAmount: number | null = best != null ? Number(best.receiptAmount) : null;
+      let statusStmt: 'approved' | 'pending' | 'disputed' = rowStatementStatus(meta);
+
+      const so = asStatementOverride(meta);
+      if (so) {
+        const oAmt = so.lastPaymentAmount;
+        if (oAmt != null && Number.isFinite(Number(oAmt))) {
+          lastPaymentAmount = Number(oAmt);
+        }
+
+        if (so.lastPaymentDate === null || so.lastPaymentDate === '') {
+          lastPaymentDate = best?.paymentDate ?? null;
+        } else if (typeof so.lastPaymentDate === 'string') {
+          const d = new Date(so.lastPaymentDate);
+          if (!Number.isNaN(d.getTime())) lastPaymentDate = d;
+        }
+
+        const ost = so.status;
+        if (ost === 'approved' || ost === 'pending' || ost === 'disputed') {
+          statusStmt = ost;
+        }
+      }
+
       const daysLate = computeDaysLate(lastPaymentDate, now);
       const tenantIdForPay = best?.tenantId ?? null;
 
@@ -240,7 +268,7 @@ export async function GET() {
         netOwner,
         expMes,
         mes,
-        status: rowStatementStatus(meta),
+        status: statusStmt,
         lastPaymentAmount,
         lastPaymentDate: lastPaymentDate ? lastPaymentDate.toISOString() : null,
         daysLate,

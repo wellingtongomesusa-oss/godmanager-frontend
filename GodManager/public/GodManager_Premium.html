@@ -2495,6 +2495,38 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 </div>
 
+<!-- Owner Statement — edit override modal -->
+<div id="modal-os-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:8px;max-width:500px;width:100%;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:16px" id="os-edit-title">Editar Statement</h3>
+      <button type="button" onclick="osEditStmtClose()" style="border:none;background:none;font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Valor Recebido ($)</label>
+        <input type="number" id="os-edit-amount" step="0.01" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Data Recebimento</label>
+        <input type="date" id="os-edit-date" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Status</label>
+        <select id="os-edit-status" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px">
+          <option value="approved">Aprovado</option>
+          <option value="pending">Pendente</option>
+          <option value="disputed">Disputado</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button type="button" onclick="osEditStmtClose()" style="padding:8px 16px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer">Cancelar</button>
+      <button type="button" onclick="osEditStmtSave()" style="padding:8px 16px;border:none;background:#22558c;color:white;border-radius:4px;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- 
  LONG TERM — MODAL: Expense Detail
  -->
@@ -2944,7 +2976,8 @@ document.addEventListener('DOMContentLoaded', function(){
  </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
- <div style="font-size:13px;font-weight:700;color:var(--ink)">Owner Statement</div> style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
+ <div style="font-size:13px;font-weight:700;color:var(--ink)">Owner Statement</div>
+ <div id="os-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
  <div id="os-bulk-toolbar" style="display:none;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--cream)">
  <span id="os-bulk-count">0 seleccionados</span>
@@ -6435,6 +6468,14 @@ function nav(r){
   else if(typeof ltpRender==='function'){await ltpRender();}
  },
  'owner-statement':async function(){
+  try{
+   if(typeof gmPropertiesFetchFromApi==='function'){
+    var freshOs=await gmPropertiesFetchFromApi();
+    if(freshOs!==null&&Array.isArray(freshOs)&&freshOs.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(freshOs);}
+   }
+  }catch(e){
+   console.warn('Sync API falhou, usando localStorage cache:',e);
+  }
   if(typeof osRender==='function'){await osRender();}
  },
  tenants:()=>typeof tnRender==='function'&&tnRender(),
@@ -6465,14 +6506,315 @@ function nav(r){
  if(renders[r]) setTimeout(renders[r],30);
 }
 
-window.osData=[];
+window.osStatementData={};
 window.osSelectedIds=new Set();
-window.osMarkAsPaid=function(){};
-window.osExportCsv=function(){};
-window.osRender=async function(){
- console.log('osRender Fase 3 pendente');
+window.osCurrentEditingId=null;
+
+window.osLoadFromApi=async function(){
+ try{
+  const res=await fetch('/api/owner-statement',{credentials:'same-origin'});
+  if(!res.ok) return null;
+  const data=await res.json();
+  if(!data.ok) return null;
+  const byId={};
+  (data.properties||[]).forEach(function(p){
+   if(!p) return;
+   if(p.id) byId[p.id]=p;
+   if(p.code) byId[p.code]=p;
+  });
+  window.osStatementData=byId;
+  return byId;
+ }catch(e){
+  console.warn('osLoadFromApi failed:',e);
+  return null;
+ }
+};
+
+window.osPopulateOccupancyFilter=function(){
+ var sel=document.getElementById('os-filter-occupancy');
+ if(!sel) return;
+ var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
+  try{window.gmPropertiesBootstrap();}catch(e){}
+  __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ }
+ var records=(Array.isArray(__gmArrOs)&&__gmArrOs.length)?__gmArrOs.map(window.gmPropertiesToUi):ltGetRecords();
+ var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ var codes=[...new Set((records||[]).map(function(r){return String((r&&r.occupancy)||'').trim();}).filter(Boolean))];
+ codes.sort(function(a,b){var la=occLabel[a]||a;var lb=occLabel[b]||b;return la.localeCompare(lb,'pt');});
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+ var current=sel.value;
+ sel.innerHTML='<option value="">Todas as ocupações</option>'+
+  codes.map(function(c){var lab=occLabel[c]||c;return '<option value="'+esc(c)+'">'+esc(lab)+'</option>';}).join('');
+ sel.value=(!current||codes.indexOf(current)>=0)?current:'';
+};
+
+function osBindTbodyActionDelegationOnce(){
+ if(window._osTbodyActBound) return;
+ window._osTbodyActBound=1;
+ document.addEventListener('click', function(ev){
+  var st=ev.target && ev.target.closest && ev.target.closest('[data-os-st-toggle]');
+  if(st){
+   var tb0=document.getElementById('os-tbody');
+   if(!tb0 || !tb0.contains(st)) return;
+   ev.preventDefault();
+   ev.stopPropagation();
+   var sid=st.getAttribute('data-os-id');
+   if(sid && typeof ltpToggleStatementStatusFromBadge==='function') ltpToggleStatementStatusFromBadge(sid);
+   return;
+  }
+  var t=ev.target && ev.target.closest && ev.target.closest('[data-os-a]');
+  if(!t) return;
+  var tb=document.getElementById('os-tbody');
+  if(!tb || !tb.contains(t)) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  var a=t.getAttribute('data-os-a');
+  var id=t.getAttribute('data-os-id');
+  if(!id) return;
+  if(a==='detail' && typeof ltOpenDetail==='function') ltOpenDetail(id);
+  else if(a==='edit'){ if(typeof ltpOpenEditProperty==='function') ltpOpenEditProperty(id); else if(typeof ltOpenEdit==='function') ltOpenEdit(id); }
+  else if(a==='del' && typeof ltpDeleteProperty==='function') ltpDeleteProperty(id);
+ }, true);
+}
+
+window.osUpdateBulkToolbar=function(){
  var tb=document.getElementById('os-bulk-toolbar');
- if(tb)tb.style.display='none';
+ if(!tb) return;
+ var count=window.osSelectedIds.size;
+ if(count===0){ tb.style.display='none'; return; }
+ tb.style.display='flex';
+ var txt=document.getElementById('os-bulk-count');
+ if(txt) txt.textContent=count+' seleccionado'+(count>1?'s':'');
+};
+
+(function osWireCheckboxes(){
+ if(window.__osCheckboxesWired) return;
+ window.__osCheckboxesWired=true;
+ document.addEventListener('change', function(ev){
+  var cb=ev.target && ev.target.closest && ev.target.closest('.os-row-check');
+  if(cb){
+   var id=cb.getAttribute('data-os-id');
+   if(cb.checked) window.osSelectedIds.add(id);
+   else window.osSelectedIds.delete(id);
+   osUpdateBulkToolbar();
+   return;
+  }
+  if(ev.target && ev.target.id==='os-check-all'){
+   var checked=ev.target.checked;
+   document.querySelectorAll('.os-row-check').forEach(function(c){
+    c.checked=checked;
+    var id=c.getAttribute('data-os-id');
+    if(checked) window.osSelectedIds.add(id);
+    else window.osSelectedIds.delete(id);
+   });
+   osUpdateBulkToolbar();
+  }
+ });
+})();
+
+window.osMarkAsPaid=function(){
+ var ids=Array.from(window.osSelectedIds);
+ if(!ids.length) return;
+ if(!confirm('Marcar '+ids.length+' como pagos? (ainda não persiste)')) return;
+ alert('Acção placeholder — backend pending');
+};
+
+window.osExportCsv=function(){
+ var ids=Array.from(window.osSelectedIds);
+ if(!ids.length){ alert('Nenhuma row seleccionada.'); return; }
+ var records=(typeof gmPropertiesLoad==='function'?gmPropertiesLoad():[]).map(window.gmPropertiesToUi);
+ var filtered=records.filter(function(r){ return ids.indexOf(String(r.id))>=0; });
+ var extras=window.osStatementData||{};
+ var headers=['Endereço','Owner','Tenant','Ocupação','Status Auto','Valor Recebido','Data Recebimento','Atrasos (dias)','Rent','Deposit','Net Owner'];
+ var rows=filtered.map(function(r){
+  var ext=extras[r.id]||extras[r.code]||{};
+  var statusAuto=(typeof gmGetEffectiveStatus==='function')?gmGetEffectiveStatus(r):'';
+  return [
+   '"'+String(r.address||'').replace(/"/g,'""')+'"',
+   '"'+String(r.owner||'').replace(/"/g,'""')+'"',
+   '"'+String(r.tenant||'').replace(/"/g,'""')+'"',
+   r.occupancy||'',
+   statusAuto,
+   ext.lastPaymentAmount!=null?ext.lastPaymentAmount:0,
+   ext.lastPaymentDate||'',
+   ext.daysLate||0,
+   r.rent||0,
+   r.deposit||0,
+   (r.net!=null?r.net:(r.netOwner!=null?r.netOwner:0))
+  ].join(',');
+ });
+ var csv=[headers.join(',')].concat(rows).join('\n');
+ var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+ var url=URL.createObjectURL(blob);
+ var a=document.createElement('a');
+ a.href=url;
+ a.download='owner-statement-'+new Date().toISOString().slice(0,10)+'.csv';
+ a.click();
+ URL.revokeObjectURL(url);
+};
+
+window.osEditStmt=function(propertyId,propertyCode){
+ window.osCurrentEditingId=propertyId;
+ var extras=window.osStatementData||{};
+ var ext=extras[propertyId]||extras[propertyCode]||{};
+ var titleEl=document.getElementById('os-edit-title');
+ if(titleEl) titleEl.textContent='Editar Statement — '+(propertyCode||'');
+ var amtEl=document.getElementById('os-edit-amount');
+ if(amtEl) amtEl.value=ext.lastPaymentAmount!=null?String(ext.lastPaymentAmount):'';
+ var dateInp=document.getElementById('os-edit-date');
+ if(dateInp) dateInp.value=ext.lastPaymentDate?String(ext.lastPaymentDate).slice(0,10):'';
+ var stEl=document.getElementById('os-edit-status');
+ if(stEl) stEl.value=(ext.status==='pending'||ext.status==='disputed'||ext.status==='approved')?ext.status:'approved';
+ var modal=document.getElementById('modal-os-edit');
+ if(modal) modal.style.display='flex';
+};
+
+window.osEditStmtClose=function(){
+ var modal=document.getElementById('modal-os-edit');
+ if(modal) modal.style.display='none';
+ window.osCurrentEditingId=null;
+};
+
+window.osEditStmtSave=async function(){
+ var id=window.osCurrentEditingId;
+ if(!id) return;
+ var amtEl=document.getElementById('os-edit-amount');
+ var dateEl=document.getElementById('os-edit-date');
+ var stEl=document.getElementById('os-edit-status');
+ var amount=amtEl?amtEl.value:'';
+ var date=dateEl?dateEl.value:'';
+ var status=stEl?stEl.value:'approved';
+ try{
+  var res=await fetch('/api/owner-statement/property/'+encodeURIComponent(id),{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   credentials:'same-origin',
+   body:JSON.stringify({
+    lastPaymentAmount:amount?Number(amount):null,
+    lastPaymentDate:date?new Date(date+'T12:00:00').toISOString():null,
+    status:status
+   })
+  });
+  if(!res.ok) throw new Error('Save failed');
+  osEditStmtClose();
+  if(typeof osRender==='function') await osRender();
+  alert('Statement actualizado.');
+ }catch(e){
+  alert('Erro ao guardar: '+(e&&e.message?e.message:String(e)));
+ }
+};
+
+window.osSendStatement=function(propertyId,propertyCode){
+ if(!confirm('Enviar statement de '+propertyCode+' ao owner?')) return;
+ alert('Envio por email/WhatsApp pendente — integração Resend será implementada.');
+};
+
+window.osRender=async function(){
+ osBindTbodyActionDelegationOnce();
+ await osLoadFromApi();
+ var extras=window.osStatementData||{};
+ var fMonthSel=(document.getElementById('os-filter-month')||{}).value||'';
+ var curMonth=fMonthSel||new Date().toISOString().slice(0,7);
+ var expByProp=new Map();
+ try{
+  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include'});
+  if(exRes.ok){
+   var exJ=await exRes.json();
+   (exJ.expenses||[]).forEach(function(e){
+    if(!e) return;
+    var add=parseFloat(e.ownerCharged)||0;
+    var pUuid=String(e.propertyId||'').trim();
+    var pCode=String(e.propertyCode||'').trim();
+    if(pUuid) expByProp.set(pUuid,(expByProp.get(pUuid)||0)+add);
+    if(pCode && pCode!==pUuid) expByProp.set(pCode,(expByProp.get(pCode)||0)+add);
+   });
+  }
+ }catch(e){}
+ var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
+  try{window.gmPropertiesBootstrap();}catch(e){console.warn('osRender auto-bootstrap',e);}
+  __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ }
+ const records=(Array.isArray(__gmArrOs)&&__gmArrOs.length)?__gmArrOs.map(window.gmPropertiesToUi):ltGetRecords();
+ const fSearch=((document.getElementById('os-search')?.value)||'').toLowerCase();
+ const fStatusCode=(document.getElementById('os-filter-occ')?.value)||'';
+ const fMonth=(document.getElementById('os-filter-month')?.value)||'';
+ const fOccFilter=(document.getElementById('os-filter-occupancy')?.value||'').trim();
+ const filtered=records.filter(function(r){
+  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch)) return false;
+  if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode) return false;
+  if(fMonth&&r.month!==fMonth) return false;
+  if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter) return false;
+  return true;
+ });
+ const totR=filtered.reduce(function(s,r){return s+(r.rent||0);},0);
+ const totNetAtual=totR;
+ const totTotalNetOwner=filtered.reduce(function(s,r){
+  var rent=Number(r.rent)||0;
+  var mPct=ltpKpiMgmPct(r);
+  var fee=rent*(mPct/100);
+  return s+(rent-fee);
+ },0);
+ const totDeposit=filtered.reduce(function(s,r){return s+(Number(r.deposit)||0);},0);
+ const totExpPM=filtered.reduce(function(s,r){var ev=0;if(expByProp&&typeof expByProp.get==='function')ev=expByProp.get(String(r.id))||0;return s+ev;},0);
+ const cancelledKmgm=filtered.filter(ltpPropIsCancelled).length;
+ const poolMgm=filtered.filter(function(r){return !ltpPropIsCancelled(r);});
+ var invalidMgmtL=0;
+ poolMgm.forEach(function(pr){ if(ltpMgmtPctInvalidUsesDefault(pr)) invalidMgmtL++; });
+ var sumMgmPct=poolMgm.reduce(function(s,r){return s+ltpKpiMgmPct(r);},0);
+ var nActiveMgm=poolMgm.length;
+ var avgMgmStr=nActiveMgm===0?'—':((sumMgmPct/nActiveMgm).toFixed(2)+'%');
+ var tipAvgMgm='Calculado sobre '+nActiveMgm+' propriedades ativas (default 8% quando nao definido). Excluidas: '+cancelledKmgm+' canceladas, '+invalidMgmtL+' sem dados validos.';
+ [['os-kpi-total',filtered.length],['os-kpi-rented',filtered.filter(function(r){return r.occupancy==='rented';}).length],
+ ['os-kpi-vacant',filtered.filter(function(r){return r.occupancy==='vacant';}).length],
+ ['os-kpi-inprog',filtered.filter(function(r){return r.occupancy==='inprogress'||r.occupancy==='renovation';}).length],
+ ['os-kpi-rent',ltFmt(totR)],
+ ['os-kpi-net',ltFmt(totNetAtual)],
+ ['os-kpi-total-deposit',ltFmt(totDeposit)],
+ ['os-kpi-total-netowner',ltFmt(totTotalNetOwner)],
+ ['os-kpi-total-exppm',ltFmt(totExpPM)],
+ ['os-kpi-avg-mgm',avgMgmStr]
+ ].forEach(function(pair){var id=pair[0],v=pair[1];var el=document.getElementById(id);if(el)el.textContent=v;});
+ var wrapAvgOs=document.getElementById('os-kpi-wrap-avgmgm');
+ if(wrapAvgOs){wrapAvgOs.title=tipAvgMgm;wrapAvgOs.setAttribute('aria-label',tipAvgMgm);}
+ const counter=document.getElementById('os-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
+ const tbody=document.getElementById('os-tbody');const empty=document.getElementById('os-empty');
+ if(!tbody){if(typeof window.osPopulateOccupancyFilter==='function')window.osPopulateOccupancyFilter();return;}
+ if(!filtered.length){
+  tbody.innerHTML='';if(empty)empty.style.display='block';
+  var ca=document.getElementById('os-check-all');if(ca)ca.checked=false;
+  if(typeof window.osPopulateOccupancyFilter==='function')window.osPopulateOccupancyFilter();
+  osUpdateBulkToolbar();
+  return;
+ }
+ if(empty)empty.style.display='none';
+ const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
+ const stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
+ const stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+ tbody.innerHTML=filtered.map(function(r,i){
+  var ext=extras[r.id]||extras[r.code]||{};
+  var _auto=gmGetEffectiveStatus(r);
+  var _lab=GM_STATUS_LABEL[_auto]||_auto;
+  var _isManual=gmHasOverride(r);
+  var payAmtTd=ext.lastPaymentAmount!=null?('$'+Number(ext.lastPaymentAmount).toFixed(2)):'—';
+  var payDateTd=ext.lastPaymentDate?(new Date(ext.lastPaymentDate)).toLocaleDateString('pt-PT'):'—';
+  var lateTd=(ext.daysLate>0)?('<span style="background:#fee;color:#c00;border:1px solid #fcc;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600">'+ext.daysLate+'d</span>'):('<span style="color:#888;font-size:11px">—</span>');
+  var rid=esc(String(r.id));
+  var rcodeJs=String(r.code||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return '\n <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'" onclick="ltOpenDetail(\''+rid+'\')">\n <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><input type="checkbox" class="os-row-check" data-os-id="'+rid+'"></td>\n <td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(i+1)+'</td>\n <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+r.address+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+(r.baths||'—')+'</div></td>\n <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+r.owner+'</td>\n <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+(r.tenant||'—')+'</td>\n <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+(occStyle[r.occupancy]||'')+'">'+(occLabel[r.occupancy]||'—')+'</span></td>\n <td style="padding:9px 12px;text-align:center"><span title="'+esc(_lab+(_isManual?' (manual)':''))+'" style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;color:#fff;background:'+(GM_STATUS_COLOR[_auto]||'#94a3b8')+'">'+_auto+(_isManual?'*':'')+'</span></td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+payAmtTd+'</td>\n <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+payDateTd+'</td>\n <td style="padding:9px 12px;text-align:center">'+lateTd+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+ltFmt(r.rent)+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+(r.deposit?ltFmt(r.deposit):'—')+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+(r.guaranteeLimit||r.guarantee?ltFmt(r.guaranteeLimit||r.guarantee):'—')+'</td>\n <td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+((r.mgmpct||r.mgmtFeePct)?(Number(r.mgmpct||r.mgmtFeePct).toFixed(0)+'%'):'—')+'</td>\n '+ltpRowNetExpDia15(r, expByProp)+'\n <td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+ltFmtMonth(r.month)+'</td>\n <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-os-st-toggle data-os-id="'+rid+'" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+(stStyle[r.status]||'')+';cursor:pointer;font-family:\'Inter\',sans-serif;border-width:1px;border-style:solid">'+(stLabel[r.status]||'—')+'</button></td>\n <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">\n <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">\n <button type="button" data-os-a="detail" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>\n <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen===\'function\')gmPropertyPaymentsOpen(\''+rid+'\');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>\n <button type="button" onclick="event.stopPropagation();osSendStatement(\''+rid+'\',\''+rcodeJs+'\')" style="padding:4px 8px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:4px;font-size:10px;cursor:pointer">Enviar</button>\n <button type="button" onclick="event.stopPropagation();osEditStmt(\''+rid+'\',\''+rcodeJs+'\')" style="padding:4px 8px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:4px;font-size:10px;cursor:pointer">Editar Stmt</button>\n <button type="button" data-os-a="edit" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>\n <button type="button" data-os-a="del" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>\n </div>\n </td>\n </tr>';
+ }).join('');
+ var caAll=document.getElementById('os-check-all');
+ var nRows=filtered.length;var nChecked=0;
+ document.querySelectorAll('.os-row-check').forEach(function(c){
+  var id=c.getAttribute('data-os-id');
+  if(window.osSelectedIds.has(id)){ c.checked=true; nChecked++; }
+ });
+ if(caAll) caAll.checked=nRows>0 && nChecked===nRows;
+ if(typeof window.osPopulateOccupancyFilter==='function')window.osPopulateOccupancyFilter();
+ osUpdateBulkToolbar();
 };
 
 function togG(h){
@@ -7703,6 +8045,7 @@ function ltpToggleStatementStatusFromBadge(id){
  });
  ltSaveRecords(l2);
  if(typeof ltpRender==='function') void ltpRender();
+ if(typeof osRender==='function') try{ void osRender(); }catch(eOsSt){}
 }
 function ltDelete(id){
  if(!confirm('Remover este statement permanentemente?'))return;
