@@ -6319,13 +6319,34 @@ function nav(r){
  window.scrollTo(0,0);
  // render hooks
  const renders={
- home:()=>{if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();},
+ home:async function gmHomeNavRender(){
+  try{
+   if(typeof gmPropertiesFetchFromApi==='function'){
+    var fresh=await gmPropertiesFetchFromApi();
+    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+   }
+  }catch(e){
+   console.warn('Sync API falhou, usando localStorage cache:',e);
+  }
+  if(typeof loadHomeDashboardFromApi==='function'){loadHomeDashboardFromApi();}
+ },
  longterm:()=>{
   if(typeof ltExpFetchPm==='function'){void ltExpFetchPm().then(function(){if(typeof ltDashRender==='function')ltDashRender();});}
   if(typeof ltDashRender==='function')ltDashRender();
   if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();
  },
- ltproperties:()=>{if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender();},
+ ltproperties:async function gmLtPropertiesNavRender(){
+  try{
+   if(typeof gmPropertiesFetchFromApi==='function'){
+    var fresh=await gmPropertiesFetchFromApi();
+    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+   }
+  }catch(e){
+   console.warn('Sync API falhou, usando localStorage cache:',e);
+  }
+  if(typeof ltpRenderNetFromApi==='function'){await ltpRenderNetFromApi();}
+  else if(typeof ltpRender==='function'){await ltpRender();}
+ },
  tenants:()=>typeof tnRender==='function'&&tnRender(),
  ltstatements:()=>typeof ltRender==='function'&&ltRender(),
  ltexpenses:()=>typeof ltExpRenderWithPm==='function'&&ltExpRenderWithPm(),
