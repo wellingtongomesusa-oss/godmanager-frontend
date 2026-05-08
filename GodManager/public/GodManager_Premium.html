@@ -2838,6 +2838,9 @@ document.addEventListener('DOMContentLoaded', function(){
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
  </select>
+ <select id="ltp-filter-occupancy" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+ <option value="">Todas as ocupações</option>
+ </select>
  <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
  <button type="button" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
  <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
@@ -10858,6 +10861,25 @@ function ltpMgmtPctInvalidUsesDefault(r){
  return false;
 }
 
+window.ltpPopulateOccupancyFilter=function(){
+ var sel=document.getElementById('ltp-filter-occupancy');
+ if(!sel)return;
+ var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
+  try{window.gmPropertiesBootstrap();}catch(e){}
+  __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ }
+ var records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
+ var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+ var codes=[...new Set((records||[]).map(function(r){return String((r&&r.occupancy)||'').trim();}).filter(Boolean))];
+ codes.sort(function(a,b){var la=occLabel[a]||a;var lb=occLabel[b]||b;return la.localeCompare(lb,'pt');});
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+ var current=sel.value;
+ sel.innerHTML='<option value="">Todas as ocupações</option>'+
+  codes.map(function(c){var lab=occLabel[c]||c;return '<option value="'+esc(c)+'">'+esc(lab)+'</option>';}).join('');
+ sel.value=(!current||codes.indexOf(current)>=0)?current:'';
+};
+
 async function ltpRender(){
  ltpBindTbodyActionDelegationOnce();
  // Usar filtro de mês selecionado, ou mês corrente como fallback
@@ -10887,10 +10909,12 @@ async function ltpRender(){
  const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
  const fStatusCode=(document.getElementById('ltp-filter-occ')?.value)||'';
  const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
+ const fOccFilter=(document.getElementById('ltp-filter-occupancy')?.value||'').trim();
  const filtered=records.filter(r=>{
  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch))return false;
  if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode)return false;
  if(fMonth&&r.month!==fMonth)return false;
+ if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter)return false;
  return true;
  });
  // KPIs
@@ -10928,8 +10952,8 @@ async function ltpRender(){
  if(wrapAvg){wrapAvg.title=tipAvgMgm;wrapAvg.setAttribute('aria-label',tipAvgMgm);}
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
- if(!tbody)return;
- if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
+ if(!tbody){if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
+ if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
  if(empty)empty.style.display='none';
  const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
@@ -10969,6 +10993,7 @@ async function ltpRender(){
  </td>
  </tr>`;
 }).join('');
+ if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();
 }
 
 // 
