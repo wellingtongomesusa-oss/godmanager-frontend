@@ -90,6 +90,7 @@ model Client {
   userPermissions       UserPermission[]        @relation("UserPermission_clientId")
   tenantPayments        TenantPayment[]         @relation("TenantPayment_clientId")
   csvBatches            CsvBatch[]              @relation("CsvBatch_clientId")
+  jobPhotos             JobPhoto[]              @relation("JobPhoto_clientId")
 
   @@map("clients")
 }
@@ -371,6 +372,25 @@ model JobAction {
   @@index([createdAt])
   @@index([clientId])
   @@map("job_actions")
+}
+
+model JobPhoto {
+  id          String   @id @default(cuid())
+  jobId       String
+  clientId    String?
+  r2Key       String   @unique
+  publicUrl   String   @db.Text
+  filename    String?
+  sizeBytes   Int?
+  contentType String?
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+  client      Client?  @relation("JobPhoto_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([clientId])
+  @@index([uploadedAt])
+  @@map("job_photos")
 }
 
 model PropertyStatusHistory {
