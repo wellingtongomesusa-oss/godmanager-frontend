@@ -2139,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Registro de Despesas</div>
  <div id="lt-exp-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
- <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1240px">
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1310px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 8px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:36px" title="Selecionar despesas PM">
   <input type="checkbox" id="lt-exp-select-all" onchange="if(this.disabled)return;if(typeof ltExpToggleAllSelection===&#39;function&#39;)ltExpToggleAllSelection(this.checked)" style="cursor:pointer">
@@ -2156,6 +2156,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Categoria / tipo</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ <th style="padding:10px 6px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:76px" title="Fotos do Job">Fotos</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">APPROVAL</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
  </tr></thead>
@@ -10803,8 +10804,45 @@ function ltExpMergeAll(){
   return o;
  }));
 }
+/** PM expenses: hydrate photo counts via GET /api/jobs/[id]/photos — cached em gmJobsPhotoState.countsByJob (reutilização F2). */
+function ltExpSchedulePmPhotoCounts(){
+ var sx=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var rl=String(sx.role||'').toLowerCase();
+ var canPmPh=(rl==='admin'||rl==='super_admin'||rl==='manager');
+ if(!canPmPh)return;
+ setTimeout(function(){
+  window.gmJobsPhotoState=window.gmJobsPhotoState||{};
+  if(!window.gmJobsPhotoState.countsByJob)window.gmJobsPhotoState.countsByJob={};
+  var cmap=window.gmJobsPhotoState.countsByJob;
+  document.querySelectorAll('#lt-exp-tbody tr.lt-exp-row[data-lt-photo-job]:not([data-lt-photo-job=""])').forEach(function(rowEl){
+   var jid=rowEl.getAttribute('data-lt-photo-job');
+   if(!jid||cmap[jid]!==undefined)return;
+   fetch('/api/jobs/'+encodeURIComponent(jid)+'/photos',{credentials:'include'})
+    .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+    .then(function(res){
+     var n=null;
+     if(res.ok&&res.j){
+      if(typeof res.j.count==='number')n=res.j.count;
+      else if(Array.isArray(res.j.photos))n=res.j.photos.length;
+     }
+     cmap[jid]=n!=null?n:0;
+     if(window.__ltExpPhotosRecomputeTimeout)clearTimeout(window.__ltExpPhotosRecomputeTimeout);
+     window.__ltExpPhotosRecomputeTimeout=setTimeout(function(){if(typeof ltExpRender==='function')ltExpRender();},200);
+    })
+    .catch(function(){
+     cmap[jid]=0;
+     if(window.__ltExpPhotosRecomputeTimeout)clearTimeout(window.__ltExpPhotosRecomputeTimeout);
+     window.__ltExpPhotosRecomputeTimeout=setTimeout(function(){if(typeof ltExpRender==='function')ltExpRender();},200);
+    });
+  });
+ },120);
+}
+
 function ltExpRender(){
  const records=ltExpMergeAll();
+ var uPmLt=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var rrPmLt=String(uPmLt.role||'').toLowerCase();
+ var ltExpCanSeePmPhotos=(rrPmLt==='admin'||rrPmLt==='super_admin'||rrPmLt==='manager');
  const fMonth=(document.getElementById('lt-exp-filter-month')?.value)||'';
  const fCat=(document.getElementById('lt-exp-filter-cat')?.value)||'';
  const fSearch=((document.getElementById('lt-exp-search')?.value)||'').toLowerCase();
@@ -10861,10 +10899,23 @@ function ltExpRender(){
    '<option value="CANCELLED"'+(stNorm==='CANCELLED'?' selected':'')+'>Cancelado</option>'+
    '<option value="FINALIZED"'+(stNorm==='FINALIZED'?' selected':'')+' disabled>Finalizado</option>'+
    '</select></td>';
+  var photoJobAttr=(ltExpCanSeePmPhotos&&isPm)?gmHtmlEscAttr(String(r.id)):'';
+  var jidStr=String(r.id);
+  var cntSrc=(window.gmJobsPhotoState&&window.gmJobsPhotoState.countsByJob)?window.gmJobsPhotoState.countsByJob[jidStr]:undefined;
+  var photoN=(cntSrc!==undefined&&cntSrc!==null)?Number(cntSrc):0;
+  var svgPh='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
+  var photosTd;
+  if(!ltExpCanSeePmPhotos){photosTd='<td style="padding:6px"></td>';}
+  else if(!isPm){photosTd='<td style="padding:6px"></td>';}
+  else if(photoN>0){
+   photosTd='<td style="text-align:center;padding:6px"><button type="button" data-lt-pid="'+gmHtmlEscAttr(jidStr)+'" onclick="if(typeof gmJobOpenPhotoPopup===&#39;function&#39;)gmJobOpenPhotoPopup(this.getAttribute(&#39;data-lt-pid&#39;))" style="display:inline-flex;align-items:center;gap:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:Inter,sans-serif" title="'+photoN+' foto(s) — clicar para ver">'+svgPh+String(photoN)+'</button></td>';
+  }else{
+   photosTd='<td style="text-align:center;padding:6px"><button type="button" data-lt-pid="'+gmHtmlEscAttr(jidStr)+'" onclick="if(typeof gmJobOpenPhotoPopup===&#39;function&#39;)gmJobOpenPhotoPopup(this.getAttribute(&#39;data-lt-pid&#39;))" style="display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--ink3);border:1px dashed var(--border2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:Inter,sans-serif" title="Adicionar ou ver fotos">'+svgPh+'</button></td>';
+  }
   const cbTd=isPm
    ? `<td style="padding:9px 8px;text-align:center"><input type="checkbox" class="lt-exp-row-cb" data-id="${gmHtmlEscAttr(String(r.id))}" onchange="if(typeof ltExpUpdateBulkBar===&#39;function&#39;)ltExpUpdateBulkBar()"`+(typeof ltExpBulkRoleOk==='function'&&!ltExpBulkRoleOk()?' disabled':'')+` style="cursor:pointer"></td>`
    : '<td style="padding:9px 8px"></td>';
-  return `<tr class="lt-exp-row status-${String(stNorm).toLowerCase()}" data-status="${stNorm}" style="border-bottom:1px solid var(--border)">
+  return `<tr class="lt-exp-row status-${String(stNorm).toLowerCase()}" data-status="${stNorm}" data-lt-photo-job="${photoJobAttr}" style="border-bottom:1px solid var(--border)">
  `+cbTd+`
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:9px 12px;font-size:12px;color:var(--ink)">${esc(r.propAddress||'—')}</td>
@@ -10878,6 +10929,7 @@ function ltExpRender(){
  <td style="padding:9px 12px;font-size:10px;color:var(--ink3)">${catShow}</td>
  <td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">${esc(dStr)}</td>
  `+statusTd+`
+ `+photosTd+`
  ${isPm?'<td style="padding:9px 8px;text-align:center;font-size:10px;color:var(--ink3)">—</td>':ltExpApprovalCell(r)}
  <td style="padding:9px 10px;text-align:center"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap">
  <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltOpenEditExpense==='function')ltOpenEditExpense(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
@@ -10892,6 +10944,7 @@ function ltExpRender(){
   if(hcb.disabled){ hcb.checked=false; hcb.indeterminate=false; }
  }
  if(typeof ltExpUpdateBulkBar==='function')ltExpUpdateBulkBar();
+ ltExpSchedulePmPhotoCounts();
 }
 
 function ltExpExportCSV(){
