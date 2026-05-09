@@ -70,11 +70,12 @@ export async function POST(req: Request) {
       .map((s) => s.trim())
       .filter(Boolean);
     if (forwardTo && forwardTo.length > 0) {
-      sendEmail({
-        to: forwardTo,
-        subject: `[GodManager] New contact lead from ${nome}`,
-        replyTo: email,
-        html: `
+      try {
+        const result = await sendEmail({
+          to: forwardTo,
+          subject: `[GodManager] New contact lead from ${nome}`,
+          replyTo: email,
+          html: `
       <h2>New contact lead</h2>
       <p><strong>Name:</strong> ${nome}</p>
       <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
@@ -91,9 +92,15 @@ export async function POST(req: Request) {
         User Agent: ${userAgent}
       </p>
     `,
-      }).catch((err) => {
-        console.error('[contacto] email forward failed:', err);
-      });
+        });
+        if (!result.ok) {
+          console.error('[contacto] sendEmail failed:', result.error);
+        } else {
+          console.log('[contacto] sendEmail ok');
+        }
+      } catch (err) {
+        console.error('[contacto] sendEmail throw:', err);
+      }
     }
 
     return NextResponse.json({ ok: true, id: lead.id });
