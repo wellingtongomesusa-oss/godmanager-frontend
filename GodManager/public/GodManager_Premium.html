@@ -672,6 +672,30 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   box-sizing:border-box;
  }
 
+ /* === Calendar Jobs Mobile UX: só cor + dia (sem chips) === */
+ #page-jobs #jobs-calendar-host .jobs-cal-event,
+ #page-jobs #jobs-calendar-host .jobs-cal-extra{display:none!important}
+ #page-jobs #jobs-calendar-host .jobs-cal-day{
+  min-height:52px!important;
+  padding-top:10px!important;
+  padding-bottom:10px!important;
+ }
+ #page-jobs #jobs-calendar-host .jobs-cal-day-num{
+  font-weight:600;
+  font-size:14px;
+  margin-bottom:0!important;
+ }
+ /* Jobs pendentes / agendados */
+ #page-jobs #jobs-calendar-host .jobs-cal-day[data-day-state="has-jobs"]{
+  background:var(--amber-bg)!important;
+  border-color:var(--amber-bd)!important;
+ }
+ /* Todos em PAID/FINALIZED */
+ #page-jobs #jobs-calendar-host .jobs-cal-day[data-day-state="all-done"]{
+  background:var(--green-bg)!important;
+  border-color:var(--green-bd)!important;
+ }
+
  /* Topbar: ocultar backup/PDF em ecrãs estreitos */
  header.topbar .tr > button.tb.gm-allow-viewer{display:none !important}
 }
@@ -16387,8 +16411,8 @@ function gmJobsRenderCalendar(rows){
   var isToday=(dStr===todayStr);
   var bgColor=isToday?'#fef3c7':'var(--paper)';
   var borderColor=isToday?'#fbbf24':'var(--border)';
-  html+='<div onclick="gmJobsCalendarDayClick(\''+dStr+'\')" style="min-height:90px;border:1px solid '+borderColor+';border-radius:6px;background:'+bgColor+';padding:6px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor=\'#1e2b3d\'" onmouseout="this.style.borderColor=\''+borderColor+'\'">';
-  html+='<div style="font-size:11px;font-weight:'+(isToday?'700':'600')+';color:'+(isToday?'#92400e':'var(--ink2)')+';margin-bottom:4px">'+d+'</div>';
+  html+='<div class="jobs-cal-day'+(isToday?' jobs-cal-is-today':'')+'" data-day-iso="'+dStr+'" onclick="gmJobsCalendarDayClick(\''+dStr+'\')" style="min-height:90px;border:1px solid '+borderColor+';border-radius:6px;background:'+bgColor+';padding:6px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor=\'#1e2b3d\'" onmouseout="this.style.borderColor=\''+borderColor+'\'">';
+  html+='<div class="jobs-cal-day-num" data-day-num="'+d+'" style="font-size:11px;font-weight:'+(isToday?'700':'600')+';color:'+(isToday?'#92400e':'var(--ink2)')+';margin-bottom:4px">'+d+'</div>';
   if(dayJobs.length>0){
    var maxShow=3;
    var stColors={
@@ -16403,10 +16427,10 @@ function gmJobsRenderCalendar(rows){
     var addrShort=String(addr).split(',')[0].slice(0,18);
     var st=String(j.status||j.statusPm||'').trim().toUpperCase();
     var chipStyle=stColors[st]||'background:#f1f5f9;color:#475569';
-    html+='<div title="'+String(st).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
+    html+='<div class="jobs-cal-event" title="'+String(st).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
    });
    if(dayJobs.length>maxShow){
-    html+='<div style="font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px">+'+(dayJobs.length-maxShow)+' mais</div>';
+    html+='<div class="jobs-cal-event jobs-cal-extra" style="font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px">+'+(dayJobs.length-maxShow)+' mais</div>';
    }
   }
   html+='</div>';
@@ -16414,6 +16438,51 @@ function gmJobsRenderCalendar(rows){
  html+='</div></div>';
  return html;
 }
+
+window.gmJobsCalendarApplyMobileState=function(){
+ if(window.innerWidth>768)return;
+ try{
+  var ymStr=window.__jobsCalendarMonth;
+  var pad=function(n){return n<10?'0'+n:''+n;};
+  if(!ymStr){
+   var nw=new Date();
+   ymStr=nw.getFullYear()+'-'+pad(nw.getMonth()+1);
+  }
+  var rows=(typeof jobsFilteredExpenses==='function')?jobsFilteredExpenses():(window.__jobsApiRowsCache||[]);
+  var byDate={};
+  (rows||[]).forEach(function(r){
+   var rd=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
+   if(!rd)return;
+   var iso=String(rd).slice(0,10);
+   if(iso.slice(0,7)!==ymStr)return;
+   if(!byDate[iso])byDate[iso]={total:0,done:0};
+   byDate[iso].total+=1;
+   var ust=String(r.statusPm||r.status||'').trim().toUpperCase();
+   if(ust==='FINALIZED'||ust==='PAID')byDate[iso].done+=1;
+  });
+  document.querySelectorAll('#page-jobs #jobs-calendar-host .jobs-cal-day[data-day-iso]').forEach(function(cell){
+   var iso=cell.getAttribute('data-day-iso');
+   cell.removeAttribute('data-day-state');
+   if(!iso||!byDate[iso])return;
+   var st=byDate[iso];
+   if(st.total>0&&st.done===st.total){cell.setAttribute('data-day-state','all-done');}
+   else{cell.setAttribute('data-day-state','has-jobs');}
+  });
+ }catch(e){console.warn('[jobsCalMobile]',e);}
+};
+
+(function gmJobsCalendarWrapMobileState(){
+ try{
+  var prev=gmJobsRenderCalendar;
+  if(typeof prev!=='function')return;
+  gmJobsRenderCalendar=function(rows){
+   var html=prev(rows);
+   try{setTimeout(function(){ if(typeof gmJobsCalendarApplyMobileState==='function') gmJobsCalendarApplyMobileState(); },50);}catch(eT){}
+   return html;
+  };
+  window.gmJobsRenderCalendar=gmJobsRenderCalendar;
+ }catch(e){console.warn('[jobsCalWrap]',e);}
+})();
 
 window.gmJobsCalendarPrevMonth=function(){
  var pad=function(n){return n<10?'0'+n:''+n;};
