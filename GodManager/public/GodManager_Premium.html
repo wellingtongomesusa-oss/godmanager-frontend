@@ -675,16 +675,8 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  /* === Calendar Jobs Mobile UX: só cor + dia (sem chips) === */
  #page-jobs #jobs-calendar-host .jobs-cal-event,
  #page-jobs #jobs-calendar-host .jobs-cal-extra{display:none!important}
- #page-jobs #jobs-calendar-host .jobs-cal-day{
-  min-height:52px!important;
-  padding-top:10px!important;
-  padding-bottom:10px!important;
- }
- #page-jobs #jobs-calendar-host .jobs-cal-day-num{
-  font-weight:600;
-  font-size:14px;
-  margin-bottom:0!important;
- }
+ /* (tamanho fino nas regras "Padronizacao" abaixo) */
+
  /* Jobs pendentes / agendados */
  #page-jobs #jobs-calendar-host .jobs-cal-day[data-day-state="has-jobs"]{
   background:var(--amber-bg)!important;
@@ -694,6 +686,37 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-jobs #jobs-calendar-host .jobs-cal-day[data-day-state="all-done"]{
   background:var(--green-bg)!important;
   border-color:var(--green-bd)!important;
+ }
+
+ /* Padronizacao tamanho celulas (mobile) */
+ #page-jobs #jobs-calendar-host .jobs-cal-day{
+  box-sizing:border-box !important;
+  min-height:44px !important;
+  height:44px !important;
+  aspect-ratio:auto !important;
+  padding:6px 4px !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  border-width:1px !important;
+  border-style:solid !important;
+ }
+ #page-jobs #jobs-calendar-host .jobs-cal-day-num{
+  font-size:13px !important;
+  line-height:1 !important;
+  width:100%;
+  text-align:left;
+  font-weight:600;
+  margin-bottom:0 !important;
+ }
+ #page-jobs #jobs-calendar-host .jobs-cal-grid,
+ #page-jobs #jobs-calendar-host [class*="grid"]{
+  gap:4px !important;
+ }
+ #page-jobs #jobs-calendar-host .jobs-cal-placeholder{
+  box-sizing:border-box !important;
+  min-height:44px !important;
+  height:44px !important;
  }
 
  /* Topbar: ocultar backup/PDF em ecrãs estreitos */
@@ -16393,16 +16416,16 @@ function gmJobsRenderCalendar(rows){
  html+='</div>';
  html+='</div>';
  // Cabeçalho dias da semana
- html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">';
+ html+='<div class="jobs-cal-grid jobs-cal-grid-weekdays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">';
  weekdaysShort.forEach(function(wd){
   html+='<div style="text-align:center;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding:6px 0">'+wd+'</div>';
  });
  html+='</div>';
  // Grid dias
- html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
+ html+='<div class="jobs-cal-grid jobs-cal-grid-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
  // Células vazias antes do dia 1
  for(var i=0;i<startWeekday;i++){
-  html+='<div style="min-height:90px;border:1px dashed var(--border);border-radius:6px;background:transparent"></div>';
+  html+='<div class="jobs-cal-placeholder" style="min-height:90px;border:1px dashed var(--border);border-radius:6px;background:transparent"></div>';
  }
  // Dias do mês
  for(var d=1;d<=daysInMonth;d++){
