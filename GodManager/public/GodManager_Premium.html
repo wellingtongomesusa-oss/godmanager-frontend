@@ -2328,6 +2328,7 @@ document.addEventListener('DOMContentLoaded', function(){
   </select>
   <button type="button" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
  </div>
+ <!-- jobsFilterDate=all --><!-- filtro todas default -->
  <div id="jobs-date-filter-row" style="display:flex;gap:8px;align-items:center;margin:8px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vista:</label>
   <button type="button" id="jobs-vm-table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Tabela</button>
@@ -2335,7 +2336,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <button type="button" id="jobs-vm-calendar" onclick="gmJobsSetViewMode('calendar')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Calendário</button>
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
-  <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Hoje</button>
+  <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Hoje</button>
   <button type="button" id="jobs-df-tomorrow" onclick="gmJobsSetDateFilter('tomorrow')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Amanhã</button>
   <button type="button" id="jobs-df-week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
   <button type="button" id="jobs-df-custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
@@ -2345,7 +2346,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <select id="jobs-vendor-filter" onchange="gmJobsSetVendorFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px">
    <option value="">Todos os vendors</option>
   </select>
-  <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--ink3);font-weight:500;margin-left:auto">Todas as datas</button>
+  <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
  </div>
  </div>
 
@@ -16148,11 +16149,11 @@ function jobsMoney(n){
  return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
-window.__jobsDateFilter='today';
+window.__jobsDateFilter='all';
 window.__jobsCustomDate='';
 
 function gmJobsGetDateRange(){
- var f=window.__jobsDateFilter||'today';
+ var f=window.__jobsDateFilter||'all';
  var custom=window.__jobsCustomDate||'';
  var now=new Date();
  var pad=function(n){return n<10?'0'+n:''+n;};
@@ -16202,6 +16203,8 @@ window.gmJobsSetDateFilter=function(f,custom){
  }catch(e){}
  if(typeof jobsRender==='function')jobsRender();
 };
+
+try{if(typeof gmJobsSetDateFilter==='function')gmJobsSetDateFilter(window.__jobsDateFilter||'all');}catch(eSync){}
 
 window.__jobsVendorFilter='';
 
