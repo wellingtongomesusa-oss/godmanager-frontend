@@ -559,6 +559,122 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .page ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(196,123,40,.55),rgba(212,146,62,.7));border-radius:8px;border:2px solid rgba(248,246,242,0);background-clip:padding-box;min-height:30px;min-width:30px;transition:background .18s ease}
 .page ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(196,123,40,.85),rgba(212,146,62,.95));background-clip:padding-box;border:2px solid rgba(248,246,242,0)}
 .page ::-webkit-scrollbar-corner{background:transparent}
+
+/* Jobs: botão de filtros visível apenas em mobile (bloco abaixo em @media) */
+#page-jobs .jobs-filters-toggle{display:none}
+@media (max-width: 768px) {
+ /* === Jobs MOBILE UX (F1-F3) === */
+
+ /* F2: KPIs full-width empilhados */
+ #page-jobs .gm-kpis-row.gm-kpis-row--jobs,
+ #page-jobs .gm-kpis-shell .gm-kpis-row--jobs{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:12px;
+  overflow:visible !important;
+  flex-wrap:wrap !important;
+  scroll-snap-type:none !important;
+  padding-bottom:0 !important;
+ }
+ #page-jobs .gm-kpis-row--jobs > *{
+  flex:none !important;
+  min-width:0 !important;
+  max-width:none !important;
+  width:100% !important;
+  scroll-snap-align:none !important;
+ }
+ #page-jobs .kpi-card,
+ #page-jobs .gm-kpis-row--jobs > div{
+  width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box;
+ }
+
+ /* F3: Filtros colapsáveis */
+ #page-jobs .jobs-filters-toggle{
+  display:flex !important;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  margin:16px 32px 0;
+  background:var(--sand);
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:14px;
+  font-weight:600;
+  font-family:'DM Sans',sans-serif;
+  color:var(--ink2);
+  cursor:pointer;
+ }
+ #page-jobs .jobs-filters-block{display:none}
+ #page-jobs .jobs-filters-block.is-open{display:block}
+
+ /* F1: Tabela -> Cards verticais */
+ #page-jobs .lt-jobs-table thead{display:none}
+ #page-jobs .lt-jobs-table,
+ #page-jobs .lt-jobs-table tbody,
+ #page-jobs .lt-jobs-table tr{display:block;width:100%}
+ #page-jobs .lt-jobs-table tr{
+  background:var(--paper);
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin-bottom:12px;
+  padding:14px;
+  box-shadow:0 1px 3px rgba(26,26,28,.06);
+ }
+ #page-jobs .lt-jobs-table td{
+  display:block;
+  padding:4px 0;
+  border:none;
+  text-align:left !important;
+  white-space:normal !important;
+  max-width:none !important;
+ }
+ #page-jobs .lt-jobs-table td.col-unit{
+  font-size:16px;
+  font-weight:600;
+  margin-bottom:8px;
+  color:var(--ink);
+ }
+ #page-jobs .lt-jobs-table td.col-unit::before{content:none !important}
+ #page-jobs .lt-jobs-table td[data-label]::before{
+  content:attr(data-label) ": ";
+  font-weight:600;
+  color:var(--ink3);
+  margin-right:4px;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+ }
+ #page-jobs .lt-jobs-table td.col-actions::before,
+ #page-jobs .lt-jobs-table td.jobs-td-dismiss::before{content:none !important}
+ #page-jobs .lt-jobs-table td.col-actions{
+  display:flex !important;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+ }
+ #page-jobs .lt-jobs-table td.col-actions > div{
+  display:flex !important;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:flex-start !important;
+ }
+ #page-jobs .lt-jobs-table td.col-actions button,
+ #page-jobs .lt-jobs-table td.col-actions .btn-action{
+  flex:1 1 calc(50% - 3px);
+  min-width:0;
+  padding:10px;
+  font-size:12px;
+  box-sizing:border-box;
+ }
+
+ /* Topbar: ocultar backup/PDF em ecrãs estreitos */
+ header.topbar .tr > button.tb.gm-allow-viewer{display:none !important}
+}
 </style>
 <script src="/properties_seed.js"></script>
 <script src="/tenants_seed.js"></script>
@@ -2203,6 +2319,8 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
  </div>
 
+ <button type="button" class="jobs-filters-toggle" id="jobs-filters-toggle" aria-expanded="false" aria-controls="jobs-filters-block">Filtros</button>
+ <div class="jobs-filters-block" id="jobs-filters-block">
  <div id="jobs-filter-row" style="display:flex;gap:12px;align-items:center;margin:16px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap">Filtrar por mes (fechamento):</label>
   <select id="jobs-filter-month" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;min-width:200px;background:var(--sand);color:var(--ink)">
@@ -2228,6 +2346,7 @@ document.addEventListener('DOMContentLoaded', function(){
    <option value="">Todos os vendors</option>
   </select>
   <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--ink3);font-weight:500;margin-left:auto">Todas as datas</button>
+ </div>
  </div>
 
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="padding:0 32px;margin-top:16px"><div class="gm-kpis-row gm-kpis-row--jobs">
@@ -2289,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
  <div style="padding:24px 32px 32px">
   <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table">
+   <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table" class="lt-jobs-table">
     <thead>
      <tr style="background:var(--cream);border-bottom:2px solid var(--border)">
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Unit</th>
@@ -16101,6 +16220,20 @@ window.gmJobsSetVendorFilter=function(vendorName){
  }
 })();
 
+(function(){
+ document.addEventListener('DOMContentLoaded', function(){
+  var page=document.getElementById('page-jobs');
+  if(!page)return;
+  var toggle=document.getElementById('jobs-filters-toggle');
+  var filtros=document.getElementById('jobs-filters-block');
+  if(!toggle||!filtros)return;
+  toggle.addEventListener('click', function(){
+   var open=filtros.classList.toggle('is-open');
+   toggle.setAttribute('aria-expanded', open?'true':'false');
+  });
+ });
+})();
+
 window.gmJobsSetViewMode=function(mode){
  var allowed=['table','agenda','calendar'];
  window.__jobsViewMode=(allowed.indexOf(mode)>=0)?mode:'calendar';
@@ -16724,8 +16857,8 @@ async function jobsRender(){
   ? '<button type="button" onclick="jobsReturn(\''+idAttr+'\')" title="Remover acoes Vendor/Job aplicadas e voltar a pendente" style="'+btnStyleBase+';background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)">Retornar</button>'
   : '';
  var btnDismissTd=isCancelled
-  ? '<td style="padding:4px 6px;text-align:center;vertical-align:middle"></td>'
-  : '<td style="padding:4px 6px;text-align:center;vertical-align:middle"><button type="button" onclick="jobsCancel(\''+idAttr+'\')" aria-label="Cancelar Job" title="Cancelar" style="padding:0;min-width:26px;height:26px;border:none;background:transparent;cursor:pointer;color:var(--ink3);font-size:14px;line-height:1;font-weight:400;display:inline-flex;align-items:center;justify-content:center;border-radius:4px" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--ink3)\'">&#10005;</button></td>';
+  ? '<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>'
+  : '<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"><button type="button" onclick="jobsCancel(\''+idAttr+'\')" aria-label="Cancelar Job" title="Cancelar" style="padding:0;min-width:26px;height:26px;border:none;background:transparent;cursor:pointer;color:var(--ink3);font-size:14px;line-height:1;font-weight:400;display:inline-flex;align-items:center;justify-content:center;border-radius:4px" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--ink3)\'">&#10005;</button></td>';
 
  var btnFinalize=(canFinalize&&canBeFinalized)
   ? '<button type="button" onclick="jobsFinalize(\''+idAttr+'\')" title="Marcar trabalho como concluído" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff;font-weight:600">✓ OK</button>'
@@ -16751,14 +16884,14 @@ async function jobsRender(){
  }
 
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
-  +'<td style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
-  +'<td style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
-  +'<td style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
-  +'<td style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||'')).replace(/"/g,'&quot;')+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
-  +'<td style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
-  +'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
-  +'<td style="padding:9px 12px">'+statusBadge+'</td>'
-  +'<td style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
+  +'<td class="col-unit" style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
+  +'<td data-label="Vendor" style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
+  +'<td data-label="Categoria" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
+  +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||'')).replace(/"/g,'&quot;')+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
+  +'<td data-label="Data" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+  +'<td data-label="Valor" data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
+  +'<td data-label="Status" style="padding:9px 12px">'+statusBadge+'</td>'
+  +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
   +btnDismissTd
   +'</tr>';
 }).join('');
