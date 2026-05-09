@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import type { PmPackage } from '@prisma/client';
 import { PM_PACKAGE_MARKUP_PCT } from '@/lib/pmPackages';
 
@@ -68,9 +69,13 @@ function toJson(v: {
 export async function GET() {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
-    const rows = await prisma.pmVendor.findMany({ orderBy: { companyName: 'asc' } });
+    const rows = await prisma.pmVendor.findMany({
+      where: { ...getClientScopeWhere(scopeUser) },
+      orderBy: { companyName: 'asc' },
+    });
     return NextResponse.json({ ok: true, vendors: rows.map(toJson) });
   } catch (e) {
     console.error('[GET /api/pm/vendors]', e);
@@ -81,6 +86,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
     const body = await req.json();
@@ -102,8 +108,18 @@ export async function POST(req: Request) {
       ? body.default_package
       : 'PACOTE_1';
 
+    const scopedClientId = getClientScopeForCreate(scopeUser);
+    const bodyClientId =
+      typeof (body as { clientId?: unknown }).clientId === 'string'
+        ? String((body as { clientId: string }).clientId).trim()
+        : typeof (body as { client_id?: unknown }).client_id === 'string'
+          ? String((body as { client_id: string }).client_id).trim()
+          : null;
+    const vendorClientId = scopedClientId ?? (bodyClientId || null);
+
     const row = await prisma.pmVendor.create({
       data: {
+        ...(vendorClientId ? { clientId: vendorClientId } : {}),
         companyName,
         contactName: String(body.contact_name || body.contactName || '').trim() || null,
         email,

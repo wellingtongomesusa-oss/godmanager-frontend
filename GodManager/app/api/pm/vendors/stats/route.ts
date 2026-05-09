@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,12 +27,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
+  const scopeUser = toClientScopeUser(user);
+
   try {
     const { searchParams } = new URL(req.url);
     const vendorIdFilter = searchParams.get('vendorId')?.trim() || null;
     const monthsBack = Math.min(60, Math.max(1, parseInt(searchParams.get('monthsBack') || '12', 10) || 12));
 
-    const baseWhere: Prisma.PmExpenseWhereInput = {};
+    const baseWhere: Prisma.PmExpenseWhereInput = { ...getClientScopeWhere(scopeUser) };
     if (vendorIdFilter) baseWhere.vendorId = vendorIdFilter;
 
     const finalizedWhere: Prisma.PmExpenseWhereInput = { ...baseWhere, status: 'FINALIZED' };
@@ -77,7 +80,7 @@ export async function GET(req: NextRequest) {
     const vendorIds = byVendorAll.map((v) => v.vendorId).filter((id): id is string => !!id);
 
     const vendors = await prisma.pmVendor.findMany({
-      where: { id: { in: vendorIds.length ? vendorIds : ['__none__'] } },
+      where: { id: { in: vendorIds.length ? vendorIds : ['__none__'] }, ...getClientScopeWhere(scopeUser) },
       select: { id: true, companyName: true, commissionMp: true },
     });
 

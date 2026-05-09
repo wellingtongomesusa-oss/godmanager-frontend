@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
 import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,17 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
+    const scopeUser = toClientScopeUser(user);
+    const exists = await prisma.pmVendor.findUnique({
+      where: { id: params.id },
+      select: { id: true, clientId: true },
+    });
+    if (!exists) {
+      return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
+    }
+    if (!canAccessClientId(scopeUser, exists.clientId)) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    }
     const rows = await prisma.vendorPayment.findMany({
       where: { vendorId: params.id },
       orderBy: [{ paidAt: 'desc' }],
@@ -51,9 +63,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
     }
 
-    const exists = await prisma.pmVendor.findUnique({ where: { id: params.id } });
+    const scopeUser = toClientScopeUser(user);
+    const exists = await prisma.pmVendor.findUnique({
+      where: { id: params.id },
+      select: { id: true, clientId: true },
+    });
     if (!exists) {
       return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
+    }
+    if (!canAccessClientId(scopeUser, exists.clientId)) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
     const amountRaw = body.amount;
@@ -70,6 +89,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const created = await prisma.vendorPayment.create({
       data: {
         vendorId: params.id,
+        clientId: exists.clientId,
         amount: amountDec,
         count,
         paidBy,

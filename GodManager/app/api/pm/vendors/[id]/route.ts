@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import type { PmPackage } from '@prisma/client';
 import { PM_PACKAGE_MARKUP_PCT } from '@/lib/pmPackages';
 
@@ -68,6 +69,7 @@ function toJson(v: {
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
     const id = params.id;
@@ -112,6 +114,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (body.metadata != null && typeof body.metadata === 'object') data.metadata = body.metadata;
 
+    const existing = await prisma.pmVendor.findFirst({
+      where: { id, ...getClientScopeWhere(scopeUser) },
+    });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+
     const row = await prisma.pmVendor.update({ where: { id }, data: data as object });
     return NextResponse.json({ ok: true, vendor: toJson(row) });
   } catch (e) {
@@ -123,8 +130,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
+    const existing = await prisma.pmVendor.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
+      select: { id: true },
+    });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+
     await prisma.pmVendor.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e) {
