@@ -6489,7 +6489,8 @@ function nav(r){
  var lvl=getEffectiveLevel();
  if(r==='bookkeeping'){
   var rrBk=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
-  if(rrBk!=='admin'&&rrBk!=='super_admin')r='home';
+  // F2.3: hide-only - bloquear apenas roles conhecidos NAO autorizados (alinhar com gate sidebar F2.2)
+  if(rrBk==='maintenance'||rrBk==='viewer')r='home';
  }
  if(r==='clients'&&getActiveClient())r='home';
  if(r==='client-users'){
