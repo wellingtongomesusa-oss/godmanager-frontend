@@ -59,6 +59,28 @@
 .lt-exp-status-select.status-cancelled{background:var(--red-bg);color:var(--red)}
 .lt-exp-status-select.status-finalized{background:#dcfce7;color:#166534}
 
+/* Bookkeeping (/bookkeeping) */
+.bk-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bk-cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;padding:4px 0 16px}
+.bk-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
+.kpi-card-wide{grid-column:span 2}
+@media(max-width:900px){.kpi-card-wide{grid-column:span 1}}
+.bk-aging-table{width:100%;border-collapse:collapse;margin-top:8px}
+.bk-aging-table th,.bk-aging-table td{padding:8px 10px;text-align:right;border:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink2)}
+.bk-aging-table th{background:var(--cream);font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)}
+.bk-aging-table td{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--ink)}
+.bk-kpi-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:var(--ink);line-height:1.15}
+.bk-kpi-sub{font-size:11px;color:var(--ink3);margin-top:6px}
+.bk-kpi-lbl{font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.bk-list{list-style:none;padding:0;margin:0}
+.bk-list li{padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink2)}
+.bk-list li:last-child{border-bottom:none}
+.bk-list li span:last-child{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px;color:var(--ink);white-space:nowrap}
+.bk-empty{color:var(--ink3);font-style:italic}
+#bk-period{padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px}
+#bk-refresh{padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;border-radius:8px;cursor:pointer;background:transparent;color:var(--ink2);border:1px solid var(--border2)}
+#bk-refresh:hover{border-color:var(--amber);color:var(--amber)}
+
 /* Mobile sidebar toggle */
 .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:400;width:36px;height:36px;background:var(--amber);border:none;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px;padding:0}
 .sb-toggle span{display:block;width:16px;height:2px;background:#fff;border-radius:2px;transition:all .2s}
@@ -775,6 +797,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px;display:none" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Bookkeeping</span></div>
  <div class="ss" onclick="window.open('/gaap.html','_blank','noopener')" id="nav-gaap" style="padding-left:16px"><span>GAAP</span></div>
  </div>
  </div>
@@ -3623,6 +3646,71 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 
 <!-- ============================================================ -->
+<!-- BOOKKEEPING -->
+<!-- ============================================================ -->
+<div class="page" id="page-bookkeeping">
+ <div class="ph" style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px">
+  <div style="flex:1;min-width:220px">
+   <div class="pt">Bookkeeping</div>
+   <div class="ps">Receitas de rent, custos de vendors, cobrança a owners e AR pendente (operacional).</div>
+  </div>
+  <div class="bk-controls">
+   <label for="bk-period" class="bk-kpi-lbl" style="margin:0">Período</label>
+   <select id="bk-period" aria-label="Período">
+    <option value="current_month" selected>Mês actual</option>
+    <option value="prev_month">Mês anterior</option>
+    <option value="ytd">YTD (ano actual)</option>
+    <option value="last_30">Últimos 30 dias</option>
+   </select>
+   <button type="button" id="bk-refresh">Atualizar</button>
+  </div>
+ </div>
+ <div class="bk-cards-grid">
+  <div class="bk-card" id="bk-card-revenue">
+   <div class="bk-kpi-lbl">Receita rent (período)</div>
+   <div class="bk-kpi-num" data-field="revenue.month.value">—</div>
+   <div class="bk-kpi-sub">YTD: <span data-field="revenue.ytd.value">—</span> · <span data-field="revenue.month.count">—</span> pagamentos</div>
+  </div>
+  <div class="bk-card" id="bk-card-vendor">
+   <div class="bk-kpi-lbl">Custo vendors (período)</div>
+   <div class="bk-kpi-num" data-field="vendorCost.month.value">—</div>
+   <div class="bk-kpi-sub">YTD: <span data-field="vendorCost.ytd.value">—</span></div>
+  </div>
+  <div class="bk-card" id="bk-card-owner">
+   <div class="bk-kpi-lbl">Cobrado a owners (período)</div>
+   <div class="bk-kpi-num" data-field="ownerCharged.month.value">—</div>
+   <div class="bk-kpi-sub">YTD: <span data-field="ownerCharged.ytd.value">—</span></div>
+  </div>
+  <div class="bk-card" id="bk-card-markup">
+   <div class="bk-kpi-lbl">Markup Manager Prop</div>
+   <div class="bk-kpi-num" data-field="markup.month">—</div>
+   <div class="bk-kpi-sub">Margem: <span data-field="markup.marginPct">—</span> · YTD: <span data-field="markup.ytd">—</span></div>
+  </div>
+  <div class="bk-card kpi-card-wide" id="bk-card-ar">
+   <div class="bk-kpi-lbl">AR pendente por idade</div>
+   <table class="bk-aging-table">
+    <thead><tr><th>0–30d</th><th>31–60d</th><th>61–90d</th><th>+90d</th><th>Total</th></tr></thead>
+    <tbody><tr>
+     <td data-field="pendingAR.current">—</td>
+     <td data-field="pendingAR.bucket_30_60">—</td>
+     <td data-field="pendingAR.bucket_60_90">—</td>
+     <td data-field="pendingAR.over_90">—</td>
+     <td data-field="pendingAR.total">—</td>
+    </tr></tbody>
+   </table>
+  </div>
+  <div class="bk-card kpi-card-wide" id="bk-card-vendors">
+   <div class="bk-kpi-lbl">Top 5 vendors (período)</div>
+   <ul class="bk-list" id="bk-list-vendors"><li class="bk-empty">—</li></ul>
+  </div>
+  <div class="bk-card kpi-card-wide" id="bk-card-properties">
+   <div class="bk-kpi-lbl">Top 5 properties (período)</div>
+   <ul class="bk-list" id="bk-list-properties"><li class="bk-empty">—</li></ul>
+  </div>
+ </div>
+</div>
+
+<!-- ============================================================ -->
 <!-- RESULTS UPLOAD -->
 <!-- ============================================================ -->
 <div class="page" id="page-results-upload">
@@ -6394,11 +6482,15 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
  var lvl=getEffectiveLevel();
+ if(r==='bookkeeping'){
+  var rrBk=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  if(rrBk!=='admin'&&rrBk!=='super_admin')r='home';
+ }
  if(r==='clients'&&getActiveClient())r='home';
  if(r==='client-users'){
   if(lvl!=='ADMIN')r='home';
@@ -6502,7 +6594,8 @@ function nav(r){
  'gross-expenses':()=>{if(typeof geWirePageOnce==='function')geWirePageOnce();if(typeof geLoadPage==='function')geLoadPage();},
  'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();},
  results:()=>{if(typeof gmResRender==='function')gmResRender();},
- 'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();}
+ 'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
+ bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();}
  };
  if(renders[r]) setTimeout(renders[r],30);
 }
@@ -17297,6 +17390,10 @@ document.addEventListener('DOMContentLoaded',function(){
    }
   }catch(eV){}
   await jobsApplyRoleGateV2();
+  try{
+   var rBk=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+   if(typeof gmBookkeepingApplyRoleGate==='function')gmBookkeepingApplyRoleGate(rBk);
+  }catch(eBk){console.warn('[bookkeeping gate]',eBk);}
  },100);
 });
 
@@ -18812,6 +18909,64 @@ window.gmPropertyPaymentsClose=function(){
  var el=document.getElementById('gm-build-stamp');
  if(el)el.textContent=String(buildDate).split('T')[0];
 })();
+</script>
+
+<script>
+(function(){
+window.gmBookkeepingState={loading:false,data:null};
+function gmBkFmtMoney(n){if(n==null||Number.isNaN(Number(n)))return '\u2014';return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function gmBkFmtPct(n){if(n==null||Number.isNaN(Number(n)))return '\u2014';return (Number(n)*100).toFixed(1)+'%';}
+function gmBkEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function gmBkLocalYMD(d){var y=d.getFullYear();var m=('0'+(d.getMonth()+1)).slice(-2);var da=('0'+d.getDate()).slice(-2);return y+'-'+m+'-'+da;}
+function gmBkGetPeriodRange(period){
+var now=new Date();var from;var to;
+if(period==='current_month'){from=new Date(now.getFullYear(),now.getMonth(),1);to=new Date(now.getFullYear(),now.getMonth()+1,0);}
+else if(period==='prev_month'){from=new Date(now.getFullYear(),now.getMonth()-1,1);to=new Date(now.getFullYear(),now.getMonth(),0);}
+else if(period==='ytd'){from=new Date(now.getFullYear(),0,1);to=now;}
+else{to=now;from=new Date(now.getTime()-30*86400000);}
+return {from:gmBkLocalYMD(from),to:gmBkLocalYMD(to)};}
+function gmBookkeepingDashReset(){
+document.querySelectorAll('#page-bookkeeping [data-field]').forEach(function(el){el.textContent='\u2014';});
+var u1=document.getElementById('bk-list-vendors');if(u1)u1.innerHTML='<li class="bk-empty">\u2014</li>';
+var u2=document.getElementById('bk-list-properties');if(u2)u2.innerHTML='<li class="bk-empty">\u2014</li>';}
+window.gmBookkeepingDashReset=gmBookkeepingDashReset;
+window.gmBookkeepingApplyRoleGate=function(role){
+var el=document.getElementById('nav-bookkeeping');if(!el)return;
+var rr=String(role||'').toLowerCase();var allowed=(rr==='super_admin'||rr==='admin');
+el.style.display=allowed?'flex':'none';};
+window.gmBookkeepingRender=function(d){if(!d){gmBookkeepingDashReset();return;}
+try{
+function setTxt(sel,val){document.querySelectorAll('#page-bookkeeping [data-field="'+sel+'"]').forEach(function(el){el.textContent=val;});}
+setTxt('revenue.month.value',gmBkFmtMoney(d.revenue&&d.revenue.month&&d.revenue.month.value));
+setTxt('revenue.ytd.value',gmBkFmtMoney(d.revenue&&d.revenue.ytd&&d.revenue.ytd.value));
+setTxt('revenue.month.count',String((d.revenue&&d.revenue.month&&d.revenue.month.count!=null)?d.revenue.month.count:0));
+setTxt('vendorCost.month.value',gmBkFmtMoney(d.vendorCost&&d.vendorCost.month&&d.vendorCost.month.value));
+setTxt('vendorCost.ytd.value',gmBkFmtMoney(d.vendorCost&&d.vendorCost.ytd&&d.vendorCost.ytd.value));
+setTxt('ownerCharged.month.value',gmBkFmtMoney(d.ownerCharged&&d.ownerCharged.month&&d.ownerCharged.month.value));
+setTxt('ownerCharged.ytd.value',gmBkFmtMoney(d.ownerCharged&&d.ownerCharged.ytd&&d.ownerCharged.ytd.value));
+setTxt('markup.month',gmBkFmtMoney(d.markup&&d.markup.month));setTxt('markup.ytd',gmBkFmtMoney(d.markup&&d.markup.ytd));
+setTxt('markup.marginPct',gmBkFmtPct(d.markup&&d.markup.marginPct));
+setTxt('pendingAR.current',gmBkFmtMoney(d.pendingAR&&d.pendingAR.current));setTxt('pendingAR.bucket_30_60',gmBkFmtMoney(d.pendingAR&&d.pendingAR.bucket_30_60));
+setTxt('pendingAR.bucket_60_90',gmBkFmtMoney(d.pendingAR&&d.pendingAR.bucket_60_90));setTxt('pendingAR.over_90',gmBkFmtMoney(d.pendingAR&&d.pendingAR.over_90));setTxt('pendingAR.total',gmBkFmtMoney(d.pendingAR&&d.pendingAR.total));
+var ulV=document.getElementById('bk-list-vendors');if(ulV){var tv=(d.topVendors||[]).map(function(v){var nm=String(v.name||v.id||'');var id=String(v.id||'');var tot='$'+Number(v.total!==undefined&&!Number.isNaN(Number(v.total))?Number(v.total):0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});var cn=v.count!=null?String(v.count):'0';return '<li><span>'+gmBkEsc(nm||id)+'</span><span>'+gmBkEsc(tot)+' ('+gmBkEsc(cn)+')</span></li>';}).join('');ulV.innerHTML=tv||'<li class="bk-empty">Sem dados</li>';}
+var ulP=document.getElementById('bk-list-properties');if(ulP){var tp=(d.topProperties||[]).map(function(p){var addr=String(p.address||p.id||'');var pid=String(p.id||'');var tot='$'+Number(p.total!==undefined&&!Number.isNaN(Number(p.total))?Number(p.total):0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});var cn=p.count!=null?String(p.count):'0';return '<li><span>'+gmBkEsc(addr||pid)+'</span><span>'+gmBkEsc(tot)+' ('+gmBkEsc(cn)+')</span></li>';}).join('');ulP.innerHTML=tp||'<li class="bk-empty">Sem dados</li>';}
+}catch(er){console.warn('[bk] render',er);gmBookkeepingDashReset();}};
+window.gmBookkeepingLoad=async function(){if(window.gmBookkeepingState.loading)return;var pr=document.getElementById('bk-period');var period=(pr&&pr.value)||'current_month';var rg=gmBkGetPeriodRange(period);window.gmBookkeepingState.loading=true;
+try{
+var url='/api/bookkeeping/summary?from='+encodeURIComponent(rg.from)+'&to='+encodeURIComponent(rg.to);
+var r=await fetch(url,{credentials:'include',cache:'no-store'});
+var data=null;
+try{data=await r.json();}catch(_j){data=null;}
+if(!r.ok||!data||(typeof data.error==='string'&&data.error)){console.warn('[bk] HTTP',r.status,data&&data.error);gmBookkeepingDashReset();return;}
+window.gmBookkeepingState.data=data;gmBookkeepingRender(data);
+}catch(er){console.error('[bk]',er);gmBookkeepingDashReset();}finally{window.gmBookkeepingState.loading=false;}};
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='bk-period'&&typeof window.gmBookkeepingLoad==='function')window.gmBookkeepingLoad();});
+document.addEventListener('click',function(e){var t=e.target;if(t&&(t.id==='bk-refresh'||((t.closest&&t.closest('#bk-refresh'))))){if(typeof window.gmBookkeepingLoad==='function')window.gmBookkeepingLoad();}});
+})();
+(function(){try{
+var ob=window.gmAuthHydrateUserBadge;if(typeof ob!=='function'||ob.__bkWrp)return;var nw=async function(){var uz=await ob.apply(this,arguments);
+try{if(typeof gmBookkeepingApplyRoleGate==='function')gmBookkeepingApplyRoleGate(String((uz&&uz.role)||''));}catch(_g){}
+return uz;};nw.__bkWrp=1;window.gmAuthHydrateUserBadge=nw;}catch(e){console.warn('[bk wrap hydrate]',e);}})();
 </script>
 <script>
 (function gmIdleAutoLogout() {
