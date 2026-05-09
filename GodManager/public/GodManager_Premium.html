@@ -18934,6 +18934,28 @@ window.gmBookkeepingApplyRoleGate=function(role){
 var el=document.getElementById('nav-bookkeeping');if(!el)return;
 var rr=String(role||'').toLowerCase();var allowed=(rr==='super_admin'||rr==='admin');
 el.style.display=allowed?'flex':'none';};
+
+// F2.1: Auto-fetch role na carga, sem depender de outras hooks
+(function(){
+function applyBkGate(){
+try{
+fetch('/api/auth/me',{credentials:'include'})
+.then(function(r){return r.ok?r.json():null;})
+.then(function(me){
+if(!me)return;
+var role=(me.user&&me.user.role)||me.role;
+if(role)window.gmBookkeepingApplyRoleGate(role);
+})
+.catch(function(){});
+}catch(e){}
+}
+if(document.readyState==='loading'){
+document.addEventListener('DOMContentLoaded',applyBkGate);
+}else{
+applyBkGate();
+}
+})();
+
 window.gmBookkeepingRender=function(d){if(!d){gmBookkeepingDashReset();return;}
 try{
 function setTxt(sel,val){document.querySelectorAll('#page-bookkeeping [data-field="'+sel+'"]').forEach(function(el){el.textContent=val;});}
