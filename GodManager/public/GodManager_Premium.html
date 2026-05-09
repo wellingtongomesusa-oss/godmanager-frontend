@@ -8926,7 +8926,7 @@ window.ltExpStatusChange=function(id,newStatus){
 window.ltExpBulkRoleOk=function(){
  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
  var role=String(u.role||'').toLowerCase();
- return role==='admin'||role==='super_admin'||role==='manager';
+ return role==='admin'||role==='super_admin'||role==='manager'||role==='maintenance';
 };
 
 window.ltExpNormalizeYm=function(m){
@@ -16262,12 +16262,12 @@ window.jobsUpdateJobsPageRoleKpis=function(){
   if(!u)return;
   var rJb=String(u.role||'').toLowerCase();
   var isAdmin=(rJb==='admin'||rJb==='super_admin');
-  var isMaint=String(u.role||'').toLowerCase()==='maintenance';
   var ev=document.querySelector('#page-jobs [data-jobs-card="fees-vendor"]');
   var ej=document.querySelector('#page-jobs [data-jobs-card="fees-job"]');
   if(ev)ev.style.display=isAdmin?'':'none';
   if(ej)ej.style.display=isAdmin?'':'none';
-  var colDisp=isMaint?'none':'';
+  // Maintenance ve colunas de montante na tabela Jobs (Wellington upgrade Mai 2026)
+  var colDisp='';
   document.querySelectorAll('#page-jobs #jobs-table [data-jobs-col="amount"]').forEach(function(el){
    el.style.display=colDisp;
   });
@@ -16805,8 +16805,8 @@ window.jobsVendorFree=function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
-  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'){
-   alert('Apenas admin ou manager podem criar Vendor Free.');
+  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){
+   alert('Sem permissao.');
    return;
   }
   id=String(id);
@@ -17149,7 +17149,7 @@ async function jobsApplyRoleGateV2(){
   }
   var btnNew=document.getElementById('jobs-new-btn');
   if(btnNew){
-   var canCreate=(role==='admin'||role==='super_admin'||role==='manager');
+   var canCreate=(role==='admin'||role==='super_admin'||role==='manager'||role==='maintenance');
    btnNew.style.display=canCreate?'inline-flex':'none';
   }
   if(typeof window.jobsUpdateJobsPageRoleKpis==='function')setTimeout(function(){
