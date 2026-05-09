@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { canAccessClientId, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
@@ -54,6 +55,7 @@ const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CA
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
     const body = await req.json();
@@ -61,14 +63,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
     }
 
-    const cur = await prisma.pmExpense.findUnique({ where: { id: params.id } });
+    const cur = await prisma.pmExpense.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
+    });
     if (!cur) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
 
     let propertyId = cur.propertyId;
+    let shouldSyncExpenseClientId = false;
+    let expenseClientIdForProperty: string | null = null;
     if (body.propertyId != null || body.propertyCode != null) {
       const r = await resolvePropertyId(String(body.propertyId || body.propertyCode).trim());
       if (!r) return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
+      const nextProp = await prisma.property.findUnique({
+        where: { id: r.id },
+        select: { clientId: true },
+      });
+      if (!nextProp) return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
+      if (!canAccessClientId(scopeUser, nextProp.clientId)) {
+        return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+      }
       propertyId = r.id;
+      shouldSyncExpenseClientId = true;
+      expenseClientIdForProperty = nextProp.clientId;
     }
 
     let vendorId = cur.vendorId;
@@ -138,6 +154,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       where: { id: params.id },
       data: {
         propertyId,
+        ...(shouldSyncExpenseClientId ? { clientId: expenseClientIdForProperty } : {}),
         vendorId,
         serviceType:
           body.serviceType !== undefined
@@ -186,8 +203,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
+    const existing = await prisma.pmExpense.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
+      select: { id: true },
+    });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+
     await prisma.pmExpense.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e) {

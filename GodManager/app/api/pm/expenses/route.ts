@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import {
+  canAccessClientId,
+  getClientScopeForCreate,
+  getClientScopeWhere,
+  toClientScopeUser,
+} from '@/lib/clientScope';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
@@ -47,13 +53,17 @@ function toJson(e: {
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   const { searchParams } = new URL(req.url);
   const monthRef = searchParams.get('monthRef') || searchParams.get('month') || undefined;
 
   try {
     const rows = await prisma.pmExpense.findMany({
-      where: monthRef ? { monthRef: { in: monthRefQueryValues(monthRef) } } : undefined,
+      where: {
+        ...(monthRef ? { monthRef: { in: monthRefQueryValues(monthRef) } } : {}),
+        ...getClientScopeWhere(scopeUser),
+      },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
@@ -72,6 +82,7 @@ const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CA
 export async function POST(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const scopeUser = toClientScopeUser(user);
 
   try {
     const body = await req.json();
@@ -84,6 +95,20 @@ export async function POST(req: Request) {
     if (!resolved) {
       return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
     }
+
+    const prop = await prisma.property.findUnique({
+      where: { id: resolved.id },
+      select: { clientId: true },
+    });
+    if (!prop) {
+      return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
+    }
+    if (!canAccessClientId(scopeUser, prop.clientId)) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const scopeClientId = getClientScopeForCreate(scopeUser);
+    const expenseClientId = scopeClientId ?? prop.clientId ?? null;
 
     const vendorId = String(body.vendorId || '').trim() || null;
     if (vendorId) {
@@ -134,6 +159,7 @@ export async function POST(req: Request) {
     const row = await prisma.pmExpense.create({
       data: {
         propertyId: resolved.id,
+        clientId: expenseClientId,
         vendorId,
         serviceType: String(body.serviceType || '').trim() || null,
         packageApplied: pkg,
