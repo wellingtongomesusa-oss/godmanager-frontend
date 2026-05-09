@@ -9525,9 +9525,11 @@ function gmJobsPhotoUpdateProgress(){gmJobsPhotoUpdateProgressText();}
 function gmJobsPhotoUpdateUploadButtonsDisabled(){
  var st=window.gmJobsPhotoState;
  var n=st&&st.photos?st.photos.length:0;
- var dis=(n>=20)||(st&&st.uploading);
+ var dis=(n>=20)||(st&&st.uploading)||(st&&st._jpGalleryReady===false);
+ var fileBtn=document.getElementById('jp-btn-file');
  var cam=document.getElementById('jp-btn-camera');
  var gal=document.getElementById('jp-btn-gallery');
+ if(fileBtn)fileBtn.disabled=!!dis;
  if(cam)cam.disabled=!!dis;
  if(gal)gal.disabled=!!dis;
 }
@@ -9538,7 +9540,7 @@ function gmJobsPhotoRenderGallery(){
  if(!g||!st)return;
  g.innerHTML='';
  if(!st.photos||!st.photos.length){
-  g.innerHTML='<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--ink3);padding:24px">Sem fotos ainda. Use Tirar foto ou Galeria.</div>';
+  g.innerHTML='<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--ink3);padding:24px">Sem fotos ainda. Use Carregar ficheiro, Tirar foto ou Galeria.</div>';
   gmJobsPhotoUpdateCounterEl();
   gmJobsPhotoUpdateUploadButtonsDisabled();
   return;
@@ -9552,14 +9554,21 @@ function gmJobsPhotoRenderGallery(){
   img.src=url;
   img.alt='';
   img.loading='lazy';
-  img.style.cssText='width:100%;height:100%;object-fit:cover';
+  img.style.cssText='width:100%;height:100%;object-fit:cover;cursor:zoom-in';
+  img.title='Ver em tamanho maior';
+  img.onclick=function(e){
+   e.preventDefault();e.stopPropagation();
+   if(typeof window.gmJobsPhotoOpenPreview==='function')window.gmJobsPhotoOpenPreview(url);
+  };
   var del=document.createElement('button');
   del.type='button';
   del.innerHTML='&#10005;';
   del.title='Remover foto';
   del.setAttribute('aria-label','Remover foto');
-  del.style.cssText='position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;padding:0';
+  del.style.cssText='position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(0,0,0,.72);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;padding:0;opacity:.45;transition:opacity .15s ease';
   del.onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.gmJobsPhotoDelete==='function')window.gmJobsPhotoDelete(pid);};
+  wrap.onmouseenter=function(){del.style.opacity='1';};
+  wrap.onmouseleave=function(){del.style.opacity='0.45';};
   wrap.appendChild(img);
   wrap.appendChild(del);
   g.appendChild(wrap);
@@ -9569,6 +9578,7 @@ function gmJobsPhotoRenderGallery(){
 }
 
 function gmJobsPhotoClose(){
+ if(typeof gmJobsPhotoClosePreview==='function')gmJobsPhotoClosePreview();
  var m=document.getElementById('modal-job-photos');
  if(m)m.remove();
  var st=window.gmJobsPhotoState;
@@ -9620,34 +9630,40 @@ async function gmJobsPhotoUploadBatch(files){
  if(!st||!st.jobId||st.uploading)return;
  var arr=Array.prototype.slice.call(files||[]).filter(function(f){return f&&f.type&&f.type.indexOf('image/')===0;});
  if(!arr.length)return;
+ var okCount=0;
  st.uploading=true;
  st.uploadProgress={current:0,total:arr.length};
  gmJobsPhotoSetProgress(true);
  gmJobsPhotoUpdateProgress();
  var camBtn=document.getElementById('jp-btn-camera');
  var galBtn=document.getElementById('jp-btn-gallery');
- if(camBtn)camBtn.disabled=true;
- if(galBtn)galBtn.disabled=true;
- for(var i=0;i<arr.length;i++){
-  var f=arr[i];
-  try{
-   var photo=await gmJobsPhotoUploadOne(st.jobId,f);
-   st.photos.unshift(photo);
-   st.uploadProgress.current++;
-   if(!st.countsByJob)st.countsByJob={};
-   st.countsByJob[st.jobId]=st.photos.length;
-   gmJobsPhotoRenderGallery();
-   gmJobsPhotoUpdateProgress();
-  }catch(e){
-   console.error('Upload falhou:',e);
-   if(typeof showToast==='function')showToast(String(e.message||e),'error');
+ var fileBtn=document.getElementById('jp-btn-file');
+ try{
+  if(camBtn)camBtn.disabled=true;
+  if(galBtn)galBtn.disabled=true;
+  if(fileBtn)fileBtn.disabled=true;
+  for(var i=0;i<arr.length;i++){
+   var f=arr[i];
+   try{
+    var photo=await gmJobsPhotoUploadOne(st.jobId,f);
+    st.photos.unshift(photo);
+    st.uploadProgress.current++;
+    okCount++;
+    if(!st.countsByJob)st.countsByJob={};
+    st.countsByJob[st.jobId]=st.photos.length;
+    gmJobsPhotoRenderGallery();
+    gmJobsPhotoUpdateProgress();
+   }catch(e){
+    console.error('Upload falhou:',e);
+    if(typeof showToast==='function')showToast(String(e.message||e),'error');
+   }
   }
+ }finally{
+  st.uploading=false;
+  gmJobsPhotoSetProgress(false);
+  gmJobsPhotoUpdateUploadButtonsDisabled();
  }
- st.uploading=false;
- gmJobsPhotoSetProgress(false);
- if(camBtn)camBtn.disabled=false;
- if(galBtn)galBtn.disabled=false;
- gmJobsPhotoUpdateUploadButtonsDisabled();
+ if(okCount>0&&typeof showToast==='function')showToast(okCount+' foto(s) enviada(s).','success');
  if(typeof jobsRender==='function')try{jobsRender();}catch(eR){}
 }
 
@@ -9657,6 +9673,8 @@ window.gmJobsPhotoDelete=async function(photoId){
  var pid=String(photoId||'');
  if(!pid)return;
  if(!confirm('Apagar esta foto?'))return;
+ st.uploading=true;
+ gmJobsPhotoUpdateUploadButtonsDisabled();
  try{
   var res=await fetch('/api/jobs/'+encodeURIComponent(st.jobId)+'/photos/delete',{
    method:'POST',
@@ -9674,10 +9692,14 @@ window.gmJobsPhotoDelete=async function(photoId){
   if(!st.countsByJob)st.countsByJob={};
   st.countsByJob[st.jobId]=st.photos.length;
   gmJobsPhotoRenderGallery();
+  if(typeof showToast==='function')showToast('Foto removida.','success');
   if(typeof jobsRender==='function')try{jobsRender();}catch(eR){}
  }catch(e){
   console.warn('gmJobsPhotoDelete',e);
   if(typeof showToast==='function')showToast('Erro ao remover foto.','error');
+ }finally{
+  st.uploading=false;
+  gmJobsPhotoUpdateUploadButtonsDisabled();
  }
 };
 
@@ -9705,9 +9727,43 @@ window.gmJobsPhotoOnFileSelect=function(ev,source){
  void gmJobsPhotoUploadBatch(files);
 };
 
+function gmJobsPhotoClosePreview(){
+ var o=document.getElementById('jp-preview-overlay');
+ if(o)o.remove();
+ try{document.removeEventListener('keydown',window.gcJobsPhotoPreviewEscHandler);}catch(eRem){}
+}
+function gmJobsPhotoOpenPreview(url){
+ if(!url)return;
+ if(typeof gmJobsPhotoClosePreview==='function')gmJobsPhotoClosePreview();
+ var o=document.createElement('div');
+ o.id='jp-preview-overlay';
+ o.style.cssText='position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+ o.setAttribute('role','presentation');
+ o.onclick=function(){gmJobsPhotoClosePreview();};
+ var pic=document.createElement('img');
+ pic.src=url;
+ pic.alt='';
+ pic.style.cssText='max-width:100%;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);cursor:default';
+ pic.onclick=function(e){e.stopPropagation();};
+ o.appendChild(pic);
+ document.body.appendChild(o);
+ window.gcJobsPhotoPreviewEscHandler=function(e){if(e.key==='Escape')gmJobsPhotoClosePreview();};
+ try{document.addEventListener('keydown',window.gcJobsPhotoPreviewEscHandler);}catch(eK){}
+}
+window.gmJobsPhotoOpenPreview=gmJobsPhotoOpenPreview;
+window.gmJobsPhotoClosePreview=gmJobsPhotoClosePreview;
+
 async function gmJobOpenPhotoPopup(id){
  id=String(id||'');
  gmJobCloseJobPopups();
+
+ var ju=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var jr=String(ju.role||'').toLowerCase();
+ if(jr!=='admin'&&jr!=='super_admin'&&jr!=='manager'&&jr!=='maintenance'){
+  alert('Sem permissao.');
+  return;
+ }
+
  var rows=(typeof jobsFilteredExpenses==='function')?jobsFilteredExpenses():[];
  var row=rows.find(function(r){return r&&String(r.id)===id;});
  var addrShort=(row&&typeof jobsResolveAddress==='function')?String(jobsResolveAddress(row)):'-';
@@ -9719,6 +9775,7 @@ async function gmJobOpenPhotoPopup(id){
  st.photos=[];
  st.uploading=false;
  st.uploadProgress={current:0,total:0};
+ st._jpGalleryReady=false;
 
  var shell=document.createElement('div');
  shell.id='modal-job-photos';
@@ -9764,7 +9821,15 @@ async function gmJobOpenPhotoPopup(id){
  prog.appendChild(progt);
 
  var foot=document.createElement('div');
- foot.style.cssText='padding:16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0';
+ foot.style.cssText='padding:16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap';
+ var btnRowStyle='flex:1;min-width:140px;padding:12px;background:var(--cream);border:1px solid var(--border2);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2);font-family:Inter,sans-serif';
+ var inFile=document.createElement('input');
+ inFile.type='file';
+ inFile.id='jp-input-file';
+ inFile.accept='image/*';
+ inFile.multiple=true;
+ inFile.style.display='none';
+ inFile.onchange=function(ev){if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,'file');};
  var inCam=document.createElement('input');
  inCam.type='file';
  inCam.id='jp-input-camera';
@@ -9779,20 +9844,28 @@ async function gmJobOpenPhotoPopup(id){
  inGal.multiple=true;
  inGal.style.display='none';
  inGal.onchange=function(ev){if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,'gallery');};
+ var btFile=document.createElement('button');
+ btFile.type='button';
+ btFile.id='jp-btn-file';
+ btFile.textContent='Carregar ficheiro';
+ btFile.style.cssText=btnRowStyle;
+ btFile.onclick=function(){inFile.click();};
  var btCam=document.createElement('button');
  btCam.type='button';
  btCam.id='jp-btn-camera';
  btCam.textContent='Tirar foto';
- btCam.style.cssText='flex:1;padding:12px;background:var(--cream);border:1px solid var(--border2);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2);font-family:Inter,sans-serif';
+ btCam.style.cssText=btnRowStyle;
  btCam.onclick=function(){inCam.click();};
  var btGal=document.createElement('button');
  btGal.type='button';
  btGal.id='jp-btn-gallery';
  btGal.textContent='Galeria';
- btGal.style.cssText='flex:1;padding:12px;background:var(--cream);border:1px solid var(--border2);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2);font-family:Inter,sans-serif';
+ btGal.style.cssText=btnRowStyle;
  btGal.onclick=function(){inGal.click();};
+ foot.appendChild(inFile);
  foot.appendChild(inCam);
  foot.appendChild(inGal);
+ foot.appendChild(btFile);
  foot.appendChild(btCam);
  foot.appendChild(btGal);
 
@@ -9804,6 +9877,7 @@ async function gmJobOpenPhotoPopup(id){
  document.body.appendChild(shell);
 
  document.getElementById('jp-title').textContent='Fotos do trabalho — '+addrShort;
+ gmJobsPhotoUpdateUploadButtonsDisabled();
 
  var res=null;
  try{
@@ -9822,6 +9896,8 @@ async function gmJobOpenPhotoPopup(id){
  }catch(e){
   console.warn('gmJobOpenPhotoPopup list',e);
   if(typeof showToast==='function')showToast('Erro de rede ao carregar fotos.','error');
+ }finally{
+  try{st._jpGalleryReady=true;}catch(eG){}
  }
  gmJobsPhotoRenderGallery();
  gmJobsPhotoUpdateCounterEl();
