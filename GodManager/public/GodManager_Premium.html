@@ -719,6 +719,43 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   height:44px !important;
  }
 
+ /* === Status badge cores mobile (tabela tipo cards <=768px) === */
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"] .jobs-status-dt{display:none!important}
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"] .jobs-status-mo{display:inline!important}
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"]{
+  display:inline-block!important;
+  padding:4px 12px!important;
+  border-radius:12px!important;
+  font-weight:700!important;
+  font-size:12px!important;
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+  border:1px solid var(--border2);
+  background:var(--sand)!important;
+  color:var(--ink2)!important;
+ }
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"]::before{content:none!important;display:none!important}
+ /* Open — PENDING / SCHEDULED */
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"][data-status="PENDING"],
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"][data-status="SCHEDULED"]{
+  background:var(--amber-bg)!important;
+  border-color:var(--amber-bd)!important;
+  color:var(--ink2)!important;
+ }
+ /* Closed — PAID / FINALIZED */
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"][data-status="PAID"],
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"][data-status="FINALIZED"]{
+  background:var(--green-bg)!important;
+  border-color:var(--green-bd)!important;
+  color:var(--green)!important;
+ }
+ /* Cancel */
+ #page-jobs .lt-jobs-table td[data-jobs-col="status"][data-status="CANCELLED"]{
+  background:var(--red-bg)!important;
+  border-color:var(--red-bd)!important;
+  color:var(--red)!important;
+ }
+
  /* Topbar: ocultar backup/PDF em ecrãs estreitos */
  header.topbar .tr > button.tb.gm-allow-viewer{display:none !important}
 }
@@ -16725,6 +16762,27 @@ window.jobsUpdateJobsPageRoleKpis=function(){
  }catch(e){console.warn('jobsUpdateJobsPageRoleKpis',e);}
 };
 
+function jobsPmStatusKey(r){
+ if(!r) return '';
+ if((r.statusPm==='CANCELLED')||String(r.status||'').toLowerCase()==='cancelled') return 'CANCELLED';
+ if(String(r.status||'').toLowerCase()==='finalized') return 'FINALIZED';
+ var pm=String(r.statusPm||'').trim().toUpperCase();
+ if(pm) return pm;
+ var lo=String(r.status||'').toLowerCase();
+ if(lo==='paid'||lo==='applied') return 'PAID';
+ if(lo==='pending') return 'PENDING';
+ if(lo==='scheduled') return 'SCHEDULED';
+ return String(r.statusPm||r.status||'').trim().toUpperCase();
+}
+function jobsStatusLabel(s){
+ var u=String(s||'').toUpperCase();
+ if(u==='PENDING') return 'Open';
+ if(u==='SCHEDULED') return 'Open';
+ if(u==='PAID'||u==='FINALIZED') return 'Closed';
+ if(u==='CANCELLED') return 'Cancel';
+ return String(s||'').trim()||'\u2014';
+}
+
 async function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
@@ -16978,14 +17036,18 @@ async function jobsRender(){
   statusBadge='<span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.statusPm||(r.status||'—'))+'</span>';
  }
 
+ var pmStatusUp=jobsPmStatusKey(r);
+ var statusLblMo=jobsStatusLabel(pmStatusUp);
+ var pmStatusEsc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr(pmStatusUp):String(pmStatusUp||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+ var lblMoEsc=String(statusLblMo).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
   +'<td class="col-unit" style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
   +'<td data-label="Vendor" style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
   +'<td data-label="Categoria" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||'')).replace(/"/g,'&quot;')+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
   +'<td data-label="Data" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
-  +'<td data-label="Valor" data-jobs-col="amount" style="padding:9px 12px;text-align:right;font-weight:700;color:var(--ink);font-family:JetBrains Mono,monospace">'+jobsMoney(baseVal)+'</td>'
-  +'<td data-label="Status" style="padding:9px 12px">'+statusBadge+'</td>'
+  +'<td data-label="Status" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
   +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
   +btnDismissTd
   +'</tr>';
