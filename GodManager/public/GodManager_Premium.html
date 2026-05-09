@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
- <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px;display:none" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Bookkeeping</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Bookkeeping</span></div>
  <div class="ss" onclick="window.open('/gaap.html','_blank','noopener')" id="nav-gaap" style="padding-left:16px"><span>GAAP</span></div>
  </div>
  </div>
@@ -18932,8 +18932,9 @@ var u2=document.getElementById('bk-list-properties');if(u2)u2.innerHTML='<li cla
 window.gmBookkeepingDashReset=gmBookkeepingDashReset;
 window.gmBookkeepingApplyRoleGate=function(role){
 var el=document.getElementById('nav-bookkeeping');if(!el)return;
-var rr=String(role||'').toLowerCase();var allowed=(rr==='super_admin'||rr==='admin');
-el.style.display=allowed?'flex':'none';};
+var rr=String(role||'').toLowerCase();
+// F2.2: default visible, esconder apenas se role conhecido E nao autorizado
+if(rr==='maintenance'||rr==='viewer'){el.style.display='none';}else{el.style.display='flex';}};
 
 // F2.1: Auto-fetch role na carga, sem depender de outras hooks
 (function(){
