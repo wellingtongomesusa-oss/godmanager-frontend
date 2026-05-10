@@ -81,6 +81,9 @@
 #bk-refresh{padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;border-radius:8px;cursor:pointer;background:transparent;color:var(--ink2);border:1px solid var(--border2)}
 #bk-refresh:hover{border-color:var(--amber);color:var(--amber)}
 
+/* Jobs mobile: vista Agenda/Calendário (desktop esconde) */
+#page-jobs .jobs-view-toggle-mobile{display:none}
+
 /* Mobile sidebar toggle */
 .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:400;width:36px;height:36px;background:var(--amber);border:none;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px;padding:0}
 .sb-toggle span{display:block;width:16px;height:2px;background:#fff;border-radius:2px;transition:all .2s}
@@ -119,6 +122,9 @@
  .btn-save-bottom{padding:6px 16px!important;font-size:11px!important}
  .gm-save-toast{bottom:52px;z-index:1001}
  #page-clients .cl-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ #page-jobs .jobs-view-toggle-mobile{display:grid!important;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 12px}
+ #page-jobs .jobs-vt-btn{padding:16px;border:2px solid var(--border);border-radius:12px;background:#fff;color:var(--ink2);font-weight:600;font-size:16px;cursor:pointer;min-height:56px;transition:all .15s ease;font-family:'DM Sans',sans-serif}
+ #page-jobs .jobs-vt-btn[data-active="true"]{background:#1e2b3d!important;color:#fff!important;border-color:#1e2b3d!important;box-shadow:0 2px 8px rgba(30,43,61,.2)}
 }
 @media(min-width:769px) and (max-width:1100px){
  :root{--sw:200px}
@@ -2404,6 +2410,10 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 
  <button type="button" class="jobs-filters-toggle" id="jobs-filters-toggle" aria-expanded="false" aria-controls="jobs-filters-block">Filtros</button>
+ <div id="jobs-view-toggle-mobile" class="jobs-view-toggle-mobile">
+  <button type="button" class="jobs-vt-btn" data-view="agenda" onclick="gmJobsSetViewModeMobile('agenda')">Agenda</button>
+  <button type="button" class="jobs-vt-btn" data-view="calendar" onclick="gmJobsSetViewModeMobile('calendar')">Calendário</button>
+ </div>
  <div class="jobs-filters-block" id="jobs-filters-block">
  <div id="jobs-filter-row" style="display:flex;gap:12px;align-items:center;margin:16px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap">Filtrar por mes (fechamento):</label>
@@ -16321,6 +16331,41 @@ window.gmJobsSetVendorFilter=function(vendorName){
  });
 })();
 
+window.gmJobsSyncMobileViewToggle=function(){
+ try{
+  var cur=window.__jobsViewMode||'calendar';
+  var uiMode=(cur==='calendar')?'calendar':'agenda';
+  var btns=document.querySelectorAll('#jobs-view-toggle-mobile .jobs-vt-btn');
+  btns.forEach(function(b){
+   b.setAttribute('data-active',b.getAttribute('data-view')===uiMode?'true':'false');
+  });
+ }catch(e){}
+};
+
+window.gmJobsSetViewModeMobile=function(uiMode){
+ var internalMode=(uiMode==='calendar')?'calendar':'agenda';
+ try{
+  if(typeof window.gmJobsSetViewMode==='function'){
+   window.gmJobsSetViewMode(internalMode);
+  }
+  var btns=document.querySelectorAll('#jobs-view-toggle-mobile .jobs-vt-btn');
+  btns.forEach(function(b){
+   b.setAttribute('data-active',b.getAttribute('data-view')===uiMode?'true':'false');
+  });
+ }catch(e){console.warn('[jobsToggleMobile]',e);}
+};
+
+document.addEventListener('DOMContentLoaded',function(){
+ setTimeout(function(){
+  var current=window.__jobsViewMode||'calendar';
+  var uiMode=(current==='calendar')?'calendar':'agenda';
+  var btns=document.querySelectorAll('#jobs-view-toggle-mobile .jobs-vt-btn');
+  btns.forEach(function(b){
+   b.setAttribute('data-active',b.getAttribute('data-view')===uiMode?'true':'false');
+  });
+ },300);
+});
+
 window.gmJobsSetViewMode=function(mode){
  var allowed=['table','agenda','calendar'];
  window.__jobsViewMode=(allowed.indexOf(mode)>=0)?mode:'calendar';
@@ -16337,6 +16382,7 @@ window.gmJobsSetViewMode=function(mode){
   });
  }catch(e){}
  if(typeof jobsRender==='function')jobsRender();
+ try{if(typeof gmJobsSyncMobileViewToggle==='function')gmJobsSyncMobileViewToggle();}catch(eMo){}
 };
 
 function gmJobsRenderAgenda(rows){
