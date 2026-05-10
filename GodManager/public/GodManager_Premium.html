@@ -125,6 +125,13 @@
  #page-jobs .jobs-view-toggle-mobile{display:grid!important;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 12px}
  #page-jobs .jobs-vt-btn{padding:16px;border:2px solid var(--border);border-radius:12px;background:#fff;color:var(--ink2);font-weight:600;font-size:16px;cursor:pointer;min-height:56px;transition:all .15s ease;font-family:'DM Sans',sans-serif}
  #page-jobs .jobs-vt-btn[data-active="true"]{background:#1e2b3d!important;color:#fff!important;border-color:#1e2b3d!important;box-shadow:0 2px 8px rgba(30,43,61,.2)}
+ header.topbar .btn-save-top,
+ #save-bottom-bar.save-bottom-bar{display:none!important}
+ #page-jobs #jobs-table-legend{display:none!important}
+ #page-jobs .kpi-card,
+ #page-jobs [data-kpi-filter]{cursor:pointer;transition:transform .1s ease,box-shadow .15s ease;-webkit-tap-highlight-color:transparent}
+ #page-jobs .kpi-card:active,
+ #page-jobs [data-kpi-filter]:active{transform:scale(.98);box-shadow:0 2px 6px rgba(0,0,0,.08)}
 }
 @media(min-width:769px) and (max-width:1100px){
  :root{--sw:200px}
@@ -2411,7 +2418,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
  <button type="button" class="jobs-filters-toggle" id="jobs-filters-toggle" aria-expanded="false" aria-controls="jobs-filters-block">Filtros</button>
  <div id="jobs-view-toggle-mobile" class="jobs-view-toggle-mobile">
-  <button type="button" class="jobs-vt-btn" data-view="agenda" onclick="gmJobsSetViewModeMobile('agenda')">Agenda</button>
+  <button type="button" class="jobs-vt-btn" data-view="table" onclick="gmJobsSetViewModeMobile('table')">Tabela</button>
   <button type="button" class="jobs-vt-btn" data-view="calendar" onclick="gmJobsSetViewModeMobile('calendar')">Calendário</button>
  </div>
  <div class="jobs-filters-block" id="jobs-filters-block">
@@ -2445,7 +2452,7 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="padding:0 32px;margin-top:16px"><div class="gm-kpis-row gm-kpis-row--jobs">
-  <div style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div class="kpi-card" data-kpi-filter="total" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Total Jobs</div>
    <div id="jobs-kpi-total" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
   </div>
@@ -2457,22 +2464,22 @@ document.addEventListener('DOMContentLoaded', function(){
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
    <div id="jobs-kpi-job" style="font-size:22px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div>
   </div>
-  <div style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper);position:relative">
+  <div class="kpi-card" data-kpi-filter="expenses-abertos" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper);position:relative">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Expenses Abertos</div>
    <div id="jobs-kpi-expenses-abertos" style="font-size:22px;font-weight:700;color:#92400e;margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">aguardam acao</div>
   </div>
-  <div data-jobs-card="kpi-open" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="kpi-open" class="kpi-card" data-kpi-filter="jobs-abertos" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs abertos</div>
    <div id="jobs-kpi-open" style="font-size:22px;font-weight:700;color:var(--red);margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">sem applied e sem cancelado</div>
   </div>
-  <div data-jobs-card="kpi-closed" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div data-jobs-card="kpi-closed" class="kpi-card" data-kpi-filter="jobs-fechados" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs fechados</div>
    <div id="jobs-kpi-closed" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">0</div>
    <div style="font-size:10px;color:var(--ink3);margin-top:2px">mes do applied ou cancelamento</div>
   </div>
-  <div id="kpi-invoices-generated" data-jobs-card="kpi-invoices" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
+  <div id="kpi-invoices-generated" data-jobs-card="kpi-invoices" class="kpi-card" data-kpi-filter="invoices-geradas" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
    <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Invoices Geradas</div>
    <div id="jobs-kpi-invoices-qty" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
    <div id="jobs-kpi-invoices-total" style="font-size:10px;color:var(--ink3);margin-top:2px">Total: USD 0.00</div>
@@ -16334,7 +16341,7 @@ window.gmJobsSetVendorFilter=function(vendorName){
 window.gmJobsSyncMobileViewToggle=function(){
  try{
   var cur=window.__jobsViewMode||'calendar';
-  var uiMode=(cur==='calendar')?'calendar':'agenda';
+  var uiMode=(cur==='calendar')?'calendar':'table';
   var btns=document.querySelectorAll('#jobs-view-toggle-mobile .jobs-vt-btn');
   btns.forEach(function(b){
    b.setAttribute('data-active',b.getAttribute('data-view')===uiMode?'true':'false');
@@ -16342,8 +16349,30 @@ window.gmJobsSyncMobileViewToggle=function(){
  }catch(e){}
 };
 
+window.__jobsKpiFilter=null;
+
+window.gmJobsKpiClickMobile=function(kpiKey){
+ if(window.innerWidth>768)return;
+ if(!kpiKey)return;
+ try{
+  window.__jobsKpiFilter=(kpiKey==='total')?null:String(kpiKey);
+  if(typeof window.gmJobsSetViewMode==='function'){
+   window.gmJobsSetViewMode('table');
+  }
+  var btns=document.querySelectorAll('#jobs-view-toggle-mobile .jobs-vt-btn');
+  btns.forEach(function(b){
+   b.setAttribute('data-active',b.getAttribute('data-view')==='table'?'true':'false');
+  });
+  var tableEl=document.querySelector('#page-jobs table.lt-jobs-table')||document.getElementById('jobs-table');
+  if(tableEl&&tableEl.scrollIntoView){
+   setTimeout(function(){tableEl.scrollIntoView({behavior:'smooth',block:'start'});},100);
+  }
+ }catch(e){console.warn('[jobsKpiClickMobile]',e);}
+};
+
 window.gmJobsSetViewModeMobile=function(uiMode){
- var internalMode=(uiMode==='calendar')?'calendar':'agenda';
+ if(uiMode==='calendar'&&window.__jobsKpiFilter){window.__jobsKpiFilter=null;}
+ var internalMode=(uiMode==='calendar')?'calendar':'table';
  try{
   if(typeof window.gmJobsSetViewMode==='function'){
    window.gmJobsSetViewMode(internalMode);
@@ -16358,7 +16387,7 @@ window.gmJobsSetViewModeMobile=function(uiMode){
 document.addEventListener('DOMContentLoaded',function(){
  setTimeout(function(){
   var current=window.__jobsViewMode||'calendar';
-  var uiMode=(current==='calendar')?'calendar':'agenda';
+  var uiMode=(current==='calendar')?'calendar':'table';
   var btns=document.querySelectorAll('#jobs-view-toggle-mobile .jobs-vt-btn');
   btns.forEach(function(b){
    b.setAttribute('data-active',b.getAttribute('data-view')===uiMode?'true':'false');
@@ -16367,6 +16396,9 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 window.gmJobsSetViewMode=function(mode){
+ if(mode==='calendar'){
+  try{window.__jobsKpiFilter=null;}catch(eKl){}
+ }
  var allowed=['table','agenda','calendar'];
  window.__jobsViewMode=(allowed.indexOf(mode)>=0)?mode:'calendar';
  try{localStorage.setItem('gm_jobs_view',window.__jobsViewMode);}catch(eLs){}
@@ -16674,7 +16706,7 @@ function gmJobsRebuildVendorOptions(rows){
  }catch(e){console.warn('gmJobsRebuildVendorOptions',e);}
 }
 
-function jobsFilteredExpenses(){
+function jobsFilteredExpensesCore(){
  var arr=jobsMergeForJobs();
  var range=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
  var vendorFilter=String(window.__jobsVendorFilter||'').trim();
@@ -16703,6 +16735,53 @@ function jobsFilteredExpenses(){
   }
   return true;
  });
+}
+
+function jobsFilteredExpenses(){
+ var rows=jobsFilteredExpensesCore();
+ var kpi=window.__jobsKpiFilter;
+ if(kpi){
+  var monthFilter='';
+  var selM=document.getElementById('jobs-filter-month');
+  if(selM)monthFilter=String(selM.value||'');
+  rows=rows.filter(function(r){
+   if(!r)return false;
+   if(kpi==='expenses-abertos'){
+    if(r.statusPm==='CANCELLED')return false;
+    if(r.statusPm==='PAID')return false;
+    var st=String(r.status||'').toLowerCase();
+    if(st==='paid'||st==='applied'||st==='cancelled')return false;
+    if(jobsHasActionFor(r.id,'vendor')||jobsHasActionFor(r.id,'job'))return false;
+    return true;
+   }
+   if(kpi==='jobs-abertos'){
+    var hasV=jobsHasActionFor(r.id,'vendor');
+    var hasJ=jobsHasActionFor(r.id,'job');
+    var st0=String(r.status||'').toLowerCase();
+    var canc=(st0==='cancelled'||r.statusPm==='CANCELLED');
+    var isClosed=(hasV||hasJ)||canc;
+    return !isClosed;
+   }
+   if(kpi==='jobs-fechados'){
+    var hasV2=jobsHasActionFor(r.id,'vendor');
+    var hasJ2=jobsHasActionFor(r.id,'job');
+    var st1=String(r.status||'').toLowerCase();
+    var canc2=(st1==='cancelled'||r.statusPm==='CANCELLED');
+    var isClosed2=(hasV2||hasJ2)||canc2;
+    if(!isClosed2)return false;
+    if(monthFilter){
+     var cym=jobsRowClosingMonthYm(r);
+     if(cym!==monthFilter)return false;
+    }
+    return true;
+   }
+   if(kpi==='invoices-geradas'){
+    return !!(typeof getInvoice==='function'&&getInvoice(r.id));
+   }
+   return true;
+  });
+ }
+ return rows;
 }
 
 function jobsResolveAddress(r){
@@ -16861,6 +16940,7 @@ async function jobsRender(){
   if(typeof gmJobsRebuildVendorOptions==='function') gmJobsRebuildVendorOptions(rowsForOpts);
  }catch(eOpts){console.warn('vendor options rebuild',eOpts);}
  var rows=jobsFilteredExpenses();
+ var rowsKpi=jobsFilteredExpensesCore();
  var user=jobsGetCurrentUser();
  var badge=document.getElementById('jobs-user-badge');
  if(badge)badge.textContent='Utilizador: '+user;
@@ -16898,10 +16978,10 @@ async function jobsRender(){
   if(a.type==='vendor')totalVendorFees+=Number(a.amount)||0;
   if(a.type==='job')totalJobFees+=Number(a.amount)||0;
  });
- var k1=document.getElementById('jobs-kpi-total'); if(k1)k1.textContent=String(rows.length);
+ var k1=document.getElementById('jobs-kpi-total'); if(k1)k1.textContent=String(rowsKpi.length);
  var k2=document.getElementById('jobs-kpi-vendor'); if(k2)k2.textContent=jobsMoney(totalVendorFees);
  var k3=document.getElementById('jobs-kpi-job'); if(k3)k3.textContent=jobsMoney(totalJobFees);
- var abertos=rows.filter(function(r){
+ var abertos=rowsKpi.filter(function(r){
   if(r&&r.statusPm==='CANCELLED')return false;
   if(r&&r.statusPm==='PAID')return false;
   var st=String(r&&r.status||'').toLowerCase();
@@ -16914,7 +16994,7 @@ async function jobsRender(){
  var jobsOpen=0;
  var jobsClosed=0;
  var mf=monthFilter;
- rows.forEach(function(r){
+ rowsKpi.forEach(function(r){
   if(!r)return;
   var hasV=jobsHasActionFor(r.id,'vendor');
   var hasJ=jobsHasActionFor(r.id,'job');
@@ -17579,6 +17659,7 @@ document.addEventListener('DOMContentLoaded',function(){
  /* jobsApplyRoleGate substituido por jobsApplyRoleGateV2 no orchestrador */
 });
 window.jobsFilteredExpenses=jobsFilteredExpenses;
+window.jobsFilteredExpensesCore=jobsFilteredExpensesCore;
 window.jobsRender=jobsRender;
 window.jobsOnVendorClick=jobsOnVendorClick;
 window.jobsOnJobClick=jobsOnJobClick;
