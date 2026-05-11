@@ -34,10 +34,32 @@ function normalizeRampTransactionsPayload(raw: unknown): RampTransactionsRespons
   return { data: [], has_more: false, total_count: 0 };
 }
 
+/** Ramp `GET /transactions` uses `start` as pagination cursor (last row id), not a datetime. Dates: `from_date`, `to_date` (ISO8601). */
+const ISO_DT_RE = /^\d{4}-\d{2}-\d{2}T/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+
+  let fromDate = searchParams.get('from_date');
+  let toDate = searchParams.get('to_date');
+
   const start = searchParams.get('start');
   const end = searchParams.get('end');
+  /** Legacy/query convenience: ISO datetimes forwarded as Ramp `from_date` / `to_date`. Raw UUID stays as pagination `start`. */
+  let pageCursor: string | null = null;
+
+  if (start) {
+    if (ISO_DT_RE.test(start)) {
+      fromDate = fromDate ?? start;
+    } else if (UUID_RE.test(start)) {
+      pageCursor = start;
+    }
+  }
+  if (end && ISO_DT_RE.test(end)) {
+    toDate = toDate ?? end;
+  }
+
   const pageSize = searchParams.get('page_size') || '50';
 
   let token: string;
@@ -50,8 +72,9 @@ export async function GET(request: Request) {
 
   const base = getRampApiBase();
   const url = new URL(`${base}/transactions`);
-  if (start) url.searchParams.set('start', start);
-  if (end) url.searchParams.set('end', end);
+  if (fromDate) url.searchParams.set('from_date', fromDate);
+  if (toDate) url.searchParams.set('to_date', toDate);
+  if (pageCursor) url.searchParams.set('start', pageCursor);
   url.searchParams.set('page_size', pageSize);
 
   let txRes: Response;
