@@ -91,6 +91,7 @@ model Client {
   tenantPayments        TenantPayment[]         @relation("TenantPayment_clientId")
   csvBatches            CsvBatch[]              @relation("CsvBatch_clientId")
   jobPhotos             JobPhoto[]              @relation("JobPhoto_clientId")
+  integrations          ClientIntegration[]
 
   @@map("clients")
 }
@@ -697,4 +698,51 @@ model CsvBatch {
   @@index([clientId])
   @@index([type])
   @@map("csv_batches")
+}
+
+enum IntegrationProvider {
+  RAMP
+  QUICKBOOKS
+  PLAID
+  APPFOLIO
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  EXPIRED
+}
+
+model ClientIntegration {
+  id        String              @id @default(cuid())
+  clientId  String
+  client    Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  provider  IntegrationProvider
+  status    IntegrationStatus   @default(CONNECTED)
+
+  // OAuth credentials (encrypted via lib/encryption.ts)
+  accessToken  String   @db.Text
+  refreshToken String?  @db.Text
+  expiresAt    DateTime?
+
+  // Provider-specific identifiers
+  externalAccountId String?
+  scope             String?
+  metadata          Json?
+
+  // Audit
+  connectedAt       DateTime  @default(now())
+  connectedByUserId String?
+  lastSyncAt      DateTime?
+  lastErrorAt     DateTime?
+  lastErrorMsg    String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, provider])
+  @@index([clientId])
+  @@index([provider, status])
+  @@map("client_integrations")
 }
