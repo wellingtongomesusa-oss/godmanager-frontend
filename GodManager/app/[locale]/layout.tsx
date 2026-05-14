@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { hasLocale } from 'next-intl';
 import { routing } from '@/i18n/routing';
 import CrispChat from '@/components/marketing/CrispChat';
+import Footer from '@/components/site/Footer';
 
 type Props = {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
     <NextIntlClientProvider locale={locale} messages={messages}>
       <div className="min-h-screen" lang={locale} data-locale={locale}>
         {children}
+        <Footer />
       </div>
       <CrispChat />
     </NextIntlClientProvider>

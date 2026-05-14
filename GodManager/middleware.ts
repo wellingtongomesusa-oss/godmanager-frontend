@@ -47,6 +47,8 @@ function isNonIntlPath(pathname: string): boolean {
     '/portal',
     '/gm',
     '/gm-premium',
+    '/terms',
+    '/privacy',
     '/form-owner',
     '/form-tenant',
     '/resultado',
