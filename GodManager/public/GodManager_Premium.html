@@ -862,6 +862,48 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .gmc-trigger:hover{background:#e0e7ff;color:#4338ca;border-color:#c7d2fe;}
 .gmc-trigger-badge{background:#4f46e5;color:#fff;font-size:10px;padding:1px 5px;
   border-radius:8px;font-weight:600;min-width:14px;text-align:center;}
+
+/* ====================================================================
+   GM TIMELINE — 5 etapas clicáveis (Jobs)
+   ==================================================================== */
+.gmtl-track{display:flex;align-items:flex-start;justify-content:space-between;
+  padding:16px 8px 10px;background:#f8fafc;border-radius:12px;margin-bottom:14px;
+  position:relative;border:1px solid #e2e8f0;}
+.gmtl-step{display:flex;flex-direction:column;align-items:center;flex:1;
+  position:relative;z-index:2;cursor:pointer;min-width:0;}
+.gmtl-step:not(:last-child)::after{content:'';position:absolute;top:18px;left:50%;
+  width:100%;height:3px;background:#e2e8f0;z-index:-1;}
+.gmtl-step.done:not(:last-child)::after{background:#10b981;}
+.gmtl-circle{width:36px;height:36px;border-radius:50%;background:#cbd5e1;
+  color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;
+  justify-content:center;border:3px solid #fff;box-shadow:0 0 0 1px #e2e8f0;
+  transition:transform .15s,box-shadow .15s;flex-shrink:0;font-family:'JetBrains Mono',monospace;}
+.gmtl-step.done .gmtl-circle{background:#10b981;}
+.gmtl-step.current .gmtl-circle{background:#4f46e5;
+  box-shadow:0 0 0 4px rgba(99,102,241,.25);}
+.gmtl-step.skipped .gmtl-circle{background:#e2e8f0;color:#94a3b8;}
+.gmtl-step:hover .gmtl-circle{transform:scale(1.12);box-shadow:0 0 0 3px rgba(0,0,0,.08);}
+.gmtl-label{font-size:11px;color:#475569;margin-top:7px;font-weight:600;
+  text-align:center;line-height:1.2;max-width:88px;font-family:'DM Sans',sans-serif;}
+.gmtl-step.current .gmtl-label{color:#4f46e5;}
+.gmtl-step.skipped .gmtl-label{color:#94a3b8;}
+@media(max-width:600px){
+  .gmtl-label{font-size:10px;max-width:60px;}
+  .gmtl-circle{width:30px;height:30px;font-size:12px;}
+  .gmtl-step:not(:last-child)::after{top:15px;height:2px;}
+}
+/* Popup detalhe da etapa - reusa visual do gmc */
+.gmtl-detail{padding:16px 20px;background:#fff;}
+.gmtl-detail h4{margin:0 0 12px;font-size:14px;color:#0f172a;font-weight:600;
+  display:flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;}
+.gmtl-detail .gmtl-badge{font-size:10px;text-transform:uppercase;
+  background:#e0e7ff;color:#4338ca;padding:3px 8px;border-radius:4px;letter-spacing:.4px;font-weight:600;}
+.gmtl-detail dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px;
+  font-size:13px;font-family:'DM Sans',sans-serif;}
+.gmtl-detail dt{color:#64748b;font-weight:500;}
+.gmtl-detail dd{margin:0;color:#0f172a;}
+.gmtl-detail .gmtl-empty{color:#94a3b8;font-style:italic;text-align:center;
+  padding:20px;font-size:13px;}
 </style>
 <script src="/properties_seed.js"></script>
 <script src="/tenants_seed.js"></script>
@@ -9868,8 +9910,21 @@ function gmJobOpenDescriptionPopup(text, jobId){
  head.appendChild(title);
  head.appendChild(closeBtn);
  var body=document.createElement('div');
- body.style.cssText='font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-wrap:break-word';
- body.textContent=String(text||'').trim()||'(Sem descrição)';
+ body.style.cssText='font-size:13px;color:var(--ink);line-height:1.6;word-wrap:break-word';
+ if(jobId && typeof gmtlFindJob==='function' && typeof gmtlRenderHtml==='function'){
+  try{
+   var jobData=gmtlFindJob(jobId);
+   if(jobData){
+    var tlWrapper=document.createElement('div');
+    tlWrapper.innerHTML=gmtlRenderHtml(jobData);
+    if(tlWrapper.firstElementChild)body.appendChild(tlWrapper.firstElementChild);
+   }
+  }catch(eTl){console.warn('Timeline render failed:',eTl);}
+ }
+ var descEl=document.createElement('div');
+ descEl.style.cssText='white-space:pre-wrap;word-wrap:break-word;margin-top:4px';
+ descEl.textContent=String(text||'').trim()||'(Sem descrição)';
+ body.appendChild(descEl);
  var footer=document.createElement('div');
  footer.style.cssText='margin-top:20px;display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap';
  var commentsBtn=null;
@@ -19993,6 +20048,258 @@ return uz;};nw.__bkWrp=1;window.gmAuthHydrateUserBadge=nw;}catch(e){console.warn
   };
 
   console.log('[GodManager] gmComments cloud system loaded');
+})();
+
+/* ====================================================================
+   GM TIMELINE — JS (5 etapas Jobs — popup descrição)
+   ==================================================================== */
+(function(){
+  if(typeof window==='undefined')return;
+
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function fmtDate(iso){
+    if(!iso)return '\u2014';
+    try{
+      var d=new Date(iso);
+      if(Number.isNaN(d.getTime()))return String(iso);
+      return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){return String(iso);}
+  }
+
+  function fmtMoney(v){
+    if(v==null||v===''||isNaN(Number(v)))return '\u2014';
+    return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  function mergeJobRow(r){
+    if(!r)return null;
+    var o=Object.assign({},r);
+    var e=o._apiRaw||{};
+    ['finalizedAt','finalizedBy','finalizedNote','createdAt','ownerName','description','vendorCost','ownerCharged','serviceDate','monthRef'].forEach(function(k){
+      if((o[k]==null||o[k]==='')&&e[k]!=null&&e[k]!=='')o[k]=e[k];
+    });
+    if(!o.description)o.description=o.desc||e.description||'';
+    if(!o.desc&&o.description)o.desc=o.description;
+    if(!o.vendor&&(o.vendorName||e.vendorName))o.vendor=String(o.vendorName||e.vendorName||'').trim();
+    if(o.ownerAmount==null&&o.ownerCharged!=null)o.ownerAmount=o.ownerCharged;
+    return o;
+  }
+
+  window.gmtlDetermineStage=function(job){
+    if(!job)return 1;
+    var st=String(job.status||job.statusPm||'').toUpperCase();
+    var hasVendorSwap=!!(job.vendorSwapped||job.reencaminhado);
+    var isPaid=(st==='PAID'||st==='APPROVED'||job.invoice||job.statementId);
+
+    if(isPaid)return 5;
+    if(st==='FINALIZED' && hasVendorSwap)return 4;
+    if(st==='FINALIZED')return 3;
+    if(job.vendor||job.vendorName||job.scheduledFor||job.scheduled_for||job.assignedVendorId||job.vendorId||job._isVendorPm)return 2;
+    return 1;
+  };
+
+  window.gmtlFindJob=function(jobId){
+    try{
+      var id=String(jobId);
+      var tries=[];
+      if(window.__jobsApiRowsCache&&Array.isArray(window.__jobsApiRowsCache))tries.push(window.__jobsApiRowsCache);
+      if(window.__jobsExpensesCache&&Array.isArray(window.__jobsExpensesCache))tries.push(window.__jobsExpensesCache);
+      for(var t=0;t<tries.length;t++){
+        var found=tries[t].find(function(r){return r&&String(r.id)===id;});
+        if(found)return mergeJobRow(found);
+      }
+      if(window.__jobsAllRows && Array.isArray(window.__jobsAllRows)){
+        var f0=window.__jobsAllRows.find(function(r){return r&&String(r.id)===id;});
+        if(f0)return mergeJobRow(f0);
+      }
+      if(window.gmJobsCache && Array.isArray(window.gmJobsCache)){
+        var f1=window.gmJobsCache.find(function(r){return r&&String(r.id)===id;});
+        if(f1)return mergeJobRow(f1);
+      }
+      if(typeof window.jobsFilteredExpenses==='function'){
+        var fe=window.jobsFilteredExpenses();
+        if(Array.isArray(fe)){
+          var f2=fe.find(function(r){return r&&String(r.id)===id;});
+          if(f2)return mergeJobRow(f2);
+        }
+      }
+      if(typeof ltExpGetRecords==='function'){
+        var recs=ltExpGetRecords()||[];
+        var f3=recs.find(function(r){return r&&String(r.id)===id;});
+        if(f3)return mergeJobRow(f3);
+      }
+    }catch(e){}
+    return null;
+  };
+
+  window.gmtlRenderHtml=function(job){
+    var stage=window.gmtlDetermineStage(job);
+    var steps=[
+      {num:1,label:'Abertura'},
+      {num:2,label:'Execu\u00E7\u00E3o'},
+      {num:3,label:'Fechamento'},
+      {num:4,label:'Reencaminhar'},
+      {num:5,label:'Financeiro'},
+    ];
+    var jid=esc(job&&job.id!=null?job.id:'');
+    var html='<div class="gmtl-track" data-job-id="'+jid+'">';
+    steps.forEach(function(s){
+      var cls='gmtl-step';
+      if(s.num<stage)cls+=' done';
+      else if(s.num===stage)cls+=' current';
+      else cls+=' skipped';
+      var content=(s.num<stage)?'\u2713':String(s.num);
+      var hrefEsc=(String(job.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
+      html+='<div class="'+cls+'" onclick="gmtlOpenStage(\''+hrefEsc+'\','+s.num+')" title="Etapa '+s.num+' - '+esc(s.label)+'">'+
+        '<div class="gmtl-circle">'+content+'</div>'+
+        '<div class="gmtl-label">'+esc(s.label)+'</div>'+
+      '</div>';
+    });
+    html+='</div>';
+    return html;
+  };
+
+  function renderStage1(job){
+    var addr=job.propAddress||job.address||job.unit||job.propertyAddress||'\u2014';
+    var desc=job.desc||job.description||'\u2014';
+    var owner=job.ownerName||job.owner||'\u2014';
+    var tenant=job.tenantName||job.tenant||'\u2014';
+    var createdAt=job.createdAt||job.created_at||job.date||'\u2014';
+    var createdBy=job.createdBy||job.created_by||'\u2014';
+    return '<div class="gmtl-detail">'+
+      '<h4>Etapa 1 <span class="gmtl-badge">Abertura</span></h4>'+
+      '<dl>'+
+        '<dt>Criado em:</dt><dd>'+esc(fmtDate(createdAt))+'</dd>'+
+        '<dt>Criado por:</dt><dd>'+esc(createdBy)+'</dd>'+
+        '<dt>Propriedade:</dt><dd>'+esc(addr)+'</dd>'+
+        '<dt>Owner:</dt><dd>'+esc(owner)+'</dd>'+
+        '<dt>Inquilino:</dt><dd>'+esc(tenant)+'</dd>'+
+        '<dt>Descri\u00E7\u00E3o:</dt><dd>'+esc(desc)+'</dd>'+
+      '</dl></div>';
+  }
+
+  function renderStage2(job){
+    var vendor=job.vendor||job.vendorName||'\u2014';
+    var scheduled=job.scheduledFor||job.scheduled_for||job.serviceDate||job.date||'\u2014';
+    var jid=String(job.id||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+    var html='<div class="gmtl-detail">'+
+      '<h4>Etapa 2 <span class="gmtl-badge">Execu\u00E7\u00E3o</span></h4>'+
+      '<dl>'+
+        '<dt>Vendor:</dt><dd>'+esc(vendor)+'</dd>'+
+        '<dt>Agendado:</dt><dd>'+esc(fmtDate(scheduled))+'</dd>'+
+      '</dl>'+
+      '<div style="margin-top:14px"><strong style="font-size:12px;color:#475569">Coment\u00E1rios do t\u00E9cnico:</strong>'+
+        '<div id="gmtl-comments-'+jid+'" style="margin-top:6px;font-size:12px;color:#64748b">Carregando...</div>'+
+      '</div></div>';
+    setTimeout(function(){
+      var rawId=job.id;
+      if(typeof gmCommentsFetch==='function'){
+        gmCommentsFetch('JOB',rawId).then(function(arr){
+          var el=document.getElementById('gmtl-comments-'+jid);
+          if(!el)return;
+          if(!arr||arr.length===0){el.innerHTML='<span class="gmtl-empty">Sem coment\u00E1rios</span>';return;}
+          el.innerHTML=arr.slice(-3).map(function(c){
+            return '<div style="padding:6px 0;border-top:1px solid #f1f5f9"><strong>'+esc(c.authorName)+':</strong> '+esc(c.content)+'</div>';
+          }).join('');
+          if(arr.length>3){
+            el.innerHTML+='<div style="margin-top:6px;font-size:11px;color:#94a3b8">Mostrando \u00FAltimos 3 de '+arr.length+'. Use o bot\u00E3o Coment\u00E1rios no popup para ver todos.</div>';
+          }
+        }).catch(function(){
+          var el=document.getElementById('gmtl-comments-'+jid);
+          if(el)el.innerHTML='<span class="gmtl-empty">Erro ao carregar</span>';
+        });
+      }else{
+        var el0=document.getElementById('gmtl-comments-'+jid);
+        if(el0)el0.innerHTML='<span class="gmtl-empty">\u2014</span>';
+      }
+    },50);
+    return html;
+  }
+
+  function renderStage3(job){
+    var st=String(job.status||job.statusPm||'').toUpperCase();
+    var finalizedAt=job.finalizedAt||job.finalized_at||'\u2014';
+    var finalizedBy=job.finalizedBy||job.finalized_by||'\u2014';
+    var note=job.finalizedNote||job.finalized_note||'\u2014';
+    var isFin=(st==='FINALIZED'||st==='PAID');
+    return '<div class="gmtl-detail">'+
+      '<h4>Etapa 3 <span class="gmtl-badge">Fechamento</span></h4>'+
+      '<dl>'+
+        '<dt>Status atual:</dt><dd>'+esc(st||'\u2014')+'</dd>'+
+        (isFin?
+          '<dt>Finalizado em:</dt><dd>'+esc(fmtDate(finalizedAt))+'</dd>'+
+          '<dt>Finalizado por:</dt><dd>'+esc(finalizedBy)+'</dd>'+
+          '<dt>Observa\u00E7\u00E3o:</dt><dd>'+esc(note)+'</dd>'
+        :'<dt>\u2014</dt><dd>Job ainda n\u00E3o finalizado</dd>')+
+      '</dl></div>';
+  }
+
+  function renderStage4(job){
+    var swapped=!!(job.vendorSwapped||job.reencaminhado);
+    if(!swapped){
+      return '<div class="gmtl-detail">'+
+        '<h4>Etapa 4 <span class="gmtl-badge">Reencaminhamento</span></h4>'+
+        '<div class="gmtl-empty">Job n\u00E3o foi reencaminhado a outro vendor.</div></div>';
+    }
+    return '<div class="gmtl-detail">'+
+      '<h4>Etapa 4 <span class="gmtl-badge">Reencaminhamento</span></h4>'+
+      '<dl>'+
+        '<dt>Novo vendor:</dt><dd>'+esc(job.newVendor||job.new_vendor||'\u2014')+'</dd>'+
+        '<dt>Motivo:</dt><dd>'+esc(job.swapReason||job.reopenReason||'\u2014')+'</dd>'+
+        '<dt>Data:</dt><dd>'+esc(fmtDate(job.swappedAt||job.swap_at))+'</dd>'+
+      '</dl></div>';
+  }
+
+  function renderStage5(job){
+    var hasFin=!!(job.invoice||job.statementId||job.statement_id||String(job.status||'').toUpperCase()==='PAID'||String(job.statusPm||'').toUpperCase()==='PAID');
+    if(!hasFin){
+      return '<div class="gmtl-detail">'+
+        '<h4>Etapa 5 <span class="gmtl-badge">Financeiro</span></h4>'+
+        '<div class="gmtl-empty">Job ainda n\u00E3o foi lan\u00E7ado em statement/expense.</div></div>';
+    }
+    return '<div class="gmtl-detail">'+
+      '<h4>Etapa 5 <span class="gmtl-badge">Financeiro</span></h4>'+
+      '<dl>'+
+        '<dt>Valor vendor:</dt><dd>'+esc(fmtMoney(job.vendorCost||job.vendor_cost))+'</dd>'+
+        '<dt>Valor owner:</dt><dd>'+esc(fmtMoney(job.ownerAmount||job.owner_amount||job.ownerCharged))+'</dd>'+
+        '<dt>Markup:</dt><dd>'+esc(fmtMoney(job.markup))+'</dd>'+
+        '<dt>Statement:</dt><dd>'+esc(job.statementId||job.statement_id||'\u2014')+'</dd>'+
+        '<dt>Invoice:</dt><dd>'+esc(job.invoice||'\u2014')+'</dd>'+
+      '</dl></div>';
+  }
+
+  window.gmtlOpenStage=function(jobId, stageNum){
+    var job=window.gmtlFindJob(jobId);
+    if(!job){alert('Dados do Job n\u00E3o encontrados.');return;}
+
+    var existing=document.getElementById('gmtl-stage-backdrop');
+    if(existing)existing.remove();
+
+    var renderers={1:renderStage1,2:renderStage2,3:renderStage3,4:renderStage4,5:renderStage5};
+    var content=(renderers[stageNum]||renderStage1)(job);
+
+    var bd=document.createElement('div');
+    bd.id='gmtl-stage-backdrop';
+    bd.className='gmc-backdrop';
+    bd.innerHTML=
+      '<div class="gmc-modal" style="max-width:480px">'+
+        '<div class="gmc-header">'+
+          '<h3>Linha do Tempo</h3>'+
+          '<button class="gmc-close" type="button" aria-label="Fechar">\u00D7</button>'+
+        '</div>'+
+        content+
+      '</div>';
+    document.body.appendChild(bd);
+    bd.querySelector('.gmc-close').addEventListener('click',function(){bd.remove();});
+    bd.addEventListener('click',function(e){if(e.target===bd)bd.remove();});
+  };
+
+  console.log('[GodManager] gmTimeline loaded');
 })();
 
 </script>
