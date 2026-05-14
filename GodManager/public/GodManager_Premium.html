@@ -4368,9 +4368,19 @@ function applyHomeDashboardFromApi(d){
  CARDS.forEach(function(c){
   switch(c.id){
   case 'total-houses':
-   c.value=String(Math.round(qp));
-   c.cd=[Math.max(0.01,ql),Math.max(0.01,qv),maint];
-   c.ctr=String(Math.round(qp));
+   try{
+     var _pl=(typeof gmPropertiesLoad==='function')?gmPropertiesLoad():[];
+     var _plen=Array.isArray(_pl)?_pl.length:0;
+     /* Fonte unica: Postgres via gmPropertiesLoad (mesma que pagina Properties).
+        Evita divergencia entre Home (AppFolio export antigo) e Properties (DB real). */
+     c.value=String(_plen);
+     c.cd=[Math.max(0.01,ql),Math.max(0.01,qv),maint];
+     c.ctr=String(_plen);
+   }catch(_e){
+     c.value=String(Math.round(qp));
+     c.cd=[Math.max(0.01,ql),Math.max(0.01,qv),maint];
+     c.ctr=String(Math.round(qp));
+   }
    break;
   case 'total-rented':
    c.value=String(Math.round(ql));
