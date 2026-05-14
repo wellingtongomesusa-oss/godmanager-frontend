@@ -904,6 +904,24 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .gmtl-detail dd{margin:0;color:#0f172a;}
 .gmtl-detail .gmtl-empty{color:#94a3b8;font-style:italic;text-align:center;
   padding:20px;font-size:13px;}
+
+/* ====================================================================
+   GM JOBS — Filtro Status Chips
+   ==================================================================== */
+.gmjs-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding:8px 0;}
+.gmjs-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;
+  border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer;
+  transition:all .12s;display:inline-flex;align-items:center;gap:7px;font-family:'DM Sans',sans-serif;}
+.gmjs-chip:hover{border-color:#94a3b8;background:#f8fafc;}
+.gmjs-chip.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+.gmjs-chip-count{font-size:10px;background:rgba(255,255,255,.25);padding:2px 7px;
+  border-radius:10px;font-weight:700;min-width:18px;text-align:center;font-family:'JetBrains Mono',monospace;}
+.gmjs-chip:not(.active) .gmjs-chip-count{background:#e2e8f0;color:#64748b;}
+.gmjs-chip[data-status="PENDING"].active{background:#f59e0b;border-color:#f59e0b;}
+.gmjs-chip[data-status="SCHEDULED"].active{background:#3b82f6;border-color:#3b82f6;}
+.gmjs-chip[data-status="FINALIZED"].active{background:#10b981;border-color:#10b981;}
+.gmjs-chip[data-status="PAID"].active{background:#059669;border-color:#059669;}
+.gmjs-chip[data-status="CANCELLED"].active{background:#94a3b8;border-color:#94a3b8;}
 </style>
 <script src="/properties_seed.js"></script>
 <script src="/tenants_seed.js"></script>
@@ -9929,6 +9947,16 @@ function gmJobOpenDescriptionPopup(text, jobId){
  footer.style.cssText='margin-top:20px;display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap';
  var commentsBtn=null;
  if(jobId){
+  var btnNotify=document.createElement('button');
+  btnNotify.type='button';
+  btnNotify.className='gmc-trigger';
+  btnNotify.textContent='Notificar Inquilino';
+  btnNotify.title='Enviar email ao inquilino (vendor acionado)';
+  btnNotify.addEventListener('click',function(){
+   gmJobCloseDescriptionPopup();
+   if(typeof gmJobNotifyTenantOpen==='function')gmJobNotifyTenantOpen(jobId);
+  });
+  footer.appendChild(btnNotify);
   commentsBtn=document.createElement('button');
   commentsBtn.type='button';
   commentsBtn.className='gmc-trigger';
@@ -17231,6 +17259,22 @@ async function jobsRender(){
 
  if(typeof window.jobsUpdateJobsPageRoleKpis==='function')try{window.jobsUpdateJobsPageRoleKpis();}catch(eK){}
 
+ /* Filtro status: contar antes, depois filtrar */
+ if(typeof gmJobsRenderStatusChips==='function' && typeof gmJobsApplyStatusFilter==='function'){
+  try{
+   var chipsHtml=gmJobsRenderStatusChips(rows);
+   var chipsContainer=document.getElementById('gmjs-status-chips-container');
+   if(!chipsContainer){
+    chipsContainer=document.createElement('div');
+    chipsContainer.id='gmjs-status-chips-container';
+    var tableEl=document.getElementById('jobs-table');
+    if(tableEl&&tableEl.parentNode)tableEl.parentNode.insertBefore(chipsContainer,tableEl);
+   }
+   if(chipsContainer)chipsContainer.innerHTML=chipsHtml;
+   rows=gmJobsApplyStatusFilter(rows);
+  }catch(e){console.warn('Status chips failed:',e);}
+ }
+
  // Modo Agenda: render alternativo
  var viewMode=window.__jobsViewMode||'calendar';
  var jobsTable=document.getElementById('jobs-table');
@@ -20300,6 +20344,161 @@ return uz;};nw.__bkWrp=1;window.gmAuthHydrateUserBadge=nw;}catch(e){console.warn
   };
 
   console.log('[GodManager] gmTimeline loaded');
+})();
+
+(function(){
+  if(typeof window==='undefined')return;
+  if(!window.__jobsStatusFilter)window.__jobsStatusFilter='all';
+
+  window.gmJobsSetStatusFilter=function(key){
+    window.__jobsStatusFilter=key||'all';
+    if(typeof jobsRender==='function')jobsRender();
+  };
+
+  window.gmJobsRenderStatusChips=function(rows){
+    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0};
+    rows.forEach(function(r){
+      var s=String(r.status||r.statusPm||'').toUpperCase();
+      if(counts[s]!==undefined)counts[s]++;
+    });
+    var chips=[
+      {key:'all',label:'Todos'},
+      {key:'PENDING',label:'Pendente'},
+      {key:'SCHEDULED',label:'Agendado'},
+      {key:'FINALIZED',label:'Finalizado'},
+      {key:'PAID',label:'Pago'},
+      {key:'CANCELLED',label:'Cancelado'},
+    ];
+    var active=window.__jobsStatusFilter||'all';
+    return '<div class="gmjs-chips" id="gmjs-status-chips">'+
+      chips.map(function(c){
+        var cls='gmjs-chip'+(active===c.key?' active':'');
+        var cnt=(c.key==='all')?counts.all:(counts[c.key]||0);
+        return '<button type="button" class="'+cls+'" data-status="'+c.key+'" '+
+          'onclick="gmJobsSetStatusFilter(\''+c.key+'\')">'+
+          c.label+'<span class="gmjs-chip-count">'+cnt+'</span></button>';
+      }).join('')+'</div>';
+  };
+
+  window.gmJobsApplyStatusFilter=function(rows){
+    var f=window.__jobsStatusFilter||'all';
+    if(f==='all')return rows;
+    return rows.filter(function(r){
+      return String(r.status||r.statusPm||'').toUpperCase()===f;
+    });
+  };
+
+  console.log('[GodManager] gmJobs status chips loaded');
+})();
+
+(function(){
+  if(typeof window==='undefined')return;
+
+  function fmtDateInput(d){
+   var dt=d?new Date(d):new Date();
+   if(isNaN(dt.getTime()))dt=new Date();
+   var y=dt.getFullYear();
+   var m=String(dt.getMonth()+1);
+   if(m.length===1)m='0'+m;
+   var da=String(dt.getDate());
+   if(da.length===1)da='0'+da;
+   return y+'-'+m+'-'+da;
+  }
+
+  window.gmJobNotifyTenantOpen=function(jobId){
+   if(!jobId){alert('Job inválido');return;}
+   var existing=document.getElementById('gmnt-backdrop');
+   if(existing)existing.remove();
+
+   var tomorrow=new Date();
+   tomorrow.setDate(tomorrow.getDate()+1);
+   var inThreeDays=new Date();
+   inThreeDays.setDate(inThreeDays.getDate()+3);
+
+   var bd=document.createElement('div');
+   bd.id='gmnt-backdrop';
+   bd.className='gmc-backdrop';
+   bd.innerHTML=
+     '<div class="gmc-modal" style="max-width:480px">'+
+       '<div class="gmc-header">'+
+         '<h3>Notificar Inquilino</h3>'+
+         '<button class="gmc-close" type="button" aria-label="Fechar">&times;</button>'+
+       '</div>'+
+       '<div style="padding:18px 20px">'+
+         '<p style="font-size:13px;color:#475569;margin:0 0 14px">Email será enviado a todos os inquilinos com cadastro válido nesta propriedade, com cópia para <strong>contact@managerprop.com</strong> (ou MANAGER_PROP_CONTACT_EMAIL).</p>'+
+         '<div style="margin-bottom:12px">'+
+           '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Data opção 1</label>'+
+           '<input type="date" id="gmnt-date1" value="'+fmtDateInput(tomorrow)+'" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px">'+
+         '</div>'+
+         '<div style="margin-bottom:12px">'+
+           '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Data opção 2</label>'+
+           '<input type="date" id="gmnt-date2" value="'+fmtDateInput(inThreeDays)+'" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px">'+
+         '</div>'+
+         '<div style="margin-bottom:14px">'+
+           '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Mensagem extra (opcional)</label>'+
+           '<textarea id="gmnt-msg" class="gmc-textarea" placeholder="Ex: A visita durará cerca de 1 hora..." style="min-height:60px"></textarea>'+
+         '</div>'+
+         '<div id="gmnt-error" style="display:none" class="gmc-error"></div>'+
+         '<div style="display:flex;justify-content:flex-end;gap:8px">'+
+           '<button type="button" id="gmnt-cancel" style="background:#f1f5f9;color:#475569;border:0;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>'+
+           '<button type="button" id="gmnt-send" class="gmc-submit">Enviar Email</button>'+
+         '</div>'+
+       '</div>'+
+     '</div>';
+   document.body.appendChild(bd);
+
+   function close(){bd.remove();}
+   bd.querySelector('.gmc-close').addEventListener('click',close);
+   bd.querySelector('#gmnt-cancel').addEventListener('click',close);
+   bd.addEventListener('click',function(e){if(e.target===bd)close();});
+
+   document.getElementById('gmnt-send').addEventListener('click',function(){
+    var el1=document.getElementById('gmnt-date1');
+    var el2=document.getElementById('gmnt-date2');
+    var elM=document.getElementById('gmnt-msg');
+    var d1=el1?el1.value:'';
+    var d2=el2?el2.value:'';
+    var msg=elM?String(elM.value||'').trim():'';
+    var errEl=document.getElementById('gmnt-error');
+    errEl.style.display='none';
+
+    if(!d1||!d2){errEl.textContent='Preencha as 2 datas.';errEl.style.display='block';return;}
+    if(d1===d2){errEl.textContent='As datas devem ser diferentes.';errEl.style.display='block';return;}
+
+    var btn=document.getElementById('gmnt-send');
+    btn.disabled=true;
+    btn.textContent='Enviando...';
+
+    fetch('/api/jobs/'+encodeURIComponent(jobId)+'/notify-tenant',{
+     method:'POST',
+     credentials:'include',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({date1:d1,date2:d2,customMessage:msg}),
+    }).then(function(r){
+     return r.json().then(function(d){return {okHttp:r.ok,status:r.status,d:d};});
+    }).then(function(x){
+     if(x.okHttp&&x.d&&x.d.ok){
+      close();
+      var st=(x.d.tenantNames||'inquilino(s)');
+      var sent=Array.isArray(x.d.sentTo)?x.d.sentTo.join(', '):'';
+      alert('Email enviado para: '+st+'\nDestinatários: '+sent);
+     }else{
+      var err=(x.d&&x.d.error)||('HTTP '+(x.status||''));
+      errEl.textContent=err;
+      errEl.style.display='block';
+      btn.disabled=false;
+      btn.textContent='Enviar Email';
+     }
+    }).catch(function(err){
+     errEl.textContent='Erro de rede: '+(err&&err.message||'');
+     errEl.style.display='block';
+     btn.disabled=false;
+     btn.textContent='Enviar Email';
+    });
+   });
+  };
+
+  console.log('[GodManager] notify-tenant loaded');
 })();
 
 </script>
