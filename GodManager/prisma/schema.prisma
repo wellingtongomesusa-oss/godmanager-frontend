@@ -92,6 +92,7 @@ model Client {
   csvBatches            CsvBatch[]              @relation("CsvBatch_clientId")
   jobPhotos             JobPhoto[]              @relation("JobPhoto_clientId")
   integrations          ClientIntegration[]
+  comments              Comment[]
 
   @@map("clients")
 }
@@ -116,6 +117,7 @@ model User {
   targetAudits    AuditEntry[]     @relation("TargetAudit")
   subscription    Subscription?
   userPermissions UserPermission[] @relation("User_permissions")
+  comments        Comment[]
 
   @@index([clientId])
   @@index([ownerId])
@@ -745,4 +747,40 @@ model ClientIntegration {
   @@index([clientId])
   @@index([provider, status])
   @@map("client_integrations")
+}
+
+// ============================================================================
+// COMMENTS (sistema genérico para Jobs, Expenses, Properties, Tenants, Vendors)
+// ============================================================================
+
+enum CommentEntityType {
+  JOB
+  EXPENSE
+  PROPERTY
+  TENANT
+  VENDOR
+}
+
+model Comment {
+  id         String            @id @default(cuid())
+  clientId   String
+  entityType CommentEntityType
+  entityId   String
+  authorId   String
+  authorName String
+  authorRole String
+  content    String            @db.Text
+  metadata   Json?
+  isInternal Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  deletedAt  DateTime?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, entityType, entityId])
+  @@index([authorId])
+  @@index([createdAt])
+  @@map("comments")
 }
