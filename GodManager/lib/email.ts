@@ -11,7 +11,9 @@ export async function sendEmail(opts: {
   to: string | string[];
   subject: string;
   html: string;
+  text?: string;
   replyTo?: string;
+  bcc?: string | string[];
 }): Promise<{ ok: boolean; error?: string }> {
   if (!RESEND_API_KEY) {
     console.warn('[email] RESEND_API_KEY not set, skipping send');
@@ -20,11 +22,19 @@ export async function sendEmail(opts: {
 
   try {
     const resend = new Resend(RESEND_API_KEY);
+    const toList = Array.isArray(opts.to) ? opts.to : [opts.to];
+    const bccList = opts.bcc
+      ? Array.isArray(opts.bcc)
+        ? opts.bcc
+        : [opts.bcc]
+      : undefined;
     const { data, error } = await resend.emails.send({
       from: `GodManager <${FROM}>`,
-      to: Array.isArray(opts.to) ? opts.to : [opts.to],
+      to: toList,
+      ...(bccList && bccList.length ? { bcc: bccList } : {}),
       subject: opts.subject,
       html: opts.html,
+      ...(opts.text ? { text: opts.text } : {}),
       replyTo: opts.replyTo,
     });
 
