@@ -17298,6 +17298,11 @@ async function jobsRender(){
  var btnFinalize=(canFinalize&&canBeFinalized)
   ? '<button type="button" onclick="jobsFinalize(\''+idAttr+'\')" title="Marcar trabalho como concluído" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff;font-weight:600">✓ OK</button>'
   : '';
+ var pmFin=(r.statusPm==='FINALIZED');
+ var canReopenJob=(userRole==='admin'||userRole==='super_admin'||userRole==='manager');
+ var btnReopen=(isFinalized||pmFin)&&!isCancelled&&canReopenJob
+  ? '<button type="button" onclick="jobsReopen(\''+idAttr+'\')" title="Reabrir job (volta a pendente)" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff;font-weight:600">Reabrir</button>'
+  : '';
  var btnReschedule=canReschedule
   ? '<button type="button" onclick="jobsReschedule(\''+idAttr+'\')" title="Reagendar para nova data" style="'+btnStyleBase+';background:#fef3c7;border-color:#fbbf24;color:#92400e;font-weight:600">Adiar</button>'
   : '';
@@ -17330,7 +17335,7 @@ async function jobsRender(){
   +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
   +'<td data-label="Data" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +'<td data-label="Status" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
-  +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
+  +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
   +btnDismissTd
   +'</tr>';
 }).join('');
@@ -17594,6 +17599,50 @@ window.jobsFinalize=function(id){
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
   if(typeof showToast==='function')showToast('Job finalizado.','success');
  }catch(e){console.warn('jobsFinalize',e);alert('Erro: '+e.message);}
+};
+
+window.jobsReopen=function(id){
+ try{
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var role=String(u.role||'').toLowerCase();
+  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'){
+   alert('Apenas admin ou gestor podem reabrir jobs.');return;
+  }
+  var motivo=prompt('Motivo da reabertura (obrigatório):','');
+  if(!motivo||!motivo.trim()){alert('Motivo obrigatório.');return;}
+  motivo=motivo.trim();
+  fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+   method:'PATCH',credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({status:'PENDING'}),
+  }).then(function(r){return r.json().then(function(d){return {r:r,d:d};});})
+  .then(function(x){
+   if(!x.r.ok||!x.d||!x.d.ok){alert('Erro ao reabrir: '+(x.d&&x.d.error||('HTTP '+x.r.status)||'falha'));return;}
+   if(typeof gmCommentsSubmit==='function'){
+    gmCommentsSubmit('JOB',id,'Job reaberto. Motivo: '+motivo).catch(function(){});
+   }
+   try{
+    var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+    caches.forEach(function(arr){
+     if(Array.isArray(arr)){
+      var ix=arr.findIndex(function(row){return row&&String(row.id)===String(id);});
+      if(ix>=0){
+       arr[ix].status='pending';
+       if(arr[ix].statusPm)arr[ix].statusPm='PENDING';
+       delete arr[ix].finalizedAt;
+       delete arr[ix].finalizedBy;
+       delete arr[ix].finalizedNote;
+      }
+     }
+    });
+   }catch(eOpt){console.warn('jobsReopen cache',eOpt);}
+   if(typeof jobsInvalidateApiCache==='function')try{jobsInvalidateApiCache();}catch(eI){}
+   if(typeof jobsRender==='function')jobsRender();
+   if(typeof ltExpRender==='function')try{ltExpRender();}catch(eR){}
+   if(typeof showToast==='function')showToast('Job reaberto.','success');
+   else alert('Job reaberto com sucesso.');
+  }).catch(function(err){alert('Erro de rede: '+(err&&err.message||''));});
+ }catch(e){alert('Erro: '+e.message);}
 };
 
 window.jobsVendorFree=function(id){
