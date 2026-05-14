@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { verifyPassword } from '@/lib/password';
 import { createSessionCookie } from '@/lib/authServer';
 import type { UserRole } from '@/lib/types';
+
+function isDatabaseUnreachable(e: unknown): boolean {
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    return ['P1001', 'P1017'].includes(e.code);
+  }
+  if (e instanceof Prisma.PrismaClientInitializationError) {
+    return true;
+  }
+  const msg = e instanceof Error ? e.message : String(e);
+  return /Can't reach database|ECONNREFUSED|connection refused|Server has closed the connection/i.test(msg);
+}
 
 export async function POST(req: Request) {
   try {
@@ -64,6 +76,16 @@ export async function POST(req: Request) {
     return res;
   } catch (e) {
     console.error('[api/auth/login]', e);
+    if (isDatabaseUnreachable(e)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Base de dados indisponivel. Confirma que o Postgres esta a correr e que DATABASE_URL no .env.local esta correcto (ex.: docker compose up -d na raiz do GodManager).',
+        },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ ok: false, error: 'Erro interno.' }, { status: 500 });
   }
 }
