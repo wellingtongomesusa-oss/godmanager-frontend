@@ -17221,7 +17221,7 @@ async function jobsRender(){
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
  var isAdmin=(userRole==='admin'||userRole==='super_admin');
  var canVendorFree=(userRole==='admin'||userRole==='super_admin'||userRole==='manager');
- var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='maintenance');
+ var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance');
  tbody.innerHTML=rows.map(function(r){
   var vendorDone=jobsHasActionFor(r.id,'vendor');
   var jobDone=jobsHasActionFor(r.id,'job');
@@ -17527,7 +17527,7 @@ window.jobsFinalize=function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
-  if(role!=='admin'&&role!=='super_admin'&&role!=='maintenance'){alert('Apenas admin ou técnicos podem finalizar.');return;}
+  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){alert('Apenas admin, gestor ou técnicos podem finalizar.');return;}
   var nota=prompt('Observação do trabalho concluído (opcional):','');
   if(nota===null) return;
   var arr=ltExpGetRecords()||[];
