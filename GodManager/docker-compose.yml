@@ -1,0 +1,28 @@
+# Postgres local para desenvolvimento (login, Prisma, etc.)
+# Uso:
+#   docker compose up -d
+# No .env.local:
+#   DATABASE_URL="postgresql://godmanager:godmanager@localhost:5432/godmanager"
+# Depois:
+#   npx prisma migrate deploy
+#   npm run seed:demo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: godmanager
+      POSTGRES_PASSWORD: godmanager
+      POSTGRES_DB: godmanager
+    ports:
+      - '5432:5432'
+    volumes:
+      - godmanager_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U godmanager -d godmanager']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  godmanager_pgdata:
