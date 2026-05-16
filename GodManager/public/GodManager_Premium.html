@@ -1124,6 +1124,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="ss" onclick="nav('ltproperties')" id="nav-ltproperties">Properties</div>
  <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement">Owner Statement</div>
  <div class="ss" onclick="nav('tenants')" id="nav-tenants">Tenants</div>
+ <div class="ss" onclick="nav('leases-history')" id="nav-leases-history">Lease history</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties">Ranking Properties</div>
  <div class="ss" onclick="nav('renovations')" id="nav-renovations">Renovations</div>
  </div>
@@ -3499,6 +3500,81 @@ document.addEventListener('DOMContentLoaded', function(){
  </table>
  </div>
  <div id="tn-empty" style="display:none;padding:36px;text-align:center;font-size:12px;color:var(--ink3)">Nenhum inquilino encontrado. Cadastre tenants nas propriedades (Properties) ou importe tenant_directory via AppFolio.</div>
+ </div>
+</div>
+
+<!--
+ LONG TERM — LEASES HISTORY (AppFolio lease_register)
+ -->
+<div class="page" id="page-leases-history">
+ <div class="ph"><div class="pt">Lease history</div><div class="ps">AppFolio lease register (CSV). Registos próprios; correspondência opcional com Properties/Tenants (só leitura).</div></div>
+ <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px">
+  <select id="lh-filter-status" style="padding:7px 12px;border:1px solid var(--border2);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink)">
+   <option value="">Todos os estados</option>
+   <option value="ACTIVE">ACTIVE</option>
+   <option value="EXPIRED">EXPIRED</option>
+   <option value="FUTURE">FUTURE</option>
+   <option value="TERMINATED">TERMINATED</option>
+   <option value="UNKNOWN">UNKNOWN</option>
+  </select>
+  <select id="lh-filter-expire" title="Contratos ACTIVE com data de fim dentro do período" style="padding:7px 12px;border:1px solid var(--border2);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink)">
+   <option value="all">Expiração: qualquer</option>
+   <option value="30">Expira nos próximos 30 dias</option>
+   <option value="60">Expira nos próximos 60 dias</option>
+   <option value="90">Expira nos próximos 90 dias</option>
+  </select>
+  <input id="lh-search" placeholder="Filtrar endereço ou inquilino..." style="padding:8px 14px;border:1px solid var(--border2);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);min-width:220px;flex:1;max-width:360px"/>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+   <label for="lh-file" style="padding:9px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Importar CSV</label>
+   <input id="lh-file" type="file" accept=".csv,text/csv" style="display:none"/>
+   <span id="lh-upload-msg" style="font-size:11px;color:var(--ink3);max-width:260px;line-height:1.35"></span>
+  </div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+  <button type="button" onclick="if(typeof gmLeasesLhApplyCard==='function')gmLeasesLhApplyCard('active');" style="text-align:left;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;cursor:pointer;font:inherit">
+   <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ativos</div>
+   <div id="lh-kpi-active" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--green);margin-top:6px">0</div>
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div>
+  </button>
+  <button type="button" onclick="if(typeof gmLeasesLhApplyCard==='function')gmLeasesLhApplyCard('expiring');" style="text-align:left;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;cursor:pointer;font:inherit">
+   <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Expiram breve</div>
+   <div id="lh-kpi-expire" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-top:6px">0</div>
+   <div id="lh-kpi-expire-sub" style="font-size:10px;color:var(--ink3);margin-top:4px;line-height:1.35"></div>
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div>
+  </button>
+  <button type="button" onclick="if(typeof gmLeasesLhApplyCard==='function')gmLeasesLhApplyCard('expired');" style="text-align:left;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;cursor:pointer;font:inherit">
+   <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Expirados</div>
+   <div id="lh-kpi-expired" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--red);margin-top:6px">0</div>
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red)"></div>
+  </button>
+  <button type="button" onclick="if(typeof gmLeasesLhApplyCard==='function')gmLeasesLhApplyCard('future');" style="text-align:left;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;cursor:pointer;font:inherit">
+   <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Futuros</div>
+   <div id="lh-kpi-future" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--blue);margin-top:6px">0</div>
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue)"></div>
+  </button>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(30,22,12,.06)">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+   <span style="font-size:13px;font-weight:700;color:var(--ink)">Registos importados</span>
+   <span id="lh-list-meta" style="font-size:11px;color:var(--ink3)"></span>
+  </div>
+  <div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;min-width:1100px">
+   <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+    <th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
+    <th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Unidade</th>
+    <th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Inquilino</th>
+    <th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Início</th>
+    <th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Fim</th>
+    <th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Renda</th>
+    <th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Caução</th>
+    <th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Estado</th>
+    <th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Match</th>
+   </tr></thead>
+   <tbody id="lh-tbody"></tbody>
+  </table>
+  </div>
+  <div id="lh-empty" style="display:none;padding:36px;text-align:center;font-size:12px;color:var(--ink3)">Nenhum lease importado. Utilize Lease Register em CSV.</div>
  </div>
 </div>
 
@@ -6937,7 +7013,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -7036,6 +7112,7 @@ function nav(r){
   if(typeof osRender==='function'){await osRender();}
  },
  tenants:()=>typeof tnRender==='function'&&tnRender(),
+ 'leases-history':()=>{if(typeof gmLeasesHistoryInit==='function')gmLeasesHistoryInit();if(typeof gmLeasesLoad==='function')gmLeasesLoad();},
  ltstatements:()=>typeof ltRender==='function'&&ltRender(),
  ltexpenses:()=>typeof ltExpRenderWithPm==='function'&&ltExpRenderWithPm(),
  ltcleanings:()=>typeof ltClnPageRender==='function'&&ltClnPageRender(),
@@ -15416,6 +15493,151 @@ window.saveClientsRaw=saveClientsRaw;
 window.loadClientsRaw=loadClientsRaw;
 window.getActiveClient=getActiveClient;
 window.normalizeClient=normalizeClient;
+
+/* === Lease history (AppFolio CSV via /api/leases) === */
+(function(){
+function lhEsc(s){
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function lhFmtUsd(s){
+ if(s==null||s==='')return '\u2014';
+ var n=parseFloat(String(s));
+ if(window.isNaN(n))return lhEsc(String(s));
+ return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function lhFmtIsoDate(iso){
+ if(!iso)return '\u2014';
+ var d; try{d=new Date(iso);}catch(e){return '\u2014';}
+ if(window.isNaN(d.getTime()))return '\u2014';
+ var y=d.getUTCFullYear();var m=String(d.getUTCMonth()+1).padStart(2,'0');var da=String(d.getUTCDate()).padStart(2,'0');
+ return y+'-'+m+'-'+da;
+}
+function lhStatusClass(st){
+ if(st==='ACTIVE')return 'pg';
+ if(st==='FUTURE')return 'pb';
+ if(st==='EXPIRED'||st==='TERMINATED')return 'pr';
+ return 'pa';
+}
+function gmLeasesClientQuery(){
+ var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+ return (ac&&ac.id)?('?clientId='+encodeURIComponent(ac.id)):'';
+}
+window.gmLeasesLhApplyCard=function(which){
+ var st=document.getElementById('lh-filter-status');
+ var ew=document.getElementById('lh-filter-expire');
+ if(which==='active'){
+  if(st)st.value='ACTIVE';
+  if(ew)ew.value='all';
+ }else if(which==='expiring'){
+  if(st)st.value='ACTIVE';
+  if(ew)ew.value='30';
+ }else if(which==='expired'){
+  if(st)st.value='EXPIRED';
+  if(ew)ew.value='all';
+ }else if(which==='future'){
+  if(st)st.value='FUTURE';
+  if(ew)ew.value='all';
+ }
+ if(typeof gmLeasesLoad==='function')gmLeasesLoad();
+};
+window._gmLhLastSummary=null;
+window.gmLeasesLoad=function(){
+ var tb=document.getElementById('lh-tbody');
+ var empty=document.getElementById('lh-empty');
+ var meta=document.getElementById('lh-list-meta');
+ if(!tb)return;
+ tb.innerHTML='<tr><td colspan="9" style="padding:28px;text-align:center;color:var(--ink3)">A carregar…</td></tr>';
+ var params=new URLSearchParams();
+ var fs=document.getElementById('lh-filter-status');if(fs&&fs.value)params.set('status',fs.value);
+ var fe=document.getElementById('lh-filter-expire');if(fe&&fe.value&&fe.value!=='all')params.set('expireWithin',fe.value);
+ var fq=document.getElementById('lh-search');if(fq&&fq.value.trim())params.set('q',fq.value.trim());
+ var cq=gmLeasesClientQuery();
+ var qs=params.toString();
+ var url='/api/leases'+cq+(qs?(cq?'&':'?')+qs:'');
+ fetch(url,{credentials:'same-origin'})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  .then(function(o){
+   if(!o.ok||!o.j||!o.j.ok){var err=(o.j&&o.j.error)||'Erro ao carregar';tb.innerHTML='<tr><td colspan="9" style="padding:28px;text-align:center;color:var(--red)">'+lhEsc(err)+'</td></tr>';return;}
+   var sum=o.j.summary||{};
+   window._gmLhLastSummary=sum;
+   var a=document.getElementById('lh-kpi-active');if(a)a.textContent=String(sum.active!=null?sum.active:0);
+   var x=document.getElementById('lh-kpi-expire');if(x)x.textContent=String(sum.expiring30!=null?sum.expiring30:0);
+   var xs=document.getElementById('lh-kpi-expire-sub');
+   if(xs){
+    var e60=sum.expiring60!=null?sum.expiring60:0;
+    var e90=sum.expiring90!=null?sum.expiring90:0;
+    xs.textContent='≤60 d: '+e60+' · ≤90 d: '+e90;
+   }
+   var ex=document.getElementById('lh-kpi-expired');if(ex)ex.textContent=String(sum.expired!=null?sum.expired:0);
+   var fu=document.getElementById('lh-kpi-future');if(fu)fu.textContent=String(sum.future!=null?sum.future:0);
+   var rows=o.j.leases||[];
+   if(meta)meta.textContent=rows.length>=500?'A mostrar até 500 registos.':(rows.length===1?'1 registo':rows.length+' registos');
+   if(!rows.length){
+    tb.innerHTML='';
+    if(empty)empty.style.display='block';
+    return;
+   }
+   if(empty)empty.style.display='none';
+   tb.innerHTML=rows.map(function(l){
+    var pcl=lhStatusClass(l.status);
+    var mP=l.matchedProperty?'<span class="pg">Prop</span>':'';
+    var mT=l.matchedTenant?'<span class="pg">Tenant</span>':'';
+    var matchTd=(mP||mT)?('<span style="white-space:nowrap">'+mP+(mP&&mT?' ':'')+mT+'</span>'):'<span style="opacity:.45">\u2014</span>';
+    return '<tr style="border-bottom:1px solid var(--border)">'+
+     '<td style="padding:10px 14px;font-size:12px;color:var(--ink);max-width:280px">'+lhEsc(l.propertyAddress||'')+'</td>'+
+     '<td style="padding:10px 14px;font-size:12px;color:var(--ink2)">'+lhEsc(l.unit||'')+'</td>'+
+     '<td style="padding:10px 14px;font-size:12px;color:var(--ink)">'+lhEsc(l.tenantName||'')+'</td>'+
+     '<td style="padding:10px 14px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+lhFmtIsoDate(l.leaseStart)+'</td>'+
+     '<td style="padding:10px 14px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+lhFmtIsoDate(l.leaseEnd)+'</td>'+
+     '<td style="padding:10px 14px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:var(--green)">'+lhFmtUsd(l.monthlyRent)+'</td>'+
+     '<td style="padding:10px 14px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--ink2)">'+lhFmtUsd(l.securityDeposit)+'</td>'+
+     '<td style="padding:10px 14px;text-align:center"><span class="'+pcl+'">'+lhEsc(l.status||'')+'</span></td>'+
+     '<td style="padding:10px 14px;text-align:center;font-size:10px;font-weight:600">'+matchTd+'</td>'+
+     '</tr>';
+   }).join('');
+  })
+  .catch(function(){
+   tb.innerHTML='<tr><td colspan="9" style="padding:28px;text-align:center;color:var(--red)">Falha de rede</td></tr>';
+  });
+};
+window.gmLeasesUpload=function(file){
+ var msg=document.getElementById('lh-upload-msg');
+ if(!file){if(msg)msg.textContent='';return;}
+ if(msg)msg.textContent='A importar…';
+ var fd=new FormData();
+ fd.append('file',file);
+ var url='/api/leases/upload'+gmLeasesClientQuery();
+ fetch(url,{method:'POST',body:fd,credentials:'same-origin'})
+  .then(function(r){return r.json().then(function(j){return{st:r.status,j:j};});})
+  .then(function(o){
+   if(o.st===409&&msg)msg.textContent='Ficheiro duplicado (já importado).';
+   else if(o.j&&o.j.ok){
+    if(typeof showToast==='function')showToast('Importação concluída','success');
+    if(msg)msg.textContent='Importação concluída.';
+    gmLeasesLoad();
+   }
+   else if(msg)msg.textContent=String(o.j&&o.j.error)||'Erro na importação';
+  })
+  .catch(function(){if(msg)msg.textContent='Erro de rede.';});
+};
+window.gmLeasesHistoryInit=function(){
+ if(window._gmLhWired)return;
+ window._gmLhWired=1;
+ var st=document.getElementById('lh-filter-status');
+ var ew=document.getElementById('lh-filter-expire');
+ var fq=document.getElementById('lh-search');
+ function deb(fn,t){var id;return function(){clearTimeout(id);id=setTimeout(fn,t)};}
+ var load=function(){gmLeasesLoad();};
+ if(st)st.addEventListener('change',load);
+ if(ew)ew.addEventListener('change',load);
+ if(fq)fq.addEventListener('input',deb(load,300));
+ var fin=document.getElementById('lh-file');
+ if(fin)fin.addEventListener('change',function(){
+   var f=this.files&&this.files[0];this.value='';
+   gmLeasesUpload(f);
+ });
+};
+})();
 
 // INIT 
 window.addEventListener('DOMContentLoaded',()=>{

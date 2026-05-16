@@ -96,6 +96,8 @@ model Client {
   glImports             GLImport[]              @relation("GLImport_clientId")
   glEntries             GLEntry[]               @relation("GLEntry_clientId")
   analyticsSnapshots    AnalyticsSnapshot[]     @relation("AnalyticsSnapshot_clientId")
+  leaseImports          LeaseImport[]           @relation("LeaseImport_clientId")
+  leases                Lease[]                 @relation("Lease_clientId")
 
   @@map("clients")
 }
@@ -290,6 +292,7 @@ model Property {
   statusHistory     PropertyStatusHistory[]
   tenantPayments    TenantPayment[]         @relation("TenantPayment_propertyId")
   glEntries         GLEntry[]               @relation("GLEntry_propertyId")
+  leases            Lease[]                 @relation("Lease_propertyId")
 
   @@index([code])
   @@index([status])
@@ -326,6 +329,7 @@ model Tenant {
   client           Client?           @relation("Tenant_clientId", fields: [clientId], references: [id], onDelete: SetNull)
   maintenanceCalls MaintenanceCall[]
   tenantPayments   TenantPayment[]   @relation("TenantPayment_tenantId")
+  leases           Lease[]           @relation("Lease_tenantId")
 
   @@index([code])
   @@index([propertyId])
@@ -893,4 +897,69 @@ model AnalyticsSnapshot {
   @@index([clientId, periodYM])
   @@index([clientId, metricKey])
   @@map("analytics_snapshots")
+}
+
+enum LeaseStatus {
+  ACTIVE
+  EXPIRED
+  FUTURE
+  TERMINATED
+  UNKNOWN
+}
+
+model LeaseImport {
+  id            String    @id @default(cuid())
+  clientId      String
+  filename      String
+  contentHash   String    @unique
+  rowCount      Int
+  periodStart   DateTime?
+  periodEnd     DateTime?
+  uploadedById  String?
+  uploadedBy    String?
+  uploadedAt    DateTime  @default(now())
+
+  client Client  @relation("LeaseImport_clientId", fields: [clientId], references: [id], onDelete: Restrict)
+  leases Lease[]
+
+  @@index([clientId])
+  @@index([uploadedAt])
+  @@map("lease_imports")
+}
+
+model Lease {
+  id              String       @id @default(cuid())
+  clientId        String
+  leaseImportId   String
+
+  propertyId String?
+  tenantId   String?
+
+  propertyAddress String
+  unit            String?
+  tenantName      String
+
+  leaseStart      DateTime?
+  leaseEnd        DateTime?
+  monthlyRent     Decimal?     @db.Decimal(12, 2)
+  securityDeposit Decimal?     @db.Decimal(12, 2)
+  status          LeaseStatus  @default(UNKNOWN)
+  notes           String?      @db.Text
+
+  leaseHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client      Client       @relation("Lease_clientId", fields: [clientId], references: [id], onDelete: Restrict)
+  leaseImport LeaseImport @relation(fields: [leaseImportId], references: [id], onDelete: Cascade)
+  property    Property?    @relation("Lease_propertyId", fields: [propertyId], references: [id], onDelete: SetNull)
+  tenant      Tenant?      @relation("Lease_tenantId", fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@unique([clientId, leaseHash])
+  @@index([clientId, status])
+  @@index([clientId, leaseEnd])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@map("leases")
 }
