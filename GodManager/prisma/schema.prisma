@@ -93,6 +93,9 @@ model Client {
   jobPhotos             JobPhoto[]              @relation("JobPhoto_clientId")
   integrations          ClientIntegration[]
   comments              Comment[]
+  glImports             GLImport[]              @relation("GLImport_clientId")
+  glEntries             GLEntry[]               @relation("GLEntry_clientId")
+  analyticsSnapshots    AnalyticsSnapshot[]     @relation("AnalyticsSnapshot_clientId")
 
   @@map("clients")
 }
@@ -285,6 +288,7 @@ model Property {
   maintenanceCalls  MaintenanceCall[]
   statusHistory     PropertyStatusHistory[]
   tenantPayments    TenantPayment[]         @relation("TenantPayment_propertyId")
+  glEntries         GLEntry[]               @relation("GLEntry_propertyId")
 
   @@index([code])
   @@index([status])
@@ -783,4 +787,108 @@ model Comment {
   @@index([authorId])
   @@index([createdAt])
   @@map("comments")
+}
+
+enum GLEntryType {
+  CHECK
+  RECEIPT
+  ECHECK
+  ECHECK_RECEIPT
+  PAYMENT
+  JE
+  CC_RECEIPT
+  REVERSE_RECEIPT
+  REVERSED_ECHECK_RECEIPT
+  BANK_TRANSFER
+  CHECK_SEND
+  OTHER
+}
+
+enum GLEntryPaidStatus {
+  UNPAID
+  PAID
+  VOID
+  REVERSED
+}
+
+model GLImport {
+  id           String    @id @default(cuid())
+  clientId     String
+  filename     String
+  contentHash  String    @unique
+  sourceFormat String    @default("appfolio_gl")
+  rowCount     Int
+  totalDebit   Decimal?  @db.Decimal(14, 2)
+  totalCredit  Decimal?  @db.Decimal(14, 2)
+  periodStart  DateTime?
+  periodEnd    DateTime?
+  uploadedById String?
+  uploadedBy   String?
+  r2Key        String?
+  uploadedAt   DateTime  @default(now())
+
+  client  Client    @relation("GLImport_clientId", fields: [clientId], references: [id])
+  entries GLEntry[]
+
+  @@index([clientId])
+  @@index([uploadedAt])
+  @@map("gl_imports")
+}
+
+model GLEntry {
+  id              String              @id @default(cuid())
+  clientId        String
+  glImportId      String
+  propertyId      String?
+  propertyAddress String
+  entryDate       DateTime
+  payee           String?
+  entryType       GLEntryType
+  reference       String?
+  debit           Decimal?            @db.Decimal(14, 2)
+  credit          Decimal?            @db.Decimal(14, 2)
+  balance         Decimal?            @db.Decimal(14, 2)
+  description     String?             @db.Text
+  account         String?
+  accountCode     String?
+  paidStatus      GLEntryPaidStatus   @default(UNPAID)
+  paidAt          DateTime?
+  paidById        String?
+  paidByName      String?
+  paidMethod      String?
+  paidNotes       String?             @db.Text
+  txnHash         String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  client   Client    @relation("GLEntry_clientId", fields: [clientId], references: [id])
+  glImport GLImport  @relation(fields: [glImportId], references: [id], onDelete: Cascade)
+  property Property? @relation("GLEntry_propertyId", fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@unique([clientId, txnHash])
+  @@index([clientId, entryDate])
+  @@index([clientId, payee])
+  @@index([clientId, entryType])
+  @@index([clientId, accountCode])
+  @@index([clientId, paidStatus])
+  @@index([propertyId])
+  @@map("gl_entries")
+}
+
+model AnalyticsSnapshot {
+  id          String    @id @default(cuid())
+  clientId    String
+  periodYM    String
+  metricKey   String
+  metricLabel String
+  metricValue Decimal?  @db.Decimal(16, 4)
+  metricQty   Int?
+  metadata    Json?
+  computedAt  DateTime  @default(now())
+
+  client Client @relation("AnalyticsSnapshot_clientId", fields: [clientId], references: [id])
+
+  @@index([clientId, periodYM])
+  @@index([clientId, metricKey])
+  @@map("analytics_snapshots")
 }
