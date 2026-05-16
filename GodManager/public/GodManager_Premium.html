@@ -20063,10 +20063,79 @@ function gmAnShowLoadErr(root,title,payload){
  root.innerHTML='<div style="padding:20px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55"><strong>'+gmAnEsc(title)+'</strong><br><br>Status: '+gmAnEsc(st)+'<br>Mensagem: '+msg+'<br><br><button type="button" onclick="if(typeof gmAnalyticsLoad===\'function\')gmAnalyticsLoad()" style="background:#dc2626;color:#fff;padding:8px 16px;border-radius:6px;border:0;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600">Tentar novamente</button></div>';
  if(typeof showToast==='function')showToast(String(payload&&payload.error||title),'error');
 }
+window.gmAnRenderAnomalies=function(d){
+ var box=document.getElementById('gmAnAnomResults');
+ if(!box)return;
+ if(!d.anomalies||d.anomalies.length===0){
+  box.innerHTML='<div style="background:var(--green-bg);border:1px solid rgba(0,0,0,.06);color:var(--green);padding:14px;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.45"><strong>Sem anomalias detectadas</strong> nos criterios actuais. (z &ge; '+gmAnEsc(String(d.minZ!=null?d.minZ:''))+' sobre '+gmAnEsc(String(d.totalAnalyzed||0))+' transaccoes dos ultimos 12 meses)</div>';
+  return;
+ }
+ var summary='<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber);padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;font-family:\'DM Sans\',sans-serif;line-height:1.45">'+
+  '<strong>'+gmAnEsc(String(d.anomaliesCount!=null?d.anomaliesCount:0))+' anomalias</strong> detectadas em '+gmAnEsc(String(d.totalAnalyzed||0))+' transaccoes (12 meses). '+
+  'Agrupado por <strong>'+gmAnEsc(d.groupBy==='payee'?'Payee':'Conta')+'</strong>, z &ge; '+gmAnEsc(String(d.minZ!=null?d.minZ:''))+'.'+
+  '</div>';
+ var rows=d.anomalies.map(function(a){
+  var dirColor=a.direction==='ABOVE'?'var(--red)':'var(--blue)';
+  var dirSym=a.direction==='ABOVE'?'ACIMA':'ABAIXO';
+  var dirArrow=a.direction==='ABOVE'?'▲':'▼';
+  var ratio=parseFloat(a.mean)>0?((parseFloat(a.sum)/parseFloat(a.mean))*100).toFixed(0):String.fromCharCode(8734);
+  return '<tr style="border-bottom:1px solid var(--border)">'+
+   '<td style="padding:10px 12px;font-weight:600;font-family:\'DM Sans\',sans-serif">'+gmAnEsc(a.group)+'</td>'+
+   '<td style="padding:10px 12px;font-family:\'DM Sans\',sans-serif">'+gmAnEsc(a.period)+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(a.sum)+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:var(--ink3);font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(a.mean)+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:var(--ink3);font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnEsc(String(a.count!=null?a.count:0))+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;font-weight:700;color:'+dirColor+';font-family:\'JetBrains Mono\',monospace;font-size:12px">z='+gmAnEsc(a.zScore)+' ('+dirArrow+' '+dirSym+')</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:'+dirColor+';font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnEsc(ratio)+'% media</td>'+
+  '</tr>';
+ }).join('');
+ box.innerHTML=summary+
+  '<div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--paper)"><table style="width:100%;min-width:720px;border-collapse:collapse;font-size:12.5px;font-family:\'DM Sans\',sans-serif">'+
+   '<thead><tr style="background:var(--sand);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)">'+
+    '<th style="padding:10px 12px;text-align:left">'+(d.groupBy==='payee'?'Payee':'Conta')+'</th>'+
+    '<th style="padding:10px 12px;text-align:left">Periodo</th>'+
+    '<th style="padding:10px 12px;text-align:right">Valor</th>'+
+    '<th style="padding:10px 12px;text-align:right">Media historica</th>'+
+    '<th style="padding:10px 12px;text-align:right">Qty</th>'+
+    '<th style="padding:10px 12px;text-align:right">Z-score</th>'+
+    '<th style="padding:10px 12px;text-align:right">% media</th>'+
+   '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+};
+window.gmAnLoadAnomalies=async function(){
+ var zEl=document.getElementById('gmAnAnomZ');
+ var gEl=document.getElementById('gmAnAnomGroup');
+ var box=document.getElementById('gmAnAnomResults');
+ if(!box)return;
+ var minZ=zEl&&zEl.value?zEl.value:'2.5';
+ var groupBy=gEl&&gEl.value?gEl.value:'payee';
+ box.innerHTML='<div style="text-align:center;color:var(--ink3);padding:20px;font-family:\'DM Sans\',sans-serif;font-size:13px">A analisar...</div>';
+ try{
+  var r=await fetch('/api/analytics/anomalies?minZ='+encodeURIComponent(minZ)+'&groupBy='+encodeURIComponent(groupBy),{credentials:'include',cache:'no-store'});
+  var d=null;
+  try{d=await r.json();}catch(_j){d=null;}
+  if(!d||d.ok!==true){
+   var err=(d&&d.error)||('HTTP '+r.status);
+   box.innerHTML='<div style="color:var(--red);padding:14px;font-family:\'DM Sans\',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:10px;background:var(--red-bg)">Erro: '+gmAnEsc(String(err))+'</div>';
+   return;
+  }
+  if(typeof gmAnRenderAnomalies==='function')gmAnRenderAnomalies(d);
+ }catch(e){
+  box.innerHTML='<div style="color:var(--red);padding:14px;font-family:\'DM Sans\',sans-serif;font-size:13px">Erro: '+gmAnEsc(String(e&&e.message||e))+'</div>';
+ }
+};
 window.gmAnToggleSection=function(key){
  var k=String(key||'').replace(/[^a-z0-9_-]/gi,'');
  var el=document.querySelector('.gma-section[data-section="'+k+'"]');
- if(el)el.classList.toggle('expanded');
+ if(el){
+  el.classList.toggle('expanded');
+  if(k==='anomalies'&&el.classList.contains('expanded')){
+   var bx=document.getElementById('gmAnAnomResults');
+   if(bx&&!bx.dataset.loaded){
+    bx.dataset.loaded='1';
+    if(typeof gmAnLoadAnomalies==='function')gmAnLoadAnomalies();
+   }
+  }
+ }
 };
 function gmAnFilterOptionHtmlFragments(sum){
  var st=window.gmAnalyticsState;
@@ -20317,6 +20386,30 @@ function gmAnShellHtml(sum,ent,imp){
  +'<div class="gma-section-body">'
  +' <div id="gmAnChartMonthly" style="width:100%;height:280px;margin-bottom:20px"></div>'
  +' <div id="gmAnComparisonTable"></div>'
+ +'</div></div>'
+ +'<div class="gma-section" data-section="anomalies">'
+ +'<div class="gma-section-head" onclick="gmAnToggleSection(\'anomalies\')"><strong>Anomalias Detectadas (z-score)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
+ +'<div class="gma-section-body">'
+ +' <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;align-items:flex-end;font-family:\'DM Sans\',sans-serif">'
+ +'  <div>'
+ +'   <label for="gmAnAnomZ" style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Sensibilidade (z minimo)</label>'
+ +'   <select id="gmAnAnomZ" onchange="if(typeof gmAnLoadAnomalies===\'function\')gmAnLoadAnomalies()" style="padding:9px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-size:12px;min-width:160px">'
+ +'    <option value="2.0">2.0 (muitas)</option>'
+ +'    <option value="2.5" selected>2.5 (moderado)</option>'
+ +'    <option value="3.0">3.0 (poucas)</option>'
+ +'    <option value="3.5">3.5 (extremas)</option>'
+ +'   </select>'
+ +'  </div>'
+ +'  <div>'
+ +'   <label for="gmAnAnomGroup" style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Agrupar por</label>'
+ +'   <select id="gmAnAnomGroup" onchange="if(typeof gmAnLoadAnomalies===\'function\')gmAnLoadAnomalies()" style="padding:9px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-size:12px;min-width:200px">'
+ +'    <option value="payee" selected>Payee (vendor / owner)</option>'
+ +'    <option value="account">Conta contabil</option>'
+ +'   </select>'
+ +'  </div>'
+ +'  <button type="button" onclick="if(typeof gmAnLoadAnomalies===\'function\')gmAnLoadAnomalies()" style="background:var(--amber);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Recalcular</button>'
+ +' </div>'
+ +' <div id="gmAnAnomResults"></div>'
  +'</div></div>'
  +'<div class="gma-section" data-section="upload">'
  +'<div class="gma-section-head" onclick="gmAnToggleSection(\'upload\')"><strong>Upload GL (AppFolio CSV)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
