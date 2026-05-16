@@ -6130,9 +6130,29 @@ function rampRenderFromData(txs,cards,useMock,opts){
    tbT.appendChild(tr);
   });
  }
- rampAggregateAndRender(txs);
+ rampAggregateAndRender(txs,cards);
 }
-function rampAggregateAndRender(txs){
+function rampAggregateAndRender(txs,cards){
+ var cardIdToHolder={};
+ if(Array.isArray(cards)){
+  cards.forEach(function(c){
+   var name=c.cardholder_name||c.display_name||c.cardholder_email||'';
+   if(c.id!=null&&name)cardIdToHolder[String(c.id)]=String(name).trim();
+  });
+ }
+ function holderOf(tx){
+  if(tx.card_id!=null&&cardIdToHolder[String(tx.card_id)])return cardIdToHolder[String(tx.card_id)];
+  if(tx.card_holder&&(tx.card_holder.first_name||tx.card_holder.last_name)){
+   return ((tx.card_holder.first_name||'')+' '+(tx.card_holder.last_name||'')).trim();
+  }
+  if(tx.user&&(tx.user.first_name||tx.user.last_name)){
+   return ((tx.user.first_name||'')+' '+(tx.user.last_name||'')).trim();
+  }
+  if(tx.card_holder_name)return tx.card_holder_name;
+  if(tx.cardholder&&tx.cardholder.display_name)return tx.cardholder.display_name;
+  if(tx.user_email)return tx.user_email;
+  return 'Desconhecido';
+ }
  function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
  var byMonth={};
  for(var i=0;i<txs.length;i++){
@@ -6148,8 +6168,7 @@ function rampAggregateAndRender(txs){
  var byPerson={};
  for(var j=0;j<txs.length;j++){
   var txp=txs[j];
-  var holder=rampTxHolder(txp);
-  if(!holder||holder==='—')holder=(txp&&txp.user_email)||(txp&&txp.user&&txp.user.email)||'Desconhecido';
+  var holder=holderOf(txp)||'Desconhecido';
   holder=String(holder).trim()||'Desconhecido';
   byPerson[holder]=(byPerson[holder]||0)+rampTxAmount(txp);
  }
@@ -6159,12 +6178,12 @@ function rampAggregateAndRender(txs){
  var byMerchant={};
  for(var k=0;k<txs.length;k++){
   var txm=txs[k];
-  var mer=rampTxMerchant(txm)||'Desconhecido';
-  byMerchant[mer]=(byMerchant[mer]||0)+rampTxAmount(txm);
+  var m=txm.merchant_name||txm.sk_merchant_name||(txm.merchant&&txm.merchant.name)||'Desconhecido';
+  byMerchant[m]=(byMerchant[m]||0)+rampTxAmount(txm);
  }
  var merchantSorted=Object.entries(byMerchant).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
- var elMer=document.getElementById('ramp-agg-merchant-body');
- if(elMer)elMer.innerHTML=merchantSorted.map(function(p){return '<div class="ramp-agg-row"><span class="label">'+esc(p[0])+'</span><span class="value">'+rampFmtMoney(p[1])+'</span></div>';}).join('')||'<div style="color:#94a3b8;text-align:center;padding:10px">Sem dados</div>';
+ var elMr=document.getElementById('ramp-agg-merchant-body');
+ if(elMr)elMr.innerHTML=merchantSorted.map(function(p){return '<div class="ramp-agg-row"><span class="label">'+esc(p[0])+'</span><span class="value">'+rampFmtMoney(p[1])+'</span></div>';}).join('')||'<div style="color:#94a3b8;text-align:center;padding:10px">Sem dados</div>';
 }
 function openRampTxModalBtn(btn){
  var em=btn&&btn.getAttribute('data-ramp-email');

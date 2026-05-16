@@ -130,15 +130,22 @@ export async function GET(request: Request) {
       allTxns.push(...items);
 
       if (pageCount === 0 && items.length > 0) {
-        const sample = asRecord(items[0]) ?? {};
+        const s = asRecord(items[0]) ?? {};
+        console.log('[RAMP DEBUG] FULL sample tx keys:', Object.keys(s).join(','));
         console.log(
           '[RAMP DEBUG] sample tx:',
           JSON.stringify(
             {
-              amount: sample.amount,
-              sk_category_name: sample.sk_category_name,
-              merchant_name: sample.merchant_name,
-              user_transaction_time: sample.user_transaction_time,
+              amount: s.amount,
+              card_id: s.card_id,
+              card_holder: s.card_holder,
+              card_holder_name: s.card_holder_name,
+              cardholder: s.cardholder,
+              user: s.user,
+              user_id: s.user_id,
+              merchant_name: s.merchant_name,
+              sk_merchant_name: s.sk_merchant_name,
+              user_transaction_time: s.user_transaction_time,
             },
             null,
             2,
