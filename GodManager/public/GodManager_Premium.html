@@ -878,6 +878,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .gma-paid-btn[data-status="PAID"]{background:#d1fae5;color:#065f46;border-color:#86efac;}
 .gma-paid-btn[data-status="PAID"]:hover{background:#a7f3d0;}
 
+.gma-cpa-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:border-color .15s;}
+.gma-cpa-card:hover{border-color:var(--border2);}
+.gma-cpa-label{font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;font-family:'DM Sans',sans-serif;}
+.gma-cpa-value{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.gma-cpa-value .gma-cpa-dollar{color:var(--ink3);font-weight:600;margin-right:2px;}
+.gma-cpa-meta{font-size:11px;color:var(--ink3);font-family:'DM Sans',sans-serif;}
+
 /* ====================================================================
    GM TIMELINE — 5 etapas clicáveis (Jobs)
    ==================================================================== */
@@ -19885,6 +19892,39 @@ function gmAnPaidMethodDisplay(v){
  if(map[k])return map[k];
  return gmAnEsc(s);
 }
+function gmAnSummaryQs(){
+ var st=window.gmAnalyticsState;
+ var q=new URLSearchParams();
+ if(st.type)q.set('type',st.type);
+ if(st.payee)q.set('payee',st.payee);
+ if(st.period)q.set('period',st.period);
+ if(st.accountCode)q.set('accountCode',st.accountCode);
+ if(st.paidStatus)q.set('paidStatus',st.paidStatus);
+ if(st.search)q.set('search',st.search);
+ var s=q.toString();
+ return s?'?'+s:'';
+}
+window.gmAnUpdateCpaCards=function(cpa){
+ cpa=cpa||{};
+ var keys=['rentIncome','ownerDistrib','mgmtFees','hoaDues','secDeposits'];
+ keys.forEach(function(k){
+  var card=document.querySelector('.gma-cpa-card[data-cpa="'+k+'"]');
+  if(!card)return;
+  var data=cpa[k]||{net:'0.00',count:0,totalDebit:'0',totalCredit:'0'};
+  var valEl=card.querySelector('[data-cpa-value]');
+  var cntEl=card.querySelector('[data-cpa-count]');
+  var debit=parseFloat(data.totalDebit||'0');
+  var credit=parseFloat(data.totalCredit||'0');
+  var displayValue;
+  if(k==='rentIncome'||k==='ownerDistrib'){
+   displayValue=Math.abs(credit-debit);
+  }else{
+   displayValue=Math.max(debit,credit);
+  }
+  if(valEl)valEl.textContent=displayValue.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(cntEl)cntEl.textContent=String(data.count!=null?data.count:0);
+ });
+};
 function gmAnQs(){
  var st=window.gmAnalyticsState;
  var q=new URLSearchParams();
@@ -20124,7 +20164,7 @@ window.gmAnalyticsRefresh=async function(){
  var root=document.getElementById('gmAnalyticsRoot');if(!root)return;
  var st=window.gmAnalyticsState;
  try{
-  var sumUrl='/api/analytics/summary'+(st.period?'?period='+encodeURIComponent(st.period):'');
+  var sumUrl='/api/analytics/summary'+gmAnSummaryQs();
   var entUrl='/api/analytics/entries?'+gmAnQs();
   var impUrl='/api/analytics/imports';
   var sum=await gmAnFetchJson(sumUrl);
@@ -20137,6 +20177,7 @@ window.gmAnalyticsRefresh=async function(){
   window.__gmAnalyticsCache.imports=imp&&imp.ok===true?imp:{ok:true,imports:[]};
   window.__gmAnalyticsTotalPages=ent.totalPages||1;
   root.innerHTML=gmAnShellHtml(sum,ent,window.__gmAnalyticsCache.imports);
+  if(typeof gmAnUpdateCpaCards==='function')gmAnUpdateCpaCards(sum.cpaBreakdown||{});
  }catch(e){console.error('[analytics]',e);gmAnShowLoadErr(root,'Erro ao carregar Analytics',{status:'?',error:String(e&&e.message||e)});}
 };
 function gmAnShellHtml(sum,ent,imp){
@@ -20153,6 +20194,13 @@ function gmAnShellHtml(sum,ent,imp){
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total débito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalDebit)+'</div></div>'
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total crédito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalCredit)+'</div></div>'
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Revisados / Pendentes</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:18px">'+gmAnEsc(String(s.countPaid!=null?s.countPaid:0))+' / '+gmAnEsc(String(s.countUnpaid!=null?s.countUnpaid:0))+'</div></div>'
+ +'</div>'
+ +'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:14px 0 18px">'
+ +' <div class="gma-cpa-card" data-cpa="rentIncome"><div class="gma-cpa-label">Rent Income</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 4100</div></div>'
+ +' <div class="gma-cpa-card" data-cpa="ownerDistrib"><div class="gma-cpa-label">Owner Distribution</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 3250</div></div>'
+ +' <div class="gma-cpa-card" data-cpa="mgmtFees"><div class="gma-cpa-label">Management Fees</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 6111</div></div>'
+ +' <div class="gma-cpa-card" data-cpa="hoaDues"><div class="gma-cpa-label">HOA Dues</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 6075</div></div>'
+ +' <div class="gma-cpa-card" data-cpa="secDeposits"><div class="gma-cpa-label">Security Deposits</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 1160/2101/2103/2105</div></div>'
  +'</div>'
  +'<div class="gma-section" data-section="upload">'
  +'<div class="gma-section-head" onclick="gmAnToggleSection(\'upload\')"><strong>Upload GL (AppFolio CSV)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'

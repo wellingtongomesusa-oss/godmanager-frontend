@@ -3,8 +3,17 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveAnalyticsClientId } from '@/lib/analyticsResolveClientId';
 import { GLEntryPaidStatus, Prisma, UserRole } from '@prisma/client';
+import { buildAnalyticsGLEntryFilters } from '@/lib/analyticsGLEntryFilters';
 
 export const dynamic = 'force-dynamic';
+
+const cpaAccounts = {
+  rentIncome: ['4100'],
+  ownerDistrib: ['3250'],
+  mgmtFees: ['6111'],
+  hoaDues: ['6075'],
+  secDeposits: ['1160', '2101', '2103', '2105'],
+} as const;
 
 export async function GET(req: Request) {
   try {
@@ -20,15 +29,7 @@ export async function GET(req: Request) {
     }
 
     const url = new URL(req.url);
-    const periodYM = url.searchParams.get('period') || '';
-
-    const where: Prisma.GLEntryWhereInput = { clientId };
-    if (periodYM && /^\d{4}-\d{2}$/.test(periodYM)) {
-      const [y, m] = periodYM.split('-').map(Number);
-      const start = new Date(Date.UTC(y, m - 1, 1));
-      const end = new Date(Date.UTC(y, m, 1));
-      where.entryDate = { gte: start, lt: end };
-    }
+    const { where, whereForCpa, monthsWhereSql } = buildAnalyticsGLEntryFilters(clientId, url.searchParams);
 
     const [
       totalEntries,
@@ -40,6 +41,7 @@ export async function GET(req: Request) {
       payeesAgg,
       accountsAgg,
       monthsAgg,
+      ...cpaAggs
     ] = await Promise.all([
       prisma.gLEntry.count({ where }),
       prisma.gLEntry.aggregate({ where, _sum: { debit: true } }),
@@ -65,14 +67,38 @@ export async function GET(req: Request) {
         _sum: { debit: true, credit: true },
       }),
       prisma.$queryRaw<{ period: string; count: bigint }[]>(Prisma.sql`
-        SELECT TO_CHAR("entryDate", 'YYYY-MM') AS period, COUNT(*)::bigint AS count
-        FROM gl_entries WHERE "clientId" = ${clientId}
+        SELECT TO_CHAR(e."entryDate", 'YYYY-MM') AS period, COUNT(*)::bigint AS count
+        FROM gl_entries e
+        WHERE ${monthsWhereSql}
         GROUP BY period ORDER BY period DESC LIMIT 24
       `),
+      ...Object.values(cpaAccounts).map((codes) =>
+        prisma.gLEntry.aggregate({
+          where: { ...whereForCpa, accountCode: { in: [...codes] } },
+          _sum: { debit: true, credit: true },
+          _count: { _all: true },
+        }),
+      ),
     ]);
 
     const payeesTop = [...payeesAgg].sort((a, b) => b._count._all - a._count._all).slice(0, 50);
     const accountsTop = [...accountsAgg].sort((a, b) => b._count._all - a._count._all).slice(0, 50);
+
+    const cpaBreakdown: Record<string, unknown> = {};
+    let i = 0;
+    for (const key of Object.keys(cpaAccounts) as (keyof typeof cpaAccounts)[]) {
+      const codes = cpaAccounts[key];
+      const agg = cpaAggs[i++];
+      const debit = Number(agg._sum.debit || 0);
+      const credit = Number(agg._sum.credit || 0);
+      cpaBreakdown[key] = {
+        totalDebit: debit.toFixed(2),
+        totalCredit: credit.toFixed(2),
+        net: (credit - debit).toFixed(2),
+        count: agg._count._all,
+        accountCodes: codes,
+      };
+    }
 
     return NextResponse.json({
       ok: true,
@@ -83,6 +109,7 @@ export async function GET(req: Request) {
         countPaid,
         countUnpaid,
       },
+      cpaBreakdown,
       types: typesAgg.map((t) => ({
         type: t.entryType,
         count: t._count._all,
