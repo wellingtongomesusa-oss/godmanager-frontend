@@ -88,6 +88,9 @@ export async function POST(req: Request) {
         ownerEmail: body.ownerEmail || null,
         ownerPhone: body.ownerPhone || null,
         mgmtFeePct: body.mgmtFeePct != null ? String(body.mgmtFeePct) : '0',
+        hoaAdmin: typeof (body as { hoaAdmin?: unknown }).hoaAdmin === 'boolean'
+          ? (body as { hoaAdmin: boolean }).hoaAdmin
+          : false,
         status: body.status || 'active',
         notes: body.notes || null,
         metadata: (normalizePropertyMetadata(body.metadata) ??

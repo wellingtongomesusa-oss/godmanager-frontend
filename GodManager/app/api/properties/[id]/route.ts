@@ -80,6 +80,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.ownerEmail !== undefined) data.ownerEmail = (body.ownerEmail as string) || null;
     if (body.ownerPhone !== undefined) data.ownerPhone = (body.ownerPhone as string) || null;
     if (body.mgmtFeePct !== undefined) data.mgmtFeePct = String(body.mgmtFeePct);
+    if (typeof body.hoaAdmin === 'boolean') data.hoaAdmin = body.hoaAdmin;
     if (body.status !== undefined) data.status = String(body.status);
     if (body.notes !== undefined) data.notes = (body.notes as string) || null;
     if (body.metadata !== undefined) {

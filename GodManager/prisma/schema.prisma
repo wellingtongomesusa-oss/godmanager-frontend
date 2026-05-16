@@ -274,6 +274,7 @@ model Property {
   ownerId           String?
   owner             Owner?                  @relation("Property_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
   mgmtFeePct        Decimal                 @default(0) @db.Decimal(5, 2)
+  hoaAdmin          Boolean                 @default(false)
   status            String                  @default("active")
   notes             String?                 @db.Text
   metadata          Json?
@@ -294,6 +295,7 @@ model Property {
   @@index([status])
   @@index([clientId])
   @@index([ownerId])
+  @@index([hoaAdmin])
   @@map("properties")
 }
 
