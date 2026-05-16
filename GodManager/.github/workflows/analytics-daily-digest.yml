@@ -1,0 +1,16 @@
+name: Analytics Daily Digest
+
+on:
+  schedule:
+    - cron: '0 11 * * *' # 11:00 UTC (~manhã US East)
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call daily-digest endpoint
+        run: |
+          curl -fsS "https://www.godmanager.us/api/analytics/daily-digest?secret=${{ secrets.CRON_SECRET }}" \
+            -o /tmp/resp.json -w "HTTP %{http_code}\n"
+          cat /tmp/resp.json | head -100
