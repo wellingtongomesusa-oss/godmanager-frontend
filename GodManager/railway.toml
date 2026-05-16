@@ -1,0 +1,9 @@
+[build]
+builder = "NIXPACKS"
+
+[[services]]
+name = "analytics-cron"
+
+[services.cron]
+schedule = "0 3 * * *"
+command = "curl -s 'https://www.godmanager.us/api/analytics/snapshot?secret=${CRON_SECRET}' > /tmp/last_cron.log 2>&1"

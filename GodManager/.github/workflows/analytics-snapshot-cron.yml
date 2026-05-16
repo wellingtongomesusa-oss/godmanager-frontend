@@ -1,0 +1,16 @@
+name: Analytics Snapshot Daily
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call snapshot endpoint
+        run: |
+          curl -fsS "https://www.godmanager.us/api/analytics/snapshot?secret=${{ secrets.CRON_SECRET }}" \
+            -o /tmp/resp.json -w "HTTP %{http_code}\n"
+          cat /tmp/resp.json | head -50
