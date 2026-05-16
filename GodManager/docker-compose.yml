@@ -10,6 +10,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: godmanager
       POSTGRES_PASSWORD: godmanager
@@ -22,7 +23,7 @@ services:
       test: ['CMD-SHELL', 'pg_isready -U godmanager -d godmanager']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
 volumes:
   godmanager_pgdata:
