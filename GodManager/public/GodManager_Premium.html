@@ -4136,7 +4136,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="ph" style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px">
   <div style="flex:1;min-width:220px">
    <div class="pt">Analytics</div>
-   <div class="ps">General Ledger importado (AppFolio) — KPIs, filtros e lançamentos. Acesso restrito.</div>
+   <div class="ps">General Ledger importado (AppFolio). Marque cada lançamento como REVISADO conforme audita. Acesso restrito ao super admin.</div>
   </div>
  </div>
  <div id="gmAnalyticsRoot" style="padding:4px 0 24px"></div>
@@ -19860,6 +19860,31 @@ function gmAnFmtDate(iso){
   return gmAnEsc(d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}));
  }catch(e){return '';}
 }
+function gmAnPaidStatusLabel(code){
+ var c=String(code||'').toUpperCase();
+ var map={UNPAID:'Pendente',PAID:'Revisado',VOID:'Anulado',REVERSED:'Estornado'};
+ if(map[c])return map[c];
+ return gmAnEsc(String(code||''));
+}
+function gmAnPaidMethodDisplay(v){
+ var s=String(v==null?'':v).trim();
+ if(!s)return '—';
+ var k=s.toLowerCase();
+ var map={
+  manual:'Manual',
+  bank_statement:'Conferido com extrato',
+  invoice:'Conferido com fatura',
+  appfolio:'Conferido com AppFolio',
+  other:'Outro',
+  cash:'Cash',
+  check:'Check',
+  ach:'ACH',
+  wire:'Wire',
+  card:'Card'
+ };
+ if(map[k])return map[k];
+ return gmAnEsc(s);
+}
 function gmAnQs(){
  var st=window.gmAnalyticsState;
  var q=new URLSearchParams();
@@ -19909,7 +19934,8 @@ function gmAnFilterOptionHtmlFragments(sum){
  var optsAcc='<option value="">Todas as contas</option>'+accounts.map(function(a){var c=String(a.accountCode||'');return '<option value="'+gmAnEsc(c)+'"'+(st.accountCode===c?' selected':'')+'>'+gmAnEsc(c+(a.account?' · '+a.account:''))+'</option>';}).join('');
  var optsMo='<option value="">Todos os meses</option>'+months.map(function(m){var p=String(m.period||'');return '<option value="'+gmAnEsc(p)+'"'+(st.period===p?' selected':'')+'>'+gmAnEsc(p)+' ('+m.count+')</option>';}).join('');
  var paidVals=['','UNPAID','PAID','VOID','REVERSED'];
- var optsPaid=paidVals.map(function(pv){if(pv==='')return '<option value=""'+(st.paidStatus===''?' selected':'')+'>Todos os estados</option>';return '<option value="'+pv+'"'+(st.paidStatus===pv?' selected':'')+'>'+pv+'</option>';}).join('');
+ var paidLbl={UNPAID:'Pendente',PAID:'Revisado',VOID:'Anulado',REVERSED:'Estornado'};
+ var optsPaid=paidVals.map(function(pv){if(pv==='')return '<option value=""'+(st.paidStatus===''?' selected':'')+'>Todos os estados</option>';return '<option value="'+pv+'"'+(st.paidStatus===pv?' selected':'')+'>'+paidLbl[pv]+'</option>';}).join('');
  return{typeHtml:optsType,payeeHtml:optsPayee,accountHtml:optsAcc,monthHtml:optsMo,paidHtml:optsPaid};
 }
 window.gmAnPopulateFilters=function(opts){
@@ -19996,7 +20022,7 @@ function gmAnRowsHtml(entries){
  var rows=list.map(function(e){
   var deb=e.debit?gmAnFmtMoney(e.debit):'—';
   var cre=e.credit?gmAnFmtMoney(e.credit):'—';
-  var ps=gmAnEsc(e.paidStatus||'');
+  var ps=gmAnPaidStatusLabel(e.paidStatus||'');
   var typ=gmAnEsc(e.entryType||'');
   var pay=gmAnEsc(e.payee||'—');
   var prop=gmAnEsc(e.propertyAddress||'');
@@ -20023,13 +20049,13 @@ window.gmAnOpenPaidModal=function(entryId){
  var paidShown=entry.paidAt?gmAnFmtDate(entry.paidAt):'—';
  if(isPaid){
   bd.innerHTML='<div class="gmc-modal" style="max-width:440px;width:100%;background:var(--paper);border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.18)">'+
-   '<div class="gmc-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)"><h3 style="margin:0;font-size:17px;font-family:\'Cormorant Garamond\',serif;font-weight:600;color:var(--ink)">Lançamento pago</h3><button type="button" class="gmc-close" style="border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--ink2)">&times;</button></div>'+
+   '<div class="gmc-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)"><h3 style="margin:0;font-size:17px;font-family:\'Cormorant Garamond\',serif;font-weight:600;color:var(--ink)">Lançamento revisado</h3><button type="button" class="gmc-close" style="border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--ink2)">&times;</button></div>'+
    '<div style="padding:18px 20px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--ink2)">'+
    '<dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 14px">'+
    '<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Valor</dt><dd style="margin:0;font-weight:700;font-family:\'JetBrains Mono\',monospace">'+amtDisp+'</dd>'+
-   '<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Pago em</dt><dd style="margin:0">'+paidShown+'</dd>'+
+   '<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Revisado em</dt><dd style="margin:0">'+paidShown+'</dd>'+
    '<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Por</dt><dd style="margin:0">'+gmAnEsc(entry.paidByName||'—')+'</dd>'+
-   '<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Método</dt><dd style="margin:0">'+gmAnEsc(entry.paidMethod||'—')+'</dd>'+
+   '<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Tipo</dt><dd style="margin:0">'+gmAnPaidMethodDisplay(entry.paidMethod)+'</dd>'+
    (entry.paidNotes?'<dt style="color:var(--ink3);font-size:11px;text-transform:uppercase;font-weight:600">Notas</dt><dd style="margin:0">'+gmAnEsc(entry.paidNotes)+'</dd>':'')+
    '</dl>'+
    '<div style="display:flex;justify-content:flex-end;gap:8px">'+
@@ -20037,19 +20063,21 @@ window.gmAnOpenPaidModal=function(entryId){
    '</div></div></div>';
  }else{
   bd.innerHTML='<div class="gmc-modal" style="max-width:440px;width:100%;background:var(--paper);border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.18)">'+
-   '<div class="gmc-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)"><h3 style="margin:0;font-size:17px;font-family:\'Cormorant Garamond\',serif;font-weight:600;color:var(--ink)">Marcar como pago</h3><button type="button" class="gmc-close" style="border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--ink2)">&times;</button></div>'+
+   '<div class="gmc-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)"><h3 style="margin:0;font-size:17px;font-family:\'Cormorant Garamond\',serif;font-weight:600;color:var(--ink)">Marcar como revisado</h3><button type="button" class="gmc-close" style="border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--ink2)">&times;</button></div>'+
    '<div style="padding:18px 20px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--ink2)">'+
    '<div style="background:var(--sand);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12px;border:1px solid var(--border2)">'+
    '<strong>Valor:</strong> '+amtDisp+' &nbsp; <strong>Payee:</strong> '+gmAnEsc(entry.payee||'—')+
    '</div>'+
-   '<div style="margin-bottom:10px"><label style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Data do pagamento</label>'+
+   '<div style="margin-bottom:10px"><label style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Data da revisão</label>'+
    '<input type="date" id="gma-paid-date" value="'+gmAnEsc(today)+'" style="width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif;box-sizing:border-box"/></div>'+
-   '<div style="margin-bottom:10px"><label style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Método</label>'+
+   '<div style="margin-bottom:10px"><label style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Tipo</label>'+
    '<select id="gma-paid-method" style="width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif;box-sizing:border-box">'+
    '<option value="">— selecionar —</option>'+
-   '<option value="cash">Cash</option><option value="check">Check</option>'+
-   '<option value="ach">ACH</option><option value="wire">Wire</option>'+
-   '<option value="card">Card</option><option value="other">Other</option>'+
+   '<option value="manual">Manual</option>'+
+   '<option value="bank_statement">Conferido com extrato</option>'+
+   '<option value="invoice">Conferido com fatura</option>'+
+   '<option value="appfolio">Conferido com AppFolio</option>'+
+   '<option value="other">Outro</option>'+
    '</select></div>'+
    '<div style="margin-bottom:14px"><label style="display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Notas (opcional)</label>'+
    '<textarea id="gma-paid-notes" style="width:100%;min-height:56px;padding:9px 11px;border:1px solid var(--border2);border-radius:7px;font-family:\'DM Sans\',sans-serif;box-sizing:border-box;resize:vertical"></textarea></div>'+
@@ -20124,7 +20152,7 @@ function gmAnShellHtml(sum,ent,imp){
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total lançamentos</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnEsc(String(s.totalEntries!=null?s.totalEntries:0))+'</div></div>'
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total débito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalDebit)+'</div></div>'
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total crédito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalCredit)+'</div></div>'
- +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Pagos / Pendentes</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:18px">'+gmAnEsc(String(s.countPaid!=null?s.countPaid:0))+' / '+gmAnEsc(String(s.countUnpaid!=null?s.countUnpaid:0))+'</div></div>'
+ +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Revisados / Pendentes</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:18px">'+gmAnEsc(String(s.countPaid!=null?s.countPaid:0))+' / '+gmAnEsc(String(s.countUnpaid!=null?s.countUnpaid:0))+'</div></div>'
  +'</div>'
  +'<div class="gma-section" data-section="upload">'
  +'<div class="gma-section-head" onclick="gmAnToggleSection(\'upload\')"><strong>Upload GL (AppFolio CSV)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
@@ -20142,7 +20170,7 @@ function gmAnShellHtml(sum,ent,imp){
  +'  <div><label for="gm-an-f-payee" class="bk-kpi-lbl">Payee</label><select id="gm-an-f-payee" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.payeeHtml+'</select></div>'
  +'  <div><label for="gm-an-f-period" class="bk-kpi-lbl">Mês</label><select id="gm-an-f-period" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.monthHtml+'</select></div>'
  +'  <div><label for="gm-an-f-account" class="bk-kpi-lbl">Conta</label><select id="gm-an-f-account" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.accountHtml+'</select></div>'
- +'  <div><label for="gm-an-f-paid" class="bk-kpi-lbl">Estado pago</label><select id="gm-an-f-paid" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.paidHtml+'</select></div>'
+ +'  <div><label for="gm-an-f-paid" class="bk-kpi-lbl">Revisão</label><select id="gm-an-f-paid" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.paidHtml+'</select></div>'
  +'  <div style="grid-column:1/-1"><label for="gm-an-f-search" class="bk-kpi-lbl">Busca livre</label><input id="gm-an-f-search" type="text" placeholder="Payee, propriedade, descricao, referencia" value="'+gmAnEsc(st.search)+'" style="width:100%;max-width:420px;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif"/></div>'
  +'  <div><button type="button" onclick="if(typeof gmAnalyticsApplyFilters===\'function\')gmAnalyticsApplyFilters()" style="padding:9px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none">Aplicar filtros</button></div>'
  +' </div>'
@@ -20156,7 +20184,7 @@ function gmAnShellHtml(sum,ent,imp){
  +'</div>'
  +'<div style="overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--paper);margin-bottom:18px">'
  +' <table style="width:100%;border-collapse:collapse;font-family:\'DM Sans\',sans-serif">'
- +' <thead><tr style="background:var(--cream)"><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Tipo</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Payee</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Debito</th><th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Credito</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Pago</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Ref.</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Conta</th></tr></thead>'
+ +' <thead><tr style="background:var(--cream)"><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Tipo</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Payee</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Debito</th><th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Credito</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Revisão</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Ref.</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Conta</th></tr></thead>'
  +' <tbody id="gm-analytics-tbody">'+gmAnRowsHtml(ent.entries||[])+'</tbody></table>'
  +'</div>'
  +'<details style="background:var(--sand);border:1px solid var(--border);border-radius:12px;padding:12px 16px">'
