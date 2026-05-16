@@ -20291,6 +20291,30 @@ window.gmAnLoadForecast=async function(){
   chartEl.innerHTML='<div style="color:var(--red);padding:14px;font-family:\'DM Sans\',sans-serif;font-size:13px">Erro: '+gmAnEsc(String(e&&e.message||e))+'</div>';
  }
 };
+window.gmAnRunCategorize=async function(){
+ var statusEl=document.getElementById('gmAnCatStatus');
+ if(!confirm('Vai usar Claude AI para categorizar ate 30 lancamentos sem conta. Continuar?'))return;
+ if(statusEl){statusEl.textContent='A processar...';statusEl.style.color='var(--ink3)';}
+ try{
+  var r=await fetch('/api/analytics/categorize-batch',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit:30})});
+  var d=null;
+  try{d=await r.json();}catch(_j){d=null;}
+  if(d&&d.ok===true){
+   if(statusEl){
+    statusEl.textContent='Concluido: '+String(d.categorized!=null?d.categorized:0)+' de '+String(d.processed!=null?d.processed:0);
+    statusEl.style.color='var(--green)';
+   }
+   setTimeout(function(){if(typeof gmAnalyticsRefresh==='function')gmAnalyticsRefresh();},800);
+  }else{
+   if(statusEl){
+    statusEl.textContent='Erro: '+gmAnEsc(String(d&&d.error||('HTTP '+r.status)));
+    statusEl.style.color='var(--red)';
+   }
+  }
+ }catch(e){
+  if(statusEl){statusEl.textContent='Erro: '+gmAnEsc(String(e&&e.message||e));statusEl.style.color='var(--red)';}
+ }
+};
 window.gmAnToggleSection=function(key){
  var k=String(key||'').replace(/[^a-z0-9_-]/gi,'');
  var el=document.querySelector('.gma-section[data-section="'+k+'"]');
@@ -20599,6 +20623,8 @@ function gmAnShellHtml(sum,ent,imp){
  +' <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">'
  +'  <input type="file" id="gm-an-file" accept=".csv,text/csv" style="font-size:12px;font-family:\'DM Sans\',sans-serif"/>'
  +'  <button type="button" onclick="if(typeof gmAnalyticsUploadCsv===\'function\')gmAnalyticsUploadCsv()" style="padding:9px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>'
+ +'  <button type="button" onclick="if(typeof gmAnRunCategorize===\'function\')gmAnRunCategorize()" style="margin-left:10px;padding:9px 16px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--blue);color:#fff;border:none">Auto-categorizar (AI)</button>'
+ +'  <span id="gmAnCatStatus" style="margin-left:12px;font-size:11px;color:var(--ink3);font-family:\'DM Sans\',sans-serif"></span>'
  +' </div>'
  +'</div></div>'
  +'<div class="gma-section" data-section="filtros">'
