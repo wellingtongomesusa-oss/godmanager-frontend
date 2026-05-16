@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { resolveAnalyticsClientId } from '@/lib/analyticsResolveClientId';
 import { GLEntryPaidStatus, Prisma, UserRole } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
-
-function clientIdFromRequest(user: { clientId: string | null }, req: Request): string | null {
-  if (user.clientId) return user.clientId;
-  const fromHeader = req.headers.get('x-client-id')?.trim();
-  return fromHeader || null;
-}
 
 export async function GET(req: Request) {
   try {
@@ -19,8 +14,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const clientId = clientIdFromRequest(user, req);
-    if (!clientId) return NextResponse.json({ ok: false, error: 'No clientId' }, { status: 400 });
+    const clientId = await resolveAnalyticsClientId(user, req);
+    if (!clientId) {
+      return NextResponse.json({ ok: false, error: 'No clientId resolved' }, { status: 400 });
+    }
 
     const url = new URL(req.url);
     const periodYM = url.searchParams.get('period') || '';

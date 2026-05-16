@@ -19859,6 +19859,26 @@ function gmAnQs(){
  if(st.search)q.set('search',st.search);
  return q.toString();
 }
+async function gmAnFetchJson(url){
+ var res=await fetch(url,{credentials:'include',cache:'no-store'});
+ var data=null;
+ try{data=await res.json();}catch(_e){data=null;}
+ if(!res.ok){
+  var err=(data&&data.error)||('HTTP '+res.status+' '+String(res.statusText||''));
+  return {ok:false,status:res.status,error:String(err)};
+ }
+ if(!data||typeof data!=='object'){
+  return {ok:false,status:res.status,error:'Resposta invalida'};
+ }
+ return Object.assign({},data,{status:res.status});
+}
+function gmAnShowLoadErr(root,title,payload){
+ if(!root)return;
+ var st=payload&&payload.status!=null?String(payload.status):'?';
+ var msg=gmAnEsc(payload&&(payload.error||payload.message)||'desconhecida');
+ root.innerHTML='<div style="padding:20px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55"><strong>'+gmAnEsc(title)+'</strong><br><br>Status: '+gmAnEsc(st)+'<br>Mensagem: '+msg+'<br><br><button type="button" onclick="if(typeof gmAnalyticsLoad===\'function\')gmAnalyticsLoad()" style="background:#dc2626;color:#fff;padding:8px 16px;border-radius:6px;border:0;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600">Tentar novamente</button></div>';
+ if(typeof showToast==='function')showToast(String(payload&&payload.error||title),'error');
+}
 window.gmAnalyticsApplyFilters=function(){
  var st=window.gmAnalyticsState;
  var gt=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():'';};
@@ -19908,10 +19928,11 @@ window.gmAnalyticsUploadCsv=async function(){
 window.gmAnalyticsRefreshEntries=async function(){
  var root=document.getElementById('gmAnalyticsRoot');if(!root||!root.querySelector('#gm-analytics-tbody'))return;
  try{
-  var res=await fetch('/api/analytics/entries?'+gmAnQs(),{credentials:'include',cache:'no-store'});
-  var data=null;try{data=await res.json();}catch(_j){data=null;}
-  if(!res.ok||!data||!data.ok){
-   if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao carregar lançamentos','error');
+  var data=await gmAnFetchJson('/api/analytics/entries?'+gmAnQs());
+  if(data.ok!==true){
+   var tbE=document.getElementById('gm-analytics-tbody');
+   if(tbE)tbE.innerHTML='<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--red);font-family:\'DM Sans\',sans-serif;font-size:12px">Erro ao paginar: '+gmAnEsc(data.error||'?')+' (HTTP '+gmAnEsc(String(data.status))+')</td></tr>';
+   if(typeof showToast==='function')showToast(String(data.error),'error');
    return;
   }
   window.__gmAnalyticsTotalPages=data.totalPages||1;
@@ -19919,7 +19940,7 @@ window.gmAnalyticsRefreshEntries=async function(){
   if(tb)tb.innerHTML=gmAnRowsHtml(data.entries||[]);
   var pg=document.getElementById('gm-an-page-info');
   if(pg)pg.textContent='Página '+String(data.page||1)+' / '+String(data.totalPages||1)+' · '+String(data.total||0)+' lançamentos';
- }catch(e){console.warn('[analytics] entries page',e);}
+ }catch(e){console.warn('[analytics] entries page',e);var tb2=document.getElementById('gm-analytics-tbody');if(tb2)tb2.innerHTML='<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--red)">'+gmAnEsc(String(e&&e.message||e))+'</td></tr>';}
 };
 function gmAnRowsHtml(entries){
  var rows=(entries||[]).map(function(e){
@@ -19941,21 +19962,19 @@ window.gmAnalyticsRefresh=async function(){
  var st=window.gmAnalyticsState;
  try{
   var sumUrl='/api/analytics/summary'+(st.period?'?period='+encodeURIComponent(st.period):'');
-  var resArr=await Promise.all([
-   fetch(sumUrl,{credentials:'include',cache:'no-store'}),
-   fetch('/api/analytics/entries?'+gmAnQs(),{credentials:'include',cache:'no-store'}),
-   fetch('/api/analytics/imports',{credentials:'include',cache:'no-store'})
-  ]);
-  var sum=await resArr[0].json().catch(function(){return null;});
-  var ent=await resArr[1].json().catch(function(){return null;});
-  var imp=await resArr[2].json().catch(function(){return null;});
-  if(!resArr[0].ok||!sum||!sum.ok){if(typeof showToast==='function')showToast((sum&&sum.error)||'Erro summary','error');return;}
-  if(!resArr[1].ok||!ent||!ent.ok){if(typeof showToast==='function')showToast((ent&&ent.error)||'Erro entries','error');return;}
+  var entUrl='/api/analytics/entries?'+gmAnQs();
+  var impUrl='/api/analytics/imports';
+  var sum=await gmAnFetchJson(sumUrl);
+  var ent=await gmAnFetchJson(entUrl);
+  var imp=await gmAnFetchJson(impUrl);
+  if(sum.ok!==true){gmAnShowLoadErr(root,'Erro ao carregar Analytics (resumo)',sum);return;}
+  if(ent.ok!==true){gmAnShowLoadErr(root,'Erro ao carregar lançamentos',ent);return;}
+  if(imp.ok!==true){gmAnShowLoadErr(root,'Erro ao carregar histórico de imports',imp);return;}
   window.__gmAnalyticsCache.summary=sum;
-  window.__gmAnalyticsCache.imports=imp&&imp.ok?imp:{ok:true,imports:[]};
+  window.__gmAnalyticsCache.imports=imp&&imp.ok===true?imp:{ok:true,imports:[]};
   window.__gmAnalyticsTotalPages=ent.totalPages||1;
   root.innerHTML=gmAnShellHtml(sum,ent,window.__gmAnalyticsCache.imports);
- }catch(e){console.error('[analytics]',e);if(typeof showToast==='function')showToast('Falha ao carregar Analytics','error');}
+ }catch(e){console.error('[analytics]',e);gmAnShowLoadErr(root,'Erro ao carregar Analytics',{status:'?',error:String(e&&e.message||e)});}
 };
 function gmAnShellHtml(sum,ent,imp){
  var s=sum.summary||{};

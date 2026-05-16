@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { GLEntryType, UserRole } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { resolveAnalyticsClientId } from '@/lib/analyticsResolveClientId';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -79,10 +80,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden — super_admin only' }, { status: 403 });
     }
 
-    const headerClientId = req.headers.get('x-client-id')?.trim() || null;
-    const clientId = user.clientId ?? headerClientId;
+    const clientId = await resolveAnalyticsClientId(user, req);
     if (!clientId) {
-      return NextResponse.json({ ok: false, error: 'No clientId' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: 'No clientId resolved' }, { status: 400 });
     }
 
     const form = await req.formData();
