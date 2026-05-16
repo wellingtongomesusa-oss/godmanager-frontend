@@ -66,11 +66,19 @@ export async function GET(req: Request) {
         _count: { _all: true },
         _sum: { debit: true, credit: true },
       }),
-      prisma.$queryRaw<{ period: string; count: bigint }[]>(Prisma.sql`
-        SELECT TO_CHAR(e."entryDate", 'YYYY-MM') AS period, COUNT(*)::bigint AS count
+      prisma.$queryRaw<
+        { period: string; count: bigint; total_debit: unknown; total_credit: unknown }[]
+      >(Prisma.sql`
+        SELECT
+          TO_CHAR(e."entryDate", 'YYYY-MM') AS period,
+          COUNT(*)::bigint AS count,
+          COALESCE(SUM(e.debit), 0) AS total_debit,
+          COALESCE(SUM(e.credit), 0) AS total_credit
         FROM gl_entries e
         WHERE ${monthsWhereSql}
-        GROUP BY period ORDER BY period DESC LIMIT 24
+        GROUP BY period
+        ORDER BY period DESC
+        LIMIT 24
       `),
       ...Object.values(cpaAccounts).map((codes) =>
         prisma.gLEntry.aggregate({
@@ -129,7 +137,13 @@ export async function GET(req: Request) {
         debit: a._sum.debit?.toString() || '0',
         credit: a._sum.credit?.toString() || '0',
       })),
-      months: monthsAgg.map((m) => ({ period: m.period, count: Number(m.count) })),
+      months: monthsAgg.map((m) => ({
+        period: m.period,
+        count: Number(m.count),
+        debit: Number(m.total_debit ?? 0).toFixed(2),
+        credit: Number(m.total_credit ?? 0).toFixed(2),
+        net: (Number(m.total_credit ?? 0) - Number(m.total_debit ?? 0)).toFixed(2),
+      })),
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'unknown';

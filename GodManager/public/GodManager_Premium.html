@@ -19925,6 +19925,111 @@ window.gmAnUpdateCpaCards=function(cpa){
   if(cntEl)cntEl.textContent=String(data.count!=null?data.count:0);
  });
 };
+window.gmAnRenderMonthlyChart=function(months){
+ var el=document.getElementById('gmAnChartMonthly');
+ if(!el||!months||!months.length){
+  if(el)el.innerHTML='<div style="text-align:center;color:var(--ink3);padding:40px;font-family:\'DM Sans\',sans-serif;font-size:13px">Sem dados para o grafico.</div>';
+  return;
+ }
+ var data=months.slice().reverse();
+ var W=el.clientWidth||800;
+ if(W<320)W=320;
+ var H=280;
+ var pad={top:20,right:20,bottom:40,left:60};
+ var vals=[];
+ for(var vi=0;vi<data.length;vi++){
+  vals.push(parseFloat(data[vi].debit||0));
+  vals.push(parseFloat(data[vi].credit||0));
+ }
+ var maxVal=vals.length?Math.max.apply(null,vals):0;
+ if(!isFinite(maxVal)||maxVal<=0)maxVal=1;
+ var plotW=W-pad.left-pad.right;
+ var plotH=H-pad.top-pad.bottom;
+ var stepX=data.length>1?plotW/(data.length-1):0;
+ function pt(i,val){
+  var x=data.length===1?pad.left+plotW/2:pad.left+i*stepX;
+  var y=pad.top+plotH-(val/maxVal)*plotH;
+  return [x,y];
+ }
+ function pathOf(field){
+  return data.map(function(m,i){
+   var p=pt(i,parseFloat(m[field]||0));
+   return (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1);
+  }).join(' ');
+ }
+ var ticks=5;
+ var gridLines='';
+ for(var t=0;t<=ticks;t++){
+  var gy=pad.top+(plotH/ticks)*t;
+  var gval=maxVal-(maxVal/ticks)*t;
+  gridLines+='<line x1="'+pad.left+'" y1="'+gy+'" x2="'+(W-pad.right)+'" y2="'+gy+'" stroke="#e2e8f0" stroke-width="1"/>';
+  gridLines+='<text x="'+(pad.left-8)+'" y="'+(gy+4)+'" font-size="10" fill="#94a3b8" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(gval/1000)+'k</text>';
+ }
+ var xLabels=data.map(function(m,i){
+  var p=pt(i,0);
+  return '<text x="'+p[0]+'" y="'+(H-pad.bottom+18)+'" font-size="10" fill="#64748b" text-anchor="middle" font-family="DM Sans,sans-serif">'+gmAnEsc(m.period)+'</text>';
+ }).join('');
+ var dots=data.map(function(m,i){
+  var pD=pt(i,parseFloat(m.debit||0));
+  var pC=pt(i,parseFloat(m.credit||0));
+  var tipD=gmAnEsc(m.period)+' debito: '+gmAnEsc(String(gmAnFmtMoney(m.debit)));
+  var tipC=gmAnEsc(m.period)+' credito: '+gmAnEsc(String(gmAnFmtMoney(m.credit)));
+  return '<circle cx="'+pD[0].toFixed(1)+'" cy="'+pD[1].toFixed(1)+'" r="3" fill="#ef4444"><title>'+tipD+'</title></circle>'+
+   '<circle cx="'+pC[0].toFixed(1)+'" cy="'+pC[1].toFixed(1)+'" r="3" fill="#10b981"><title>'+tipC+'</title></circle>';
+ }).join('');
+ var svg='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block">'+
+  gridLines+
+  '<path d="'+pathOf('debit')+'" fill="none" stroke="#ef4444" stroke-width="2"/>'+
+  '<path d="'+pathOf('credit')+'" fill="none" stroke="#10b981" stroke-width="2"/>'+
+  dots+xLabels+
+  '<g transform="translate('+(W-168)+', '+(pad.top-2)+')" font-family="DM Sans,sans-serif">'+
+   '<rect x="-8" y="-14" width="168" height="20" fill="var(--paper)" stroke="var(--border)" stroke-width="1" rx="4"/>'+
+   '<circle cx="0" cy="-4" r="3" fill="#ef4444"/><text x="8" y="-1" font-size="10" fill="#475569">Debito</text>'+
+   '<circle cx="68" cy="-4" r="3" fill="#10b981"/><text x="76" y="-1" font-size="10" fill="#475569">Credito</text>'+
+  '</g>'+
+  '</svg>';
+ el.innerHTML=svg;
+};
+window.gmAnRenderComparisonTable=function(months){
+ var el=document.getElementById('gmAnComparisonTable');
+ if(!el||!months||!months.length){if(el)el.innerHTML='';return;}
+ var rows=months.slice();
+ function pct(curr,prev){
+  curr=parseFloat(curr||0);prev=parseFloat(prev||0);
+  if(prev===0)return null;
+  return ((curr-prev)/Math.abs(prev))*100;
+ }
+ function arrow(p){
+  if(p===null||isNaN(p))return '<span style="color:var(--ink3)">—</span>';
+  var color=p>0?'#059669':(p<0?'#dc2626':'#94a3b8');
+  var sym=p>0?'▲':(p<0?'▼':'•');
+  return '<span style="color:'+color+';font-weight:600">'+sym+' '+Math.abs(p).toFixed(1)+'%</span>';
+ }
+ var trs=rows.map(function(m,i){
+  var prev=rows[i+1];
+  var dQty=prev?pct(m.count,prev.count):null;
+  var dNet=prev?pct(m.net,prev.net):null;
+  return '<tr style="border-bottom:1px solid var(--border)">'+
+   '<td style="padding:8px 12px;font-weight:600;font-family:\'DM Sans\',sans-serif">'+gmAnEsc(m.period)+'</td>'+
+   '<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnEsc(String(m.count!=null?m.count:0))+'</td>'+
+   '<td style="padding:8px 12px;text-align:right;color:#dc2626;font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(m.debit)+'</td>'+
+   '<td style="padding:8px 12px;text-align:right;color:#059669;font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(m.credit)+'</td>'+
+   '<td style="padding:8px 12px;text-align:right;font-weight:600;font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(m.net)+'</td>'+
+   '<td style="padding:8px 12px;text-align:right">'+arrow(dQty)+'</td>'+
+   '<td style="padding:8px 12px;text-align:right">'+arrow(dNet)+'</td>'+
+  '</tr>';
+ }).join('');
+ el.innerHTML='<div style="overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--paper)"><table style="width:100%;min-width:640px;border-collapse:collapse;font-size:12.5px;font-family:\'DM Sans\',sans-serif">'+
+  '<thead><tr style="background:var(--sand);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)">'+
+   '<th style="padding:10px 12px;text-align:left">Periodo</th>'+
+   '<th style="padding:10px 12px;text-align:right">Qty</th>'+
+   '<th style="padding:10px 12px;text-align:right">Debito</th>'+
+   '<th style="padding:10px 12px;text-align:right">Credito</th>'+
+   '<th style="padding:10px 12px;text-align:right">Net</th>'+
+   '<th style="padding:10px 12px;text-align:right">&#916; Qty</th>'+
+   '<th style="padding:10px 12px;text-align:right">&#916; Net</th>'+
+  '</tr></thead><tbody>'+trs+'</tbody></table></div>';
+};
 function gmAnQs(){
  var st=window.gmAnalyticsState;
  var q=new URLSearchParams();
@@ -20178,6 +20283,11 @@ window.gmAnalyticsRefresh=async function(){
   window.__gmAnalyticsTotalPages=ent.totalPages||1;
   root.innerHTML=gmAnShellHtml(sum,ent,window.__gmAnalyticsCache.imports);
   if(typeof gmAnUpdateCpaCards==='function')gmAnUpdateCpaCards(sum.cpaBreakdown||{});
+  var mo=sum.months||[];
+  if(typeof gmAnRenderComparisonTable==='function')gmAnRenderComparisonTable(mo);
+  requestAnimationFrame(function(){
+   if(typeof gmAnRenderMonthlyChart==='function')gmAnRenderMonthlyChart(mo);
+  });
  }catch(e){console.error('[analytics]',e);gmAnShowLoadErr(root,'Erro ao carregar Analytics',{status:'?',error:String(e&&e.message||e)});}
 };
 function gmAnShellHtml(sum,ent,imp){
@@ -20202,6 +20312,12 @@ function gmAnShellHtml(sum,ent,imp){
  +' <div class="gma-cpa-card" data-cpa="hoaDues"><div class="gma-cpa-label">HOA Dues</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 6075</div></div>'
  +' <div class="gma-cpa-card" data-cpa="secDeposits"><div class="gma-cpa-label">Security Deposits</div><div class="gma-cpa-value"><span class="gma-cpa-dollar">$</span><span data-cpa-value>0.00</span></div><div class="gma-cpa-meta"><span data-cpa-count>0</span> lançamentos · acc 1160/2101/2103/2105</div></div>'
  +'</div>'
+ +'<div class="gma-section" data-section="charts">'
+ +'<div class="gma-section-head" onclick="gmAnToggleSection(\'charts\')"><strong>Gráficos &amp; Comparações Mês-a-Mês</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
+ +'<div class="gma-section-body">'
+ +' <div id="gmAnChartMonthly" style="width:100%;height:280px;margin-bottom:20px"></div>'
+ +' <div id="gmAnComparisonTable"></div>'
+ +'</div></div>'
  +'<div class="gma-section" data-section="upload">'
  +'<div class="gma-section-head" onclick="gmAnToggleSection(\'upload\')"><strong>Upload GL (AppFolio CSV)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
  +'<div class="gma-section-body">'
