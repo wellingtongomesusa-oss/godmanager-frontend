@@ -864,6 +864,16 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .gmc-trigger-badge{background:#4f46e5;color:#fff;font-size:10px;padding:1px 5px;
   border-radius:8px;font-weight:600;min-width:14px;text-align:center;}
 
+/* Analytics — expand/collapse sections */
+.gma-section{margin-bottom:14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);overflow:hidden;}
+.gma-section-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--sand);user-select:none;transition:background .12s;}
+.gma-section-head:hover{background:var(--cream);}
+.gma-section-head strong{font-size:13px;color:var(--ink);font-weight:600;letter-spacing:.3px;text-transform:uppercase;font-family:'DM Sans',sans-serif;}
+.gma-section-chev{width:10px;height:10px;border-right:2px solid var(--ink2);border-bottom:2px solid var(--ink2);transform:rotate(45deg);transition:transform .15s;margin-left:10px;flex-shrink:0;}
+.gma-section.expanded .gma-section-chev{transform:rotate(225deg);}
+.gma-section-body{padding:16px;display:none;border-top:1px solid var(--border);}
+.gma-section.expanded .gma-section-body{display:block;}
+
 /* ====================================================================
    GM TIMELINE — 5 etapas clicáveis (Jobs)
    ==================================================================== */
@@ -19879,6 +19889,39 @@ function gmAnShowLoadErr(root,title,payload){
  root.innerHTML='<div style="padding:20px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55"><strong>'+gmAnEsc(title)+'</strong><br><br>Status: '+gmAnEsc(st)+'<br>Mensagem: '+msg+'<br><br><button type="button" onclick="if(typeof gmAnalyticsLoad===\'function\')gmAnalyticsLoad()" style="background:#dc2626;color:#fff;padding:8px 16px;border-radius:6px;border:0;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600">Tentar novamente</button></div>';
  if(typeof showToast==='function')showToast(String(payload&&payload.error||title),'error');
 }
+window.gmAnToggleSection=function(key){
+ var k=String(key||'').replace(/[^a-z0-9_-]/gi,'');
+ var el=document.querySelector('.gma-section[data-section="'+k+'"]');
+ if(el)el.classList.toggle('expanded');
+};
+function gmAnFilterOptionHtmlFragments(sum){
+ var st=window.gmAnalyticsState;
+ var types=(sum.types||[]);
+ var payees=(sum.topPayees||[]);
+ var accounts=(sum.accounts||[]);
+ var months=(sum.months||[]);
+ var optsType='<option value="">Todos os tipos</option>'+types.map(function(t){return '<option value="'+gmAnEsc(t.type)+'"'+(st.type===t.type?' selected':'')+'>'+gmAnEsc(t.type)+' ('+t.count+')</option>';}).join('');
+ var optsPayee='<option value="">Todos os payees</option>'+payees.map(function(p){var pv=String(p.payee||'');return '<option value="'+gmAnEsc(pv)+'"'+(st.payee===pv?' selected':'')+'>'+gmAnEsc(pv)+'</option>';}).join('');
+ var optsAcc='<option value="">Todas as contas</option>'+accounts.map(function(a){var c=String(a.accountCode||'');return '<option value="'+gmAnEsc(c)+'"'+(st.accountCode===c?' selected':'')+'>'+gmAnEsc(c+(a.account?' · '+a.account:''))+'</option>';}).join('');
+ var optsMo='<option value="">Todos os meses</option>'+months.map(function(m){var p=String(m.period||'');return '<option value="'+gmAnEsc(p)+'"'+(st.period===p?' selected':'')+'>'+gmAnEsc(p)+' ('+m.count+')</option>';}).join('');
+ var paidVals=['','UNPAID','PAID','VOID','REVERSED'];
+ var optsPaid=paidVals.map(function(pv){if(pv==='')return '<option value=""'+(st.paidStatus===''?' selected':'')+'>Todos os estados</option>';return '<option value="'+pv+'"'+(st.paidStatus===pv?' selected':'')+'>'+pv+'</option>';}).join('');
+ return{typeHtml:optsType,payeeHtml:optsPayee,accountHtml:optsAcc,monthHtml:optsMo,paidHtml:optsPaid};
+}
+window.gmAnPopulateFilters=function(opts){
+ opts=opts||{};
+ var sum=window.__gmAnalyticsCache&&window.__gmAnalyticsCache.summary;
+ if(!sum||sum.ok!==true)return;
+ var fr=gmAnFilterOptionHtmlFragments(sum);
+ var st=window.gmAnalyticsState;
+ var a=document.getElementById('gm-an-f-type');if(a){a.innerHTML=fr.typeHtml;a.value=st.type||'';}
+ var b=document.getElementById('gm-an-f-payee');if(b){b.innerHTML=fr.payeeHtml;b.value=st.payee||'';}
+ var c=document.getElementById('gm-an-f-period');if(c){c.innerHTML=fr.monthHtml;c.value=st.period||'';}
+ var d=document.getElementById('gm-an-f-account');if(d){d.innerHTML=fr.accountHtml;d.value=st.accountCode||'';}
+ var e=document.getElementById('gm-an-f-paid');if(e){e.innerHTML=fr.paidHtml;e.value=st.paidStatus||'';}
+ var f=document.getElementById('gm-an-f-search');if(f)f.value=st.search||'';
+ if(opts.expandFiltros){var sec=document.querySelector('.gma-section[data-section="filtros"]');if(sec)sec.classList.add('expanded');}
+};
 window.gmAnalyticsApplyFilters=function(){
  var st=window.gmAnalyticsState;
  var gt=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():'';};
@@ -19921,6 +19964,7 @@ window.gmAnalyticsUploadCsv=async function(){
   if(typeof showToast==='function')showToast(okMsg,'success');
   inp.value='';
   await gmAnalyticsRefresh();
+  if(typeof gmAnPopulateFilters==='function')gmAnPopulateFilters({expandFiltros:true});
  }catch(e){
   if(typeof showToast==='function')showToast('Falha de rede','error');
  }
@@ -19979,16 +20023,7 @@ window.gmAnalyticsRefresh=async function(){
 function gmAnShellHtml(sum,ent,imp){
  var s=sum.summary||{};
  var st=window.gmAnalyticsState;
- var types=(sum.types||[]);
- var payees=(sum.topPayees||[]);
- var accounts=(sum.accounts||[]);
- var months=(sum.months||[]);
- var optsType='<option value="">Todos os tipos</option>'+types.map(function(t){return '<option value="'+gmAnEsc(t.type)+'"'+(st.type===t.type?' selected':'')+'>'+gmAnEsc(t.type)+' ('+t.count+')</option>';}).join('');
- var optsPayee='<option value="">Todos os payees</option>'+payees.map(function(p){var pv=String(p.payee||'');return '<option value="'+gmAnEsc(pv)+'"'+(st.payee===pv?' selected':'')+'>'+gmAnEsc(pv)+'</option>';}).join('');
- var optsAcc='<option value="">Todas as contas</option>'+accounts.map(function(a){var c=String(a.accountCode||'');return '<option value="'+gmAnEsc(c)+'"'+(st.accountCode===c?' selected':'')+'>'+gmAnEsc(c+(a.account?' · '+a.account:''))+'</option>';}).join('');
- var optsMo='<option value="">Todos os meses</option>'+months.map(function(m){var p=String(m.period||'');return '<option value="'+gmAnEsc(p)+'"'+(st.period===p?' selected':'')+'>'+gmAnEsc(p)+' ('+m.count+')</option>';}).join('');
- var paidVals=['','UNPAID','PAID','VOID','REVERSED'];
- var optsPaid=paidVals.map(function(pv){if(pv==='')return '<option value=""'+(st.paidStatus===''?' selected':'')+'>Todos os estados</option>';return '<option value="'+pv+'"'+(st.paidStatus===pv?' selected':'')+'>'+pv+'</option>';}).join('');
+ var fr=gmAnFilterOptionHtmlFragments(sum);
  var imports=(imp&&imp.imports)||[];
  var impRows=imports.slice(0,12).map(function(i){
   return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-size:11px;color:var(--ink2)">'+gmAnEsc(i.filename)+'</td><td style="padding:8px 10px;font-size:11px;color:var(--ink3)">'+gmAnFmtDate(i.uploadedAt)+'</td><td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;text-align:right">'+String(i.rowCount!=null?i.rowCount:'—')+'</td></tr>';
@@ -20000,25 +20035,27 @@ function gmAnShellHtml(sum,ent,imp){
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total crédito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalCredit)+'</div></div>'
  +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Pagos / Pendentes</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:18px">'+gmAnEsc(String(s.countPaid!=null?s.countPaid:0))+' / '+gmAnEsc(String(s.countUnpaid!=null?s.countUnpaid:0))+'</div></div>'
  +'</div>'
- +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 4px rgba(30,22,12,.06)">'
- +' <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Upload GL (AppFolio CSV)</div>'
+ +'<div class="gma-section" data-section="upload">'
+ +'<div class="gma-section-head" onclick="gmAnToggleSection(\'upload\')"><strong>Upload GL (AppFolio CSV)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
+ +'<div class="gma-section-body">'
  +' <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">'
  +'  <input type="file" id="gm-an-file" accept=".csv,text/csv" style="font-size:12px;font-family:\'DM Sans\',sans-serif"/>'
  +'  <button type="button" onclick="if(typeof gmAnalyticsUploadCsv===\'function\')gmAnalyticsUploadCsv()" style="padding:9px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>'
  +' </div>'
- +'</div>'
- +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px">'
- +' <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px">Filtros</div>'
+ +'</div></div>'
+ +'<div class="gma-section" data-section="filtros">'
+ +'<div class="gma-section-head" onclick="gmAnToggleSection(\'filtros\')"><strong>Filtros</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
+ +'<div class="gma-section-body">'
  +' <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;align-items:end">'
- +'  <div><label for="gm-an-f-type" class="bk-kpi-lbl">Tipo</label><select id="gm-an-f-type" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsType+'</select></div>'
- +'  <div><label for="gm-an-f-payee" class="bk-kpi-lbl">Payee</label><select id="gm-an-f-payee" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsPayee+'</select></div>'
- +'  <div><label for="gm-an-f-period" class="bk-kpi-lbl">Mês</label><select id="gm-an-f-period" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsMo+'</select></div>'
- +'  <div><label for="gm-an-f-account" class="bk-kpi-lbl">Conta</label><select id="gm-an-f-account" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsAcc+'</select></div>'
- +'  <div><label for="gm-an-f-paid" class="bk-kpi-lbl">Estado pago</label><select id="gm-an-f-paid" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsPaid+'</select></div>'
+ +'  <div><label for="gm-an-f-type" class="bk-kpi-lbl">Tipo</label><select id="gm-an-f-type" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.typeHtml+'</select></div>'
+ +'  <div><label for="gm-an-f-payee" class="bk-kpi-lbl">Payee</label><select id="gm-an-f-payee" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.payeeHtml+'</select></div>'
+ +'  <div><label for="gm-an-f-period" class="bk-kpi-lbl">Mês</label><select id="gm-an-f-period" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.monthHtml+'</select></div>'
+ +'  <div><label for="gm-an-f-account" class="bk-kpi-lbl">Conta</label><select id="gm-an-f-account" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.accountHtml+'</select></div>'
+ +'  <div><label for="gm-an-f-paid" class="bk-kpi-lbl">Estado pago</label><select id="gm-an-f-paid" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+fr.paidHtml+'</select></div>'
  +'  <div style="grid-column:1/-1"><label for="gm-an-f-search" class="bk-kpi-lbl">Busca livre</label><input id="gm-an-f-search" type="text" placeholder="Payee, propriedade, descricao, referencia" value="'+gmAnEsc(st.search)+'" style="width:100%;max-width:420px;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif"/></div>'
  +'  <div><button type="button" onclick="if(typeof gmAnalyticsApplyFilters===\'function\')gmAnalyticsApplyFilters()" style="padding:9px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none">Aplicar filtros</button></div>'
  +' </div>'
- +'</div>'
+ +'</div></div>'
  +'<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">'
  +' <div id="gm-an-page-info" style="font-size:12px;color:var(--ink3);font-family:\'DM Sans\',sans-serif">Página '+String(ent.page||1)+' / '+String(ent.totalPages||1)+' · '+String(ent.total||0)+' lançamentos</div>'
  +' <div style="display:flex;gap:8px">'
