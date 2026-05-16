@@ -92,6 +92,7 @@
 .bk-ai-row.user .bk-ai-bubble{background:var(--blue);color:#fff;border:1px solid var(--blue-bd)}
 .bk-ai-row.assistant .bk-ai-bubble{background:var(--cream);border:1px solid var(--border);color:var(--ink2)}
 #page-bookkeeping-ai.page.active{display:block!important}
+#page-analytics.page.active{display:block!important}
 #bk-ai-input{min-height:88px;resize:vertical;width:100%;max-width:720px;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)}
 #bk-ai-input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(201,169,110,.12)}
 .bk-ai-actions{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
@@ -1173,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">AI ASSISTANT</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss sb-ix-ic" onclick="nav('bookkeeping-ai')" id="nav-bookkeeping-ai" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span>Bookkeeping AI</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('analytics')" id="nav-analytics" style="padding-left:16px;display:none" title="Analytics (super_admin only)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="admin" id="sb-gm-admin-section" style="display:none">
@@ -4114,6 +4116,19 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- ============================================================ -->
+<!-- ANALYTICS (GL — super_admin only) -->
+<!-- ============================================================ -->
+<section id="page-analytics" class="page" style="display:none">
+ <div class="ph" style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px">
+  <div style="flex:1;min-width:220px">
+   <div class="pt">Analytics</div>
+   <div class="ps">General Ledger importado (AppFolio) — KPIs, filtros e lançamentos. Acesso restrito.</div>
+  </div>
+ </div>
+ <div id="gmAnalyticsRoot" style="padding:4px 0 24px"></div>
+</section>
+
+<!-- ============================================================ -->
 <!-- RESULTS UPLOAD -->
 <!-- ============================================================ -->
 <div class="page" id="page-results-upload">
@@ -6895,7 +6910,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI'};
+const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -6903,6 +6918,10 @@ function nav(r){
  if(r==='bookkeeping-ai'){
   var emAi=String((window.__gmCurrentUser&&window.__gmCurrentUser.email)||'').toLowerCase();
   if(emAi!=='w@godmanager.us')r='home';
+ }
+ if(r==='analytics'){
+  var rAn=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  if(rAn!=='super_admin')r='home';
  }
  if(r==='bookkeeping'){
   var rrBk=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -7014,7 +7033,8 @@ function nav(r){
  results:()=>{if(typeof gmResRender==='function')gmResRender();},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();},
- 'bookkeeping-ai':()=>{setTimeout(function(){try{var i=document.getElementById('bk-ai-input');if(i)i.focus();}catch(eBkAi){}},40);}
+ 'bookkeeping-ai':()=>{setTimeout(function(){try{var i=document.getElementById('bk-ai-input');if(i)i.focus();}catch(eBkAi){}},40);},
+ analytics:()=>{if(typeof gmAnalyticsLoad==='function')gmAnalyticsLoad();}
  };
  if(renders[r]) setTimeout(renders[r],30);
 }
@@ -18018,12 +18038,21 @@ window.__bkAiMessages=window.__bkAiMessages||[];
 
 function gmBookkeepingAiGate(){
  try{
-  if(window.__gmCurrentUser&&String(window.__gmCurrentUser.email||'').toLowerCase()==='w@godmanager.us'){
-   var n=document.getElementById('nav-bookkeeping-ai');
-   if(n)n.style.display='';
-   var sec=document.getElementById('wrap-nav-bookkeeping-ai');
-   if(sec)sec.style.display='';
+  var u=window.__gmCurrentUser;
+  var em=String(u&&u.email||'').toLowerCase();
+  var role=String(u&&u.role||'').toLowerCase();
+  var isW=em==='w@godmanager.us';
+  var isSa=role==='super_admin';
+  var wrap=document.getElementById('wrap-nav-bookkeeping-ai');
+  var nb=document.getElementById('nav-bookkeeping-ai');
+  var na=document.getElementById('nav-analytics');
+  if(isW||isSa){
+   if(wrap)wrap.style.display='';
+  }else{
+   if(wrap)wrap.style.display='none';
   }
+  if(nb)nb.style.display=isW?'':'none';
+  if(na)na.style.display=isSa?'':'none';
  }catch(e){console.warn('[bk ai gate]',e);}
 }
 
@@ -19794,6 +19823,211 @@ document.addEventListener('click',function(e){var t=e.target;if(t&&(t.id==='bk-r
 var ob=window.gmAuthHydrateUserBadge;if(typeof ob!=='function'||ob.__bkWrp)return;var nw=async function(){var uz=await ob.apply(this,arguments);
 try{if(typeof gmBookkeepingApplyRoleGate==='function')gmBookkeepingApplyRoleGate(String((uz&&uz.role)||''));}catch(_g){}
 return uz;};nw.__bkWrp=1;window.gmAuthHydrateUserBadge=nw;}catch(e){console.warn('[bk wrap hydrate]',e);}})();
+</script>
+<script>
+(function(){
+'use strict';
+window.gmAnalyticsState={page:1,pageSize:50,type:'',payee:'',period:'',accountCode:'',paidStatus:'',search:''};
+window.__gmAnalyticsCache={summary:null,imports:null};
+window.__gmAnalyticsTotalPages=1;
+function gmAnEsc(s){
+ var t=String(s==null?'':s);
+ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function gmAnFmtMoney(v){
+ var n=parseFloat(String(v||'0').replace(/,/g,''));
+ if(Number.isNaN(n))n=0;
+ return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function gmAnFmtDate(iso){
+ try{
+  var d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return gmAnEsc(iso);
+  return gmAnEsc(d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}));
+ }catch(e){return '';}
+}
+function gmAnQs(){
+ var st=window.gmAnalyticsState;
+ var q=new URLSearchParams();
+ q.set('page',String(st.page));
+ q.set('pageSize',String(st.pageSize));
+ if(st.type)q.set('type',st.type);
+ if(st.payee)q.set('payee',st.payee);
+ if(st.period)q.set('period',st.period);
+ if(st.accountCode)q.set('accountCode',st.accountCode);
+ if(st.paidStatus)q.set('paidStatus',st.paidStatus);
+ if(st.search)q.set('search',st.search);
+ return q.toString();
+}
+window.gmAnalyticsApplyFilters=function(){
+ var st=window.gmAnalyticsState;
+ var gt=function(id){var e=document.getElementById(id);return e?String(e.value||'').trim():'';};
+ st.type=gt('gm-an-f-type');
+ st.payee=gt('gm-an-f-payee');
+ st.period=gt('gm-an-f-period');
+ st.accountCode=gt('gm-an-f-account');
+ st.paidStatus=gt('gm-an-f-paid');
+ st.search=gt('gm-an-f-search');
+ st.page=1;
+ if(typeof gmAnalyticsRefresh==='function')gmAnalyticsRefresh();
+};
+window.gmAnalyticsPrevPage=function(){
+ if(window.gmAnalyticsState.page>1){window.gmAnalyticsState.page--;if(typeof gmAnalyticsRefreshEntries==='function')gmAnalyticsRefreshEntries();}
+};
+window.gmAnalyticsNextPage=function(){
+ var st=window.gmAnalyticsState;
+ var tp=window.__gmAnalyticsTotalPages||1;
+ if(st.page<tp){st.page++;if(typeof gmAnalyticsRefreshEntries==='function')gmAnalyticsRefreshEntries();}
+};
+window.gmAnalyticsUploadCsv=async function(){
+ var inp=document.getElementById('gm-an-file');
+ if(!inp||!inp.files||!inp.files[0]){if(typeof showToast==='function')showToast('Seleccione um ficheiro CSV.','warning');return;}
+ var fd=new FormData();fd.append('file',inp.files[0]);
+ try{
+  var res=await fetch('/api/analytics/gl-upload',{method:'POST',credentials:'include',body:fd});
+  var data=null;try{data=await res.json();}catch(_j){data=null;}
+  if(res.status===409){
+   var msg=(data&&data.message)||'Este CSV já foi importado.';
+   if(typeof showToast==='function')showToast(msg,'warning');
+   return;
+  }
+  if(!res.ok||!data||!data.ok){
+   var err=(data&&data.error)||('Erro '+res.status);
+   if(typeof showToast==='function')showToast(err,'error');
+   return;
+  }
+  var okMsg='Importação concluída: '+String(data.rowsInserted||0)+' linhas inseridas';
+  if(data.rowsSkippedAsDuplicate)okMsg+=' · '+String(data.rowsSkippedAsDuplicate)+' duplicadas ignoradas';
+  if(typeof showToast==='function')showToast(okMsg,'success');
+  inp.value='';
+  await gmAnalyticsRefresh();
+ }catch(e){
+  if(typeof showToast==='function')showToast('Falha de rede','error');
+ }
+};
+window.gmAnalyticsRefreshEntries=async function(){
+ var root=document.getElementById('gmAnalyticsRoot');if(!root||!root.querySelector('#gm-analytics-tbody'))return;
+ try{
+  var res=await fetch('/api/analytics/entries?'+gmAnQs(),{credentials:'include',cache:'no-store'});
+  var data=null;try{data=await res.json();}catch(_j){data=null;}
+  if(!res.ok||!data||!data.ok){
+   if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao carregar lançamentos','error');
+   return;
+  }
+  window.__gmAnalyticsTotalPages=data.totalPages||1;
+  var tb=document.getElementById('gm-analytics-tbody');
+  if(tb)tb.innerHTML=gmAnRowsHtml(data.entries||[]);
+  var pg=document.getElementById('gm-an-page-info');
+  if(pg)pg.textContent='Página '+String(data.page||1)+' / '+String(data.totalPages||1)+' · '+String(data.total||0)+' lançamentos';
+ }catch(e){console.warn('[analytics] entries page',e);}
+};
+function gmAnRowsHtml(entries){
+ var rows=(entries||[]).map(function(e){
+  var deb=e.debit?gmAnFmtMoney(e.debit):'—';
+  var cre=e.credit?gmAnFmtMoney(e.credit):'—';
+  var ps=gmAnEsc(e.paidStatus||'');
+  var typ=gmAnEsc(e.entryType||'');
+  var pay=gmAnEsc(e.payee||'—');
+  var prop=gmAnEsc(e.propertyAddress||'');
+  var ref=gmAnEsc(e.reference||'');
+  var ac=gmAnEsc((e.accountCode?e.accountCode+' · ':'')+(e.account||''));
+  var pdCls=(String(e.paidStatus||'')==='PAID')?'background:var(--green-bg);color:var(--green);border:1px solid rgba(0,0,0,.06)':'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)';
+  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 12px;font-size:12px;color:var(--ink2);white-space:nowrap">'+gmAnFmtDate(e.entryDate)+'</td><td style="padding:10px 12px;font-size:11px;font-weight:600;color:var(--ink)">'+typ+'</td><td style="padding:10px 12px;font-size:12px;color:var(--ink2);max-width:160px;overflow:hidden;text-overflow:ellipsis" title="'+pay+'">'+pay+'</td><td style="padding:10px 12px;font-size:12px;color:var(--ink2);max-width:220px;overflow:hidden;text-overflow:ellipsis" title="'+prop+'">'+prop+'</td><td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;text-align:right">'+deb+'</td><td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;text-align:right">'+cre+'</td><td style="padding:10px 12px;font-size:11px"><span style="display:inline-block;padding:3px 9px;border-radius:20px;font-weight:600;'+pdCls+'">'+ps+'</span></td><td style="padding:10px 12px;font-size:11px;color:var(--ink3);max-width:140px;overflow:hidden;text-overflow:ellipsis" title="'+ref+'">'+ref+'</td><td style="padding:10px 12px;font-size:11px;color:var(--ink3);max-width:180px;overflow:hidden;text-overflow:ellipsis" title="'+ac+'">'+ac+'</td></tr>';
+ }).join('');
+ return rows||'<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink3);font-family:\'DM Sans\',sans-serif">Sem lançamentos para os filtros seleccionados.</td></tr>';
+}
+window.gmAnalyticsRefresh=async function(){
+ var root=document.getElementById('gmAnalyticsRoot');if(!root)return;
+ var st=window.gmAnalyticsState;
+ try{
+  var sumUrl='/api/analytics/summary'+(st.period?'?period='+encodeURIComponent(st.period):'');
+  var resArr=await Promise.all([
+   fetch(sumUrl,{credentials:'include',cache:'no-store'}),
+   fetch('/api/analytics/entries?'+gmAnQs(),{credentials:'include',cache:'no-store'}),
+   fetch('/api/analytics/imports',{credentials:'include',cache:'no-store'})
+  ]);
+  var sum=await resArr[0].json().catch(function(){return null;});
+  var ent=await resArr[1].json().catch(function(){return null;});
+  var imp=await resArr[2].json().catch(function(){return null;});
+  if(!resArr[0].ok||!sum||!sum.ok){if(typeof showToast==='function')showToast((sum&&sum.error)||'Erro summary','error');return;}
+  if(!resArr[1].ok||!ent||!ent.ok){if(typeof showToast==='function')showToast((ent&&ent.error)||'Erro entries','error');return;}
+  window.__gmAnalyticsCache.summary=sum;
+  window.__gmAnalyticsCache.imports=imp&&imp.ok?imp:{ok:true,imports:[]};
+  window.__gmAnalyticsTotalPages=ent.totalPages||1;
+  root.innerHTML=gmAnShellHtml(sum,ent,window.__gmAnalyticsCache.imports);
+ }catch(e){console.error('[analytics]',e);if(typeof showToast==='function')showToast('Falha ao carregar Analytics','error');}
+};
+function gmAnShellHtml(sum,ent,imp){
+ var s=sum.summary||{};
+ var st=window.gmAnalyticsState;
+ var types=(sum.types||[]);
+ var payees=(sum.topPayees||[]);
+ var accounts=(sum.accounts||[]);
+ var months=(sum.months||[]);
+ var optsType='<option value="">Todos os tipos</option>'+types.map(function(t){return '<option value="'+gmAnEsc(t.type)+'"'+(st.type===t.type?' selected':'')+'>'+gmAnEsc(t.type)+' ('+t.count+')</option>';}).join('');
+ var optsPayee='<option value="">Todos os payees</option>'+payees.map(function(p){var pv=String(p.payee||'');return '<option value="'+gmAnEsc(pv)+'"'+(st.payee===pv?' selected':'')+'>'+gmAnEsc(pv)+'</option>';}).join('');
+ var optsAcc='<option value="">Todas as contas</option>'+accounts.map(function(a){var c=String(a.accountCode||'');return '<option value="'+gmAnEsc(c)+'"'+(st.accountCode===c?' selected':'')+'>'+gmAnEsc(c+(a.account?' · '+a.account:''))+'</option>';}).join('');
+ var optsMo='<option value="">Todos os meses</option>'+months.map(function(m){var p=String(m.period||'');return '<option value="'+gmAnEsc(p)+'"'+(st.period===p?' selected':'')+'>'+gmAnEsc(p)+' ('+m.count+')</option>';}).join('');
+ var paidVals=['','UNPAID','PAID','VOID','REVERSED'];
+ var optsPaid=paidVals.map(function(pv){if(pv==='')return '<option value=""'+(st.paidStatus===''?' selected':'')+'>Todos os estados</option>';return '<option value="'+pv+'"'+(st.paidStatus===pv?' selected':'')+'>'+pv+'</option>';}).join('');
+ var imports=(imp&&imp.imports)||[];
+ var impRows=imports.slice(0,12).map(function(i){
+  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-size:11px;color:var(--ink2)">'+gmAnEsc(i.filename)+'</td><td style="padding:8px 10px;font-size:11px;color:var(--ink3)">'+gmAnFmtDate(i.uploadedAt)+'</td><td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;text-align:right">'+String(i.rowCount!=null?i.rowCount:'—')+'</td></tr>';
+ }).join('');
+ return ''
+ +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:22px">'
+ +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total lançamentos</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnEsc(String(s.totalEntries!=null?s.totalEntries:0))+'</div></div>'
+ +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total débito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalDebit)+'</div></div>'
+ +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Total crédito</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:22px">'+gmAnFmtMoney(s.totalCredit)+'</div></div>'
+ +' <div class="bk-card" style="margin:0"><div class="bk-kpi-lbl">Pagos / Pendentes</div><div class="bk-kpi-num" style="font-family:\'JetBrains Mono\',monospace;font-size:18px">'+gmAnEsc(String(s.countPaid!=null?s.countPaid:0))+' / '+gmAnEsc(String(s.countUnpaid!=null?s.countUnpaid:0))+'</div></div>'
+ +'</div>'
+ +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 4px rgba(30,22,12,.06)">'
+ +' <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Upload GL (AppFolio CSV)</div>'
+ +' <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">'
+ +'  <input type="file" id="gm-an-file" accept=".csv,text/csv" style="font-size:12px;font-family:\'DM Sans\',sans-serif"/>'
+ +'  <button type="button" onclick="if(typeof gmAnalyticsUploadCsv===\'function\')gmAnalyticsUploadCsv()" style="padding:9px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>'
+ +' </div>'
+ +'</div>'
+ +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px">'
+ +' <div style="font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px">Filtros</div>'
+ +' <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;align-items:end">'
+ +'  <div><label for="gm-an-f-type" class="bk-kpi-lbl">Tipo</label><select id="gm-an-f-type" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsType+'</select></div>'
+ +'  <div><label for="gm-an-f-payee" class="bk-kpi-lbl">Payee</label><select id="gm-an-f-payee" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsPayee+'</select></div>'
+ +'  <div><label for="gm-an-f-period" class="bk-kpi-lbl">Mês</label><select id="gm-an-f-period" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsMo+'</select></div>'
+ +'  <div><label for="gm-an-f-account" class="bk-kpi-lbl">Conta</label><select id="gm-an-f-account" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsAcc+'</select></div>'
+ +'  <div><label for="gm-an-f-paid" class="bk-kpi-lbl">Estado pago</label><select id="gm-an-f-paid" style="width:100%;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif">'+optsPaid+'</select></div>'
+ +'  <div style="grid-column:1/-1"><label for="gm-an-f-search" class="bk-kpi-lbl">Busca livre</label><input id="gm-an-f-search" type="text" placeholder="Payee, propriedade, descricao, referencia" value="'+gmAnEsc(st.search)+'" style="width:100%;max-width:420px;padding:9px 11px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:\'DM Sans\',sans-serif"/></div>'
+ +'  <div><button type="button" onclick="if(typeof gmAnalyticsApplyFilters===\'function\')gmAnalyticsApplyFilters()" style="padding:9px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none">Aplicar filtros</button></div>'
+ +' </div>'
+ +'</div>'
+ +'<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">'
+ +' <div id="gm-an-page-info" style="font-size:12px;color:var(--ink3);font-family:\'DM Sans\',sans-serif">Página '+String(ent.page||1)+' / '+String(ent.totalPages||1)+' · '+String(ent.total||0)+' lançamentos</div>'
+ +' <div style="display:flex;gap:8px">'
+ +'  <button type="button" onclick="gmAnalyticsPrevPage()" style="padding:8px 14px;font-size:11px;font-weight:600;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink2);cursor:pointer;font-family:\'DM Sans\',sans-serif">Anterior</button>'
+ +'  <button type="button" onclick="gmAnalyticsNextPage()" style="padding:8px 14px;font-size:11px;font-weight:600;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink2);cursor:pointer;font-family:\'DM Sans\',sans-serif">Seguinte</button>'
+ +' </div>'
+ +'</div>'
+ +'<div style="overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--paper);margin-bottom:18px">'
+ +' <table style="width:100%;border-collapse:collapse;font-family:\'DM Sans\',sans-serif">'
+ +' <thead><tr style="background:var(--cream)"><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Tipo</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Payee</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Debito</th><th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Credito</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Pago</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Ref.</th><th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Conta</th></tr></thead>'
+ +' <tbody id="gm-analytics-tbody">'+gmAnRowsHtml(ent.entries||[])+'</tbody></table>'
+ +'</div>'
+ +'<details style="background:var(--sand);border:1px solid var(--border);border-radius:12px;padding:12px 16px">'
+ +' <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--ink2);font-family:\'DM Sans\',sans-serif">Imports recentes</summary>'
+ +' <table style="width:100%;margin-top:12px;border-collapse:collapse;font-family:\'DM Sans\',sans-serif"><thead><tr style="background:var(--cream)"><th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:var(--ink3)">Ficheiro</th><th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:var(--ink3)">Data upload</th><th style="padding:8px 10px;text-align:right;font-size:9px;text-transform:uppercase;color:var(--ink3)">Linhas</th></tr></thead><tbody>'+(impRows||'<tr><td colspan="3" style="padding:12px;color:var(--ink3);font-size:12px">Sem imports.</td></tr>')+'</tbody></table>'
+ +'</details>';
+}
+window.gmAnalyticsLoad=async function(){
+ var root=document.getElementById('gmAnalyticsRoot');if(!root)return;
+ var role=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(role!=='super_admin'){
+  root.innerHTML='<div style="padding:28px;border:1px solid var(--border);border-radius:12px;background:var(--cream);color:var(--ink2);font-family:\'DM Sans\',sans-serif;font-size:14px">Sem acesso. Apenas utilizadores <strong>super_admin</strong> podem ver Analytics.</div>';
+  return;
+ }
+ root.innerHTML='<div style="padding:48px;text-align:center;color:var(--ink3);font-family:\'DM Sans\',sans-serif">A carregar Analytics…</div>';
+ await gmAnalyticsRefresh();
+};
+})();
 </script>
 <script>
 (function gmIdleAutoLogout() {
