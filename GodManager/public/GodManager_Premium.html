@@ -20123,6 +20123,174 @@ window.gmAnLoadAnomalies=async function(){
   box.innerHTML='<div style="color:var(--red);padding:14px;font-family:\'DM Sans\',sans-serif;font-size:13px">Erro: '+gmAnEsc(String(e&&e.message||e))+'</div>';
  }
 };
+window.gmAnRenderForecastChart=function(d){
+ var el=document.getElementById('gmAnForecastChart');
+ if(!el)return;
+ var hist=(d.history||[]).slice(-9);
+ var fc=d.forecast||[];
+ var fcMapped=fc.map(function(f){
+  return {period:f.period,debit:f.debit,credit:f.credit,net:f.net,forecast:true,debitLow:f.debitLow,debitHigh:f.debitHigh,creditLow:f.creditLow,creditHigh:f.creditHigh};
+ });
+ var all=hist.concat(fcMapped);
+ if(all.length===0){el.innerHTML='';return;}
+ var W=el.clientWidth||800;if(W<320)W=320;
+ var H=280;
+ var pad={top:20,right:20,bottom:40,left:60};
+ var vals=[];
+ var ai;
+ for(ai=0;ai<all.length;ai++){
+  var mx=all[ai];
+  vals.push(parseFloat(mx.debit||0));
+  vals.push(parseFloat(mx.credit||0));
+  vals.push(parseFloat(mx.debitHigh||0)||0);
+  vals.push(parseFloat(mx.creditHigh||0)||0);
+ }
+ var maxVal=vals.length?Math.max.apply(null,vals):1;
+ if(!isFinite(maxVal)||maxVal<=0)maxVal=1;
+ var plotW=W-pad.left-pad.right;
+ var plotH=H-pad.top-pad.bottom;
+ var stepX=all.length>1?plotW/(all.length-1):0;
+ function pt(i,val){
+  var x=all.length===1?pad.left+plotW/2:pad.left+i*stepX;
+  var y=pad.top+plotH-(val/maxVal)*plotH;
+  return [x,y];
+ }
+ var histIdx=hist.length-1;
+ function pathSeg(field,fromIdx,toIdx){
+  if(fromIdx>toIdx)return '';
+  var out='';
+  var k;
+  for(k=fromIdx;k<=toIdx;k++){
+   var mk=all[k];
+   var v=parseFloat(mk[field]||0);
+   var p=pt(k,v);
+   out+=(k===fromIdx?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1);
+  }
+  return out;
+ }
+ var confidenceAreas='';
+ if(fc.length>0&&histIdx>=0&&histIdx<all.length-1){
+  var ring=[];
+  var ui;
+  for(ui=histIdx;ui<all.length;ui++){
+   var mu=all[ui];
+   var ch=parseFloat(mu.forecast?(mu.creditHigh||mu.credit||0):(mu.credit||0));
+   ring.push(pt(ui,ch));
+  }
+  var uj;
+  for(uj=all.length-1;uj>=histIdx;uj--){
+   var ml=all[uj];
+   var cl=parseFloat(ml.forecast?(ml.creditLow||ml.credit||0):(ml.credit||0));
+   ring.push(pt(uj,cl));
+  }
+  if(ring.length>=3){
+   var areaD='M'+ring[0][0].toFixed(1)+','+ring[0][1].toFixed(1);
+   var uz;
+   for(uz=1;uz<ring.length;uz++){
+    areaD+='L'+ring[uz][0].toFixed(1)+','+ring[uz][1].toFixed(1);
+   }
+   areaD+='Z';
+   confidenceAreas='<path d="'+areaD+'" fill="#10b981" fill-opacity="0.12"/>';
+  }
+ }
+ var ticks=5;
+ var gridLines='';
+ var t;
+ for(t=0;t<=ticks;t++){
+  var gy=pad.top+(plotH/ticks)*t;
+  var gval=maxVal-(maxVal/ticks)*t;
+  gridLines+='<line x1="'+pad.left+'" y1="'+gy+'" x2="'+(W-pad.right)+'" y2="'+gy+'" stroke="#e2e8f0" stroke-width="1"/>';
+  gridLines+='<text x="'+(pad.left-8)+'" y="'+(gy+4)+'" font-size="10" fill="#94a3b8" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(gval/1000)+'k</text>';
+ }
+ var divX=pt(Math.max(0,histIdx),0)[0];
+ var divider='<line x1="'+divX.toFixed(1)+'" y1="'+pad.top+'" x2="'+divX.toFixed(1)+'" y2="'+(H-pad.bottom)+'" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,4"/>'+
+  '<text x="'+(divX+4).toFixed(1)+'" y="'+(pad.top+12)+'" font-size="10" fill="#64748b" font-family="DM Sans,sans-serif">previsao &#8594;</text>';
+ var xLabels=all.map(function(m,i){
+  var p=pt(i,0);
+  var clr=m.forecast?'#0284c7':'#64748b';
+  return '<text x="'+p[0].toFixed(1)+'" y="'+(H-pad.bottom+18)+'" font-size="10" fill="'+clr+'" text-anchor="middle" font-family="DM Sans,sans-serif">'+gmAnEsc(m.period)+'</text>';
+ }).join('');
+ var pathHistDebit=pathSeg('debit',0,histIdx);
+ var pathHistCredit=pathSeg('credit',0,histIdx);
+ var pathFcDebit=fc.length?pathSeg('debit',histIdx,all.length-1):'';
+ var pathFcCredit=fc.length?pathSeg('credit',histIdx,all.length-1):'';
+ var dots=all.map(function(m,i){
+  var pD=pt(i,parseFloat(m.debit||0));
+  var pC=pt(i,parseFloat(m.credit||0));
+  var dAttr=m.forecast?'fill="#fff" stroke="#ef4444" stroke-width="2"':'fill="#ef4444"';
+  var cAttr=m.forecast?'fill="#fff" stroke="#10b981" stroke-width="2"':'fill="#10b981"';
+  var tipD=gmAnEsc(m.period)+' debito: '+gmAnEsc(String(gmAnFmtMoney(m.debit)))+(m.forecast?' (previsto)':'');
+  var tipC=gmAnEsc(m.period)+' credito: '+gmAnEsc(String(gmAnFmtMoney(m.credit)))+(m.forecast?' (previsto)':'');
+  return '<circle cx="'+pD[0].toFixed(1)+'" cy="'+pD[1].toFixed(1)+'" r="3" '+dAttr+'><title>'+tipD+'</title></circle>'+
+   '<circle cx="'+pC[0].toFixed(1)+'" cy="'+pC[1].toFixed(1)+'" r="3" '+cAttr+'><title>'+tipC+'</title></circle>';
+ }).join('');
+ var svg='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block">'+
+  confidenceAreas+gridLines+divider+
+  (pathHistDebit?'<path d="'+pathHistDebit+'" fill="none" stroke="#ef4444" stroke-width="2"/>':'')+
+  (pathHistCredit?'<path d="'+pathHistCredit+'" fill="none" stroke="#10b981" stroke-width="2"/>':'')+
+  (pathFcDebit?'<path d="'+pathFcDebit+'" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4" opacity="0.7"/>':'')+
+  (pathFcCredit?'<path d="'+pathFcCredit+'" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="6,4" opacity="0.7"/>':'')+
+  dots+xLabels+
+ '</svg>';
+ el.innerHTML=svg;
+};
+window.gmAnRenderForecastTable=function(d){
+ var el=document.getElementById('gmAnForecastTable');
+ if(!el)return;
+ var fc=d.forecast||[];
+ if(fc.length===0){el.innerHTML='';return;}
+ var rows=fc.map(function(f){
+  return '<tr style="border-bottom:1px solid var(--border)">'+
+   '<td style="padding:10px 12px;font-weight:600;font-family:\'DM Sans\',sans-serif">'+gmAnEsc(f.period)+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:var(--red);font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(f.debit)+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:var(--red);font-size:11px;font-family:\'JetBrains Mono\',monospace">('+gmAnFmtMoney(f.debitLow)+' – '+gmAnFmtMoney(f.debitHigh)+')</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:var(--green);font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(f.credit)+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;color:var(--green);font-size:11px;font-family:\'JetBrains Mono\',monospace">('+gmAnFmtMoney(f.creditLow)+' – '+gmAnFmtMoney(f.creditHigh)+')</td>'+
+   '<td style="padding:10px 12px;text-align:right;font-weight:700;color:'+(parseFloat(f.net)>=0?'var(--green)':'var(--red)')+';font-family:\'JetBrains Mono\',monospace;font-size:12px">'+gmAnFmtMoney(f.net)+'</td>'+
+  '</tr>';
+ }).join('');
+ el.innerHTML='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--paper)"><table style="width:100%;min-width:720px;border-collapse:collapse;font-size:12.5px;font-family:\'DM Sans\',sans-serif">'+
+  '<thead><tr style="background:var(--sand);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)">'+
+   '<th style="padding:10px 12px;text-align:left">Periodo</th>'+
+   '<th style="padding:10px 12px;text-align:right">Debito previsto</th>'+
+   '<th style="padding:10px 12px;text-align:right">Intervalo (+/-20%)</th>'+
+   '<th style="padding:10px 12px;text-align:right">Credito previsto</th>'+
+   '<th style="padding:10px 12px;text-align:right">Intervalo (+/-20%)</th>'+
+   '<th style="padding:10px 12px;text-align:right">Net previsto</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+};
+window.gmAnLoadForecast=async function(){
+ var infoEl=document.getElementById('gmAnForecastInfo');
+ var chartEl=document.getElementById('gmAnForecastChart');
+ var tableEl=document.getElementById('gmAnForecastTable');
+ if(!chartEl)return;
+ if(infoEl)infoEl.innerHTML='';
+ if(tableEl)tableEl.innerHTML='';
+ chartEl.innerHTML='<div style="text-align:center;color:var(--ink3);padding:40px;font-family:\'DM Sans\',sans-serif;font-size:13px">A calcular previsao...</div>';
+ try{
+  var r=await fetch('/api/analytics/forecast?horizon=3',{credentials:'include',cache:'no-store'});
+  var d=null;
+  try{d=await r.json();}catch(_j){d=null;}
+  if(!d||d.ok!==true){
+   var err=(d&&d.error)||('HTTP '+r.status);
+   chartEl.innerHTML='<div style="color:var(--red);padding:14px;font-family:\'DM Sans\',sans-serif;font-size:13px">Erro: '+gmAnEsc(String(err))+'</div>';
+   return;
+  }
+  if(d.note){
+   if(infoEl)infoEl.innerHTML='<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber);padding:10px 14px;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:12px">'+gmAnEsc(d.note)+'</div>';
+   chartEl.innerHTML='';
+   if(tableEl)tableEl.innerHTML='';
+   return;
+  }
+  if(infoEl)infoEl.innerHTML='Baseado em <strong>'+gmAnEsc(String(d.historyMonths!=null?d.historyMonths:0))+' meses</strong> de historico · Metodo: media movel ponderada (6 meses) + fator sazonal · Margem +/-20%';
+  if(typeof gmAnRenderForecastTable==='function')gmAnRenderForecastTable(d);
+  requestAnimationFrame(function(){
+   if(typeof gmAnRenderForecastChart==='function')gmAnRenderForecastChart(d);
+  });
+ }catch(e){
+  chartEl.innerHTML='<div style="color:var(--red);padding:14px;font-family:\'DM Sans\',sans-serif;font-size:13px">Erro: '+gmAnEsc(String(e&&e.message||e))+'</div>';
+ }
+};
 window.gmAnToggleSection=function(key){
  var k=String(key||'').replace(/[^a-z0-9_-]/gi,'');
  var el=document.querySelector('.gma-section[data-section="'+k+'"]');
@@ -20133,6 +20301,13 @@ window.gmAnToggleSection=function(key){
    if(bx&&!bx.dataset.loaded){
     bx.dataset.loaded='1';
     if(typeof gmAnLoadAnomalies==='function')gmAnLoadAnomalies();
+   }
+  }
+  if(k==='forecast'&&el.classList.contains('expanded')){
+   var fcx=document.getElementById('gmAnForecastChart');
+   if(fcx&&!fcx.dataset.loaded){
+    fcx.dataset.loaded='1';
+    if(typeof gmAnLoadForecast==='function')gmAnLoadForecast();
    }
   }
  }
@@ -20410,6 +20585,13 @@ function gmAnShellHtml(sum,ent,imp){
  +'  <button type="button" onclick="if(typeof gmAnLoadAnomalies===\'function\')gmAnLoadAnomalies()" style="background:var(--amber);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Recalcular</button>'
  +' </div>'
  +' <div id="gmAnAnomResults"></div>'
+ +'</div></div>'
+ +'<div class="gma-section" data-section="forecast">'
+ +'<div class="gma-section-head" onclick="gmAnToggleSection(\'forecast\')"><strong>Cash Flow Forecast (pr\u00f3ximos 3 meses)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
+ +'<div class="gma-section-body">'
+ +' <div id="gmAnForecastInfo" style="font-size:12px;color:var(--ink3);margin-bottom:14px;font-family:\'DM Sans\',sans-serif;line-height:1.45"></div>'
+ +' <div id="gmAnForecastChart" style="width:100%;height:280px;margin-bottom:20px"></div>'
+ +' <div id="gmAnForecastTable"></div>'
  +'</div></div>'
  +'<div class="gma-section" data-section="upload">'
  +'<div class="gma-section-head" onclick="gmAnToggleSection(\'upload\')"><strong>Upload GL (AppFolio CSV)</strong><div class="gma-section-chev" aria-hidden="true"></div></div>'
