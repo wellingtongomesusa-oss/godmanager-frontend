@@ -87,6 +87,7 @@ export async function GET(req: Request) {
           paidAt: true,
           paidByName: true,
           paidMethod: true,
+          paidNotes: true,
         },
       }),
     ]);
