@@ -2100,8 +2100,36 @@ document.addEventListener('DOMContentLoaded', function(){
  <button type="button" class="btn-gm-ix" id="ramp-btn-refresh" onclick="fetchRampData()">Atualizar Dados</button>
  </div>
  </div>
+ <div id="ramp-date-filter" style="display:flex;gap:10px;align-items:end;margin:10px 0 18px;flex-wrap:wrap;padding:14px;background:var(--paper);border:1px solid var(--border);border-radius:10px">
+ <div>
+ <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:3px">Período</label>
+ <select id="ramp-filter-preset" onchange="rampApplyPreset()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:12px;background:var(--sand);color:var(--ink)">
+ <option value="current_month" selected>Mês atual</option>
+ <option value="last_month">Mês anterior</option>
+ <option value="last_3_months">Últimos 3 meses</option>
+ <option value="last_6_months">Últimos 6 meses</option>
+ <option value="ytd">Ano até hoje (YTD)</option>
+ <option value="today">Hoje</option>
+ <option value="yesterday">Ontem</option>
+ <option value="last_7_days">Últimos 7 dias</option>
+ <option value="last_30_days">Últimos 30 dias</option>
+ <option value="all">Tudo (histórico)</option>
+ <option value="custom">Personalizado</option>
+ </select>
+ </div>
+ <div>
+ <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:3px">De</label>
+ <input type="date" id="ramp-filter-from" style="padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:12px;background:var(--sand);color:var(--ink)">
+ </div>
+ <div>
+ <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:3px">Até</label>
+ <input type="date" id="ramp-filter-to" style="padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:12px;background:var(--sand);color:var(--ink)">
+ </div>
+ <button type="button" onclick="rampApplyFilter()" style="background:var(--amber);color:#fff;border:0;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
+ <span id="ramp-filter-status" style="font-size:11px;color:var(--ink3);margin-left:auto;align-self:center"></span>
+ </div>
  <div class="gm-ix-kpi-grid" id="ramp-kpi-wrap">
- <div class="gm-ix-kpi k2"><div class="k-l">Total Gasto no Mês</div><div class="k-v" id="ramp-kpi-spend"><span class="gm-sk" style="display:inline-block;width:120px;height:22px"></span></div><div class="k-s">Transações liquidadas + pendentes</div><div class="k-bar"></div></div>
+ <div class="gm-ix-kpi k2"><div class="k-l" id="ramp-kpi-spend-label">TOTAL GASTO NO PERÍODO</div><div class="k-v" id="ramp-kpi-spend"><span class="gm-sk" style="display:inline-block;width:120px;height:22px"></span></div><div class="k-s">Transações liquidadas + pendentes</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi"><div class="k-l">Nº de Cartões Ativos</div><div class="k-v" id="ramp-kpi-cards"><span class="gm-sk" style="display:inline-block;width:48px;height:22px"></span></div><div class="k-s">Cartões com estado ativo</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k3"><div class="k-l">Maior Gasto</div><div class="k-v" id="ramp-kpi-top" style="font-size:15px;line-height:1.25"><span class="gm-sk" style="display:inline-block;width:100%;max-width:220px;height:40px"></span></div><div class="k-s">Merchant com maior valor no período</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k4"><div class="k-l">Cashback Disponível</div><div class="k-v" id="ramp-kpi-cb"><span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span></div><div class="k-s">Estimativa acumulada</div><div class="k-bar"></div></div>
@@ -2124,7 +2152,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <h3>Titulares de Cartão</h3>
  <div style="overflow-x:auto">
  <table class="gm-ix-table" id="ramp-table-cardholders">
- <thead><tr><th>Titular</th><th>Email</th><th>Limite Total ($)</th><th>Limite Disponível ($)</th><th>Gasto no Mês ($)</th><th>Status</th><th>Ações</th></tr></thead>
+ <thead><tr><th>Titular</th><th>Email</th><th>Limite Total ($)</th><th>Limite Disponível ($)</th><th>Gasto no período ($)</th><th>Status</th><th>Ações</th></tr></thead>
  <tbody id="ramp-tbody-holders"></tbody>
  </table>
  </div>
@@ -6064,13 +6092,13 @@ function rampMockCards(){
 }
 function rampSpendForHolderEmail(txs,email){
  var t=0;
- var now=new Date();
- var y=now.getUTCFullYear(),mon=now.getUTCMonth();
+ var rg=rampGetFilterRangeMs();
  txs.forEach(function(tx){
   if(rampTxEmail(tx).toLowerCase()!==String(email).toLowerCase())return;
   var d=new Date((tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||0);
   if(isNaN(d.getTime()))return;
-  if(d.getUTCFullYear()!==y||d.getUTCMonth()!==mon)return;
+  var tm=d.getTime();
+  if(tm<rg.start||tm>rg.end)return;
   t+=rampTxAmount(tx);
  });
  return t;
@@ -6081,13 +6109,29 @@ function rampRenderFromData(txs,cards,useMock,opts){
  var errEl=document.getElementById('ramp-conn-err');
  if(errEl&&!opts.keepError){errEl.classList.remove('on');errEl.textContent='';}
  if(note){note.classList.toggle('on',!!useMock);if(useMock)note.textContent='Dados de exemplo — conecte a API para dados reais.';}
- var now=new Date();
- var y=now.getUTCFullYear(),m=now.getUTCMonth();
+ var presetEl=document.getElementById('ramp-filter-preset');
+ var labelMap={
+  current_month:'TOTAL GASTO NO MÊS',
+  last_month:'TOTAL MÊS ANTERIOR',
+  last_3_months:'TOTAL ÚLTIMOS 3 MESES',
+  last_6_months:'TOTAL ÚLTIMOS 6 MESES',
+  ytd:'TOTAL YEAR-TO-DATE',
+  today:'TOTAL HOJE',
+  yesterday:'TOTAL ONTEM',
+  last_7_days:'TOTAL ÚLTIMOS 7 DIAS',
+  last_30_days:'TOTAL ÚLTIMOS 30 DIAS',
+  all:'TOTAL HISTÓRICO',
+  custom:'TOTAL DO PERÍODO'
+ };
+ var lbl=document.getElementById('ramp-kpi-spend-label');
+ if(lbl&&presetEl)lbl.textContent=labelMap[presetEl.value]||'TOTAL GASTO NO PERÍODO';
+ var rg=rampGetFilterRangeMs();
  var monthSpend=0,merTotals={},top={m:'—',v:0},cashback=0;
  txs.forEach(function(tx){
   var d=new Date((tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||0);
   if(isNaN(d.getTime()))return;
-  if(d.getUTCFullYear()!==y||d.getUTCMonth()!==m)return;
+  var tm=d.getTime();
+  if(tm<rg.start||tm>rg.end)return;
   var amt=rampTxAmount(tx);
   monthSpend+=amt;
   var mer=rampTxMerchant(tx);
@@ -6229,6 +6273,95 @@ function rampMonthRangeUtcIso(){
  var end=y+'-'+pad(m+1)+'-'+pad(lastDay)+'T23:59:59Z';
  return{start:start,end:end};
 }
+function rampDateToIso(d){
+ return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');
+}
+function rampGetFilterQueryIso(){
+ var fromEl=document.getElementById('ramp-filter-from');
+ var toEl=document.getElementById('ramp-filter-to');
+ var fromVal=fromEl&&fromEl.value;
+ var toVal=toEl&&toEl.value;
+ if(fromVal&&toVal){
+  return{fromIso:fromVal+'T00:00:00Z',toIso:toVal+'T23:59:59Z'};
+ }
+ var range=rampMonthRangeUtcIso();
+ return{fromIso:range.start,toIso:range.end};
+}
+function rampGetFilterRangeMs(){
+ var rq=rampGetFilterQueryIso();
+ return{start:new Date(rq.fromIso).getTime(),end:new Date(rq.toIso).getTime()};
+}
+window.rampApplyPreset=function(){
+ var preset=document.getElementById('ramp-filter-preset');
+ var fromEl=document.getElementById('ramp-filter-from');
+ var toEl=document.getElementById('ramp-filter-to');
+ if(!preset||!fromEl||!toEl)return;
+ var key=preset.value;
+ var now=new Date();
+ var y=now.getUTCFullYear();
+ var m=now.getUTCMonth();
+ var d=now.getUTCDate();
+ var from=null,to=null;
+ switch(key){
+ case 'current_month':
+  from=new Date(Date.UTC(y,m,1));
+  to=new Date(Date.UTC(y,m+1,0));
+  break;
+ case 'last_month':
+  from=new Date(Date.UTC(y,m-1,1));
+  to=new Date(Date.UTC(y,m,0));
+  break;
+ case 'last_3_months':
+  from=new Date(Date.UTC(y,m-2,1));
+  to=new Date(Date.UTC(y,m+1,0));
+  break;
+ case 'last_6_months':
+  from=new Date(Date.UTC(y,m-5,1));
+  to=new Date(Date.UTC(y,m+1,0));
+  break;
+ case 'ytd':
+  from=new Date(Date.UTC(y,0,1));
+  to=new Date(Date.UTC(y,m,d));
+  break;
+ case 'today':
+  from=new Date(Date.UTC(y,m,d));
+  to=new Date(Date.UTC(y,m,d));
+  break;
+ case 'yesterday':
+  from=new Date(Date.UTC(y,m,d-1));
+  to=new Date(Date.UTC(y,m,d-1));
+  break;
+ case 'last_7_days':
+  from=new Date(Date.UTC(y,m,d-6));
+  to=new Date(Date.UTC(y,m,d));
+  break;
+ case 'last_30_days':
+  from=new Date(Date.UTC(y,m,d-29));
+  to=new Date(Date.UTC(y,m,d));
+  break;
+ case 'all':
+  from=new Date(Date.UTC(2020,0,1));
+  to=new Date(Date.UTC(y,11,31));
+  break;
+ case 'custom':
+ default:
+  return;
+ }
+ if(from&&to){
+  fromEl.value=rampDateToIso(from);
+  toEl.value=rampDateToIso(to);
+ }
+};
+window.rampApplyFilter=function(){
+ var statusEl=document.getElementById('ramp-filter-status');
+ if(statusEl)statusEl.textContent='A carregar...';
+ var p=fetchRampData();
+ if(p&&typeof p.then==='function'){
+  p.finally(function(){if(statusEl)statusEl.textContent='';});
+ }else{
+  if(statusEl)statusEl.textContent='';
+ }
+};
 function fetchRampData(){
  var errEl=document.getElementById('ramp-conn-err');
  var note=document.getElementById('ramp-mock-note');
@@ -6253,9 +6386,10 @@ function fetchRampData(){
    return{ok:r.ok,status:r.status,j:j};
   });
  }
- var range=rampMonthRangeUtcIso();
- var txUrl='/api/ramp/transactions?start='+encodeURIComponent(range.start)+'&end='+encodeURIComponent(range.end)+'&page_size=100&max_pages=10';
- Promise.all([
+ var rq=rampGetFilterQueryIso();
+ var qs='from_date='+encodeURIComponent(rq.fromIso)+'&to_date='+encodeURIComponent(rq.toIso)+'&page_size=100&max_pages=10';
+ var txUrl='/api/ramp/transactions?'+qs;
+ return Promise.all([
   fetch(txUrl,{credentials:'same-origin'}).then(function(r){return parseRampRes(r,txUrl);}),
   fetch('/api/ramp/cards',{credentials:'same-origin'}).then(function(r){return parseRampRes(r,'/api/ramp/cards');})
  ]).then(function(pair){
@@ -7248,7 +7382,7 @@ function nav(r){
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
- ramp:()=>{if(typeof fetchRampData==='function')fetchRampData();},
+ ramp:()=>{if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
  'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
