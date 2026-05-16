@@ -1273,6 +1273,11 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- CLIENTS (Admin) -->
 <div class="page" id="page-clients">
  <div class="ph"><div class="pt pt-clients-mgmt">Client Management</div><div class="ps">Register companies and manage user access — GodManager.com</div></div>
+ <div id="cl-trial-invite-strip" style="display:none;justify-content:flex-end;margin-bottom:12px">
+  <button type="button" onclick="if(typeof gmTrialInviteGenerate==='function')gmTrialInviteGenerate();"
+   style="background:#7c3aed;color:#fff;border:0;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+   Gerar link de trial</button>
+ </div>
  <div class="cl-card">
  <div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px">Register new client</div>
  <form id="cl-form" onsubmit="return registerClient(event)">
@@ -15786,6 +15791,26 @@ window.gmOwnerAuditRefresh=function(){
 };
 })();
 
+window.gmTrialInviteGenerate=async function(){
+ var r0=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(r0!=='super_admin'){alert('Apenas super admin pode gerar convites de trial.');return;}
+ var email=window.prompt('Email do convidado (opcional):');
+ var note=window.prompt('Nota interna (ex: Empresa X, contato Y):');
+ var daysRaw=window.prompt('Expira em quantos dias? (default 14)','14');
+ var days=parseInt(String(daysRaw||'14'),10);
+ if(isNaN(days)||days<1)days=14;
+ try{
+  var r=await fetch('/api/admin/trial-invites',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:(email&&String(email).trim())||null,note:(note&&String(note).trim())||null,expiresInDays:days})});
+  var d=await r.json();
+  if(!d||!d.ok){alert('Erro: '+String((d&&d.error)||r.status));return;}
+  var msg='Link gerado (valido ate '+String(new Date(d.invite.expiresAt).toISOString().slice(0,10))+'):\n\n'+String(d.link)+'\n\nCopiado para o clipboard.';
+  try{await navigator.clipboard.writeText(String(d.link));}catch(_c){}
+  alert(msg);
+ }catch(e){
+  alert('Erro: '+String(e&&e.message||e));
+ }
+};
+
 // INIT 
 window.addEventListener('DOMContentLoaded',()=>{
  updateBranding();
@@ -18557,6 +18582,11 @@ async function gmAuthHydrateUserBadge(){
    }
   }catch(eRender){console.warn('[gmAuth] re-render after hydrate failed',eRender);}
   if(typeof gmBookkeepingAiGate==='function')gmBookkeepingAiGate();
+  try{
+   var rTr=String(u&&u.role||'').toLowerCase();
+   var st=document.getElementById('cl-trial-invite-strip');
+   if(st)st.style.display=(rTr==='super_admin')?'flex':'none';
+  }catch(_eTr){}
   return u;
  }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
 }

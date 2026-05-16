@@ -963,3 +963,20 @@ model Lease {
   @@index([tenantId])
   @@map("leases")
 }
+
+model TrialInvite {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  email        String?
+  note         String?
+  createdById  String?
+  createdBy    String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  usedByEmail  String?
+  usedByUserId String?
+  createdAt    DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@map("trial_invites")
+}
