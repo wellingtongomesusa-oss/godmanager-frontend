@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
+import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,7 @@ function serialize(c: CallWithRelations) {
     metadata: c.metadata ?? null,
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
+    clientId: c.clientId,
   };
 }
 
@@ -46,6 +48,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       },
     });
     if (!c) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(u);
+    if (!canAccessClientId(scopeUser, c.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
     return NextResponse.json({ ok: true, call: serialize(c) });
   } catch (e) {
     console.error('[GET /api/maintenance-calls/:id]', e);
@@ -57,6 +63,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const u = await getCurrentUserFromSession();
   if (!u) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
+    const existing = await prisma.maintenanceCall.findUnique({ where: { id: params.id } });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(u);
+    if (!canAccessClientId(scopeUser, existing.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const data: Prisma.MaintenanceCallUpdateInput = {};
     if (typeof body?.tipo === 'string') data.tipo = body.tipo;
@@ -71,11 +84,33 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data.resolvedBy = u.email || u.id;
     }
     if (body?.tenantId === null) data.tenant = { disconnect: true };
-    else if (typeof body?.tenantId === 'string')
+    else if (typeof body?.tenantId === 'string') {
+      const t = await prisma.tenant.findUnique({
+        where: { id: body.tenantId },
+        select: { clientId: true },
+      });
+      if (!t) {
+        return NextResponse.json({ ok: false, error: 'tenant not found' }, { status: 404 });
+      }
+      if (!canAccessClientId(scopeUser, t.clientId)) {
+        return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+      }
       data.tenant = { connect: { id: body.tenantId } };
+    }
     if (body?.propertyId === null) data.property = { disconnect: true };
-    else if (typeof body?.propertyId === 'string')
+    else if (typeof body?.propertyId === 'string') {
+      const p = await prisma.property.findUnique({
+        where: { id: body.propertyId },
+        select: { clientId: true },
+      });
+      if (!p) {
+        return NextResponse.json({ ok: false, error: 'property not found' }, { status: 404 });
+      }
+      if (!canAccessClientId(scopeUser, p.clientId)) {
+        return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+      }
       data.property = { connect: { id: body.propertyId } };
+    }
 
     const updated = await prisma.maintenanceCall.update({
       where: { id: params.id },
@@ -108,7 +143,14 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const u = await getCurrentUserFromSession();
   if (!u) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
-    await prisma.maintenanceCall.delete({ where: { id: params.id } }).catch(() => {});
+    const existing = await prisma.maintenanceCall.findUnique({ where: { id: params.id } });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    const scopeUser = toClientScopeUser(u);
+    if (!canAccessClientId(scopeUser, existing.clientId)) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
+
+    await prisma.maintenanceCall.delete({ where: { id: params.id } });
     await prisma.auditEntry
       .create({
         data: {
@@ -123,6 +165,10 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
       .catch(() => {});
     return NextResponse.json({ ok: true });
   } catch (e) {
+    const err = e as { code?: string };
+    if (err?.code === 'P2025') {
+      return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    }
     console.error('[DELETE /api/maintenance-calls/:id]', e);
     return NextResponse.json({ ok: false, error: 'Failed' }, { status: 500 });
   }
