@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "ClientProductType" AS ENUM ('PROPERTY_MANAGEMENT', 'DESIGN_DECORATION');
+
+-- AlterTable
+ALTER TABLE "clients" ADD COLUMN "productType" "ClientProductType" NOT NULL DEFAULT 'PROPERTY_MANAGEMENT';

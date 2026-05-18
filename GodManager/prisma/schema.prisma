@@ -34,6 +34,11 @@ enum ClientPlan {
   enterprise
 }
 
+enum ClientProductType {
+  PROPERTY_MANAGEMENT
+  DESIGN_DECORATION
+}
+
 // === STRIPE BILLING — Trial + Subscription ===
 
 enum BusinessSegment {
@@ -67,6 +72,7 @@ model Client {
   address     String?
   plan        ClientPlan @default(starter)
   accessLevel UserRole   @default(manager)
+  productType ClientProductType @default(PROPERTY_MANAGEMENT)
   active      Boolean    @default(true)
   logoUrl     String?
   createdAt   DateTime   @default(now())
