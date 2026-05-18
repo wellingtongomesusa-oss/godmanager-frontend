@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/db';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
+import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 
 export type SyncOwnerStatementResult = {
   payoutId: string;
@@ -248,27 +249,10 @@ export async function syncOwnerStatementForProperty(args: {
       }
     }
 
-    const allLines = await tx.statementLineItem.findMany({
-      where: { ownerMonthPayoutId: payout.id },
-      select: { lineType: true, amount: true },
-    });
-
-    let inc = new Prisma.Decimal(0);
-    let exp = new Prisma.Decimal(0);
-    for (const li of allLines) {
-      if (li.lineType === 'income') inc = inc.add(li.amount);
-      else if (li.lineType === 'expense') exp = exp.add(li.amount);
-    }
-    const net = inc.sub(exp);
-
-    await tx.ownerMonthPayout.update({
-      where: { id: payout.id },
-      data: {
-        totalIncome: inc,
-        totalExpenses: exp,
-        netPayout: net,
-      },
-    });
+    const { totalIncome: inc, totalExpenses: exp, netPayout: net } = await recomputeOwnerMonthPayoutTotals(
+      payout.id,
+      tx
+    );
 
     const actor = await tx.user.findUnique({
       where: { id: args.actorId },
