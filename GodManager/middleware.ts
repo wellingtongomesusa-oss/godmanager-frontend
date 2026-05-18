@@ -38,6 +38,7 @@ function isNonIntlPath(pathname: string): boolean {
     '/_next',
     '/_vercel',
     '/dashboard',
+    '/design',
     '/admin',
     '/account',
     '/register',
@@ -119,6 +120,7 @@ export function middleware(request: NextRequest) {
     }
     const isProtected =
       pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/design') ||
       pathname.startsWith('/admin') ||
       pathname.startsWith('/account') ||
       pathname === '/GodManager_Premium.html' ||

@@ -1,16 +1,24 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/db';
+import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getPostLoginUrlForProductType } from '@/lib/productRoutes';
 
-import { useEffect } from 'react';
-import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
+export const dynamic = 'force-dynamic';
 
-export default function DashboardPage() {
-  useEffect(() => {
-    window.location.replace(getGodManagerPremiumUrl());
-  }, []);
+export default async function DashboardPage() {
+  const user = await getCurrentUserFromSession();
+  if (!user) {
+    redirect('/login?from=/dashboard');
+  }
 
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center bg-[#141416] text-sm text-white/70">
-      A carregar o painel…
-    </div>
-  );
+  const client =
+    user.clientId != null
+      ? await prisma.client.findUnique({
+          where: { id: user.clientId },
+          select: { productType: true },
+        })
+      : null;
+
+  const url = getPostLoginUrlForProductType(client?.productType);
+  redirect(url);
 }

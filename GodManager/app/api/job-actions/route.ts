@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
+import {
+  canAccessClientId,
+  getClientScopeForCreate,
+  getClientScopeWhere,
+  toClientScopeUser,
+} from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +20,7 @@ function serialize(a: {
   actorId: string | null;
   actorEmail: string | null;
   metadata: Prisma.JsonValue | null;
+  clientId: string | null;
   createdAt: Date;
 }) {
   return {
@@ -25,6 +32,7 @@ function serialize(a: {
     actorId: a.actorId,
     actorEmail: a.actorEmail,
     metadata: a.metadata,
+    clientId: a.clientId,
     createdAt: a.createdAt.toISOString(),
   };
 }
@@ -33,12 +41,15 @@ export async function GET(req: Request) {
   const u = await getCurrentUserFromSession();
   if (!u) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
+    const scopeUser = toClientScopeUser(u);
     const url = new URL(req.url);
     const jobId = url.searchParams.get('jobId');
     const action = url.searchParams.get('action');
     const rawLimit = Number(url.searchParams.get('limit'));
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : 200;
-    const where: Prisma.JobActionWhereInput = {};
+    const where: Prisma.JobActionWhereInput = {
+      ...getClientScopeWhere(scopeUser),
+    };
     if (jobId) where.jobId = jobId;
     if (action) where.action = action;
     const actions = await prisma.jobAction.findMany({
@@ -63,16 +74,60 @@ export async function POST(req: Request) {
     if (!action || !jobId) {
       return NextResponse.json({ ok: false, error: 'action and jobId required' }, { status: 400 });
     }
+    const jobType =
+      typeof body?.jobType === 'string' && body.jobType ? String(body.jobType) : 'expense';
+
+    const scopeUser = toClientScopeUser(u);
+
+    let expenseForClient: { clientId: string | null; property: { clientId: string | null } | null } | null =
+      null;
+    if (jobType === 'expense') {
+      expenseForClient = await prisma.pmExpense.findUnique({
+        where: { id: jobId },
+        select: {
+          clientId: true,
+          property: { select: { clientId: true } },
+        },
+      });
+      if (!expenseForClient) {
+        return NextResponse.json({ ok: false, error: 'job not found' }, { status: 404 });
+      }
+      const effClientId =
+        expenseForClient.clientId ?? expenseForClient.property?.clientId ?? null;
+      if (!canAccessClientId(scopeUser, effClientId)) {
+        return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json(
+        { ok: false, error: 'jobType not supported for scoped create' },
+        { status: 400 },
+      );
+    }
+
+    let clientId: string | null = getClientScopeForCreate(scopeUser);
+    if (clientId === null && u.role === 'super_admin') {
+      const raw = (body as { clientId?: unknown }).clientId;
+      clientId = raw != null && String(raw).trim() !== '' ? String(raw).trim() : null;
+    }
+    const effFallback =
+      expenseForClient?.clientId ?? expenseForClient?.property?.clientId ?? null;
+    if (clientId === null && effFallback) {
+      clientId = effFallback;
+    }
+
     const created = await prisma.jobAction.create({
       data: {
         jobId,
-        jobType: typeof body?.jobType === 'string' && body.jobType ? body.jobType : 'expense',
+        jobType,
         action,
         reason: body?.reason ? String(body.reason) : null,
         actorId: u.id,
         actorEmail: u.email,
         metadata:
-          body?.metadata && typeof body.metadata === 'object' ? (body.metadata as object) : undefined,
+          body?.metadata && typeof body.metadata === 'object'
+            ? (body.metadata as object)
+            : undefined,
+        ...(clientId ? { client: { connect: { id: clientId } } } : {}),
       },
     });
     await prisma.auditEntry
