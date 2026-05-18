@@ -556,6 +556,13 @@ model OwnerMonthPayout {
   @@map("owner_month_payouts")
 }
 
+enum LineItemSource {
+  AUTO_RENTAL // criado pelo sync a partir de TenantPayment
+  AUTO_EXPENSE // criado pelo sync a partir de PmExpense
+  MANUAL // criado pela UI (Fase B)
+  CSV_UPLOAD // criado por upload em massa (Fase B)
+}
+
 model StatementLineItem {
   id                 String           @id @default(cuid())
   ownerMonthPayoutId String
@@ -568,9 +575,14 @@ model StatementLineItem {
   updatedAt          DateTime         @updatedAt
   clientId           String?
   client             Client?          @relation("StatementLineItem_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+  source             LineItemSource   @default(MANUAL)
+  sourceRefId        String?
+  transactionDate    DateTime?
 
   @@index([ownerMonthPayoutId])
   @@index([clientId])
+  @@index([clientId, lineType, source])
+  @@unique([ownerMonthPayoutId, source, sourceRefId], name: "uniq_line_item_source")
   @@map("statement_line_items")
 }
 
