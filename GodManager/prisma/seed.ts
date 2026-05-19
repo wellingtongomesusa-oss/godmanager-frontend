@@ -1,40 +1,43 @@
 import { PrismaClient } from '@prisma/client';
-import { SEED_USERS } from '../lib/seed';
+import { SEED_USER_DEFS } from '../lib/seed';
+import { hashPassword } from '../lib/password';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  for (const u of SEED_USERS) {
+  for (const def of SEED_USER_DEFS) {
+    const { plainPassword, ...rest } = def;
+    const passwordHash = await hashPassword(plainPassword);
     await prisma.user.upsert({
-      where: { id: u.id },
+      where: { id: def.id },
       create: {
-        id: u.id,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        email: u.email,
-        phone: u.phone ?? null,
-        role: u.role,
-        status: u.status,
-        permissions: u.permissions,
-        passwordHash: u.passwordHash,
-        createdAt: new Date(u.createdAt),
-        lastActive: new Date(u.lastActive),
+        id: rest.id,
+        firstName: rest.firstName,
+        lastName: rest.lastName,
+        email: rest.email,
+        phone: rest.phone ?? null,
+        role: rest.role,
+        status: rest.status,
+        permissions: rest.permissions,
+        passwordHash,
+        createdAt: new Date(rest.createdAt),
+        lastActive: new Date(rest.lastActive),
         clientId: null,
       },
       update: {
-        firstName: u.firstName,
-        lastName: u.lastName,
-        email: u.email,
-        phone: u.phone ?? null,
-        role: u.role,
-        status: u.status,
-        permissions: u.permissions,
-        passwordHash: u.passwordHash,
-        lastActive: new Date(u.lastActive),
+        firstName: rest.firstName,
+        lastName: rest.lastName,
+        email: rest.email,
+        phone: rest.phone ?? null,
+        role: rest.role,
+        status: rest.status,
+        permissions: rest.permissions,
+        passwordHash,
+        lastActive: new Date(rest.lastActive),
       },
     });
   }
-  console.log(`[prisma/seed] Upserted ${SEED_USERS.length} users.`);
+  console.log(`[prisma/seed] Upserted ${SEED_USER_DEFS.length} users.`);
 }
 
 main()

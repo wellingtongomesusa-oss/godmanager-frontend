@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
-import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
+import { canAccessClientId, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,18 +40,15 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const u = await getCurrentUserFromSession();
   if (!u) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
-    const c = await prisma.maintenanceCall.findUnique({
-      where: { id: params.id },
+    const scopeUser = toClientScopeUser(u);
+    const c = await prisma.maintenanceCall.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
       include: {
         tenant: { select: { id: true, code: true, name: true } },
         property: { select: { id: true, code: true, address: true } },
       },
     });
     if (!c) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
-    const scopeUser = toClientScopeUser(u);
-    if (!canAccessClientId(scopeUser, c.clientId)) {
-      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-    }
     return NextResponse.json({ ok: true, call: serialize(c) });
   } catch (e) {
     console.error('[GET /api/maintenance-calls/:id]', e);
@@ -63,12 +60,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const u = await getCurrentUserFromSession();
   if (!u) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
-    const existing = await prisma.maintenanceCall.findUnique({ where: { id: params.id } });
-    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
     const scopeUser = toClientScopeUser(u);
-    if (!canAccessClientId(scopeUser, existing.clientId)) {
-      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-    }
+    const existing = await prisma.maintenanceCall.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
+    });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
     const data: Prisma.MaintenanceCallUpdateInput = {};
@@ -143,12 +139,12 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const u = await getCurrentUserFromSession();
   if (!u) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
-    const existing = await prisma.maintenanceCall.findUnique({ where: { id: params.id } });
-    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
     const scopeUser = toClientScopeUser(u);
-    if (!canAccessClientId(scopeUser, existing.clientId)) {
-      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-    }
+    const existing = await prisma.maintenanceCall.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
+      select: { id: true },
+    });
+    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
 
     await prisma.maintenanceCall.delete({ where: { id: params.id } });
     await prisma.auditEntry

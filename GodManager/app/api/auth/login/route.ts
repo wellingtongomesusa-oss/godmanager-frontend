@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import { verifyPassword } from '@/lib/password';
+import { verifyPassword, hashPassword } from '@/lib/password';
+import {
+  checkLoginRateLimit,
+  recordFailedLogin,
+  clearLoginAttempts,
+} from '@/lib/rateLimit';
 import { createSessionCookie } from '@/lib/authServer';
 import type { UserRole } from '@/lib/types';
 
@@ -26,6 +31,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Email e password sao obrigatorios.' }, { status: 400 });
     }
 
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const key = `${ip}:${emailRaw}`;
+    const limit = checkLoginRateLimit(key);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'too_many_attempts', retryAfter: limit.retryAfterSeconds },
+        { status: 429 },
+      );
+    }
+
     let user = await prisma.user.findUnique({ where: { email: emailRaw } });
     if (!user) {
       const users = await prisma.user.findMany({});
@@ -33,6 +48,7 @@ export async function POST(req: Request) {
     }
 
     if (!user) {
+      recordFailedLogin(key);
       return NextResponse.json({ ok: false, error: 'Email ou password invalidos.' }, { status: 401 });
     }
 
@@ -43,14 +59,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Conta pendente de aprovacao.' }, { status: 403 });
     }
 
-    const valid = verifyPassword(password, user.passwordHash);
+    const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
     if (!valid) {
+      recordFailedLogin(key);
       return NextResponse.json({ ok: false, error: 'Email ou password invalidos.' }, { status: 401 });
+    }
+
+    clearLoginAttempts(key);
+
+    const updateData: { lastActive: Date; passwordHash?: string } = {
+      lastActive: new Date(),
+    };
+    if (needsRehash) {
+      updateData.passwordHash = await hashPassword(password);
     }
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastActive: new Date() },
+      data: updateData,
     });
 
     const cookie = createSessionCookie(user.id, user.role as UserRole);

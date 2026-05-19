@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/db";
 import { getCurrentUserFromSession } from "@/lib/authServer";
-import { toClientScopeUser, canAccessClientId } from "@/lib/clientScope";
+import { getClientScopeWhere, toClientScopeUser } from "@/lib/clientScope";
 import { generateUploadUrl, publicUrlForKey } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
@@ -22,18 +22,16 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const jobId = params.jobId;
-  const expense = await prisma.pmExpense.findUnique({
-    where: { id: jobId },
+  const scopeUser = toClientScopeUser(user);
+  const expense = await prisma.pmExpense.findFirst({
+    where: { id: jobId, ...getClientScopeWhere(scopeUser) },
     select: { id: true, clientId: true },
   });
   if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const scopeUser = toClientScopeUser(user);
-  if (!canAccessClientId(scopeUser, expense.clientId)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const photoCount = await prisma.jobPhoto.count({ where: { jobId: expense.id } });
+  const photoCount = await prisma.jobPhoto.count({
+    where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
+  });
   if (photoCount >= MAX_PHOTOS_PER_JOB) {
     return NextResponse.json({ error: "Limite de 20 fotos atingido" }, { status: 400 });
   }

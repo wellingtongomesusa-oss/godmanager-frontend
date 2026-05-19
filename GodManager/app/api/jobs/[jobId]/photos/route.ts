@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUserFromSession } from "@/lib/authServer";
-import { toClientScopeUser, canAccessClientId } from "@/lib/clientScope";
+import { getClientScopeWhere, toClientScopeUser } from "@/lib/clientScope";
 
 export const dynamic = "force-dynamic";
 
@@ -12,19 +12,15 @@ export async function GET(_req: Request, { params }: { params: { jobId: string }
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const jobId = params.jobId;
-  const expense = await prisma.pmExpense.findUnique({
-    where: { id: jobId },
+  const scopeUser = toClientScopeUser(user);
+  const expense = await prisma.pmExpense.findFirst({
+    where: { id: jobId, ...getClientScopeWhere(scopeUser) },
     select: { id: true, clientId: true },
   });
   if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const scopeUser = toClientScopeUser(user);
-  if (!canAccessClientId(scopeUser, expense.clientId)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const photos = await prisma.jobPhoto.findMany({
-    where: { jobId: expense.id },
+    where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
     orderBy: { uploadedAt: "desc" },
     select: {
       id: true,

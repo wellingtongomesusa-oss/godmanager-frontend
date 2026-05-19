@@ -5,12 +5,12 @@ import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { login } from '@/lib/auth';
+import { loginAsync } from '@/lib/auth';
 import { appendAudit } from '@/lib/audit';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
-import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
+import { getPostLoginRoute, type ProductType } from '@/lib/postLoginRoute';
 
 function validEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -26,6 +26,7 @@ function validLoginId(v: string): boolean {
 const inputLoginClass =
   'rounded-lg border-login-navy/12 bg-white pl-10 text-login-navy placeholder:text-login-muted/70 focus:border-login-gold focus:ring-[3px] focus:ring-login-gold/20';
 
+/** Login principal da app — `app/[locale]/login/page.tsx` */
 export function LoginForm() {
   const t = useTranslations('login');
   const router = useRouter();
@@ -47,6 +48,35 @@ export function LoginForm() {
     }
   }, []);
 
+  /** Sessão já válida: enviar para o destino correto sem bloquear o form (loading inicia false). */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const meRes = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
+        if (cancelled) return;
+        if (meRes.status === 401 || !meRes.ok) return;
+        const meJson = (await meRes.json().catch(() => null)) as {
+          ok?: boolean;
+          user?: { role?: string; productType?: ProductType };
+        } | null;
+        if (!meJson?.ok || !meJson.user) return;
+        const u = meJson.user;
+        router.replace(
+          getPostLoginRoute({
+            role: String(u.role ?? ''),
+            productType: (u.productType ?? null) as ProductType,
+          }),
+        );
+      } catch {
+        /* rede / parse — mantém form visível */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   const from = searchParams.get('from') || '/dashboard';
   const idleBanner = searchParams.get('reason') === 'idle';
 
@@ -60,10 +90,10 @@ export function LoginForm() {
 
     setLoading(true);
     await new Promise((r) => setTimeout(r, 400));
-    const res = login(email.trim(), password);
-    setLoading(false);
+    const res = await loginAsync(email.trim(), password);
 
     if (!res.ok) {
+      setLoading(false);
       toast(res.error, 'error');
       return;
     }
@@ -85,14 +115,39 @@ export function LoginForm() {
     }
 
     toast(t('signedIn'), 'success');
+
     const destination = from.startsWith('/') ? from : '/dashboard';
     const normalized = destination.replace(/\/$/, '') || '/';
-    if (normalized === '/dashboard') {
-      /* Sem hash: GodManager_Premium inicia em HOME > Home (page-home) */
-      window.location.replace(getGodManagerPremiumUrl());
+
+    let route: string;
+    if (normalized !== '/dashboard') {
+      route = normalized;
+      setLoading(false);
+      router.push(route);
+      router.refresh();
       return;
     }
-    router.replace(destination);
+
+    try {
+      const meRes = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
+      const meJson = (await meRes.json().catch(() => null)) as {
+        ok?: boolean;
+        user?: { role?: string; productType?: ProductType };
+      } | null;
+      const mu = meJson?.ok ? meJson.user : undefined;
+      route = getPostLoginRoute({
+        role: String(mu?.role ?? res.user.role ?? ''),
+        productType: (mu?.productType ?? null) as ProductType,
+      });
+    } catch {
+      route = getPostLoginRoute({
+        role: String(res.user.role ?? ''),
+        productType: null,
+      });
+    }
+
+    setLoading(false);
+    router.push(route);
     router.refresh();
   };
 

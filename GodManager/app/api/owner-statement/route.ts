@@ -119,6 +119,7 @@ export async function GET() {
       propertyIds.length > 0
         ? await prisma.pmExpense.findMany({
             where: {
+              ...(scope as Record<string, unknown>),
               monthRef: { in: monthVals },
               propertyId: { in: propertyIds },
             },

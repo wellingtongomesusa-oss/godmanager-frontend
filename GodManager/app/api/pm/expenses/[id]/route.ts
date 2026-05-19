@@ -91,7 +91,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.vendorId !== undefined) {
       const vid = String(body.vendorId || '').trim() || null;
       if (vid) {
-        const v = await prisma.pmVendor.findUnique({ where: { id: vid } });
+        const v = await prisma.pmVendor.findFirst({
+          where: { id: vid, ...getClientScopeWhere(scopeUser) },
+        });
         if (!v) return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
         vendorId = vid;
       } else {

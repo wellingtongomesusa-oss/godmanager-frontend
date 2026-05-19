@@ -112,7 +112,7 @@ function slug(s: string): string {
 async function seedAdmin() {
   const email = 'demo@godmanager.us';
   const password = 'Demo@2026';
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
   const data = {
     firstName: 'Demo',
     lastName: 'Admin',

@@ -14,6 +14,8 @@ export function getPostLoginUrlForProductType(
   switch (productType) {
     case 'DESIGN_DECORATION':
       return '/design';
+    case 'EXPENSES_JOBS':
+      return getGodManagerPremiumUrl();
     // Futuros verticais entram aqui:
     // case 'HOSPITALITY':       return '/hospitality';
     // case 'CONSTRUCTION':      return '/construction';
