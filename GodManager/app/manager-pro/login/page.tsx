@@ -7,6 +7,7 @@ import { setSession } from '@/lib/manager-pro/auth';
 
 /**
  * Login GodManager.One — sessão no browser (MP_SESSION_KEY) + cookie httpOnly das APIs (/api/auth/*).
+ * Legacy: não é o login principal da app (use /[locale]/login).
  */
 export default function ManagerProLoginPage() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function ManagerProLoginPage() {
         at: new Date().toISOString(),
       });
 
+      setLoading(false);
       router.replace('/manager-pro');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado.');

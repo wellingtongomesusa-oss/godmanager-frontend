@@ -37,6 +37,7 @@ enum ClientPlan {
 enum ClientProductType {
   PROPERTY_MANAGEMENT
   DESIGN_DECORATION
+  EXPENSES_JOBS
 }
 
 // === STRIPE BILLING — Trial + Subscription ===
@@ -539,6 +540,9 @@ model OwnerMonthPayout {
   property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   yearMonth   String
   paidAt      DateTime?
+  closedAt    DateTime?
+  closedBy    String?
+  lastSentAt  DateTime?
   paidAmount  Decimal?  @db.Decimal(12, 2)
   method      String?   @db.VarChar(40)
   reference   String?   @db.VarChar(120)
