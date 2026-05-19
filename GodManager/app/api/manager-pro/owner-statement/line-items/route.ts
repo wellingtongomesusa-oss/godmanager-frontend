@@ -129,6 +129,9 @@ export async function GET(req: Request) {
             netPayout: decToStr(payout.netPayout ?? null),
             paidAt: payout.paidAt?.toISOString() ?? null,
             paidAmount: decToStr(payout.paidAmount ?? null),
+            closedAt: payout.closedAt?.toISOString() ?? null,
+            closedBy: payout.closedBy ?? null,
+            lastSentAt: payout.lastSentAt?.toISOString() ?? null,
             clientId: payout.clientId,
           }
         : null,
