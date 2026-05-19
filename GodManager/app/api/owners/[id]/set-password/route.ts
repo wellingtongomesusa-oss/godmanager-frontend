@@ -71,7 +71,7 @@ export async function POST(
   }
 
   const password = parsed.data.password;
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
 
   try {
     const byOwner = await prisma.user.findFirst({ where: { ownerId: owner.id } });

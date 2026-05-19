@@ -88,6 +88,7 @@ export async function POST(req: Request) {
     if (!validRoles.includes(role)) return NextResponse.json({ ok: false, error: 'Role invalido.' }, { status: 400 });
     if (!validStatuses.includes(status)) return NextResponse.json({ ok: false, error: 'Status invalido.' }, { status: 400 });
 
+    const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
         role: role as import('@prisma/client').UserRole,
         status: status as import('@prisma/client').UserStatus,
         permissions,
-        passwordHash: hashPassword(password),
+        passwordHash,
       },
     });
 

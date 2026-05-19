@@ -26,6 +26,7 @@ const prisma = new PrismaClient();
 const VALID_PRODUCT_TYPES: readonly ClientProductType[] = [
   'PROPERTY_MANAGEMENT',
   'DESIGN_DECORATION',
+  'EXPENSES_JOBS',
 ];
 const VALID_PLANS: readonly ClientPlan[] = ['starter', 'professional', 'enterprise'];
 
@@ -193,7 +194,7 @@ async function main() {
     return;
   }
 
-  const pwdHash = hashPassword(plainPassword);
+  const pwdHash = await hashPassword(plainPassword);
 
   const created = await prisma.$transaction(async (tx) => {
     const createdClient = await tx.client.create({

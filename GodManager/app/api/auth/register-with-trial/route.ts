@@ -155,6 +155,8 @@ export async function POST(req: NextRequest) {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
+    const passwordHash = await hashPassword(password);
+
     const result = await prisma.$transaction(
       async (tx) => {
         let client = await tx.client.findFirst({
@@ -181,7 +183,7 @@ export async function POST(req: NextRequest) {
             role: 'admin',
             status: 'active',
             permissions: [],
-            passwordHash: hashPassword(password),
+            passwordHash,
             clientId: client.id,
           },
         });

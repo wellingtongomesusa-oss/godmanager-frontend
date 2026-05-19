@@ -24,12 +24,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Nova password tem de ser diferente da actual.' }, { status: 400 });
     }
 
-    const valid = verifyPassword(oldPassword, user.passwordHash);
+    const { valid } = await verifyPassword(oldPassword, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ ok: false, error: 'Password actual incorrecta.' }, { status: 401 });
     }
 
-    const newHash = hashPassword(newPassword);
+    const newHash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: user.id },
       data: { passwordHash: newHash, lastActive: new Date() },

@@ -1,14 +1,10 @@
-import { hashPassword } from '@/lib/password';
-import type { User } from '@/lib/types';
+import type { User, UserRole, UserStatus } from '@/lib/types';
 
-function u(partial: Omit<User, 'passwordHash'> & { plainPassword: string }): User {
-  const { plainPassword, ...rest } = partial;
-  return { ...rest, passwordHash: hashPassword(plainPassword) };
-}
+/** Plain credentials for prisma/seed.ts — bcrypt applied at runtime. */
+export type SeedUserDef = Omit<User, 'passwordHash'> & { plainPassword: string };
 
-/** 8 utilizadores iniciais — carregados na primeira visita */
-export const SEED_USERS: User[] = [
-  u({
+export const SEED_USER_DEFS: SeedUserDef[] = [
+  {
     id: 'u-wellington',
     firstName: 'Wellington',
     lastName: 'Gomes',
@@ -20,8 +16,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-01-15T10:00:00.000Z',
     lastActive: new Date().toISOString(),
     plainPassword: 'Invoice@123',
-  }),
-  u({
+  },
+  {
     id: 'u-ana',
     firstName: 'Ana',
     lastName: 'Costa',
@@ -32,8 +28,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-02-01T09:00:00.000Z',
     lastActive: '2026-03-28T14:22:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
-  u({
+  },
+  {
     id: 'u-frederico',
     firstName: 'Frederico',
     lastName: 'da Silva',
@@ -44,8 +40,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-02-10T11:30:00.000Z',
     lastActive: '2026-03-27T18:00:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
-  u({
+  },
+  {
     id: 'u-carlos',
     firstName: 'Carlos',
     lastName: 'Mendes',
@@ -56,8 +52,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-02-12T08:00:00.000Z',
     lastActive: '2026-03-26T09:15:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
-  u({
+  },
+  {
     id: 'u-maria',
     firstName: 'Maria',
     lastName: 'Silva',
@@ -68,8 +64,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-02-14T13:00:00.000Z',
     lastActive: '2026-03-28T07:45:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
-  u({
+  },
+  {
     id: 'u-pedro',
     firstName: 'Pedro',
     lastName: 'Lima',
@@ -80,8 +76,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-02-20T10:00:00.000Z',
     lastActive: '2026-03-10T16:00:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
-  u({
+  },
+  {
     id: 'u-jennifer',
     firstName: 'Jennifer',
     lastName: 'Martinez',
@@ -92,8 +88,8 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-03-20T12:00:00.000Z',
     lastActive: '2026-03-20T12:00:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
-  u({
+  },
+  {
     id: 'u-patricia',
     firstName: 'Patricia',
     lastName: 'Oliveira',
@@ -104,5 +100,5 @@ export const SEED_USERS: User[] = [
     createdAt: '2026-03-01T09:00:00.000Z',
     lastActive: '2026-03-28T11:00:00.000Z',
     plainPassword: 'TempPass88!',
-  }),
+  },
 ];

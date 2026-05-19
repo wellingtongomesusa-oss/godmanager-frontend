@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Email ja existe.' }, { status: 409 });
     }
 
+    const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
         role: 'viewer',
         status: 'pending',
         permissions: [],
-        passwordHash: hashPassword(password),
+        passwordHash,
       },
     });
 

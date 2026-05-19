@@ -53,7 +53,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (body.password.length < 8) {
         return NextResponse.json({ ok: false, error: 'Password min 8 chars.' }, { status: 400 });
       }
-      data.passwordHash = hashPassword(body.password);
+      data.passwordHash = await hashPassword(body.password);
     }
     if (typeof body.lastActive === 'string' && body.lastActive.length > 0) {
       data.lastActive = new Date(body.lastActive);
