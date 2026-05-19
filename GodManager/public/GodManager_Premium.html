@@ -255,6 +255,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #ltp-photo-dropzone.ltp-dz-drag{border-color:var(--amber)!important;background:var(--amber-bg)!important}
 
 /* Premium enhancements */
+.gm-section-hidden{display:none!important}
 table{border-collapse:collapse}
 thead tr{background:var(--cream)!important}
 th{font-size:9px!important;font-weight:600!important;letter-spacing:1px!important;text-transform:uppercase!important;color:var(--ink3)!important}
@@ -287,6 +288,9 @@ button{font-family:'Inter',sans-serif!important}
 .cl-pill-pl-starter{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:#4a5568;color:#fff}
 .cl-pill-pl-pro{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:#22558c;color:#fff}
 .cl-pill-pl-ent{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:#c9a96e;color:#fff}
+.cl-pill-pr-pm{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:#22558c;color:#fff}
+.cl-pill-pr-dd{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:var(--blue);color:#fff}
+.cl-pill-pr-ej{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;background:var(--slate);color:#fff}
 #sb-brand-name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sb-brand-tag.client-wl{font-style:italic}
 #page-client-users .cu-bar,#users-modal-bg .cu-bar{height:6px;border-radius:3px;background:var(--cream);overflow:hidden;margin-top:8px}
@@ -1150,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('ownerportal')" id="nav-ownerportal">Owner Portal</div>
  <div class="ss" onclick="nav('ltownerpay')" id="nav-ltownerpay" style="padding-left:16px">Owner Payment</div>
+ <div class="ss" onclick="nav('owner-statement-detail')" id="nav-owner-statement-detail" style="padding-left:16px">Owner Statement (Detalhe)</div>
  <div class="ss sb-ix-ic" onclick="nav('owner-audit')" id="nav-owner-audit" style="padding-left:16px;display:none" title="Auditoria de Repasses (super_admin)">
  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Auditoria Repasses</span></div>
  <div class="ss" onclick="nav('listings')" id="nav-listings">Listings</div>
@@ -1211,6 +1216,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="admin" id="sb-gm-admin-section" style="display:none">
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">ADMIN</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
+ <div class="ss" onclick="nav('admin-dashboard')" id="nav-admin-dashboard" style="padding-left:16px;display:none" title="Dashboard Admin (super_admin only)">Dashboard Admin</div>
  <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px">Clients</div>
  <div class="ss" onclick="gmAdminUsersModalOpen()" id="nav-admin-users" style="padding-left:16px">Users</div>
  <div class="ss" onclick="nav('backup')" id="nav-backup" style="padding-left:16px">Backup & Restore</div>
@@ -1297,6 +1303,11 @@ document.addEventListener('DOMContentLoaded', function(){
  <option value="professional" selected>PROFESSIONAL (4 users)</option>
  <option value="enterprise">ENTERPRISE (11 users)</option>
  </select></div>
+ <div class="cl-fg"><label>Product *</label><select class="fi" id="cl-product" required>
+ <option value="PROPERTY_MANAGEMENT" selected>Property Management</option>
+ <option value="DESIGN_DECORATION">Design &amp; Decoration</option>
+ <option value="EXPENSES_JOBS">Expenses / Jobs</option>
+ </select></div>
  <div class="cl-fg"><label>Access Level *</label><select class="fi" id="cl-level" required>
  <option value="ADMIN">ADMIN</option>
  <option value="MANAGER">MANAGER</option>
@@ -1311,10 +1322,16 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div class="cl-table-wrap">
  <table class="cl-table" id="cl-table">
- <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Plan</th><th>Access</th><th>Users</th><th>Status</th><th>Actions</th></tr></thead>
+ <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Plan</th><th>Produto</th><th>Access</th><th>Users</th><th>Status</th><th>Actions</th></tr></thead>
  <tbody id="cl-tbody"></tbody>
  </table>
  </div>
+</div>
+
+<!-- ADMIN DASHBOARD (super_admin only — gate em nav + gmBookkeepingAiGate) -->
+<div class="page" id="page-admin-dashboard">
+ <div class="ph"><div class="pt">Dashboard Admin</div><div class="ps">Visão geral do GodManager — todos os produtos, clientes, e métricas operacionais</div></div>
+ <div class="cg" id="admin-dash-cards"></div>
 </div>
 
 <!-- placeholder: client-users route uses modal only -->
@@ -1606,6 +1623,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="cl-fg"><label>Phone</label><input class="fi" id="cl-edit-phone" type="text"></div>
  <div class="cl-fg" style="grid-column:1/-1"><label>Address</label><textarea class="fi" id="cl-edit-addr" rows="2"></textarea></div>
  <div class="cl-fg"><label>Plan *</label><select class="fi" id="cl-edit-plan" required><option value="starter">STARTER</option><option value="professional">PROFESSIONAL</option><option value="enterprise">ENTERPRISE</option></select></div>
+ <div class="cl-fg"><label>Product *</label><select class="fi" id="cl-edit-product" required><option value="PROPERTY_MANAGEMENT">Property Management</option><option value="DESIGN_DECORATION">Design &amp; Decoration</option><option value="EXPENSES_JOBS">Expenses / Jobs</option></select></div>
  <div class="cl-fg"><label>Access Level *</label><select class="fi" id="cl-edit-level" required><option value="ADMIN">ADMIN</option><option value="MANAGER">MANAGER</option><option value="VIEWER">VIEWER</option></select></div>
  <div class="cl-fg cl-tog"><label style="cursor:pointer;display:flex;align-items:center;gap:8px"><input type="checkbox" id="cl-edit-active"> <span>Active</span></label></div>
  </div>
@@ -3508,6 +3526,99 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 </div>
 
+<!-- LONG TERM — OWNER STATEMENT DETAIL -->
+<div class="page" id="page-owner-statement-detail">
+ <div class="ph"><div class="pt">Owner Statement — Detalhe</div><div class="ps">Statement individual por propriedade</div></div>
+ <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+ <button type="button" id="osd-bulk-send" onclick="if(typeof osdBulkSend==='function')osdBulkSend()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar em lote (todos os owners do mês)</button>
+ </div>
+ <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+ <select id="osd-property" style="flex:1;min-width:280px;max-width:560px;padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
+ <select id="osd-period" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
+ <input id="osd-search-tenant" type="text" oninput="if(typeof osdRebuildPropertySelect==='function')osdRebuildPropertySelect()" placeholder="Filtrar por tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:220px">
+ <button type="button" id="osd-load" onclick="if(typeof osdLoadStatement==='function')osdLoadStatement()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar statement</button>
+ </div>
+
+ <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e período para visualizar o statement.</div>
+
+ <div id="osd-statement-area" style="display:none;margin-top:16px">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--cream)">
+ <div id="osd-subheader-title" style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--ink)"></div>
+ <div id="osd-subheader-meta" style="font-size:12px;color:var(--ink2);margin-top:6px;line-height:1.45"></div>
+ <div id="osd-detail-status-row" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"></div>
+ </div>
+ <div style="padding:12px 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--border)">
+ <button type="button" id="osd-add-income" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('income')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Income</button>
+ <button type="button" id="osd-add-expense" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('expense')" style="padding:8px 14px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Expense</button>
+ <button type="button" id="osd-upload-csv" onclick="if(typeof osdCsvPick==='function')osdCsvPick()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>
+ <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
+ <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
+ <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
+ </div>
+ <div style="overflow-x:auto">
+ <table style="width:100%;border-collapse:collapse;min-width:920px">
+ <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Descrição</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Origem</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Crédito ($)</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Débito ($)</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">Total Acumulado ($)</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
+ </tr></thead>
+ <tbody id="osd-detail-tbody"></tbody>
+ <tfoot id="osd-detail-tfoot"><tr style="background:rgba(237,234,228,.95);border-top:2px solid var(--border);font-weight:600">
+ <td colspan="3" style="padding:12px 14px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3);letter-spacing:.6px">Totais</td>
+ <td id="osd-foot-income" style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--green);font-size:14px">$0.00</td>
+ <td id="osd-foot-expenses" style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--red);font-size:14px">$0.00</td>
+ <td style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:15px"><span id="osd-foot-net">$0.00</span></td>
+ <td style="padding:12px"></td>
+ </tr></tfoot>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- Line item modal -->
+ <div id="osd-li-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10060;padding:24px;overflow:auto;box-sizing:border-box" onclick="if(event.target===this)osdLiClose()">
+ <div onclick="event.stopPropagation()" style="max-width:420px;margin:48px auto;background:var(--paper);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.14)">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:var(--ink)" id="osd-li-modal-title">Linha</div>
+ <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+ <input type="hidden" id="osd-li-edit-id" value="">
+ <input type="hidden" id="osd-li-type" value="income">
+ <label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Data</label>
+ <input id="osd-li-date" type="date" style="padding:8px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px">
+ <label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Descrição</label>
+ <input id="osd-li-desc" type="text" maxlength="300" placeholder="Descrição" style="padding:8px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px">
+ <label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Valor (USD)</label>
+ <input id="osd-li-amt" type="number" step="0.01" min="0.01" placeholder="0.00" style="padding:8px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px">
+ <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+ <button type="button" onclick="osdLiClose()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
+ <button type="button" onclick="osdLiSave()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Guardar</button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- CSV modal -->
+ <div id="osd-csv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10070;padding:24px;overflow:auto;box-sizing:border-box" onclick="if(event.target===this)osdCsvClose()">
+ <div onclick="event.stopPropagation()" style="max-width:520px;margin:48px auto;background:var(--paper);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.14)">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:var(--ink)">Upload CSV — Owner Statement</div>
+ <div style="padding:16px 18px;font-size:12px;color:var(--ink2);line-height:1.45">
+ <div id="osd-csv-summary"></div>
+ <pre id="osd-csv-errors" style="margin-top:12px;padding:12px;background:var(--cream);border-radius:8px;font-size:11px;color:var(--red);white-space:pre-wrap;display:none;max-height:220px;overflow:auto;font-family:'JetBrains Mono',monospace"></pre>
+ </div>
+ <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;background:var(--sand)">
+ <button type="button" onclick="osdCsvClose()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Fechar</button>
+ <button type="button" id="osd-csv-confirm" onclick="osdCsvConfirm()" style="display:none;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Confirmar upload</button>
+ </div>
+ </div>
+ </div>
+
+ <input type="file" id="osd-csv-file" accept=".csv,text/csv" style="display:none" onchange="osdCsvOnChange(event)">
+</div>
+
 <!-- 
  LONG TERM — TENANTS (registry)
  -->
@@ -5198,8 +5309,95 @@ function renderCards(){
  if(CI[c.id])CI[c.id].destroy();
  CI[c.id]=new Chart(cv,{type:'doughnut',data:{labels:c.labels||[],datasets:[{data:c.cd,backgroundColor:c.cc,borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:!c.empty}},animation:{duration:500}}});
  });
+});
+}
+
+var ADMIN_CHART={};
+function gmAdminMoney(n){
+ if(n==null||typeof n!=='number'||isNaN(n))return '--';
+ return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function gmAdminDashboardInvokeNav(target){
+ if(!target)return;
+ if(target==='users-modal'){
+  if(typeof gmAdminUsersModalOpen==='function')gmAdminUsersModalOpen();
+  return;
+ }
+ if(typeof nav==='function')nav(target);
+}
+async function gmAdminDashboardLoad(){
+ var host=document.getElementById('admin-dash-cards');
+ if(!host)return;
+ host.innerHTML='<div style="grid-column:1/-1;padding:24px;color:var(--ink3);font-family:\'DM Sans\',sans-serif;font-size:13px">A carregar indicadores…</div>';
+ try{
+  var res=await fetch('/api/admin/dashboard/kpis',{credentials:'same-origin',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  if(!res.ok||!j||!j.ok)throw new Error((j&&j.error)||('HTTP '+res.status));
+  gmAdminDashboardRender(j);
+ }catch(e){
+  console.warn('[admin-dashboard]',e);
+  host.innerHTML='<div style="grid-column:1/-1;padding:24px;color:var(--red);font-family:\'DM Sans\',sans-serif;font-size:13px">Não foi possível carregar o dashboard admin.</div>';
+ }
+}
+function gmAdminDashboardRender(d){
+ var host=document.getElementById('admin-dash-cards');
+ if(!host||typeof Chart==='undefined')return;
+ host.innerHTML='';
+ var C=d.clients,P=d.portfolio,U=d.users,F=d.financials||{};
+ var ym=String(F.yearMonth||'');
+ var upd=new Date(d.updatedAt||Date.now());
+ var updHtml='<div class="cu">Updated: '+upd.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})+'</div>';
+ var pm=C.byProduct.PROPERTY_MANAGEMENT,dd=C.byProduct.DESIGN_DECORATION,ej=C.byProduct.EXPENSES_JOBS;
+ var sumPt=pm+dd+ej;
+ var cdProd=sumPt===0?[1,1,1]:[Math.max(0.01,pm),Math.max(0.01,dd),Math.max(0.01,ej)];
+ var ccProd=sumPt===0?['#e2ddd4','#e2ddd4','#e2ddd4']:['#22558c','#c9a96e','#2a6e4e'];
+ var uPen=Math.max(0,U.total-U.active-U.suspended);
+ var cdUser=[Math.max(0.01,U.active),Math.max(0.01,U.suspended)];
+ var ex=F.expensesCurrentMonth||0,nt=F.netOwnerCurrentMonth||0;
+ var cards=[
+  {id:'adm-cli-tot',label:'TOTAL CLIENTES',badge:'CLI',barClass:'bb bg',value:String(C.total),sub1:'Clientes registados na plataforma (cross-client)',sub2:'',cd:cdProd,cc:ccProd,ctr:String(C.total),pills:[{t:'PM:'+pm,c:'pb'},{t:'D&D:'+dd,c:'pa'},{t:'EJ:'+ej,c:'pg'}],nav:'clients'},
+  {id:'adm-cli-act',label:'CLIENTES ATIVOS',badge:'ACT',barClass:'bb ba',value:String(C.active),sub1:'Activos vs suspensos (flag active)',sub2:'',cd:[Math.max(0.01,C.active),Math.max(0.01,C.suspended)],cc:['#2a6e4e','#b83030'],ctr:String(C.active),pills:[{t:'Active '+C.active,c:'pg'},{t:'Suspended '+C.suspended,c:'pr'}],nav:'clients'},
+  {id:'adm-cli-new',label:'NOVOS CLIENTES (30d)',badge:'NEW',barClass:'bb bb',value:String(C.newLast30Days),sub1:'Novos clientes nos últimos 30 dias',sub2:'',cd:[Math.max(0.01,C.newLast30Days),Math.max(0.01,Math.max(0,C.total-C.newLast30Days))],cc:['#c9a96e','#e2ddd4'],ctr:String(C.newLast30Days),pills:[{t:'Rolling',c:'pa'}],nav:'clients'},
+  {id:'adm-users',label:'TOTAL USERS',badge:'USR',barClass:'bb bg',value:String(U.total),sub1:'Utilizadores activos vs suspensos',sub2:(uPen?('Pending / outros: '+uPen):''),cd:cdUser,cc:['#2a6e4e','#b83030'],ctr:String(U.total),pills:[{t:'Active '+U.active,c:'pg'},{t:'Suspended '+U.suspended,c:'pr'}],nav:'users-modal'},
+  {id:'adm-prop',label:'TOTAL PROPERTIES',badge:'PRP',barClass:'bb ba',value:String(P.totalProperties),sub1:'Propriedades em todos os clientes',sub2:'',cd:[Math.max(0.01,P.totalProperties)],cc:['#22558c'],ctr:String(P.totalProperties),pills:[{t:'Portfolio',c:'pb'}],nav:'ltproperties'},
+  {id:'adm-tnt',label:'TOTAL TENANTS',badge:'TNT',barClass:'bb bb',value:String(P.totalTenants),sub1:'Inquilinos registados (cross-client)',sub2:'',cd:[Math.max(0.01,P.totalTenants)],cc:['#2a6e4e'],ctr:String(P.totalTenants),pills:[{t:'Tenants',c:'pg'}],nav:'tenants'},
+  {id:'adm-vnd',label:'TOTAL VENDORS',badge:'VND',barClass:'bb br',value:String(P.totalVendors),sub1:'Fornecedores PM (cross-client)',sub2:'',cd:[Math.max(0.01,P.totalVendors)],cc:['#b83030'],ctr:String(P.totalVendors),pills:[{t:'PM vendors',c:'pr'}],nav:'vendors'},
+  {id:'adm-exp',label:'EXPENSES ('+ym+')',badge:'EXP',barClass:'bb br',value:gmAdminMoney(ex),sub1:'Soma owner charged em pm_expenses (monthRef)',sub2:'Cross-client · mês corrente',cd:[Math.max(0.01,ex)],cc:['#b83030'],ctr:gmAdminMoney(ex),pills:[{t:'PM',c:'pr'}],nav:'ltexpenses'},
+  {id:'adm-net',label:'NET OWNER ('+ym+')',badge:'NET',barClass:'bb bb',value:gmAdminMoney(nt),sub1:'Soma netPayout em owner_month_payouts',sub2:'Cross-client · repasses ao mês',cd:[Math.max(0.01,Math.abs(nt)+0.01)],cc:['#22558c'],ctr:gmAdminMoney(nt),pills:[{t:'Statements',c:'pb'}],nav:'owner-statement'}
+ ];
+ cards.forEach(function(c,i){
+  var el=document.createElement('div');
+  el.className='card';
+  el.style.animationDelay=(i*0.03)+'s';
+  var navT=c.nav||'clients';
+  el.onclick=function(ev){
+   if(ev.target.closest&&ev.target.closest('.ck'))return;
+   gmAdminDashboardInvokeNav(navT);
+  };
+  var pillsHtml=c.pills&&c.pills.length?'<div class="cd"></div><div class="cp">'+c.pills.map(function(p){return '<span class="pill '+p.c+'">'+p.t+'</span>';}).join('')+'</div>':'<div style="height:8px"></div>';
+  var csz=(c.ctr&&String(c.ctr).length>10)?'9px':'11px';
+  el.innerHTML='<div class="ct"><div class="cl">'+c.label+'</div><div class="cb">'+c.badge+'</div></div>'+
+   '<div class="cv2">'+c.value+'</div>'+
+   '<div class="cs1">'+c.sub1+'</div>'+(c.sub2?'<div class="cs2">'+c.sub2+'</div>':'')+
+   '<div class="cc"><canvas id="adm-ch-'+c.id+'" width="80" height="80"></canvas><div class="cc-ctr" style="width:70px;height:70px;font-size:'+csz+'">'+c.ctr+'</div></div>'+
+   pillsHtml+updHtml+
+   '<div class="cf"><a class="ck" href="#">Ver detalhes →</a></div>'+
+   '<div class="cbar '+c.barClass+'"></div>';
+  var ck=el.querySelector('.ck');
+  if(ck){ck.onclick=function(ev){ev.preventDefault();ev.stopPropagation();gmAdminDashboardInvokeNav(navT);};}
+  host.appendChild(el);
+ });
+ requestAnimationFrame(function(){
+  cards.forEach(function(c){
+   var cv=document.getElementById('adm-ch-'+c.id);
+   if(!cv)return;
+   if(ADMIN_CHART[c.id])try{ADMIN_CHART[c.id].destroy();}catch(eD){}
+   ADMIN_CHART[c.id]=new Chart(cv,{type:'doughnut',data:{labels:[],datasets:[{data:c.cd,backgroundColor:c.cc,borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:true}},animation:{duration:500}}});
+  });
  });
 }
+window.gmAdminDashboardLoad=gmAdminDashboardLoad;
+window.osAdminDashLoad=gmAdminDashboardLoad;
 
 // — Integrations hub (QuickBooks + cartões)
 function ixUpdateQbLastSync(){
@@ -5538,6 +5736,9 @@ function normalizeClient(c){
  if(c.contact&&!c.contactName)c.contactName=c.contact;
  if(!Array.isArray(c.users))c.users=[];
  if(!c.plan)c.plan='professional';
+ var ptRaw=String(c.productType||'PROPERTY_MANAGEMENT').toUpperCase();
+ if(ptRaw!=='PROPERTY_MANAGEMENT'&&ptRaw!=='DESIGN_DECORATION'&&ptRaw!=='EXPENSES_JOBS')ptRaw='PROPERTY_MANAGEMENT';
+ c.productType=ptRaw;
  if(c.accessLevel)c.accessLevel=String(c.accessLevel).toUpperCase();
  c.users.forEach(function(u){if(u&&u.accessLevel)u.accessLevel=String(u.accessLevel).toUpperCase();});
  return c;
@@ -5569,6 +5770,8 @@ function accessPillCls(l){var u=String(l||'').toUpperCase();if(u==='ADMIN')retur
 function planPillCls(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'cl-pill-pl-starter';if(v==='enterprise')return 'cl-pill-pl-ent';return 'cl-pill-pl-pro';}
 function planLabel(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'Starter';if(v==='enterprise')return 'Enterprise';return 'Professional';}
 function planLabelDisp(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'STARTER';if(v==='enterprise')return 'ENTERPRISE';return 'PROFESSIONAL';}
+function productPillCls(pt){var v=String(pt||'PROPERTY_MANAGEMENT').toUpperCase();if(v==='DESIGN_DECORATION')return 'cl-pill-pr-dd';if(v==='EXPENSES_JOBS')return 'cl-pill-pr-ej';return 'cl-pill-pr-pm';}
+function productLabelDisp(pt){var v=String(pt||'PROPERTY_MANAGEMENT').toUpperCase();if(v==='DESIGN_DECORATION')return 'D&D';if(v==='EXPENSES_JOBS')return 'EJ';return 'PM';}
 const clientConfig={company_name:'Manager Prop LLC',logo_url:''};
 if(typeof window.gmPlatformCompanyName!=='string'||!window.gmPlatformCompanyName)window.gmPlatformCompanyName=clientConfig.company_name;
 function gmClientInitials(name){
@@ -5720,7 +5923,9 @@ function registerClient(e){
   var un=(em.split('@')[0]||'owner').replace(/[^a-z0-9._-]/gi,'');
   var tp=String(e.tempPassword||('Temp'+Math.random().toString(36).slice(2,10)+'!'));
   var owner={id:'usr_'+Date.now(),name:contact,email:em,username:un,tempPassword:tp,accessLevel:al,status:'active',lastLogin:'—',isOwner:true};
-  var rec={id:e.id||('cl_'+Date.now()),company:co,companyName:co,contact:contact,contactName:contact,email:em,phone:String(e.phone||'').trim(),address:String(e.address||'').trim(),plan:pl,accessLevel:al,status:e.status==='inactive'?'inactive':'active',createdAt:e.createdAt||new Date().toISOString().slice(0,10),users:[owner]};
+  var ptRaw=String(e.productType||'PROPERTY_MANAGEMENT').toUpperCase();
+  if(ptRaw!=='PROPERTY_MANAGEMENT'&&ptRaw!=='DESIGN_DECORATION'&&ptRaw!=='EXPENSES_JOBS')ptRaw='PROPERTY_MANAGEMENT';
+  var rec={id:e.id||('cl_'+Date.now()),company:co,companyName:co,contact:contact,contactName:contact,email:em,phone:String(e.phone||'').trim(),address:String(e.address||'').trim(),plan:pl,productType:ptRaw,accessLevel:al,status:e.status==='inactive'?'inactive':'active',createdAt:e.createdAt||new Date().toISOString().slice(0,10),users:[owner]};
   if(Array.isArray(e.users)&&e.users.length)rec.users=e.users.slice();
   var clients=loadClientsRaw();
   clients.push(rec);
@@ -5733,16 +5938,20 @@ function registerClient(e){
  var em=document.getElementById('cl-email').value.trim();
  var al=document.getElementById('cl-level').value.toUpperCase();
  var pl=document.getElementById('cl-plan').value;
+ var pt=document.getElementById('cl-product')?document.getElementById('cl-product').value:'PROPERTY_MANAGEMENT';
+ pt=String(pt||'PROPERTY_MANAGEMENT').toUpperCase();
+ if(pt!=='PROPERTY_MANAGEMENT'&&pt!=='DESIGN_DECORATION'&&pt!=='EXPENSES_JOBS')pt='PROPERTY_MANAGEMENT';
  if(!co||!contact||!em){alert('Fill required fields.');return false;}
  var un=(em.split('@')[0]||'owner').replace(/[^a-z0-9._-]/gi,'');
  var tp='Temp'+Math.random().toString(36).slice(2,10)+'!';
  var owner={id:'usr_'+Date.now(),name:contact,email:em,username:un,tempPassword:tp,accessLevel:al,status:'active',lastLogin:'—',isOwner:true};
- var rec={id:'cl_'+Date.now(),company:co,companyName:co,contact:contact,contactName:contact,email:em,phone:(document.getElementById('cl-phone').value||'').trim(),address:'',plan:pl,accessLevel:al,status:'active',createdAt:new Date().toISOString().slice(0,10),users:[owner]};
+ var rec={id:'cl_'+Date.now(),company:co,companyName:co,contact:contact,contactName:contact,email:em,phone:(document.getElementById('cl-phone').value||'').trim(),address:'',plan:pl,productType:pt,accessLevel:al,status:'active',createdAt:new Date().toISOString().slice(0,10),users:[owner]};
  var clients=loadClientsRaw();
  clients.push(rec);
  saveClientsRaw(clients);
  document.getElementById('cl-form').reset();
  if(document.getElementById('cl-plan'))document.getElementById('cl-plan').value='professional';
+ if(document.getElementById('cl-product'))document.getElementById('cl-product').value='PROPERTY_MANAGEMENT';
  loadClients();
  return false;
 }
@@ -5769,10 +5978,12 @@ function loadClients(){
   var pc=accessPillCls(c.accessLevel);
   var pp=planPillCls(c.plan);
   var plab=planLabelDisp(c.plan);
+  var prCls=productPillCls(c.productType);
+  var prLab=productLabelDisp(c.productType);
   var uc=getUserCount(c.id)+'/'+getMaxUsers(getClientPlanObj(c));
   var co=String(c.company||c.companyName||'').replace(/</g,'&lt;');
   var id=c.id.replace(/'/g,'');
-  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
+  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+prCls+'">'+prLab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
  }).join('');
 }
 function editClient(clientId){
@@ -5785,6 +5996,7 @@ function editClient(clientId){
  document.getElementById('cl-edit-phone').value=c.phone||'';
  document.getElementById('cl-edit-addr').value=c.address||'';
  document.getElementById('cl-edit-plan').value=getClientPlanObj(c);
+ var ep=document.getElementById('cl-edit-product');if(ep)ep.value=String(c.productType||'PROPERTY_MANAGEMENT').toUpperCase();
  document.getElementById('cl-edit-level').value=c.accessLevel||'VIEWER';
  document.getElementById('cl-edit-active').checked=c.status==='active';
  var m=document.getElementById('cl-modal-bg');if(m)m.classList.add('on');
@@ -5802,6 +6014,10 @@ function saveClEdit(){
  clients[i].phone=(document.getElementById('cl-edit-phone').value||'').trim();
  clients[i].address=(document.getElementById('cl-edit-addr').value||'').trim();
  clients[i].plan=document.getElementById('cl-edit-plan').value;
+ var ept=document.getElementById('cl-edit-product')?document.getElementById('cl-edit-product').value:'PROPERTY_MANAGEMENT';
+ ept=String(ept||'PROPERTY_MANAGEMENT').toUpperCase();
+ if(ept!=='PROPERTY_MANAGEMENT'&&ept!=='DESIGN_DECORATION'&&ept!=='EXPENSES_JOBS')ept='PROPERTY_MANAGEMENT';
+ clients[i].productType=ept;
  clients[i].accessLevel=document.getElementById('cl-edit-level').value.toUpperCase();
  clients[i].status=document.getElementById('cl-edit-active').checked?'active':'inactive';
  saveClientsRaw(clients);
@@ -7264,7 +7480,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics'};
+const TITLES={home:'Home',clients:'Client Management','admin-dashboard':'Dashboard Admin','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement','owner-statement-detail':'Owner Statement — Detalhe',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -7280,6 +7496,10 @@ function nav(r){
  if(r==='owner-audit'){
   var rOu=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
   if(rOu!=='super_admin')r='home';
+ }
+ if(r==='admin-dashboard'&&window.__gmCurrentUser){
+  var rAdDash=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  if(rAdDash!=='super_admin')r='home';
  }
  if(r==='bookkeeping'){
   var rrBk=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -7366,6 +7586,9 @@ function nav(r){
   }
   if(typeof osRender==='function'){await osRender();}
  },
+ 'owner-statement-detail':async function(){
+  if(typeof osdInitPage==='function'){await osdInitPage();}
+ },
  tenants:()=>typeof tnRender==='function'&&tnRender(),
  'leases-history':()=>{if(typeof gmLeasesHistoryInit==='function')gmLeasesHistoryInit();if(typeof gmLeasesLoad==='function')gmLeasesLoad();},
  ltstatements:()=>typeof ltRender==='function'&&ltRender(),
@@ -7394,7 +7617,21 @@ function nav(r){
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();},
  'bookkeeping-ai':()=>{setTimeout(function(){try{var i=document.getElementById('bk-ai-input');if(i)i.focus();}catch(eBkAi){}},40);},
- analytics:()=>{if(typeof gmAnalyticsLoad==='function')gmAnalyticsLoad();}
+ analytics:()=>{if(typeof gmAnalyticsLoad==='function')gmAnalyticsLoad();},
+ 'admin-dashboard':async function gmAdminDashboardNavHook(){
+  try{
+   var rr=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+   if(rr!=='super_admin'&&typeof gmAuthHydrateUserBadge==='function'){
+    var uz=await gmAuthHydrateUserBadge();
+    rr=String((uz&&uz.role)||'').toLowerCase();
+   }
+   if(rr!=='super_admin'){
+    if(typeof nav==='function')nav('home');
+    return;
+   }
+   if(typeof window.osAdminDashLoad==='function')await window.osAdminDashLoad();
+  }catch(eAd){console.warn('[admin-dashboard nav]',eAd);if(typeof nav==='function')nav('home');}
+ }
  };
  if(renders[r]) setTimeout(renders[r],30);
 }
@@ -7402,6 +7639,475 @@ function nav(r){
 window.osStatementData={};
 window.osSelectedIds=new Set();
 window.osCurrentEditingId=null;
+
+/** Owner Statement — Detalhe (osd*) */
+window.OSD_STATE={currentDetail:null,detailLines:[],propertiesCache:[]};
+window.osdCsvLastFile=null;
+
+window.osdYearMonthCurrent=function(){
+ var d=new Date();
+ return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+};
+window.osdPeriodOptions=function(){
+ var out=[];
+ var now=new Date();
+ var y=now.getUTCFullYear();
+ var mo=now.getUTCMonth();
+ for(var i=-11;i<=0;i++){
+  var dt=new Date(Date.UTC(y,mo+i,1));
+  out.push(dt.getUTCFullYear()+'-'+String(dt.getUTCMonth()+1).padStart(2,'0'));
+ }
+ return out;
+};
+window.osdFmtPeriod=function(ym){
+ var p=(ym||'').split('-');
+ var y=parseInt(p[0],10),m=parseInt(p[1],10)-1;
+ if(!Number.isFinite(y)||!Number.isFinite(m)||m<0||m>11)return ym||'';
+ var d=new Date(Date.UTC(y,m,1));
+ var s=new Intl.DateTimeFormat('pt-BR',{month:'short',year:'numeric',timeZone:'UTC'}).format(d);
+ return (s.charAt(0).toUpperCase()+s.slice(1)).replace(/\.$/,'');
+};
+window.osdFmtCurrency=function(n){
+ var x=Number(n);
+ if(!Number.isFinite(x))x=0;
+ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(x);
+};
+window.osdEscHtml=function(s){
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+};
+window.osdFmtDateShort=function(iso){
+ if(!iso)return '';
+ try{
+  var d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return String(iso).slice(0,10);
+  return new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+ }catch(e){return String(iso).slice(0,10);}
+};
+window.osdParseNum=function(v){
+ var x=typeof v==='number'?v:parseFloat(String(v||''));
+ return Number.isFinite(x)?x:0;
+};
+
+window.osdTenantHint=function(p){
+ try{
+  var m=p&&p.metadata;
+  if(m&&typeof m==='object'&&!Array.isArray(m)&&typeof m.tenant==='string')return m.tenant;
+ }catch(e){}
+ return '';
+};
+
+window.osdFillPeriodSelect=function(){
+ var periodEl=document.getElementById('osd-period');
+ if(!periodEl||periodEl.dataset.osdFilled)return;
+ periodEl.dataset.osdFilled='1';
+ periodEl.innerHTML=window.osdPeriodOptions().map(function(ym){return'<option value="'+ym+'">'+window.osdFmtPeriod(ym)+'</option>';}).join('');
+ periodEl.value=window.osdYearMonthCurrent();
+};
+
+window.osdRebuildPropertySelect=function(){
+ var sel=document.getElementById('osd-property');
+ if(!sel)return;
+ var prev=sel.value||'';
+ var inp=document.getElementById('osd-search-tenant');
+ var q=(inp&&inp.value||'').trim().toLowerCase();
+ var arr=(window.OSD_STATE.propertiesCache||[]).slice();
+ if(q){
+  arr=arr.filter(function(p){
+   var tn=String(window.osdTenantHint(p)||'').toLowerCase();
+   var code=String(p.code||'').toLowerCase();
+   var addr=String(p.address||'').toLowerCase();
+   var own=String(p.ownerName||'').toLowerCase();
+   return tn.indexOf(q)>=0||code.indexOf(q)>=0||addr.indexOf(q)>=0||own.indexOf(q)>=0;
+  });
+ }
+ sel.innerHTML='';
+ var opt0=document.createElement('option');
+ opt0.value='';
+ opt0.textContent='— Selecionar propriedade —';
+ sel.appendChild(opt0);
+ arr.forEach(function(p){
+  var id=String(p.id||'').trim();
+  if(!id)return;
+  var o=document.createElement('option');
+  o.value=id;
+  var lab=(p.code||'')+' — '+(p.address||'');
+  o.textContent=lab.length>140?lab.slice(0,137)+'…':lab;
+  sel.appendChild(o);
+ });
+ var ok=false;
+ for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===prev){ok=true;break;}}
+ if(ok)sel.value=prev;
+};
+
+window.osdHideStatement=function(){
+ var area=document.getElementById('osd-statement-area');
+ var empty=document.getElementById('osd-empty-state');
+ var st=document.getElementById('osd-detail-status-row');
+ if(st)st.innerHTML='';
+ if(area)area.style.display='none';
+ if(empty)empty.style.display='block';
+};
+
+window.osdShowStatement=function(){
+ var area=document.getElementById('osd-statement-area');
+ var empty=document.getElementById('osd-empty-state');
+ if(area)area.style.display='block';
+ if(empty)empty.style.display='none';
+};
+
+window.osdInitPage=async function(){
+ window.osdFillPeriodSelect();
+ window.osdHideStatement();
+ try{
+  var res=await fetch('/api/properties',{credentials:'same-origin'});
+  var bodyText=await res.text();
+  var data={};
+  try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
+  if(!res.ok||!data.ok){
+   alert((data&&data.error)||('Falha ao carregar propriedades ('+res.status+')'));
+   window.OSD_STATE.propertiesCache=[];
+   window.osdRebuildPropertySelect();
+   return;
+  }
+  window.OSD_STATE.propertiesCache=(data.properties||[]).map(function(p){
+   return{id:p.id,code:p.code||'',address:p.address||'',ownerName:p.ownerName||'',metadata:p.metadata};
+  });
+  window.osdRebuildPropertySelect();
+ }catch(e){
+  console.error(e);
+  alert('Erro de rede ao carregar propriedades.');
+ }
+};
+
+window.osdResolveCurrentDetail=function(pid,yearMonth){
+ var pidNorm=String(pid||'').trim();
+ var row=(window.OSD_STATE.propertiesCache||[]).find(function(x){return x.id===pidNorm;});
+ window.OSD_STATE.currentDetail={
+  propertyId:pidNorm,
+  code:row?row.code:'',
+  address:row?row.address:'',
+  ownerName:row?row.ownerName:'',
+  yearMonth:yearMonth
+ };
+};
+
+window.osdSourceCellHtml=function(src){
+ var s=String(src||'');
+ var esc=window.osdEscHtml(s);
+ var badge='';
+ if(s==='AUTO_RENTAL'||s==='AUTO_EXPENSE'){
+  badge='<span style="margin-left:6px;padding:2px 8px;border-radius:20px;background:var(--cream);color:var(--ink3);font-size:10px;font-weight:600">AUTO</span>';
+ }else if(s==='MANUAL'){
+  badge='<span class="pa" style="margin-left:6px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600">MANUAL</span>';
+ }else if(s==='CSV_UPLOAD'){
+  badge='<span class="pb" style="margin-left:6px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600">CSV</span>';
+ }
+ return esc+badge;
+};
+
+window.osdRenderDetailBadges=function(payout){
+ var row=document.getElementById('osd-detail-status-row');
+ if(!row)return;
+ var chunks=[];
+ if(payout&&payout.closedAt){
+  chunks.push('<span class="pg" style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700">FECHADO em '+window.osdEscHtml(window.osdFmtDateShort(payout.closedAt))+'</span>');
+ }else{
+  chunks.push('<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(107,114,128,.12);color:var(--ink3);border:1px solid var(--border2)">ABERTO</span>');
+ }
+ if(payout&&payout.lastSentAt){
+  chunks.push('<span style="font-size:11px;color:var(--ink3)">Enviado em '+window.osdEscHtml(window.osdFmtDateShort(payout.lastSentAt))+'</span>');
+ }
+ row.innerHTML=chunks.join('');
+};
+
+window.osdRenderLineItems=function(data){
+ var tbody=document.getElementById('osd-detail-tbody');
+ if(!tbody)return;
+ var items=(data.lineItems||[]).slice().sort(function(a,b){
+  var ta=new Date(a.transactionDate||a.createdAt||0).getTime();
+  var tb=new Date(b.transactionDate||b.createdAt||0).getTime();
+  if(ta!==tb)return ta-tb;
+  return String(a.createdAt||'').localeCompare(String(b.createdAt||''));
+ });
+ window.OSD_STATE.detailLines=items;
+ tbody.innerHTML='';
+ var run=0;
+ items.forEach(function(li){
+  var amt=window.osdParseNum(li.amount);
+  var cred='',deb='',delta=0;
+  if(String(li.lineType).toLowerCase()==='income'){cred=window.osdFmtCurrency(amt);delta=amt;}
+  else {deb=window.osdFmtCurrency(amt);delta=-amt;}
+  run+=delta;
+  var src=String(li.source||'');
+  var auto=src==='AUTO_RENTAL'||src==='AUTO_EXPENSE';
+  var srcHtml=window.osdSourceCellHtml(src);
+  var disTitle='Editado via sync — corrija a TenantPayment/PmExpense original';
+  var btEdit='<button type="button" '+(auto?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(auto?'var(--sand)':'var(--paper)')+';color:'+(auto?'var(--ink3)':'var(--ink)')+';cursor:'+(auto?'not-allowed':'pointer')+'">Editar</button>';
+  var btDel='<button type="button" '+(auto?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="margin-left:6px;padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(auto?'var(--sand)':'transparent')+';color:'+(auto?'var(--ink3)':'var(--red)')+';cursor:'+(auto?'not-allowed':'pointer')+'">Apagar</button>';
+  var tr=document.createElement('tr');
+  tr.style.borderBottom='1px solid var(--border)';
+  tr.innerHTML='<td style="padding:10px 12px;color:var(--ink2);white-space:nowrap">'+window.osdEscHtml(window.osdFmtDateShort(li.transactionDate))+'</td>'+
+   '<td style="padding:10px 12px;color:var(--ink);max-width:280px">'+window.osdEscHtml(li.description||'')+'</td>'+
+   '<td style="padding:10px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+srcHtml+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--green)">'+window.osdEscHtml(cred||'—')+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--red)">'+window.osdEscHtml(deb||'—')+'</td>'+
+   '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:var(--blue)">'+window.osdEscHtml(window.osdFmtCurrency(run))+'</td>'+
+   '<td style="padding:10px 12px;text-align:center;white-space:nowrap"></td>';
+  var cell=tr.lastElementChild;
+  cell.innerHTML=btEdit+btDel;
+  var bts=cell.querySelectorAll('button');
+  if(!auto&&bts[0])bts[0].onclick=function(){window.osdLiOpenEdit(li.id);};
+  if(!auto&&bts[1])bts[1].onclick=function(){window.osdLiDelete(li.id);};
+  tbody.appendChild(tr);
+ });
+
+ var payout=data.payout;
+ var ti,te,tn;
+ if(payout){
+  ti=window.osdParseNum(payout.totalIncome);
+  te=window.osdParseNum(payout.totalExpenses);
+  tn=window.osdParseNum(payout.netPayout);
+ }else{
+  ti=0;te=0;
+  items.forEach(function(li){
+   var amt=window.osdParseNum(li.amount);
+   if(String(li.lineType).toLowerCase()==='income')ti+=amt;else te+=amt;
+  });
+  tn=ti-te;
+ }
+ var fi=document.getElementById('osd-foot-income');
+ var fe=document.getElementById('osd-foot-expenses');
+ var fn=document.getElementById('osd-foot-net');
+ if(fi)fi.textContent=window.osdFmtCurrency(ti);
+ if(fe)fe.textContent=window.osdFmtCurrency(te);
+ if(fn){
+  fn.textContent=window.osdFmtCurrency(tn);
+  fn.style.color= tn>0?'var(--green)':(tn<0?'var(--red)':'var(--ink)');
+ }
+ window.osdRenderDetailBadges(payout||null);
+};
+
+window.osdLoadStatement=async function(){
+ var pid=(document.getElementById('osd-property')&&document.getElementById('osd-property').value)||'';
+ var ymSel=document.getElementById('osd-period');
+ var ymRaw=(ymSel&&ymSel.value)?String(ymSel.value).trim():window.osdYearMonthCurrent();
+ var ym=/^\d{4}-\d{2}$/.test(ymRaw)?ymRaw:window.osdYearMonthCurrent();
+ if(!pid){
+  alert('Selecione uma propriedade.');
+  return;
+ }
+ window.osdResolveCurrentDetail(pid,ym);
+ var cd=window.OSD_STATE.currentDetail;
+ var tbody=document.getElementById('osd-detail-tbody');
+ if(tbody)tbody.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--ink3)">A carregar…</td></tr>';
+ window.osdShowStatement();
+ var ttl=document.getElementById('osd-subheader-title');
+ var meta=document.getElementById('osd-subheader-meta');
+ if(ttl)ttl.textContent=(cd.code||'')+' — '+(cd.address||'');
+ if(meta)meta.textContent='Owner: '+(cd.ownerName||'—')+' · Período '+window.osdFmtPeriod(ym)+' ('+ym+')';
+ var stRow=document.getElementById('osd-detail-status-row');
+ if(stRow)stRow.innerHTML='';
+
+ try{
+  var url='/api/manager-pro/owner-statement/line-items?propertyId='+encodeURIComponent(pid)+'&yearMonth='+encodeURIComponent(ym);
+  var res=await fetch(url,{credentials:'same-origin'});
+  var bodyText=await res.text();
+  var data={};
+  try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={error:bodyText?bodyText.slice(0,280):'Parse'};}
+  if(!res.ok){
+   var errMsg=(typeof data.error==='string'&&data.error)?data.error:((typeof data.message==='string'&&data.message)?data.message:('Erro HTTP '+res.status));
+   if(tbody)tbody.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">'+window.osdEscHtml(errMsg)+'</td></tr>';
+   return;
+  }
+  if(!data.ok){
+   var apiErr=(typeof data.error==='string'&&data.error)?data.error:'Resposta inválida da API';
+   if(tbody)tbody.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">'+window.osdEscHtml(apiErr)+'</td></tr>';
+   return;
+  }
+  window.osdRenderLineItems(data);
+ }catch(e){
+  console.error(e);
+  if(tbody)tbody.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">Erro de rede.</td></tr>';
+ }
+};
+
+window.osdLiClose=function(){
+ var m=document.getElementById('osd-li-modal');if(m)m.style.display='none';
+};
+
+window.osdLiOpenCreate=function(lineType){
+ var d=document.getElementById('osd-li-edit-id');if(d)d.value='';
+ var t=document.getElementById('osd-li-type');if(t)t.value=lineType||'income';
+ var ttl=document.getElementById('osd-li-modal-title');
+ if(ttl)ttl.textContent=lineType==='expense'?'Novo Expense':'Novo Income';
+ var dt=new Date();
+ var di=document.getElementById('osd-li-date');if(di)di.value=dt.toISOString().slice(0,10);
+ var dc=document.getElementById('osd-li-desc');if(dc)dc.value='';
+ var da=document.getElementById('osd-li-amt');if(da)da.value='';
+ var m=document.getElementById('osd-li-modal');if(m)m.style.display='block';
+};
+
+window.osdLiOpenEdit=function(id){
+ var li=(window.OSD_STATE.detailLines||[]).find(function(x){return x.id===id;});
+ if(!li)return;
+ var ed=document.getElementById('osd-li-edit-id');if(ed)ed.value=li.id;
+ var t=document.getElementById('osd-li-type');if(t)t.value=String(li.lineType||'income').toLowerCase();
+ var ttl=document.getElementById('osd-li-modal-title');if(ttl)ttl.textContent='Editar linha';
+ var di=document.getElementById('osd-li-date');
+ if(di&&li.transactionDate)di.value=String(li.transactionDate).slice(0,10);
+ var dc=document.getElementById('osd-li-desc');if(dc)dc.value=li.description||'';
+ var da=document.getElementById('osd-li-amt');if(da)da.value=String(li.amount||'');
+ var m=document.getElementById('osd-li-modal');if(m)m.style.display='block';
+};
+
+window.osdLiSave=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){alert('Carregue um statement primeiro.');return;}
+ var ym=cd.yearMonth||window.osdYearMonthCurrent();
+ var editId=(document.getElementById('osd-li-edit-id')&&document.getElementById('osd-li-edit-id').value)||'';
+ var lineType=(document.getElementById('osd-li-type')&&document.getElementById('osd-li-type').value)||'income';
+ var desc=(document.getElementById('osd-li-desc')&&document.getElementById('osd-li-desc').value)||'';
+ var amt=parseFloat((document.getElementById('osd-li-amt')&&document.getElementById('osd-li-amt').value)||'');
+ var td=(document.getElementById('osd-li-date')&&document.getElementById('osd-li-date').value)||'';
+ if(!desc.trim()){alert('Descrição obrigatória.');return;}
+ if(!Number.isFinite(amt)||amt<=0){alert('Valor inválido.');return;}
+ try{
+  if(editId){
+   var res=await fetch('/api/manager-pro/owner-statement/line-items/'+encodeURIComponent(editId),{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:desc.trim(),amount:amt,lineType:lineType,transactionDate:td||undefined})});
+   var j=await res.json().catch(function(){return{};});
+   if(!res.ok||!j.ok){alert((j&&j.message)||j.error||('HTTP '+res.status));return;}
+  }else{
+   var res2=await fetch('/api/manager-pro/owner-statement/line-items',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:cd.propertyId,yearMonth:ym,lineType:lineType,description:desc.trim(),amount:amt,transactionDate:td||undefined})});
+   var j2=await res2.json().catch(function(){return{};});
+   if(!res2.ok||!j2.ok){alert((j2&&j2.message)||j2.error||('HTTP '+res2.status));return;}
+  }
+  window.osdLiClose();
+  await window.osdLoadStatement();
+ }catch(e){
+  alert('Erro: '+(e&&e.message||''));
+ }
+};
+
+window.osdLiDelete=async function(id){
+ if(!id||!confirm('Apagar esta linha?'))return;
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/line-items/'+encodeURIComponent(id),{method:'DELETE',credentials:'same-origin'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.message)||j.error||('HTTP '+res.status));return;}
+  await window.osdLoadStatement();
+ }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
+
+window.osdStatementSync=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){alert('Carregue um statement primeiro.');return;}
+ var ym=cd.yearMonth||window.osdYearMonthCurrent();
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:cd.propertyId,yearMonth:ym})});
+  var bodyText=await res.text();
+  var j={};
+  try{j=bodyText?JSON.parse(bodyText):{};}catch(pe){}
+  if(!res.ok||!j.ok){alert((j&&j.error)||('HTTP '+res.status));return;}
+  await window.osdLoadStatement();
+ }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
+
+window.osdCsvPick=function(){
+ var inp=document.getElementById('osd-csv-file');if(inp)inp.click();
+};
+
+window.osdCsvClose=function(){
+ var m=document.getElementById('osd-csv-modal');if(m)m.style.display='none';
+ var btn=document.getElementById('osd-csv-confirm');if(btn)btn.style.display='none';
+ window.osdCsvLastFile=null;
+};
+
+window.osdCsvOnChange=function(ev){
+ var inp=ev.target;
+ var f=inp.files&&inp.files[0];
+ inp.value='';
+ if(!f)return;
+ window.osdCsvLastFile=f;
+ var fd=new FormData();fd.append('file',f);
+ fetch('/api/manager-pro/owner-statement/csv-upload?dryRun=true',{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};});}).then(function(x){
+  var modal=document.getElementById('osd-csv-modal');
+  var sum=document.getElementById('osd-csv-summary');
+  var errEl=document.getElementById('osd-csv-errors');
+  var btn=document.getElementById('osd-csv-confirm');
+  if(btn)btn.style.display='none';
+  if(!modal||!sum)return;
+  modal.style.display='block';
+  if(!x.ok||!x.j.ok){
+   sum.innerHTML='<span style="color:var(--red)">Falha na pré-visualização ('+window.osdEscHtml(String(x.status||''))+'). '+window.osdEscHtml(JSON.stringify(x.j))+'</span>';
+   if(errEl){errEl.style.display='none';errEl.textContent='';}
+   return;
+  }
+  var s=x.j.summary||{};
+  sum.innerHTML='Pré-visualização (dry run)<br><span style="color:var(--ink2)">Linhas totais: '+window.osdEscHtml(String(s.totalLines!=null?s.totalLines:'—'))+' · válidas: '+window.osdEscHtml(String(s.validLines!=null?s.validLines:'—'))+' · erros: '+window.osdEscHtml(String(s.errorLines!=null?s.errorLines:'—'))+'</span>';
+  var errs=x.j.errors||[];
+  if(errs.length){
+   var txt=errs.map(function(e){return 'Linha '+e.line+': '+(e.errors||[]).join('; ');}).join('\n');
+   if(errEl){errEl.textContent=txt;errEl.style.display='block';}
+   if(btn)btn.style.display='none';
+  }else{
+   if(errEl){errEl.style.display='none';errEl.textContent='';}
+   if(btn)btn.style.display='inline-block';
+  }
+ }).catch(function(e){alert('Erro rede CSV: '+(e&&e.message||''));});
+};
+
+window.osdCsvConfirm=function(){
+ var f=window.osdCsvLastFile;
+ if(!f){alert('Nenhum ficheiro.');return;}
+ var fd=new FormData();fd.append('file',f);
+ fetch('/api/manager-pro/owner-statement/csv-upload',{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(x){
+  if(!x.ok||!x.j.ok){alert(x.j.error||'Upload falhou');return;}
+  window.osdCsvClose();
+  window.osdLoadStatement();
+ }).catch(function(e){alert('Erro rede: '+(e&&e.message||''));});
+};
+
+window.osdBulkSend=async function(){
+ var ymSel=document.getElementById('osd-period');
+ var ym=(ymSel&&ymSel.value)?String(ymSel.value).trim():window.osdYearMonthCurrent();
+ var label=window.osdFmtPeriod(ym);
+ if(!confirm('Enviar statement de '+label+' para TODOS os owners com statement fechado?'))return;
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/send-bulk',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({yearMonth:ym,onlyClosed:true})});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('HTTP '+res.status));return;}
+  var s=j.summary||{};
+  alert('Concluído. Tentados: '+(s.totalAttempted||0)+'. Enviados: '+(s.sent||0)+'. Falhas: '+(s.failed||0)+'.');
+  await window.osdLoadStatement();
+ }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
+
+window.osdCloseStatement=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){alert('Carregue um statement primeiro.');return;}
+ var ym=cd.yearMonth||(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ if(!confirm('Fechar este statement para o período selecionado?'))return;
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/close',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:cd.propertyId,yearMonth:ym})});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('HTTP '+res.status));return;}
+  await window.osdLoadStatement();
+ }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
+
+window.osdSendOwnerStatement=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){alert('Carregue um statement primeiro.');return;}
+ var ym=cd.yearMonth||(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ if(!confirm('Enviar o statement atual por e-mail ao owner desta propriedade?'))return;
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/send',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:cd.propertyId,yearMonth:ym})});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('HTTP '+res.status));return;}
+  alert('Enviado para '+String(j.sentTo||'')+'.');
+  await window.osdLoadStatement();
+ }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
 
 window.osLoadFromApi=async function(){
  try{
@@ -18727,6 +19433,8 @@ function gmBookkeepingAiGate(){
   }
   if(nb)nb.style.display=isW?'':'none';
   if(na)na.style.display=isSa?'':'none';
+  var nd=document.getElementById('nav-admin-dashboard');
+  if(nd)nd.style.display=isSa?'':'none';
   if(no)no.style.display=isSa?'':'none';
  }catch(e){console.warn('[bk ai gate]',e);}
 }
@@ -18782,6 +19490,40 @@ function gmBookkeepingAiClear(){
 window.gmBookkeepingAiGate=gmBookkeepingAiGate;
 window.gmBookkeepingAiSend=gmBookkeepingAiSend;
 window.gmBookkeepingAiClear=gmBookkeepingAiClear;
+
+/** Modo restrito EXPENSES_JOBS — apenas secção EXPENSES na sidebar (ativado só quando user.productType === 'EXPENSES_JOBS'). */
+function gmApplyExpensesJobsMode(){
+ try{
+  var navRoot=document.querySelector('.sidebar nav');
+  if(!navRoot)return;
+  navRoot.querySelectorAll('.sb-sec').forEach(function(sec){
+   var key=sec.getAttribute('data-sb-sec')||'';
+   if(key==='expenses'){
+    sec.classList.remove('gm-section-hidden');
+    sec.style.display='';
+    sec.setAttribute('aria-expanded','true');
+    var head=sec.querySelector('.sb-sec-head');
+    if(head)head.setAttribute('aria-expanded','true');
+    var sbBody=sec.querySelector('.sb-sec-body');
+    if(sbBody){
+     sbBody.style.display='';
+     sbBody.querySelectorAll('.ss').forEach(function(el){el.style.display='';});
+    }
+   }else{
+    sec.classList.add('gm-section-hidden');
+   }
+  });
+  var btc=document.getElementById('btn-topbar-clients');
+  if(btc){
+   btc.classList.add('gm-section-hidden');
+   btc.style.display='none';
+  }
+  setTimeout(function(){
+   try{if(typeof nav==='function')nav('ltexpenses');}catch(eN){console.warn('[gmApplyExpensesJobsMode] nav',eN);}
+  },80);
+ }catch(e){console.warn('[gmApplyExpensesJobsMode]',e);}
+}
+window.gmApplyExpensesJobsMode=gmApplyExpensesJobsMode;
 
 /* Badge do utilizador: buscar dados reais via /api/auth/me */
 async function gmAuthHydrateUserBadge(){
@@ -18897,6 +19639,12 @@ document.addEventListener('DOMContentLoaded',function(){
    if(typeof gmBookkeepingApplyRoleGate==='function')gmBookkeepingApplyRoleGate(rBk);
   }catch(eBk){console.warn('[bookkeeping gate]',eBk);}
   if(typeof gmBookkeepingAiGate==='function')gmBookkeepingAiGate();
+  try{
+   var gmEjU=window.__gmCurrentUser;
+   if(gmEjU&&gmEjU.productType==='EXPENSES_JOBS'&&typeof gmApplyExpensesJobsMode==='function'){
+    gmApplyExpensesJobsMode();
+   }
+  }catch(_gEj){}
  },100);
 });
 
