@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentAdminFromSession } from '@/lib/authServer';
+import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +12,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Forbidden - admin only' }, { status: 403 });
   }
   try {
+    const scopeUser = toClientScopeUser(admin);
+
     const body = await req.json().catch(() => ({}));
     const confirm = String((body as { confirm?: unknown }).confirm || '').trim();
     if (confirm !== 'DELETE ALL EXPENSES') {
@@ -18,10 +22,21 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const totalBefore = await prisma.pmExpense.count();
+
+    const expenseWhere: Prisma.PmExpenseWhereInput =
+      scopeUser.role === 'super_admin'
+        ? {}
+        : { ...(getClientScopeWhere(scopeUser) as Prisma.PmExpenseWhereInput) };
+
+    const vendorPaymentWhere: Prisma.VendorPaymentWhereInput =
+      scopeUser.role === 'super_admin'
+        ? {}
+        : { ...(getClientScopeWhere(scopeUser) as Prisma.VendorPaymentWhereInput) };
+
+    const totalBefore = await prisma.pmExpense.count({ where: expenseWhere });
     const [expResult, vpResult] = await prisma.$transaction([
-      prisma.pmExpense.deleteMany({}),
-      prisma.vendorPayment.deleteMany({}),
+      prisma.pmExpense.deleteMany({ where: expenseWhere }),
+      prisma.vendorPayment.deleteMany({ where: vendorPaymentWhere }),
     ]);
     const deleted = expResult.count;
     const vendorPaymentsDeleted = vpResult.count;
@@ -38,7 +53,8 @@ export async function POST(req: Request) {
             deleted,
             before: totalBefore,
             vendorPaymentsDeleted,
-            scope: 'all',
+            scope: scopeUser.role === 'super_admin' ? 'super_admin_global' : 'client_scoped',
+            clientId: scopeUser.clientId,
           }),
           ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
           userAgent: req.headers.get('user-agent') || null,

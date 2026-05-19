@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
-import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
+import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -32,15 +32,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   try {
     const scopeUser = toClientScopeUser(user);
-    const exists = await prisma.pmVendor.findUnique({
-      where: { id: params.id },
+    const exists = await prisma.pmVendor.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
       select: { id: true, clientId: true },
     });
     if (!exists) {
       return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
-    }
-    if (!canAccessClientId(scopeUser, exists.clientId)) {
-      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
     const rows = await prisma.vendorPayment.findMany({
       where: { vendorId: params.id },
@@ -64,15 +61,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const scopeUser = toClientScopeUser(user);
-    const exists = await prisma.pmVendor.findUnique({
-      where: { id: params.id },
+    const exists = await prisma.pmVendor.findFirst({
+      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
       select: { id: true, clientId: true },
     });
     if (!exists) {
       return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
-    }
-    if (!canAccessClientId(scopeUser, exists.clientId)) {
-      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
     const amountRaw = body.amount;

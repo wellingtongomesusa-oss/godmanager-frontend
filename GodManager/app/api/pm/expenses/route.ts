@@ -112,7 +112,9 @@ export async function POST(req: Request) {
 
     const vendorId = String(body.vendorId || '').trim() || null;
     if (vendorId) {
-      const v = await prisma.pmVendor.findUnique({ where: { id: vendorId } });
+      const v = await prisma.pmVendor.findFirst({
+        where: { id: vendorId, ...getClientScopeWhere(scopeUser) },
+      });
       if (!v) return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
     }
 

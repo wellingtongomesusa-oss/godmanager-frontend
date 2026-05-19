@@ -204,7 +204,10 @@ export async function GET(req: Request) {
     const vendors =
       vendorIds.length > 0
         ? await prisma.pmVendor.findMany({
-            where: { id: { in: vendorIds } },
+            where: {
+              id: { in: vendorIds },
+              ...(scopeWhere as Prisma.PmVendorWhereInput),
+            },
             select: { id: true, companyName: true },
           })
         : [];
@@ -221,7 +224,10 @@ export async function GET(req: Request) {
     const propertiesRows =
       propertyIds.length > 0
         ? await prisma.property.findMany({
-            where: { id: { in: propertyIds } },
+            where: {
+              id: { in: propertyIds },
+              ...(scopeWhere as Prisma.PropertyWhereInput),
+            },
             select: { id: true, address: true },
           })
         : [];

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { computeNetForPropertyMonth } from '@/lib/pmNetCompute';
 import { monthRefQueryValues } from '@/lib/pmMonthRef';
@@ -19,6 +20,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     const prop = await resolvePropertyId(String(body.propertyId || body.propertyCode || '').trim());
     if (!prop) return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
+
+    const scopeUser = toClientScopeUser(user);
+    const inScope = await prisma.property.findFirst({
+      where: { id: prop.id, ...getClientScopeWhere(scopeUser) },
+      select: { id: true },
+    });
+    if (!inScope) return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
 
     const yearMonth = String(body.yearMonth || '').trim();
     if (!/^\d{4}-\d{1,2}$/.test(yearMonth)) {
@@ -65,6 +73,12 @@ export async function DELETE(req: Request) {
     if (!prop || !/^\d{4}-\d{1,2}$/.test(yearMonth)) {
       return NextResponse.json({ ok: false, error: 'Invalid params' }, { status: 400 });
     }
+    const scopeUser = toClientScopeUser(user);
+    const inScope = await prisma.property.findFirst({
+      where: { id: prop.id, ...getClientScopeWhere(scopeUser) },
+      select: { id: true },
+    });
+    if (!inScope) return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
     const m = /^(\d{4})-(\d{1,2})$/.exec(yearMonth);
     const padded = m ? `${m[1]}-${String(parseInt(m[2], 10)).padStart(2, '0')}` : yearMonth;
     await prisma.ownerMonthPayout.deleteMany({
@@ -94,21 +108,29 @@ export async function GET(req: Request) {
   const monthKeys = monthRefQueryValues(yearMonth);
 
   try {
-    const [properties, monthExpenses] = await Promise.all([
-      prisma.property.findMany({
-        orderBy: { ownerName: 'asc' },
-        include: { ownerMonthPayouts: { where: { yearMonth: { in: monthKeys } } } },
-      }),
-      // Todas as despesas do mês por propriedade (com ou sem pacote) — nunca filtrar por pmPackage / packageApplied
-      prisma.pmExpense.findMany({
-        where: {
-          monthRef: { in: monthKeys },
-          status: { in: ['SCHEDULED', 'PAID', 'PENDING', 'FINALIZED'] },
-        },
-        include: { vendor: { select: { companyName: true } } },
-        orderBy: [{ serviceDate: 'asc' }, { createdAt: 'asc' }],
-      }),
-    ]);
+    const scopeUser = toClientScopeUser(user);
+    const scopeWhere = getClientScopeWhere(scopeUser);
+
+    const properties = await prisma.property.findMany({
+      where: scopeWhere,
+      orderBy: { ownerName: 'asc' },
+      include: { ownerMonthPayouts: { where: { yearMonth: { in: monthKeys } } } },
+    });
+
+    const propertyIds = properties.map((p) => p.id);
+
+    const monthExpenses =
+      propertyIds.length === 0
+        ? []
+        : await prisma.pmExpense.findMany({
+            where: {
+              propertyId: { in: propertyIds },
+              monthRef: { in: monthKeys },
+              status: { in: ['SCHEDULED', 'PAID', 'PENDING', 'FINALIZED'] },
+            },
+            include: { vendor: { select: { companyName: true } } },
+            orderBy: [{ serviceDate: 'asc' }, { createdAt: 'asc' }],
+          });
 
     const byPropertyId = new Map<string, typeof monthExpenses>();
     for (const e of monthExpenses) {
