@@ -7,6 +7,7 @@ import {
   getClientScopeWhere,
   toClientScopeUser,
 } from '@/lib/clientScope';
+import { getPmExpensesListWhere, isFieldRole } from '@/lib/pmExpensesScope';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
@@ -53,8 +54,6 @@ function toJson(e: {
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  const scopeUser = toClientScopeUser(user);
-
   const { searchParams } = new URL(req.url);
   const monthRef = searchParams.get('monthRef') || searchParams.get('month') || undefined;
 
@@ -62,7 +61,7 @@ export async function GET(req: Request) {
     const rows = await prisma.pmExpense.findMany({
       where: {
         ...(monthRef ? { monthRef: { in: monthRefQueryValues(monthRef) } } : {}),
-        ...getClientScopeWhere(scopeUser),
+        ...getPmExpensesListWhere(user),
       },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },
@@ -82,6 +81,9 @@ const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CA
 export async function POST(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  if (isFieldRole(user)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
   const scopeUser = toClientScopeUser(user);
 
   try {

@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { canAccessClientId, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
+import {
+  canAccessPmExpense,
+  getPmExpensesListWhere,
+  isFieldRole,
+} from '@/lib/pmExpensesScope';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
@@ -55,6 +60,9 @@ const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CA
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  if (isFieldRole(user)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
   const scopeUser = toClientScopeUser(user);
 
   try {
@@ -64,9 +72,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const cur = await prisma.pmExpense.findFirst({
-      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
+      where: { id: params.id, ...getPmExpensesListWhere(user) },
+      select: {
+        id: true,
+        propertyId: true,
+        vendorId: true,
+        clientId: true,
+        packageApplied: true,
+        vendorCost: true,
+        serviceType: true,
+        serviceDate: true,
+        monthRef: true,
+        status: true,
+        description: true,
+      },
     });
-    if (!cur) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    if (!cur || !canAccessPmExpense(user, cur)) {
+      return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    }
 
     let propertyId = cur.propertyId;
     let shouldSyncExpenseClientId = false;
@@ -205,14 +228,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  const scopeUser = toClientScopeUser(user);
+  if (isFieldRole(user)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
 
   try {
     const existing = await prisma.pmExpense.findFirst({
-      where: { id: params.id, ...getClientScopeWhere(scopeUser) },
-      select: { id: true },
+      where: { id: params.id, ...getPmExpensesListWhere(user) },
+      select: { id: true, clientId: true, vendorId: true },
     });
-    if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    if (!existing || !canAccessPmExpense(user, existing)) {
+      return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    }
 
     await prisma.pmExpense.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });

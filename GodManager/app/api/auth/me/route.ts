@@ -38,6 +38,7 @@ export async function GET() {
       phone: user.phone,
       role: user.role,
       clientId: user.clientId,
+      vendorId: user.vendorId ?? null,
       status: user.status,
       permissions: user.permissions,
       lastActive: user.lastActive,

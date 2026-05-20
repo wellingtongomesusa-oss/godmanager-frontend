@@ -5,10 +5,11 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { hashPassword } from '@/lib/password';
 import { getMaxUsersForClientPlan, clientPlanLabelPt } from '@/lib/clientPlanLimits';
 import { resolveClientUsersScope } from '@/lib/clientUsersScope';
+import { assertVendorBelongsToClient } from '@/lib/fieldVendorScope';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance'];
+const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance', 'field'];
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -33,6 +34,7 @@ function mapUser(u: {
   phone: string | null;
   role: UserRole;
   status: UserStatus;
+  vendorId?: string | null;
   createdAt: Date;
   lastActive: Date;
 }) {
@@ -44,6 +46,7 @@ function mapUser(u: {
     phone: u.phone,
     role: u.role,
     status: u.status,
+    vendorId: u.vendorId ?? null,
     createdAt: u.createdAt.toISOString(),
     lastActive: u.lastActive.toISOString(),
   };
@@ -100,6 +103,7 @@ export async function GET(req: Request) {
         phone: true,
         role: true,
         status: true,
+        vendorId: true,
         createdAt: true,
         lastActive: true,
       },
@@ -138,9 +142,30 @@ export async function POST(req: Request) {
     }
     if (!ALLOWED_CREATE_ROLES.includes(role as UserRole)) {
       return NextResponse.json(
-        { ok: false, error: 'Role inválido. Permitidos: admin, manager, maintenance.' },
+        { ok: false, error: 'Role inválido. Permitidos: admin, manager, maintenance, field.' },
         { status: 400 },
       );
+    }
+
+    const vendorIdRaw = String(body?.vendorId ?? '').trim();
+    let vendorId: string | null = null;
+    if (role === 'field') {
+      if (!vendorIdRaw) {
+        return NextResponse.json(
+          { ok: false, error: 'vendorId é obrigatório para utilizadores de campo (field).' },
+          { status: 400 },
+        );
+      }
+      const vendorCheck = await assertVendorBelongsToClient(vendorIdRaw, scope.clientId);
+      if (!vendorCheck.ok) {
+        return NextResponse.json({ ok: false, error: vendorCheck.error }, { status: vendorCheck.status });
+      }
+      vendorId = vendorIdRaw;
+    } else if (vendorIdRaw) {
+      const vendorCheck = await assertVendorBelongsToClient(vendorIdRaw, scope.clientId);
+      if (!vendorCheck.ok) {
+        return NextResponse.json({ ok: false, error: vendorCheck.error }, { status: vendorCheck.status });
+      }
     }
 
     const firstName = String(body?.firstName || '').trim();
@@ -209,6 +234,7 @@ export async function POST(req: Request) {
         permissions: [],
         passwordHash,
         clientId: scope.clientId,
+        vendorId: role === 'field' ? vendorId : null,
       },
       select: {
         id: true,
@@ -218,6 +244,7 @@ export async function POST(req: Request) {
         phone: true,
         role: true,
         status: true,
+        vendorId: true,
         createdAt: true,
         lastActive: true,
       },
