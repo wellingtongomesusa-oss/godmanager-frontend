@@ -10,22 +10,27 @@ export async function GET() {
   }
 
   let productType: ClientProductType | null = null;
+  let companyName: string | null = null;
 
   if (user.role === 'super_admin' && user.clientId == null) {
     productType = null;
+    companyName = null;
   } else if (user.clientId) {
     try {
       const client = await prisma.client.findUnique({
         where: { id: user.clientId },
-        select: { productType: true },
+        select: { productType: true, companyName: true },
       });
       productType = client?.productType ?? 'PROPERTY_MANAGEMENT';
+      companyName = client?.companyName ?? null;
     } catch (e) {
-      console.error('[api/auth/me] falha ao obter Client.productType', e);
+      console.error('[api/auth/me] falha ao obter Client', e);
       productType = null;
+      companyName = null;
     }
   } else {
     productType = null;
+    companyName = null;
   }
 
   return NextResponse.json({
@@ -38,6 +43,7 @@ export async function GET() {
       phone: user.phone,
       role: user.role,
       clientId: user.clientId,
+      companyName,
       vendorId: user.vendorId ?? null,
       status: user.status,
       permissions: user.permissions,
