@@ -22,6 +22,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" crossorigin="anonymous"></script>
+<script src="/gm-audit-2026.js"></script>
 <style>
 :root{
  /* GodManager Premium — FINANCIAL OPERATIONS */
@@ -303,6 +305,10 @@ button{font-family:'Inter',sans-serif!important}
 #cl-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.45);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
 #cl-modal-bg.on{display:flex}
 #cl-modal-inner{background:var(--paper);border-radius:12px;max-width:480px;width:100%;padding:24px;border:1px solid var(--border);max-height:90vh;overflow:auto}
+#cl-success-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.45);z-index:5002;display:none;align-items:center;justify-content:center;padding:20px}
+#cl-success-modal-bg.on{display:flex}
+#cl-success-modal-inner{background:var(--paper);border-radius:12px;max-width:440px;width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 12px 48px rgba(0,0,0,.18)}
+#cl-success-password-display{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink);padding:14px 16px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-bd);word-break:break-all;margin:14px 0}
 .cl-btn-sec{padding:8px 14px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif}
 .cl-btn-sec:hover{border-color:var(--amber);color:var(--amber)}
 body[data-gm-level="VIEWER"] main.content button:not(.gm-allow-viewer):not(.sb-toggle),
@@ -1211,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec-body">
  <div class="ss sb-ix-ic" onclick="nav('bookkeeping-ai')" id="nav-bookkeeping-ai" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span>Bookkeeping AI</span></div>
  <div class="ss sb-ix-ic" onclick="nav('analytics')" id="nav-analytics" style="padding-left:16px;display:none" title="Analytics (super_admin only)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('auditoria-2026')" id="nav-auditoria-2026" style="padding-left:16px;display:none" title="Auditoria GL 2026 (admin)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6M9 9h1"/></svg><span>Auditoria 2026</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="admin" id="sb-gm-admin-section" style="display:none">
@@ -1292,11 +1299,11 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div class="cl-card">
  <div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px">Register new client</div>
- <form id="cl-form" onsubmit="return registerClient(event)">
+ <form id="cl-form" onsubmit="registerClient(event); return false;">
  <div class="cl-row">
  <div class="cl-fg"><label>Company Name *</label><input class="fi" id="cl-co" type="text" required placeholder="Manager Prop"></div>
  <div class="cl-fg"><label>Contact Name *</label><input class="fi" id="cl-contact" type="text" required placeholder="Jane Doe"></div>
- <div class="cl-fg"><label>Email *</label><input class="fi" id="cl-email" type="email" required placeholder="ops@company.com"></div>
+ <div class="cl-fg"><label>Company / billing email *</label><input class="fi" id="cl-email" type="email" required placeholder="billing@company.com"></div>
  <div class="cl-fg"><label>Phone</label><input class="fi" id="cl-phone" type="text" placeholder="+1 …"></div>
  <div class="cl-fg"><label>Plan *</label><select class="fi" id="cl-plan" required>
  <option value="starter">STARTER (2 users)</option>
@@ -1313,6 +1320,23 @@ document.addEventListener('DOMContentLoaded', function(){
  <option value="MANAGER">MANAGER</option>
  <option value="VIEWER">VIEWER</option>
  </select></div>
+ </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:12px">
+ <div class="cl-fg"><label>Admin First Name *</label><input class="fi" id="cl-admin-first-name" type="text" required autocomplete="given-name"></div>
+ <div class="cl-fg"><label>Admin Last Name *</label><input class="fi" id="cl-admin-last-name" type="text" required autocomplete="family-name"></div>
+ </div>
+ <div class="cl-fg" style="margin-top:12px">
+ <label>Admin email (login)</label>
+ <input class="fi" id="cl-admin-email" type="email" autocomplete="username" placeholder="Opcional — se vazio, usa o email da empresa">
+ <div style="font-size:11px;color:var(--ink3);margin-top:4px">Este email serve para iniciar sessão. Deixe em branco para ser igual ao email da empresa.</div>
+ </div>
+ <div class="cl-fg" style="margin-top:12px">
+ <label>Senha do admin *</label>
+ <div style="display:flex;gap:8px;align-items:stretch">
+ <input class="fi" id="cl-admin-password" type="text" required minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password" style="flex:1">
+ <button type="button" id="cl-generate-password" class="cl-btn-sec" onclick="var el=document.getElementById('cl-admin-password');if(el&amp;&amp;window.gmGenerateStrongPassword)el.value=window.gmGenerateStrongPassword(20);" style="flex-shrink:0;background:var(--blue);color:#fff;border-color:var(--blue);padding:0 16px;border-radius:8px;font-weight:600">Gerar senha forte</button>
+ </div>
+ <div style="font-size:11px;color:var(--ink3);margin-top:4px">A senha será mostrada uma vez após o cadastro. Anote em local seguro antes de fechar.</div>
  </div>
  <button type="submit" class="bp" style="margin-top:18px">Register Client</button>
  </form>
@@ -1630,6 +1654,18 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
  <button type="button" class="cl-btn-sec" onclick="closeClModal()">Cancel</button>
  <button type="button" class="bp" style="margin-top:0" onclick="saveClEdit()">Save</button>
+ </div>
+ </div>
+</div>
+
+<div id="cl-success-modal-bg" onclick="if(event.target===this)gmCloseClientSuccessModal()">
+ <div id="cl-success-modal-inner" onclick="event.stopPropagation()">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px">Cliente criado com sucesso</div>
+ <div style="font-size:13px;color:var(--ink2);line-height:1.45;margin-bottom:12px">Anote a senha do admin antes de fechar. Ela não será mostrada novamente.</div>
+ <div id="cl-success-password-display" aria-live="polite"></div>
+ <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:8px">
+ <button type="button" class="cl-btn-sec" onclick="gmCopyAdminPasswordCreated()">Copiar senha</button>
+ <button type="button" class="bp" style="margin-top:0" onclick="gmCloseClientSuccessModal()">Já anotei, fechar</button>
  </div>
  </div>
 </div>
@@ -4399,6 +4435,76 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 
 <!-- ============================================================ -->
+<!-- AUDITORIA 2026 — GL AppFolio (admin / super_admin) -->
+<!-- ============================================================ -->
+<div class="page" id="page-auditoria-2026">
+ <div class="ph">
+  <div class="pt">Auditoria 2026</div>
+  <div class="ps">Análise por propriedade a partir do General Ledger AppFolio (CSV), demo Owner Statement (PDF) e envio opcional por e-mail ou WhatsApp. Dados só em memória nesta sessão.</div>
+ </div>
+
+ <input type="file" id="aud2026-csv-input" accept=".csv" style="display:none"/>
+ <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px;margin-bottom:20px">
+  <button type="button" id="aud2026-csv-load" style="padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--amber);color:#fff;border:none;box-shadow:0 2px 8px rgba(201,169,110,.25)">Carregar General Ledger</button>
+  <label for="aud2026-filter" style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">Filtrar
+   <input type="text" id="aud2026-filter" placeholder="Nome ou morada..." style="padding:8px 10px;font-size:12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);min-width:220px"/></label>
+ </div>
+
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px">
+  <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+   <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Rent Income (4100)</div>
+   <div id="aud2026-kpi-rent4100" style="font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:700;color:var(--ink)">—</div>
+  </div>
+  <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+   <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Owner Distribution (3250)</div>
+   <div id="aud2026-kpi-3250" style="font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:700;color:var(--ink)">—</div>
+  </div>
+  <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+   <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Management Fee (6111)</div>
+   <div id="aud2026-kpi-6111" style="font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:700;color:var(--ink)">—</div>
+  </div>
+  <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+   <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">% médio global (6111/4100)</div>
+   <div id="aud2026-kpi-global-pct" style="font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:700;color:var(--ink)">—</div>
+  </div>
+  <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
+   <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Propriedades</div>
+   <div id="aud2026-kpi-props" style="font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:700;color:var(--ink)">—</div>
+  </div>
+ </div>
+
+ <div style="border-radius:12px;border:1px solid var(--border);overflow:hidden;background:var(--paper);box-shadow:0 1px 4px rgba(30,22,12,.06)">
+  <div style="overflow-x:auto">
+  <table class="bk-table gm-audit2026-table" style="width:100%;border-collapse:collapse;font-size:12px;font-family:'DM Sans',sans-serif">
+   <thead style="background:var(--cream)">
+    <tr>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Propriedade</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Rent (4100)</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Owner Dist (3250)</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Mgmt (6111)</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">% Fee/Rent</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Ações</th>
+    </tr>
+   </thead>
+   <tbody id="aud2026-tbody"><tr><td colspan="6" style="padding:14px;color:var(--ink3)">Sem dados. Carregue um ficheiro .csv exportado do AppFolio (General Ledger) com o botão acima.</td></tr></tbody>
+   <tfoot id="aud2026-tfoot-wrap" style="background:var(--cream);border-top:1px solid var(--border)">
+    <tr>
+     <td style="padding:12px;font-weight:600">TOTAIS (vista atual)</td>
+     <td id="aud2026-foot-rent4100" style="padding:12px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700">—</td>
+     <td id="aud2026-foot-3250" style="padding:12px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700">—</td>
+     <td id="aud2026-foot-6111" style="padding:12px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700">—</td>
+     <td id="aud2026-foot-pct" style="padding:12px;text-align:center;font-size:11px;font-weight:600;color:var(--ink2)">—</td>
+     <td></td>
+    </tr>
+   </tfoot>
+  </table>
+  </div>
+ </div>
+
+ <p style="margin-top:16px;font-size:11px;color:var(--ink3);max-width:720px">Validação esperada para o cenário QA de referência: console <span style="font-family:'JetBrains Mono',monospace">gmAudit2026Fixture241()</span> e <span style="font-family:'JetBrains Mono',monospace">gmAudit2026FixtureGlobal()</span> (sem persistência).</p>
+ </div>
+
+<!-- ============================================================ -->
 <!-- OWNER PAYMENT AUDIT (super_admin) -->
 <!-- ============================================================ -->
 <div class="page" id="page-owner-audit">
@@ -5753,6 +5859,139 @@ function loadClientsRaw(){
  try{var r=localStorage.getItem('gm_clients');if(!r)return [];var a=JSON.parse(r);if(!Array.isArray(a))return [];return a.map(normalizeClient);}catch(e){return [];}
 }
 function saveClientsRaw(arr){try{localStorage.setItem('gm_clients',JSON.stringify(arr.map(normalizeClient)));}catch(e){}}
+/** API premium — cache de clientes (super_admin). */
+function mapApiClientRow(api){
+ return{
+ id:api.id,
+ company:api.companyName,
+ companyName:api.companyName,
+ contactName:api.contactName||'',
+ email:api.email||'',
+ phone:api.phone||'',
+ address:api.address||'',
+ plan:api.plan||'professional',
+ productType:api.productType||'PROPERTY_MANAGEMENT',
+ accessLevel:String(api.accessLevel||'ADMIN').toUpperCase(),
+ status:(api.active===false)?'inactive':'active',
+ activeUserCount:typeof api.activeUserCount==='number'?api.activeUserCount:0,
+ _fromApi:true,
+ users:[]
+ };
+}
+function findClientById(clientId){
+ var ls=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
+ if(ls)return ls;
+ if(window._gmClientsApiCache&&Array.isArray(window._gmClientsApiCache)){
+  var hit=window._gmClientsApiCache.filter(function(x){return x.id===clientId;})[0];
+  if(hit)return hit;
+ }
+ return undefined;
+}
+function normalizeClientFromApiRow(c){
+ if(!c)return null;
+ var al=String(c.accessLevel||'ADMIN').toUpperCase();
+ return normalizeClient({
+ id:c.id,
+ company:c.companyName||c.company,
+ companyName:c.companyName||c.company,
+ contactName:c.contactName||'',
+ contact:c.contactName||'',
+ email:c.email,
+ phone:c.phone||'',
+ address:c.address||'',
+ plan:c.plan||'professional',
+ productType:c.productType||'PROPERTY_MANAGEMENT',
+ accessLevel:al,
+ status:'active',
+ users:[{id:'syn_owner',status:'active',accessLevel:al,isOwner:true}]
+ });
+}
+function gmGenerateStrongPassword(len){
+ len=len||20;
+ var alpha='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+ var sym='!@#$%^&*';
+ function pick(s){return s.charAt(Math.floor(Math.random()*s.length));}
+ var out='',i;
+ for(i=0;i<Math.max(len-4,8);i++)out+=pick(alpha);
+ out+=pick(sym)+pick(sym)+pick(sym)+pick(sym);
+ return out.split('').sort(function(){return Math.random()-0.5;}).join('');
+}
+window.gmGenerateStrongPassword=gmGenerateStrongPassword;
+function gmShowClientCreatedModal(){
+ var pwd=document.getElementById('cl-admin-password');
+ var disp=document.getElementById('cl-success-password-display');
+ var bg=document.getElementById('cl-success-modal-bg');
+ if(disp&&pwd)disp.textContent=pwd.value||'';
+ if(bg)bg.classList.add('on');
+}
+function gmCloseClientSuccessModal(){
+ var bg=document.getElementById('cl-success-modal-bg');
+ if(bg)bg.classList.remove('on');
+ var f=document.getElementById('cl-form');
+ if(f)f.reset();
+ var pl=document.getElementById('cl-plan');if(pl)pl.value='professional';
+ var pr=document.getElementById('cl-product');if(pr)pr.value='PROPERTY_MANAGEMENT';
+ var pw=document.getElementById('cl-admin-password');if(pw)pw.value='';
+ var disp=document.getElementById('cl-success-password-display');if(disp)disp.textContent='';
+ loadClients();
+}
+function gmCopyAdminPasswordCreated(){
+ var t=document.getElementById('cl-success-password-display');
+ var v=t&&t.textContent?t.textContent:((document.getElementById('cl-admin-password')&&document.getElementById('cl-admin-password').value)||'');
+ if(!v)return;
+ if(navigator.clipboard&&navigator.clipboard.writeText){
+  navigator.clipboard.writeText(v).catch(function(){window.prompt('Senha:',v);});
+ }else{
+  try{
+   var ta=document.createElement('textarea');ta.value=v;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  }catch(e){window.prompt('Senha:',v);}
+ }
+}
+function gmEscapeJsQuotes(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+window.gmDeleteClient=async function gmDeleteClient(clientId,companyName){
+ var nm=String(companyName||'');
+ var msg="Excluir cliente '"+nm+"' permanentemente? Isso apaga o cliente e TODOS os usuários associados. Esta ação NÃO pode ser desfeita.";
+ if(!confirm(msg))return;
+ try{
+  var res=await fetch('/api/admin/clients/'+encodeURIComponent(clientId),{method:'DELETE',credentials:'same-origin'});
+  var j=await res.json().catch(function(){return {};});
+  if(res.ok&&j.ok){
+   alert('Cliente excluído');
+   if(typeof loadClients==='function')loadClients();
+   return;
+  }
+  if(res.status===404){
+   try{
+    var arr=loadClientsRaw().filter(function(x){return String(x.id)!==String(clientId);});
+    saveClientsRaw(arr);
+    var ac=getActiveClient();
+    if(ac&&String(ac.id)===String(clientId)){localStorage.removeItem('gm_active_client');location.reload();return;}
+    alert('Cliente excluído');
+    loadClients();
+    return;
+   }catch(locE){console.warn('[gmDeleteClient local]',locE);}
+  }
+  alert(j.error||('Erro '+res.status));
+ }catch(err){console.warn('[gmDeleteClient]',err);alert('Erro de rede.');}
+};
+function renderClientTableRow(c){
+ var st=c.status==='active';
+ var pc=accessPillCls(c.accessLevel);
+ var pp=planPillCls(c.plan);
+ var plab=planLabelDisp(c.plan);
+ var prCls=productPillCls(c.productType);
+ var prLab=productLabelDisp(c.productType);
+ var uc=getUserCount(c.id)+'/'+getMaxUsers(getClientPlanObj(c));
+ var co=String(c.company||c.companyName||'').replace(/</g,'&lt;');
+ var id=String(c.id).replace(/'/g,'');
+ var nmEsc=gmEscapeJsQuotes(c.company||c.companyName||'');
+ var delBtn='<button type="button" onclick="gmDeleteClient(\''+id+'\',\''+nmEsc+'\')" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">Excluir</button>';
+ var api=c._fromApi===true;
+ var btns=api
+ ?'<button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button>'+delBtn
+ :'<button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button>'+delBtn;
+ return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+prCls+'">'+prLab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap">'+btns+'</td></tr>';
+}
 function getMaxUsers(plan){
  var p=String(plan||'').toLowerCase();
  if(p==='starter')return 2;
@@ -5761,11 +6000,13 @@ function getMaxUsers(plan){
 }
 function getClientPlanObj(c){return String((c&&c.plan)||'professional').toLowerCase();}
 function getUserCount(clientId){
- var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
- if(!c||!Array.isArray(c.users))return 0;
+ var c=findClientById(clientId);
+ if(!c)return 0;
+ if(typeof c.activeUserCount==='number')return c.activeUserCount;
+ if(!c.users||!Array.isArray(c.users))return 0;
  return c.users.filter(function(u){return u&&u.status==='active';}).length;
 }
-function canAddUser(clientId){var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];if(!c)return false;return getUserCount(clientId)<getMaxUsers(getClientPlanObj(c));}
+function canAddUser(clientId){var c=findClientById(clientId);if(!c)return false;return getUserCount(clientId)<getMaxUsers(getClientPlanObj(c));}
 function accessPillCls(l){var u=String(l||'').toUpperCase();if(u==='ADMIN')return 'cl-pill-adm';if(u==='MANAGER')return 'cl-pill-mgr';return 'cl-pill-vwr';}
 function planPillCls(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'cl-pill-pl-starter';if(v==='enterprise')return 'cl-pill-pl-ent';return 'cl-pill-pl-pro';}
 function planLabel(p){var v=String(p||'').toLowerCase();if(v==='starter')return 'Starter';if(v==='enterprise')return 'Enterprise';return 'Professional';}
@@ -5911,7 +6152,7 @@ function applyPermissions(level){
   if(n9)n9.style.display='';
  }
 }
-function registerClient(e){
+async function registerClient(e){
  if(e&&e.preventDefault)e.preventDefault();
  if(e&&e.company!==undefined){
   var co=String(e.company||'').trim();
@@ -5933,6 +6174,44 @@ function registerClient(e){
   if(typeof loadClients==='function')loadClients();
   return false;
  }
+ var role=null;
+ try{role=window.__gmCurrentUser&&window.__gmCurrentUser.role;}catch(rErr){}
+ if(role==='super_admin'){
+  var co2=document.getElementById('cl-co').value.trim();
+  var contact2=document.getElementById('cl-contact').value.trim();
+  var em2=document.getElementById('cl-email').value.trim();
+  var al2=document.getElementById('cl-level').value.toUpperCase();
+  var pl2=document.getElementById('cl-plan').value;
+  var pt2=document.getElementById('cl-product')?document.getElementById('cl-product').value:'PROPERTY_MANAGEMENT';
+  pt2=String(pt2||'PROPERTY_MANAGEMENT').toUpperCase();
+  if(pt2!=='PROPERTY_MANAGEMENT'&&pt2!=='DESIGN_DECORATION'&&pt2!=='EXPENSES_JOBS')pt2='PROPERTY_MANAGEMENT';
+  var fn=document.getElementById('cl-admin-first-name')?document.getElementById('cl-admin-first-name').value.trim():'';
+  var ln=document.getElementById('cl-admin-last-name')?document.getElementById('cl-admin-last-name').value.trim():'';
+  var admEm=document.getElementById('cl-admin-email')?document.getElementById('cl-admin-email').value.trim():'';
+  var pwd=document.getElementById('cl-admin-password')?document.getElementById('cl-admin-password').value.trim():'';
+  if(!co2||!contact2||!em2){alert('Preencha empresa, contacto e email da empresa.');return false;}
+  if(!fn||!ln){alert('Preencha nome e apelido do administrador.');return false;}
+  if(!pwd||pwd.length<8){alert('Senha do admin: mínimo 8 caracteres.');return false;}
+  var payload={
+   companyName:co2,
+   contactName:contact2,
+   email:em2,
+   phone:(document.getElementById('cl-phone')&&document.getElementById('cl-phone').value||'').trim(),
+   plan:pl2,
+   productType:pt2,
+   accessLevel:al2,
+   admin:{firstName:fn,lastName:ln,password:pwd}
+  };
+  if(admEm)payload.admin.email=admEm;
+  try{
+   var res=await fetch('/api/admin/clients',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   var j=await res.json().catch(function(){return {};});
+   if(!res.ok){alert(j.error||('Erro '+res.status));return false;}
+   if(j.ok){gmShowClientCreatedModal();return false;}
+   alert(j.error||'Falha ao criar cliente.');
+   return false;
+  }catch(err){console.warn('[registerClient]',err);alert('Erro de rede ao criar cliente.');return false;}
+ }
  var co=document.getElementById('cl-co').value.trim();
  var contact=document.getElementById('cl-contact').value.trim();
  var em=document.getElementById('cl-email').value.trim();
@@ -5942,21 +6221,26 @@ function registerClient(e){
  pt=String(pt||'PROPERTY_MANAGEMENT').toUpperCase();
  if(pt!=='PROPERTY_MANAGEMENT'&&pt!=='DESIGN_DECORATION'&&pt!=='EXPENSES_JOBS')pt='PROPERTY_MANAGEMENT';
  if(!co||!contact||!em){alert('Fill required fields.');return false;}
+ var fnb=document.getElementById('cl-admin-first-name')?document.getElementById('cl-admin-first-name').value.trim():'';
+ var lnb=document.getElementById('cl-admin-last-name')?document.getElementById('cl-admin-last-name').value.trim():'';
+ var pwdb=document.getElementById('cl-admin-password')?document.getElementById('cl-admin-password').value.trim():'';
+ if(!fnb||!lnb||!pwdb||pwdb.length<8){alert('Para modo demo (sem super_admin), preencha Admin First/Last Name e senha (min. 8 caracteres).');return false;}
  var un=(em.split('@')[0]||'owner').replace(/[^a-z0-9._-]/gi,'');
- var tp='Temp'+Math.random().toString(36).slice(2,10)+'!';
- var owner={id:'usr_'+Date.now(),name:contact,email:em,username:un,tempPassword:tp,accessLevel:al,status:'active',lastLogin:'—',isOwner:true};
+ var tp=pwdb;
+ var admMail=document.getElementById('cl-admin-email')&&document.getElementById('cl-admin-email').value.trim();
+ var ownerEmail=admMail||em;
+ var owner={id:'usr_'+Date.now(),name:(fnb+' '+lnb).trim(),email:ownerEmail,username:(ownerEmail.split('@')[0]||'owner').replace(/[^a-z0-9._-]/gi,''),tempPassword:tp,accessLevel:al,status:'active',lastLogin:'—',isOwner:true};
  var rec={id:'cl_'+Date.now(),company:co,companyName:co,contact:contact,contactName:contact,email:em,phone:(document.getElementById('cl-phone').value||'').trim(),address:'',plan:pl,productType:pt,accessLevel:al,status:'active',createdAt:new Date().toISOString().slice(0,10),users:[owner]};
  var clients=loadClientsRaw();
  clients.push(rec);
  saveClientsRaw(clients);
- document.getElementById('cl-form').reset();
- if(document.getElementById('cl-plan'))document.getElementById('cl-plan').value='professional';
- if(document.getElementById('cl-product'))document.getElementById('cl-product').value='PROPERTY_MANAGEMENT';
- loadClients();
+ gmShowClientCreatedModal();
  return false;
 }
 function saveClients(data){if(data!==undefined)saveClientsRaw(data);return loadClientsRaw();}
 function deleteClient(clientId){
+ var dc=findClientById(clientId);
+ if(dc&&dc._fromApi){alert('Remoção de clientes registados na base de dados não está disponível neste ecrã.');return;}
  if(!confirm('Remove this client and all user records?'))return;
  var clients=loadClientsRaw().filter(function(x){return x.id!==clientId;});
  saveClientsRaw(clients);
@@ -5964,31 +6248,40 @@ function deleteClient(clientId){
  if(ac&&ac.id===clientId){localStorage.removeItem('gm_active_client');location.reload();return;}
  loadClients();
 }
-function loadClients(){
+async function loadClients(){
  var tb=document.getElementById('cl-tbody');
  if(!tb)return;
  var q=(document.getElementById('cl-search')&&document.getElementById('cl-search').value||'').toLowerCase().trim();
+ var tryApi=false;
+ try{if(window.__gmCurrentUser&&window.__gmCurrentUser.role==='super_admin')tryApi=true;}catch(eA){}
+ if(tryApi){
+  try{
+   var res=await fetch('/api/admin/clients',{credentials:'same-origin',cache:'no-store'});
+   var j=await res.json().catch(function(){return {};});
+   if(res.ok&&j.ok&&Array.isArray(j.clients)){
+    window._gmClientsApiCache=j.clients.map(mapApiClientRow);
+    var clientsApi=window._gmClientsApiCache.filter(function(c){
+     if(!q)return true;
+     var co=c.company||c.companyName||'';
+     return [co,c.contactName,c.email,c.phone].join(' ').toLowerCase().indexOf(q)>=0;
+    });
+    tb.innerHTML=clientsApi.map(renderClientTableRow).join('');
+    return;
+   }
+  }catch(err){console.warn('[loadClients api]',err);}
+ }
+ window._gmClientsApiCache=null;
  var clients=loadClientsRaw().filter(function(c){
   if(!q)return true;
   var co=c.company||c.companyName||'';
   return [co,c.contactName,c.email,c.phone].join(' ').toLowerCase().indexOf(q)>=0;
  });
- tb.innerHTML=clients.map(function(c){
-  var st=c.status==='active';
-  var pc=accessPillCls(c.accessLevel);
-  var pp=planPillCls(c.plan);
-  var plab=planLabelDisp(c.plan);
-  var prCls=productPillCls(c.productType);
-  var prLab=productLabelDisp(c.productType);
-  var uc=getUserCount(c.id)+'/'+getMaxUsers(getClientPlanObj(c));
-  var co=String(c.company||c.companyName||'').replace(/</g,'&lt;');
-  var id=c.id.replace(/'/g,'');
-  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+prCls+'">'+prLab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
- }).join('');
+ tb.innerHTML=clients.map(renderClientTableRow).join('');
 }
 function editClient(clientId){
- var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
+ var c=findClientById(clientId);
  if(!c)return;
+ if(c._fromApi){alert('Este cliente está na base de dados. Use o painel administrativo Next.js para editar.');return;}
  document.getElementById('cl-edit-id').value=c.id;
  document.getElementById('cl-edit-co').value=c.company||c.companyName||'';
  document.getElementById('cl-edit-contact').value=c.contactName||c.contact||'';
@@ -6026,19 +6319,26 @@ function saveClEdit(){
  closeClModal();loadClients();
 }
 function toggleClientStatus(clientId){
+ var probe=findClientById(clientId);
+ if(!probe)return;
+ if(probe._fromApi){alert('Ativar/desativar clientes na base de dados não está disponível neste ecrã.');return;}
  var clients=loadClientsRaw();
- var c=clients.filter(function(x){return x.id===clientId;})[0];
- if(!c)return;
- c.status=c.status==='active'?'inactive':'active';
+ var i=clients.findIndex(function(x){return x.id===clientId;});
+ if(i<0)return;
+ clients[i].status=clients[i].status==='active'?'inactive':'active';
+ var c=clients[i];
  saveClientsRaw(clients);
  var ac=getActiveClient();
  if(ac&&ac.id===clientId){if(c.status==='inactive'){localStorage.removeItem('gm_active_client');window._cuMgmtClientId=null;location.reload();return;}else{localStorage.setItem('gm_active_client',JSON.stringify(normalizeClient(c)));updateBranding();applyPermissions();}}
  loadClients();
 }
 function loginAsClient(clientId){
- var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
+ var c=findClientById(clientId);
  if(!c||c.status!=='active'){alert('Client must be active.');return;}
- try{localStorage.setItem('gm_active_client',JSON.stringify(normalizeClient(c)));}catch(err){alert('Storage failed.');return;}
+ try{
+  var blob=c._fromApi?normalizeClientFromApiRow(c):normalizeClient(c);
+  localStorage.setItem('gm_active_client',JSON.stringify(blob));
+ }catch(err){alert('Storage failed.');return;}
  window._cuMgmtClientId=null;
  location.reload();
 }
@@ -6070,8 +6370,9 @@ function renderClientUsersPage(){
  var ac=getActiveClient();
  if(!cid&&ac)cid=ac.id;
  if(!cid){closeUsersModal();return;}
- var c=loadClientsRaw().filter(function(x){return x.id===cid;})[0];
+ var c=findClientById(cid);
  if(!c){closeUsersModal();return;}
+ if(c._fromApi){alert('Gestão de utilizadores neste modal só está disponível para clientes demo (localStorage).');closeUsersModal();return;}
  var co=c.company||c.companyName||'Company';
  var ut=document.getElementById('um-title');
  var us=document.getElementById('um-sub');
@@ -7480,7 +7781,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','admin-dashboard':'Dashboard Admin','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement','owner-statement-detail':'Owner Statement — Detalhe',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics'};
+const TITLES={home:'Home',clients:'Client Management','admin-dashboard':'Dashboard Admin','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement','owner-statement-detail':'Owner Statement — Detalhe',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics','auditoria-2026':'Auditoria 2026'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -7488,6 +7789,10 @@ function nav(r){
  if(r==='bookkeeping-ai'){
   var emAi=String((window.__gmCurrentUser&&window.__gmCurrentUser.email)||'').toLowerCase();
   if(emAi!=='w@godmanager.us')r='home';
+ }
+ if(r==='auditoria-2026'){
+  var rAud=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  if(rAud!=='admin'&&rAud!=='super_admin')r='home';
  }
  if(r==='analytics'){
   var rAn=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -7518,8 +7823,8 @@ function nav(r){
  if(r==='backup'&&lvl!=='ADMIN')r='home';
  if(r==='org-chart'&&lvl!=='ADMIN')r='home';
  if(r==='admin-audit'&&lvl!=='ADMIN')r='home';
- if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','admin-audit'];if(mb.indexOf(r)>=0)r='home';}
+ if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(vb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -7618,6 +7923,7 @@ function nav(r){
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();},
  'bookkeeping-ai':()=>{setTimeout(function(){try{var i=document.getElementById('bk-ai-input');if(i)i.focus();}catch(eBkAi){}},40);},
  analytics:()=>{if(typeof gmAnalyticsLoad==='function')gmAnalyticsLoad();},
+ 'auditoria-2026':()=>{setTimeout(function(){try{if(typeof gmAudit2026NavInit==='function')gmAudit2026NavInit();}catch(eA){}},20);},
  'admin-dashboard':async function gmAdminDashboardNavHook(){
   try{
    var rr=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -16431,6 +16737,7 @@ window.gvOpenModal=gvOpenModal;window.gvCloseModal=gvCloseModal;window.gvSaveVen
 // Expor funções (API global)
 window.saveAllData=saveAllData;
 window.registerClient=registerClient;
+window.clientsRegisterSubmit=registerClient;
 window.loadClients=loadClients;
 window.saveClients=saveClients;
 window.editClient=editClient;
@@ -19422,17 +19729,21 @@ function gmBookkeepingAiGate(){
   var role=String(u&&u.role||'').toLowerCase();
   var isW=em==='w@godmanager.us';
   var isSa=role==='super_admin';
+  var isAud=role==='admin'||role==='super_admin';
   var wrap=document.getElementById('wrap-nav-bookkeeping-ai');
   var nb=document.getElementById('nav-bookkeeping-ai');
   var na=document.getElementById('nav-analytics');
+  var nAud=document.getElementById('nav-auditoria-2026');
   var no=document.getElementById('nav-owner-audit');
-  if(isW||isSa){
+  var showAiSec=isW||isSa||isAud;
+  if(showAiSec){
    if(wrap)wrap.style.display='';
   }else{
    if(wrap)wrap.style.display='none';
   }
   if(nb)nb.style.display=isW?'':'none';
   if(na)na.style.display=isSa?'':'none';
+  if(nAud)nAud.style.display=isAud?'':'none';
   var nd=document.getElementById('nav-admin-dashboard');
   if(nd)nd.style.display=isSa?'':'none';
   if(no)no.style.display=isSa?'':'none';
