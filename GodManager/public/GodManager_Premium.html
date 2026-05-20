@@ -13234,13 +13234,7 @@ function ltExpValueWithExtras(r){
  return base+extras;
 }
 function ltExpMergeAll(){
- return (window._pmExpenseRows || []).map(ltExpMapApiToRow).concat(ltExpGetRecords().map(function(r){
-  if(!r) return r;
-  var o={};
-  for (var k in r) { if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k]; }
-  o._isPm = false; o._isVendorPm = false;
-  return o;
- }));
+ return (window._pmExpenseRows || []).map(ltExpMapApiToRow);
 }
 /** PM expenses: hydrate photo counts via GET /api/jobs/[id]/photos — cached em gmJobsPhotoState.countsByJob (reutilização F2). */
 function ltExpSchedulePmPhotoCounts(){
@@ -13771,29 +13765,13 @@ function ltDashRender(){
 // LONG TERM — SAMPLE DATA: EXPENSES & CLEANINGS
 // 
 function ltExpLoadSampleData(){
- if(ltExpGetRecords().length>0)return;
- const stmts=ltGetRecords();
- function pid(addr){return(stmts.find(r=>r.address===addr)||{}).id||'';}
- ltExpSaveRecords([
- {id:'ltexp_s1',propId:pid('4821 Sunset Blvd, Kissimmee FL 34746'),propAddress:'4821 Sunset Blvd, Kissimmee FL 34746',category:'HOA',month:'2026-03',value:180,desc:'HOA Sunset Community - Marco 2026',docnum:'INV-0312',due:'2026-03-05',paid:'2026-03-04',status:'paid',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s2',propId:pid('4821 Sunset Blvd, Kissimmee FL 34746'),propAddress:'4821 Sunset Blvd, Kissimmee FL 34746',category:'Luz / Electric',month:'2026-03',value:110,desc:'Duke Energy - Fatura Marco 2026',docnum:'DE-88421',due:'2026-03-15',paid:'2026-03-14',status:'paid',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s3',propId:pid('1130 Oakwood Drive, Orlando FL 32801'),propAddress:'1130 Oakwood Drive, Orlando FL 32801',category:'HOA',month:'2026-03',value:220,desc:'HOA Oakwood Estates - Marco 2026',docnum:'INV-0298',due:'2026-03-05',paid:'',status:'unpaid',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s4',propId:pid('1130 Oakwood Drive, Orlando FL 32801'),propAddress:'1130 Oakwood Drive, Orlando FL 32801',category:'Vendor',month:'2026-03',value:320,desc:'CoolAir HVAC Services - Troca capacitor',docnum:'HAVC-2241',due:'2026-03-10',paid:'2026-03-12',status:'paid',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s5',propId:pid('987 Palmeira Court, Davenport FL 33837'),propAddress:'987 Palmeira Court, Davenport FL 33837',category:'Manutenção',month:'2026-03',value:200,desc:'Servico interno - verificacao vazamento',docnum:'',due:'2026-03-08',paid:'',status:'overdue',linkToStatement:true,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s6',propId:pid('987 Palmeira Court, Davenport FL 33837'),propAddress:'987 Palmeira Court, Davenport FL 33837',category:'Vendor',month:'2026-03',value:750,desc:'ProPlumb Solutions - Substituicao cano e sifao',docnum:'PPL-5502',due:'2026-03-12',paid:'',status:'unpaid',linkToStatement:false,savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltexp_s7',propId:pid('4821 Sunset Blvd, Kissimmee FL 34746'),propAddress:'4821 Sunset Blvd, Kissimmee FL 34746',category:'Vendor',month:'2026-03',value:410,desc:'Master Vacation Homes LLC — manutencao piscina Marco',docnum:'MVH-1001',due:'2026-03-18',paid:'',status:'unpaid',linkToStatement:false,savedAt:new Date().toLocaleString('pt-BR')}
- ]);
+ /* Demo seed desligado — despesas/jobs vêm só da API scoped por tenant. */
+ return;
 }
 
 function ltClnLoadSampleData(){
- if(ltClnGetRecords().length>0)return;
- ltClnSaveRecords([
- {id:'ltcln_s1',propAddress:'4821 Sunset Blvd, Kissimmee FL 34746',type:'Standard',date:'2026-03-05',value:120,status:'paid',notes:'',savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltcln_s2',propAddress:'4821 Sunset Blvd, Kissimmee FL 34746',type:'Standard',date:'2026-03-19',value:120,status:'unpaid',notes:'Aguardando confirmacao',savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltcln_s3',propAddress:'1130 Oakwood Drive, Orlando FL 32801',type:'Deep Clean',date:'2026-03-08',value:220,status:'paid',notes:'Pos reforma HVAC',savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltcln_s4',propAddress:'987 Palmeira Court, Davenport FL 33837',type:'Standard',date:'2026-03-10',value:130,status:'paid',notes:'',savedAt:new Date().toLocaleString('pt-BR')},
- {id:'ltcln_s5',propAddress:'987 Palmeira Court, Davenport FL 33837',type:'Checkout',date:'2026-03-15',value:180,status:'unpaid',notes:'Checkin novo inquilino em 20/03',savedAt:new Date().toLocaleString('pt-BR')}
- ]);
+ /* Demo seed desligado — cleanings por tenant virão da API (quando existir). */
+ return;
 }
 
 
@@ -14305,7 +14283,25 @@ async function ltpRender(){
 // 
 // LTCLNPAGE — CLEANINGS PAGE RENDER
 // 
+function gmUserHasTenantClientId(){
+ try{
+  var u=window.__gmCurrentUser;
+  return !!(u&&u.clientId&&String(u.clientId).trim());
+ }catch(e){return false;}
+}
 function ltClnPageRender(){
+ if(gmUserHasTenantClientId()){
+  const tbody=document.getElementById('ltclnp-tbody');
+  const empty=document.getElementById('ltclnp-empty');
+  [['ltclnp-total',0],['ltclnp-paid',0],['ltclnp-unpaid',0],['ltclnp-value',ltFmt(0)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+  const counter=document.getElementById('ltclnp-counter');if(counter)counter.textContent='0 registro(s)';
+  if(tbody)tbody.innerHTML='';
+  if(empty){
+   empty.textContent='Nenhum registro de limpeza.';
+   empty.style.display='block';
+  }
+  return;
+ }
  const records=ltClnGetRecords();
  const fMonth=(document.getElementById('ltcln-filter-month')?.value)||'';
  const fType=(document.getElementById('ltcln-filter-type')?.value)||'';
@@ -18431,7 +18427,7 @@ var JOBS_FEES={vendor:120,job:200};
  }catch(e){console.warn('jobs migrate isJob',e);}
 })();
 
-/* Jobs: leitura multi-user via /api/pm/expenses (cache 30s + fallback localStorage) */
+/* Jobs: leitura multi-user via /api/pm/expenses (cache 30s; só API — sem merge localStorage) */
 /* __jobsExpensesCache alias a __jobsApiRowsCache (compostos por ltExpMapApiToRow — shape real API) */
 window.__jobsExpensesCacheAt=0;
 window.__jobsApiRowsCache=undefined;
@@ -18483,25 +18479,10 @@ window.jobsFetchFromApi=function(){
  return window.__jobsApiFetchInFlight;
 };
 function jobsMergeForJobs(){
- var local=(typeof ltExpGetRecords==='function')?(ltExpGetRecords()||[]):[];
  var api=window.__jobsApiRowsCache;
  if(api==null)api=window.__jobsExpensesCache;
- if(api===null||api===undefined){
-  if(typeof ltExpMergeAll==='function')return ltExpMergeAll();
-  return local;
- }
- var byId=Object.create(null);
- (api||[]).forEach(function(r){
-  if(r&&r.id)byId[String(r.id)]=r;
- });
- local.forEach(function(r){
-  if(!r||r.id==null||r.id==='')return;
-  var id=String(r.id);
-  if(byId[id])return;
-  if(r._isPm)return;
-  byId[id]=r;
- });
- return Object.keys(byId).map(function(k){return byId[k];});
+ if(api===null||api===undefined)return [];
+ return Array.isArray(api)?api.slice():[];
 }
 
 function jobsIsMasterVendor(vendorName){
@@ -18965,7 +18946,7 @@ function gmJobsRenderAgenda(rows){
   });
   html+='</div>';
  });
- if(!html) html='<div style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job encontrado.</div>';
+ if(!html) html='<div style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job.</div>';
  return html;
 }
 
@@ -19562,7 +19543,7 @@ async function jobsRender(){
   calendarHost.style.display='none';
  }
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">Nenhuma despesa encontrada.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job.</td></tr>';
   return;
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -20412,6 +20393,11 @@ function gmClearTenantDataCaches(reason){
   window._gmClientsApiCache=null;
   window._gmAdminDashClientsCache=null;
   window.__gmCurrentUser=null;
+  window.__jobsApiRowsCache=null;
+  window.__jobsExpensesCache=null;
+  window.__jobsExpensesCacheAt=0;
+  window.__jobsApiFetchInFlight=null;
+  window._pmExpenseRows=[];
  }catch(_m){}
  if(reason)console.info('[gmClearTenantDataCaches]',reason,'whitelist removidas:',cleared);
 }
