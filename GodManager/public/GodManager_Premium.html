@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="mycompany" id="sb-mycompany-section" style="display:none">
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">My company</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('client-users')" id="nav-client-users" style="padding-left:16px">Users</div>
+ <div class="ss" onclick="nav('client-users')" id="nav-client-users" style="padding-left:16px">Equipe</div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-co" style="padding-left:16px">Settings</div>
  </div>
  </div>
@@ -1513,41 +1513,57 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 </div>
 
-<!-- USER MANAGEMENT MODAL (per client) -->
+<!-- GESTÃO DE EQUIPE (tenant — API Postgres) -->
 <div id="users-modal-bg" onclick="if(event.target===this)closeUsersModal()">
  <div id="users-modal-inner" onclick="event.stopPropagation()">
- <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px" id="um-title">Users</div>
- <div style="font-size:12px;color:var(--ink3);margin-bottom:14px" id="um-sub"></div>
+ <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px" id="um-title">Equipe</div>
+ <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;font-family:'DM Sans',sans-serif" id="um-sub">Utilizadores da sua empresa</div>
+ <div id="cu-loading" style="display:none;padding:24px;text-align:center;color:var(--ink3);font-family:'DM Sans',sans-serif;font-size:13px">A carregar...</div>
+ <div id="cu-error" style="display:none;padding:12px 14px;margin-bottom:12px;background:var(--red-bg);border:1px solid rgba(180,60,60,.2);border-radius:8px;color:var(--red);font-size:12px;font-family:'DM Sans',sans-serif"></div>
+ <div id="cu-main-panel">
  <div class="cl-card" style="margin-bottom:16px;padding:16px">
  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
- <div id="cu-plan-line" style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--navy)"></div>
+ <div id="cu-plan-line" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink)"></div>
  <div id="cu-count-line" style="font-size:12px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
- <div class="cu-bar" id="cu-progress-wrap"><span id="cu-progress-fill" style="display:block;width:0%;height:100%;background:var(--blue);border-radius:3px"></span></div>
+ <div class="cu-bar" id="cu-progress-wrap"><span id="cu-progress-fill" style="display:block;width:0%;height:100%;background:var(--amber);border-radius:3px"></span></div>
  </div>
  <div class="cl-card" style="padding:16px;margin-bottom:16px">
- <div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px">Add user</div>
- <form id="cu-add-form" onsubmit="return addUserSubmit(event)">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:14px">Novo utilizador</div>
+ <form id="cu-add-form" onsubmit="return gmClientUsersCreateSubmit(event)">
  <input type="hidden" id="cu-client-id">
  <div class="cl-row">
- <div class="cl-fg"><label>Name *</label><input class="fi" id="cu-name" type="text" required></div>
- <div class="cl-fg"><label>Email *</label><input class="fi" id="cu-em" type="email" required></div>
- <div class="cl-fg"><label>Username *</label><input class="fi" id="cu-user" type="text" required autocomplete="username"></div>
- <div class="cl-fg"><label>Password *</label><input class="fi" id="cu-pass" type="text" required autocomplete="new-password"></div>
- <div class="cl-fg"><label>Access Level *</label><select class="fi" id="cu-lvl" required><option value="ADMIN">ADMIN</option><option value="MANAGER">MANAGER</option><option value="VIEWER">VIEWER</option></select></div>
+ <div class="cl-fg"><label>Nome *</label><input class="fi" id="cu-first-name" type="text" required autocomplete="given-name"></div>
+ <div class="cl-fg"><label>Sobrenome *</label><input class="fi" id="cu-last-name" type="text" required autocomplete="family-name"></div>
+ <div class="cl-fg"><label>Email (login) *</label><input class="fi" id="cu-em" type="email" required autocomplete="email"></div>
+ <div class="cl-fg"><label>Função *</label><select class="fi" id="cu-lvl" required><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="maintenance">Manutenção</option></select></div>
+ <div class="cl-fg" style="grid-column:1/-1"><label>Senha *</label><div style="display:flex;gap:8px;align-items:stretch"><input class="fi" id="cu-pass" type="text" required minlength="8" autocomplete="new-password" style="flex:1"><button type="button" class="cl-btn-sec" onclick="var el=document.getElementById('cu-pass');if(el&amp;&amp;window.gmGenerateStrongPassword)el.value=window.gmGenerateStrongPassword(20);" style="flex-shrink:0;background:var(--amber);color:#fff;border-color:var(--amber);padding:0 16px;border-radius:8px;font-weight:600;font-family:'DM Sans',sans-serif">Gerar senha forte</button></div><div style="font-size:11px;color:var(--ink3);margin-top:4px">A senha será mostrada uma vez após o cadastro.</div></div>
  </div>
- <p class="cu-limit-msg" id="cu-limit-msg" style="display:none">Upgrade plan to add more users.</p>
- <button type="submit" class="bp" id="cu-btn-add" style="margin-top:14px">Add User</button>
+ <p class="cu-limit-msg" id="cu-limit-msg" style="display:none;font-size:12px;color:var(--red);margin-top:8px">Limite de usuários do plano atingido.</p>
+ <button type="submit" class="bp" id="cu-btn-add" style="margin-top:14px">Criar utilizador</button>
  </form>
  </div>
  <div class="cl-table-wrap">
  <table class="cl-table">
- <thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Status</th><th>Actions</th></tr></thead>
+ <thead><tr><th>Nome</th><th>Email</th><th>Função</th><th>Status</th><th>Ações</th></tr></thead>
  <tbody id="cu-tbody"></tbody>
  </table>
  </div>
  <div style="display:flex;justify-content:flex-end;margin-top:16px">
- <button type="button" class="cl-btn-sec" onclick="closeUsersModal()">Close</button>
+ <button type="button" class="cl-btn-sec" onclick="closeUsersModal()">Fechar</button>
+ </div>
+ </div>
+ </div>
+</div>
+
+<div id="cu-success-modal-bg" onclick="if(event.target===this)gmCloseCuUserSuccessModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5002;display:none;align-items:center;justify-content:center;padding:20px">
+ <div style="background:var(--paper);border-radius:12px;max-width:440px;width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.12)" onclick="event.stopPropagation()">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px">Utilizador criado</div>
+ <div style="font-size:13px;color:var(--ink2);line-height:1.45;margin-bottom:12px;font-family:'DM Sans',sans-serif">Anote a senha antes de fechar. Ela não será mostrada novamente.</div>
+ <div id="cu-success-password-display" aria-live="polite" style="font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px;background:var(--sand);border-radius:8px;border:1px solid var(--border2);word-break:break-all"></div>
+ <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px">
+ <button type="button" class="cl-btn-sec" onclick="gmCopyCuUserPasswordCreated()">Copiar senha</button>
+ <button type="button" class="bp" style="margin-top:0" onclick="gmCloseCuUserSuccessModal()">Já anotei, fechar</button>
  </div>
  </div>
 </div>
@@ -6370,7 +6386,7 @@ function renderClientTableRow(c){
  var delBtn='<button type="button" onclick="gmDeleteClient(\''+id+'\',\''+nmEsc+'\')" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">Excluir</button>';
  var api=c._fromApi===true;
  var btns=api
- ?'<button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button>'+delBtn
+ ?'<button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Equipe</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button>'+delBtn
  :'<button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button>'+delBtn;
  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+prCls+'">'+prLab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap">'+btns+'</td></tr>';
 }
@@ -6504,7 +6520,13 @@ function applyPermissions(level){
  var tbc=document.getElementById('btn-topbar-clients');
  if(tbc)tbc.style.display=(isPlatform&&lvl==='ADMIN')?'inline-flex':'none';
  if(gmAd)gmAd.style.display=(isPlatform&&lvl==='ADMIN')?'block':'none';
- if(myCo)myCo.style.display=(!isPlatform&&lvl==='ADMIN')?'block':'none';
+ var isTenantAdmin=false;
+ try{
+  var uTm=window.__gmCurrentUser;
+  var rTm=String(uTm&&uTm.role||'').toLowerCase();
+  isTenantAdmin=rTm==='admin'&&!!(uTm&&uTm.clientId);
+ }catch(_eTm){}
+ if(myCo)myCo.style.display=(isTenantAdmin||(!isPlatform&&lvl==='ADMIN'))?'block':'none';
  var wC=document.getElementById('wrap-nav-compliance');
  var wO=document.getElementById('wrap-nav-operations');
  var wI=document.getElementById('wrap-nav-integrations');
@@ -6729,9 +6751,53 @@ function exitClientView(){
  window._cuMgmtClientId=null;
  location.reload();
 }
+window._cuApiUsers=[];
+window._cuApiMeta=null;
+function gmClientUsersResolveScopeId(){
+ var r='';
+ try{r=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();}catch(e){}
+ if(r==='super_admin'){
+  if(window._cuMgmtClientId)return String(window._cuMgmtClientId);
+  if(window.gmActiveClient&&window.gmActiveClient.id)return String(window.gmActiveClient.id);
+  return '';
+ }
+ return '';
+}
+function gmClientUsersApiUrl(){
+ var q=gmClientUsersResolveScopeId();
+ return q?('/api/client/users?clientId='+encodeURIComponent(q)):'/api/client/users';
+}
+function gmCuRoleLabelPt(role){
+ var m={admin:'Administrador',manager:'Gestor',maintenance:'Manutenção',super_admin:'Super admin'};
+ return m[String(role||'').toLowerCase()]||String(role||'');
+}
+function gmShowCuUserSuccessModal(email,password){
+ var disp=document.getElementById('cu-success-password-display');
+ if(disp){
+  disp.innerHTML='<div style="margin-bottom:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--ink2)">'+String(email||'').replace(/</g,'&lt;')+'</div><div style="font-weight:700">'+String(password||'').replace(/</g,'&lt;')+'</div>';
+ }
+ window._cuLastCreatedPassword=password||'';
+ var bg=document.getElementById('cu-success-modal-bg');
+ if(bg)bg.style.display='flex';
+}
+function gmCloseCuUserSuccessModal(){
+ var bg=document.getElementById('cu-success-modal-bg');
+ if(bg)bg.style.display='none';
+ window._cuLastCreatedPassword='';
+}
+function gmCopyCuUserPasswordCreated(){
+ var v=window._cuLastCreatedPassword||'';
+ if(!v){alert('Nenhuma senha para copiar.');return;}
+ try{navigator.clipboard.writeText(v);if(typeof showToast==='function')showToast('Senha copiada.','success');else alert('Senha copiada.');}catch(e){alert(v);}
+}
 function openUsers(clientId){
  if(clientId)window._cuMgmtClientId=clientId;
- else if(getActiveClient())window._cuMgmtClientId=getActiveClient().id;
+ else{
+  var r='';
+  try{r=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();}catch(e){}
+  if(r==='super_admin'&&window.gmActiveClient&&window.gmActiveClient.id)window._cuMgmtClientId=window.gmActiveClient.id;
+  else if(getActiveClient())window._cuMgmtClientId=getActiveClient().id;
+ }
  openUsersModal();
 }
 function openUserManagement(clientId){openUsers(clientId);}
@@ -6747,116 +6813,149 @@ function closeUsersModal(){
 function renderUsersModal(){
  renderClientUsersPage();
 }
-function renderClientUsersPage(){
- var cid=window._cuMgmtClientId;
- var ac=getActiveClient();
- if(!cid&&ac)cid=ac.id;
- if(!cid){closeUsersModal();return;}
- var c=findClientById(cid);
- if(!c){closeUsersModal();return;}
- if(c._fromApi){alert('Gestão de utilizadores neste modal só está disponível para clientes demo (localStorage).');closeUsersModal();return;}
- var co=c.company||c.companyName||'Company';
+async function renderClientUsersPage(){
+ var loading=document.getElementById('cu-loading');
+ var errEl=document.getElementById('cu-error');
+ var panel=document.getElementById('cu-main-panel');
  var ut=document.getElementById('um-title');
  var us=document.getElementById('um-sub');
- if(ut)ut.textContent='Users — '+co;
- if(us)us.textContent='Manage users for this organization (plan limits apply).';
- var max=getMaxUsers(getClientPlanObj(c));
- var cnt=getUserCount(cid);
- var pct=Math.min(100,Math.round((cnt/max)*100));
- var plab=planLabel(c.plan);
- document.getElementById('cu-plan-line').innerHTML='<span class="'+planPillCls(c.plan)+'">'+plab+'</span> · '+cnt+' of '+max+' users';
- document.getElementById('cu-count-line').textContent=Math.round((cnt/max)*100)+'% capacity';
- var fill=document.getElementById('cu-progress-fill');
- if(fill){
-  fill.style.width=pct+'%';
-  fill.style.background=(getClientPlanObj(c)==='enterprise')?'#c9a96e':(getClientPlanObj(c)==='starter'?'#4a5568':'#22558c');
+ if(loading)loading.style.display='block';
+ if(panel)panel.style.display='none';
+ if(errEl){errEl.style.display='none';errEl.textContent='';}
+ var r='';
+ try{r=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();}catch(e){}
+ if(r==='super_admin'&&!gmClientUsersResolveScopeId()){
+  if(loading)loading.style.display='none';
+  if(errEl){errEl.style.display='block';errEl.textContent='Selecione um cliente no Dashboard Admin ou abra Equipe a partir da lista de clientes.';}
+  return;
  }
- document.getElementById('cu-client-id').value=cid;
- refreshCuFormState();
- renderCuTable();
+ try{
+  var res=await fetch(gmClientUsersApiUrl(),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return {};});
+  if(loading)loading.style.display='none';
+  if(!res.ok||!j.ok){
+   if(errEl){errEl.style.display='block';errEl.textContent=j.error||('Erro '+res.status);}
+   return;
+  }
+  window._cuApiUsers=Array.isArray(j.users)?j.users:[];
+  window._cuApiMeta=j.meta||null;
+  if(panel)panel.style.display='block';
+  var meta=j.meta||{};
+  var co=meta.companyName||'Empresa';
+  if(ut)ut.textContent='Equipe — '+co;
+  if(us)us.textContent='Utilizadores da sua empresa (limite do plano aplicado).';
+  var max=meta.maxUsers||4;
+  var cnt=meta.activeUserCount||0;
+  var pct=max>0?Math.min(100,Math.round((cnt/max)*100)):0;
+  var plab=meta.planLabel||planLabel(meta.plan);
+  var planLine=document.getElementById('cu-plan-line');
+  if(planLine)planLine.innerHTML='<span class="'+planPillCls(meta.plan)+'">'+String(plab).replace(/</g,'&lt;')+'</span> · '+cnt+' de '+max+' utilizadores';
+  var countLine=document.getElementById('cu-count-line');
+  if(countLine)countLine.textContent=(max>0?Math.round((cnt/max)*100):0)+'% da capacidade';
+  var fill=document.getElementById('cu-progress-fill');
+  if(fill){
+   fill.style.width=pct+'%';
+   var pl=String(meta.plan||'').toLowerCase();
+   fill.style.background=(pl==='enterprise')?'var(--amber)':(pl==='starter'?'var(--ink3)':'var(--blue)');
+  }
+  var hid=document.getElementById('cu-client-id');
+  if(hid)hid.value=meta.clientId||gmClientUsersResolveScopeId()||'';
+  refreshCuFormState();
+  renderCuTable();
+ }catch(net){
+  if(loading)loading.style.display='none';
+  if(errEl){errEl.style.display='block';errEl.textContent='Erro de rede ao carregar utilizadores.';}
+  console.warn('[renderClientUsersPage]',net);
+ }
 }
 function refreshCuFormState(){
- var cid=document.getElementById('cu-client-id').value;
- var ok=cid&&canAddUser(cid);
+ var meta=window._cuApiMeta;
+ var ok=true;
+ if(meta&&typeof meta.activeUserCount==='number'&&typeof meta.maxUsers==='number'){
+  ok=meta.activeUserCount<meta.maxUsers;
+ }
  var btn=document.getElementById('cu-btn-add');
  var msg=document.getElementById('cu-limit-msg');
  if(btn){btn.disabled=!ok;btn.style.opacity=ok?'1':'0.45';}
  if(msg)msg.style.display=ok?'none':'block';
 }
-function addUserSubmit(e){
+async function gmClientUsersCreateSubmit(e){
  e.preventDefault();
- var cid=document.getElementById('cu-client-id').value;
- if(!cid||!canAddUser(cid))return false;
- addUser(cid,{name:document.getElementById('cu-name').value.trim(),email:document.getElementById('cu-em').value.trim(),username:document.getElementById('cu-user').value.trim(),tempPassword:document.getElementById('cu-pass').value,accessLevel:document.getElementById('cu-lvl').value.toUpperCase()});
- document.getElementById('cu-add-form').reset();
- renderClientUsersPage();
+ var fn=document.getElementById('cu-first-name');
+ var ln=document.getElementById('cu-last-name');
+ var em=document.getElementById('cu-em');
+ var pw=document.getElementById('cu-pass');
+ var rl=document.getElementById('cu-lvl');
+ if(!fn||!ln||!em||!pw||!rl)return false;
+ var payload={
+  firstName:fn.value.trim(),
+  lastName:ln.value.trim(),
+  email:em.value.trim(),
+  password:pw.value.trim(),
+  role:rl.value
+ };
+ var scopeId=gmClientUsersResolveScopeId();
+ if(scopeId)payload.clientId=scopeId;
+ var btn=document.getElementById('cu-btn-add');
+ if(btn){btn.disabled=true;}
+ try{
+  var res=await fetch('/api/client/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok){
+   alert(j.error||('Erro '+res.status));
+   return false;
+  }
+  var shownPwd=j.passwordPlain||payload.password;
+  gmShowCuUserSuccessModal(j.user&&j.user.email||payload.email,shownPwd);
+  var form=document.getElementById('cu-add-form');
+  if(form)form.reset();
+  await renderClientUsersPage();
+ }catch(err){
+  alert('Erro de rede ao criar utilizador.');
+  console.warn('[gmClientUsersCreateSubmit]',err);
+ }finally{
+  if(btn)refreshCuFormState();
+ }
  return false;
 }
-function addUser(clientId,userData){
- var clients=loadClientsRaw();
- var i=clients.findIndex(function(x){return x.id===clientId;});
- if(i<0)return;
- if(!canAddUser(clientId)){alert('User limit reached.');return;}
- if(!userData.name||!userData.email||!userData.username||!userData.tempPassword){alert('Fill all required fields.');return;}
- clients[i].users=clients[i].users||[];
- clients[i].users.push({id:'usr_'+Date.now(),name:userData.name,email:userData.email,username:userData.username,tempPassword:userData.tempPassword,accessLevel:userData.accessLevel||'VIEWER',status:'active',lastLogin:'—',isOwner:false});
- saveClientsRaw(clients);
-}
 function renderCuTable(){
- var cid=document.getElementById('cu-client-id').value;
  var tb=document.getElementById('cu-tbody');
- if(!tb||!cid)return;
- var c=loadClientsRaw().filter(function(x){return x.id===cid;})[0];
- if(!c||!Array.isArray(c.users)){tb.innerHTML='';return;}
- tb.innerHTML=c.users.map(function(u){
+ if(!tb)return;
+ var users=window._cuApiUsers||[];
+ var meId='';
+ try{meId=String((window.__gmCurrentUser&&window.__gmCurrentUser.id)||'');}catch(e){}
+ if(!users.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--ink3);padding:24px">Nenhum utilizador.</td></tr>';return;}
+ tb.innerHTML=users.map(function(u){
   var st=u.status==='active';
-  var pc=accessPillCls(u.accessLevel);
-  var uid=(u.id||'').replace(/'/g,'');
-  return '<tr><td>'+String(u.name||'').replace(/</g,'&lt;')+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pc+'">'+(u.accessLevel||'')+'</span></td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-navy" onclick="editUser(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">Edit</button> <button type="button" class="cl-btn-sec cl-act-red" '+(u.isOwner?'disabled style="opacity:.4"':'')+' onclick="toggleUserStatus(\''+cid.replace(/'/g,'')+'\',\''+uid+'\')">'+(st?'Deactivate':'Activate')+'</button></td></tr>';
+  var uid=String(u.id||'').replace(/'/g,'\\\'');
+  var nm=(String(u.firstName||'')+' '+String(u.lastName||'')).trim().replace(/</g,'&lt;');
+  var rl=gmCuRoleLabelPt(u.role).replace(/</g,'&lt;');
+  var isSelf=meId&&String(u.id)===meId;
+  return '<tr><td>'+nm+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="cl-pill-mgr" style="font-size:10px">'+rl+'</span></td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Ativo':(u.status==='suspended'?'Suspenso':'Pendente'))+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-red" '+(isSelf?'disabled style="opacity:.4"':'')+' onclick="gmClientUsersToggleStatus(\''+uid+'\')">'+(st?'Desativar':'Ativar')+'</button></td></tr>';
  }).join('');
 }
-function editUser(clientId,userId){
- var c=loadClientsRaw().filter(function(x){return x.id===clientId;})[0];
- if(!c)return;
- var u=(c.users||[]).filter(function(x){return x.id===userId;})[0];
+async function gmClientUsersToggleStatus(userId){
+ if(!userId)return;
+ var u=(window._cuApiUsers||[]).filter(function(x){return x.id===userId;})[0];
  if(!u)return;
- document.getElementById('cu-edit-cid').value=clientId;
- document.getElementById('cu-edit-uid').value=userId;
- document.getElementById('cu-edit-name').value=u.name||'';
- document.getElementById('cu-edit-em').value=u.email||'';
- document.getElementById('cu-edit-user').value=u.username||'';
- document.getElementById('cu-edit-lvl').value=u.accessLevel||'VIEWER';
- var m=document.getElementById('cu-modal-bg');if(m)m.style.display='flex';
+ var next=u.status==='active'?'suspended':'active';
+ if(!confirm(next==='suspended'?'Desativar este utilizador?':'Reativar este utilizador?'))return;
+ var body={status:next};
+ var scopeId=gmClientUsersResolveScopeId();
+ if(scopeId)body.clientId=scopeId;
+ try{
+  var res=await fetch('/api/client/users/'+encodeURIComponent(userId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok){alert(j.error||('Erro '+res.status));return;}
+  await renderClientUsersPage();
+ }catch(e){alert('Erro de rede.');console.warn('[gmClientUsersToggleStatus]',e);}
 }
+function editUser(){alert('Edição de perfil em breve. Use desativar/ativar por agora.');}
 function closeCuUserModal(){var m=document.getElementById('cu-modal-bg');if(m)m.style.display='none';}
-function saveCuUserEdit(){
- var cid=document.getElementById('cu-edit-cid').value;
- var uid=document.getElementById('cu-edit-uid').value;
- var clients=loadClientsRaw();
- var ci=clients.findIndex(function(x){return x.id===cid;});
- if(ci<0){closeCuUserModal();return;}
- var us=clients[ci].users||[];
- var ui=us.findIndex(function(x){return x.id===uid;});
- if(ui<0){closeCuUserModal();return;}
- us[ui].name=document.getElementById('cu-edit-name').value.trim();
- us[ui].email=document.getElementById('cu-edit-em').value.trim();
- us[ui].username=document.getElementById('cu-edit-user').value.trim();
- us[ui].accessLevel=document.getElementById('cu-edit-lvl').value.toUpperCase();
- saveClientsRaw(clients);
- closeCuUserModal();
- renderClientUsersPage();
-}
-function toggleUserStatus(clientId,userId){
- var clients=loadClientsRaw();
- var ci=clients.findIndex(function(x){return x.id===clientId;});
- if(ci<0)return;
- var us=clients[ci].users||[];
- var u=us.filter(function(x){return x.id===userId;})[0];
- if(!u||u.isOwner)return;
- u.status=u.status==='active'?'inactive':'active';
- saveClientsRaw(clients);
- renderClientUsersPage();
-}
+function saveCuUserEdit(){closeCuUserModal();}
+function toggleUserStatus(clientId,userId){gmClientUsersToggleStatus(userId);}
+function addUserSubmit(e){return gmClientUsersCreateSubmit(e);}
+function addUser(){}
 
 // — Ramp / QuickBooks páginas dedicadas
 window._rampTxCache=[];
@@ -8163,7 +8262,7 @@ window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
 // NAV 
-const TITLES={home:'Home',clients:'Client Management','admin-dashboard':'Dashboard Admin','client-users':'Users',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement','owner-statement-detail':'Owner Statement — Detalhe',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics','auditoria-2026':'Auditoria 2026'};
+const TITLES={home:'Home',clients:'Client Management','admin-dashboard':'Dashboard Admin','client-users':'Equipe',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement','owner-statement-detail':'Owner Statement — Detalhe',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics','auditoria-2026':'Auditoria 2026'};
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -8195,9 +8294,10 @@ function nav(r){
  }
  if(r==='clients'&&getActiveClient())r='home';
  if(r==='client-users'){
-  if(lvl!=='ADMIN')r='home';
-  else{
-   if(!window._cuMgmtClientId&&getActiveClient())window._cuMgmtClientId=getActiveClient().id;
+  var rCu=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  if(rCu!=='admin'&&rCu!=='super_admin')r='home';
+  else if(rCu==='super_admin'){
+   if(!window._cuMgmtClientId&&window.gmActiveClient&&window.gmActiveClient.id)window._cuMgmtClientId=window.gmActiveClient.id;
    if(!window._cuMgmtClientId)r='home';
   }
  }
@@ -8214,7 +8314,7 @@ function nav(r){
   document.querySelectorAll('.si,.ss').forEach(e=>e.classList.remove('active'));
   var nuc=document.getElementById('nav-client-users');if(nuc)nuc.classList.add('active');
   const titleEl=document.getElementById('page-title');
-  if(titleEl)titleEl.textContent=TITLES['client-users']||'Users';
+  if(titleEl)titleEl.textContent=TITLES['client-users']||'Equipe';
   openUsersModal();
   return;
  }
@@ -20363,6 +20463,7 @@ async function gmAuthHydrateUserBadge(){
    if(st)st.style.display=(rTr==='super_admin')?'flex':'none';
   }catch(_eTr){}
   try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(_gab){}
+  try{if(typeof applyPermissions==='function')applyPermissions();}catch(_ePerm){}
   return u;
  }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
 }

@@ -1,20 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getCurrentUserFromSession } from '@/lib/authServer';
 import { hashPassword } from '@/lib/password';
-
-type SessionUser = NonNullable<Awaited<ReturnType<typeof getCurrentUserFromSession>>>;
-
-async function requireAdmin(): Promise<{ error: string; status: number; user: null } | { error: null; status: number; user: SessionUser }> {
-  const user = await getCurrentUserFromSession();
-  if (!user) return { error: 'Nao autenticado', status: 401, user: null };
-  if (user.role !== 'admin' && user.role !== 'super_admin')
-    return { error: 'Apenas administradores', status: 403, user: null };
-  return { error: null, status: 200, user };
-}
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   const u = await prisma.user.findUnique({ where: { id: params.id } });
   if (!u) return NextResponse.json({ ok: false, error: 'Nao encontrado.' }, { status: 404 });
@@ -36,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
 
   try {
@@ -86,7 +76,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   const actor = gate.user;
   if (!actor) return NextResponse.json({ ok: false, error: 'Nao autenticado' }, { status: 401 });

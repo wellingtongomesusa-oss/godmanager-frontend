@@ -18,6 +18,22 @@ function parseAuthCookie(value: string | undefined): { exp: number; role: string
   }
 }
 
+/** Páginas App Router /admin — gestão de plataforma (não confundir com /api/admin/* nem Equipe no Premium). */
+const ADMIN_PLATFORM_SUPER_ONLY: string[] = [
+  '/admin/users',
+  '/admin/roles',
+  '/admin/audit',
+  '/admin/settings',
+  '/admin/contact-leads',
+  '/admin/demo-leads',
+];
+
+function isAdminPlatformPage(pathname: string): boolean {
+  return ADMIN_PLATFORM_SUPER_ONLY.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
+
 function preferredLoginLocale(request: NextRequest): string {
   const c = request.cookies.get('NEXT_LOCALE')?.value;
   if (c && (routing.locales as readonly string[]).includes(c)) {
@@ -135,6 +151,9 @@ export function middleware(request: NextRequest) {
       const login = new URL(`/${loc}/login`, request.url);
       login.searchParams.set('from', pathname);
       return NextResponse.redirect(login);
+    }
+    if (isAdminPlatformPage(pathname) && session.role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     if (pathname.startsWith('/admin') && session.role !== 'admin' && session.role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
