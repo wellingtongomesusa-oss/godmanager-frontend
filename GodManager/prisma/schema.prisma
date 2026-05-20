@@ -105,8 +105,73 @@ model Client {
   analyticsSnapshots    AnalyticsSnapshot[]     @relation("AnalyticsSnapshot_clientId")
   leaseImports          LeaseImport[]           @relation("LeaseImport_clientId")
   leases                Lease[]                 @relation("Lease_clientId")
+  glAuditSnapshots      GlAuditSnapshot[]       @relation("GlAuditSnapshot_clientId")
+  mgmtFeeContracts      MgmtFeeContract[]       @relation("MgmtFeeContract_clientId")
+  feeAuditSnapshots     FeeAuditSnapshot[]      @relation("FeeAuditSnapshot_clientId")
+  ownerAuditSnapshots   OwnerAuditSnapshot[]    @relation("OwnerAuditSnapshot_clientId")
 
   @@map("clients")
+}
+
+model GlAuditSnapshot {
+  id              String   @id @default(cuid())
+  clientId        String
+  uploadedAt      DateTime @default(now())
+  uploadedBy      String?
+  label           String?
+  periodStart     String?
+  periodEnd       String?
+  totalsJson      Json
+  monthlyJson     Json
+  perPropertyJson Json
+
+  client Client @relation("GlAuditSnapshot_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("gl_audit_snapshots")
+}
+
+model MgmtFeeContract {
+  id            String   @id @default(cuid())
+  clientId      String
+  propertyKey   String
+  contractedPct Float
+  updatedAt     DateTime @updatedAt
+  updatedBy     String?
+
+  client Client @relation("MgmtFeeContract_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, propertyKey])
+  @@index([clientId])
+  @@map("mgmt_fee_contracts")
+}
+
+model FeeAuditSnapshot {
+  id          String   @id @default(cuid())
+  clientId    String
+  capturedAt  DateTime @default(now())
+  capturedBy  String?
+  label       String?
+  resultsJson Json // [{ propertyKey, valorOwner, feeEsperado, feeCobrado, pctContratada, pctAplicada }]
+
+  client Client @relation("FeeAuditSnapshot_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("fee_audit_snapshots")
+}
+
+model OwnerAuditSnapshot {
+  id          String   @id @default(cuid())
+  clientId    String
+  capturedAt  DateTime @default(now())
+  capturedBy  String?
+  label       String?
+  resultsJson Json // [{ propertyKey, owner, overPayment, netDevido, distribuido, feeDevido }]
+
+  client Client @relation("OwnerAuditSnapshot_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("owner_audit_snapshots")
 }
 
 model User {
