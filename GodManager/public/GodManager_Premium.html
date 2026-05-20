@@ -1536,7 +1536,8 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="cl-fg"><label>Nome *</label><input class="fi" id="cu-first-name" type="text" required autocomplete="given-name"></div>
  <div class="cl-fg"><label>Sobrenome *</label><input class="fi" id="cu-last-name" type="text" required autocomplete="family-name"></div>
  <div class="cl-fg"><label>Email (login) *</label><input class="fi" id="cu-em" type="email" required autocomplete="email"></div>
- <div class="cl-fg"><label>Função *</label><select class="fi" id="cu-lvl" required><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="maintenance">Manutenção</option></select></div>
+ <div class="cl-fg"><label>Função *</label><select class="fi" id="cu-lvl" required onchange="if(typeof gmCuOnRoleChange==='function')gmCuOnRoleChange()"><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="maintenance">Manutenção</option><option value="field">Piscineiro (field)</option></select></div>
+ <div class="cl-fg" id="cu-vendor-wrap" style="display:none"><label>Equipe (fornecedor) *</label><select class="fi" id="cu-vendor-id"><option value="">— Selecione a equipe —</option></select><div style="font-size:11px;color:var(--ink3);margin-top:4px">Obrigatório para piscineiros — só vê jobs desta equipe.</div></div>
  <div class="cl-fg" style="grid-column:1/-1"><label>Senha *</label><div style="display:flex;gap:8px;align-items:stretch"><input class="fi" id="cu-pass" type="text" required minlength="8" autocomplete="new-password" style="flex:1"><button type="button" class="cl-btn-sec" onclick="var el=document.getElementById('cu-pass');if(el&amp;&amp;window.gmGenerateStrongPassword)el.value=window.gmGenerateStrongPassword(20);" style="flex-shrink:0;background:var(--amber);color:#fff;border-color:var(--amber);padding:0 16px;border-radius:8px;font-weight:600;font-family:'DM Sans',sans-serif">Gerar senha forte</button></div><div style="font-size:11px;color:var(--ink3);margin-top:4px">A senha será mostrada uma vez após o cadastro.</div></div>
  </div>
  <p class="cu-limit-msg" id="cu-limit-msg" style="display:none;font-size:12px;color:var(--red);margin-top:8px">Limite de usuários do plano atingido.</p>
@@ -1545,7 +1546,7 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div class="cl-table-wrap">
  <table class="cl-table">
- <thead><tr><th>Nome</th><th>Email</th><th>Função</th><th>Status</th><th>Ações</th></tr></thead>
+ <thead><tr><th>Nome</th><th>Email</th><th>Função</th><th>Equipe</th><th>Status</th><th>Ações</th></tr></thead>
  <tbody id="cu-tbody"></tbody>
  </table>
  </div>
@@ -2727,10 +2728,15 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- JOBS PAGE -->
 <div class="page" id="page-jobs">
+ <div id="jobs-field-vendor-banner" style="display:none;margin:0 0 16px;padding:14px 18px;border-radius:10px;border:1px solid var(--amber-bd);background:var(--amber-bg);align-items:center;gap:12px;flex-wrap:wrap;font-family:'DM Sans',sans-serif">
+  <span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3)">Sua equipe</span>
+  <span id="jobs-field-vendor-name" style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)"></span>
+  <span style="font-size:12px;color:var(--ink2)">Agenda filtrada automaticamente para os jobs desta equipe.</span>
+ </div>
  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start">
   <div>
    <div class="pt">Jobs</div>
-   <div class="ps">Acoes de manutencao sobre expenses abertos</div>
+   <div class="ps" id="jobs-page-subtitle">Acoes de manutencao sobre expenses abertos</div>
   </div>
   <div style="display:flex;gap:12px;align-items:center">
    <button id="jobs-new-btn" type="button" style="padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:none;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(45,114,82,.22)" onclick="if(typeof jobsOpenNewModal==='function')jobsOpenNewModal();else if(typeof ltExpOpenNewModal==='function')ltExpOpenNewModal();else if(typeof openExpenseModal==='function')openExpenseModal();else if(typeof ltOpenNewExpense==='function')ltOpenNewExpense();">+ Novo Job</button>
@@ -2764,11 +2770,13 @@ document.addEventListener('DOMContentLoaded', function(){
   <button type="button" id="jobs-df-week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
   <button type="button" id="jobs-df-custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
   <input type="date" id="jobs-df-custom-input" onchange="gmJobsSetDateFilter('custom',this.value)" style="display:none;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-left:4px">
+  <span id="jobs-vendor-filter-wrap" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vendor:</label>
   <select id="jobs-vendor-filter" onchange="gmJobsSetVendorFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px">
    <option value="">Todos os vendors</option>
   </select>
+  </span>
   <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
  </div>
  </div>
@@ -6420,9 +6428,39 @@ function gmClientInitials(name){
  if(parts.length===1)return parts[0].slice(0,2).toUpperCase();
  return (String(parts[0][0]||'')+String(parts[1][0]||'')).toUpperCase()||'GM';
 }
+/** Nome do tenant da sessão (/api/auth/me), sem substituir gm_active_client do super_admin. */
+function gmSessionTenantBrandingName(){
+ try{
+  var u=window.__gmCurrentUser;
+  var cid=String(u&&u.clientId||'').trim();
+  if(!cid)return '';
+  return String(u&&u.companyName||'').trim();
+ }catch(e){return '';}
+}
+function gmApplyBrandingFromSessionUser(){
+ var ac=getActiveClient();
+ if(ac){
+  updateBranding(ac);
+  return;
+ }
+ var tn=gmSessionTenantBrandingName();
+ if(tn){
+  renderSidebarClientBrand(null);
+  var bcEl=document.getElementById('bc-brand');
+  if(bcEl)bcEl.textContent=tn;
+  var exitBtn=document.getElementById('btn-exit-client');
+  if(exitBtn)exitBtn.style.display='none';
+  document.body.classList.add('gm-client-active');
+  return;
+ }
+ updateBranding();
+}
+window.gmSessionTenantBrandingName=gmSessionTenantBrandingName;
+window.gmApplyBrandingFromSessionUser=gmApplyBrandingFromSessionUser;
 function renderSidebarClientBrand(client){
  var c=(client!==undefined)?client:getActiveClient();
- var name=(c&&(c.company||c.companyName))||window.gmPlatformCompanyName||clientConfig.company_name;
+ var sessionTenant=(!c)?gmSessionTenantBrandingName():'';
+ var name=(c&&(c.company||c.companyName))||sessionTenant||window.gmPlatformCompanyName||clientConfig.company_name;
  var logo=String((c&&(c.logoUrl||c.client_logo_url))||clientConfig.logo_url||'').trim();
  var nameEl=document.getElementById('sb-brand-name');
  var tagEl=document.getElementById('sb-brand-tag');
@@ -6506,9 +6544,11 @@ function updateBranding(client){
  var exitBtn=document.getElementById('btn-exit-client');
  renderSidebarClientBrand(c);
  var cn=c&&(c.company||c.companyName);
+ if(!cn)cn=gmSessionTenantBrandingName();
+ var acView=getActiveClient();
  if(bcEl)bcEl.textContent=cn?cn:'GodManager';
- if(exitBtn)exitBtn.style.display=c?'inline-flex':'none';
- document.body.classList.toggle('gm-client-active',!!cn);
+ if(exitBtn)exitBtn.style.display=acView?'inline-flex':'none';
+ document.body.classList.toggle('gm-client-active',!!cn||!!acView);
 }
 function applyPermissions(level){
  var lvl=(level!=null&&level!=='')?String(level).toUpperCase():getEffectiveLevel();
@@ -6768,9 +6808,52 @@ function gmClientUsersApiUrl(){
  return q?('/api/client/users?clientId='+encodeURIComponent(q)):'/api/client/users';
 }
 function gmCuRoleLabelPt(role){
- var m={admin:'Administrador',manager:'Gestor',maintenance:'Manutenção',super_admin:'Super admin'};
+ var m={admin:'Administrador',manager:'Gestor',maintenance:'Manutenção',field:'Piscineiro',super_admin:'Super admin'};
  return m[String(role||'').toLowerCase()]||String(role||'');
 }
+window._cuVendorNameById={};
+async function gmCuEnsureVendorsLoaded(){
+ if(window._cuVendorsForForm&&window._cuVendorsForForm.length)return window._cuVendorsForForm;
+ try{
+  if(typeof gvFetchFromApi==='function')await gvFetchFromApi();
+ }catch(e){console.warn('[gmCuEnsureVendorsLoaded]',e);}
+ var list=Array.isArray(window._pmVendorsList)?window._pmVendorsList:[];
+ window._cuVendorsForForm=list;
+ window._cuVendorNameById={};
+ list.forEach(function(v){
+  var id=String(v.id||'').trim();
+  if(!id)return;
+  window._cuVendorNameById[id]=String(v.companyName||v.company_name||v.name||id).trim();
+ });
+ return list;
+}
+function gmCuPopulateVendorSelect(){
+ var sel=document.getElementById('cu-vendor-id');
+ if(!sel)return;
+ var list=window._cuVendorsForForm||[];
+ var html='<option value="">— Selecione a equipe —</option>';
+ list.forEach(function(v){
+  var id=String(v.id||'').trim();
+  if(!id)return;
+  var nm=String(v.companyName||v.company_name||v.name||id).trim().replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  html+='<option value="'+id.replace(/"/g,'&quot;')+'">'+nm+'</option>';
+ });
+ sel.innerHTML=html;
+}
+async function gmCuOnRoleChange(){
+ var rl=document.getElementById('cu-lvl');
+ var wrap=document.getElementById('cu-vendor-wrap');
+ var vsel=document.getElementById('cu-vendor-id');
+ if(!rl||!wrap)return;
+ var isField=rl.value==='field';
+ wrap.style.display=isField?'':'none';
+ if(vsel)vsel.required=!!isField;
+ if(isField){
+  await gmCuEnsureVendorsLoaded();
+  gmCuPopulateVendorSelect();
+ }else if(vsel){vsel.value='';}
+}
+window.gmCuOnRoleChange=gmCuOnRoleChange;
 function gmShowCuUserSuccessModal(email,password){
  var disp=document.getElementById('cu-success-password-display');
  if(disp){
@@ -6860,8 +6943,10 @@ async function renderClientUsersPage(){
   }
   var hid=document.getElementById('cu-client-id');
   if(hid)hid.value=meta.clientId||gmClientUsersResolveScopeId()||'';
+  try{await gmCuEnsureVendorsLoaded();}catch(_v){}
   refreshCuFormState();
   renderCuTable();
+  try{if(typeof gmCuOnRoleChange==='function')gmCuOnRoleChange();}catch(_r){}
  }catch(net){
   if(loading)loading.style.display='none';
   if(errEl){errEl.style.display='block';errEl.textContent='Erro de rede ao carregar utilizadores.';}
@@ -6886,7 +6971,14 @@ async function gmClientUsersCreateSubmit(e){
  var em=document.getElementById('cu-em');
  var pw=document.getElementById('cu-pass');
  var rl=document.getElementById('cu-lvl');
+ var vsel=document.getElementById('cu-vendor-id');
  if(!fn||!ln||!em||!pw||!rl)return false;
+ if(rl.value==='field'){
+  if(!vsel||!String(vsel.value||'').trim()){
+   alert('Selecione a equipe (fornecedor) para o piscineiro.');
+   return false;
+  }
+ }
  var payload={
   firstName:fn.value.trim(),
   lastName:ln.value.trim(),
@@ -6894,6 +6986,7 @@ async function gmClientUsersCreateSubmit(e){
   password:pw.value.trim(),
   role:rl.value
  };
+ if(rl.value==='field'&&vsel)payload.vendorId=String(vsel.value||'').trim();
  var scopeId=gmClientUsersResolveScopeId();
  if(scopeId)payload.clientId=scopeId;
  var btn=document.getElementById('cu-btn-add');
@@ -6924,14 +7017,19 @@ function renderCuTable(){
  var users=window._cuApiUsers||[];
  var meId='';
  try{meId=String((window.__gmCurrentUser&&window.__gmCurrentUser.id)||'');}catch(e){}
- if(!users.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--ink3);padding:24px">Nenhum utilizador.</td></tr>';return;}
+ if(!users.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--ink3);padding:24px">Nenhum utilizador.</td></tr>';return;}
+ var vmap=window._cuVendorNameById||{};
  tb.innerHTML=users.map(function(u){
   var st=u.status==='active';
   var uid=String(u.id||'').replace(/'/g,'\\\'');
   var nm=(String(u.firstName||'')+' '+String(u.lastName||'')).trim().replace(/</g,'&lt;');
   var rl=gmCuRoleLabelPt(u.role).replace(/</g,'&lt;');
+  var vid=String(u.vendorId||'').trim();
+  var vnm='—';
+  if(vid)vnm=String(vmap[vid]||vid).replace(/</g,'&lt;');
+  if(String(u.role||'').toLowerCase()!=='field')vnm='—';
   var isSelf=meId&&String(u.id)===meId;
-  return '<tr><td>'+nm+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="cl-pill-mgr" style="font-size:10px">'+rl+'</span></td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Ativo':(u.status==='suspended'?'Suspenso':'Pendente'))+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-red" '+(isSelf?'disabled style="opacity:.4"':'')+' onclick="gmClientUsersToggleStatus(\''+uid+'\')">'+(st?'Desativar':'Ativar')+'</button></td></tr>';
+  return '<tr><td>'+nm+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="cl-pill-mgr" style="font-size:10px">'+rl+'</span></td><td style="font-size:12px;color:var(--ink2)">'+vnm+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Ativo':(u.status==='suspended'?'Suspenso':'Pendente'))+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-red" '+(isSelf?'disabled style="opacity:.4"':'')+' onclick="gmClientUsersToggleStatus(\''+uid+'\')">'+(st?'Desativar':'Ativar')+'</button></td></tr>';
  }).join('');
 }
 async function gmClientUsersToggleStatus(userId){
@@ -20320,6 +20418,83 @@ window.gmBookkeepingAiGate=gmBookkeepingAiGate;
 window.gmBookkeepingAiSend=gmBookkeepingAiSend;
 window.gmBookkeepingAiClear=gmBookkeepingAiClear;
 
+/** Sidebar só com Jobs (secção EXPENSES, item nav-jobs). Reutilizado por maintenance e field (piscineiro). */
+function gmApplyJobsOnlySidebarMode(){
+ try{
+  document.querySelectorAll('.sb-sec').forEach(function(sec){sec.style.display='none';});
+  var myCo=document.getElementById('sb-mycompany-section');
+  if(myCo)myCo.style.display='none';
+  var btc=document.getElementById('btn-topbar-clients');
+  if(btc){btc.style.display='none';}
+  var exp=document.querySelector('.sb-sec[data-sb-sec="expenses"]');
+  if(exp){
+   exp.style.display='';
+   exp.classList.remove('gm-section-hidden');
+   exp.setAttribute('aria-expanded','true');
+   var head=exp.querySelector('.sb-sec-head');
+   if(head)head.setAttribute('aria-expanded','true');
+   var sbBody=exp.querySelector('.sb-sec-body');
+   if(sbBody){
+    sbBody.style.display='';
+    sbBody.querySelectorAll('.ss').forEach(function(el){
+     if(el.id!=='nav-jobs')el.style.display='none';
+     else el.style.display='';
+    });
+   }
+   var lbl=exp.querySelector('.sb-sec-lbl');
+   if(lbl)lbl.textContent='JOBS';
+   var chev=exp.querySelector('.sb-sec-chev');
+   if(chev)chev.style.display='none';
+  }
+  setTimeout(function(){
+   try{if(typeof nav==='function')nav('jobs');}catch(eN){console.warn('[gmApplyJobsOnlySidebarMode] nav',eN);}
+  },80);
+ }catch(e){console.warn('[gmApplyJobsOnlySidebarMode]',e);}
+}
+window.gmApplyJobsOnlySidebarMode=gmApplyJobsOnlySidebarMode;
+
+async function gmFieldUserShowVendorBanner(user){
+ try{
+  var banner=document.getElementById('jobs-field-vendor-banner');
+  var nameEl=document.getElementById('jobs-field-vendor-name');
+  var sub=document.getElementById('jobs-page-subtitle');
+  if(!banner||!nameEl)return;
+  var vid=String(user&&user.vendorId||'').trim();
+  if(!vid){
+   banner.style.display='none';
+   if(sub)sub.textContent='Agenda de jobs (equipe não vinculada)';
+   return;
+  }
+  var name='';
+  try{
+   if(typeof gvFetchFromApi==='function')await gvFetchFromApi();
+   var list=Array.isArray(window._pmVendorsList)?window._pmVendorsList:[];
+   for(var i=0;i<list.length;i++){
+    if(String(list[i].id||'')===vid){
+     name=String(list[i].companyName||list[i].company_name||'').trim();
+     break;
+    }
+   }
+  }catch(eV){console.warn('[gmFieldUserShowVendorBanner]',eV);}
+  if(!name)name='Equipe';
+  nameEl.textContent=name;
+  banner.style.display='flex';
+  if(sub)sub.textContent='Agenda da equipe '+name+' — somente leitura';
+ }catch(e){console.warn('[gmFieldUserShowVendorBanner]',e);}
+}
+window.gmFieldUserShowVendorBanner=gmFieldUserShowVendorBanner;
+
+/** Modo restrito field (piscineiro): só Jobs + banner da equipe. */
+async function gmApplyFieldUserMode(user){
+ gmApplyJobsOnlySidebarMode();
+ var vfw=document.getElementById('jobs-vendor-filter-wrap');
+ if(vfw)vfw.style.display='none';
+ var btnNew=document.getElementById('jobs-new-btn');
+ if(btnNew)btnNew.style.display='none';
+ await gmFieldUserShowVendorBanner(user||window.__gmCurrentUser);
+}
+window.gmApplyFieldUserMode=gmApplyFieldUserMode;
+
 /** Modo restrito EXPENSES_JOBS — apenas secção EXPENSES na sidebar (ativado só quando user.productType === 'EXPENSES_JOBS'). */
 function gmApplyExpensesJobsMode(){
  try{
@@ -20425,7 +20600,9 @@ async function gmAuthHydrateUserBadge(){
   var u=data.user;
   gmAuthMaybeClearCachesOnUserChange(u);
   var fullName=((u.firstName||'')+' '+(u.lastName||'')).trim()||u.email||'User';
-  var roleLabel=(u.role||'').charAt(0).toUpperCase()+(u.role||'').slice(1);
+  var roleMap={field:'Piscineiro',maintenance:'Manutenção',admin:'Administrador',manager:'Gestor',super_admin:'Super admin',accountant:'Contabilidade',leasing:'Leasing',viewer:'Visualizador',owner:'Proprietário'};
+  var roleKey=String(u.role||'').toLowerCase();
+  var roleLabel=roleMap[roleKey]||((u.role||'').charAt(0).toUpperCase()+(u.role||'').slice(1));
   // Actualizar badge na sidebar
   var nameEl=document.querySelector('.sb-un-n');
   var roleEl=document.querySelector('.sb-un-r');
@@ -20433,6 +20610,7 @@ async function gmAuthHydrateUserBadge(){
   if(roleEl)roleEl.textContent=roleLabel||u.email||'';
   // Cache rapido
   window.__gmCurrentUser=u;
+  try{if(typeof gmApplyBrandingFromSessionUser==='function')gmApplyBrandingFromSessionUser();}catch(_eBr){}
   // Re-render Jobs se for a página atual (resolve race condition do botão Finalizar/Reativar)
   // Verifica DOM page-jobs visível em vez de location.hash (a app usa nav() não hash)
   try{
@@ -20481,28 +20659,21 @@ async function jobsApplyRoleGateV2(){
    if(adminSec)adminSec.style.display='none';
   }
 
-  // Maintenance - so JOBS
+  // Piscineiro (field) — só Jobs + banner da equipe
+  if(role==='field'){
+   if(typeof gmApplyFieldUserMode==='function')await gmApplyFieldUserMode(user);
+   return;
+  }
+
+  // Restaurar filtro vendor (outros roles)
+  var vfw0=document.getElementById('jobs-vendor-filter-wrap');
+  if(vfw0)vfw0.style.display='';
+  var banner0=document.getElementById('jobs-field-vendor-banner');
+  if(banner0)banner0.style.display='none';
+
+  // Maintenance — só JOBS
   if(role==='maintenance'){
-   document.querySelectorAll('.sb-sec').forEach(function(sec){sec.style.display='none';});
-   var exp=document.querySelector('.sb-sec[data-sb-sec="expenses"]');
-   if(exp){
-    exp.style.display='';
-    exp.setAttribute('aria-expanded','true');
-    var head=exp.querySelector('.sb-sec-head');
-    if(head)head.setAttribute('aria-expanded','true');
-    var sbBody=exp.querySelector('.sb-sec-body');
-    if(sbBody){
-     sbBody.style.display='';
-     sbBody.querySelectorAll('.ss').forEach(function(el){
-      if(el.id!=='nav-jobs')el.style.display='none';
-     });
-    }
-    var lbl=exp.querySelector('.sb-sec-lbl');
-    if(lbl)lbl.textContent='JOBS';
-    var chev=exp.querySelector('.sb-sec-chev');
-    if(chev)chev.style.display='none';
-   }
-   if(typeof nav==='function')setTimeout(function(){try{nav('jobs');}catch(e){}},50);
+   if(typeof gmApplyJobsOnlySidebarMode==='function')gmApplyJobsOnlySidebarMode();
   }
   var btnNew=document.getElementById('jobs-new-btn');
   if(btnNew){
@@ -20532,7 +20703,8 @@ document.addEventListener('DOMContentLoaded',function(){
   if(typeof gmBookkeepingAiGate==='function')gmBookkeepingAiGate();
   try{
    var gmEjU=window.__gmCurrentUser;
-   if(gmEjU&&gmEjU.productType==='EXPENSES_JOBS'&&typeof gmApplyExpensesJobsMode==='function'){
+   var rEj=String(gmEjU&&gmEjU.role||'').toLowerCase();
+   if(rEj!=='field'&&gmEjU&&gmEjU.productType==='EXPENSES_JOBS'&&typeof gmApplyExpensesJobsMode==='function'){
     gmApplyExpensesJobsMode();
    }
   }catch(_gEj){}
@@ -21348,6 +21520,7 @@ window.tenantViewDetails=function(tid){
   var n=String(name||'').trim()||DEF_CO;
   window.gmPlatformCompanyName=n;
   try{clientConfig.company_name=n;}catch(e0){}
+  if(typeof gmApplyBrandingFromSessionUser==='function'){gmApplyBrandingFromSessionUser();return;}
   if(typeof renderSidebarClientBrand==='function'){try{renderSidebarClientBrand();}catch(e1){}}
  };
  window.adminLoadCompanyName=async function(){
@@ -21395,6 +21568,12 @@ window.tenantViewDetails=function(tid){
    var name=(data&&data.name)||DEF_CO;
    window.gmPlatformCompanyName=name;
    try{clientConfig.company_name=name;}catch(eB){}
+   var tenantCid='';
+   try{tenantCid=String(window.__gmCurrentUser&&window.__gmCurrentUser.clientId||'').trim();}catch(_tc){}
+   if(tenantCid||getActiveClient()){
+    if(typeof gmApplyBrandingFromSessionUser==='function')gmApplyBrandingFromSessionUser();
+    return;
+   }
    if(typeof window.gmUpdateCompanyNameInSidebar==='function')window.gmUpdateCompanyNameInSidebar(name);
   }catch(e){console.warn('gmLoadCompanyNameOnBoot',e);}
  };
