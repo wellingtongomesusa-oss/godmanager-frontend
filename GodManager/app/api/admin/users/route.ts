@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getCurrentUserFromSession } from '@/lib/authServer';
 import { hashPassword } from '@/lib/password';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -18,18 +18,8 @@ function generateRandomPassword(length = 12): string {
     .join('');
 }
 
-type SessionUser = NonNullable<Awaited<ReturnType<typeof getCurrentUserFromSession>>>;
-
-async function requireAdmin(): Promise<{ error: string; status: number; user: null } | { error: null; status: number; user: SessionUser }> {
-  const user = await getCurrentUserFromSession();
-  if (!user) return { error: 'Nao autenticado', status: 401, user: null };
-  if (user.role !== 'admin' && user.role !== 'super_admin')
-    return { error: 'Apenas administradores', status: 403, user: null };
-  return { error: null, status: 200, user };
-}
-
 export async function GET() {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
   return NextResponse.json({
@@ -50,7 +40,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
 
   try {
