@@ -12489,6 +12489,51 @@ function gmJobOpenCommentPopup(id){
 }
 window.gmJobOpenCommentPopup=gmJobOpenCommentPopup;
 
+/** Jobs localStorage — escopo por clientId (evita vazamento cross-tenant no mesmo browser). */
+var MP_LEGACY_CLIENT_ID='cmoqec9bw0000057uu4p5h15a';
+var GM_JOB_LS_MIGRATED_FLAG='gm_job_ls_migrated_v1';
+var GM_JOB_ACTIONS_KEY_BASE='gm_job_actions';
+var GM_JOB_INVOICES_KEY_BASE='gm_job_invoices';
+
+function gmJobsActiveClientId(){
+ try{
+  var ac=getActiveClient();
+  if(ac&&ac.id)return String(ac.id).trim();
+  var u=window.__gmCurrentUser;
+  if(u&&u.clientId)return String(u.clientId).trim();
+ }catch(e){}
+ return null;
+}
+
+function gmJobsScopedLsKey(base){
+ var suffix=gmJobsActiveClientId()||'none';
+ return String(base||'')+'__'+suffix;
+}
+
+/** One-shot: legado global → gm_job_*__<Manager Prop>; remove chaves globais. */
+function gmJobLsMigrateLegacyOnce(){
+ try{
+  if(localStorage.getItem(GM_JOB_LS_MIGRATED_FLAG)==='1')return;
+  var mpId=MP_LEGACY_CLIENT_ID;
+  var actionsScoped=GM_JOB_ACTIONS_KEY_BASE+'__'+mpId;
+  var invoicesScoped=GM_JOB_INVOICES_KEY_BASE+'__'+mpId;
+  var rawActions=localStorage.getItem(GM_JOB_ACTIONS_KEY_BASE);
+  if(rawActions!==null&&localStorage.getItem(actionsScoped)===null){
+   localStorage.setItem(actionsScoped,rawActions);
+  }
+  var rawInv=localStorage.getItem(GM_JOB_INVOICES_KEY_BASE);
+  if(rawInv!==null&&localStorage.getItem(invoicesScoped)===null){
+   localStorage.setItem(invoicesScoped,rawInv);
+  }
+  try{localStorage.removeItem(GM_JOB_ACTIONS_KEY_BASE);}catch(_ra){}
+  try{localStorage.removeItem(GM_JOB_INVOICES_KEY_BASE);}catch(_ri){}
+  localStorage.setItem(GM_JOB_LS_MIGRATED_FLAG,'1');
+ }catch(e){console.warn('[gmJobLsMigrateLegacyOnce]',e);}
+}
+window.gmJobsActiveClientId=gmJobsActiveClientId;
+window.gmJobsScopedLsKey=gmJobsScopedLsKey;
+window.gmJobLsMigrateLegacyOnce=gmJobLsMigrateLegacyOnce;
+
 window.gerarNumeroInvoice=function(){
  var d=new Date();
  var key=String(d.getFullYear())+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
@@ -12504,29 +12549,33 @@ window.gerarNumeroInvoice=function(){
 
 function getInvoice(expenseId){
  try{
-  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  var key=gmJobsScopedLsKey(GM_JOB_INVOICES_KEY_BASE);
+  var all=JSON.parse(localStorage.getItem(key)||'{}');
   return all[String(expenseId)]||null;
  }catch(e){return null;}
 }
 function setInvoice(expenseId,invoiceObj){
  try{
-  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  var key=gmJobsScopedLsKey(GM_JOB_INVOICES_KEY_BASE);
+  var all=JSON.parse(localStorage.getItem(key)||'{}');
   if(!all||typeof all!=='object')all={};
   all[String(expenseId)]=invoiceObj;
-  localStorage.setItem('gm_job_invoices',JSON.stringify(all));
+  localStorage.setItem(key,JSON.stringify(all));
  }catch(e){}
 }
 function listInvoices(){
  try{
-  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  var key=gmJobsScopedLsKey(GM_JOB_INVOICES_KEY_BASE);
+  var all=JSON.parse(localStorage.getItem(key)||'{}');
   return Object.keys(all).map(function(id){return Object.assign({expenseId:id},all[id]);});
  }catch(e){return [];}
 }
 function removeInvoice(expenseId){
  try{
-  var all=JSON.parse(localStorage.getItem('gm_job_invoices')||'{}');
+  var key=gmJobsScopedLsKey(GM_JOB_INVOICES_KEY_BASE);
+  var all=JSON.parse(localStorage.getItem(key)||'{}');
   delete all[String(expenseId)];
-  localStorage.setItem('gm_job_invoices',JSON.stringify(all));
+  localStorage.setItem(key,JSON.stringify(all));
  }catch(e){}
 }
 window.getInvoice=getInvoice;
@@ -17689,6 +17738,7 @@ window.gmTrialInviteGenerate=async function(){
 
 // INIT 
 window.addEventListener('DOMContentLoaded',()=>{
+ try{if(typeof gmJobLsMigrateLegacyOnce==='function')gmJobLsMigrateLegacyOnce();}catch(_mj){}
  updateBranding();
  applyPermissions();
  sbInitSectionCollapse();
@@ -18622,7 +18672,11 @@ window.jobsVendorSourceStr=function(r){
 };
 
 function jobsLoadActions(){
- try{var a=JSON.parse(localStorage.getItem(JOBS_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}
+ try{
+  var key=gmJobsScopedLsKey(JOBS_KEY);
+  var a=JSON.parse(localStorage.getItem(key)||'[]');
+  return Array.isArray(a)?a:[];
+ }catch(e){return[];}
 }
 
 // ==================== MANAGER MARKUP MODAL ====================
@@ -18722,7 +18776,7 @@ window.jobsManagerClose=jobsManagerClose;
 window.jobsManagerSave=jobsManagerSave;
 
 function jobsSaveActions(arr){
- try{localStorage.setItem(JOBS_KEY,JSON.stringify(arr||[]));}catch(e){}
+ try{localStorage.setItem(gmJobsScopedLsKey(JOBS_KEY),JSON.stringify(arr||[]));}catch(e){}
 }
 
 function jobsHasActionFor(expenseId,type){
@@ -20610,6 +20664,7 @@ async function gmAuthHydrateUserBadge(){
   if(roleEl)roleEl.textContent=roleLabel||u.email||'';
   // Cache rapido
   window.__gmCurrentUser=u;
+  try{if(typeof gmJobLsMigrateLegacyOnce==='function')gmJobLsMigrateLegacyOnce();}catch(_mj2){}
   try{if(typeof gmApplyBrandingFromSessionUser==='function')gmApplyBrandingFromSessionUser();}catch(_eBr){}
   // Re-render Jobs se for a página atual (resolve race condition do botão Finalizar/Reativar)
   // Verifica DOM page-jobs visível em vez de location.hash (a app usa nav() não hash)
