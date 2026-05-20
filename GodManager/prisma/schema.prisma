@@ -18,6 +18,7 @@ enum UserRole {
   accountant
   leasing
   maintenance
+  field
   viewer
   owner
 }
@@ -188,8 +189,10 @@ model User {
   lastActive      DateTime         @default(now())
   clientId        String?
   ownerId         String?
+  vendorId        String?
   client          Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
   owner           Owner?           @relation("User_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
+  vendor          PmVendor?        @relation("User_fieldVendor", fields: [vendorId], references: [id], onDelete: SetNull)
   auditEntries    AuditEntry[]     @relation("ActorAudit")
   targetAudits    AuditEntry[]     @relation("TargetAudit")
   subscription    Subscription?
@@ -198,6 +201,7 @@ model User {
 
   @@index([clientId])
   @@index([ownerId])
+  @@index([vendorId])
   @@index([email])
   @@map("users")
 }
@@ -544,6 +548,7 @@ model PmVendor {
   updatedAt      DateTime        @updatedAt
   expenses       PmExpense[]
   payments       VendorPayment[]
+  fieldUsers     User[]          @relation("User_fieldVendor")
   clientId       String?
   client         Client?         @relation("PmVendor_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
@@ -596,6 +601,7 @@ model PmExpense {
   @@index([monthRef])
   @@index([vendorId])
   @@index([clientId])
+  @@index([clientId, vendorId])
   @@map("pm_expenses")
 }
 

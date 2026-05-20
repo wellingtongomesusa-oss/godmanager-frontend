@@ -5,6 +5,7 @@ export type UserRole =
   | 'accountant'
   | 'leasing'
   | 'maintenance'
+  | 'field'
   | 'viewer'
   | 'owner';
 
