@@ -876,16 +876,31 @@
     tb.innerHTML = hr;
   }
 
+  function gmAuditIsSuperAuditUser() {
+    try {
+      var u = window.__gmCurrentUser;
+      return u && String(u.role || '').toLowerCase() === 'super_admin';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function gmAuditSuperSelectClientMarkup() {
+    if (typeof window.gmAudit2026DashClientMarkup === 'function')
+      return window.gmAudit2026DashClientMarkup();
+    return escHtml(
+      'Selecione um cliente no Dashboard Admin para arquivar/salvar resultados.',
+    );
+  }
+
   function gmAuditEffectiveClientId() {
     try {
       var u = window.__gmCurrentUser;
       if (!u) return '';
       var role = String(u.role || '').toLowerCase();
       if (role === 'super_admin') {
-        if (typeof getActiveClient === 'function') {
-          var ac = getActiveClient();
-          if (ac && ac.id) return String(ac.id);
-        }
+        if (window.gmActiveClient && window.gmActiveClient.id)
+          return String(window.gmActiveClient.id);
         return '';
       }
       return u.clientId ? String(u.clientId) : '';
@@ -893,6 +908,20 @@
       return '';
     }
   }
+
+  window.gmAudit2026OnActiveAuditClientChanged = function () {
+    try {
+      var hf = document.getElementById('aud2026-hist-feedback');
+      if (hf) {
+        hf.style.display = 'none';
+        hf.textContent = '';
+      }
+      if (typeof window.gmAudit2026FeeFetchAndRender === 'function')
+        window.gmAudit2026FeeFetchAndRender();
+      if (typeof window.gmAudit2026OwnerFetchAndRender === 'function')
+        window.gmAudit2026OwnerFetchAndRender();
+    } catch (_) {}
+  };
 
   /** Detalhe / DELETE snapshots: sempre com clientId para alinhar multi-tenant. */
   function gmAuditSnapshotsApiUrl(id) {
@@ -1025,12 +1054,31 @@
 
   window.gmAudit2026ArchiveCurrent = function () {
     var ctx = window.__AUD2026_CTX;
+    var hidFb = document.getElementById('aud2026-hist-feedback');
+    if (hidFb) {
+      hidFb.style.display = 'none';
+      hidFb.textContent = '';
+    }
     if (!ctx || !ctx.totals.props) return alert('Carregue um CSV primeiro.');
     var cid = gmAuditEffectiveClientId();
-    if (!cid)
-      return alert(
-        'Selecione um cliente na GodManager (super_admin: modo cliente ativo) ou confirme a sua empresa.',
-      );
+    var fb = document.getElementById('aud2026-feedback');
+    if (!cid) {
+      if (gmAuditIsSuperAuditUser()) {
+        if (fb) {
+          fb.style.display = 'block';
+          fb.style.color = 'var(--ink3)';
+          fb.innerHTML = gmAuditSuperSelectClientMarkup();
+        }
+      } else {
+        if (fb) {
+          fb.style.display = 'block';
+          fb.style.color = 'var(--ink3)';
+          fb.textContent =
+            'Cliente n\u00e3o definido para a sua conta. Confirme a sess\u00e3o.';
+        }
+      }
+      return;
+    }
     var defLab = ctx.detectedPeriodLabel || 'Auditoria GL';
     var labelOk = '';
     try {
@@ -1088,13 +1136,34 @@
 
   window.gmAudit2026SnapshotsRefresh = function () {
     var cid = gmAuditEffectiveClientId();
-    if (!cid) {
-      alert('Selecione o cliente ativo (super_admin) ou confirme sess\u00e3o.');
-      return;
-    }
     var tb = document.getElementById('aud2026-snapshots-tbody');
     var selA = document.getElementById('aud2026-compare-a');
     var selB = document.getElementById('aud2026-compare-b');
+    var hFb = document.getElementById('aud2026-hist-feedback');
+    if (!cid) {
+      if (hFb) {
+        hFb.style.display = 'block';
+        hFb.style.color = 'var(--ink3)';
+        if (gmAuditIsSuperAuditUser()) hFb.innerHTML = gmAuditSuperSelectClientMarkup();
+        else
+          hFb.textContent =
+            'Cliente n\u00e3o definido. Confirme a sess\u00e3o ou contacte suporte.';
+      }
+      if (tb)
+        tb.innerHTML =
+          '<tr><td colspan="5" style="padding:12px;color:var(--ink3)">' +
+          (gmAuditIsSuperAuditUser()
+            ? escHtml(
+                'Selecione um cliente no Dashboard Admin para listar snapshots.',
+              )
+            : '\u2014') +
+          '</td></tr>';
+      return;
+    }
+    if (hFb) {
+      hFb.style.display = 'none';
+      hFb.textContent = '';
+    }
     if (tb)
       tb.innerHTML =
         '<tr><td colspan="5" style="padding:10px;color:var(--ink3)">A carregar...</td></tr>';
@@ -1726,7 +1795,8 @@
       if (fb) {
         fb.style.display = 'block';
         fb.style.color = 'var(--ink3)';
-        fb.textContent = 'Selecione o cliente ativo (super_admin) para carregar contratos gravados.';
+        if (gmAuditIsSuperAuditUser()) fb.innerHTML = gmAuditSuperSelectClientMarkup();
+        else fb.textContent = 'Cliente n\u00e3o definido para a sua conta.';
       }
       gmAudit2026FeeRenderTable(ctx);
       return;
@@ -1962,7 +2032,17 @@
     var cid =
       typeof gmAuditEffectiveClientId === 'function' ? gmAuditEffectiveClientId() : '';
     var fb = document.getElementById('aud2026-fee-feedback');
-    if (!ctx || !cid) return alert('Carregue o GL e selecione o cliente.');
+    if (!ctx) return alert('Carregue o GL primeiro.');
+    if (!cid) {
+      if (gmAuditIsSuperAuditUser() && fb) {
+        fb.style.display = 'block';
+        fb.style.color = 'var(--ink3)';
+        fb.innerHTML = gmAuditSuperSelectClientMarkup();
+      } else {
+        alert('Cliente n\u00e3o definido.');
+      }
+      return;
+    }
     var tb = document.getElementById('aud2026-fee-tbody');
     if (!tb) return;
     var inpList = tb.querySelectorAll('.aud2026fee-pctinp');
@@ -2014,7 +2094,14 @@
       typeof gmAuditEffectiveClientId === 'function' ? gmAuditEffectiveClientId() : '';
     var fb = document.getElementById('aud2026-fee-feedback');
     if (!ctx || !ctx.seqKeys || !ctx.seqKeys.length) return alert('Carregue o GL primeiro.');
-    if (!cid) return alert('Selecione o cliente ativo.');
+    if (!cid) {
+      if (gmAuditIsSuperAuditUser() && fb) {
+        fb.style.display = 'block';
+        fb.style.color = 'var(--ink3)';
+        fb.innerHTML = gmAuditSuperSelectClientMarkup();
+      } else alert('Cliente n\u00e3o definido.');
+      return;
+    }
     var tb = document.getElementById('aud2026-fee-tbody');
     var lookupSaved = window.__AUD2026_FEE_LOOKUP || {};
     var results = [];
@@ -2368,8 +2455,10 @@
       if (fb) {
         fb.style.display = 'block';
         fb.style.color = 'var(--ink3)';
-        fb.textContent =
-          'Selecione o cliente ativo para carregar % contratadas e snapshots.';
+        if (gmAuditIsSuperAuditUser()) fb.innerHTML = gmAuditSuperSelectClientMarkup();
+        else
+          fb.textContent =
+            'Cliente n\u00e3o definido. Confirme sess\u00e3o.';
       }
       gmAudit2026OwnerRenderTable(ctx);
       return;
@@ -2640,7 +2729,14 @@
     var fb = document.getElementById('aud2026-owner-feedback');
     if (!ctx || !ctx.seqKeys || !ctx.seqKeys.length)
       return alert('Carregue o GL primeiro.');
-    if (!cid) return alert('Selecione o cliente ativo.');
+    if (!cid) {
+      if (gmAuditIsSuperAuditUser() && fb) {
+        fb.style.display = 'block';
+        fb.style.color = 'var(--ink3)';
+        fb.innerHTML = gmAuditSuperSelectClientMarkup();
+      } else alert('Cliente n\u00e3o definido.');
+      return;
+    }
     var lk = window.__AUD2026_FEE_LOOKUP || {};
     var feeTb = document.getElementById('aud2026-fee-tbody');
     var resultsOut = [];

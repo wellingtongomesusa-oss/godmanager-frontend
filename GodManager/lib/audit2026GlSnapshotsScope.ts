@@ -10,7 +10,7 @@ export type AuditGlSnapScopeErr = { ok: false; status: number; error: string };
 export type AuditGlSnapScope = AuditGlSnapScopeOk | AuditGlSnapScopeErr;
 
 /**
- * Auditoria GL 2026 snapshots: mesmo clientId enviado na UI (`getActiveClient` para super_admin).
+ * Auditoria GL 2026: multi-tenant. super_admin envia sempre `clientId` (cliente ativo escolhido no Dashboard Admin). admin só usa `user.clientId` (payload ignorado para escopo).
  */
 export async function resolveAuditGlSnapshotClientScope(
   user: MinimalUser,
@@ -35,22 +35,21 @@ export async function resolveAuditGlSnapshotClientScope(
     return { ok: true, clientId: cid };
   }
 
-  const target = inc || (user.clientId || '').trim();
-  if (!target) {
+  /** super_admin: clientId sempre explícito (UI envia empresa selecionada no Dashboard Admin). Sem fallback ao clientId da conta. */
+  if (!inc) {
     return {
       ok: false,
       status: 400,
-      error:
-        'Selecione o modo cliente (super_admin) ou envie clientId conforme o cliente em contexto.',
+      error: 'Envie clientId (cliente selecionado no Dashboard Admin) para auditoria.',
     };
   }
 
   const c = await prisma.client.findUnique({
-    where: { id: target },
+    where: { id: inc },
     select: { id: true },
   });
   if (!c) {
     return { ok: false, status: 404, error: 'Cliente não encontrado.' };
   }
-  return { ok: true, clientId: target };
+  return { ok: true, clientId: inc };
 }
