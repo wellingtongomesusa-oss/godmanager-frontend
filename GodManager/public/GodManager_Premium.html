@@ -1262,6 +1262,12 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="topbar-left">
  <button type="button" class="btn-save-top" onclick="saveAllData()">Save</button>
  <div class="bc"><span id="bc-brand" style="font-weight:700;color:var(--navy);font-family:'Sora',sans-serif">GodManager</span><span style="color:var(--border2);margin:0 8px">/</span><span id="page-title">Home</span></div>
+ <!-- Cliente ativo para auditoria 2026 (super_admin — só memória da sessão, sem storage) -->
+ <div id="gm-super-active-client-bar" aria-live="polite" style="display:none;flex:1;min-width:0;margin-left:12px;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--ink2);padding:7px 12px;border-radius:8px;border:1px solid var(--amber-bd);background:var(--amber-bg);box-sizing:border-box;flex-wrap:wrap">
+  <span id="gm-super-active-client-txt"></span>
+  <button type="button" id="gm-super-active-client-swap" class="tb-clients" style="padding:6px 10px;font-size:11px;margin:0" onclick="if(typeof nav==='function')nav('admin-dashboard')">Trocar</button>
+  <button type="button" id="gm-super-active-client-clear" class="tb-clients" style="padding:6px 10px;font-size:11px;margin:0;color:var(--ink3);border-color:var(--border2);background:transparent" onclick="if(typeof gmActiveClientClearForAudit==='function')gmActiveClientClearForAudit()">Limpar</button>
+ </div>
  </div>
  <div class="tr">
  <button type="button" id="btn-exit-client" onclick="exitClientView()">Exit Client View</button>
@@ -1355,6 +1361,11 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- ADMIN DASHBOARD (super_admin only — gate em nav + gmBookkeepingAiGate) -->
 <div class="page" id="page-admin-dashboard">
  <div class="ph"><div class="pt">Dashboard Admin</div><div class="ps">Visão geral do GodManager — todos os produtos, clientes, e métricas operacionais</div></div>
+ <div id="admin-dash-client-select-wrap" style="display:none;margin-bottom:26px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+  <div style="margin-bottom:12px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Seleção para auditoria GL 2026</div>
+  <div class="ps" style="margin-top:6px;line-height:1.45">Escolha o cliente cuja empresa será usada nas abas Histórico, Auditoria de Fee e Auditoria do Owner (persistência apenas nesta sessão do browser).</div>
+  <div class="cg" id="admin-dash-client-cards-grid" style="margin-top:16px"><div style="grid-column:1/-1;padding:12px;color:var(--ink3);font-family:'DM Sans',sans-serif;font-size:12px">A carregar clientes…</div></div>
+ </div>
  <div class="cg" id="admin-dash-cards"></div>
 </div>
 
@@ -4552,6 +4563,7 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 
  <div id="aud2026-panel-history" style="display:none">
+  <div id="aud2026-hist-feedback" style="display:none;margin:0 0 14px;font-size:12px;font-family:'DM Sans',sans-serif;line-height:1.5;color:var(--ink2)"></div>
 
   <p class="ps" style="margin-bottom:12px;max-width:780px;line-height:1.45">
    Snapshots com totais, série mensal e detalhe por propriedade. Super admin: selecione o cliente ativo no GodManager antes de atualizar esta lista ou abrir detalhes.
@@ -4745,7 +4757,7 @@ document.addEventListener('DOMContentLoaded', function(){
        <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Resultado</th>
       </tr>
      </thead>
-     <tbody id="aud2026-owner-tbody"><tr><td colspan="10" style="padding:14px;color:var(--ink3)">Abra esta aba após carregar o GL e selecionar o cliente.</td></tr></tbody>
+     <tbody id="aud2026-owner-tbody"><tr><td colspan="10" style="padding:14px;color:var(--ink3)">Abra esta aba após carregar o GL. Como super_admin, escolha o cliente no Dashboard Admin.</td></tr></tbody>
     </table>
    </div>
   </div>
@@ -5757,7 +5769,125 @@ function gmAdminDashboardRender(d){
 window.gmAdminDashboardLoad=gmAdminDashboardLoad;
 window.osAdminDashLoad=gmAdminDashboardLoad;
 
-// — Integrations hub (QuickBooks + cartões)
+/* Cliente ativo em memória (super_admin → contexto Auditoria 2026; sem localStorage) */
+window.gmActiveClient=null;
+
+function gmPremiumIsSuperAdmin(){
+ var u=window.__gmCurrentUser;return u&&String(u.role||'').toLowerCase()==='super_admin';
+}
+
+window.gmActiveClientBannerRefresh=function(){
+ var wrap=document.getElementById('gm-super-active-client-bar');
+ var txt=document.getElementById('gm-super-active-client-txt');
+ if(!wrap||!txt)return;
+ if(!gmPremiumIsSuperAdmin()||!window.gmActiveClient||!window.gmActiveClient.id){
+  wrap.style.display='none';txt.innerHTML='';return;
+ }
+ var nm=String(window.gmActiveClient.companyName||(window.gmActiveClient.company||'')||'Cliente').replace(/</g,'&lt;');
+ txt.innerHTML='Cliente ativo: <strong style=\"color:var(--ink)\">'+nm+'</strong>';
+ wrap.style.display='flex';
+};
+
+window.gmActiveClientClearForAudit=function(){
+ window.gmActiveClient=null;
+ if(typeof gmAdminDashClientCardsRerenderHighlight==='function')gmAdminDashClientCardsRerenderHighlight();
+ if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();
+ try{if(typeof window.gmAudit2026OnActiveAuditClientChanged==='function')window.gmAudit2026OnActiveAuditClientChanged();}catch(eC){}
+};
+
+window.gmActiveClientSelectForAudit=function(payload){
+ try{
+ if(!payload||!payload.id)return;
+ window.gmActiveClient={id:String(payload.id),companyName:String(payload.companyName||payload.company||'')};
+ if(typeof gmAdminDashClientCardsRerenderHighlight==='function')gmAdminDashClientCardsRerenderHighlight();
+ if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();
+ try{if(typeof window.gmAudit2026OnActiveAuditClientChanged==='function')window.gmAudit2026OnActiveAuditClientChanged();}catch(eSel){}
+ }catch(eSel2){console.warn('[gmActiveClient]',eSel2);}
+};
+
+window.gmAudit2026DashClientMarkup=function(){
+ try{
+ var msg='Selecione um cliente no Dashboard Admin para arquivar/salvar resultados.';
+ return msg+' <button type=\"button\" onclick=\"if(typeof nav===\'function\')nav(\'admin-dashboard\')\" style=\"margin-left:8px;margin-top:4px;padding:6px 12px;font-size:11px;font-weight:600;font-family:\'DM Sans\',sans-serif;border-radius:7px;border:1px solid var(--amber);background:transparent;color:var(--amber);cursor:pointer\">Ir para Dashboard Admin</button>';
+ }catch(em){return 'Selecione um cliente no Dashboard Admin.';}
+};
+
+async function gmAdminDashClientCardsLoad(){
+ var wrap=document.getElementById('admin-dash-client-select-wrap');
+ var grid=document.getElementById('admin-dash-client-cards-grid');
+ if(!wrap||!grid)return;
+ var rr=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(rr!=='super_admin'){
+  wrap.style.display='none';
+  return;
+ }
+ wrap.style.display='block';
+ grid.innerHTML='<div style=\"grid-column:1/-1;padding:12px;color:var(--ink3);font-family:\'DM Sans\',sans-serif;font-size:12px\">A carregar clientes…</div>';
+ try{
+  var res=await fetch('/api/admin/clients',{credentials:'same-origin',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  if(!res.ok||!j||!Array.isArray(j.clients)){
+   grid.innerHTML='<div style=\"grid-column:1/-1;color:var(--red);padding:14px;font-size:13px;font-family:\'DM Sans\',sans-serif\">Não foi possível carregar a lista de clientes.</div>';
+   return;
+  }
+  window._gmAdminDashClientsCache=j.clients.slice();
+  gmAdminDashClientCardsWireDelegationOnce(grid);
+  gmAdminDashClientCardsRender(j.clients);
+ }catch(er){
+  console.warn('[admin-dash-client-cards]',er);
+  grid.innerHTML='<div style=\"grid-column:1/-1;color:var(--red);padding:14px\">Erro de rede ao carregar clientes.</div>';
+ }
+}
+
+function gmAdminDashClientCardsWireDelegationOnce(gridEl){
+ if(!gridEl||window._gmAdminDashClientGridWired)return;
+ window._gmAdminDashClientGridWired=true;
+ gridEl.addEventListener('click',function(ev){
+  var el=(ev.target&&ev.target.closest)?ev.target.closest('[data-ccid]'):null;
+  if(!el)return;
+  ev.preventDefault();
+  window.gmActiveClientSelectForAudit({
+   id:el.getAttribute('data-ccid')||'',
+   companyName:el.getAttribute('data-ccnm')||''
+  });
+ });
+ gridEl.addEventListener('keydown',function(ev){
+  if(ev.key!=='Enter'&&ev.key!==' ')return;
+  var el=(ev.target&&ev.target.closest)?ev.target.closest('[data-ccid]'):null;
+  if(!el)return;
+  ev.preventDefault();
+  window.gmActiveClientSelectForAudit({
+   id:el.getAttribute('data-ccid')||'',
+   companyName:el.getAttribute('data-ccnm')||''
+  });
+ });
+}
+
+window.gmAdminDashClientCardsRerenderHighlight=function(){
+ if(!window._gmAdminDashClientsCache)return;
+ gmAdminDashClientCardsRender(window._gmAdminDashClientsCache.slice());
+};
+
+function gmAdminDashClientCardsRender(rows){
+ var grid=document.getElementById('admin-dash-client-cards-grid');
+ if(!grid)return;
+ function escHa(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+ var hh='',i,c,co,st,prod,nUsers,on,actId=window.gmActiveClient&&window.gmActiveClient.id?String(window.gmActiveClient.id):'';
+ for(i=0;i<rows.length;i++){
+  c=rows[i];if(!c||!c.id)continue;
+  co=String(c.companyName||'').replace(/</g,'&lt;');st=c.active===false;
+  prod=(typeof productLabelDisp==='function'?productLabelDisp(c.productType):String(c.productType||'PM'));
+  nUsers=typeof c.activeUserCount==='number'?c.activeUserCount:0;on=actId===String(c.id);
+  hh+='<div class="gm-adm-ccard card'+(on?' gm-adm-ccard-on':'')+'" tabindex="0" role="button" aria-pressed="'+(on?'true':'false')+'" data-ccid="'+escHa(String(c.id))+'" data-ccnm="'+escHa(String(c.companyName||''))+'" style="cursor:pointer;outline-offset:4px;'+(on?'box-shadow:inset 0 0 0 2px var(--amber);border-color:var(--amber);':'')+'">'+
+   '<div class="ct"><div class="cl">'+co+'</div><div class="cb">CLI</div></div>'+
+   '<div class="cv2">'+(st?'Inativo':'Ativo')+'</div>'+
+   '<div class="cs1">Produto: '+prod.replace(/</g,'&lt;')+' · Utilizadores ativos: '+nUsers+'</div>'+
+   '<div class="cf" style="margin-top:8px"><span class="ck" style="pointer-events:none;color:var(--amber)">'+(on?'Selecionado para auditoria':'Clicar para selecionar')+'</span></div>'+
+   '<div class="cbar '+(on?'ba':'bg')+'" style="position:relative"></div></div>';
+ }
+ grid.innerHTML=hh||('<div style="grid-column:1/-1;color:var(--ink3);padding:12px">Sem clientes.</div>');
+}
+
 function ixUpdateQbLastSync(){
  var el=document.getElementById('ix-qb-last');
  if(!el)return;
@@ -8102,6 +8232,7 @@ function nav(r){
  if(titleEl) titleEl.textContent=TITLES[r]||r;
  window.location.hash=r==='home'?'':r;
  window.scrollTo(0,0);
+ try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(_gab){}
  // render hooks
  const renders={
  home:async function gmHomeNavRender(){
@@ -8188,6 +8319,8 @@ function nav(r){
     return;
    }
    if(typeof window.osAdminDashLoad==='function')await window.osAdminDashLoad();
+   try{if(typeof gmAdminDashClientCardsLoad==='function')await gmAdminDashClientCardsLoad();}catch(ec){console.warn('[admin-dash-client-cards]',ec);}
+   try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(eb){}
   }catch(eAd){console.warn('[admin-dashboard nav]',eAd);if(typeof nav==='function')nav('home');}
  }
  };
@@ -20124,6 +20257,7 @@ async function gmAuthHydrateUserBadge(){
    var st=document.getElementById('cl-trial-invite-strip');
    if(st)st.style.display=(rTr==='super_admin')?'flex':'none';
   }catch(_eTr){}
+  try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(_gab){}
   return u;
  }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
 }
