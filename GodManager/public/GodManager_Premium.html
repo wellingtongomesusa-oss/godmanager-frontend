@@ -8288,7 +8288,7 @@ function nav(r){
  tenantportal:()=>typeof tpRender==='function'&&tpRender(),
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
- vendors:()=>{if(typeof gvRender==='function')gvRender();},
+ vendors:()=>{if(typeof gvNavigateVendors==='function')void gvNavigateVendors();},
  settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
@@ -9114,7 +9114,10 @@ function togG(h){
 }
 
 function doLogout(){
- try{ localStorage.removeItem('gm_auth_token_v1'); localStorage.removeItem('gm_active_client'); }catch(e){}
+ if(typeof gmClearTenantDataCaches==='function')gmClearTenantDataCaches('logout-legado');
+ else try{localStorage.removeItem('gm_active_client');localStorage.removeItem('gm_vendors');}catch(e){}
+ try{localStorage.removeItem('gm_auth_token_v1');}catch(e){}
+ try{localStorage.removeItem('gm_last_known_user_id');}catch(e){}
  document.cookie='gm_auth=; path=/; max-age=0';
  window.location.href='/login';
 }
@@ -16603,6 +16606,9 @@ const GV_I18N={en:{vendors_title:'Vendors',vendors_subtitle:'Manage vendors, ser
 function gvLang(){const l=(document.documentElement.lang||'en').toLowerCase();if(l.startsWith('pt'))return'pt';if(l.startsWith('es'))return'es';return'en';}
 function gvT(k){const g=GV_I18N[gvLang()]||GV_I18N.en;return g[k]||GV_I18N.en[k]||k;}
 window._pmVendorsList=null;
+/** idle | loading | ok | empty | error — lista Vendors só via API (sem localStorage) */
+window._pmVendorsLoadState='idle';
+window._pmVendorsLoadError='';
 function gvMapApiToLocal(a){
  if(!a)return null;
  var dp=a.default_package||'PACOTE_1';
@@ -16620,10 +16626,10 @@ function gvLoadFromLocal(){
  try{var arr=JSON.parse(localStorage.getItem(GV_KEY)||'[]');if(!Array.isArray(arr))return[];var changed=false;for(var i=0;i<arr.length;i++){var v=arr[i];if(!v)continue;if(v.charge_18_percent===true&&v.commission_mp!==true){v.commission_mp=true;changed=true;}if(Object.prototype.hasOwnProperty.call(v,'charge_18_percent')){delete v.charge_18_percent;changed=true;}if(v.service_type==null)v.service_type='';if(v.default_package==null)v.default_package='PACOTE_1';if(v.markup_pct==null)v.markup_pct=(v.default_package==='PACOTE_2')?18:((v.default_package==='PACOTE_3')?25:((v.default_package==='PACOTE_4')?0:15));}if(changed){try{localStorage.setItem(GV_KEY,JSON.stringify(arr));}catch(e2){}}return arr;}catch(e){return[]}
 }
 function gvLoad(){
- if(window._pmVendorsList&&window._pmVendorsList.length){
-  return window._pmVendorsList.map(gvMapApiToLocal).filter(Boolean);
+ if(window._pmVendorsLoadState==='ok'||window._pmVendorsLoadState==='empty'){
+  return(window._pmVendorsList||[]).map(gvMapApiToLocal).filter(Boolean);
  }
- return gvLoadFromLocal();
+ return[];
 }
 function gvSave(arr){localStorage.setItem(GV_KEY,JSON.stringify(arr))}
 // Sincronizacao one-time: localStorage -> Postgres (botao em Settings; apenas admin ve o bloco)
@@ -16700,15 +16706,51 @@ async function gvSyncToPostgres(){
  }
 }
 async function gvFetchFromApi(){
+ window._pmVendorsLoadState='loading';
+ window._pmVendorsLoadError='';
  try{
-  var r=await fetch('/api/pm/vendors',{credentials:'include'});
-  if(r.status===401){window._pmVendorsList=null;return false;}
-  if(!r.ok){window._pmVendorsList=null;return false;}
+  var r=await fetch('/api/pm/vendors',{credentials:'include',cache:'no-store'});
+  if(r.status===401){
+   window._pmVendorsList=null;
+   window._pmVendorsLoadState='error';
+   window._pmVendorsLoadError='Sessão expirada. Inicie sessão novamente.';
+   return false;
+  }
+  if(!r.ok){
+   window._pmVendorsList=null;
+   window._pmVendorsLoadState='error';
+   window._pmVendorsLoadError='Não foi possível carregar fornecedores (HTTP '+r.status+').';
+   return false;
+  }
   var j=await r.json();
-  if(!j||!j.ok||!Array.isArray(j.vendors)){window._pmVendorsList=null;return false;}
+  if(!j||!j.ok||!Array.isArray(j.vendors)){
+   window._pmVendorsList=null;
+   window._pmVendorsLoadState='error';
+   window._pmVendorsLoadError=(j&&j.error)?String(j.error):'Resposta inválida da API de fornecedores.';
+   return false;
+  }
   window._pmVendorsList=j.vendors;
+  window._pmVendorsLoadState=j.vendors.length?'ok':'empty';
   return true;
- }catch(e){window._pmVendorsList=null;return false;}
+ }catch(e){
+  window._pmVendorsList=null;
+  window._pmVendorsLoadState='error';
+  window._pmVendorsLoadError=(e&&e.message)?e.message:'Erro de rede ao carregar fornecedores.';
+  return false;
+ }
+}
+async function gvNavigateVendors(){
+ gvPage=1;
+ gvDetailsData=null;
+ gvDetailsLoading=false;
+ window._pmVendorsList=null;
+ window._pmVendorsLoadState='loading';
+ window._pmVendorsLoadError='';
+ gvRender();
+ await gvFetchFromApi();
+ gvBills=gvBuildBills(gvLoad());
+ gvLoadBills();
+ gvRender();
 }
 
 // Vendor Details — stats desde Postgres (/api/pm/vendors/stats)
@@ -16998,13 +17040,32 @@ window.vendorMarcarPago=async function(vendorId,vendorName){
  }catch(err){console.warn('vendorMarcarPago',err);alert('Erro: '+err.message);}
 };
 function gvRenderTable(){
+ var tb=document.getElementById('gv-tbody');
+ var pi=document.getElementById('gv-page-info');
+ if(tb){
+  if(window._pmVendorsLoadState==='loading'){
+   tb.innerHTML='<tr><td colspan="13" style="padding:16px;color:var(--ink3)">A carregar fornecedores…</td></tr>';
+   if(pi)pi.textContent='';
+   return;
+  }
+  if(window._pmVendorsLoadState==='error'){
+   var errMsg=String(window._pmVendorsLoadError||'Erro ao carregar fornecedores.').replace(/</g,'&lt;');
+   tb.innerHTML='<tr><td colspan="13" style="padding:16px;color:var(--red)">'+errMsg+'</td></tr>';
+   if(pi)pi.textContent='';
+   return;
+  }
+  if(window._pmVendorsLoadState==='empty'){
+   tb.innerHTML='<tr><td colspan="13" style="padding:16px;color:var(--ink3)">Nenhum vendor cadastrado.</td></tr>';
+   if(pi)pi.textContent='0 vendor(s)';
+   return;
+  }
+ }
  var v=gvLoad();
  var q=((document.getElementById('gv-search')||{}).value||'').toLowerCase();
  var filtered=v.filter(function(x){return !q||((x.company_name+' '+x.contact_name+' '+x.trade+' '+x.email+' '+x.phone)+'').toLowerCase().indexOf(q)>=0;});
  var totalPages=Math.max(1,Math.ceil(filtered.length/GV_PAGE_SIZE));
  if(gvPage>totalPages)gvPage=totalPages;
  var pageRows=filtered.slice((gvPage-1)*GV_PAGE_SIZE,gvPage*GV_PAGE_SIZE);
- var tb=document.getElementById('gv-tbody');
  if(tb){
   var html=pageRows.map(function(v){
    var o=gvOrdersFor(v.id);
@@ -17042,9 +17103,8 @@ function gvRenderTable(){
    var histRow='<tr id="vendor-hist-'+eid+'" style="display:none;background:var(--cream)"><td colspan="13" style="padding:14px 24px"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px">Historico de pagamentos \u2014 '+(v.company_name||'')+'</div><div class="vendor-hist-content"><div style="color:var(--ink3);font-size:12px;font-style:italic">Clique no botao para carregar.</div></div></td></tr>';
    return rowHtml+histRow;
   }).join('');
-  tb.innerHTML=html||'<tr><td colspan="13" style="padding:16px;color:var(--ink3)">No vendors</td></tr>';
+  tb.innerHTML=html||'<tr><td colspan="13" style="padding:16px;color:var(--ink3)">Nenhum resultado para este filtro.</td></tr>';
  }
- var pi=document.getElementById('gv-page-info');
  if(pi)pi.textContent='Page '+gvPage+'/'+totalPages+' \u00B7 '+filtered.length+' vendor(s)';
 }
 function gvRender(){const vendors=gvLoad();const t=document.getElementById('gv-title');if(t)t.textContent=`${gvT('vendors_title')} — ${(gvMonth==='all'?gvT('all_months'):GV_MONTHS[+gvMonth])} 2026`;const s=document.getElementById('gv-subtitle');if(s)s.textContent=gvT('vendors_subtitle');const n=document.getElementById('gv-btn-new');if(n)n.textContent=gvT('new_vendor');const tt=document.getElementById('gv-top-title');if(tt)tt.textContent=gvT('top_vendors');gvWireMonths();gvRenderKpis(vendors);gvTopRows(vendors);gvRenderTable();var pg=document.getElementById('page-vendors');if(pg&&pg.classList.contains('active')){if(gvDetailsData==null&&!gvDetailsLoading){void gvDetailsLoad();}else if(gvDetailsData){gvDetailsRender();}}}
@@ -17080,10 +17140,7 @@ async function gvSaveVendor(){
    if(r.ok){await gvFetchFromApi();gvEditingId=null;gvCloseModal();gvRender();if(!gvBills.length)gvBills=gvBuildBills(gvLoad());return;}
   }
  }catch(e){console.warn('gvSaveVendor API',e);}
- const arr=gvLoadFromLocal().filter(x=>x.id!==v.id);arr.push(v);gvSave(arr);
- gvEditingId=null;gvCloseModal();
- if(!gvBills.length)gvBills=gvBuildBills(gvLoad());
- gvRender();
+ alert('Não foi possível gravar o fornecedor na API. Tente novamente.');
 }
 function gvEdit(id){
  id=String(id);
@@ -17098,10 +17155,8 @@ async function gvDelete(id){
  try{
   const r=await fetch('/api/pm/vendors/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});
   if(r.ok){await gvFetchFromApi();gvRender();return;}
- }catch(e){}
- gvSave(gvLoadFromLocal().filter(x=>x.id!==id));
- if(window._pmVendorsList)window._pmVendorsList=window._pmVendorsList.filter(function(x){return x.id!==id;});
- gvRender();
+  alert('Não foi possível excluir o fornecedor na API.');
+ }catch(e){alert('Erro de rede ao excluir fornecedor.');}
 }
 function gvExportCsv(){const rows=gvLoad();if(!rows.length){alert('No vendors');return;}const headers=['company_name','contact_name','trade','phone','email','status'];const csv=[headers.join(',')].concat(rows.map(r=>headers.map(h=>`"${String(r[h]||'').replace(/"/g,'""')}"`).join(','))).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='vendors.csv';a.click();}
 function gvPrevPage(){if(gvPage>1){gvPage--;gvRenderTable();}}
@@ -17109,15 +17164,12 @@ function gvNextPage(){const total=Math.max(1,Math.ceil(gvLoad().length/GV_PAGE_S
 function gvInitStatic(){const st=document.getElementById('gv-address_state');if(st&&!st.options.length){st.innerHTML='<option value=""></option>'+GV_STATES.map(s=>`<option value="${s}">${s}</option>`).join('');}const tr=document.getElementById('gv-trade');if(tr&&!tr.options.length){tr.innerHTML=GV_TRADES.map(t=>`<option value="${t}">${t}</option>`).join('');}}
 async function gvInit(){
  gvInitStatic();
- var ok=await gvFetchFromApi();
- if(!ok && !gvLoadFromLocal().length){
-  gvSave([{id:'v1',company_name:'N4MO LLC',contact_name:'Nate Moore',email:'pay@n4mo.com',phone:'(321) 555-0192',address_street:'100 Lake St',address_city:'Orlando',address_state:'FL',address_zip:'32801',trade:'General Maintenance',service_type:'Manutenção',default_package:'PACOTE_1',markup_pct:15,status:'Active',checklist:{name:true,address:true,email:true,phone:true,w9:true,bank_info:true,workers_comp:true},documents:[],created_at:new Date().toISOString(),updated_at:new Date().toISOString()},{id:'v2',company_name:'Manager Prop',contact_name:'Finance Ops',email:'ap@managerprop.com',phone:'(407) 555-0001',address_street:'200 Main Ave',address_city:'Kissimmee',address_state:'FL',address_zip:'34741',trade:'HOA Management',service_type:'HOA',default_package:'PACOTE_2',markup_pct:18,status:'Pending Review',checklist:{name:true,address:true,email:true,phone:true,w9:false,bank_info:true,workers_comp:false},documents:[],created_at:new Date().toISOString(),updated_at:new Date().toISOString()}]);
- }
+ await gvFetchFromApi();
  gvBills=gvBuildBills(gvLoad());
  gvLoadBills();
  gvRender();
 }
-window.gvOpenModal=gvOpenModal;window.gvCloseModal=gvCloseModal;window.gvSaveVendor=gvSaveVendor;window.gvRenderTable=gvRenderTable;window.gvDelete=gvDelete;window.gvEdit=gvEdit;window.gvView=gvView;window.gvSetMonth=gvSetMonth;window.gvPrevPage=gvPrevPage;window.gvNextPage=gvNextPage;window.gvTradeChanged=gvTradeChanged;window.gvRefreshChecklist=gvRefreshChecklist;window.gvUploadDoc=gvUploadDoc;window.gvExportCsv=gvExportCsv;window.gvDetailsLoad=gvDetailsLoad;window.gvDetailsRender=gvDetailsRender;
+window.gvOpenModal=gvOpenModal;window.gvCloseModal=gvCloseModal;window.gvSaveVendor=gvSaveVendor;window.gvRenderTable=gvRenderTable;window.gvDelete=gvDelete;window.gvEdit=gvEdit;window.gvView=gvView;window.gvSetMonth=gvSetMonth;window.gvPrevPage=gvPrevPage;window.gvNextPage=gvNextPage;window.gvTradeChanged=gvTradeChanged;window.gvRefreshChecklist=gvRefreshChecklist;window.gvUploadDoc=gvUploadDoc;window.gvExportCsv=gvExportCsv;window.gvDetailsLoad=gvDetailsLoad;window.gvDetailsRender=gvDetailsRender;window.gvNavigateVendors=gvNavigateVendors;
 
 // Expor funções (API global)
 window.saveAllData=saveAllData;
@@ -20221,6 +20273,58 @@ function gmApplyExpensesJobsMode(){
 }
 window.gmApplyExpensesJobsMode=gmApplyExpensesJobsMode;
 
+/**
+ * Limpa APENAS caches localStorage recarregáveis via API (whitelist).
+ * NÃO apaga mp_*, lt_*, gm_job_*, gm_lt_*, gm_properties nem outras fontes legadas.
+ * Auth/UI (gm_auth_token_v1, gm_lang, etc.) nunca entram na whitelist.
+ */
+var GM_TENANT_CACHE_WHITELIST=[
+ 'gm_vendors',
+ 'gm_clients',
+ 'gm_active_client'
+];
+var GM_LAST_KNOWN_USER_KEY='gm_last_known_user_id';
+
+function gmAuthUserSignature(u){
+ if(!u)return '';
+ var id=String(u.id||u.userId||'').trim();
+ if(id)return id;
+ return String(u.email||'').trim().toLowerCase();
+}
+
+function gmClearTenantDataCaches(reason){
+ var cleared=0;
+ try{
+  GM_TENANT_CACHE_WHITELIST.forEach(function(k){
+   try{
+    if(localStorage.getItem(k)!==null){
+     localStorage.removeItem(k);
+     cleared++;
+    }
+   }catch(eR){}
+  });
+ }catch(e){console.warn('[gmClearTenantDataCaches]',reason||'',e);}
+ try{
+  window._pmVendorsList=null;
+  window._pmVendorsLoadState='idle';
+  window._pmVendorsLoadError='';
+  window.gmActiveClient=null;
+  window._gmClientsApiCache=null;
+  window._gmAdminDashClientsCache=null;
+  window.__gmCurrentUser=null;
+ }catch(_m){}
+ if(reason)console.info('[gmClearTenantDataCaches]',reason,'whitelist removidas:',cleared);
+}
+
+function gmAuthMaybeClearCachesOnUserChange(u){
+ var sig=gmAuthUserSignature(u);
+ if(!sig)return;
+ var prev='';
+ try{prev=localStorage.getItem(GM_LAST_KNOWN_USER_KEY)||'';}catch(e){}
+ if(prev&&prev!==sig)gmClearTenantDataCaches('troca-de-utilizador');
+ try{localStorage.setItem(GM_LAST_KNOWN_USER_KEY,sig);}catch(e){}
+}
+
 /* Badge do utilizador: buscar dados reais via /api/auth/me */
 async function gmAuthHydrateUserBadge(){
  try{
@@ -20233,6 +20337,7 @@ async function gmAuthHydrateUserBadge(){
   var data=await res.json();
   if(!data||!data.ok||!data.user){console.warn('[gmAuth] sem user em /me');return null;}
   var u=data.user;
+  gmAuthMaybeClearCachesOnUserChange(u);
   var fullName=((u.firstName||'')+' '+(u.lastName||'')).trim()||u.email||'User';
   var roleLabel=(u.role||'').charAt(0).toUpperCase()+(u.role||'').slice(1);
   // Actualizar badge na sidebar
@@ -20267,7 +20372,9 @@ async function gmAuthLogout(){
  try{
   await fetch('/api/auth/logout',{method:'POST',credentials:'include'});
  }catch(e){console.warn('[gmAuth] logout falhou',e);}
+ gmClearTenantDataCaches('logout');
  try{localStorage.removeItem('gm_auth_token_v1');}catch(e){}
+ try{localStorage.removeItem(GM_LAST_KNOWN_USER_KEY);}catch(e){}
  window.location.href='/login';
 }
 
@@ -20350,6 +20457,7 @@ window.gmAdminUsersModalOpen=gmAdminUsersModalOpen;
 window.gmAdminUsersModalClose=gmAdminUsersModalClose;
 window.gmAuthLogout=gmAuthLogout;
 window.gmAuthHydrateUserBadge=gmAuthHydrateUserBadge;
+window.gmClearTenantDataCaches=gmClearTenantDataCaches;
 
 document.addEventListener('DOMContentLoaded',function(){
  setTimeout(function(){
@@ -22858,7 +22966,10 @@ window.gmAnalyticsLoad=async function(){
     fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
       .catch(function(){})
       .finally(function() {
-        try { localStorage.removeItem('gm_auth'); } catch(e) {}
+        if (typeof gmClearTenantDataCaches === 'function') gmClearTenantDataCaches('idle-logout');
+        else try { localStorage.removeItem('gm_auth'); localStorage.removeItem('gm_vendors'); } catch(e) {}
+        try { localStorage.removeItem('gm_auth_token_v1'); } catch(e) {}
+        try { localStorage.removeItem('gm_last_known_user_id'); } catch(e) {}
         alert('Sessão expirada por inactividade. Faça login novamente.');
         window.location.href = '/login';
       });
