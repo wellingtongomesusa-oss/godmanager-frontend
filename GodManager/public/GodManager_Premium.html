@@ -3188,7 +3188,15 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Detalhes</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
- <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR *</label><select id="lt-nexp-vendor" onchange="ltNexpVendorChanged()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer"><option value="">— Selecionar vendor —</option></select><div style="margin-bottom:12px;margin-top:12px"><label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px">Pacote / Markup</label><select id="lt-pacote-sel-detalhe" class="lt-pacote-sel" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px"><option value="">— Selecionar pacote —</option><option value="PACOTE_1">Pacote 1 — +15%</option><option value="PACOTE_2">Pacote 2 — +18%</option><option value="PACOTE_3">Pacote 3 — +25%</option><option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option></select></div><input id="lt-nexp-vendor-new" type="text" placeholder="Nome do novo vendor" style="display:none;width:100%;margin-top:6px;padding:8px 11px;border:1px solid var(--amber);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div id="lt-nexp-detalhe-vendor-wrap" style="display:none;grid-column:1/-1">
+  <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR *</label>
+  <select id="lt-nexp-vendor" onchange="ltNexpVendorChanged()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer"><option value="">— Selecionar vendor —</option></select>
+  <input id="lt-nexp-vendor-new" type="text" placeholder="Nome do novo vendor" style="display:none;width:100%;margin-top:6px;padding:8px 11px;border:1px solid var(--amber);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+ </div>
+ <div id="lt-nexp-detalhe-pacote-wrap" style="grid-column:1/-1;margin-bottom:12px">
+  <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px;color:var(--ink2)">Pacote / Markup</label>
+  <select id="lt-pacote-sel-detalhe" class="lt-pacote-sel" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px"><option value="">— Selecionar pacote —</option><option value="PACOTE_1">Pacote 1 — +15%</option><option value="PACOTE_2">Pacote 2 — +18%</option><option value="PACOTE_3">Pacote 3 — +25%</option><option value="PACOTE_4">Pacote 4 — Sem markup (0%)</option></select>
+ </div>
  <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DESCRIÇÃO *</label><input id="lt-nexp-desc" placeholder="Ex: Fatura HOA referente a Marco 2026" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NÚMERO DO DOCUMENTO</label><input id="lt-nexp-docnum" placeholder="Número da fatura, boleto ou invoice" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE VENCIMENTO</label><input id="lt-nexp-due" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
@@ -11194,13 +11202,18 @@ function ltNexpGetVendorValue(){
 
 function ltNexpOnCatChange(){
  var c=(document.getElementById('lt-nexp-cat')||{}).value;
+ var isVendor=c==='Vendor';
  var pm=document.getElementById('lt-nexp-pm-block');
  var leg=document.getElementById('lt-nexp-legacy-value-wrap');
  var optWrap=document.getElementById('lt-nexp-optional-pm-vendor-wrap');
- if(pm)pm.style.display=(c==='Vendor')?'block':'none';
- if(leg)leg.style.display=(c==='Vendor')?'none':'block';
- if(optWrap)optWrap.style.display=(c==='Vendor')?'none':'block';
- if(c==='Vendor'){ltNexpPopulatePmVendorSelect();ltNexpPmRecalc();}
+ var detVendor=document.getElementById('lt-nexp-detalhe-vendor-wrap');
+ var detPacote=document.getElementById('lt-nexp-detalhe-pacote-wrap');
+ if(pm)pm.style.display=isVendor?'block':'none';
+ if(leg)leg.style.display=isVendor?'none':'block';
+ if(optWrap)optWrap.style.display=isVendor?'none':'block';
+ if(detVendor)detVendor.style.display='none';
+ if(detPacote)detPacote.style.display=isVendor?'none':'block';
+ if(isVendor){ltNexpPopulatePmVendorSelect();ltNexpPmRecalc();}
  else{ltNexpPopulatePmVendorSelect();}
 }
 function ltNexpPopulatePmVendorSelect(){
