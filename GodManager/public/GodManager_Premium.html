@@ -11079,24 +11079,33 @@ function ltExpApprovalInfo(ev,id){
  setTimeout(()=>{const close=(e)=>{if(pop.contains(e.target))return;pop.style.display='none';document.removeEventListener('click',close,true);};document.addEventListener('click',close,true);},10);
 }
 
-function ltPopulatePropertyDropdowns(){
- var gm=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
- if((!gm||!gm.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltPopulate auto-bootstrap',e);}
-  gm=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
- }
- var records;
- if(Array.isArray(gm)&&gm.length){
-  records=gm.map(p=>{var ui=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;return{id:ui.id||p.id,address:ui.address||p.address||p.name||'—',owner:ui.owner||p.owner||''};});
- }else{
-  records=ltGetRecords();
- }
- records=records.filter(r=>r&&r.address&&r.address!=='Total'&&r.address!=='Admin - * *, *');
- records.sort((a,b)=>String(a.address).localeCompare(String(b.address)));
- const opts=records.map(r=>`<option value="${r.id}" data-address="${String(r.address).replace(/"/g,'&quot;')}">${String(r.address)}${r.owner?' — '+r.owner:''}</option>`).join('');
- ['lt-nexp-prop','lt-cln-prop'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el) el.innerHTML='<option value="">— Selecionar propriedade —</option>'+opts;
+/** Popula lt-nexp-prop / lt-cln-prop só via GET /api/properties (sessão). Sem gm_properties. */
+async function ltPopulatePropertyDropdowns(){
+ var placeholder='<option value="">— Selecionar propriedade —</option>';
+ var records=[];
+ try{
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  if(res.ok){
+   var data=await res.json();
+   if(data&&data.ok===true&&Array.isArray(data.properties)){
+    records=data.properties.map(function(p){
+     var code=String(p.code||'').trim();
+     var addr=String(p.address||code||'—').trim();
+     return{id:code||String(p.id||'').trim(),address:addr,owner:String(p.ownerName||'').trim()};
+    });
+   }
+  }else{console.warn('ltPopulatePropertyDropdowns HTTP',res.status);}
+ }catch(e){console.warn('ltPopulatePropertyDropdowns fetch',e);}
+ records=records.filter(function(r){
+  return r&&r.id&&r.address&&r.address!=='Total'&&r.address!=='Admin - * *, *';
+ });
+ records.sort(function(a,b){return String(a.address).localeCompare(String(b.address));});
+ var opts=records.length?records.map(function(r){
+  return '<option value="'+String(r.id).replace(/"/g,'&quot;')+'" data-address="'+String(r.address).replace(/"/g,'&quot;')+'">'+String(r.address)+(r.owner?' — '+r.owner:'')+'</option>';
+ }).join(''):'';
+ ['lt-nexp-prop','lt-cln-prop'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el)el.innerHTML=placeholder+opts;
  });
 }
 
@@ -13152,11 +13161,12 @@ window.gerarInvoicePDF=function(data,opts){
  });
 })();
 
-function ltOpenNewExpense(prefill){
+async function ltOpenNewExpense(prefill){
  var pf=(prefill&&typeof prefill==='object')?prefill:{};
  if(!pf.vendorFreeClone){try{window.__lastVendorFreeFrom=null;}catch(eClr){}}
  try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
- ltExpEditingId=null;ltExpEditingPmId=null;ltPopulatePropertyDropdowns();
+ ltExpEditingId=null;ltExpEditingPmId=null;
+ await ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Nova Despesa';
  ['lt-nexp-desc','lt-nexp-docnum'].forEach(id=>document.getElementById(id).value='');
  ['lt-nexp-due','lt-nexp-paid','lt-nexp-value'].forEach(id=>document.getElementById(id).value='');
@@ -13225,14 +13235,15 @@ function ltOpenNewExpense(prefill){
 }
 function ltCloseNewExpense(){document.getElementById('lt-newexp-modal').style.display='none';}
 
-function ltOpenEditExpense(id){
+async function ltOpenEditExpense(id){
  id=String(id);
  var e=(window._pmExpenseRows || []).find(function(x){ return String(x.id) === id; });
  var nexpFixedCatList=['HOA','Água','Luz / Electric','Manutenção'];
  var stNexp0=String((e&&e.serviceType)?e.serviceType:'').trim();
  var nexpUseFullVendorBlock=!!(e && e.vendorId && nexpFixedCatList.indexOf(stNexp0)<0);
  if(nexpUseFullVendorBlock) {
-  ltExpEditingId = null; ltExpEditingPmId = id; ltPopulatePropertyDropdowns();
+  ltExpEditingId = null; ltExpEditingPmId = id;
+  await ltPopulatePropertyDropdowns();
   document.getElementById('lt-newexp-title').textContent = 'Editar Despesa (vendor)';
   document.getElementById('lt-nexp-cat').value = 'Vendor';
   if(typeof ltNexpOnCatChange==='function') ltNexpOnCatChange();
@@ -13264,7 +13275,8 @@ function ltOpenEditExpense(id){
   return;
  }
  if(e) {
-  ltExpEditingId = id; ltExpEditingPmId = null; ltPopulatePropertyDropdowns();
+  ltExpEditingId = id; ltExpEditingPmId = null;
+  await ltPopulatePropertyDropdowns();
   document.getElementById('lt-newexp-title').textContent = 'Editar Despesa';
   if(typeof ltNexpSetPmBlockPacoteMode==='function') ltNexpSetPmBlockPacoteMode(false);
   var propSel2=document.getElementById('lt-nexp-prop');
@@ -13303,7 +13315,8 @@ function ltOpenEditExpense(id){
   else alert('Despesa não encontrada. Recarregue a página e tente novamente.');
   return;
  }
- ltExpEditingId=id;ltExpEditingPmId=null; ltPopulatePropertyDropdowns();
+ ltExpEditingId=id;ltExpEditingPmId=null;
+ await ltPopulatePropertyDropdowns();
  document.getElementById('lt-newexp-title').textContent='Editar Despesa (local legado)';
  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
  document.getElementById('lt-nexp-prop').value=r.propId||'';
@@ -13613,8 +13626,9 @@ let ltClnEditingId=null;
 function ltClnGetRecords(){try{return JSON.parse(localStorage.getItem(LT_CLN_KEY)||'[]');}catch(e){return [];}}
 function ltClnSaveRecords(arr){localStorage.setItem(LT_CLN_KEY,JSON.stringify(arr));}
 
-function ltOpenNewCleaning(){
- ltClnEditingId=null; ltPopulatePropertyDropdowns();
+async function ltOpenNewCleaning(){
+ ltClnEditingId=null;
+ await ltPopulatePropertyDropdowns();
  document.getElementById('lt-cln-title').textContent='Registrar Limpeza';
  document.getElementById('lt-cln-prop').value='';
  document.getElementById('lt-cln-type').value='Standard';
