@@ -7,6 +7,34 @@ import { matchPropertyWithMeta } from '@/lib/tenantPaymentMatcher';
 export const dynamic = 'force-dynamic';
 
 const MAX_KEYS = 500;
+const SEM_OWNER = '(sem owner)';
+
+function resolveOwnerFields(
+  row: {
+    ownerName: string | null;
+    ownerEmail: string | null;
+    owner: { name: string; email: string | null } | null;
+  } | undefined,
+): { ownerName: string; ownerEmail: string | null } {
+  if (!row) {
+    return { ownerName: SEM_OWNER, ownerEmail: null };
+  }
+  const propName = (row.ownerName || '').trim();
+  if (propName) {
+    return {
+      ownerName: propName,
+      ownerEmail: (row.ownerEmail || '').trim() || null,
+    };
+  }
+  const linkedName = (row.owner?.name || '').trim();
+  if (linkedName) {
+    return {
+      ownerName: linkedName,
+      ownerEmail: (row.ownerEmail || row.owner?.email || '').trim() || null,
+    };
+  }
+  return { ownerName: SEM_OWNER, ownerEmail: null };
+}
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +70,11 @@ export async function POST(req: Request) {
         address: true,
         mgmtFeePct: true,
         hoaAdmin: true,
+        ownerName: true,
+        ownerEmail: true,
+        owner: {
+          select: { name: true, email: true },
+        },
       },
       orderBy: { address: 'asc' },
     });
@@ -59,12 +92,15 @@ export async function POST(req: Request) {
           propertyAddress: null,
           mgmtFeePct: null,
           hoaAdmin: false,
+          ownerName: null,
+          ownerEmail: null,
           score: null,
           method: null,
         };
       }
       const row = byId.get(meta.propertyId);
       const pctNum = row ? Number(row.mgmtFeePct) : 0;
+      const owner = resolveOwnerFields(row);
       return {
         propertyKey,
         matched: true,
@@ -72,6 +108,8 @@ export async function POST(req: Request) {
         propertyAddress: row?.address ?? null,
         mgmtFeePct: Number.isFinite(pctNum) ? pctNum : 0,
         hoaAdmin: row?.hoaAdmin ?? false,
+        ownerName: owner.ownerName,
+        ownerEmail: owner.ownerEmail,
         score: meta.score,
         method: meta.method,
       };

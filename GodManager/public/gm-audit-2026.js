@@ -284,7 +284,7 @@
       blob.txs.push(tx);
 
       var g = curGl;
-      if (/^4/.test(g)) blob.income4 = round2(blob.income4 + credit);
+      if (/^4/.test(g)) blob.income4 = round2(blob.income4 + credit - debit);
       if (/^6|^7/.test(g)) {
         blob.expense67 = round2(blob.expense67 + debit);
         if (g !== '6111') {
@@ -295,8 +295,8 @@
         }
       }
       if (g === '4100') {
-        blob.net4100c = round2(blob.net4100c + credit);
-        blob.qtyRentals += 1;
+        blob.net4100c = round2(blob.net4100c + credit - debit);
+        if (credit > 0.009) blob.qtyRentals += 1;
       }
       if (g === '3250') {
         blob.qtyOwnerPmts += 1;
@@ -334,7 +334,7 @@
           };
         }
         var mog = monthlyScratch[ymKey];
-        if (g === '4100') mog.rent4100 = round2(mog.rent4100 + credit);
+        if (g === '4100') mog.rent4100 = round2(mog.rent4100 + credit - debit);
         else if (g === '3250') mog.ownerDist3250 = round2(mog.ownerDist3250 + debit);
         else if (g === '6111') mog.mgmtFee6111 = round2(mog.mgmtFee6111 + debit);
       }
@@ -2235,6 +2235,273 @@
     return st.kind === 'valid' ? st.pct : null;
   };
 
+  /** Nome do owner em Properties (match-properties); fallback «(sem owner)». */
+  window.gmAudit2026OwnerDisplayFromMatch = function (mRow) {
+    if (!mRow || !mRow.matched) return '(sem owner)';
+    var n = String(mRow.ownerName == null ? '' : mRow.ownerName).trim();
+    return n || '(sem owner)';
+  };
+
+  /** Segmento GL antes de « - » (cabeçalho AppFolio). */
+  function ownerAuditGlHeadSegment(propertyKey) {
+    var k = String(propertyKey == null ? '' : propertyKey).trim();
+    var di = k.indexOf(' - ');
+    return di >= 0 ? k.slice(0, di).trim() : k;
+  }
+
+  /** Sufixo de unidade A/B/#A/#B/Unit no segmento principal. */
+  window.gmAudit2026OwnerExtractUnitSuffix = function (propertyKey) {
+    var seg = ownerAuditGlHeadSegment(propertyKey);
+    var patterns = [
+      /\s+#\s*([AB])\s*$/i,
+      /\s*#\s*([AB])\s*$/i,
+      /\s+unit\s*([AB])\s*$/i,
+      /\s*\(unit\s*([AB])\)\s*$/i,
+      /\s*\(([AB])\)\s*$/i,
+    ];
+    var pi;
+    for (pi = 0; pi < patterns.length; pi++) {
+      var m = seg.match(patterns[pi]);
+      if (m && m[1]) return String(m[1]).toUpperCase();
+    }
+    return '';
+  };
+
+  /** Chave de agrupamento: mesmo imóvel base sem sufixo de unidade. */
+  window.gmAudit2026OwnerBaseGroupKey = function (propertyKey) {
+    var seg = ownerAuditGlHeadSegment(propertyKey);
+    var base = seg
+      .replace(/\s+#\s*[AB]\s*$/i, '')
+      .replace(/\s*#\s*[AB]\s*$/i, '')
+      .replace(/\s+unit\s*[AB]\s*$/i, '')
+      .replace(/\s*\(unit\s*[AB]\)\s*$/i, '')
+      .replace(/\s*\([AB]\)\s*$/i, '')
+      .trim();
+    return base.toLowerCase();
+  };
+
+  /** Imóvel «base» para % Properties (sem sufixo A/B quando existir). */
+  window.gmAudit2026OwnerPickBaseMemberKey = function (memberKeys) {
+    if (!memberKeys || !memberKeys.length) return '';
+    var i;
+    for (i = 0; i < memberKeys.length; i++) {
+      if (!window.gmAudit2026OwnerExtractUnitSuffix(memberKeys[i])) return memberKeys[i];
+    }
+    return memberKeys.slice().sort(function (a, b) {
+      return String(a).localeCompare(String(b));
+    })[0];
+  };
+
+  /** Título agrupado, ex.: «2693 Armstrong Avenue (A+B)». */
+  window.gmAudit2026OwnerGroupDisplayLabel = function (memberKeys) {
+    if (!memberKeys || memberKeys.length <= 1) return memberKeys[0] || '';
+    var suffixes = [];
+    var seen = {};
+    var mi;
+    for (mi = 0; mi < memberKeys.length; mi++) {
+      var suf = window.gmAudit2026OwnerExtractUnitSuffix(memberKeys[mi]);
+      if (suf && !seen[suf]) {
+        seen[suf] = true;
+        suffixes.push(suf);
+      }
+    }
+    suffixes.sort();
+    var basePk = window.gmAudit2026OwnerPickBaseMemberKey(memberKeys);
+    var head = ownerAuditGlHeadSegment(basePk);
+    head = head
+      .replace(/\s+#\s*[AB]\s*$/i, '')
+      .replace(/\s*#\s*[AB]\s*$/i, '')
+      .replace(/\s+unit\s*[AB]\s*$/i, '')
+      .replace(/\s*\(unit\s*[AB]\)\s*$/i, '')
+      .replace(/\s*\([AB]\)\s*$/i, '')
+      .trim();
+    if (suffixes.length) return head + ' (' + suffixes.join('+') + ')';
+    return head + ' (' + memberKeys.length + ' un.)';
+  };
+
+  function ownerAuditPredPayeeFromMap(mapPayeeToUsd) {
+    var best = '(a definir)';
+    var bestAmt = -1;
+    var k;
+    for (k in mapPayeeToUsd) {
+      if (!Object.prototype.hasOwnProperty.call(mapPayeeToUsd, k)) continue;
+      var amt = Number(mapPayeeToUsd[k]);
+      if (!isFinite(amt)) continue;
+      if (amt > bestAmt || (Math.abs(amt - bestAmt) < 1e-6 && k.localeCompare(best) < 0)) {
+        bestAmt = amt;
+        best = k;
+      }
+    }
+    return bestAmt < 0.01 ? '(a definir)' : best;
+  }
+
+  /** Soma txs e totais de várias propertyKeys GL antes do cálculo mensal. */
+  function ownerAuditMergePropertyObjects(memberKeys, ctx) {
+    var merged = {
+      txs: [],
+      income4: 0,
+      expense67: 0,
+      rent4100: 0,
+      net4100c: 0,
+      dist3250: 0,
+      debit3250: 0,
+      fee6111: 0,
+      ownerAuditExpenseEx611: 0,
+      ownerAudit6075: 0,
+      ownerAuditRepair: 0,
+      qtyRentals: 0,
+      qtyOwnerPmts: 0,
+      ownerHints: [],
+      owner3250ByPayee: {},
+      ownerPredPayee: '(a definir)',
+    };
+    var hintSeen = {};
+    var mi;
+    for (mi = 0; mi < memberKeys.length; mi++) {
+      var pv = ctx.properties[memberKeys[mi]];
+      if (!pv) continue;
+      merged.txs = merged.txs.concat(pv.txs || []);
+      merged.income4 = round2(merged.income4 + Number(pv.income4 || 0));
+      merged.expense67 = round2(merged.expense67 + Number(pv.expense67 || 0));
+      var rent = Number(pv.rent4100 != null ? pv.rent4100 : pv.net4100c || 0);
+      merged.rent4100 = round2(merged.rent4100 + rent);
+      merged.net4100c = round2(merged.net4100c + rent);
+      var dist = Number(pv.dist3250 != null ? pv.dist3250 : pv.debit3250 || 0);
+      merged.dist3250 = round2(merged.dist3250 + dist);
+      merged.debit3250 = merged.dist3250;
+      merged.fee6111 = round2(merged.fee6111 + Number(pv.fee6111 || 0));
+      merged.ownerAuditExpenseEx611 = round2(
+        merged.ownerAuditExpenseEx611 +
+          Number(
+            pv.ownerAuditExpenseEx611 != null
+              ? pv.ownerAuditExpenseEx611
+              : pv.exp67Ex611 != null
+                ? pv.exp67Ex611
+                : 0,
+          ),
+      );
+      merged.ownerAudit6075 = round2(
+        merged.ownerAudit6075 + Number(pv.ownerAudit6075 || 0),
+      );
+      merged.ownerAuditRepair = round2(
+        merged.ownerAuditRepair + Number(pv.ownerAuditRepair || 0),
+      );
+      merged.qtyRentals += Number(pv.qtyRentals || 0);
+      merged.qtyOwnerPmts += Number(pv.qtyOwnerPmts || 0);
+      var hints = pv.ownerHints || [];
+      var hi;
+      for (hi = 0; hi < hints.length; hi++) {
+        if (!hintSeen[hints[hi]]) {
+          hintSeen[hints[hi]] = true;
+          merged.ownerHints.push(hints[hi]);
+        }
+      }
+      var omap = pv.owner3250ByPayee || {};
+      var py;
+      for (py in omap) {
+        if (!Object.prototype.hasOwnProperty.call(omap, py)) continue;
+        merged.owner3250ByPayee[py] = round2(
+          (merged.owner3250ByPayee[py] || 0) + Number(omap[py]),
+        );
+      }
+    }
+    merged.ownerPredPayee = ownerAuditPredPayeeFromMap(merged.owner3250ByPayee);
+    return merged;
+  }
+
+  function ownerAuditBuildWorkUnits(keys) {
+    var byBase = {};
+    var ki;
+    for (ki = 0; ki < keys.length; ki++) {
+      var pk = keys[ki];
+      var bk = window.gmAudit2026OwnerBaseGroupKey(pk);
+      if (!byBase[bk]) byBase[bk] = [];
+      byBase[bk].push(pk);
+    }
+    var units = [];
+    var bases = Object.keys(byBase).sort();
+    var bi;
+    for (bi = 0; bi < bases.length; bi++) {
+      var members = byBase[bases[bi]].slice().sort();
+      units.push({
+        displayKey:
+          members.length === 1
+            ? members[0]
+            : window.gmAudit2026OwnerGroupDisplayLabel(members),
+        memberKeys: members,
+      });
+    }
+    return units;
+  }
+
+  /** % do imóvel base; sinaliza se unidades A/B têm % diferente em Properties. */
+  window.gmAudit2026OwnerPctStatusForGroup = function (memberKeys, propMatch) {
+    propMatch = propMatch || {};
+    var basePk = window.gmAudit2026OwnerPickBaseMemberKey(memberKeys);
+    var baseSt = window.gmAudit2026PctStatusFromMatch(propMatch[basePk]);
+    if (baseSt.kind !== 'valid') return baseSt;
+    var seen = {};
+    var mi;
+    for (mi = 0; mi < memberKeys.length; mi++) {
+      var st = window.gmAudit2026PctStatusFromMatch(propMatch[memberKeys[mi]]);
+      if (st.kind === 'valid') seen[String(st.pct)] = true;
+    }
+    var pcts = Object.keys(seen);
+    if (pcts.length > 1) {
+      return {
+        kind: 'valid',
+        pct: baseSt.pct,
+        label: baseSt.label + ' (! unid. % diferente)',
+      };
+    }
+    return baseSt;
+  };
+
+  function ownerAuditRowMatchesFilters(ro, searchQ, ownerSel) {
+    if (ownerSel) {
+      if (window.gmAudit2026OwnerDisplayFromMatch(ro.match) !== ownerSel) return false;
+    }
+    if (!searchQ) return true;
+    var key = String(ro.key || '').toLowerCase();
+    var addr = String((ro.match && ro.match.propertyAddress) || '').toLowerCase();
+    var own = window.gmAudit2026OwnerDisplayFromMatch(ro.match).toLowerCase();
+    if (key.indexOf(searchQ) >= 0 || addr.indexOf(searchQ) >= 0 || own.indexOf(searchQ) >= 0)
+      return true;
+    if (ro.memberKeys && ro.memberKeys.length) {
+      var mj;
+      for (mj = 0; mj < ro.memberKeys.length; mj++) {
+        if (String(ro.memberKeys[mj]).toLowerCase().indexOf(searchQ) >= 0) return true;
+      }
+    }
+    return false;
+  }
+
+  window.gmAudit2026OwnerPopulateOwnerDropdown = function (verdictRows, revisarRows) {
+    var sel = document.getElementById('aud2026-owner-filter-owner');
+    if (!sel) return;
+    var prev = sel.value;
+    var seen = {};
+    var i;
+    var all = (verdictRows || []).concat(revisarRows || []);
+    for (i = 0; i < all.length; i++) {
+      seen[window.gmAudit2026OwnerDisplayFromMatch(all[i].match)] = true;
+    }
+    var names = Object.keys(seen).sort(function (a, b) {
+      return a.localeCompare(b, 'pt', { sensitivity: 'base' });
+    });
+    var html = '<option value="">Todos os owners</option>';
+    for (i = 0; i < names.length; i++) {
+      html +=
+        '<option value="' +
+        escHtml(names[i]) +
+        '">' +
+        escHtml(names[i]) +
+        '</option>';
+    }
+    sel.innerHTML = html;
+    if (prev && seen[prev]) sel.value = prev;
+  };
+
   window.gmAudit2026FetchPropertyMatches = function (ctx) {
     var cid =
       typeof gmAuditEffectiveClientId === 'function' ? gmAuditEffectiveClientId() : '';
@@ -2407,13 +2674,19 @@
     return Y + '-' + String(M).padStart(2, '0');
   };
 
-  /** Último mês parcial: data máxima do CSV antes do dia 25. */
+  /** Meses presentes no CSV (todos entram na auditoria; sem exclusão por dia 25). */
   window.gmAudit2026OwnerDetectCsvSpan = function (ctx) {
     var maxTs = -1;
     var maxDateStr = '';
     var months = {};
     if (!ctx || !ctx.properties) {
-      return { partialLastYm: null, maxDateStr: '', months: [] };
+      return {
+        partialLastYm: null,
+        maxDateStr: '',
+        months: [],
+        firstYm: null,
+        lastYm: null,
+      };
     }
     var pks = Object.keys(ctx.properties);
     var pi;
@@ -2438,18 +2711,13 @@
         }
       }
     }
-    var partialLastYm = null;
-    if (maxTs >= 0) {
-      var dMax = new Date(maxTs);
-      if (dMax.getUTCDate() < 25) {
-        partialLastYm = gmAudit2026OwnerParseYm(maxDateStr);
-      }
-    }
     var monthList = Object.keys(months).sort();
     return {
-      partialLastYm: partialLastYm,
+      partialLastYm: null,
       maxDateStr: maxDateStr,
       months: monthList,
+      firstYm: monthList.length ? monthList[0] : null,
+      lastYm: monthList.length ? monthList[monthList.length - 1] : null,
     };
   };
 
@@ -2472,8 +2740,12 @@
       }
       var m = months[ym];
       var g = tx.gl;
-      if (/^4/.test(g)) m.income4 = round2(m.income4 + tx.credit);
-      if (g === '4100') m.rent4100 = round2(m.rent4100 + tx.credit);
+      if (/^4/.test(g))
+        m.income4 = round2(m.income4 + Number(tx.credit || 0) - Number(tx.debit || 0));
+      if (g === '4100')
+        m.rent4100 = round2(
+          m.rent4100 + Number(tx.credit || 0) - Number(tx.debit || 0),
+        );
       if (/^6|^7/.test(g)) {
         if (g !== '6111') m.expEx611 = round2(m.expEx611 + tx.debit);
         if (g === '6112') m.exp6112 = round2(m.exp6112 + tx.debit);
@@ -2524,15 +2796,14 @@
     return { qtyRentals: qr, qtyOwnerPmts: qd };
   }
 
-  /** Triagem: exclui meses órfãos (dist sem income4) e último mês parcial do CSV. */
+  /** Triagem: exclui apenas meses órfãos (dist 3250 sem income 4xxx no mês). */
   window.gmAudit2026ComputeOwnerTrimmedAudit = function (pv, savedPct, span) {
     span = span && typeof span === 'object' ? span : {};
-    var partialYm = span.partialLastYm || null;
     var buckets = ownerAuditMonthBuckets(pv);
     var yms = Object.keys(buckets).sort();
     var validYmSet = {};
     var excludedOrphan = [];
-    var excludedPartial = partialYm ? [partialYm] : [];
+    var excludedPartial = [];
     var sum = {
       income4: 0,
       rent4100: 0,
@@ -2544,12 +2815,10 @@
       var ym = yms[yi];
       var m = buckets[ym];
       var orphan = m.dist3250 > 0.01 && m.income4 < 0.01;
-      var isPartial = partialYm && ym === partialYm;
       if (orphan) {
         excludedOrphan.push(ym);
         continue;
       }
-      if (isPartial) continue;
       validYmSet[ym] = true;
       sum.income4 = round2(sum.income4 + m.income4);
       sum.rent4100 = round2(sum.rent4100 + m.rent4100);
@@ -2748,9 +3017,13 @@
     var note = document.getElementById('aud2026-owner-trim-notice');
     if (note) {
       var parts = [];
-      if (summary.partialLastYm) {
+      if (summary.auditFirstYm && summary.auditLastYm) {
         parts.push(
-          'Último mês parcial excluído: ' + String(summary.partialLastYm) + '.',
+          'Auditando todos os meses do arquivo (' +
+            ymToShortPtBR(summary.auditFirstYm) +
+            ' a ' +
+            ymToShortPtBR(summary.auditLastYm) +
+            ').',
         );
       }
       if (summary.nOrphanMonths != null && summary.nOrphanMonths > 0) {
@@ -2761,13 +3034,13 @@
       }
       if (summary.brutoLiquido != null && isFinite(Number(summary.brutoLiquido))) {
         parts.push(
-          'Saldo bruto (sem recorte): $ ' + fmtUsd(summary.brutoLiquido) + '.',
+          'Saldo bruto (sem recorte órfão): $ ' + fmtUsd(summary.brutoLiquido) + '.',
         );
       }
       note.textContent =
         parts.length > 0
           ? parts.join(' ')
-          : 'Recorte ativo: meses órfãos e último mês parcial excluídos do saldo.';
+          : 'Todos os meses do CSV entram no saldo recortado (exceto meses órfãos).';
     }
   };
 
@@ -2847,11 +3120,93 @@
     window.gmAudit2026OwnerFetchAndRender();
   };
 
-  var AUD2026_OWNER_COLS = 14;
+  var AUD2026_OWNER_COLS = 15;
 
-  /** Veredito owner: % de Properties (mgmtFeePct) + gmAudit2026ComputeOwnerAuditDistRow */
-  window.gmAudit2026OwnerRenderTable = function (ctx) {
+  /** Calcula linhas owner (sem filtro UI) e guarda cache para busca/dropdown. */
+  window.gmAudit2026OwnerRebuildCache = function (ctx) {
     ctx = ctx || window.__AUD2026_CTX;
+    if (!ctx || !ctx.seqKeys || !ctx.seqKeys.length) {
+      window.__AUD2026_OWNER_RENDER_CACHE = null;
+      return;
+    }
+    var keys = ctx.seqKeys.filter(function (k) {
+      return !window.gmAudit2026IsAggregatePropertyKey(k);
+    });
+    if (!keys.length) {
+      window.__AUD2026_OWNER_RENDER_CACHE = {
+        verdictRows: [],
+        revisarRows: [],
+        auditFirstYm: null,
+        auditLastYm: null,
+      };
+      return;
+    }
+    var snapM = window.__AUD2026_OWNER_SNAPSHOT_MAP || {};
+    var propMatch = window.__AUD2026_PROP_MATCH || {};
+    var csvSpan = gmAudit2026OwnerDetectCsvSpan(ctx);
+    var verdictRows = [];
+    var revisarRows = [];
+    var units = ownerAuditBuildWorkUnits(keys);
+    var ui;
+    for (ui = 0; ui < units.length; ui++) {
+      var unit = units[ui];
+      var memberKeys = unit.memberKeys;
+      var displayKey = unit.displayKey;
+      var basePk = window.gmAudit2026OwnerPickBaseMemberKey(memberKeys);
+      var pvObj =
+        memberKeys.length === 1
+          ? ctx.properties[memberKeys[0]]
+          : ownerAuditMergePropertyObjects(memberKeys, ctx);
+      if (!pvObj) continue;
+      var mRow = propMatch[basePk];
+      var pctSt =
+        memberKeys.length === 1
+          ? window.gmAudit2026PctStatusFromMatch(mRow)
+          : window.gmAudit2026OwnerPctStatusForGroup(memberKeys, propMatch);
+      var peff =
+        pctSt.kind === 'valid'
+          ? pctSt.pct
+          : window.gmAudit2026OwnerPctFromMatch(basePk);
+      var oaBruto = gmAudit2026ComputeOwnerAuditDistRow(pvObj, peff);
+      var trim =
+        pctSt.kind === 'valid'
+          ? gmAudit2026ComputeOwnerTrimmedAudit(pvObj, peff, csvSpan)
+          : null;
+      var prevE = ownerAuditSnapPrev(snapM, basePk);
+      var item = {
+        key: displayKey,
+        memberKeys: memberKeys,
+        pv: pvObj,
+        oa: trim ? trim.oa : oaBruto,
+        oaBruto: oaBruto,
+        trim: trim,
+        prev: prevE,
+        pctSt: pctSt,
+        match: mRow,
+      };
+      if (pctSt.kind === 'valid') verdictRows.push(item);
+      else revisarRows.push(item);
+    }
+    verdictRows.sort(function (a, b) {
+      var ka = gmAudit2026OwnerTriageSortKey(a.trim);
+      var kb = gmAudit2026OwnerTriageSortKey(b.trim);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];
+      return ka[1] - kb[1];
+    });
+    revisarRows.sort(function (a, b) {
+      return String(a.key).localeCompare(String(b.key));
+    });
+    window.__AUD2026_OWNER_RENDER_CACHE = {
+      verdictRows: verdictRows,
+      revisarRows: revisarRows,
+      auditFirstYm: csvSpan.firstYm,
+      auditLastYm: csvSpan.lastYm,
+    };
+    window.gmAudit2026OwnerPopulateOwnerDropdown(verdictRows, revisarRows);
+  };
+
+  /** Aplica busca + dropdown sobre o cache e pinta tabela/KPIs (sem recarregar GL). */
+  window.gmAudit2026OwnerApplyViewFilters = function () {
     var tb = document.getElementById('aud2026-owner-tbody');
     var tbRev = document.getElementById('aud2026-owner-revisar-tbody');
     var colN = AUD2026_OWNER_COLS;
@@ -2866,6 +3221,7 @@
       );
     }
 
+    var ctx = window.__AUD2026_CTX;
     if (!ctx || !ctx.seqKeys || !ctx.seqKeys.length) {
       if (tb) tb.innerHTML = emptyHtml('Sem dados GL. Use «Análise atual» para carregar o CSV.');
       if (tbRev) tbRev.innerHTML = '';
@@ -2873,68 +3229,46 @@
       return;
     }
 
-    var qRaw = '';
-    try {
-      qRaw = (document.getElementById('aud2026-filter').value || '').trim();
-    } catch (_) {}
-    var q = qRaw.toLowerCase();
-
-    var keys = ctx.seqKeys.filter(function (k) {
-      if (window.gmAudit2026IsAggregatePropertyKey(k)) return false;
-      return !q || String(k || '').toLowerCase().indexOf(q) >= 0;
-    });
-
-    if (!keys.length) {
-      if (tb) tb.innerHTML = emptyHtml('Sem linhas neste filtro.');
+    var cache = window.__AUD2026_OWNER_RENDER_CACHE;
+    if (!cache) {
+      if (tb) tb.innerHTML = emptyHtml('A calcular…');
       if (tbRev) tbRev.innerHTML = '';
       window.gmAudit2026OwnerRefreshSummaryCards({});
       return;
     }
 
-    var snapM = window.__AUD2026_OWNER_SNAPSHOT_MAP || {};
-    var propMatch = window.__AUD2026_PROP_MATCH || {};
-    var csvSpan = gmAudit2026OwnerDetectCsvSpan(ctx);
+    var searchQ = '';
+    var ownerSel = '';
+    try {
+      searchQ = (
+        document.getElementById('aud2026-owner-search').value || ''
+      )
+        .trim()
+        .toLowerCase();
+    } catch (_) {}
+    try {
+      ownerSel = (
+        document.getElementById('aud2026-owner-filter-owner').value || ''
+      ).trim();
+    } catch (_) {}
 
-    var verdictRows = [];
-    var revisarRows = [];
-    var ki;
-    for (ki = 0; ki < keys.length; ki++) {
-      var pk = keys[ki];
-      var pvObj = ctx.properties[pk];
-      if (!pvObj) continue;
-      var mRow = propMatch[pk];
-      var pctSt = window.gmAudit2026PctStatusFromMatch(mRow);
-      var peff =
-        pctSt.kind === 'valid' ? pctSt.pct : window.gmAudit2026OwnerPctFromMatch(pk);
-      var oaBruto = gmAudit2026ComputeOwnerAuditDistRow(pvObj, peff);
-      var trim =
-        pctSt.kind === 'valid'
-          ? gmAudit2026ComputeOwnerTrimmedAudit(pvObj, peff, csvSpan)
-          : null;
-      var prevE = ownerAuditSnapPrev(snapM, pk);
-      var item = {
-        key: pk,
-        pv: pvObj,
-        oa: trim ? trim.oa : oaBruto,
-        oaBruto: oaBruto,
-        trim: trim,
-        prev: prevE,
-        pctSt: pctSt,
-        match: mRow,
-      };
-      if (pctSt.kind === 'valid') verdictRows.push(item);
-      else revisarRows.push(item);
+    var verdictRows = cache.verdictRows.filter(function (ro) {
+      return ownerAuditRowMatchesFilters(ro, searchQ, ownerSel);
+    });
+    var revisarRows = cache.revisarRows.filter(function (ro) {
+      return ownerAuditRowMatchesFilters(ro, searchQ, ownerSel);
+    });
+
+    if (!verdictRows.length && !revisarRows.length) {
+      if (tb) tb.innerHTML = emptyHtml('Nenhum imóvel neste filtro.');
+      if (tbRev) tbRev.innerHTML = '';
+      window.gmAudit2026OwnerRefreshSummaryCards({
+        nRevisar: 0,
+        auditFirstYm: cache.auditFirstYm,
+        auditLastYm: cache.auditLastYm,
+      });
+      return;
     }
-
-    verdictRows.sort(function (a, b) {
-      var ka = gmAudit2026OwnerTriageSortKey(a.trim);
-      var kb = gmAudit2026OwnerTriageSortKey(b.trim);
-      if (ka[0] !== kb[0]) return ka[0] - kb[0];
-      return ka[1] - kb[1];
-    });
-    revisarRows.sort(function (a, b) {
-      return String(a.key).localeCompare(String(b.key));
-    });
 
     var summary = {
       saldoLiquido: 0,
@@ -2948,7 +3282,8 @@
       nRevisar: revisarRows.length,
       totQtyRent: 0,
       totQtyDist: 0,
-      partialLastYm: csvSpan.partialLastYm,
+      auditFirstYm: cache.auditFirstYm,
+      auditLastYm: cache.auditLastYm,
       nOrphanMonths: 0,
       brutoLiquido: 0,
     };
@@ -3089,6 +3424,9 @@
         '<td style="padding:8px 10px;max-width:200px;word-break:break-word">' +
         escHtml(ro.key.length > 100 ? ro.key.slice(0, 97) + '\u2026' : ro.key) +
         '</td>' +
+        '<td style="padding:8px 10px;font-size:11px;color:var(--ink2);max-width:140px;word-break:break-word">' +
+        escHtml(window.gmAudit2026OwnerDisplayFromMatch(ro.match)) +
+        '</td>' +
         pctCellHtml(ro.pctSt) +
         '<td style="padding:8px;text-align:center">' +
         triageClassCellHtml(trim) +
@@ -3168,8 +3506,15 @@
     );
     delete summary._brutoDevolver;
     delete summary._brutoReceber;
+    summary.nRevisar = revisarRows.length;
     window.gmAudit2026OwnerRefreshSummaryCards(summary);
     window.__AUD2026_OWNER_LAST_SUMMARY = summary;
+  };
+
+  /** Veredito owner: recalcula cache + aplica filtros locais. */
+  window.gmAudit2026OwnerRenderTable = function (ctx) {
+    window.gmAudit2026OwnerRebuildCache(ctx);
+    window.gmAudit2026OwnerApplyViewFilters();
   };
 
   window.gmAudit2026OwnerSaveSnapshotUpload = function () {
@@ -3696,12 +4041,18 @@
     if (flt)
       flt.addEventListener('input', function () {
         if (window.__AUD2026_CTX) render(window.__AUD2026_CTX);
-        try {
-          var poFlt = document.getElementById('aud2026-panel-owner');
-          if (poFlt && poFlt.style.display !== 'none' && window.__AUD2026_CTX) {
-            window.gmAudit2026OwnerRenderTable(window.__AUD2026_CTX);
-          }
-        } catch (_) {}
+      });
+    var ownSearch = document.getElementById('aud2026-owner-search');
+    if (ownSearch)
+      ownSearch.addEventListener('input', function () {
+        if (typeof window.gmAudit2026OwnerApplyViewFilters === 'function')
+          window.gmAudit2026OwnerApplyViewFilters();
+      });
+    var ownOwnerSel = document.getElementById('aud2026-owner-filter-owner');
+    if (ownOwnerSel)
+      ownOwnerSel.addEventListener('change', function () {
+        if (typeof window.gmAudit2026OwnerApplyViewFilters === 'function')
+          window.gmAudit2026OwnerApplyViewFilters();
       });
     var qg = document.getElementById('aud2026-qa-global');
     var q241 = document.getElementById('aud2026-qa-241');
