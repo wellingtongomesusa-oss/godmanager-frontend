@@ -167,12 +167,12 @@ function parseAppfolioGeneralLedger(csvText) {
     blob.txs.push(tx);
 
     const g = curGl;
-    if (/^4/.test(g)) blob.income4 = round2(blob.income4 + credit);
+    if (/^4/.test(g)) blob.income4 = round2(blob.income4 + credit - debit);
     if (/^6|^7/.test(g)) {
       blob.expense67 = round2(blob.expense67 + debit);
       if (g !== '6111') blob.exp67Ex611 = round2(blob.exp67Ex611 + debit);
     }
-    if (g === '4100') blob.net4100c = round2(blob.net4100c + credit);
+    if (g === '4100') blob.net4100c = round2(blob.net4100c + credit - debit);
     if (g === '3250') {
       blob.debit3250 = round2(blob.debit3250 + debit);
       if (tx.payee && blob.ownerHints.indexOf(tx.payee) < 0) blob.ownerHints.push(tx.payee);
@@ -327,8 +327,10 @@ function monthlyBreakdown(pv, pct) {
     }
     const m = months[ym];
     const g = tx.gl;
-    if (/^4/.test(g)) m.income4 = round2(m.income4 + tx.credit);
-    if (g === '4100') m.rent4100 = round2(m.rent4100 + tx.credit);
+    if (/^4/.test(g))
+      m.income4 = round2(m.income4 + Number(tx.credit || 0) - Number(tx.debit || 0));
+    if (g === '4100')
+      m.rent4100 = round2(m.rent4100 + Number(tx.credit || 0) - Number(tx.debit || 0));
     if (/^6|^7/.test(g) && g !== '6111') m.expEx611 = round2(m.expEx611 + tx.debit);
     if (g === '3250') m.dist3250 = round2(m.dist3250 + tx.debit);
   }
@@ -372,12 +374,14 @@ function aggregatePvFromTxs(txs) {
   };
   for (const tx of txs) {
     const g = tx.gl;
-    if (/^4/.test(g)) agg.income4 = round2(agg.income4 + tx.credit);
+    if (/^4/.test(g))
+      agg.income4 = round2(agg.income4 + Number(tx.credit || 0) - Number(tx.debit || 0));
     if (/^6|^7/.test(g)) {
       agg.expense67 = round2(agg.expense67 + tx.debit);
       if (g !== '6111') agg.exp67Ex611 = round2(agg.exp67Ex611 + tx.debit);
     }
-    if (g === '4100') agg.net4100c = round2(agg.net4100c + tx.credit);
+    if (g === '4100')
+      agg.net4100c = round2(agg.net4100c + Number(tx.credit || 0) - Number(tx.debit || 0));
     if (g === '3250') agg.debit3250 = round2(agg.debit3250 + tx.debit);
     if (g === '6111') agg.debit6111 = round2(agg.debit6111 + tx.debit);
   }
@@ -464,8 +468,10 @@ function ownerMonthBuckets(pv) {
     }
     const m = months[ym];
     const g = tx.gl;
-    if (/^4/.test(g)) m.income4 = round2(m.income4 + tx.credit);
-    if (g === '4100') m.rent4100 = round2(m.rent4100 + tx.credit);
+    if (/^4/.test(g))
+      m.income4 = round2(m.income4 + Number(tx.credit || 0) - Number(tx.debit || 0));
+    if (g === '4100')
+      m.rent4100 = round2(m.rent4100 + Number(tx.credit || 0) - Number(tx.debit || 0));
     if (/^6|^7/.test(g) && g !== '6111') m.expEx611 = round2(m.expEx611 + tx.debit);
     if (g === '3250') m.dist3250 = round2(m.dist3250 + tx.debit);
   }
