@@ -43,7 +43,7 @@ function glHeader(txt) {
   return { gl: m[1], name: String(m[2]).trim() };
 }
 
-function rowVal(row, keys) {
+function rowVal(keys, row) {
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     if (Object.prototype.hasOwnProperty.call(row, k) && row[k] !== undefined && row[k] !== null && row[k] !== '')
@@ -53,7 +53,7 @@ function rowVal(row, keys) {
 }
 
 /** Idêntico a gm-audit-2026.js parseAppfolioGeneralLedger */
-function parseAppfolioGeneralLedger(csvText) {
+export function parseAppfolioGeneralLedger(csvText) {
   const p = Papa.parse(csvText.trim(), {
     header: true,
     skipEmptyLines: 'greedy',
@@ -187,6 +187,11 @@ function near(a, b, eps = 0.02) {
   return Math.abs(Number(a) - Number(b)) <= eps;
 }
 
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isMain) {
 const defaultCsv = path.join(
   process.env.HOME || '',
   'Downloads/general_ledger-20260516.csv',
@@ -272,3 +277,4 @@ console.log(
 );
 
 if (!lassoPb) console.log('\n(AVISO: nenhuma linha Property combinou /241 Lasso/i)');
+}

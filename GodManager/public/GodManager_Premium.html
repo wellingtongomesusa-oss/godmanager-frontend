@@ -4726,36 +4726,53 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
 
  <div id="aud2026-panel-owner" style="display:none">
-  <p class="ps" style="margin-bottom:14px;max-width:920px;line-height:1.45">
-   Compara por propriedade o <b>net que o proprietário devia receber</b>
-   (<span dir="ltr">income 4xxx − fee devido sobre rent 4100 − despesas 6/7xxx exceto 6111</span>)
-   contra o distribuído na conta <b>3250</b>. Percentagem contratada reutilizada de <i>MgmtFeeContract</i> (a mesma gravada na aba «Auditoria de Fee»). Sem contrato gravado por propriedade: <b>Revisar</b>, sem valor colorido — dados só via Postgres quando autenticado.
+  <p class="ps" style="margin-bottom:10px;max-width:920px;line-height:1.45">
+   <b>Triagem</b> por propriedade: <span dir="ltr">income 4xxx − fee (mgmtFeePct × rent 4100) − despesas 6/7 exc. 6111</span> vs <b>3250</b>, só em <b>meses válidos</b> (exclui distribuição sem aluguel no mês e o último mês parcial do CSV). % de <b>Properties</b> (match GL ↔ Postgres). Sem % válido: <b>A revisar</b>.
   </p>
+  <p id="aud2026-owner-trim-notice" style="margin:0 0 14px;font-size:11px;color:var(--ink3);max-width:920px;line-height:1.45;font-family:'DM Sans',sans-serif">Meses órfãos e último mês parcial são excluídos do saldo recortado.</p>
 
-  <div class="gm-owner-dist-leg" aria-label="Legenda auditoria distribuicao owner" style="display:flex;flex-wrap:wrap;gap:18px;margin:0 0 18px;font-size:11px;line-height:1.45;color:var(--ink2);font-family:'DM Sans',sans-serif;max-width:960px">
-   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--red);flex-shrink:0;display:inline-block"></span>Vermelho — Owner recebeu a mais (devolver / <span dir="ltr">to return</span>)</span>
-   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--blue);flex-shrink:0;display:inline-block"></span>Azul — Owner com valor correto</span>
-   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--green);flex-shrink:0;display:inline-block"></span>Verde — Owner recebeu a menos (tem a receber)</span>
+  <div class="gm-owner-dist-leg" aria-label="Legenda triagem owner" style="display:flex;flex-wrap:wrap;gap:18px;margin:0 0 18px;font-size:11px;line-height:1.45;color:var(--ink2);font-family:'DM Sans',sans-serif;max-width:1000px">
+   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--red);flex-shrink:0;display:inline-block"></span>Vermelho — Descasamento real (investigar)</span>
+   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--amber);flex-shrink:0;display:inline-block"></span>Laranja — Placement / one-shot (6112)</span>
+   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--green);flex-shrink:0;display:inline-block"></span>Verde — A pagar ao owner</span>
+   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--blue);flex-shrink:0;display:inline-block"></span>Azul — Correto (≤ $1)</span>
+   <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:10px;height:10px;border-radius:3px;background:var(--ink3);flex-shrink:0;display:inline-block"></span>Cinza — Cadastro a revisar</span>
   </div>
 
   <div id="aud2026-owner-feedback" style="display:none;margin-bottom:12px;font-size:12px;font-family:'DM Sans',sans-serif"></div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:22px">
    <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px;box-shadow:0 1px 4px rgba(30,22,12,.06)">
-    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">A devolver (over)</div>
-    <div id="aud2026-owner-sum-devolver" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">—</div>
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Saldo líquido (recorte)</div>
+    <div id="aud2026-owner-sum-liquido" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">—</div>
    </div>
    <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
-    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">A receber (under)</div>
-    <div id="aud2026-owner-sum-receber" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">—</div>
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Vermelho real</div>
+    <div id="aud2026-owner-sum-red" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--red);line-height:1.35">—</div>
    </div>
    <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
-    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Corretos (≤ $1)</div>
-    <div id="aud2026-owner-sum-corr" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">—</div>
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Laranja placement</div>
+    <div id="aud2026-owner-sum-orange" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--amber);line-height:1.35">—</div>
    </div>
    <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
-    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">A revisar</div>
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Verde a pagar</div>
+    <div id="aud2026-owner-sum-green" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--green);line-height:1.35">—</div>
+   </div>
+   <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Azul ok</div>
+    <div id="aud2026-owner-sum-blue" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">—</div>
+   </div>
+   <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Cinza a revisar</div>
     <div id="aud2026-owner-sum-revisar" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink3)">—</div>
+   </div>
+   <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Lanç. 4100 (total)</div>
+    <div id="aud2026-owner-sum-qty-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">—</div>
+   </div>
+   <div style="border-radius:10px;border:1px solid var(--border);background:var(--paper);padding:12px 14px">
+    <div style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Lanç. 3250 (total)</div>
+    <div id="aud2026-owner-sum-qty-dist" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">—</div>
    </div>
   </div>
 
@@ -4770,18 +4787,40 @@ document.addEventListener('DOMContentLoaded', function(){
      <thead style="background:var(--cream)">
       <tr>
        <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Propriedade</th>
+       <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">% Properties</th>
+       <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Triagem</th>
        <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Income</th>
        <th style="padding:8px 12px;text-align:right;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;line-height:1.25">Fee devido<br/>(4100&nbsp;×&nbsp;%)</th>
        <th style="padding:8px 12px;text-align:right;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;line-height:1.25">Despesas<br/>(6/7 ex.6111)</th>
        <th style="padding:8px 12px;text-align:right;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;line-height:1.25">Net devido</th>
        <th style="padding:8px 12px;text-align:right;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;line-height:1.25">Distribuído<br/>(3250)</th>
+       <th style="padding:8px 12px;text-align:center;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;line-height:1.25">Lanç.<br/>4100</th>
+       <th style="padding:8px 12px;text-align:center;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;line-height:1.25">Lanç.<br/>3250</th>
        <th style="padding:8px 12px;text-align:center;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;line-height:1.2">Anterior</th>
-       <th style="padding:8px 12px;text-align:center;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;line-height:1.2">Atual</th>
+       <th style="padding:8px 12px;text-align:center;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;line-height:1.2">Saldo<br/>recorte</th>
        <th style="padding:8px 12px;text-align:center;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;line-height:1.2">Variação</th>
        <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Resultado</th>
       </tr>
      </thead>
-     <tbody id="aud2026-owner-tbody"><tr><td colspan="10" style="padding:14px;color:var(--ink3)">Abra esta aba após carregar o GL. Como super_admin, escolha o cliente no Dashboard Admin.</td></tr></tbody>
+     <tbody id="aud2026-owner-tbody"><tr><td colspan="14" style="padding:14px;color:var(--ink3)">Abra esta aba após carregar o GL. Como super_admin, escolha o cliente no Dashboard Admin.</td></tr></tbody>
+    </table>
+   </div>
+  </div>
+
+  <div style="margin-top:22px;font-size:20px;font-weight:600;color:var(--ink);font-family:'Cormorant Garamond',Georgia,serif">A revisar (cadastro em Properties)</div>
+  <p style="margin:0 0 12px;font-size:11px;color:var(--ink3);max-width:920px;line-height:1.45">Sem match, % não cadastrado (0) ou % suspeito (fora de 1–20%). Estes imóveis não entram no consolidado nem no veredito colorido.</p>
+  <div style="border-radius:12px;border:1px solid var(--border);overflow:hidden;background:var(--paper);box-shadow:0 1px 4px rgba(30,22,12,.06)">
+   <div style="overflow-x:auto">
+    <table class="bk-table" style="width:100%;border-collapse:collapse;font-size:11px;font-family:'DM Sans',sans-serif;margin:0">
+     <thead style="background:var(--cream)">
+      <tr>
+       <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Propriedade (GL)</th>
+       <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Endereço DB</th>
+       <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Motivo</th>
+       <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase">Distrib. 3250</th>
+      </tr>
+     </thead>
+     <tbody id="aud2026-owner-revisar-tbody"><tr><td colspan="4" style="padding:12px;color:var(--ink3)">—</td></tr></tbody>
     </table>
    </div>
   </div>

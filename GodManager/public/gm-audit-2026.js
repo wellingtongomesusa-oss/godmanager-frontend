@@ -218,6 +218,8 @@
           ownerHints: [],
           owner3250ByPayee: {},
           fee6111Txns: [],
+          qtyRentals: 0,
+          qtyOwnerPmts: 0,
         };
         propOrder.push(key);
       }
@@ -292,8 +294,12 @@
             blob.expRepair60736 = round2(blob.expRepair60736 + debit);
         }
       }
-      if (g === '4100') blob.net4100c = round2(blob.net4100c + credit);
+      if (g === '4100') {
+        blob.net4100c = round2(blob.net4100c + credit);
+        blob.qtyRentals += 1;
+      }
       if (g === '3250') {
+        blob.qtyOwnerPmts += 1;
         blob.debit3250 = round2(blob.debit3250 + debit);
         if (tx.payee && blob.ownerHints.indexOf(tx.payee) < 0) blob.ownerHints.push(tx.payee);
         if (debit > 0.009) {
@@ -395,6 +401,8 @@
         ownerAuditOtherExp: round2(despNA - h6075 - rep60736),
         seqIdx: idxMap[key],
         mgmtFeeAudit: mfaudit,
+        qtyRentals: pb.qtyRentals || 0,
+        qtyOwnerPmts: pb.qtyOwnerPmts || 0,
       };
     }
 
@@ -771,8 +779,12 @@
     window.__AUD_TOTALS_NOTE = ctx.totals;
     gmAuditRenderMonthlyAnalysis(ctx.monthly || []);
     try {
-      gmAudit2026FeeRenderAfterGl(ctx);
-    } catch (_) {}
+      window.gmAudit2026FetchPropertyMatches(ctx);
+    } catch (_) {
+      try {
+        gmAudit2026FeeRenderAfterGl(ctx);
+      } catch (_2) {}
+    }
   }
 
   var AUD2026_MONTHLY_SERIES_EXPECT = {
@@ -911,6 +923,8 @@
 
   window.gmAudit2026OnActiveAuditClientChanged = function () {
     try {
+      window.__AUD2026_PROP_MATCH = {};
+      window.__AUD2026_PROP_MATCH_READY = false;
       var hf = document.getElementById('aud2026-hist-feedback');
       if (hf) {
         hf.style.display = 'none';
@@ -2177,7 +2191,101 @@
       });
   };
 
-  /** === Auditoria do Owner ( distribuição 3250 vs net devido · % gravada · sem localStorage ) === */
+  /** === Auditoria do Owner ( distribuição 3250 vs net devido · % Properties ) === */
+
+  window.__AUD2026_PROP_MATCH = window.__AUD2026_PROP_MATCH || {};
+  window.__AUD2026_PROP_MATCH_READY = false;
+
+  /** Ignora agregados / cabeçalhos GL que não são imóveis. */
+  window.gmAudit2026IsAggregatePropertyKey = function (key) {
+    var k = String(key == null ? '' : key).trim();
+    if (!k) return true;
+    if (/^->\s*\d{4}/i.test(k)) return true;
+    if (/^starting\s+balance/i.test(k)) return true;
+    if (/^net\s+change$/i.test(k)) return true;
+    if (/^total$/i.test(k)) return true;
+    return false;
+  };
+
+  /** classifica mgmtFeePct do match: valid (1–20), missing (0), suspicious, unmatched */
+  window.gmAudit2026PctStatusFromMatch = function (matchRow) {
+    if (!matchRow || !matchRow.matched) {
+      return { kind: 'unmatched', pct: null, label: 'Sem match Properties' };
+    }
+    var p = Number(matchRow.mgmtFeePct);
+    if (!isFinite(p) || p === 0) {
+      return { kind: 'missing', pct: null, label: 'Não cadastrado' };
+    }
+    if (p >= 1 && p <= 20) {
+      return { kind: 'valid', pct: round2(p), label: round2(p) + '%' };
+    }
+    return {
+      kind: 'suspicious',
+      pct: round2(p),
+      label: 'Suspeito (' + round2(p) + '%)',
+    };
+  };
+
+  /** % numérico para gmAudit2026ComputeOwnerAuditDistRow (só kind === valid). */
+  window.gmAudit2026OwnerPctFromMatch = function (propertyKey) {
+    var m =
+      window.__AUD2026_PROP_MATCH &&
+      window.__AUD2026_PROP_MATCH[String(propertyKey)];
+    var st = window.gmAudit2026PctStatusFromMatch(m);
+    return st.kind === 'valid' ? st.pct : null;
+  };
+
+  window.gmAudit2026FetchPropertyMatches = function (ctx) {
+    var cid =
+      typeof gmAuditEffectiveClientId === 'function' ? gmAuditEffectiveClientId() : '';
+    if (!ctx || !ctx.seqKeys || !ctx.seqKeys.length || !cid) {
+      window.__AUD2026_PROP_MATCH = {};
+      window.__AUD2026_PROP_MATCH_READY = false;
+      return Promise.resolve();
+    }
+    var keys = ctx.seqKeys.filter(function (k) {
+      return !window.gmAudit2026IsAggregatePropertyKey(k);
+    });
+    return fetch('/api/audit-2026/match-properties', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: cid, propertyKeys: keys }),
+    })
+      .then(function (r) {
+        return r.json().then(function (j) {
+          return { r: r, j: j };
+        });
+      })
+      .then(function (x) {
+        var map = {};
+        if (x.r.ok && x.j && x.j.ok && Array.isArray(x.j.results)) {
+          for (var i = 0; i < x.j.results.length; i++) {
+            var row = x.j.results[i];
+            if (row && row.propertyKey != null) map[String(row.propertyKey)] = row;
+          }
+          window.__AUD2026_PROP_MATCH_READY = true;
+        } else {
+          console.warn('[match-properties]', (x.j && x.j.error) || x.r.statusText);
+          window.__AUD2026_PROP_MATCH_READY = false;
+        }
+        window.__AUD2026_PROP_MATCH = map;
+        try {
+          gmAudit2026FeeRenderAfterGl(ctx);
+        } catch (_) {}
+        try {
+          var po = document.getElementById('aud2026-panel-owner');
+          if (po && po.style.display !== 'none') {
+            window.gmAudit2026OwnerRenderTable(ctx);
+          }
+        } catch (_) {}
+      })
+      .catch(function (err) {
+        console.warn('[match-properties]', err);
+        window.__AUD2026_PROP_MATCH = {};
+        window.__AUD2026_PROP_MATCH_READY = false;
+      });
+  };
 
   window.__AUD2026_OWNER_SNAPSHOT_RAW = window.__AUD2026_OWNER_SNAPSHOT_RAW || null;
   window.__AUD2026_OWNER_SNAPSHOT_MAP =
@@ -2284,6 +2392,218 @@
         overPayment: overPayment,
       }),
     };
+  };
+
+  /** YYYY-MM a partir de data AppFolio (MM/DD/YYYY ou ISO). */
+  window.gmAudit2026OwnerParseYm = function (ds) {
+    var s = String(ds == null ? '' : ds).trim();
+    var iso = s.match(/^(\d{4})-(\d{2})-/);
+    if (iso) return iso[1] + '-' + iso[2];
+    var md = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!md) return null;
+    var M = parseInt(md[1], 10);
+    var Y = parseInt(md[3], 10);
+    if (!isFinite(M) || !isFinite(Y) || M < 1 || M > 12) return null;
+    return Y + '-' + String(M).padStart(2, '0');
+  };
+
+  /** Último mês parcial: data máxima do CSV antes do dia 25. */
+  window.gmAudit2026OwnerDetectCsvSpan = function (ctx) {
+    var maxTs = -1;
+    var maxDateStr = '';
+    var months = {};
+    if (!ctx || !ctx.properties) {
+      return { partialLastYm: null, maxDateStr: '', months: [] };
+    }
+    var pks = Object.keys(ctx.properties);
+    var pi;
+    for (pi = 0; pi < pks.length; pi++) {
+      var pv = ctx.properties[pks[pi]];
+      if (!pv || !pv.txs) continue;
+      var ti;
+      for (ti = 0; ti < pv.txs.length; ti++) {
+        var tx = pv.txs[ti];
+        var ym = gmAudit2026OwnerParseYm(tx.date);
+        if (ym) months[ym] = true;
+        var md = String(tx.date || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (!md) continue;
+        var ts = Date.UTC(
+          parseInt(md[3], 10),
+          parseInt(md[1], 10) - 1,
+          parseInt(md[2], 10),
+        );
+        if (ts > maxTs) {
+          maxTs = ts;
+          maxDateStr = tx.date;
+        }
+      }
+    }
+    var partialLastYm = null;
+    if (maxTs >= 0) {
+      var dMax = new Date(maxTs);
+      if (dMax.getUTCDate() < 25) {
+        partialLastYm = gmAudit2026OwnerParseYm(maxDateStr);
+      }
+    }
+    var monthList = Object.keys(months).sort();
+    return {
+      partialLastYm: partialLastYm,
+      maxDateStr: maxDateStr,
+      months: monthList,
+    };
+  };
+
+  function ownerAuditMonthBuckets(pv) {
+    var months = {};
+    var txs = pv && pv.txs ? pv.txs : [];
+    var i;
+    for (i = 0; i < txs.length; i++) {
+      var tx = txs[i];
+      var ym = gmAudit2026OwnerParseYm(tx.date);
+      if (!ym) continue;
+      if (!months[ym]) {
+        months[ym] = {
+          income4: 0,
+          rent4100: 0,
+          expEx611: 0,
+          exp6112: 0,
+          dist3250: 0,
+        };
+      }
+      var m = months[ym];
+      var g = tx.gl;
+      if (/^4/.test(g)) m.income4 = round2(m.income4 + tx.credit);
+      if (g === '4100') m.rent4100 = round2(m.rent4100 + tx.credit);
+      if (/^6|^7/.test(g)) {
+        if (g !== '6111') m.expEx611 = round2(m.expEx611 + tx.debit);
+        if (g === '6112') m.exp6112 = round2(m.exp6112 + tx.debit);
+      }
+      if (g === '3250') m.dist3250 = round2(m.dist3250 + tx.debit);
+    }
+    return months;
+  }
+
+  function ownerAuditExpenseTopGlFromTxs(txs, validYmSet) {
+    var by = {};
+    var i;
+    for (i = 0; i < txs.length; i++) {
+      var tx = txs[i];
+      var ym = gmAudit2026OwnerParseYm(tx.date);
+      if (!ym || !validYmSet[ym]) continue;
+      var g = tx.gl;
+      if (!/^6|^7/.test(g) || g === '6111') continue;
+      var d = Number(tx.debit || 0);
+      if (d <= 0) continue;
+      by[g] = round2((by[g] || 0) + d);
+    }
+    var topGl = null;
+    var topAmt = 0;
+    var keys = Object.keys(by);
+    var k;
+    for (k = 0; k < keys.length; k++) {
+      if (by[keys[k]] > topAmt) {
+        topAmt = by[keys[k]];
+        topGl = keys[k];
+      }
+    }
+    return { topGl: topGl, topAmt: topAmt, exp6112: by['6112'] || 0 };
+  }
+
+  function ownerAuditQtyInValidMonths(pv, validYmSet) {
+    var qr = 0;
+    var qd = 0;
+    var txs = pv && pv.txs ? pv.txs : [];
+    var i;
+    for (i = 0; i < txs.length; i++) {
+      var tx = txs[i];
+      var ym = gmAudit2026OwnerParseYm(tx.date);
+      if (!ym || !validYmSet[ym]) continue;
+      if (tx.gl === '4100' && Number(tx.credit || 0) > 0) qr += 1;
+      if (tx.gl === '3250' && Number(tx.debit || 0) > 0) qd += 1;
+    }
+    return { qtyRentals: qr, qtyOwnerPmts: qd };
+  }
+
+  /** Triagem: exclui meses órfãos (dist sem income4) e último mês parcial do CSV. */
+  window.gmAudit2026ComputeOwnerTrimmedAudit = function (pv, savedPct, span) {
+    span = span && typeof span === 'object' ? span : {};
+    var partialYm = span.partialLastYm || null;
+    var buckets = ownerAuditMonthBuckets(pv);
+    var yms = Object.keys(buckets).sort();
+    var validYmSet = {};
+    var excludedOrphan = [];
+    var excludedPartial = partialYm ? [partialYm] : [];
+    var sum = {
+      income4: 0,
+      rent4100: 0,
+      dist3250: 0,
+      ownerAuditExpenseEx611: 0,
+    };
+    var yi;
+    for (yi = 0; yi < yms.length; yi++) {
+      var ym = yms[yi];
+      var m = buckets[ym];
+      var orphan = m.dist3250 > 0.01 && m.income4 < 0.01;
+      var isPartial = partialYm && ym === partialYm;
+      if (orphan) {
+        excludedOrphan.push(ym);
+        continue;
+      }
+      if (isPartial) continue;
+      validYmSet[ym] = true;
+      sum.income4 = round2(sum.income4 + m.income4);
+      sum.rent4100 = round2(sum.rent4100 + m.rent4100);
+      sum.dist3250 = round2(sum.dist3250 + m.dist3250);
+      sum.ownerAuditExpenseEx611 = round2(
+        sum.ownerAuditExpenseEx611 + m.expEx611,
+      );
+    }
+    var expMeta = ownerAuditExpenseTopGlFromTxs(pv.txs || [], validYmSet);
+    var oa = gmAudit2026ComputeOwnerAuditDistRow(sum, savedPct);
+    var triage = gmAudit2026OwnerTriageFromOver(oa, expMeta);
+    var qtyV = ownerAuditQtyInValidMonths(pv, validYmSet);
+    return {
+      oa: oa,
+      triageBand: triage.band,
+      triageLabel: triage.label,
+      validMonthCount: Object.keys(validYmSet).length,
+      excludedOrphan: excludedOrphan,
+      excludedPartial: excludedPartial,
+      topExpenseGl: expMeta.topGl,
+      exp6112: expMeta.exp6112,
+      qtyRentals: qtyV.qtyRentals,
+      qtyOwnerPmts: qtyV.qtyOwnerPmts,
+    };
+  };
+
+  /** @returns {{band:string,label:string}} */
+  window.gmAudit2026OwnerTriageFromOver = function (oa, expMeta) {
+    expMeta = expMeta || {};
+    if (!oa || !oa.hasPct || oa.overPayment == null || !isFinite(Number(oa.overPayment))) {
+      return { band: 'gray', label: 'A revisar' };
+    }
+    var o = Number(oa.overPayment);
+    if (Math.abs(o) <= 1) return { band: 'blue', label: 'Correto' };
+    if (o < -1) return { band: 'green', label: 'A pagar ao owner' };
+    if (o > 1) {
+      if (expMeta.topGl === '6112' && Number(expMeta.exp6112 || 0) > 0.01) {
+        return { band: 'orange', label: 'Placement / one-shot' };
+      }
+      return { band: 'red', label: 'Descasamento real' };
+    }
+    return { band: 'gray', label: 'A revisar' };
+  };
+
+  window.gmAudit2026OwnerTriageSortKey = function (trim) {
+    var order = { red: 0, orange: 1, green: 2, blue: 3, gray: 4 };
+    var b = trim && trim.triageBand ? trim.triageBand : 'gray';
+    var o = order[b] != null ? order[b] : 5;
+    var sal =
+      trim && trim.oa && trim.oa.overPayment != null
+        ? Number(trim.oa.overPayment)
+        : 0;
+    var mag = b === 'green' ? Math.abs(sal) : sal;
+    return [o, -mag];
   };
 
   function ownerAuditPctEffFromInputs(pk, feeTbodyEl, lookupSaved) {
@@ -2402,35 +2722,53 @@
     );
   }
 
-  window.gmAudit2026OwnerRefreshSummaryCards = function (rowsMeta) {
-    var totDevolver = 0;
-    var totReceber = 0;
-    var nCorr = 0,
-      nRev = 0;
-    rowsMeta = Array.isArray(rowsMeta) ? rowsMeta : [];
-    var r;
-    for (r = 0; r < rowsMeta.length; r++) {
-      var om = rowsMeta[r];
-      if (!om.hasPct) {
-        nRev += 1;
-        continue;
-      }
-      if (om.over == null || !isFinite(om.over)) {
-        nRev += 1;
-        continue;
-      }
-      if (om.over > 1) totDevolver += om.over;
-      else if (om.over < -1) totReceber += Math.abs(om.over);
-      else nCorr += 1;
-    }
+  window.gmAudit2026OwnerRefreshSummaryCards = function (summary) {
+    summary = summary && typeof summary === 'object' ? summary : {};
     function setIx(id, t) {
       var el = document.getElementById(id);
       if (el) el.textContent = t;
     }
-    setIx('aud2026-owner-sum-devolver', '$ ' + fmtUsd(totDevolver));
-    setIx('aud2026-owner-sum-receber', '$ ' + fmtUsd(totReceber));
-    setIx('aud2026-owner-sum-corr', String(nCorr));
-    setIx('aud2026-owner-sum-revisar', String(nRev));
+    setIx('aud2026-owner-sum-liquido', '$ ' + fmtUsd(summary.saldoLiquido || 0));
+    setIx(
+      'aud2026-owner-sum-red',
+      '$ ' + fmtUsd(summary.totRedReal || 0) + ' (' + String(summary.nRedReal || 0) + ')',
+    );
+    setIx(
+      'aud2026-owner-sum-orange',
+      '$ ' + fmtUsd(summary.totOrange || 0) + ' (' + String(summary.nOrange || 0) + ')',
+    );
+    setIx(
+      'aud2026-owner-sum-green',
+      '$ ' + fmtUsd(summary.totGreenPay || 0) + ' (' + String(summary.nGreenPay || 0) + ')',
+    );
+    setIx('aud2026-owner-sum-blue', String(summary.nBlueOk || 0));
+    setIx('aud2026-owner-sum-revisar', String(summary.nRevisar || 0));
+    setIx('aud2026-owner-sum-qty-rent', String(summary.totQtyRent || 0));
+    setIx('aud2026-owner-sum-qty-dist', String(summary.totQtyDist || 0));
+    var note = document.getElementById('aud2026-owner-trim-notice');
+    if (note) {
+      var parts = [];
+      if (summary.partialLastYm) {
+        parts.push(
+          'Último mês parcial excluído: ' + String(summary.partialLastYm) + '.',
+        );
+      }
+      if (summary.nOrphanMonths != null && summary.nOrphanMonths > 0) {
+        parts.push(
+          String(summary.nOrphanMonths) +
+            ' meses-imóvel órfãos (dist 3250 sem income 4xxx no mês) excluídos.',
+        );
+      }
+      if (summary.brutoLiquido != null && isFinite(Number(summary.brutoLiquido))) {
+        parts.push(
+          'Saldo bruto (sem recorte): $ ' + fmtUsd(summary.brutoLiquido) + '.',
+        );
+      }
+      note.textContent =
+        parts.length > 0
+          ? parts.join(' ')
+          : 'Recorte ativo: meses órfãos e último mês parcial excluídos do saldo.';
+    }
   };
 
   window.gmAudit2026OwnerFetchAndRender = function () {
@@ -2449,7 +2787,6 @@
       return;
     }
     if (!cid) {
-      window.__AUD2026_FEE_LOOKUP = {};
       window.__AUD2026_OWNER_SNAPSHOT_RAW = null;
       window.__AUD2026_OWNER_SNAPSHOT_MAP = {};
       if (fb) {
@@ -2466,52 +2803,34 @@
     if (fb) {
       fb.style.display = 'block';
       fb.style.color = 'var(--ink3)';
-      fb.textContent = 'A carregar dados de auditoria do owner…';
+      fb.textContent = 'A carregar match Properties e snapshot anterior…';
     }
     window.__AUD2026_OWNER_SNAPSHOT_RAW = null;
     window.__AUD2026_OWNER_SNAPSHOT_MAP = {};
-    Promise.all([
-      fetch('/api/audit-2026/fee-contracts?clientId=' + encodeURIComponent(cid), {
-        credentials: 'same-origin',
-      }).then(function (r) {
-        return r.json().then(function (j) {
-          return { r: r, j: j };
+
+    var matchP = window.__AUD2026_PROP_MATCH_READY
+      ? Promise.resolve()
+      : window.gmAudit2026FetchPropertyMatches(ctx);
+
+    matchP
+      .then(function () {
+        return fetch(
+          '/api/audit-2026/owner-snapshots?clientId=' + encodeURIComponent(cid),
+          { credentials: 'same-origin' },
+        ).then(function (r) {
+          return r.json().then(function (j) {
+            return { r: r, j: j };
+          });
         });
-      }),
-      fetch('/api/audit-2026/owner-snapshots?clientId=' + encodeURIComponent(cid), {
-        credentials: 'same-origin',
-      }).then(function (r) {
-        return r.json().then(function (j) {
-          return { r: r, j: j };
-        });
-      }),
-    ])
-      .then(function (pair) {
-        var x = pair[0];
-        var xOs = pair[1];
-        window.__AUD2026_FEE_LOOKUP = {};
-        window.__AUD2026_OWNER_SNAPSHOT_RAW = null;
-        window.__AUD2026_OWNER_SNAPSHOT_MAP = {};
+      })
+      .then(function (xOs) {
         if (xOs.r.ok && xOs.j.ok && xOs.j.snapshot) {
           window.__AUD2026_OWNER_SNAPSHOT_RAW = xOs.j.snapshot;
           window.__AUD2026_OWNER_SNAPSHOT_MAP =
             gmAudit2026OwnerSnapshotRowsToMap(xOs.j.snapshot);
-        }
-        if (!x.r.ok || !x.j.ok || !Array.isArray(x.j.contracts)) {
-          if (fb)
-            fb.textContent = (x.j && x.j.error) || 'Erro ao carregar % contratadas.';
-          if (fb) fb.style.color = 'var(--red)';
-          gmAudit2026OwnerRenderTable(window.__AUD2026_CTX);
-          return;
-        }
-        var hh;
-        for (hh = 0; hh < x.j.contracts.length; hh++) {
-          var tr = x.j.contracts[hh];
-          if (tr.propertyKey != null && tr.contractedPct != null)
-            window.__AUD2026_FEE_LOOKUP[String(tr.propertyKey)] = Number(tr.contractedPct);
-        }
-        if (!xOs.r.ok || !xOs.j.ok)
+        } else if (!xOs.r.ok || !xOs.j.ok) {
           console.warn('[owner-snapshots]', (xOs.j && xOs.j.error) || xOs.r.statusText);
+        }
         if (fb) fb.style.display = 'none';
         gmAudit2026OwnerRenderTable(window.__AUD2026_CTX);
       })
@@ -2528,16 +2847,19 @@
     window.gmAudit2026OwnerFetchAndRender();
   };
 
-  /** Subtotal agregados por proprietário predominante na 3250 */
+  var AUD2026_OWNER_COLS = 14;
+
+  /** Veredito owner: % de Properties (mgmtFeePct) + gmAudit2026ComputeOwnerAuditDistRow */
   window.gmAudit2026OwnerRenderTable = function (ctx) {
     ctx = ctx || window.__AUD2026_CTX;
     var tb = document.getElementById('aud2026-owner-tbody');
-    if (!tb) return;
+    var tbRev = document.getElementById('aud2026-owner-revisar-tbody');
+    var colN = AUD2026_OWNER_COLS;
 
-    function emptyHtml(msg, colspanN) {
+    function emptyHtml(msg) {
       return (
         '<tr><td colspan="' +
-        String(colspanN) +
+        String(colN) +
         '" style="padding:14px;color:var(--ink3)">' +
         escHtml(msg) +
         '</td></tr>'
@@ -2545,11 +2867,9 @@
     }
 
     if (!ctx || !ctx.seqKeys || !ctx.seqKeys.length) {
-      tb.innerHTML = emptyHtml(
-        'Sem dados GL. Use «Análise atual» para carregar o CSV.',
-        10,
-      );
-      window.gmAudit2026OwnerRefreshSummaryCards([]);
+      if (tb) tb.innerHTML = emptyHtml('Sem dados GL. Use «Análise atual» para carregar o CSV.');
+      if (tbRev) tbRev.innerHTML = '';
+      window.gmAudit2026OwnerRefreshSummaryCards({});
       return;
     }
 
@@ -2560,166 +2880,296 @@
     var q = qRaw.toLowerCase();
 
     var keys = ctx.seqKeys.filter(function (k) {
-      return (
-        !q || String(k || '').toLowerCase().indexOf(q) >= 0
-      );
+      if (window.gmAudit2026IsAggregatePropertyKey(k)) return false;
+      return !q || String(k || '').toLowerCase().indexOf(q) >= 0;
     });
 
     if (!keys.length) {
-      tb.innerHTML = emptyHtml('Sem linhas neste filtro.', 10);
-      window.gmAudit2026OwnerRefreshSummaryCards([]);
+      if (tb) tb.innerHTML = emptyHtml('Sem linhas neste filtro.');
+      if (tbRev) tbRev.innerHTML = '';
+      window.gmAudit2026OwnerRefreshSummaryCards({});
       return;
     }
 
-    var lk = window.__AUD2026_FEE_LOOKUP || {};
     var snapM = window.__AUD2026_OWNER_SNAPSHOT_MAP || {};
-    var feeTb = document.getElementById('aud2026-fee-tbody');
+    var propMatch = window.__AUD2026_PROP_MATCH || {};
+    var csvSpan = gmAudit2026OwnerDetectCsvSpan(ctx);
 
-    var rowObjs = [];
+    var verdictRows = [];
+    var revisarRows = [];
     var ki;
     for (ki = 0; ki < keys.length; ki++) {
       var pk = keys[ki];
       var pvObj = ctx.properties[pk];
       if (!pvObj) continue;
-      var peff = ownerAuditPctEffFromInputs(pk, feeTb, lk);
-      var oa = gmAudit2026ComputeOwnerAuditDistRow(pvObj, peff);
+      var mRow = propMatch[pk];
+      var pctSt = window.gmAudit2026PctStatusFromMatch(mRow);
+      var peff =
+        pctSt.kind === 'valid' ? pctSt.pct : window.gmAudit2026OwnerPctFromMatch(pk);
+      var oaBruto = gmAudit2026ComputeOwnerAuditDistRow(pvObj, peff);
+      var trim =
+        pctSt.kind === 'valid'
+          ? gmAudit2026ComputeOwnerTrimmedAudit(pvObj, peff, csvSpan)
+          : null;
       var prevE = ownerAuditSnapPrev(snapM, pk);
-      rowObjs.push({ key: pk, pv: pvObj, oa: oa, prev: prevE });
+      var item = {
+        key: pk,
+        pv: pvObj,
+        oa: trim ? trim.oa : oaBruto,
+        oaBruto: oaBruto,
+        trim: trim,
+        prev: prevE,
+        pctSt: pctSt,
+        match: mRow,
+      };
+      if (pctSt.kind === 'valid') verdictRows.push(item);
+      else revisarRows.push(item);
     }
 
-    rowObjs.sort(function (a, b) {
-      var oa = String(a.oa.ownerLabel || '').localeCompare(String(b.oa.ownerLabel || ''));
-      if (oa !== 0) return oa;
-      return (b.pv.dist3250 || 0) - (a.pv.dist3250 || 0);
+    verdictRows.sort(function (a, b) {
+      var ka = gmAudit2026OwnerTriageSortKey(a.trim);
+      var kb = gmAudit2026OwnerTriageSortKey(b.trim);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];
+      return ka[1] - kb[1];
+    });
+    revisarRows.sort(function (a, b) {
+      return String(a.key).localeCompare(String(b.key));
     });
 
-    var groupsMap = {};
-    var gi;
-    for (gi = 0; gi < rowObjs.length; gi++) {
-      var grpKey = rowObjs[gi].oa.ownerLabel || '(a definir)';
-      if (!groupsMap[grpKey]) groupsMap[grpKey] = [];
-      groupsMap[grpKey].push(rowObjs[gi]);
+    var summary = {
+      saldoLiquido: 0,
+      totRedReal: 0,
+      nRedReal: 0,
+      totOrange: 0,
+      nOrange: 0,
+      totGreenPay: 0,
+      nGreenPay: 0,
+      nBlueOk: 0,
+      nRevisar: revisarRows.length,
+      totQtyRent: 0,
+      totQtyDist: 0,
+      partialLastYm: csvSpan.partialLastYm,
+      nOrphanMonths: 0,
+      brutoLiquido: 0,
+    };
+
+    function triageBandColor(band) {
+      if (band === 'red') return 'var(--red)';
+      if (band === 'orange') return 'var(--amber)';
+      if (band === 'green') return 'var(--green)';
+      if (band === 'blue') return 'var(--blue)';
+      return 'var(--ink3)';
     }
 
-    var groupKeys = Object.keys(groupsMap).sort(function (x, y) {
-      return x.localeCompare(y);
-    });
-
-    var rowsHtml = '';
-    var metaSum = [];
-
-    function resultadoCellHtml(oa) {
-      if (!oa.hasPct) {
+    function triageClassCellHtml(trim) {
+      if (!trim) {
         return (
-          '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--ink3)">Revisar</span>'
+          '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--ink3)">\u2014</span>'
         );
       }
-      var col =
-        oa.band === 'red'
-          ? 'var(--red)'
-          : oa.band === 'green'
-            ? 'var(--green)'
-            : oa.band === 'blue'
-              ? 'var(--blue)'
-              : 'var(--ink3)';
+      var col = triageBandColor(trim.triageBand);
       return (
-        '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:' +
+        '<span style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700;color:' +
         col +
         '">' +
-        escHtml(oa.resultadoLabel) +
+        escHtml(trim.triageLabel) +
         '</span>'
       );
     }
 
-    function subtotalMessage(sumOver) {
-      if (Math.abs(sumOver) <= 1) return 'L\u00edquido correto.';
-      if (sumOver > 1)
+    function resultadoCellHtml(trim) {
+      if (!trim || !trim.oa || !trim.oa.hasPct) {
         return (
-          'Total que o propriet\u00e1rio deve devolver: $ ' + fmtUsd(sumOver)
+          '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--ink3)">Revisar</span>'
         );
+      }
+      var oa = trim.oa;
+      var col = triageBandColor(trim.triageBand);
+      var lbl = trim.triageLabel;
+      if (trim.triageBand === 'red' && oa.overPayment != null) {
+        lbl = 'Devolver $ ' + fmtUsd(oa.overPayment);
+      } else if (trim.triageBand === 'green' && oa.overPayment != null) {
+        lbl = 'A pagar $ ' + fmtUsd(Math.abs(oa.overPayment));
+      } else if (trim.triageBand === 'orange' && oa.overPayment != null) {
+        lbl = 'Placement $ ' + fmtUsd(oa.overPayment);
+      }
       return (
-        'Total que o propriet\u00e1rio tem a receber: $ ' + fmtUsd(Math.abs(sumOver))
+        '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:' +
+        col +
+        '">' +
+        escHtml(lbl) +
+        '</span>'
       );
     }
 
-    var gkIdx;
-    for (gkIdx = 0; gkIdx < groupKeys.length; gkIdx++) {
-      var go = groupsMap[groupKeys[gkIdx]];
-      var subAgg = 0;
-      var hasAny = false;
-      var lx;
-      for (lx = 0; lx < go.length; lx++) {
-        var ro = go[lx];
-        if (ro.oa.hasPct && ro.oa.overPayment != null && isFinite(ro.oa.overPayment)) {
-          subAgg = round2(subAgg + Number(ro.oa.overPayment));
-          hasAny = true;
-        }
-        metaSum.push({
-          hasPct: ro.oa.hasPct,
-          over: ro.oa.overPayment,
-        });
-        rowsHtml +=
-          '<tr>' +
-          '<td style="padding:8px 10px;max-width:200px;word-break:break-word">' +
-          escHtml(ro.key.length > 110 ? ro.key.slice(0, 107) + '\u2026' : ro.key) +
-          '</td>' +
-          '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
-          fmtUsd(ro.oa.income) +
-          '</td>' +
-          '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">' +
-          (ro.oa.feeDevido == null ? '\u2014' : '$ ' + fmtUsd(ro.oa.feeDevido)) +
-          '</td>' +
-          '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
-          fmtUsd(ro.oa.despesas) +
-          '</td>' +
-          '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">' +
-          (ro.oa.netDevido == null ? '\u2014' : '$ ' + fmtUsd(ro.oa.netDevido)) +
-          '</td>' +
-          '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
-          fmtUsd(ro.oa.distribuido) +
-          '</td>' +
-          '<td style="padding:8px;text-align:center">' +
-          (ro.prev.prevMissing || ro.prev.overPayment == null
-            ? '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--ink3)">\u2014</span>'
-            : ownerAuditOverSignedOverCell(true, ro.prev.overPayment)) +
-          '</td>' +
-          '<td style="padding:8px;text-align:center">' +
-          ownerAuditOverSignedOverCell(ro.oa.hasPct, ro.oa.overPayment) +
-          '</td>' +
-          '<td style="padding:8px;text-align:center">' +
-          ownerAuditVariationCell(ro.oa, ro.prev) +
-          '</td>' +
-          '<td style="padding:8px 10px;text-align:center">' +
-          resultadoCellHtml(ro.oa) +
-          '</td></tr>';
-      }
-
-      var subTxt = hasAny
-        ? '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:' +
-          (Math.abs(subAgg) <= 1
-            ? 'var(--blue)'
-            : subAgg > 1
-              ? 'var(--red)'
-              : 'var(--green)') +
-          '">' +
-          escHtml(subtotalMessage(subAgg)) +
-          '</span>'
-        : '';
-
-      rowsHtml +=
-        '<tr style="background:var(--cream)">' +
-        '<td colspan="10" style="padding:11px 14px;text-align:right;font-size:11px;line-height:1.5;color:var(--ink2);font-family:\'DM Sans\',sans-serif">' +
-        '<span style="font-weight:700">' +
-        escHtml(String(groupKeys[gkIdx])) +
-        '</span> \u00b7 <span style="font-size:10px;color:var(--ink3);text-transform:uppercase">subtotal grupo (payee predominante 3250)</span><br/>' +
-        (subTxt ||
-          '<span style="font-size:11px;font-weight:700;color:var(--ink3)">\u2014</span>') +
-        '</td></tr>';
+    function qtyCells(ro) {
+      var qr =
+        ro.trim && ro.trim.qtyRentals != null
+          ? Number(ro.trim.qtyRentals)
+          : ro.pv.qtyRentals != null
+            ? Number(ro.pv.qtyRentals)
+            : 0;
+      var qd =
+        ro.trim && ro.trim.qtyOwnerPmts != null
+          ? Number(ro.trim.qtyOwnerPmts)
+          : ro.pv.qtyOwnerPmts != null
+            ? Number(ro.pv.qtyOwnerPmts)
+            : 0;
+      summary.totQtyRent += qr;
+      summary.totQtyDist += qd;
+      var warn =
+        qr !== qd
+          ? 'color:var(--amber);font-weight:700'
+          : 'color:var(--ink2)';
+      return (
+        '<td style="padding:8px;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;' +
+        warn +
+        '">' +
+        String(qr) +
+        '</td><td style="padding:8px;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;' +
+        warn +
+        '">' +
+        String(qd) +
+        '</td>'
+      );
     }
 
-    tb.innerHTML = rowsHtml || emptyHtml('Sem linhas.', 10);
+    function pctCellHtml(pctSt) {
+      var col =
+        pctSt.kind === 'valid'
+          ? 'var(--ink)'
+          : pctSt.kind === 'suspicious'
+            ? 'var(--amber)'
+            : 'var(--ink3)';
+      return (
+        '<td style="padding:8px;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;color:' +
+        col +
+        '">' +
+        escHtml(pctSt.label) +
+        '</td>'
+      );
+    }
 
-    window.gmAudit2026OwnerRefreshSummaryCards(metaSum);
+    function buildDataRow(ro) {
+      var trim = ro.trim;
+      var oa = ro.oa;
+      if (
+        ro.oaBruto &&
+        ro.oaBruto.hasPct &&
+        ro.oaBruto.overPayment != null &&
+        isFinite(Number(ro.oaBruto.overPayment))
+      ) {
+        var ob = Number(ro.oaBruto.overPayment);
+        if (ob > 1) summary._brutoDevolver = round2((summary._brutoDevolver || 0) + ob);
+        else if (ob < -1)
+          summary._brutoReceber = round2(
+            (summary._brutoReceber || 0) + Math.abs(ob),
+          );
+      }
+      if (trim && trim.excludedOrphan) {
+        summary.nOrphanMonths += trim.excludedOrphan.length;
+      }
+      if (oa.hasPct && oa.overPayment != null && isFinite(oa.overPayment)) {
+        var ov = Number(oa.overPayment);
+        if (trim && trim.triageBand === 'red' && ov > 1) {
+          summary.totRedReal = round2(summary.totRedReal + ov);
+          summary.nRedReal += 1;
+        } else if (trim && trim.triageBand === 'orange' && ov > 1) {
+          summary.totOrange = round2(summary.totOrange + ov);
+          summary.nOrange += 1;
+        } else if (trim && trim.triageBand === 'green' && ov < -1) {
+          summary.totGreenPay = round2(summary.totGreenPay + Math.abs(ov));
+          summary.nGreenPay += 1;
+        } else if (trim && trim.triageBand === 'blue') {
+          summary.nBlueOk += 1;
+        }
+      }
+      return (
+        '<tr>' +
+        '<td style="padding:8px 10px;max-width:200px;word-break:break-word">' +
+        escHtml(ro.key.length > 100 ? ro.key.slice(0, 97) + '\u2026' : ro.key) +
+        '</td>' +
+        pctCellHtml(ro.pctSt) +
+        '<td style="padding:8px;text-align:center">' +
+        triageClassCellHtml(trim) +
+        '</td>' +
+        '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
+        fmtUsd(oa.income) +
+        '</td>' +
+        '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">' +
+        (oa.feeDevido == null ? '\u2014' : '$ ' + fmtUsd(oa.feeDevido)) +
+        '</td>' +
+        '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
+        fmtUsd(oa.despesas) +
+        '</td>' +
+        '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">' +
+        (oa.netDevido == null ? '\u2014' : '$ ' + fmtUsd(oa.netDevido)) +
+        '</td>' +
+        '<td style="padding:8px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
+        fmtUsd(oa.distribuido) +
+        '</td>' +
+        qtyCells(ro) +
+        '<td style="padding:8px;text-align:center">' +
+        (ro.prev.prevMissing || ro.prev.overPayment == null
+          ? '<span style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;color:var(--ink3)">\u2014</span>'
+          : ownerAuditOverSignedOverCell(true, ro.prev.overPayment)) +
+        '</td>' +
+        '<td style="padding:8px;text-align:center">' +
+        ownerAuditOverSignedOverCell(oa.hasPct, oa.overPayment) +
+        '</td>' +
+        '<td style="padding:8px;text-align:center">' +
+        ownerAuditVariationCell(oa, ro.prev) +
+        '</td>' +
+        '<td style="padding:8px 10px;text-align:center">' +
+        resultadoCellHtml(trim) +
+        '</td></tr>'
+      );
+    }
+
+    var rowsHtml = '';
+    var riMain;
+    for (riMain = 0; riMain < verdictRows.length; riMain++) {
+      rowsHtml += buildDataRow(verdictRows[riMain]);
+    }
+
+    if (tb)
+      tb.innerHTML =
+        rowsHtml || emptyHtml('Nenhum imóvel com % válido em Properties neste filtro.');
+
+    var revHtml = '';
+    for (var ri = 0; ri < revisarRows.length; ri++) {
+      var rr = revisarRows[ri];
+      var dbAddr =
+        rr.match && rr.match.propertyAddress
+          ? rr.match.propertyAddress
+          : '\u2014';
+      revHtml +=
+        '<tr><td style="padding:8px 10px;max-width:220px;word-break:break-word">' +
+        escHtml(rr.key.length > 90 ? rr.key.slice(0, 87) + '\u2026' : rr.key) +
+        '</td><td style="padding:8px 10px;font-size:11px;color:var(--ink2)">' +
+        escHtml(dbAddr) +
+        '</td><td style="padding:8px 10px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink3)">' +
+        escHtml(rr.pctSt.label) +
+        '</td><td style="padding:8px 10px;text-align:right;font-family:JetBrains Mono,monospace;font-size:11px">$ ' +
+        fmtUsd(rr.pv.dist3250) +
+        '</td></tr>';
+    }
+    if (tbRev) {
+      tbRev.innerHTML =
+        revHtml ||
+        '<tr><td colspan="4" style="padding:10px 12px;color:var(--ink3)">Nenhum imóvel pendente de cadastro.</td></tr>';
+    }
+
+    summary.saldoLiquido = round2(
+      summary.totRedReal + summary.totOrange - summary.totGreenPay,
+    );
+    summary.brutoLiquido = round2(
+      (summary._brutoDevolver || 0) - (summary._brutoReceber || 0),
+    );
+    delete summary._brutoDevolver;
+    delete summary._brutoReceber;
+    window.gmAudit2026OwnerRefreshSummaryCards(summary);
+    window.__AUD2026_OWNER_LAST_SUMMARY = summary;
   };
 
   window.gmAudit2026OwnerSaveSnapshotUpload = function () {
@@ -2737,16 +3187,18 @@
       } else alert('Cliente n\u00e3o definido.');
       return;
     }
-    var lk = window.__AUD2026_FEE_LOOKUP || {};
-    var feeTb = document.getElementById('aud2026-fee-tbody');
     var resultsOut = [];
     var si;
     for (si = 0; si < ctx.seqKeys.length; si++) {
       var k1 = ctx.seqKeys[si];
+      if (window.gmAudit2026IsAggregatePropertyKey(k1)) continue;
       var pv1 = ctx.properties[k1];
       if (!pv1) continue;
-      var peff1 = ownerAuditPctEffFromInputs(k1, feeTb, lk);
-      var oa1 = gmAudit2026ComputeOwnerAuditDistRow(pv1, peff1);
+      var peff1 = window.gmAudit2026OwnerPctFromMatch(k1);
+      if (peff1 == null) continue;
+      var spanSave = gmAudit2026OwnerDetectCsvSpan(ctx);
+      var trim1 = gmAudit2026ComputeOwnerTrimmedAudit(pv1, peff1, spanSave);
+      var oa1 = trim1.oa;
       resultsOut.push({
         propertyKey: k1,
         owner: oa1.ownerLabel,

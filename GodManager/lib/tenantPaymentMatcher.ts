@@ -62,7 +62,17 @@ export interface TenantLite {
   status?: string | null;
 }
 
-export function matchProperty(paymentAddress: string, properties: PropertyLite[]): string | null {
+export type PropertyMatchMeta = {
+  propertyId: string;
+  score: number;
+  method: 'exact_part' | 'token';
+};
+
+/** Mesma lógica que matchProperty, com score e método (auditoria GL ↔ Properties). */
+export function matchPropertyWithMeta(
+  paymentAddress: string,
+  properties: PropertyLite[],
+): PropertyMatchMeta | null {
   const parts = paymentAddress
     .split(' - ')
     .map((x) => x.trim())
@@ -70,17 +80,24 @@ export function matchProperty(paymentAddress: string, properties: PropertyLite[]
   for (const part of parts) {
     const normalizedPart = normalizeAddress(part);
     const matches = properties.filter((pr) => normalizeAddress(pr.address) === normalizedPart);
-    if (matches.length === 1) return matches[0]!.id;
+    if (matches.length === 1) {
+      return { propertyId: matches[0]!.id, score: 1, method: 'exact_part' };
+    }
   }
 
-  let best: { id: string; score: number } | null = null;
+  let best: PropertyMatchMeta | null = null;
   for (const prop of properties) {
     const score = tokenSimilarity(paymentAddress, prop.address);
     if (score >= 0.6 && (!best || score > best.score)) {
-      best = { id: prop.id, score };
+      best = { propertyId: prop.id, score, method: 'token' };
     }
   }
-  return best ? best.id : null;
+  return best;
+}
+
+export function matchProperty(paymentAddress: string, properties: PropertyLite[]): string | null {
+  const m = matchPropertyWithMeta(paymentAddress, properties);
+  return m ? m.propertyId : null;
 }
 
 export function matchTenant(
