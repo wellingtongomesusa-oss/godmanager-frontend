@@ -1312,6 +1312,21 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="page active" id="page-home">
  <div class="ph"><div class="pt">Home</div><div class="ps">Portfolio overview — properties, leasing, expenses, and compliance.</div></div>
  <div class="cg" id="home-cards"></div>
+ <div id="gm-bank-balance-modal-bg" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5200;display:none;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)gmBankAccountCloseModal()">
+ <div style="background:var(--paper);border-radius:12px;max-width:420px;width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(26,26,28,.12)" onclick="event.stopPropagation()">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px" id="gm-bank-modal-title">Saldo bancario</div>
+ <div style="font-size:11px;color:var(--ink3);margin-bottom:18px" id="gm-bank-modal-sub">Registar snapshot manual</div>
+ <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Saldo (USD)</label>
+ <input id="gm-bank-modal-balance" type="number" step="0.01" min="0" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'JetBrains Mono',monospace;font-size:14px;margin-bottom:14px;box-sizing:border-box">
+ <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Data do saldo</label>
+ <input id="gm-bank-modal-date" type="date" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:20px;box-sizing:border-box">
+ <div id="gm-bank-modal-err" style="display:none;font-size:11px;color:var(--red);margin-bottom:12px"></div>
+ <div style="display:flex;gap:10px;justify-content:flex-end">
+ <button type="button" onclick="gmBankAccountCloseModal()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+ <button type="button" id="gm-bank-modal-save" onclick="gmBankAccountSaveModal()" style="padding:9px 16px;border:none;border-radius:8px;background:var(--amber);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Salvar</button>
+ </div>
+ </div>
+ </div>
  <div id="home-lucro-mp-wrap" style="display:none;margin-top:28px;background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
  <div id="home-lucro-mp-head" class="home-lucro-mp-head" role="button" tabindex="0" aria-expanded="true" aria-controls="home-lucro-mp-body" title="Expandir ou recolher">
  <div>
@@ -5174,6 +5189,9 @@ const CARDS=[
  {id:'total-net-owner',label:'TOTAL NET OWNER',badge:'NET',barClass:'bb bb',value:'—',sub1:'Soma a repassar aos owners',sub2:'',deltaHtml:'',cd:[1],cc:['#22558c'],ctr:'—',pills:[{t:'Net Mensal',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
  {id:'ganho-financeiro',label:'GANHO FINANCEIRO',badge:'GNF',barClass:'bb ba',value:'—',sub1:'Gestao: —',sub1Html:'Gestao: —<br>Markup: —<br>Tenant Place: —',sub2:'Mes corrente',deltaHtml:'',cd:[100],cc:['#7c3aed'],ctr:'—',pills:[],r:'ltproperties',empty:true,labels:[]},
  {id:'total-exp-pm',label:'TOTAL EXP MES (PM)',badge:'EXP',barClass:'bb br',value:'—',sub1:'Soma despesas do mes (PM)',sub2:'',deltaHtml:'',cd:[1],cc:['#b83030'],ctr:'—',pills:[{t:'Atual',c:'pr'}],r:'ltexpenses',empty:true,labels:[]},
+ {id:'trust-chase',label:'TRUST CHASE',badge:'TC',barClass:'bb bg',value:'—',sub1:'Clique para registrar',sub2:'',bankMeta:'',bankAccount:true,accountType:'TRUST_CHASE',noNav:true,empty:true,cd:[100],cc:['#22558c'],ctr:'—',pills:[],r:'',labels:[]},
+ {id:'operating-trust',label:'OPERATING TRUST',badge:'OT',barClass:'bb ba',value:'—',sub1:'Clique para registrar',sub2:'',bankMeta:'',bankAccount:true,accountType:'OPERATING_TRUST',noNav:true,empty:true,cd:[100],cc:['#c9a96e'],ctr:'—',pills:[],r:'',labels:[]},
+ {id:'deposit-security',label:'DEPOSIT SECURITY',badge:'DS',barClass:'bb bb',value:'—',sub1:'Clique para registrar',sub2:'',bankMeta:'',bankAccount:true,accountType:'DEPOSIT_SECURITY',noNav:true,empty:true,cd:[100],cc:['#2a6e4e'],ctr:'—',pills:[],r:'',labels:[]},
  {id:'expenses-calls',label:'EXPENSES CALLS',badge:'EXP',barClass:'bb ba',value:'0',sub1:'Total de chamados abertos no mes',sub2:'Aguardam acao do tecnico',cd:[1],cc:['#92400e'],ctr:'0',pills:[{t:'Abertos',c:'pa'}],r:'jobs',empty:true,labels:[]},
  {id:'rent-receivable',label:'RENT RECEIVABLE',badge:'RCV',barClass:'bb ba',value:'—',sub1:'Active rents due this month',sub2:'',cd:[65,25,10],cc:['#2a6e4e','#c9a96e','#b83030'],ctr:'—',pills:[{t:'Collected',c:'pg'},{t:'Pending',c:'pa'},{t:'Late',c:'pr'}],r:'ltstatements',empty:true,labels:[]},
  {id:'occupancy-index',label:'OCCUPANCY INDEX',badge:'IDX',barClass:'bb bg',value:'—',sub1:'Portfolio occupancy rate',sub2:'Rented / Total Houses',cd:[80,20],cc:['#2a6e4e','#e2ddd4'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Available',c:'pa'}],r:'longterm',empty:true,labels:[]},
@@ -5432,6 +5450,158 @@ async function gmHomeRefreshFinancialCardDeltas(){
   }
   if(typeof renderCards==='function') renderCards();
  }catch(e){console.warn('gmHomeRefreshFinancialCardDeltas',e);}
+}
+var GM_BANK_CARD_BY_ID={
+ 'trust-chase':'TRUST_CHASE',
+ 'operating-trust':'OPERATING_TRUST',
+ 'deposit-security':'DEPOSIT_SECURITY'
+};
+var GM_BANK_CARD_LABEL={
+ 'TRUST_CHASE':'TRUST CHASE',
+ 'OPERATING_TRUST':'OPERATING TRUST',
+ 'DEPOSIT_SECURITY':'DEPOSIT SECURITY'
+};
+function gmCanEditBankAccounts(){
+ try{
+  var r=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  return r==='admin'||r==='manager'||r==='super_admin';
+ }catch(e){return false;}
+}
+function gmBankAccountsClientPayload(){
+ var u=window.__gmCurrentUser;
+ if(!u||String(u.role||'').toLowerCase()!=='super_admin')return {};
+ var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+ var cid=ac&&ac.id?String(ac.id):(u.clientId?String(u.clientId):'');
+ return cid?{clientId:cid}:{};
+}
+function gmBankAccountsClientQuery(){
+ var p=gmBankAccountsClientPayload();
+ return p.clientId?'?clientId='+encodeURIComponent(p.clientId):'';
+}
+function gmFmtDateBrYmd(ymd){
+ if(!ymd)return '—';
+ var p=String(ymd).slice(0,10).split('-');
+ if(p.length!==3)return ymd;
+ return p[2]+'/'+p[1]+'/'+p[0];
+}
+function gmFmtDateTimeBr(iso){
+ if(!iso)return '—';
+ try{
+  var d=new Date(iso);
+  if(isNaN(d.getTime()))return '—';
+  var dd=String(d.getDate()).padStart(2,'0');
+  var mm=String(d.getMonth()+1).padStart(2,'0');
+  var yy=d.getFullYear();
+  var hh=String(d.getHours()).padStart(2,'0');
+  var mi=String(d.getMinutes()).padStart(2,'0');
+  return dd+'/'+mm+'/'+yy+' '+hh+':'+mi;
+ }catch(e){return '—';}
+}
+function gmHomeApplyBankAccountCards(balances){
+ var map=balances||{};
+ Object.keys(GM_BANK_CARD_BY_ID).forEach(function(cardId){
+  var c=CARDS.find(function(x){return x.id===cardId;});
+  if(!c)return;
+  var apiType=GM_BANK_CARD_BY_ID[cardId];
+  var snap=map[apiType];
+  if(!snap){
+   c.value='—';
+   c.sub1='Clique para registrar';
+   c.bankMeta='';
+   c.empty=true;
+   c.ctr='—';
+   return;
+  }
+  var bal=Number(snap.balance)||0;
+  c.value=gmHomeMoney(bal);
+  c.ctr=gmHomeMoneyCtr(bal);
+  c.sub1='Saldo em '+gmFmtDateBrYmd(snap.balanceDate);
+  c.bankMeta=snap.recordedByName
+   ?('Registrado por '+snap.recordedByName+' em '+gmFmtDateTimeBr(snap.recordedAt))
+   :('Registrado em '+gmFmtDateTimeBr(snap.recordedAt));
+  c.empty=false;
+ });
+}
+function gmHomeFetchBankAccounts(){
+ var q=gmBankAccountsClientQuery();
+ return fetch('/api/bank-accounts/balances'+q,{credentials:'include',cache:'no-store'})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  .then(function(o){
+   if(!o.ok||!o.j||!o.j.ok){
+    if(o.j&&o.j.error&&o.j.error.indexOf('clientId')>=0)return;
+    console.warn('gmHomeFetchBankAccounts',o.j&&o.j.error);
+    return;
+   }
+   window.__gmBankBalancesCache=o.j.balances||{};
+   gmHomeApplyBankAccountCards(window.__gmBankBalancesCache);
+   if(typeof renderCards==='function')renderCards();
+  })
+  .catch(function(e){console.warn('gmHomeFetchBankAccounts',e);});
+}
+window.__gmBankModalAccountType=null;
+function gmBankAccountCloseModal(){
+ var bg=document.getElementById('gm-bank-balance-modal-bg');
+ if(bg)bg.style.display='none';
+ window.__gmBankModalAccountType=null;
+}
+function gmBankAccountOpenModal(accountType){
+ if(!gmCanEditBankAccounts()){
+  alert('Apenas admin, manager ou super_admin podem registar saldos bancarios.');
+  return;
+ }
+ var at=String(accountType||'').trim();
+ if(!at||!GM_BANK_CARD_LABEL[at])return;
+ window.__gmBankModalAccountType=at;
+ var bg=document.getElementById('gm-bank-balance-modal-bg');
+ var title=document.getElementById('gm-bank-modal-title');
+ var balIn=document.getElementById('gm-bank-modal-balance');
+ var dateIn=document.getElementById('gm-bank-modal-date');
+ var err=document.getElementById('gm-bank-modal-err');
+ if(title)title.textContent=GM_BANK_CARD_LABEL[at];
+ if(err){err.style.display='none';err.textContent='';}
+ var snap=(window.__gmBankBalancesCache||{})[at];
+ if(balIn)balIn.value=snap&&snap.balance!=null?String(snap.balance):'';
+ if(dateIn){
+  if(snap&&snap.balanceDate)dateIn.value=String(snap.balanceDate).slice(0,10);
+  else dateIn.value=new Date().toISOString().slice(0,10);
+ }
+ if(bg)bg.style.display='flex';
+}
+async function gmBankAccountSaveModal(){
+ var at=window.__gmBankModalAccountType;
+ if(!at)return;
+ var balIn=document.getElementById('gm-bank-modal-balance');
+ var dateIn=document.getElementById('gm-bank-modal-date');
+ var err=document.getElementById('gm-bank-modal-err');
+ var saveBtn=document.getElementById('gm-bank-modal-save');
+ var balance=Number(balIn&&balIn.value);
+ var balanceDate=dateIn?String(dateIn.value||'').trim():'';
+ if(!Number.isFinite(balance)||balance<0){
+  if(err){err.textContent='Informe um saldo valido (>= 0).';err.style.display='block';}
+  return;
+ }
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(balanceDate)){
+  if(err){err.textContent='Informe a data do saldo.';err.style.display='block';}
+  return;
+ }
+ if(err)err.style.display='none';
+ if(saveBtn)saveBtn.disabled=true;
+ try{
+  var body=Object.assign({accountType:at,balance:balance,balanceDate:balanceDate},gmBankAccountsClientPayload());
+  var res=await fetch('/api/bank-accounts/balances',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok){
+   if(err){err.textContent=j.error||('Erro '+res.status);err.style.display='block';}
+   return;
+  }
+  gmBankAccountCloseModal();
+  await gmHomeFetchBankAccounts();
+ }catch(e){
+  console.warn('gmBankAccountSaveModal',e);
+  if(err){err.textContent='Erro de rede ao guardar.';err.style.display='block';}
+ }finally{
+  if(saveBtn)saveBtn.disabled=false;
+ }
 }
 function gmHomeFetchPmMarkupMonth(){
  var d=new Date();
@@ -5960,6 +6130,7 @@ function loadHomeDashboardFromApi(){
  }
  try{if(typeof gmHomeRenderLucroMpTable==='function')gmHomeRenderLucroMpTable();}catch(eL){}
  try{if(typeof gmHomeRefreshFinancialCardDeltas==='function')gmHomeRefreshFinancialCardDeltas();}catch(eD){}
+ try{if(typeof gmHomeFetchBankAccounts==='function')gmHomeFetchBankAccounts();}catch(eBk){}
  // 2. Depois, tenta API remota. So sobrescreve se vier com dados REAIS (qty_properties > 0)
  fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
@@ -6175,32 +6346,39 @@ function renderCards(){
  CARDS.forEach((c,i)=>{
  const isEmpty=c.empty;
  const el=document.createElement('div');
- el.className='card'+(isEmpty?' empty':'')+(c.noNav?' card-static':'');
+ el.className='card'+(isEmpty?' empty':'')+(c.noNav?' card-static':'')+(c.bankAccount?' home-bank-card':'');
  el.style.animationDelay=(i*.03)+'s';
- if(c.noNav){
+ if(c.bankAccount){
+  el.onclick=function(ev){
+   if(ev.target.closest&&ev.target.closest('.ck')){ev.preventDefault();return;}
+   if(typeof gmBankAccountOpenModal==='function')gmBankAccountOpenModal(c.accountType);
+  };
+ }else if(c.noNav){
   el.onclick=function(ev){if(ev.target.closest&&ev.target.closest('.ck')){ev.preventDefault();}};
  }else{
   el.onclick=()=>nav(c.r);
  }
  const isAlert=c.sub2&&c.sub2.startsWith('alert:');
  const s2=isAlert?`<div class="ca"> ${c.sub2.replace('alert: ','')}</div>`:(c.sub2?`<div class="cs2">${c.sub2}</div>`:'');
+ const bankMetaBlock=c.bankMeta?`<div class="cs2" style="font-size:9.5px;color:var(--ink3);margin-top:3px;line-height:1.4">${c.bankMeta}</div>`:'';
  const subBlock=c.sub1Html?`<div class="cs1">${c.sub1Html}</div>`:`<div class="cs1">${c.sub1}</div>`;
  const deltaBlock=c.deltaHtml?`<div class="gm-card-delta">${c.deltaHtml}</div>`:'';
  const csz=c.ctr.length>6?'9px':'11px';
  const pillsHtml=c.pills.length?`<div class="cd"></div><div class="cp">${c.pills.map(p=>`<span class="pill ${p.c}">${p.t}</span>`).join('')}</div>`:'<div style="height:8px"></div>';
  const updLine=formatCardUpdatedLine(c.id);
- const ckCls=c.noNav?'ck ck-disabled':'ck';
+ var ckLabel=c.bankAccount?(typeof gmCanEditBankAccounts==='function'&&gmCanEditBankAccounts()?'Atualizar saldo':'Consulta'):'Ver detalhes →';
+ const ckCls=(c.noNav&&!c.bankAccount)?'ck ck-disabled':'ck';
  el.innerHTML=`
  <div class="ct"><div class="cl">${c.label}</div><div class="cb">${c.badge}</div></div>
  <div class="cv2">${c.value}</div>
- ${subBlock}${s2}${deltaBlock}
+ ${subBlock}${bankMetaBlock}${s2}${deltaBlock}
  <div class="cc">
  <canvas id="ch-${c.id}" width="80" height="80"></canvas>
  <div class="cc-ctr" style="width:70px;height:70px;font-size:${csz}">${c.ctr}</div>
  </div>
  ${pillsHtml}
  ${updLine}
- <div class="cf"><a class="${ckCls}" ${c.noNav?'href="#" aria-disabled="true"':''}>Ver detalhes →</a></div>
+ <div class="cf"><a class="${ckCls}" ${c.noNav&&!c.bankAccount?'href="#" aria-disabled="true"':''}>${ckLabel}</a></div>
  <div class="cbar ${c.barClass}"></div>`;
  g.appendChild(el);
  });
