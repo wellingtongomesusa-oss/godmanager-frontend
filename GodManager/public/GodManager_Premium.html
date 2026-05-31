@@ -1293,6 +1293,28 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="page active" id="page-home">
  <div class="ph"><div class="pt">Home</div><div class="ps">Portfolio overview — properties, leasing, expenses, and compliance.</div></div>
  <div class="cg" id="home-cards"></div>
+ <div id="home-lucro-mp-wrap" style="display:none;margin-top:28px;background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Lucro por casa</div>
+ <div style="font-size:11px;color:var(--ink3);margin-top:4px">Rent, MGM% e lucro da Manager Prop por propriedade</div>
+ </div>
+ <div style="max-height:280px;overflow-y:auto">
+ <table style="width:100%;border-collapse:collapse;min-width:520px">
+ <thead style="position:sticky;top:0;z-index:1"><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--green)">Rent</th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">MGM%</th>
+ <th id="home-lucro-mp-sort-th" role="button" tabindex="0" style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--amber);cursor:pointer;user-select:none" title="Ordenar por LUCRO MP">LUCRO MP <span id="home-lucro-mp-sort-ind" style="font-size:8px;opacity:.85">▼</span></th>
+ </tr></thead>
+ <tbody id="home-lucro-mp-tbody"></tbody>
+ <tfoot><tr style="background:var(--cream);border-top:2px solid var(--border)">
+ <td style="padding:9px 12px;font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.5px">Total</td>
+ <td colspan="2"></td>
+ <td id="home-lucro-mp-total" style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--amber)">—</td>
+ </tr></tfoot>
+ </table>
+ </div>
+ </div>
 </div>
 
 <!-- CLIENTS (Admin) -->
@@ -3063,7 +3085,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="background:var(--paper);border-radius:12px;width:680px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
  <div id="lt-detail-title" style="font-size:14px;font-weight:700;color:var(--ink)">Statement Detail</div>
- <span onclick="ltCloseDetail()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1"></span>
+ <button type="button" onclick="ltCloseDetail()" aria-label="Fechar" style="font-size:20px;line-height:1;cursor:pointer;color:var(--ink3);padding:4px 10px;border:0;background:transparent;border-radius:6px;font-family:'DM Sans',sans-serif">×</button>
  </div>
  <div id="lt-detail-body"></div>
  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap" id="lt-detail-actions"></div>
@@ -5112,7 +5134,7 @@ const CARDS=[
  {id:'total-rented',label:'TOTAL RENTED',badge:'RNT',barClass:'bb bg',value:'—',sub1:'Currently leased units',sub2:'',cd:[80,20],cc:['#2a6e4e','#b83030'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Vacant',c:'pr'}],r:'longterm',empty:true,labels:[]},
  {id:'total-owners',label:'TOTAL OWNERS',badge:'OWN',barClass:'bb ba',value:'—',sub1:'Unique property owners',sub2:'',cd:[70,30],cc:['#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Pending',c:'pa'}],r:'ownerportal',empty:true,labels:[]},
  {id:'vacant-houses',label:'VACANT HOUSES',badge:'VAC',barClass:'bb br',value:'—',sub1:'Currently unoccupied units',sub2:'Ready to lease',cd:[50,30,20],cc:['#b83030','#c9a96e','#4a5568'],ctr:'—',pills:[{t:'Market Ready',c:'pa'},{t:'Needs Repair',c:'pr'},{t:'Listed',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
- {id:'in-progress',label:'IN PROGRESS',badge:'WIP',barClass:'bb ba',value:'—',sub1:'Move-in / renovation / onboarding',sub2:'Houses not yet available',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Move-in',c:'pa'},{t:'Renovation',c:'pb'},{t:'Onboarding',c:'pg'}],r:'renovations',empty:true,labels:[]},
+ {id:'reserva-seguranca',label:'RESERVA DE SEGURANCA',badge:'RSV',barClass:'bb ba',value:'—',sub1:'Soma das contas reserva do portfolio',sub2:'',cd:[100],cc:['#c9a96e'],ctr:'—',pills:[{t:'Com reserva',c:'pg'}],r:'ltproperties',empty:true,labels:[]},
  {id:'move-out',label:'TENANT / OWNER MOVE-OUT',badge:'OUT',barClass:'bb br',value:'—',sub1:'Upcoming departures',sub2:'Tenants and owners leaving',cd:[60,40],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Tenant Notice',c:'pr'},{t:'Owner Notice',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'security-deposits',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb bg',value:'—',sub1:'Total deposits held in trust',sub2:'',cd:[100],cc:['#2a6e4e'],ctr:'—',pills:[{t:'Trust Account',c:'pg'}],r:'ltstatements',empty:true,labels:[]},
  {id:'total-net-owner',label:'TOTAL NET OWNER',badge:'NET',barClass:'bb bb',value:'—',sub1:'Soma a repassar aos owners',sub2:'',cd:[1],cc:['#22558c'],ctr:'—',pills:[{t:'Net Mensal',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
@@ -5307,14 +5329,17 @@ function applyHomeDashboardFromApi(d){
    c.cd=[Math.max(0.01,qv),Math.max(0.01,Math.max(1,qp-qv))];
    c.ctr=String(Math.round(qv));
    break;
-  case 'in-progress':
-   c.value=String(Math.round(qf));
-   c.cd=[Math.max(0.01,qf),1];
-   c.ctr=String(Math.round(qf));
-   if(c.pills&&c.pills[0]) c.pills[0].t='Move-in ('+Math.round(qf)+')';
-   if(c.pills&&c.pills[1]) c.pills[1].t='Renovation (0)';
-   if(c.pills&&c.pills[2]) c.pills[2].t='Onboarding (0)';
+  case 'reserva-seguranca':{
+   var tGuar=gmHomeNum(d.total_guarantee_sum,0);
+   var nGuar=Math.round(gmHomeNum(d.qty_guarantee_houses,0));
+   c.value=gmHomeMoney(tGuar);
+   c.cd=[Math.max(0.01,tGuar)];
+   c.ctr=gmHomeMoneyCtr(tGuar);
+   c.sub1=nGuar+' '+(nGuar===1?'casa com reserva':'casas com reserva');
+   c.sub2='';
+   if(c.pills&&c.pills[0]) c.pills[0].t=(nGuar===1?'1 casa':'Casas ('+nGuar+')');
    break;
+  }
   case 'move-out':
    c.value=String(Math.round(qnot));
    c.cd=[Math.max(0.01,qnot),1];
@@ -5463,7 +5488,7 @@ function gmHomeBuildDashboardFromLocal(){
   var arr=window.gmPropertiesLoad()||[];
   if(!arr.length)return null;
  var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
- var totDepSum=0,totNetOwnerSum=0;
+ var totDepSum=0,totNetOwnerSum=0,totGuaranteeSum=0,qtyGuaranteeHouses=0;
  var owners={};
  arr.forEach(function(p){
   var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
@@ -5483,6 +5508,8 @@ function gmHomeBuildDashboardFromLocal(){
   if(isRented)ql++; else if(isVacant)qv++;
   if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
   if(stt==='disputed'||stt==='notice')qnot++;
+  var guar=Number(p.guarantee!=null?p.guarantee:0)||0;
+  if(guar>0){totGuaranteeSum+=guar;qtyGuaranteeHouses++;}
   pr+=rent;mkt+=mrent;tsd+=dep;
   totDepSum+=dep;
   totNetOwnerSum+=(rent-rent*mPct/100);
@@ -5520,6 +5547,8 @@ function gmHomeBuildDashboardFromLocal(){
   potential_rent_monthly:pr,market_rent_total:mkt,occupancy_rate:occRate,
   total_security_deposits:tsd,
   total_deposit_sum:totDepSum,
+  total_guarantee_sum:totGuaranteeSum,
+  qty_guarantee_houses:qtyGuaranteeHouses,
   total_net_owner_sum:totNetOwnerSum,
   total_exp_pm_sum:(typeof window.__gmHomeExpPmCached==='number'?window.__gmHomeExpPmCached:0),
   qty_expenses_calls:qExpCalls,
@@ -5527,6 +5556,62 @@ function gmHomeBuildDashboardFromLocal(){
   _source:'local'
  };
  }catch(e){console.warn('gmHomeBuildDashboardFromLocal',e);return null;}
+}
+
+window.__gmHomeLucroSort='desc';
+function gmHomeLucroMpPct(r){
+ if(typeof ltpKpiMgmPct==='function')return ltpKpiMgmPct(r);
+ return Number(r.mgmpct!=null?r.mgmpct:(r.mgmtFeePct!=null?r.mgmtFeePct:0))||0;
+}
+function gmHomeBindLucroMpSortOnce(){
+ if(window._gmHomeLucroSortBound)return;
+ window._gmHomeLucroSortBound=1;
+ var th=document.getElementById('home-lucro-mp-sort-th');
+ if(!th)return;
+ function toggle(){
+  window.__gmHomeLucroSort=(window.__gmHomeLucroSort==='desc')?'asc':'desc';
+  gmHomeRenderLucroMpTable();
+ }
+ th.addEventListener('click',toggle);
+ th.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggle();}});
+}
+function gmHomeRenderLucroMpTable(){
+ gmHomeBindLucroMpSortOnce();
+ var wrap=document.getElementById('home-lucro-mp-wrap');
+ var tb=document.getElementById('home-lucro-mp-tbody');
+ var totEl=document.getElementById('home-lucro-mp-total');
+ var ind=document.getElementById('home-lucro-mp-sort-ind');
+ if(!wrap||!tb)return;
+ var arr=[];
+ try{
+  if(typeof window.gmPropertiesLoad==='function')arr=window.gmPropertiesLoad()||[];
+ }catch(e){}
+ if(!arr.length){wrap.style.display='none';tb.innerHTML='';if(totEl)totEl.textContent='—';return;}
+ var rows=arr.map(function(p){
+  var r=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;
+  if(!r)return null;
+  var rent=Number(r.rent)||0;
+  var pct=gmHomeLucroMpPct(r);
+  var lucro=rent*pct/100;
+  return{address:String(r.address||'—'),rent:rent,pct:pct,lucro:lucro};
+ }).filter(Boolean);
+ if(!rows.length){wrap.style.display='none';return;}
+ var desc=window.__gmHomeLucroSort!=='asc';
+ rows.sort(function(a,b){return desc?(b.lucro-a.lucro):(a.lucro-b.lucro);});
+ var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+ var sumLucro=0;
+ tb.innerHTML=rows.map(function(row){
+  sumLucro+=row.lucro;
+  return '<tr style="border-bottom:1px solid var(--border)">'
+  +'<td style="padding:8px 12px;font-size:11px;color:var(--ink);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(row.address)+'">'+esc(row.address)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(row.rent)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+row.pct.toFixed(0)+'%</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--amber)">'+ltFmt(row.lucro)+'</td>'
+  +'</tr>';
+ }).join('');
+ if(totEl)totEl.textContent=ltFmt(sumLucro);
+ if(ind)ind.textContent=desc?'▼':'▲';
+ wrap.style.display='block';
 }
 
 function loadHomeDashboardFromApi(){
@@ -5538,6 +5623,7 @@ function loadHomeDashboardFromApi(){
  }else{
   renderCards();
  }
+ try{if(typeof gmHomeRenderLucroMpTable==='function')gmHomeRenderLucroMpTable();}catch(eL){}
  // 2. Depois, tenta API remota. So sobrescreve se vier com dados REAIS (qty_properties > 0)
  fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
@@ -5780,6 +5866,7 @@ function renderCards(){
  if(CI[c.id])CI[c.id].destroy();
  CI[c.id]=new Chart(cv,{type:'doughnut',data:{labels:c.labels||[],datasets:[{data:c.cd,backgroundColor:c.cc,borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:!c.empty}},animation:{duration:500}}});
  });
+ try{if(typeof gmHomeRenderLucroMpTable==='function')gmHomeRenderLucroMpTable();}catch(eHm){}
 });
 }
 
@@ -10621,11 +10708,92 @@ function ltDelete(id){
  ltRender();
 }
 
+/**
+ * Popup Ver Statement — MGM% da propriedade (campo mgmtFeePct da casa).
+ * Default 8% se nulo, vazio ou fora do intervalo [0, 30].
+ * Nao usar ltpKpiMgmPct (regra de KPI do portfolio, nao fee contratual da unidade).
+ */
+function ltDetailMgmtFeePct(mgmtFeePct){
+ if(mgmtFeePct===null||mgmtFeePct===undefined||mgmtFeePct==='')return 8;
+ var m=Number(mgmtFeePct);
+ if(!isFinite(m)||m<0||m>30)return 8;
+ return m;
+}
+/** Fallback do popup: GET /api/properties (escopo sessao). Sem gmPropertiesLoad (cross-tenant). */
+async function ltFetchPropertyDetailFromApi(id){
+ try{
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  if(!res.ok)return null;
+  var data=await res.json();
+  if(!data||data.ok!==true||!Array.isArray(data.properties))return null;
+  var sid=String(id);
+  var p=data.properties.find(function(pr){
+   if(!pr)return false;
+   return String(pr.code||'')===sid||String(pr.id||'')===sid;
+  });
+  if(!p)return null;
+  var meta={};
+  if(p.metadata){
+   if(typeof p.metadata==='object')meta=p.metadata;
+   else try{meta=JSON.parse(p.metadata);}catch(eM){}
+  }
+  var rent=Number(p.rent)||0;
+  var mPct=ltDetailMgmtFeePct(p.mgmtFeePct);
+  var sLow=String(p.status||'').toLowerCase();
+  var statusUi='pending';
+  if(sLow==='disputed')statusUi='disputed';
+  else if(sLow==='active'||sLow==='approved')statusUi='approved';
+  return{
+   id:String(p.code||p.id),
+   _apiId:p.id,
+   address:p.address||'—',
+   owner:p.ownerName||'—',
+   tenant:meta.tenant||'',
+   baths:meta.baths||(p.bathrooms!=null?String(p.bathrooms):''),
+   month:meta.month||'',
+   rent:rent,
+   mgmtFeePct:p.mgmtFeePct,
+   deposit:Number(p.deposit)||0,
+   net:Number(meta.netOwner)!=null?Number(meta.netOwner):(rent-rent*mPct/100),
+   status:statusUi,
+   hoa:Number(meta.hoa)||0,
+   water:meta.water,
+   electric:meta.electric,
+   maint:meta.maint,
+   vendor:meta.vendor,
+   vendorname:meta.vendorname,
+   desc:meta.desc,
+   vendordate:meta.vendordate,
+   notes:p.notes||'',
+   photos:Array.isArray(meta.photos)?meta.photos:[],
+   files:Array.isArray(meta.files)?meta.files:[],
+   ownerFullName:meta.ownerFullName||'',
+   ownerTaxId:meta.ownerTaxId||'',
+   ownerEmail:p.ownerEmail||meta.ownerEmail||'',
+   ownerPhone:p.ownerPhone||meta.ownerPhone||'',
+   ownerMailingAddr:meta.ownerMailingAddr||'',
+   bankName:meta.bankName||'',
+   bankType:meta.bankType||'',
+   bankRouting:meta.bankRouting||'',
+   bankAccount:meta.bankAccount||'',
+   bankHolder:meta.bankHolder||'',
+   bankMethod:meta.bankMethod||'',
+   approver:meta.approver||'',
+   approvedBy:p.approvedBy||'',
+   approvedAt:p.approvedAt||'',
+   savedAt:meta.savedAt||''
+  };
+ }catch(e){console.warn('ltFetchPropertyDetailFromApi',e);return null;}
+}
+
 // Detail Modal 
-function ltOpenDetail(id){
- const records=ltGetRecords();
- const r=records.find(x=>x.id===id);
+async function ltOpenDetail(id){
+ var r=(ltGetRecords()||[]).find(function(x){return x&&String(x.id)===String(id);});
+ if(!r) r=await ltFetchPropertyDetailFromApi(id);
  if(!r)return;
+ var rentDet=Number(r.rent)||0;
+ var mPctDet=ltDetailMgmtFeePct(r.mgmtFeePct);
+ var ganhoMgrProp=rentDet*mPctDet/100;
  const statusLabels={approved:'Approved',pending:'Pending',disputed:'Disputed'};
  const statusColors={approved:'var(--green)',pending:'var(--amber)',disputed:'var(--red)'};
  const statusBg={approved:'var(--green-bg)',pending:'var(--amber-bg)',disputed:'var(--red-bg)'};
@@ -10691,6 +10859,7 @@ function ltOpenDetail(id){
  ${r.electric?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Luz / Electric</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.electric)}</td></tr>`:''}
  ${r.maint?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Manutenção</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.maint)}</td></tr>`:''}
  ${r.vendor?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Vendor${r.vendorname?' ('+r.vendorname+')':''}</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.vendor)}</td></tr>`:''}
+ <tr style="border-top:1px solid var(--border);background:var(--amber-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--amber)">Ganho da Manager Prop</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--amber);text-align:right">${ltFmt(ganhoMgrProp)}</td></tr>
  <tr style="border-top:2px solid var(--border);background:var(--blue-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--blue)">NET ao Owner (dia 10)</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:${r.net>=0?'var(--blue)':'var(--red)'};text-align:right">${ltFmt(r.net)}</td></tr>
  </tbody>
  </table>
