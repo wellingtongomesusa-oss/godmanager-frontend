@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { hashPassword } from '@/lib/password';
 import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
+import { recordAudit } from '@/lib/auditServer';
+import type { UserRole, UserStatus } from '@prisma/client';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const gate = await requireSuperAdmin();
@@ -30,30 +32,100 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
 
   try {
+    const existing = await prisma.user.findUnique({ where: { id: params.id } });
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: 'Nao encontrado.' }, { status: 404 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const data: Record<string, unknown> = {};
-    if (typeof body.firstName === 'string') data.firstName = body.firstName.trim();
-    if (typeof body.lastName === 'string') data.lastName = body.lastName.trim();
-    if (typeof body.email === 'string') data.email = body.email.trim().toLowerCase();
-    if (typeof body.phone === 'string' || body.phone === null) data.phone = body.phone;
-    if (typeof body.role === 'string') data.role = body.role;
-    if (typeof body.status === 'string') data.status = body.status;
-    if (Array.isArray(body.permissions)) data.permissions = body.permissions.map(String);
+    const changedFields: string[] = [];
+    let passwordChanged = false;
+
+    if (typeof body.firstName === 'string') {
+      const v = body.firstName.trim();
+      data.firstName = v;
+      if (v !== existing.firstName) changedFields.push('firstName');
+    }
+    if (typeof body.lastName === 'string') {
+      const v = body.lastName.trim();
+      data.lastName = v;
+      if (v !== existing.lastName) changedFields.push('lastName');
+    }
+    if (typeof body.email === 'string') {
+      const v = body.email.trim().toLowerCase();
+      data.email = v;
+      if (v !== existing.email) changedFields.push('email');
+    }
+    if (typeof body.phone === 'string' || body.phone === null) {
+      data.phone = body.phone;
+      if (body.phone !== existing.phone) changedFields.push('phone');
+    }
+    if (typeof body.role === 'string') {
+      const v = body.role as UserRole;
+      data.role = v;
+      if (v !== existing.role) changedFields.push(`role:${existing.role}->${v}`);
+    }
+    if (typeof body.status === 'string') {
+      const v = body.status as UserStatus;
+      data.status = v;
+      if (v !== existing.status) changedFields.push(`status:${existing.status}->${v}`);
+    }
+    if (Array.isArray(body.permissions)) {
+      const v = body.permissions.map(String);
+      data.permissions = v;
+      if (JSON.stringify(v) !== JSON.stringify(existing.permissions)) {
+        changedFields.push('permissions');
+      }
+    }
     if (typeof body.password === 'string' && body.password.length > 0) {
       if (body.password.length < 8) {
         return NextResponse.json({ ok: false, error: 'Password min 8 chars.' }, { status: 400 });
       }
       data.passwordHash = await hashPassword(body.password);
+      passwordChanged = true;
     }
     if (typeof body.lastActive === 'string' && body.lastActive.length > 0) {
-      data.lastActive = new Date(body.lastActive);
+      const v = new Date(body.lastActive);
+      data.lastActive = v;
+      if (v.getTime() !== existing.lastActive.getTime()) changedFields.push('lastActive');
     }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ ok: false, error: 'Nenhum campo para atualizar.' }, { status: 400 });
     }
 
+    if (changedFields.length === 0 && !passwordChanged) {
+      return NextResponse.json({ ok: false, error: 'Nenhuma alteracao efectiva.' }, { status: 400 });
+    }
+
     const user = await prisma.user.update({ where: { id: params.id }, data: data as import('@prisma/client').Prisma.UserUpdateInput });
+
+    if (changedFields.length > 0) {
+      await recordAudit({
+        request: req,
+        actor: { id: gate.user!.id, email: gate.user!.email },
+        action: 'user.update',
+        entity: 'user',
+        entityId: params.id,
+        targetUserId: params.id,
+        details: `changed: ${changedFields.join(', ')}`,
+        clientId: existing.clientId,
+      });
+    }
+    if (passwordChanged) {
+      await recordAudit({
+        request: req,
+        actor: { id: gate.user!.id, email: gate.user!.email },
+        action: 'user.password_change',
+        entity: 'user',
+        entityId: params.id,
+        targetUserId: params.id,
+        details: 'password changed by super_admin',
+        clientId: existing.clientId,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       user: {
@@ -75,7 +147,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   const actor = gate.user;
@@ -84,6 +156,26 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     if (actor.id === params.id) {
       return NextResponse.json({ ok: false, error: 'Nao podes eliminar a tua propria conta.' }, { status: 400 });
     }
+
+    const existing = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, email: true, role: true, clientId: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: 'Nao encontrado.' }, { status: 404 });
+    }
+
+    await recordAudit({
+      request: req,
+      actor: { id: actor.id, email: actor.email },
+      action: 'user.delete',
+      entity: 'user',
+      entityId: params.id,
+      targetUserId: params.id,
+      details: `email: ${existing.email} | role: ${existing.role}`,
+      clientId: existing.clientId,
+    });
+
     await prisma.user.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

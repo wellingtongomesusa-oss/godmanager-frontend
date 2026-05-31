@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { hashPassword } from '@/lib/password';
 import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
+import { recordAudit } from '@/lib/auditServer';
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -90,6 +91,17 @@ export async function POST(req: Request) {
         permissions,
         passwordHash,
       },
+    });
+
+    await recordAudit({
+      request: req,
+      actor: { id: gate.user!.id, email: gate.user!.email },
+      action: 'user.create',
+      entity: 'user',
+      entityId: user.id,
+      targetUserId: user.id,
+      details: `email: ${user.email} | role: ${user.role}`,
+      clientId: user.clientId,
     });
 
     return NextResponse.json({

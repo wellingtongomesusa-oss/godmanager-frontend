@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { verifyPassword, hashPassword } from '@/lib/password';
+import { recordAudit } from '@/lib/auditServer';
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +34,17 @@ export async function POST(req: Request) {
     await prisma.user.update({
       where: { id: user.id },
       data: { passwordHash: newHash, lastActive: new Date() },
+    });
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'user.password_change',
+      entity: 'user',
+      entityId: user.id,
+      targetUserId: user.id,
+      details: 'password changed by user',
+      clientId: user.clientId,
     });
 
     return NextResponse.json({ ok: true });

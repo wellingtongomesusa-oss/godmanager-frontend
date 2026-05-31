@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { normalizePropertyMetadata } from '@/lib/photoMetadata';
 import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +90,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const updated = await prisma.property.update({ where: { id: params.id }, data });
+
+    const changedFields = Object.keys(data);
+    if (changedFields.length > 0) {
+      await recordAudit({
+        request: req,
+        actor: { id: user.id, email: user.email },
+        action: 'property.update',
+        entity: 'property',
+        entityId: params.id,
+        details: `changed: ${changedFields.join(', ')}`,
+        clientId: existing.clientId,
+      });
+    }
+
     return NextResponse.json({ ok: true, property: serialize(updated) });
   } catch (e) {
     console.error('[PATCH /api/properties/:id]', e);
@@ -96,7 +111,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
@@ -107,6 +122,16 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     if (!canAccessClientId(scopeUser, existing.clientId)) {
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
     }
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'property.delete',
+      entity: 'property',
+      entityId: params.id,
+      details: `code: ${existing.code || ''}`,
+      clientId: existing.clientId,
+    });
 
     await prisma.property.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
