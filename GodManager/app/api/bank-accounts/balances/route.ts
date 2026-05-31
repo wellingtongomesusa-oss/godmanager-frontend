@@ -9,6 +9,7 @@ import {
   isValidBankAccountType,
   resolveBankAccountClientScope,
 } from '@/lib/bankAccountBalancesScope';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -150,6 +151,17 @@ export async function POST(req: Request) {
         balanceDate,
         recordedBy: user.id,
       },
+    });
+
+    const balanceDateStr = balanceDate.toISOString().slice(0, 10);
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'bank_balance.create',
+      entity: 'bank_account',
+      entityId: created.id,
+      details: `accountType: ${accountType} | balance: ${balanceNum.toFixed(2)} | balanceDate: ${balanceDateStr}`,
+      clientId: scope.clientId,
     });
 
     const recordedByName = `${user.firstName} ${user.lastName}`.trim();

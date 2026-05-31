@@ -11,6 +11,7 @@ import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
 import type { PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -201,6 +202,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       executedByUserId = null;
     }
 
+    const changedFields: string[] = [];
+    if (propertyId !== cur.propertyId) changedFields.push('propertyId');
+    if (vendorId !== cur.vendorId) changedFields.push('vendorId');
+    if (pkg !== cur.packageApplied) changedFields.push('packageApplied');
+    if (vendorCost !== Number(cur.vendorCost)) changedFields.push('vendorCost');
+    if (monthRef !== cur.monthRef) changedFields.push('monthRef');
+    if (st !== cur.status) changedFields.push(`status:${cur.status}->${st}`);
+    const nextServiceType =
+      body.serviceType !== undefined
+        ? String(body.serviceType).trim() || null
+        : cur.serviceType;
+    if (nextServiceType !== cur.serviceType) changedFields.push('serviceType');
+    const prevSvc = cur.serviceDate?.toISOString().slice(0, 10) ?? '';
+    const nextSvc = serviceDate?.toISOString().slice(0, 10) ?? '';
+    if (prevSvc !== nextSvc) changedFields.push('serviceDate');
+    const nextDesc =
+      body.description !== undefined ? String(body.description).trim() || null : cur.description;
+    if (nextDesc !== cur.description) changedFields.push('description');
+    if (shouldSyncExpenseClientId) changedFields.push('clientId');
+
     const row = await prisma.pmExpense.update({
       where: { id: params.id },
       data: {
@@ -249,6 +270,23 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
       },
     });
+
+    if (isFinalizingNow || isReactivating || changedFields.length > 0) {
+      let action = 'pm_expense.update';
+      if (isFinalizingNow) action = 'pm_expense.finalize';
+      else if (isReactivating) action = 'pm_expense.reopen';
+
+      await recordAudit({
+        request: req,
+        actor: { id: user.id, email: user.email },
+        action,
+        entity: 'pm_expense',
+        entityId: params.id,
+        details: `changed: ${changedFields.join(', ') || action}`,
+        clientId: row.clientId ?? cur.clientId,
+      });
+    }
+
     return NextResponse.json({ ok: true, expense: toJson(row) });
   } catch (e) {
     console.error('[PATCH /api/pm/expenses/:id]', e);

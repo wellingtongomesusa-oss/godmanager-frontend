@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,56 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.notes !== undefined) data.notes = body.notes || null;
     if (body.metadata !== undefined) data.metadata = body.metadata;
 
+    const changedFields: string[] = [];
+    if (body.name !== undefined && data.name !== existing.name) changedFields.push('name');
+    if (body.email !== undefined && data.email !== existing.email) changedFields.push('email');
+    if (body.phone !== undefined && data.phone !== existing.phone) changedFields.push('phone');
+    if (body.unit !== undefined && data.unit !== existing.unit) changedFields.push('unit');
+    if (body.propertyId !== undefined && data.propertyId !== existing.propertyId) {
+      changedFields.push('propertyId');
+    }
+    if (body.moveIn !== undefined) {
+      const prev = existing.moveIn?.toISOString() ?? null;
+      const next = data.moveIn?.toISOString() ?? null;
+      if (prev !== next) changedFields.push('moveIn');
+    }
+    if (body.leaseTo !== undefined) {
+      const prev = existing.leaseTo?.toISOString() ?? null;
+      const next = data.leaseTo?.toISOString() ?? null;
+      if (prev !== next) changedFields.push('leaseTo');
+    }
+    if (body.rent !== undefined && data.rent?.toString() !== existing.rent.toString()) {
+      changedFields.push('rent');
+    }
+    if (body.deposit !== undefined && data.deposit?.toString() !== existing.deposit.toString()) {
+      changedFields.push('deposit');
+    }
+    if (body.tenantType !== undefined && data.tenantType !== existing.tenantType) {
+      changedFields.push('tenantType');
+    }
+    if (body.status !== undefined && data.status !== existing.status) changedFields.push('status');
+    if (body.ssn !== undefined && data.ssn !== existing.ssn) changedFields.push('ssn');
+    if (body.itin !== undefined && data.itin !== existing.itin) changedFields.push('itin');
+    if (body.tags !== undefined && JSON.stringify(data.tags) !== JSON.stringify(existing.tags)) {
+      changedFields.push('tags');
+    }
+    if (body.notes !== undefined && data.notes !== existing.notes) changedFields.push('notes');
+    if (body.metadata !== undefined) changedFields.push('metadata');
+
     const updated = await prisma.tenant.update({ where: { id: params.id }, data });
+
+    if (changedFields.length > 0) {
+      await recordAudit({
+        request: req,
+        actor: { id: user.id, email: user.email },
+        action: 'tenant.update',
+        entity: 'tenant',
+        entityId: params.id,
+        details: `changed: ${changedFields.join(', ')}`,
+        clientId: existing.clientId,
+      });
+    }
+
     return NextResponse.json({ ok: true, tenant: serialize(updated) });
   } catch (e) {
     console.error('[PATCH /api/tenants/[id]]', e);
@@ -86,7 +136,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   try {
@@ -96,6 +146,16 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     if (!canAccessClientId(scopeUser, existing.clientId)) {
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
     }
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'tenant.delete',
+      entity: 'tenant',
+      entityId: params.id,
+      details: `name: ${existing.name || ''} | code: ${existing.code || ''}`,
+      clientId: existing.clientId,
+    });
 
     await prisma.tenant.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });

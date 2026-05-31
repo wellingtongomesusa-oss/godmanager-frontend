@@ -7,6 +7,7 @@ import {
   getClientScopeWhere,
   toClientScopeUser,
 } from '@/lib/clientScope';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,17 @@ export async function POST(req: Request) {
         createdBy: user.id,
         clientId,
       },
+      include: { property: { select: { code: true } } },
+    });
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'tenant.create',
+      entity: 'tenant',
+      entityId: created.id,
+      details: `name: ${created.name || ''} | code: ${created.code || ''} | propertyCode: ${created.property?.code || ''}`,
+      clientId: created.clientId,
     });
 
     return NextResponse.json({
