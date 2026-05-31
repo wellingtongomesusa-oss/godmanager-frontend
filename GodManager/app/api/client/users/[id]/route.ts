@@ -3,6 +3,7 @@ import type { UserStatus } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveClientUsersScope } from '@/lib/clientUsersScope';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const target = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, clientId: true, role: true },
+      select: { id: true, clientId: true, role: true, email: true, status: true },
     });
     if (!target || target.clientId !== scope.clientId) {
       return NextResponse.json({ ok: false, error: 'Utilizador não encontrado.' }, { status: 404 });
@@ -33,16 +34,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const data: { status?: UserStatus } = {};
+    const changedFields: string[] = [];
     if (typeof body.status === 'string') {
       const st = body.status as UserStatus;
       if (!VALID_STATUSES.includes(st)) {
         return NextResponse.json({ ok: false, error: 'Status inválido.' }, { status: 400 });
       }
       data.status = st;
+      if (st !== target.status) changedFields.push(`status:${target.status}->${st}`);
     }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ ok: false, error: 'Nenhum campo para atualizar.' }, { status: 400 });
+    }
+
+    if (changedFields.length === 0) {
+      return NextResponse.json({ ok: false, error: 'Nenhuma alteração efectiva.' }, { status: 400 });
     }
 
     const updated = await prisma.user.update({
@@ -59,6 +66,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         createdAt: true,
         lastActive: true,
       },
+    });
+
+    await recordAudit({
+      request: req,
+      actor: { id: actor.id, email: actor.email },
+      action: 'user.update',
+      entity: 'user',
+      entityId: params.id,
+      targetUserId: params.id,
+      details: `changed: ${changedFields.join(', ')}`,
+      clientId: scope.clientId,
     });
 
     return NextResponse.json({
@@ -101,7 +119,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   try {
     const target = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, clientId: true, role: true },
+      select: { id: true, clientId: true, role: true, email: true },
     });
     if (!target || target.clientId !== scope.clientId) {
       return NextResponse.json({ ok: false, error: 'Utilizador não encontrado.' }, { status: 404 });
@@ -109,6 +127,17 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (target.role === 'super_admin') {
       return NextResponse.json({ ok: false, error: 'Operação não permitida.' }, { status: 403 });
     }
+
+    await recordAudit({
+      request: req,
+      actor: { id: actor.id, email: actor.email },
+      action: 'user.delete',
+      entity: 'user',
+      entityId: params.id,
+      targetUserId: params.id,
+      details: `email: ${target.email} | role: ${target.role}`,
+      clientId: scope.clientId,
+    });
 
     await prisma.user.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });

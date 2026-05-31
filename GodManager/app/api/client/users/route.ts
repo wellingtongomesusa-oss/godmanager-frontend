@@ -6,6 +6,7 @@ import { hashPassword } from '@/lib/password';
 import { getMaxUsersForClientPlan, clientPlanLabelPt } from '@/lib/clientPlanLimits';
 import { resolveClientUsersScope } from '@/lib/clientUsersScope';
 import { assertVendorBelongsToClient } from '@/lib/fieldVendorScope';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -251,6 +252,17 @@ export async function POST(req: Request) {
     });
 
     const meta = await loadClientMeta(scope.clientId);
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'user.create',
+      entity: 'user',
+      entityId: created.id,
+      targetUserId: created.id,
+      details: `email: ${created.email} | role: ${created.role}`,
+      clientId: scope.clientId,
+    });
 
     return NextResponse.json({
       ok: true,
