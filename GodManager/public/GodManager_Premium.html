@@ -3460,6 +3460,27 @@ document.addEventListener('DOMContentLoaded', function(){
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
  </select>
+ <select id="ltp-filter-movein" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender()" title="Filtra apenas o card Move in no mes" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+ <option value="">Move in: Todos</option>
+ <option value="2025-01">Move in: Jan 2025</option>
+ <option value="2025-02">Move in: Fev 2025</option>
+ <option value="2025-03">Move in: Mar 2025</option>
+ <option value="2025-04">Move in: Abr 2025</option>
+ <option value="2025-05">Move in: Mai 2025</option>
+ <option value="2025-06">Move in: Jun 2025</option>
+ <option value="2025-07">Move in: Jul 2025</option>
+ <option value="2025-08">Move in: Ago 2025</option>
+ <option value="2025-09">Move in: Set 2025</option>
+ <option value="2025-10">Move in: Out 2025</option>
+ <option value="2025-11">Move in: Nov 2025</option>
+ <option value="2025-12">Move in: Dez 2025</option>
+ <option value="2026-01">Move in: Jan 2026</option>
+ <option value="2026-02">Move in: Fev 2026</option>
+ <option value="2026-03">Move in: Mar 2026</option>
+ <option value="2026-04">Move in: Abr 2026</option>
+ <option value="2026-05">Move in: Mai 2026</option>
+ <option value="2026-06">Move in: Jun 2026</option>
+ </select>
  <select id="ltp-filter-occupancy" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todas as ocupações</option>
  </select>
@@ -3472,16 +3493,16 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:10;--gm-kpi-cols-tablet:5">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">ocupadas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">disponiveis</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">EM ANDAMENTO</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">reforma/transicao</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">lease ativo no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">total − alugadas no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MOVE IN NO MES</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">move-in no periodo</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">NET ATUAL</div><div id="ltp-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma coluna Rent</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DEPOSIT</div><div id="ltp-kpi-total-deposit" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma deposits</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL NET OWNER</div><div id="ltp-kpi-total-netowner" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma a repassar</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL EXP MES (PM)</div><div id="ltp-kpi-total-exppm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma despesas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  <div id="ltp-kpi-wrap-avgmgm" tabindex="0" title="" style="padding:14px 14px 10px;position:relative;outline:none;cursor:help;touch-action:manipulation">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MEDIA MGM FEE</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">0%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">media coluna MGM%</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">GANHO FINANCEIRO</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">$0</div><div id="ltp-kpi-ganho-sub" style="font-size:10px;color:var(--ink3);margin-top:3px">Media MGM% = —</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
  </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -3503,7 +3524,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">STATUS AUTO</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
- <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Garantida</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">RESERVA DE SEGURANCA</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGM %</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
 <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
@@ -14367,6 +14388,96 @@ function ltpMgmtPctInvalidUsesDefault(r){
  return false;
 }
 
+/** Intervalo civil do mes YYYY-MM (inicio 00:00, fim 23:59:59.999 ultimo dia). */
+function ltpMonthRange(ym){
+ var m=String(ym||'').match(/^(\d{4})-(\d{2})$/);
+ if(!m) return null;
+ var y=+m[1], mo=+m[2]-1;
+ return {start:new Date(y,mo,1),end:new Date(y,mo+1,0,23,59,59,999)};
+}
+function ltpParseYmd(s){
+ var t=String(s||'').trim();
+ var m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(!m) return null;
+ var d=new Date(+m[1],+m[2]-1,+m[3]);
+ return isNaN(d.getTime())?null:d;
+}
+function ltpYmFromDate(d){
+ if(!d||isNaN(d.getTime())) return '';
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+/** Indice propId -> [{start,end}] a partir de GM_TENANTS_SEED e cache /api/tenants se ja carregado. */
+function ltpGetTenantLeaseIndex(){
+ var idx={};
+ function push(pid,moveIn,leaseTo){
+  var k=String(pid||'').trim();
+  if(!k) return;
+  if(!idx[k]) idx[k]=[];
+  idx[k].push({start:ltpParseYmd(moveIn),end:leaseTo?ltpParseYmd(leaseTo):null});
+ }
+ try{
+  (window.GM_TENANTS_SEED||[]).forEach(function(t){
+   if(!t) return;
+   push(t.propId,t.moveIn,t.leaseTo);
+  });
+ }catch(e){}
+ try{
+  (window.__gmTenantsTnCache||[]).forEach(function(t){
+   if(!t) return;
+   push(t.propId||t.propertyId,t.moveIn,t.leaseTo);
+  });
+ }catch(e){}
+ return idx;
+}
+/**
+ * Lease ativo no mes civil: inicio do contrato <= ultimo dia do mes
+ * E (fim do contrato >= primeiro dia do mes OU fim indefinido).
+ * Fonte: tenants (moveIn/leaseTo) por propId; fallback moveIn da propriedade sem fim.
+ */
+function ltpLeaseActiveInMonth(r,tenantIdx,ym){
+ var range=ltpMonthRange(ym);
+ if(!range||!r) return false;
+ var leases=tenantIdx[String(r.id)]||[];
+ var i;
+ if(leases.length){
+  for(i=0;i<leases.length;i++){
+   var L=leases[i];
+   if(!L.start) continue;
+   if(L.start>range.end) continue;
+   if(!L.end) return true;
+   if(L.end>=range.start) return true;
+  }
+  return false;
+ }
+ if(!r.tenant||!String(r.tenant).trim()) return false;
+ var mi=ltpParseYmd(r.moveIn||r.moveInDate);
+ if(!mi||mi>range.end) return false;
+ return true;
+}
+function ltpMoveInInMonth(r,tenantIdx,ym){
+ var range=ltpMonthRange(ym);
+ if(!range||!r) return false;
+ var leases=tenantIdx[String(r.id)]||[];
+ var i;
+ for(i=0;i<leases.length;i++){
+  var L=leases[i];
+  if(L.start&&L.start>=range.start&&L.start<=range.end) return true;
+ }
+ var mi=ltpParseYmd(r.moveIn||r.moveInDate);
+ return !!(mi&&mi>=range.start&&mi<=range.end);
+}
+function ltpFilterTableRecords(records){
+ var fSearch=((document.getElementById('ltp-search')||{}).value||'').toLowerCase();
+ var fStatusCode=(document.getElementById('ltp-filter-occ')||{}).value||'';
+ var fOccFilter=(document.getElementById('ltp-filter-occupancy')||{}).value||'';
+ return (records||[]).filter(function(r){
+  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch)) return false;
+  if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode) return false;
+  if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter) return false;
+  return true;
+ });
+}
+
 window.ltpPopulateOccupancyFilter=function(){
  var sel=document.getElementById('ltp-filter-occupancy');
  if(!sel)return;
@@ -14412,50 +14523,63 @@ async function ltpRender(){
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  const records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
- const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
- const fStatusCode=(document.getElementById('ltp-filter-occ')?.value)||'';
- const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
- const fOccFilter=(document.getElementById('ltp-filter-occupancy')?.value||'').trim();
- const filtered=records.filter(r=>{
- if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch))return false;
- if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode)return false;
- if(fMonth&&r.month!==fMonth)return false;
- if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter)return false;
- return true;
+ const fMonth=(document.getElementById('ltp-filter-month')||{}).value||'';
+ const fMoveInCard=(document.getElementById('ltp-filter-movein')||{}).value||'';
+ var kpiMonth=fMonth||curMonth;
+ var moveInKpiMonth=fMoveInCard||kpiMonth;
+ var tenantIdx=ltpGetTenantLeaseIndex();
+ var portfolioTotal=records.length;
+ /* Tabela: todas as casas; mes NAO filtra linhas (so busca/status/ocupacao). */
+ const filtered=ltpFilterTableRecords(records);
+ /* KPIs do mes: portfolio inteiro + criterios do mes selecionado. */
+ var rentedInMonth=records.filter(function(r){return ltpLeaseActiveInMonth(r,tenantIdx,kpiMonth);}).length;
+ var vacantInMonth=Math.max(0,portfolioTotal-rentedInMonth);
+ var moveInCount=records.filter(function(r){return ltpMoveInInMonth(r,tenantIdx,moveInKpiMonth);}).length;
+ var totExpPM=0;
+ var totTotalNetOwner=0;
+ var totR=records.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+ var totNetAtual=totR;
+ var totDeposit=records.reduce(function(s,r){return s+(Number(r.deposit)||0);},0);
+ var sumByCode=window._pmSummaryByCode;
+ records.forEach(function(r){
+  var ev=expByProp&&typeof expByProp.get==='function'?(expByProp.get(String(r.id))||0):0;
+  totExpPM+=ev;
+  if(sumByCode&&sumByCode[r.id]!=null){
+   totTotalNetOwner+=parseFloat(sumByCode[r.id].net)||0;
+  }else{
+   var rent=Number(r.rent)||0;
+   var mPct=ltpKpiMgmPct(r);
+   totTotalNetOwner+=rent-rent*mPct/100-ev;
+  }
  });
- // KPIs
- const totR=filtered.reduce((s,r)=>s+(r.rent||0),0);
- /* Net Atual: soma da coluna RENT (igual a totR) */
- const totNetAtual=totR;
- /* Total Net Owner: soma (rent - fee MGM em $) = soma coluna NET OWNER sem despesas PM */
- const totTotalNetOwner=filtered.reduce((s,r)=>{
-  var rent=Number(r.rent)||0;
-  var mPct=ltpKpiMgmPct(r);
-  var fee=rent*(mPct/100);
-  return s+(rent-fee);
- },0);
- const totDeposit=filtered.reduce((s,r)=>s+(Number(r.deposit)||0),0);
- const totExpPM=filtered.reduce((s,r)=>{var ev=0;if(expByProp&&typeof expByProp.get==='function')ev=expByProp.get(String(r.id))||0;return s+ev;},0);
- const cancelledKmgm=filtered.filter(ltpPropIsCancelled).length;
- const poolMgm=filtered.filter(function(r){return !ltpPropIsCancelled(r);});
+ var cancelledKmgm=records.filter(ltpPropIsCancelled).length;
+ var poolMgm=records.filter(function(r){return !ltpPropIsCancelled(r);});
  var invalidMgmtL=0;
  poolMgm.forEach(function(pr){ if(ltpMgmtPctInvalidUsesDefault(pr))invalidMgmtL++; });
  var sumMgmPct=poolMgm.reduce(function(s,r){return s+ltpKpiMgmPct(r);},0);
  var nActiveMgm=poolMgm.length;
  var avgMgmStr=nActiveMgm===0?'—':((sumMgmPct/nActiveMgm).toFixed(2)+'%');
- var tipAvgMgm='Calculado sobre '+nActiveMgm+' propriedades ativas (default 8% quando nao definido). Excluidas: '+cancelledKmgm+' canceladas, '+invalidMgmtL+' sem dados validos.';
- [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
- ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
- ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
+ var ganhoFin=records.reduce(function(s,r){
+  var rent=Number(r.rent)||0;
+  var mPct=ltpKpiMgmPct(r);
+  return s+rent*mPct/100;
+ },0);
+ var tipGanho='SUM(rent × MGM%/100) sobre '+portfolioTotal+' propriedades do portfolio. Media MGM% = media das ativas (excl. canceladas).';
+ [['ltp-kpi-total',portfolioTotal],
+ ['ltp-kpi-rented',rentedInMonth],
+ ['ltp-kpi-vacant',vacantInMonth],
+ ['ltp-kpi-inprog',moveInCount],
  ['ltp-kpi-rent',ltFmt(totR)],
  ['ltp-kpi-net',ltFmt(totNetAtual)],
  ['ltp-kpi-total-deposit',ltFmt(totDeposit)],
  ['ltp-kpi-total-netowner',ltFmt(totTotalNetOwner)],
  ['ltp-kpi-total-exppm',ltFmt(totExpPM)],
- ['ltp-kpi-avg-mgm',avgMgmStr]
- ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ ['ltp-kpi-avg-mgm',ltFmt(ganhoFin)]
+ ].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.textContent=pair[1];});
+ var ganhoSub=document.getElementById('ltp-kpi-ganho-sub');
+ if(ganhoSub)ganhoSub.textContent='Media MGM% = '+avgMgmStr;
  var wrapAvg=document.getElementById('ltp-kpi-wrap-avgmgm');
- if(wrapAvg){wrapAvg.title=tipAvgMgm;wrapAvg.setAttribute('aria-label',tipAvgMgm);}
+ if(wrapAvg){wrapAvg.title=tipGanho;wrapAvg.setAttribute('aria-label',tipGanho);}
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody){if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
