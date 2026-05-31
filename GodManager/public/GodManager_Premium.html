@@ -1312,17 +1312,21 @@ document.addEventListener('DOMContentLoaded', function(){
  <div id="home-lucro-mp-body">
  <div id="home-lucro-mp-bands"></div>
  <div id="home-lucro-mp-table-scroll">
- <table style="width:100%;border-collapse:collapse;min-width:520px">
+ <table style="width:100%;border-collapse:collapse;min-width:720px">
  <thead style="position:sticky;top:0;z-index:1"><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
  <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--green)">Rent</th>
  <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">MGM%</th>
- <th id="home-lucro-mp-sort-th" role="button" tabindex="0" style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--amber);cursor:pointer;user-select:none" title="Ordenar por LUCRO MP">LUCRO MP <span id="home-lucro-mp-sort-ind" style="font-size:8px;opacity:.85">▼</span></th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">LUCRO MP</th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--blue)">MARKUP MP</th>
+ <th id="home-lucro-mp-sort-th" role="button" tabindex="0" style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--amber);cursor:pointer;user-select:none" title="Ordenar por LUCRO TOTAL MP">LUCRO TOTAL MP <span id="home-lucro-mp-sort-ind" style="font-size:8px;opacity:.85">▼</span></th>
  </tr></thead>
  <tbody id="home-lucro-mp-tbody"></tbody>
  <tfoot><tr style="background:var(--cream);border-top:2px solid var(--border)">
  <td style="padding:9px 12px;font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.5px">Total</td>
  <td colspan="2"></td>
+ <td id="home-lucro-mp-total-gestao" style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--ink2)">—</td>
+ <td id="home-lucro-mp-total-markup" style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--blue)">—</td>
  <td id="home-lucro-mp-total" style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--amber)">—</td>
  </tr></tfoot>
  </table>
@@ -3538,7 +3542,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL NET OWNER</div><div id="ltp-kpi-total-netowner" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma a repassar</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL EXP MES (PM)</div><div id="ltp-kpi-total-exppm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma despesas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  <div id="ltp-kpi-wrap-avgmgm" tabindex="0" title="" style="padding:14px 14px 10px;position:relative;outline:none;cursor:help;touch-action:manipulation">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">GANHO FINANCEIRO</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">$0</div><div id="ltp-kpi-ganho-sub" style="font-size:10px;color:var(--ink3);margin-top:3px">Media MGM% = —</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">GANHO FINANCEIRO</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">$0</div><div id="ltp-kpi-ganho-sub" style="font-size:10px;color:var(--ink3);margin-top:3px;line-height:1.45">Gestao: —<br>Markup: —</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
  </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -5217,6 +5221,32 @@ function gmHomeMoneyCtr(n){
  var s=n>=1e6?(n/1e6).toFixed(2)+'M':(n>=1e3?(n/1e3).toFixed(1)+'k':n.toFixed(0));
  return '$'+s;
 }
+/** Markup PmExpense = ownerCharged - vendorCost (todos os pacotes). */
+function ltPmExpenseMarkup(e){
+ if(!e)return 0;
+ var o=parseFloat(e.ownerCharged),v=parseFloat(e.vendorCost);
+ if(isNaN(o)||isNaN(v))return 0;
+ return Math.round((o-v)*100)/100;
+}
+function ltPmBuildMarkupByProp(expenses){
+ var byProp=new Map(),total=0;
+ (expenses||[]).forEach(function(e){
+  if(!e)return;
+  var mk=ltPmExpenseMarkup(e);
+  total+=mk;
+  var pUuid=String(e.propertyId||'').trim();
+  var pCode=String(e.propertyCode||'').trim();
+  if(pUuid)byProp.set(pUuid,(byProp.get(pUuid)||0)+mk);
+  if(pCode&&pCode!==pUuid)byProp.set(pCode,(byProp.get(pCode)||0)+mk);
+ });
+ return{byProp:byProp,total:Math.round(total*100)/100};
+}
+function ltPmMarkupForRecord(byProp,r){
+ if(!byProp||!r||typeof byProp.get!=='function')return 0;
+ var keys=[String(r.id||''),String(r.code||''),String(r._apiId||'')].filter(Boolean);
+ for(var i=0;i<keys.length;i++){if(byProp.has(keys[i]))return byProp.get(keys[i])||0;}
+ return 0;
+}
 function gmHomeFetchPmMarkupMonth(){
  var d=new Date();
  var ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -5226,12 +5256,7 @@ function gmHomeFetchPmMarkupMonth(){
   .then(function(r){if(!r.ok)throw new Error('pm expenses');return r.json();})
   .then(function(j){
    var rows=(j&&j.expenses)||[];
-   var sum=0;
-   for(var i=0;i<rows.length;i++){
-    var e=rows[i],o=parseFloat(e.ownerCharged),v=parseFloat(e.vendorCost);
-    if(!isNaN(o)&&!isNaN(v)) sum+=o-v;
-   }
-   sum=Math.round(sum*100)/100;
+   var sum=ltPmBuildMarkupByProp(rows).total;
    var c=CARDS.find(function(x){return x.id==='pm-month-markup';});
    if(c){
     var sMoney=typeof gmHomeMoney==='function'?gmHomeMoney(sum):('$'+sum.toFixed(2));
@@ -5623,12 +5648,12 @@ function gmHomeRenderLucroBandCards(rows,sumLucro){
  ];
  var counts={L0:0,L100:0,L200:0,L300:0,L400:0,L500:0};
  rows.forEach(function(row){
-  var b=gmHomeLucroBandCount(row.lucro);
+  var b=gmHomeLucroBandCount(row.lucroTotal!=null?row.lucroTotal:row.lucro);
   if(b&&counts[b]!=null)counts[b]++;
  });
  function miniCard(d,n,extraVal){
   var val=extraVal!=null?extraVal:String(n);
-  var sub=d.isTotal?'Soma LUCRO MP':(n===1?'1 casa':n+' casas');
+  var sub=d.isTotal?'Soma LUCRO TOTAL MP':(n===1?'1 casa':n+' casas');
   var emptyCls=(d.isTotal||n>0)?'':' empty';
   return '<div class="card home-lucro-mini'+emptyCls+'" style="pointer-events:none">'
   +'<div class="ct"><div class="cl">'+d.label+'</div><div class="cb">'+d.badge+'</div></div>'
@@ -5657,12 +5682,14 @@ function gmHomeBindLucroMpSortOnce(){
  th.addEventListener('click',toggle);
  th.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggle();}});
 }
-function gmHomeRenderLucroMpTable(){
+async function gmHomeRenderLucroMpTable(){
  gmHomeBindLucroMpSortOnce();
  gmHomeBindLucroCollapseOnce();
  var wrap=document.getElementById('home-lucro-mp-wrap');
  var tb=document.getElementById('home-lucro-mp-tbody');
  var totEl=document.getElementById('home-lucro-mp-total');
+ var totGestao=document.getElementById('home-lucro-mp-total-gestao');
+ var totMarkup=document.getElementById('home-lucro-mp-total-markup');
  var ind=document.getElementById('home-lucro-mp-sort-ind');
  if(!wrap||!tb)return;
  var arr=[];
@@ -5670,31 +5697,46 @@ function gmHomeRenderLucroMpTable(){
   if(typeof window.gmPropertiesLoad==='function')arr=window.gmPropertiesLoad()||[];
  }catch(e){}
  if(!arr.length){wrap.style.display='none';tb.innerHTML='';if(totEl)totEl.textContent='—';return;}
+ var ym=new Date().toISOString().slice(0,7);
+ var markupByProp=new Map();
+ try{
+  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(ym),{credentials:'include',cache:'no-store'});
+  if(exRes.ok){
+   var exJ=await exRes.json();
+   markupByProp=ltPmBuildMarkupByProp((exJ&&exJ.expenses)||[]).byProp;
+  }
+ }catch(eEx){console.warn('gmHomeRenderLucroMpTable expenses',eEx);}
  var rows=arr.map(function(p){
   var r=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;
   if(!r)return null;
   var rent=Number(r.rent)||0;
   var pct=gmHomeLucroMpPct(r);
-  var lucro=rent*pct/100;
-  return{address:String(r.address||'—'),rent:rent,pct:pct,lucro:lucro};
+  var lucroGestao=rent*pct/100;
+  var lucroMarkup=ltPmMarkupForRecord(markupByProp,r);
+  var lucroTotal=lucroGestao+lucroMarkup;
+  return{address:String(r.address||'—'),rent:rent,pct:pct,lucro:lucroGestao,lucroMarkup:lucroMarkup,lucroTotal:lucroTotal};
  }).filter(Boolean);
  if(!rows.length){wrap.style.display='none';return;}
  var desc=window.__gmHomeLucroSort!=='asc';
- rows.sort(function(a,b){return desc?(b.lucro-a.lucro):(a.lucro-b.lucro);});
+ rows.sort(function(a,b){return desc?(b.lucroTotal-a.lucroTotal):(a.lucroTotal-b.lucroTotal);});
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
- var sumLucro=0;
+ var sumGestao=0,sumMarkup=0,sumTotal=0;
  tb.innerHTML=rows.map(function(row){
-  sumLucro+=row.lucro;
+  sumGestao+=row.lucro;sumMarkup+=row.lucroMarkup;sumTotal+=row.lucroTotal;
   return '<tr style="border-bottom:1px solid var(--border)">'
   +'<td style="padding:8px 12px;font-size:11px;color:var(--ink);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(row.address)+'">'+esc(row.address)+'</td>'
   +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(row.rent)+'</td>'
   +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+row.pct.toFixed(0)+'%</td>'
-  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--amber)">'+ltFmt(row.lucro)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+ltFmt(row.lucro)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--blue)">'+ltFmt(row.lucroMarkup)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--amber)">'+ltFmt(row.lucroTotal)+'</td>'
   +'</tr>';
  }).join('');
- if(totEl)totEl.textContent=ltFmt(sumLucro);
+ if(totGestao)totGestao.textContent=ltFmt(sumGestao);
+ if(totMarkup)totMarkup.textContent=ltFmt(sumMarkup);
+ if(totEl)totEl.textContent=ltFmt(sumTotal);
  if(ind)ind.textContent=desc?'▼':'▲';
- gmHomeRenderLucroBandCards(rows,sumLucro);
+ gmHomeRenderLucroBandCards(rows,sumTotal);
  var body=document.getElementById('home-lucro-mp-body');
  if(body)body.style.display=(window.__gmHomeLucroExpanded!==false)?'block':'none';
  wrap.style.display='block';
@@ -10879,7 +10921,22 @@ async function ltOpenDetail(id){
  if(!r)return;
  var rentDet=Number(r.rent)||0;
  var mPctDet=ltDetailMgmtFeePct(r.mgmtFeePct);
- var ganhoMgrProp=rentDet*mPctDet/100;
+ var ganhoGestaoDet=rentDet*mPctDet/100;
+ var stmtMonth=String(r.month||'').trim().slice(0,7);
+ if(!/^\d{4}-\d{1,2}$/.test(stmtMonth))stmtMonth=new Date().toISOString().slice(0,7);
+ var ganhoMarkupDet=0;
+ var cache=window.__ltpPmExpensesCache;
+ if(cache&&cache.month===stmtMonth&&cache.markupByProp)ganhoMarkupDet=ltPmMarkupForRecord(cache.markupByProp,r);
+ else{
+  try{
+   var exResD=await fetch('/api/pm/expenses?month='+encodeURIComponent(stmtMonth),{credentials:'include',cache:'no-store'});
+   if(exResD.ok){
+    var exJD=await exResD.json();
+    ganhoMarkupDet=ltPmMarkupForRecord(ltPmBuildMarkupByProp((exJD&&exJD.expenses)||[]).byProp,r);
+   }
+  }catch(eMk){console.warn('ltOpenDetail markup',eMk);}
+ }
+ var ganhoTotalDet=ganhoGestaoDet+ganhoMarkupDet;
  const statusLabels={approved:'Approved',pending:'Pending',disputed:'Disputed'};
  const statusColors={approved:'var(--green)',pending:'var(--amber)',disputed:'var(--red)'};
  const statusBg={approved:'var(--green-bg)',pending:'var(--amber-bg)',disputed:'var(--red-bg)'};
@@ -10945,7 +11002,9 @@ async function ltOpenDetail(id){
  ${r.electric?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Luz / Electric</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.electric)}</td></tr>`:''}
  ${r.maint?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Manutenção</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.maint)}</td></tr>`:''}
  ${r.vendor?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Vendor${r.vendorname?' ('+r.vendorname+')':''}</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.vendor)}</td></tr>`:''}
- <tr style="border-top:1px solid var(--border);background:var(--amber-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--amber)">Ganho da Manager Prop</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--amber);text-align:right">${ltFmt(ganhoMgrProp)}</td></tr>
+ <tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">Ganho gestao (MGM)</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);text-align:right">${ltFmt(ganhoGestaoDet)}</td></tr>
+ <tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">Ganho markup despesas</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);text-align:right">${ltFmt(ganhoMarkupDet)}</td></tr>
+ <tr style="border-top:1px solid var(--border);background:var(--amber-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--amber)">Ganho total MP</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber);text-align:right">${ltFmt(ganhoTotalDet)}</td></tr>
  <tr style="border-top:2px solid var(--border);background:var(--blue-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--blue)">NET ao Owner (dia 10)</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:${r.net>=0?'var(--blue)':'var(--red)'};text-align:right">${ltFmt(r.net)}</td></tr>
  </tbody>
  </table>
@@ -14758,11 +14817,17 @@ async function ltpRender(){
  var fMonthSel=(document.getElementById('ltp-filter-month')||{}).value||'';
  var curMonth=fMonthSel||new Date().toISOString().slice(0,7);
  var expByProp=new Map();
+ var markupByProp=new Map();
+ var totMarkupMonth=0;
  try{
-  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include'});
+  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include',cache:'no-store'});
   if(exRes.ok){
    var exJ=await exRes.json();
-   (exJ.expenses||[]).forEach(function(e){
+   var exList=(exJ&&exJ.expenses)||[];
+   var mkPack=ltPmBuildMarkupByProp(exList);
+   markupByProp=mkPack.byProp;
+   totMarkupMonth=mkPack.total;
+   exList.forEach(function(e){
     if(!e) return;
     var add=parseFloat(e.ownerCharged)||0;
     var pUuid=String(e.propertyId||'').trim();
@@ -14772,6 +14837,7 @@ async function ltpRender(){
    });
   }
  }catch(e){}
+ window.__ltpPmExpensesCache={month:curMonth,markupByProp:markupByProp,totMarkup:totMarkupMonth};
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
   try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltpRender auto-bootstrap',e);}
@@ -14814,12 +14880,14 @@ async function ltpRender(){
  var sumMgmPct=poolMgm.reduce(function(s,r){return s+ltpKpiMgmPct(r);},0);
  var nActiveMgm=poolMgm.length;
  var avgMgmStr=nActiveMgm===0?'—':((sumMgmPct/nActiveMgm).toFixed(2)+'%');
- var ganhoFin=records.reduce(function(s,r){
+ var ganhoGestao=records.reduce(function(s,r){
   var rent=Number(r.rent)||0;
   var mPct=ltpKpiMgmPct(r);
   return s+rent*mPct/100;
  },0);
- var tipGanho='SUM(rent × MGM%/100) sobre '+portfolioTotal+' propriedades do portfolio. Media MGM% = media das ativas (excl. canceladas).';
+ var ganhoMarkup=totMarkupMonth;
+ var ganhoFin=ganhoGestao+ganhoMarkup;
+ var tipGanho='GANHO = gestao (rent×MGM%/100) + markup (ownerCharged-vendorCost) no mes '+kpiMonth+'. Media MGM% = media das ativas (excl. canceladas).';
  [['ltp-kpi-total',portfolioTotal],
  ['ltp-kpi-rented',rentedInMonth],
  ['ltp-kpi-vacant',vacantInMonth],
@@ -14832,7 +14900,7 @@ async function ltpRender(){
  ['ltp-kpi-avg-mgm',ltFmt(ganhoFin)]
  ].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.textContent=pair[1];});
  var ganhoSub=document.getElementById('ltp-kpi-ganho-sub');
- if(ganhoSub)ganhoSub.textContent='Media MGM% = '+avgMgmStr;
+ if(ganhoSub)ganhoSub.innerHTML='Gestao: '+ltFmt(ganhoGestao)+' (media MGM% '+avgMgmStr+')<br>Markup: '+ltFmt(ganhoMarkup);
  var wrapAvg=document.getElementById('ltp-kpi-wrap-avgmgm');
  if(wrapAvg){wrapAvg.title=tipGanho;wrapAvg.setAttribute('aria-label',tipGanho);}
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
