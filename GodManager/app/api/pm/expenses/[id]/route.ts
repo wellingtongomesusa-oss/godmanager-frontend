@@ -57,6 +57,12 @@ function toJson(e: {
 
 const STATUS_SET = new Set<PmExpenseStatus>(['SCHEDULED', 'PAID', 'PENDING', 'CANCELLED', 'FINALIZED']);
 
+function parseOptionalGeoNumber(v: unknown): number | null {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -175,6 +181,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const isFinalizingNow = st === 'FINALIZED' && cur.status !== 'FINALIZED';
     const isReactivating = cur.status === 'FINALIZED' && st !== 'FINALIZED';
 
+    let executedAt: Date | null | undefined;
+    let executedLat: number | null | undefined;
+    let executedLng: number | null | undefined;
+    let executedAccuracy: number | null | undefined;
+    let executedByUserId: string | null | undefined;
+
+    if (isFinalizingNow) {
+      executedAt = new Date();
+      executedByUserId = user.id;
+      if (body.lat !== undefined) executedLat = parseOptionalGeoNumber(body.lat);
+      if (body.lng !== undefined) executedLng = parseOptionalGeoNumber(body.lng);
+      if (body.accuracy !== undefined) executedAccuracy = parseOptionalGeoNumber(body.accuracy);
+    } else if (isReactivating) {
+      executedAt = null;
+      executedLat = null;
+      executedLng = null;
+      executedAccuracy = null;
+      executedByUserId = null;
+    }
+
     const row = await prisma.pmExpense.update({
       where: { id: params.id },
       data: {
@@ -212,6 +238,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           : isReactivating
             ? null
             : undefined,
+        ...(executedAt !== undefined ? { executedAt } : {}),
+        ...(executedLat !== undefined ? { executedLat } : {}),
+        ...(executedLng !== undefined ? { executedLng } : {}),
+        ...(executedAccuracy !== undefined ? { executedAccuracy } : {}),
+        ...(executedByUserId !== undefined ? { executedByUserId } : {}),
       },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },
