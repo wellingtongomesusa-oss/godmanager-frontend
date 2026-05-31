@@ -230,6 +230,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .ck-disabled{opacity:.42;pointer-events:none;cursor:default;color:rgba(201,169,110,.55)!important}.ck-disabled:hover{opacity:.42}
 .cbar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 10px 10px}
 .bg{background:var(--green)}.ba{background:var(--amber)}.bb{background:var(--blue)}.br{background:var(--red)}.bi{background:var(--ink2)}
+.home-lucro-mp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.home-lucro-mp-head:focus{outline:2px solid rgba(201,169,110,.35);outline-offset:2px}
+.home-lucro-mp-chevron{width:18px;height:18px;flex-shrink:0;color:var(--ink3);transition:transform .2s ease;margin-top:2px}
+#home-lucro-mp-bands{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+#home-lucro-mp-bands .home-lucro-mini.card{cursor:default;padding:16px 18px 12px;min-height:118px}
+#home-lucro-mp-bands .home-lucro-mini.card:hover{transform:none;box-shadow:0 1px 3px rgba(26,26,28,.04),0 4px 12px rgba(26,26,28,.03)}
+#home-lucro-mp-bands .home-lucro-mini .cc,#home-lucro-mp-bands .home-lucro-mini .cf,#home-lucro-mp-bands .home-lucro-mini .cd,#home-lucro-mp-bands .home-lucro-mini .cp{display:none}
+#home-lucro-mp-table-scroll{max-height:280px;overflow-y:auto}
 .mw{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:48px 40px;text-align:center}
 .mw h3{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:10px;letter-spacing:-.2px}.mw p{font-size:12.5px;color:var(--ink3);max-width:500px;margin:0 auto;line-height:1.6}
 .ur{display:flex;gap:14px;margin-top:28px;justify-content:center;flex-wrap:wrap}
@@ -1294,11 +1302,16 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="ph"><div class="pt">Home</div><div class="ps">Portfolio overview — properties, leasing, expenses, and compliance.</div></div>
  <div class="cg" id="home-cards"></div>
  <div id="home-lucro-mp-wrap" style="display:none;margin-top:28px;background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
- <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+ <div id="home-lucro-mp-head" class="home-lucro-mp-head" role="button" tabindex="0" aria-expanded="true" aria-controls="home-lucro-mp-body" title="Expandir ou recolher">
+ <div>
  <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Lucro por casa</div>
  <div style="font-size:11px;color:var(--ink3);margin-top:4px">Rent, MGM% e lucro da Manager Prop por propriedade</div>
  </div>
- <div style="max-height:280px;overflow-y:auto">
+ <svg id="home-lucro-mp-chevron" class="home-lucro-mp-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="transform:rotate(180deg)"><polyline points="6 9 12 15 18 9"/></svg>
+ </div>
+ <div id="home-lucro-mp-body">
+ <div id="home-lucro-mp-bands"></div>
+ <div id="home-lucro-mp-table-scroll">
  <table style="width:100%;border-collapse:collapse;min-width:520px">
  <thead style="position:sticky;top:0;z-index:1"><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
@@ -1313,6 +1326,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <td id="home-lucro-mp-total" style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--amber)">—</td>
  </tr></tfoot>
  </table>
+ </div>
  </div>
  </div>
 </div>
@@ -5508,8 +5522,8 @@ function gmHomeBuildDashboardFromLocal(){
   if(isRented)ql++; else if(isVacant)qv++;
   if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
   if(stt==='disputed'||stt==='notice')qnot++;
-  var guar=Number(p.guarantee!=null?p.guarantee:0)||0;
-  if(guar>0){totGuaranteeSum+=guar;qtyGuaranteeHouses++;}
+  var resAmt=gmHomePropertyReservaAmt(p);
+  if(resAmt>0){totGuaranteeSum+=resAmt;qtyGuaranteeHouses++;}
   pr+=rent;mkt+=mrent;tsd+=dep;
   totDepSum+=dep;
   totNetOwnerSum+=(rent-rent*mPct/100);
@@ -5558,7 +5572,75 @@ function gmHomeBuildDashboardFromLocal(){
  }catch(e){console.warn('gmHomeBuildDashboardFromLocal',e);return null;}
 }
 
+/** Mesmo campo da coluna Properties RESERVA DE SEGURANCA: guaranteeLimit, senao guarantee. */
+function gmHomePropertyReservaAmt(p){
+ if(!p)return 0;
+ var gl=Number(p.guaranteeLimit);
+ var g=Number(p.guarantee);
+ if(isFinite(gl)&&gl>0)return gl;
+ if(isFinite(g)&&g>0)return g;
+ return 0;
+}
 window.__gmHomeLucroSort='desc';
+window.__gmHomeLucroExpanded=true;
+function gmHomeLucroBandCount(lucro){
+ var l=Number(lucro)||0;
+ if(l===0)return 'L0';
+ if(l>=1&&l<=100)return 'L100';
+ if(l<=200)return 'L200';
+ if(l<=300)return 'L300';
+ if(l<=400)return 'L400';
+ if(l>500)return 'L500';
+ return null;
+}
+function gmHomeBindLucroCollapseOnce(){
+ if(window._gmHomeLucroCollapseBound)return;
+ window._gmHomeLucroCollapseBound=1;
+ var head=document.getElementById('home-lucro-mp-head');
+ if(!head)return;
+ function toggle(){
+  window.__gmHomeLucroExpanded=!window.__gmHomeLucroExpanded;
+  var body=document.getElementById('home-lucro-mp-body');
+  var ch=document.getElementById('home-lucro-mp-chevron');
+  if(body)body.style.display=window.__gmHomeLucroExpanded?'block':'none';
+  if(ch)ch.style.transform=window.__gmHomeLucroExpanded?'rotate(180deg)':'rotate(0deg)';
+  head.setAttribute('aria-expanded',window.__gmHomeLucroExpanded?'true':'false');
+ }
+ head.addEventListener('click',toggle);
+ head.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggle();}});
+}
+function gmHomeRenderLucroBandCards(rows,sumLucro){
+ var host=document.getElementById('home-lucro-mp-bands');
+ if(!host)return;
+ var defs=[
+  {code:'L0',badge:'L0',label:'$0',bar:'bi'},
+  {code:'L100',badge:'L100',label:'ate $100',bar:'ba'},
+  {code:'L200',badge:'L200',label:'ate $200',bar:'ba'},
+  {code:'L300',badge:'L300',label:'ate $300',bar:'bb'},
+  {code:'L400',badge:'L400',label:'ate $400',bar:'bb'},
+  {code:'L500',badge:'L500',label:'acima de $500',bar:'bg'},
+  {code:'TOT',badge:'TOT',label:'TOTAL',bar:'ba',isTotal:true}
+ ];
+ var counts={L0:0,L100:0,L200:0,L300:0,L400:0,L500:0};
+ rows.forEach(function(row){
+  var b=gmHomeLucroBandCount(row.lucro);
+  if(b&&counts[b]!=null)counts[b]++;
+ });
+ function miniCard(d,n,extraVal){
+  var val=extraVal!=null?extraVal:String(n);
+  var sub=d.isTotal?'Soma LUCRO MP':(n===1?'1 casa':n+' casas');
+  var emptyCls=(d.isTotal||n>0)?'':' empty';
+  return '<div class="card home-lucro-mini'+emptyCls+'" style="pointer-events:none">'
+  +'<div class="ct"><div class="cl">'+d.label+'</div><div class="cb">'+d.badge+'</div></div>'
+  +'<div class="cv2">'+val+'</div>'
+  +'<div class="cs1">'+sub+'</div>'
+  +'<div class="cbar '+d.bar+'"></div></div>';
+ }
+ host.innerHTML=defs.map(function(d){
+  if(d.isTotal)return miniCard(d,rows.length,typeof ltFmt==='function'?ltFmt(sumLucro):('$'+sumLucro.toFixed(2)));
+  return miniCard(d,counts[d.code]||0,null);
+ }).join('');
+}
 function gmHomeLucroMpPct(r){
  if(typeof ltpKpiMgmPct==='function')return ltpKpiMgmPct(r);
  return Number(r.mgmpct!=null?r.mgmpct:(r.mgmtFeePct!=null?r.mgmtFeePct:0))||0;
@@ -5577,6 +5659,7 @@ function gmHomeBindLucroMpSortOnce(){
 }
 function gmHomeRenderLucroMpTable(){
  gmHomeBindLucroMpSortOnce();
+ gmHomeBindLucroCollapseOnce();
  var wrap=document.getElementById('home-lucro-mp-wrap');
  var tb=document.getElementById('home-lucro-mp-tbody');
  var totEl=document.getElementById('home-lucro-mp-total');
@@ -5611,6 +5694,9 @@ function gmHomeRenderLucroMpTable(){
  }).join('');
  if(totEl)totEl.textContent=ltFmt(sumLucro);
  if(ind)ind.textContent=desc?'▼':'▲';
+ gmHomeRenderLucroBandCards(rows,sumLucro);
+ var body=document.getElementById('home-lucro-mp-body');
+ if(body)body.style.display=(window.__gmHomeLucroExpanded!==false)?'block':'none';
  wrap.style.display='block';
 }
 
