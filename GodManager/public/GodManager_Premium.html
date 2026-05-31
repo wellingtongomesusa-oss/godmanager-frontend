@@ -1293,6 +1293,28 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="page active" id="page-home">
  <div class="ph"><div class="pt">Home</div><div class="ps">Portfolio overview — properties, leasing, expenses, and compliance.</div></div>
  <div class="cg" id="home-cards"></div>
+ <div id="home-lucro-mp-wrap" style="display:none;margin-top:28px;background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Lucro por casa</div>
+ <div style="font-size:11px;color:var(--ink3);margin-top:4px">Rent, MGM% e lucro da Manager Prop por propriedade</div>
+ </div>
+ <div style="max-height:280px;overflow-y:auto">
+ <table style="width:100%;border-collapse:collapse;min-width:520px">
+ <thead style="position:sticky;top:0;z-index:1"><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--green)">Rent</th>
+ <th style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">MGM%</th>
+ <th id="home-lucro-mp-sort-th" role="button" tabindex="0" style="padding:8px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--amber);cursor:pointer;user-select:none" title="Ordenar por LUCRO MP">LUCRO MP <span id="home-lucro-mp-sort-ind" style="font-size:8px;opacity:.85">▼</span></th>
+ </tr></thead>
+ <tbody id="home-lucro-mp-tbody"></tbody>
+ <tfoot><tr style="background:var(--cream);border-top:2px solid var(--border)">
+ <td style="padding:9px 12px;font-size:11px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.5px">Total</td>
+ <td colspan="2"></td>
+ <td id="home-lucro-mp-total" style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--amber)">—</td>
+ </tr></tfoot>
+ </table>
+ </div>
+ </div>
 </div>
 
 <!-- CLIENTS (Admin) -->
@@ -2928,7 +2950,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <input id="lt-f-deposit" type="number" placeholder="0" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--amber-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
  </div>
  <div>
- <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CONTA GARANTIDA ($) <span style="font-weight:400;color:var(--ink3);font-size:10px">— min sugerido $500</span></label>
+ <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CONTA RESERVA DE SEGURANCA ($) <span style="font-weight:400;color:var(--ink3);font-size:10px">— min sugerido $500</span></label>
  <input id="lt-f-guarantee" type="number" placeholder="500" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
  </div>
  <div>
@@ -3063,7 +3085,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="background:var(--paper);border-radius:12px;width:680px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
  <div id="lt-detail-title" style="font-size:14px;font-weight:700;color:var(--ink)">Statement Detail</div>
- <span onclick="ltCloseDetail()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1"></span>
+ <button type="button" onclick="ltCloseDetail()" aria-label="Fechar" style="font-size:20px;line-height:1;cursor:pointer;color:var(--ink3);padding:4px 10px;border:0;background:transparent;border-radius:6px;font-family:'DM Sans',sans-serif">×</button>
  </div>
  <div id="lt-detail-body"></div>
  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap" id="lt-detail-actions"></div>
@@ -3368,9 +3390,9 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="ltp-err-deposit" class="ltp-err-msg"></div>
 </div>
 <div style="grid-column:1/-1">
-<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-guarantee-limit">Limite Conta Garantida (USD)</label>
-<input id="ltp-f-guarantee-limit" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Limite Conta Garantida" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
-<div style="font-size:10px;color:var(--ink3);margin-top:3px">Limite máximo de saldo da conta garantida do owner.</div>
+<label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px" for="ltp-f-guarantee-limit">Limite Conta Reserva de Seguranca (USD)</label>
+<input id="ltp-f-guarantee-limit" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Limite Conta Reserva de Seguranca" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none">
+<div style="font-size:10px;color:var(--ink3);margin-top:3px">Limite máximo de saldo da conta reserva de seguranca do owner.</div>
 </div>
 <div style="grid-column:1/-1">
 <label style="font-size:11px;font-weight:600;color:var(--blue);display:block;margin-bottom:4px" for="ltp-f-net">Net Owner (USD)</label>
@@ -3460,6 +3482,27 @@ document.addEventListener('DOMContentLoaded', function(){
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
  </select>
+ <select id="ltp-filter-movein" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender()" title="Filtra apenas o card Move in no mes" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+ <option value="">Move in: Todos</option>
+ <option value="2025-01">Move in: Jan 2025</option>
+ <option value="2025-02">Move in: Fev 2025</option>
+ <option value="2025-03">Move in: Mar 2025</option>
+ <option value="2025-04">Move in: Abr 2025</option>
+ <option value="2025-05">Move in: Mai 2025</option>
+ <option value="2025-06">Move in: Jun 2025</option>
+ <option value="2025-07">Move in: Jul 2025</option>
+ <option value="2025-08">Move in: Ago 2025</option>
+ <option value="2025-09">Move in: Set 2025</option>
+ <option value="2025-10">Move in: Out 2025</option>
+ <option value="2025-11">Move in: Nov 2025</option>
+ <option value="2025-12">Move in: Dez 2025</option>
+ <option value="2026-01">Move in: Jan 2026</option>
+ <option value="2026-02">Move in: Fev 2026</option>
+ <option value="2026-03">Move in: Mar 2026</option>
+ <option value="2026-04">Move in: Abr 2026</option>
+ <option value="2026-05">Move in: Mai 2026</option>
+ <option value="2026-06">Move in: Jun 2026</option>
+ </select>
  <select id="ltp-filter-occupancy" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todas as ocupações</option>
  </select>
@@ -3472,16 +3515,16 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:10;--gm-kpi-cols-tablet:5">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">ocupadas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">disponiveis</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">EM ANDAMENTO</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">reforma/transicao</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">lease ativo no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">total − alugadas no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MOVE IN NO MES</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">move-in no periodo</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">NET ATUAL</div><div id="ltp-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma coluna Rent</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DEPOSIT</div><div id="ltp-kpi-total-deposit" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma deposits</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL NET OWNER</div><div id="ltp-kpi-total-netowner" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma a repassar</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL EXP MES (PM)</div><div id="ltp-kpi-total-exppm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma despesas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  <div id="ltp-kpi-wrap-avgmgm" tabindex="0" title="" style="padding:14px 14px 10px;position:relative;outline:none;cursor:help;touch-action:manipulation">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MEDIA MGM FEE</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">0%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">media coluna MGM%</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">GANHO FINANCEIRO</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">$0</div><div id="ltp-kpi-ganho-sub" style="font-size:10px;color:var(--ink3);margin-top:3px">Media MGM% = —</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
  </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -3503,7 +3546,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">STATUS AUTO</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
- <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Garantida</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">RESERVA DE SEGURANCA</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGM %</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
 <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
@@ -3590,7 +3633,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Atrasos</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">Rent</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--amber)">Deposit</th>
- <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Garantida</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Reserva de Seguranca</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">MGM %</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
 <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
@@ -5091,7 +5134,7 @@ const CARDS=[
  {id:'total-rented',label:'TOTAL RENTED',badge:'RNT',barClass:'bb bg',value:'—',sub1:'Currently leased units',sub2:'',cd:[80,20],cc:['#2a6e4e','#b83030'],ctr:'—',pills:[{t:'Occupied',c:'pg'},{t:'Vacant',c:'pr'}],r:'longterm',empty:true,labels:[]},
  {id:'total-owners',label:'TOTAL OWNERS',badge:'OWN',barClass:'bb ba',value:'—',sub1:'Unique property owners',sub2:'',cd:[70,30],cc:['#22558c','#c9a96e'],ctr:'—',pills:[{t:'Active',c:'pg'},{t:'Pending',c:'pa'}],r:'ownerportal',empty:true,labels:[]},
  {id:'vacant-houses',label:'VACANT HOUSES',badge:'VAC',barClass:'bb br',value:'—',sub1:'Currently unoccupied units',sub2:'Ready to lease',cd:[50,30,20],cc:['#b83030','#c9a96e','#4a5568'],ctr:'—',pills:[{t:'Market Ready',c:'pa'},{t:'Needs Repair',c:'pr'},{t:'Listed',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
- {id:'in-progress',label:'IN PROGRESS',badge:'WIP',barClass:'bb ba',value:'—',sub1:'Move-in / renovation / onboarding',sub2:'Houses not yet available',cd:[40,35,25],cc:['#c9a96e','#22558c','#2a6e4e'],ctr:'—',pills:[{t:'Move-in',c:'pa'},{t:'Renovation',c:'pb'},{t:'Onboarding',c:'pg'}],r:'renovations',empty:true,labels:[]},
+ {id:'reserva-seguranca',label:'RESERVA DE SEGURANCA',badge:'RSV',barClass:'bb ba',value:'—',sub1:'Soma das contas reserva do portfolio',sub2:'',cd:[100],cc:['#c9a96e'],ctr:'—',pills:[{t:'Com reserva',c:'pg'}],r:'ltproperties',empty:true,labels:[]},
  {id:'move-out',label:'TENANT / OWNER MOVE-OUT',badge:'OUT',barClass:'bb br',value:'—',sub1:'Upcoming departures',sub2:'Tenants and owners leaving',cd:[60,40],cc:['#b83030','#c9a96e'],ctr:'—',pills:[{t:'Tenant Notice',c:'pr'},{t:'Owner Notice',c:'pa'}],r:'longterm',empty:true,labels:[]},
  {id:'security-deposits',label:'SECURITY DEPOSITS',badge:'DEP',barClass:'bb bg',value:'—',sub1:'Total deposits held in trust',sub2:'',cd:[100],cc:['#2a6e4e'],ctr:'—',pills:[{t:'Trust Account',c:'pg'}],r:'ltstatements',empty:true,labels:[]},
  {id:'total-net-owner',label:'TOTAL NET OWNER',badge:'NET',barClass:'bb bb',value:'—',sub1:'Soma a repassar aos owners',sub2:'',cd:[1],cc:['#22558c'],ctr:'—',pills:[{t:'Net Mensal',c:'pb'}],r:'ltproperties',empty:true,labels:[]},
@@ -5286,14 +5329,17 @@ function applyHomeDashboardFromApi(d){
    c.cd=[Math.max(0.01,qv),Math.max(0.01,Math.max(1,qp-qv))];
    c.ctr=String(Math.round(qv));
    break;
-  case 'in-progress':
-   c.value=String(Math.round(qf));
-   c.cd=[Math.max(0.01,qf),1];
-   c.ctr=String(Math.round(qf));
-   if(c.pills&&c.pills[0]) c.pills[0].t='Move-in ('+Math.round(qf)+')';
-   if(c.pills&&c.pills[1]) c.pills[1].t='Renovation (0)';
-   if(c.pills&&c.pills[2]) c.pills[2].t='Onboarding (0)';
+  case 'reserva-seguranca':{
+   var tGuar=gmHomeNum(d.total_guarantee_sum,0);
+   var nGuar=Math.round(gmHomeNum(d.qty_guarantee_houses,0));
+   c.value=gmHomeMoney(tGuar);
+   c.cd=[Math.max(0.01,tGuar)];
+   c.ctr=gmHomeMoneyCtr(tGuar);
+   c.sub1=nGuar+' '+(nGuar===1?'casa com reserva':'casas com reserva');
+   c.sub2='';
+   if(c.pills&&c.pills[0]) c.pills[0].t=(nGuar===1?'1 casa':'Casas ('+nGuar+')');
    break;
+  }
   case 'move-out':
    c.value=String(Math.round(qnot));
    c.cd=[Math.max(0.01,qnot),1];
@@ -5442,7 +5488,7 @@ function gmHomeBuildDashboardFromLocal(){
   var arr=window.gmPropertiesLoad()||[];
   if(!arr.length)return null;
  var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
- var totDepSum=0,totNetOwnerSum=0;
+ var totDepSum=0,totNetOwnerSum=0,totGuaranteeSum=0,qtyGuaranteeHouses=0;
  var owners={};
  arr.forEach(function(p){
   var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
@@ -5462,6 +5508,8 @@ function gmHomeBuildDashboardFromLocal(){
   if(isRented)ql++; else if(isVacant)qv++;
   if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
   if(stt==='disputed'||stt==='notice')qnot++;
+  var guar=Number(p.guarantee!=null?p.guarantee:0)||0;
+  if(guar>0){totGuaranteeSum+=guar;qtyGuaranteeHouses++;}
   pr+=rent;mkt+=mrent;tsd+=dep;
   totDepSum+=dep;
   totNetOwnerSum+=(rent-rent*mPct/100);
@@ -5499,6 +5547,8 @@ function gmHomeBuildDashboardFromLocal(){
   potential_rent_monthly:pr,market_rent_total:mkt,occupancy_rate:occRate,
   total_security_deposits:tsd,
   total_deposit_sum:totDepSum,
+  total_guarantee_sum:totGuaranteeSum,
+  qty_guarantee_houses:qtyGuaranteeHouses,
   total_net_owner_sum:totNetOwnerSum,
   total_exp_pm_sum:(typeof window.__gmHomeExpPmCached==='number'?window.__gmHomeExpPmCached:0),
   qty_expenses_calls:qExpCalls,
@@ -5506,6 +5556,62 @@ function gmHomeBuildDashboardFromLocal(){
   _source:'local'
  };
  }catch(e){console.warn('gmHomeBuildDashboardFromLocal',e);return null;}
+}
+
+window.__gmHomeLucroSort='desc';
+function gmHomeLucroMpPct(r){
+ if(typeof ltpKpiMgmPct==='function')return ltpKpiMgmPct(r);
+ return Number(r.mgmpct!=null?r.mgmpct:(r.mgmtFeePct!=null?r.mgmtFeePct:0))||0;
+}
+function gmHomeBindLucroMpSortOnce(){
+ if(window._gmHomeLucroSortBound)return;
+ window._gmHomeLucroSortBound=1;
+ var th=document.getElementById('home-lucro-mp-sort-th');
+ if(!th)return;
+ function toggle(){
+  window.__gmHomeLucroSort=(window.__gmHomeLucroSort==='desc')?'asc':'desc';
+  gmHomeRenderLucroMpTable();
+ }
+ th.addEventListener('click',toggle);
+ th.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggle();}});
+}
+function gmHomeRenderLucroMpTable(){
+ gmHomeBindLucroMpSortOnce();
+ var wrap=document.getElementById('home-lucro-mp-wrap');
+ var tb=document.getElementById('home-lucro-mp-tbody');
+ var totEl=document.getElementById('home-lucro-mp-total');
+ var ind=document.getElementById('home-lucro-mp-sort-ind');
+ if(!wrap||!tb)return;
+ var arr=[];
+ try{
+  if(typeof window.gmPropertiesLoad==='function')arr=window.gmPropertiesLoad()||[];
+ }catch(e){}
+ if(!arr.length){wrap.style.display='none';tb.innerHTML='';if(totEl)totEl.textContent='—';return;}
+ var rows=arr.map(function(p){
+  var r=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;
+  if(!r)return null;
+  var rent=Number(r.rent)||0;
+  var pct=gmHomeLucroMpPct(r);
+  var lucro=rent*pct/100;
+  return{address:String(r.address||'—'),rent:rent,pct:pct,lucro:lucro};
+ }).filter(Boolean);
+ if(!rows.length){wrap.style.display='none';return;}
+ var desc=window.__gmHomeLucroSort!=='asc';
+ rows.sort(function(a,b){return desc?(b.lucro-a.lucro):(a.lucro-b.lucro);});
+ var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+ var sumLucro=0;
+ tb.innerHTML=rows.map(function(row){
+  sumLucro+=row.lucro;
+  return '<tr style="border-bottom:1px solid var(--border)">'
+  +'<td style="padding:8px 12px;font-size:11px;color:var(--ink);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(row.address)+'">'+esc(row.address)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(row.rent)+'</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+row.pct.toFixed(0)+'%</td>'
+  +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--amber)">'+ltFmt(row.lucro)+'</td>'
+  +'</tr>';
+ }).join('');
+ if(totEl)totEl.textContent=ltFmt(sumLucro);
+ if(ind)ind.textContent=desc?'▼':'▲';
+ wrap.style.display='block';
 }
 
 function loadHomeDashboardFromApi(){
@@ -5517,6 +5623,7 @@ function loadHomeDashboardFromApi(){
  }else{
   renderCards();
  }
+ try{if(typeof gmHomeRenderLucroMpTable==='function')gmHomeRenderLucroMpTable();}catch(eL){}
  // 2. Depois, tenta API remota. So sobrescreve se vier com dados REAIS (qty_properties > 0)
  fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
@@ -5759,6 +5866,7 @@ function renderCards(){
  if(CI[c.id])CI[c.id].destroy();
  CI[c.id]=new Chart(cv,{type:'doughnut',data:{labels:c.labels||[],datasets:[{data:c.cd,backgroundColor:c.cc,borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:!c.empty}},animation:{duration:500}}});
  });
+ try{if(typeof gmHomeRenderLucroMpTable==='function')gmHomeRenderLucroMpTable();}catch(eHm){}
 });
 }
 
@@ -10600,11 +10708,92 @@ function ltDelete(id){
  ltRender();
 }
 
+/**
+ * Popup Ver Statement — MGM% da propriedade (campo mgmtFeePct da casa).
+ * Default 8% se nulo, vazio ou fora do intervalo [0, 30].
+ * Nao usar ltpKpiMgmPct (regra de KPI do portfolio, nao fee contratual da unidade).
+ */
+function ltDetailMgmtFeePct(mgmtFeePct){
+ if(mgmtFeePct===null||mgmtFeePct===undefined||mgmtFeePct==='')return 8;
+ var m=Number(mgmtFeePct);
+ if(!isFinite(m)||m<0||m>30)return 8;
+ return m;
+}
+/** Fallback do popup: GET /api/properties (escopo sessao). Sem gmPropertiesLoad (cross-tenant). */
+async function ltFetchPropertyDetailFromApi(id){
+ try{
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  if(!res.ok)return null;
+  var data=await res.json();
+  if(!data||data.ok!==true||!Array.isArray(data.properties))return null;
+  var sid=String(id);
+  var p=data.properties.find(function(pr){
+   if(!pr)return false;
+   return String(pr.code||'')===sid||String(pr.id||'')===sid;
+  });
+  if(!p)return null;
+  var meta={};
+  if(p.metadata){
+   if(typeof p.metadata==='object')meta=p.metadata;
+   else try{meta=JSON.parse(p.metadata);}catch(eM){}
+  }
+  var rent=Number(p.rent)||0;
+  var mPct=ltDetailMgmtFeePct(p.mgmtFeePct);
+  var sLow=String(p.status||'').toLowerCase();
+  var statusUi='pending';
+  if(sLow==='disputed')statusUi='disputed';
+  else if(sLow==='active'||sLow==='approved')statusUi='approved';
+  return{
+   id:String(p.code||p.id),
+   _apiId:p.id,
+   address:p.address||'—',
+   owner:p.ownerName||'—',
+   tenant:meta.tenant||'',
+   baths:meta.baths||(p.bathrooms!=null?String(p.bathrooms):''),
+   month:meta.month||'',
+   rent:rent,
+   mgmtFeePct:p.mgmtFeePct,
+   deposit:Number(p.deposit)||0,
+   net:Number(meta.netOwner)!=null?Number(meta.netOwner):(rent-rent*mPct/100),
+   status:statusUi,
+   hoa:Number(meta.hoa)||0,
+   water:meta.water,
+   electric:meta.electric,
+   maint:meta.maint,
+   vendor:meta.vendor,
+   vendorname:meta.vendorname,
+   desc:meta.desc,
+   vendordate:meta.vendordate,
+   notes:p.notes||'',
+   photos:Array.isArray(meta.photos)?meta.photos:[],
+   files:Array.isArray(meta.files)?meta.files:[],
+   ownerFullName:meta.ownerFullName||'',
+   ownerTaxId:meta.ownerTaxId||'',
+   ownerEmail:p.ownerEmail||meta.ownerEmail||'',
+   ownerPhone:p.ownerPhone||meta.ownerPhone||'',
+   ownerMailingAddr:meta.ownerMailingAddr||'',
+   bankName:meta.bankName||'',
+   bankType:meta.bankType||'',
+   bankRouting:meta.bankRouting||'',
+   bankAccount:meta.bankAccount||'',
+   bankHolder:meta.bankHolder||'',
+   bankMethod:meta.bankMethod||'',
+   approver:meta.approver||'',
+   approvedBy:p.approvedBy||'',
+   approvedAt:p.approvedAt||'',
+   savedAt:meta.savedAt||''
+  };
+ }catch(e){console.warn('ltFetchPropertyDetailFromApi',e);return null;}
+}
+
 // Detail Modal 
-function ltOpenDetail(id){
- const records=ltGetRecords();
- const r=records.find(x=>x.id===id);
+async function ltOpenDetail(id){
+ var r=(ltGetRecords()||[]).find(function(x){return x&&String(x.id)===String(id);});
+ if(!r) r=await ltFetchPropertyDetailFromApi(id);
  if(!r)return;
+ var rentDet=Number(r.rent)||0;
+ var mPctDet=ltDetailMgmtFeePct(r.mgmtFeePct);
+ var ganhoMgrProp=rentDet*mPctDet/100;
  const statusLabels={approved:'Approved',pending:'Pending',disputed:'Disputed'};
  const statusColors={approved:'var(--green)',pending:'var(--amber)',disputed:'var(--red)'};
  const statusBg={approved:'var(--green-bg)',pending:'var(--amber-bg)',disputed:'var(--red-bg)'};
@@ -10670,6 +10859,7 @@ function ltOpenDetail(id){
  ${r.electric?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Luz / Electric</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.electric)}</td></tr>`:''}
  ${r.maint?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Manutenção</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.maint)}</td></tr>`:''}
  ${r.vendor?`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 12px;font-size:12px;color:var(--ink2)">— Vendor${r.vendorname?' ('+r.vendorname+')':''}</td><td style="padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);text-align:right">-${ltFmt(r.vendor)}</td></tr>`:''}
+ <tr style="border-top:1px solid var(--border);background:var(--amber-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--amber)">Ganho da Manager Prop</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--amber);text-align:right">${ltFmt(ganhoMgrProp)}</td></tr>
  <tr style="border-top:2px solid var(--border);background:var(--blue-bg)"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:var(--blue)">NET ao Owner (dia 10)</td><td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:${r.net>=0?'var(--blue)':'var(--red)'};text-align:right">${ltFmt(r.net)}</td></tr>
  </tbody>
  </table>
@@ -14367,6 +14557,96 @@ function ltpMgmtPctInvalidUsesDefault(r){
  return false;
 }
 
+/** Intervalo civil do mes YYYY-MM (inicio 00:00, fim 23:59:59.999 ultimo dia). */
+function ltpMonthRange(ym){
+ var m=String(ym||'').match(/^(\d{4})-(\d{2})$/);
+ if(!m) return null;
+ var y=+m[1], mo=+m[2]-1;
+ return {start:new Date(y,mo,1),end:new Date(y,mo+1,0,23,59,59,999)};
+}
+function ltpParseYmd(s){
+ var t=String(s||'').trim();
+ var m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(!m) return null;
+ var d=new Date(+m[1],+m[2]-1,+m[3]);
+ return isNaN(d.getTime())?null:d;
+}
+function ltpYmFromDate(d){
+ if(!d||isNaN(d.getTime())) return '';
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+/** Indice propId -> [{start,end}] a partir de GM_TENANTS_SEED e cache /api/tenants se ja carregado. */
+function ltpGetTenantLeaseIndex(){
+ var idx={};
+ function push(pid,moveIn,leaseTo){
+  var k=String(pid||'').trim();
+  if(!k) return;
+  if(!idx[k]) idx[k]=[];
+  idx[k].push({start:ltpParseYmd(moveIn),end:leaseTo?ltpParseYmd(leaseTo):null});
+ }
+ try{
+  (window.GM_TENANTS_SEED||[]).forEach(function(t){
+   if(!t) return;
+   push(t.propId,t.moveIn,t.leaseTo);
+  });
+ }catch(e){}
+ try{
+  (window.__gmTenantsTnCache||[]).forEach(function(t){
+   if(!t) return;
+   push(t.propId||t.propertyId,t.moveIn,t.leaseTo);
+  });
+ }catch(e){}
+ return idx;
+}
+/**
+ * Lease ativo no mes civil: inicio do contrato <= ultimo dia do mes
+ * E (fim do contrato >= primeiro dia do mes OU fim indefinido).
+ * Fonte: tenants (moveIn/leaseTo) por propId; fallback moveIn da propriedade sem fim.
+ */
+function ltpLeaseActiveInMonth(r,tenantIdx,ym){
+ var range=ltpMonthRange(ym);
+ if(!range||!r) return false;
+ var leases=tenantIdx[String(r.id)]||[];
+ var i;
+ if(leases.length){
+  for(i=0;i<leases.length;i++){
+   var L=leases[i];
+   if(!L.start) continue;
+   if(L.start>range.end) continue;
+   if(!L.end) return true;
+   if(L.end>=range.start) return true;
+  }
+  return false;
+ }
+ if(!r.tenant||!String(r.tenant).trim()) return false;
+ var mi=ltpParseYmd(r.moveIn||r.moveInDate);
+ if(!mi||mi>range.end) return false;
+ return true;
+}
+function ltpMoveInInMonth(r,tenantIdx,ym){
+ var range=ltpMonthRange(ym);
+ if(!range||!r) return false;
+ var leases=tenantIdx[String(r.id)]||[];
+ var i;
+ for(i=0;i<leases.length;i++){
+  var L=leases[i];
+  if(L.start&&L.start>=range.start&&L.start<=range.end) return true;
+ }
+ var mi=ltpParseYmd(r.moveIn||r.moveInDate);
+ return !!(mi&&mi>=range.start&&mi<=range.end);
+}
+function ltpFilterTableRecords(records){
+ var fSearch=((document.getElementById('ltp-search')||{}).value||'').toLowerCase();
+ var fStatusCode=(document.getElementById('ltp-filter-occ')||{}).value||'';
+ var fOccFilter=(document.getElementById('ltp-filter-occupancy')||{}).value||'';
+ return (records||[]).filter(function(r){
+  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch)) return false;
+  if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode) return false;
+  if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter) return false;
+  return true;
+ });
+}
+
 window.ltpPopulateOccupancyFilter=function(){
  var sel=document.getElementById('ltp-filter-occupancy');
  if(!sel)return;
@@ -14412,50 +14692,63 @@ async function ltpRender(){
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  const records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
- const fSearch=((document.getElementById('ltp-search')?.value)||'').toLowerCase();
- const fStatusCode=(document.getElementById('ltp-filter-occ')?.value)||'';
- const fMonth=(document.getElementById('ltp-filter-month')?.value)||'';
- const fOccFilter=(document.getElementById('ltp-filter-occupancy')?.value||'').trim();
- const filtered=records.filter(r=>{
- if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch))return false;
- if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode)return false;
- if(fMonth&&r.month!==fMonth)return false;
- if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter)return false;
- return true;
+ const fMonth=(document.getElementById('ltp-filter-month')||{}).value||'';
+ const fMoveInCard=(document.getElementById('ltp-filter-movein')||{}).value||'';
+ var kpiMonth=fMonth||curMonth;
+ var moveInKpiMonth=fMoveInCard||kpiMonth;
+ var tenantIdx=ltpGetTenantLeaseIndex();
+ var portfolioTotal=records.length;
+ /* Tabela: todas as casas; mes NAO filtra linhas (so busca/status/ocupacao). */
+ const filtered=ltpFilterTableRecords(records);
+ /* KPIs do mes: portfolio inteiro + criterios do mes selecionado. */
+ var rentedInMonth=records.filter(function(r){return ltpLeaseActiveInMonth(r,tenantIdx,kpiMonth);}).length;
+ var vacantInMonth=Math.max(0,portfolioTotal-rentedInMonth);
+ var moveInCount=records.filter(function(r){return ltpMoveInInMonth(r,tenantIdx,moveInKpiMonth);}).length;
+ var totExpPM=0;
+ var totTotalNetOwner=0;
+ var totR=records.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+ var totNetAtual=totR;
+ var totDeposit=records.reduce(function(s,r){return s+(Number(r.deposit)||0);},0);
+ var sumByCode=window._pmSummaryByCode;
+ records.forEach(function(r){
+  var ev=expByProp&&typeof expByProp.get==='function'?(expByProp.get(String(r.id))||0):0;
+  totExpPM+=ev;
+  if(sumByCode&&sumByCode[r.id]!=null){
+   totTotalNetOwner+=parseFloat(sumByCode[r.id].net)||0;
+  }else{
+   var rent=Number(r.rent)||0;
+   var mPct=ltpKpiMgmPct(r);
+   totTotalNetOwner+=rent-rent*mPct/100-ev;
+  }
  });
- // KPIs
- const totR=filtered.reduce((s,r)=>s+(r.rent||0),0);
- /* Net Atual: soma da coluna RENT (igual a totR) */
- const totNetAtual=totR;
- /* Total Net Owner: soma (rent - fee MGM em $) = soma coluna NET OWNER sem despesas PM */
- const totTotalNetOwner=filtered.reduce((s,r)=>{
-  var rent=Number(r.rent)||0;
-  var mPct=ltpKpiMgmPct(r);
-  var fee=rent*(mPct/100);
-  return s+(rent-fee);
- },0);
- const totDeposit=filtered.reduce((s,r)=>s+(Number(r.deposit)||0),0);
- const totExpPM=filtered.reduce((s,r)=>{var ev=0;if(expByProp&&typeof expByProp.get==='function')ev=expByProp.get(String(r.id))||0;return s+ev;},0);
- const cancelledKmgm=filtered.filter(ltpPropIsCancelled).length;
- const poolMgm=filtered.filter(function(r){return !ltpPropIsCancelled(r);});
+ var cancelledKmgm=records.filter(ltpPropIsCancelled).length;
+ var poolMgm=records.filter(function(r){return !ltpPropIsCancelled(r);});
  var invalidMgmtL=0;
  poolMgm.forEach(function(pr){ if(ltpMgmtPctInvalidUsesDefault(pr))invalidMgmtL++; });
  var sumMgmPct=poolMgm.reduce(function(s,r){return s+ltpKpiMgmPct(r);},0);
  var nActiveMgm=poolMgm.length;
  var avgMgmStr=nActiveMgm===0?'—':((sumMgmPct/nActiveMgm).toFixed(2)+'%');
- var tipAvgMgm='Calculado sobre '+nActiveMgm+' propriedades ativas (default 8% quando nao definido). Excluidas: '+cancelledKmgm+' canceladas, '+invalidMgmtL+' sem dados validos.';
- [['ltp-kpi-total',filtered.length],['ltp-kpi-rented',filtered.filter(r=>r.occupancy==='rented').length],
- ['ltp-kpi-vacant',filtered.filter(r=>r.occupancy==='vacant').length],
- ['ltp-kpi-inprog',filtered.filter(r=>r.occupancy==='inprogress'||r.occupancy==='renovation').length],
+ var ganhoFin=records.reduce(function(s,r){
+  var rent=Number(r.rent)||0;
+  var mPct=ltpKpiMgmPct(r);
+  return s+rent*mPct/100;
+ },0);
+ var tipGanho='SUM(rent × MGM%/100) sobre '+portfolioTotal+' propriedades do portfolio. Media MGM% = media das ativas (excl. canceladas).';
+ [['ltp-kpi-total',portfolioTotal],
+ ['ltp-kpi-rented',rentedInMonth],
+ ['ltp-kpi-vacant',vacantInMonth],
+ ['ltp-kpi-inprog',moveInCount],
  ['ltp-kpi-rent',ltFmt(totR)],
  ['ltp-kpi-net',ltFmt(totNetAtual)],
  ['ltp-kpi-total-deposit',ltFmt(totDeposit)],
  ['ltp-kpi-total-netowner',ltFmt(totTotalNetOwner)],
  ['ltp-kpi-total-exppm',ltFmt(totExpPM)],
- ['ltp-kpi-avg-mgm',avgMgmStr]
- ].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ ['ltp-kpi-avg-mgm',ltFmt(ganhoFin)]
+ ].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.textContent=pair[1];});
+ var ganhoSub=document.getElementById('ltp-kpi-ganho-sub');
+ if(ganhoSub)ganhoSub.textContent='Media MGM% = '+avgMgmStr;
  var wrapAvg=document.getElementById('ltp-kpi-wrap-avgmgm');
- if(wrapAvg){wrapAvg.title=tipAvgMgm;wrapAvg.setAttribute('aria-label',tipAvgMgm);}
+ if(wrapAvg){wrapAvg.title=tipGanho;wrapAvg.setAttribute('aria-label',tipGanho);}
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody){if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
