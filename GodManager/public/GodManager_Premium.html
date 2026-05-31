@@ -1260,6 +1260,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">My company</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('client-users')" id="nav-client-users" style="padding-left:16px">Equipe</div>
+ <div class="ss" onclick="nav('admin-audit')" id="nav-audit-log-tenant" style="padding-left:16px;display:none">Audit Log</div>
  <div class="ss" onclick="nav('settings')" id="nav-settings-co" style="padding-left:16px">Settings</div>
  </div>
  </div>
@@ -1301,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', function(){
    </div>
  </div>
  <button type="button" class="tb gm-allow-viewer" onclick="gmBackupExport()" title="Export backup JSON" style="padding:6px 12px;background:#22558c;color:#fff;border:1px solid #22558c;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;margin-right:8px">Backup</button>
+ <button type="button" id="btn-topbar-historico" class="tb" onclick="if(typeof nav==='function')nav('admin-audit');" style="display:none;margin-right:8px">Historico</button>
  <button class="tb gm-allow-viewer" onclick="window.print()">Export PDF</button>
  </div>
 </header>
@@ -1641,37 +1643,21 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
   <div>
    <div class="pt">Audit Log</div>
-   <div class="ps">Registo de ações críticas multi-utilizador (Postgres) · Apenas administradores</div>
+   <div class="ps">Registo de ações críticas multi-utilizador (Postgres) · Admin, gestor e super admin</div>
   </div>
   <button type="button" onclick="if(typeof adminAuditRender==='function')adminAuditRender();" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Atualizar</button>
  </div>
  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
   <input id="audit-f-actor" type="text" placeholder="Filtrar por email do utilizador" style="flex:1;min-width:220px;padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px"/>
-  <select id="audit-f-entity" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px">
+  <select id="audit-f-entity" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;min-width:160px">
    <option value="">Todas as entidades</option>
-   <option value="session">Sessão</option>
-   <option value="property">Property</option>
-   <option value="tenant">Tenant</option>
-   <option value="vendor">Vendor</option>
-   <option value="vendor_payment">Vendor Payment</option>
-   <option value="gaap">GAAP</option>
-   <option value="properties">Properties (bulk)</option>
   </select>
-  <select id="audit-f-action" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px">
+  <select id="audit-f-action" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;min-width:160px">
    <option value="">Todas as ações</option>
-   <option value="login">Login</option>
-   <option value="logout">Logout</option>
-   <option value="create">Create</option>
-   <option value="update">Update</option>
-   <option value="delete">Delete</option>
-   <option value="mark_paid">Mark Paid</option>
-   <option value="gaap_unlock">GAAP Unlock</option>
-   <option value="gaap_unlock_fail">GAAP Unlock Fail</option>
-   <option value="reset_status">Reset Status</option>
   </select>
   <input id="audit-f-from" type="date" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px"/>
   <input id="audit-f-to" type="date" style="padding:8px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px"/>
-  <button type="button" onclick="if(typeof adminAuditRender==='function')adminAuditRender();" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Filtrar</button>
+  <button type="button" onclick="if(typeof adminAuditFilterApply==='function')adminAuditFilterApply();" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Filtrar</button>
  </div>
  <div id="admin-audit-container">
   <div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar audit log...</div>
@@ -7247,6 +7233,13 @@ function applyPermissions(level){
  var tbc=document.getElementById('btn-topbar-clients');
  if(tbc)tbc.style.display=(isPlatform&&lvl==='ADMIN')?'inline-flex':'none';
  if(gmAd)gmAd.style.display=(isPlatform&&lvl==='ADMIN')?'block':'none';
+ var canAudit=typeof gmCanViewAuditLog==='function'&&gmCanViewAuditLog();
+ var navAuditPlat=document.getElementById('nav-admin-audit');
+ var navAuditTenant=document.getElementById('nav-audit-log-tenant');
+ if(navAuditPlat)navAuditPlat.style.display=(isPlatform&&lvl==='ADMIN'&&canAudit)?'':'none';
+ if(navAuditTenant)navAuditTenant.style.display=(canAudit&&!isPlatform)?'':'none';
+ var btnHist=document.getElementById('btn-topbar-historico');
+ if(btnHist)btnHist.style.display=canAudit?'inline-flex':'none';
  var isTenantAdmin=false;
  try{
   var uTm=window.__gmCurrentUser;
@@ -9089,9 +9082,9 @@ function nav(r){
  if(r==='gross-expenses'&&lvl!=='ADMIN')r='home';
  if(r==='backup'&&lvl!=='ADMIN')r='home';
  if(r==='org-chart'&&lvl!=='ADMIN')r='home';
- if(r==='admin-audit'&&lvl!=='ADMIN')r='home';
+ if(r==='admin-audit'&&!(typeof gmCanViewAuditLog==='function'&&gmCanViewAuditLog()))r='home';
  if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -9176,7 +9169,7 @@ function nav(r){
  vendors:()=>{if(typeof gvNavigateVendors==='function')void gvNavigateVendors();},
  settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
- 'admin-audit':()=>{if(typeof adminAuditRender==='function')adminAuditRender();},
+ 'admin-audit':()=>{if(typeof adminAuditEnterPage==='function')adminAuditEnterPage();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
@@ -22826,6 +22819,55 @@ window.tenantViewDetails=function(tid){
 /* ========== /RANKING PROPERTIES ========== */
 
 /* ========== AUDIT LOG ========== */
+window.gmCanViewAuditLog=function(){
+ try{
+  var r=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+  return r==='admin'||r==='manager'||r==='super_admin';
+ }catch(e){return false;}
+};
+window.__adminAuditPage={offset:0,limit:50};
+window.adminAuditPopulateSelect=function(selId,values,emptyLabel){
+ var sel=document.getElementById(selId);
+ if(!sel)return;
+ var prev=sel.value;
+ var html='<option value="">'+String(emptyLabel||'Todas')+'</option>';
+ (values||[]).forEach(function(v){
+  if(v==null||String(v).trim()==='')return;
+  html+='<option value="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>';
+ });
+ sel.innerHTML=html;
+ if(prev&&[].some.call(sel.options,function(o){return o.value===prev;}))sel.value=prev;
+};
+window.adminAuditLoadFacets=async function(){
+ try{
+  var res=await fetch('/api/audit/facets',{credentials:'include',cache:'no-store'});
+  if(!res.ok)return;
+  var data=await res.json();
+  if(!data||!data.ok)return;
+  adminAuditPopulateSelect('audit-f-action',data.actions||[],'Todas as ações');
+  adminAuditPopulateSelect('audit-f-entity',data.entities||[],'Todas as entidades');
+ }catch(e){console.warn('adminAuditLoadFacets',e);}
+};
+window.adminAuditEnterPage=async function(){
+ window.__adminAuditPage.offset=0;
+ await adminAuditLoadFacets();
+ if(typeof adminAuditRender==='function')await adminAuditRender();
+};
+window.adminAuditFilterApply=function(){
+ window.__adminAuditPage.offset=0;
+ if(typeof adminAuditRender==='function')adminAuditRender();
+};
+window.adminAuditPagePrev=function(){
+ var p=window.__adminAuditPage||{offset:0,limit:50};
+ if(p.offset<=0)return;
+ p.offset=Math.max(0,p.offset-(p.limit||50));
+ if(typeof adminAuditRender==='function')adminAuditRender();
+};
+window.adminAuditPageNext=function(){
+ var p=window.__adminAuditPage||{offset:0,limit:50};
+ p.offset=(p.offset||0)+(p.limit||50);
+ if(typeof adminAuditRender==='function')adminAuditRender();
+};
 window.gmLogAudit=function(action,entity,entityId,details){
  try{
   fetch('/api/audit',{
@@ -22880,6 +22922,7 @@ window.adminAuditRender=async function(){
  var container=document.getElementById('admin-audit-container');
  if(!container)return;
  container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar audit log...</div>';
+ var pg=window.__adminAuditPage||{offset:0,limit:50};
  var qs=[];
  var actor=(document.getElementById('audit-f-actor')||{}).value||'';
  var ent=(document.getElementById('audit-f-entity')||{}).value||'';
@@ -22891,30 +22934,45 @@ window.adminAuditRender=async function(){
  if(act)qs.push('action='+encodeURIComponent(act));
  if(fr)qs.push('from='+encodeURIComponent(fr));
  if(to)qs.push('to='+encodeURIComponent(to+'T23:59:59'));
- qs.push('limit=200');
+ qs.push('limit='+encodeURIComponent(String(pg.limit||50)));
+ qs.push('offset='+encodeURIComponent(String(pg.offset||0)));
  try{
   var res=await fetch('/api/audit?'+qs.join('&'),{credentials:'include',cache:'no-store'});
   if(res.status===401){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Sessão expirada. Faça login novamente.</div>';return;}
-  if(res.status===403){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Acesso negado. Apenas administradores.</div>';return;}
+  if(res.status===403){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Acesso negado. Requer perfil admin, gestor ou super admin.</div>';return;}
   if(!res.ok){container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--red)">Erro ao carregar (HTTP '+res.status+').</div>';return;}
   var data=await res.json();
   var entries=(data&&data.entries)||[];
+  var total=typeof data.total==='number'?data.total:entries.length;
+  var offset=typeof data.offset==='number'?data.offset:(pg.offset||0);
+  var limit=typeof data.limit==='number'?data.limit:(pg.limit||50);
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
   var actionPill=function(a){
    var bg='var(--blue-bg)',fg='var(--blue)';
-   if(a==='login'||a==='create'){bg='var(--green-bg)';fg='var(--green)';}
-   else if(a==='logout'||a==='delete'){bg='var(--red-bg)';fg='var(--red)';}
-   else if(a==='update'||a==='mark_paid'){bg='var(--amber-bg)';fg='var(--amber)';}
-   else if(a==='gaap_unlock_fail'){bg='var(--red-bg)';fg='var(--red)';}
-   else if(a==='reset_status'){bg='var(--red-bg)';fg='var(--red)';}
+   var al=String(a||'').toLowerCase();
+   if(al.indexOf('login')>=0||al==='create'||al.indexOf('.create')>=0){bg='var(--green-bg)';fg='var(--green)';}
+   else if(al.indexOf('logout')>=0||al==='delete'||al.indexOf('.delete')>=0){bg='var(--red-bg)';fg='var(--red)';}
+   else if(al.indexOf('update')>=0||al==='mark_paid'||al.indexOf('reset')>=0){bg='var(--amber-bg)';fg='var(--amber)';}
+   else if(al.indexOf('fail')>=0){bg='var(--red-bg)';fg='var(--red)';}
    return '<span style="display:inline-block;padding:3px 9px;border-radius:20px;background:'+bg+';color:'+fg+';font-size:9.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase">'+esc(a)+'</span>';
   };
+  var rangeStart=total===0?0:offset+1;
+  var rangeEnd=total===0?0:Math.min(offset+entries.length,total);
+  var counterHtml='<div style="font-size:11px;color:var(--ink3);margin-bottom:10px">Mostrando '+rangeStart+'–'+rangeEnd+' de '+total+' (ordenado por mais recente).</div>';
+  var pagerHtml='';
+  if(total>0){
+   var canPrev=offset>0;
+   var canNext=offset+limit<total;
+   pagerHtml='<div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap">'
+    +'<button type="button" onclick="adminAuditPagePrev()" '+(canPrev?'':'disabled')+' style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;opacity:'+(canPrev?'1':'.45')+'">Anterior</button>'
+    +'<button type="button" onclick="adminAuditPageNext()" '+(canNext?'':'disabled')+' style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25);opacity:'+(canNext?'1':'.45')+'">Proxima</button>'
+    +'</div>';
+  }
   if(!entries.length){
-   container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic;border:1px dashed var(--border2);border-radius:12px">Sem registos para os filtros aplicados.</div>';
+   container.innerHTML=counterHtml+'<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic;border:1px dashed var(--border2);border-radius:12px">Sem registos para os filtros aplicados.</div>'+pagerHtml;
    return;
   }
-  var html=''
-   +'<div style="font-size:11px;color:var(--ink3);margin-bottom:10px">Mostrando '+entries.length+' '+(entries.length===1?'registo':'registos')+' (limite 200, ordenado por mais recente).</div>'
+  var html=counterHtml
    +'<div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(30,22,12,.06)">'
    +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1080px">'
    +'<thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'
@@ -22944,7 +23002,7 @@ window.adminAuditRender=async function(){
     +'<td style="padding:8px 14px;font-family:\'JetBrains Mono\',monospace;font-size:10.5px;color:var(--ink3)">'+esc(e.ip||'-')+'</td>'
     +'</tr>';
   });
-  html+='</tbody></table></div></div>';
+  html+='</tbody></table></div></div>'+pagerHtml;
   container.innerHTML=html;
  }catch(err){
   console.warn('adminAuditRender',err);

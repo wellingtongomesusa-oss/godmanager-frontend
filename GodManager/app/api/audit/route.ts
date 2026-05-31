@@ -3,24 +3,9 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
 import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
+import { canViewAuditLog } from '@/lib/auditAccess';
 
 export const dynamic = 'force-dynamic';
-
-const ADMIN_EMAILS = new Set([
-  'wellington.gomes@godmanager.com',
-  'wellingtongomesusa@gmail.com',
-]);
-
-function isAdmin(user: { id: string; email: string; role: string } | null | undefined) {
-  if (!user) return false;
-  const roleLower = String(user.role || '').toLowerCase();
-  if (roleLower === 'admin' || roleLower === 'super_admin') return true;
-  const email = String(user.email || '').toLowerCase();
-  if (!email) return false;
-  if (ADMIN_EMAILS.has(email)) return true;
-  if (email.indexOf('admin') >= 0) return true;
-  return false;
-}
 
 function serialize(e: {
   id: string;
@@ -112,7 +97,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  if (!isAdmin(user))
+  if (!canViewAuditLog(user.role))
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   try {
     const url = new URL(req.url);
@@ -122,7 +107,9 @@ export async function GET(req: Request) {
     const fromStr = url.searchParams.get('from');
     const toStr = url.searchParams.get('to');
     const rawLimit = Number(url.searchParams.get('limit'));
-    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : 200;
+    const rawOffset = Number(url.searchParams.get('offset'));
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : 50;
+    const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.min(rawOffset, 100_000) : 0;
 
     const where: Prisma.AuditEntryWhereInput = {};
     if (entity) where.entity = entity;
@@ -143,13 +130,24 @@ export async function GET(req: Request) {
 
     const scopeUser = toClientScopeUser(user);
     const scopeWhere = getClientScopeWhere(scopeUser);
+    const fullWhere = { ...scopeWhere, ...where };
 
-    const entries = await prisma.auditEntry.findMany({
-      where: { ...scopeWhere, ...where },
-      orderBy: [{ timestamp: 'desc' }],
-      take: limit,
+    const [entries, total] = await Promise.all([
+      prisma.auditEntry.findMany({
+        where: fullWhere,
+        orderBy: [{ timestamp: 'desc' }],
+        skip: offset,
+        take: limit,
+      }),
+      prisma.auditEntry.count({ where: fullWhere }),
+    ]);
+    return NextResponse.json({
+      ok: true,
+      entries: entries.map(serialize),
+      total,
+      offset,
+      limit,
     });
-    return NextResponse.json({ ok: true, entries: entries.map(serialize) });
   } catch (e) {
     console.error('[GET /api/audit]', e);
     return NextResponse.json({ ok: false, error: 'Failed' }, { status: 500 });
