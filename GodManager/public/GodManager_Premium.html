@@ -237,8 +237,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .home-lucro-mp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
 .home-lucro-mp-head:focus{outline:2px solid rgba(201,169,110,.35);outline-offset:2px}
 .home-lucro-mp-chevron{width:18px;height:18px;flex-shrink:0;color:var(--ink3);transition:transform .2s ease;margin-top:2px}
-#home-lucro-mp-bands{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
-#home-lucro-mp-bands .home-lucro-mini.card{cursor:default;padding:16px 18px 12px;min-height:118px}
+#home-lucro-mp-bands{display:grid;grid-template-columns:repeat(6,minmax(104px,1fr)) minmax(196px,1.4fr);gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+#home-lucro-mp-bands .home-lucro-mini.card{cursor:default;padding:16px 18px 12px;min-height:118px;min-width:0}
+#home-lucro-mp-bands .home-lucro-mini--total.card{grid-column:auto;overflow:visible}
+#home-lucro-mp-bands .home-lucro-mini--total .cv2{font-size:20px;letter-spacing:-.35px;line-height:1.15;white-space:nowrap}
+@media (max-width:960px){
+#home-lucro-mp-bands{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+#home-lucro-mp-bands .home-lucro-mini--total.card{grid-column:1/-1}
+#home-lucro-mp-bands .home-lucro-mini--total .cv2{font-size:22px}
+}
 #home-lucro-mp-bands .home-lucro-mini.card:hover{transform:none;box-shadow:0 1px 3px rgba(26,26,28,.04),0 4px 12px rgba(26,26,28,.03)}
 #home-lucro-mp-bands .home-lucro-mini .cc,#home-lucro-mp-bands .home-lucro-mini .cf,#home-lucro-mp-bands .home-lucro-mini .cd,#home-lucro-mp-bands .home-lucro-mini .cp{display:none}
 #home-lucro-mp-table-scroll{max-height:280px;overflow-y:auto}
@@ -5849,7 +5856,8 @@ function gmHomeRenderLucroBandCards(rows,sumLucro){
   var val=extraVal!=null?extraVal:String(n);
   var sub=d.isTotal?'Soma LUCRO TOTAL MP':(n===1?'1 casa':n+' casas');
   var emptyCls=(d.isTotal||n>0)?'':' empty';
-  return '<div class="card home-lucro-mini'+emptyCls+'" style="pointer-events:none">'
+  var totCls=d.isTotal?' home-lucro-mini--total':'';
+  return '<div class="card home-lucro-mini'+totCls+emptyCls+'" style="pointer-events:none">'
   +'<div class="ct"><div class="cl">'+d.label+'</div><div class="cb">'+d.badge+'</div></div>'
   +'<div class="cv2">'+val+'</div>'
   +'<div class="cs1">'+sub+'</div>'
