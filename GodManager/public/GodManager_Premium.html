@@ -407,6 +407,16 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  overflow:visible;padding-bottom:0;scroll-snap-type:none;}
  .gm-kpis-row--strip > *{min-width:0;width:100%}
 }
+@media (max-width:1023px){
+ .gm-kpis-shell--hint.gm-kpis-shell--strip-12::after{
+ content:'>';
+ position:absolute;right:10px;top:50%;transform:translateY(-50%);
+ font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink3);opacity:.4;pointer-events:none;line-height:1;}
+ .gm-kpis-shell--hint.gm-kpis-shell--strip-12 .gm-kpis-row--strip-12{padding-right:28px}}
+.gm-kpis-row--strip.gm-kpis-row--strip-12 > *{min-width:min(128px,28vw)}
+@media (min-width:768px) and (max-width:1023px){
+ .gm-kpis-row--strip.gm-kpis-row--strip-12{
+ grid-template-columns:repeat(var(--gm-kpi-cols-tablet,6),minmax(0,1fr));}}
 .gm-kpis-shell--floating{margin-bottom:16px}
 @media (max-width:767px){ .gm-kpis-shell--floating:last-child{margin-bottom:20px}}
 .gm-kpis-row--floating{
@@ -986,8 +996,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .btn-save-top,
 header.topbar .btn-save-top{display:none !important;}
 </style>
-<script src="/properties_seed.js"></script>
-<script src="/tenants_seed.js"></script>
 <script src="/gm_clean_ghost_props.js"></script>
 <script>
 // Bootstrap i18n: ler NEXT_LOCALE (marketing) -> gm_lang (premium)
@@ -1057,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var msg=daysLeft===1?'Last day of your free trial':daysLeft+' days left in your free trial';
   var banner=document.createElement('div');
   banner.id='gm-trial-banner';
-  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:'+bgColor+';color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:\\'DM Sans\\',sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.1)';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:'+bgColor+';color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.1)';
   var link=document.createElement('a');
   link.href=pricingHref;
   link.style.cssText='color:#fff;text-decoration:underline;font-weight:700';
@@ -1071,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var pricingHref=gmPricingLocalePath();
   var ov=document.createElement('div');
   ov.id='gm-trial-expired';
-  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,55,0.95);display:flex;align-items:center;justify-content:center;font-family:\\'DM Sans\\',sans-serif;color:#fff';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,55,0.95);display:flex;align-items:center;justify-content:center;font-family:"DM Sans",sans-serif;color:#fff';
   var inner=document.createElement('div');
   inner.style.cssText='max-width:480px;text-align:center;padding:32px';
   var mark=document.createElement('div');
@@ -1097,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function(){
  function gmTrialPastDueBanner(){
   var banner=document.createElement('div');
   banner.id='gm-trial-banner-pastdue';
-  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:#b83030;color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:\\'DM Sans\\',sans-serif';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:#b83030;color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif';
   banner.appendChild(document.createTextNode('Payment failed · '));
   var btn=document.createElement('button');
   btn.type='button';
@@ -3545,10 +3553,10 @@ document.addEventListener('DOMContentLoaded', function(){
 <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:11;--gm-kpi-cols-tablet:5">
+ <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--strip-12" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip gm-kpis-row--strip-12" style="--gm-kpi-cols-desktop:12;--gm-kpi-cols-tablet:6" data-gm-kpi-count="12">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">lease ativo no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">total − alugadas no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">portfolio menos vagas (VG)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">status VG (vaga)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MOVE IN NO MES</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">move-in no periodo</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">NET ATUAL</div><div id="ltp-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma coluna Rent</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
@@ -3557,7 +3565,8 @@ document.addEventListener('DOMContentLoaded', function(){
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL EXP MES (PM)</div><div id="ltp-kpi-total-exppm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma despesas</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  <div id="ltp-kpi-wrap-avgmgm" tabindex="0" title="" style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative;outline:none;cursor:help;touch-action:manipulation">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">GANHO FINANCEIRO</div><div id="ltp-kpi-avg-mgm" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#7c3aed">$0</div><div id="ltp-kpi-ganho-sub" style="font-size:10px;color:var(--ink3);margin-top:3px;line-height:1.45">Gestao: —<br>Markup: —<br>Tenant Place: —</div><div id="ltp-kpi-ganho-delta" class="ltp-kpi-delta"></div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>
- <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TENANT PLACE</div><div id="ltp-kpi-tenant-place" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#0d9488">$0</div><div id="ltp-kpi-tenant-place-sub" style="font-size:10px;color:var(--ink3);margin-top:3px">0 casas com move-in no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#0d9488"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TENANT PLACE</div><div id="ltp-kpi-tenant-place" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#0d9488">$0</div><div id="ltp-kpi-tenant-place-sub" style="font-size:10px;color:var(--ink3);margin-top:3px">0 casas com move-in no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#0d9488"></div></div>
+ <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RESERVA DE SEGURANCA</div><div id="ltp-kpi-reserva-seguranca" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div id="ltp-kpi-reserva-seguranca-delta" class="ltp-kpi-delta"></div><div id="ltp-kpi-reserva-seguranca-sub" style="font-size:10px;color:var(--ink3);margin-top:3px">0 casas com reserva</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -5378,6 +5387,12 @@ function ltPortfolioNetOwnerSum(records,expByProp,summaryByCode){
 function ltPortfolioDepositSum(records){
  return (records||[]).reduce(function(s,r){return s+(Number(r.deposit)||0);},0);
 }
+function ltPortfolioReservaSum(records){
+ return (records||[]).reduce(function(s,r){return s+(typeof gmHomePropertyReservaAmt==='function'?gmHomePropertyReservaAmt(r):0);},0);
+}
+function ltPortfolioReservaCount(records){
+ return (records||[]).filter(function(r){return (typeof gmHomePropertyReservaAmt==='function'?gmHomePropertyReservaAmt(r):0)>0;}).length;
+}
 function ltPortfolioExpPmSum(expByProp){
  var s=0;
  if(expByProp&&typeof expByProp.forEach==='function') expByProp.forEach(function(v){s+=Number(v)||0;});
@@ -5651,6 +5666,10 @@ function applyHomeDashboardFromApi(d){
  var qp=gmHomeNum(d.qty_properties,d.total_properties);
  var ql=gmHomeNum(d.qty_leases_active,d.occupied_units);
  var qv=gmHomeNum(d.qty_vacant,d.vacant_units);
+ try{
+  var _pk=gmPropertiesPortfolioKpiCounts(gmPropertiesFilteredUiRecords());
+  if(_pk.total>0){qp=_pk.total;ql=_pk.alugadas;qv=_pk.vagas;}
+ }catch(_pkE){}
  var qo=gmHomeNum(d.qty_owners,d.total_owners);
  var qf=gmHomeNum(d.qty_future,0);
  var qnot=gmHomeNum(d.qty_notice,0);
@@ -5879,10 +5898,12 @@ function gmHomeBuildDashboardFromLocal(){
   if(typeof window.gmPropertiesLoad!=='function')return null;
   var arr=window.gmPropertiesLoad()||[];
   if(!arr.length)return null;
- var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
+ var uiRecs=gmPropertiesFilteredUiRecords();
+ var portKpi=gmPropertiesPortfolioKpiCounts(uiRecs);
+ var ql=portKpi.alugadas,qv=portKpi.vagas,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
  var totDepSum=0,totNetOwnerSum=0,totGuaranteeSum=0,qtyGuaranteeHouses=0;
  var owners={};
- arr.forEach(function(p){
+ uiRecs.forEach(function(p){
   var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
   var mrent=Number(p.marketRent!=null?p.marketRent:rent)||0;
   var dep=Number(p.deposit)||0;
@@ -5895,9 +5916,6 @@ function gmHomeBuildDashboardFromLocal(){
   var mPct=Number(mPctRaw)||0;
   var occ=String(p.occupancy||'').toLowerCase();
   var stt=String(p.status||'').toLowerCase();
-  var isRented=(occ==='rented')||(rent>0&&occ!=='vacant'&&occ!=='renovation'&&occ!=='inprogress');
-  var isVacant=(occ==='vacant')||(rent===0&&occ!=='rented'&&occ!=='inprogress'&&occ!=='renovation');
-  if(isRented)ql++; else if(isVacant)qv++;
   if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
   if(stt==='disputed'||stt==='notice')qnot++;
   var resAmt=gmHomePropertyReservaAmt(p);
@@ -5908,7 +5926,7 @@ function gmHomeBuildDashboardFromLocal(){
   var ow=String(p.owner||'').trim();
   if(ow)owners[ow]=true;
  });
- var qp=arr.length;
+ var qp=portKpi.total;
  var qo=Object.keys(owners).length;
  var occRate=qp>0?((ql/qp)*100):0;
  var ymTp=new Date().toISOString().slice(0,7);
@@ -6105,9 +6123,42 @@ async function gmHomeRenderLucroMpTable(){
  wrap.style.display='block';
 }
 
-function loadHomeDashboardFromApi(){
- // 1. Primeiro, render imediato com dados locais
- var local=gmHomeBuildDashboardFromLocal();
+/** Garante cache gm_properties_v2 antes de KPIs da Home (sem seed legado). */
+async function gmHomeEnsurePropertiesCache(){
+ try{
+  var arr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  if(arr.length)return arr;
+  if(typeof window.gmPropertiesBootstrap==='function'){
+   await window.gmPropertiesBootstrap({silent:true});
+  }
+  return (typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ }catch(e){
+  console.warn('gmHomeEnsurePropertiesCache',e);
+  return [];
+ }
+}
+function gmHomeShouldApplyEmptyDashboard(){
+ var arr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ if(arr.length)return false;
+ return !!window.__gmPropertiesBootstrapError;
+}
+async function gmHomeInit(){
+ await gmHomeEnsurePropertiesCache();
+ if(typeof loadHomeDashboardFromApi==='function')await loadHomeDashboardFromApi();
+}
+window.gmHomeRefresh=function(){
+ if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
+};
+async function loadHomeDashboardFromApi(){
+ // 1. Cache API (Postgres) antes do dashboard local — evita race com bootstrap async
+ var local=null;
+ try{
+  await gmHomeEnsurePropertiesCache();
+  local=gmHomeBuildDashboardFromLocal();
+ }catch(eInit){
+  console.warn('loadHomeDashboardFromApi bootstrap',eInit);
+  local=gmHomeBuildDashboardFromLocal();
+ }
  if(local){
   applyHomeDashboardFromApi(local);
   renderCards();
@@ -6125,8 +6176,8 @@ function loadHomeDashboardFromApi(){
   var hasRealData=o&&o.ok&&o.j&&typeof o.j==='object'&&
                   (Number(o.j.qty_properties)>0||Number(o.j.total_properties)>0);
   if(!hasRealData){
-   // API nao tem dados validos - mantem o que ja esta (local ou vazio)
-   if(!local){applyHomeDashboardFromApi(null);renderCards();}
+   // API AppFolio sem dados — nao esvaziar cards se ja temos Postgres em cache
+   if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
    return;
   }
   // API tem dados reais, sobrescreve (Tenant Place permanece local — sem campo na API)
@@ -6136,6 +6187,17 @@ function loadHomeDashboardFromApi(){
    o.j.total_tenant_place_sum=tpApi.sum;
    o.j.qty_tenant_place_movein=tpApi.count;
   }catch(eTp){}
+  try{
+   var _pkAf=gmPropertiesPortfolioKpiCounts(gmPropertiesFilteredUiRecords());
+   if(_pkAf.total>0){
+    o.j.qty_properties=_pkAf.total;
+    o.j.total_properties=_pkAf.total;
+    o.j.qty_leases_active=_pkAf.alugadas;
+    o.j.occupied_units=_pkAf.alugadas;
+    o.j.qty_vacant=_pkAf.vagas;
+    o.j.vacant_units=_pkAf.vagas;
+   }
+  }catch(_pkAf2){}
   applyHomeDashboardFromApi(o.j);
   renderCards();
   try{if(typeof gmHomeRefreshFinancialCardDeltas==='function')gmHomeRefreshFinancialCardDeltas();}catch(eD2){}
@@ -6148,8 +6210,8 @@ function loadHomeDashboardFromApi(){
   }catch(e){}
  })
  .catch(function(){
-  // Falha de rede - mantem o que ja esta (local ou vazio)
-  if(!local){applyHomeDashboardFromApi(null);renderCards();}
+  // Falha de rede — nao zerar KPIs se properties API ja populou cache
+  if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
   try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
  });
  try{ if(typeof gmHomeFetchPmMarkupMonth==='function') gmHomeFetchPmMarkupMonth(); }catch(e){}
@@ -9122,7 +9184,7 @@ function nav(r){
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
   }
-  if(typeof loadHomeDashboardFromApi==='function'){loadHomeDashboardFromApi();}
+  if(typeof loadHomeDashboardFromApi==='function'){await loadHomeDashboardFromApi();}
  },
  longterm:()=>{
   if(typeof ltExpFetchPm==='function'){void ltExpFetchPm().then(function(){if(typeof ltDashRender==='function')ltDashRender();});}
@@ -9698,12 +9760,12 @@ window.osLoadFromApi=async function(){
  }
 };
 
-window.osPopulateOccupancyFilter=function(){
+window.osPopulateOccupancyFilter=async function(){
  var sel=document.getElementById('os-filter-occupancy');
  if(!sel) return;
  var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('osRender bootstrap',e);}
   __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  var records=(Array.isArray(__gmArrOs)&&__gmArrOs.length)?__gmArrOs.map(window.gmPropertiesToUi):ltGetRecords();
@@ -9901,7 +9963,7 @@ window.osRender=async function(){
  }catch(e){}
  var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){console.warn('osRender auto-bootstrap',e);}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('osRender auto-bootstrap',e);}
   __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  const records=(Array.isArray(__gmArrOs)&&__gmArrOs.length)?__gmArrOs.map(window.gmPropertiesToUi):ltGetRecords();
@@ -12110,6 +12172,7 @@ function ltExpMapApiToRow(e){
   serviceDate:e.serviceDate,
   statusPm:e.status,
   value:oc,
+  jobValueOverride:e.jobValueOverride!=null&&e.jobValueOverride!==''?Number(e.jobValueOverride):null,
   status:ui,
   vendor:String(e.vendorName||'').trim(),
   _apiRaw:e
@@ -12881,28 +12944,41 @@ function gmJobsPhotoRenderGallery(){
  st.photos.forEach(function(photo){
   var pid=photo&&photo.id?String(photo.id):'';
   var url=photo&&photo.publicUrl?String(photo.publicUrl):'';
+  var ct=photo&&photo.contentType?String(photo.contentType):'';
+  var isPdf=ct==='application/pdf'||(!ct&&/\.pdf(\?|$)/i.test(url));
   var wrap=document.createElement('div');
   wrap.style.cssText='position:relative;aspect-ratio:1;background:#f0f0f0;border-radius:6px;overflow:hidden';
-  var img=document.createElement('img');
-  img.src=url;
-  img.alt='';
-  img.loading='lazy';
-  img.style.cssText='width:100%;height:100%;object-fit:cover;cursor:zoom-in';
-  img.title='Ver em tamanho maior';
-  img.onclick=function(e){
-   e.preventDefault();e.stopPropagation();
-   if(typeof window.gmJobsPhotoOpenPreview==='function')window.gmJobsPhotoOpenPreview(url);
-  };
+  if(isPdf){
+   var pdfLink=document.createElement('a');
+   pdfLink.href=url;
+   pdfLink.target='_blank';
+   pdfLink.rel='noopener noreferrer';
+   pdfLink.title='Abrir PDF em nova aba';
+   pdfLink.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;text-decoration:none;color:var(--ink2);cursor:pointer;gap:6px;padding:8px;box-sizing:border-box';
+   pdfLink.innerHTML='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">PDF</span>';
+   wrap.appendChild(pdfLink);
+  }else{
+   var img=document.createElement('img');
+   img.src=url;
+   img.alt='';
+   img.loading='lazy';
+   img.style.cssText='width:100%;height:100%;object-fit:cover;cursor:zoom-in';
+   img.title='Ver em tamanho maior';
+   img.onclick=function(e){
+    e.preventDefault();e.stopPropagation();
+    if(typeof window.gmJobsPhotoOpenPreview==='function')window.gmJobsPhotoOpenPreview(url);
+   };
+   wrap.appendChild(img);
+  }
   var del=document.createElement('button');
   del.type='button';
   del.innerHTML='&#10005;';
-  del.title='Remover foto';
-  del.setAttribute('aria-label','Remover foto');
+  del.title='Remover ficheiro';
+  del.setAttribute('aria-label','Remover ficheiro');
   del.style.cssText='position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(0,0,0,.72);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;padding:0;opacity:.45;transition:opacity .15s ease';
   del.onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.gmJobsPhotoDelete==='function')window.gmJobsPhotoDelete(pid);};
   wrap.onmouseenter=function(){del.style.opacity='1';};
   wrap.onmouseleave=function(){del.style.opacity='0.45';};
-  wrap.appendChild(img);
   wrap.appendChild(del);
   g.appendChild(wrap);
  });
@@ -12927,13 +13003,20 @@ function gmJobsPhotoClose(){
 window.gmJobsPhotoClose=gmJobsPhotoClose;
 
 async function gmJobsPhotoUploadOne(jobId,file){
- var maxB=5*1024*1024;
- if(!file||file.size>maxB) throw new Error('Ficheiro demasiado grande (max 5 MB)');
- var dataUrl=await gmJobsPhotoCompressPromise(file);
- var blob=typeof dataUrlToBlob==='function'?dataUrlToBlob(dataUrl):null;
- if(!blob) throw new Error('dataUrl invalido');
- var ct=(blob.type&&blob.type.indexOf('image/')===0)?blob.type:'image/jpeg';
- if(blob.size>maxB) throw new Error('Blob demasiado grande');
+ var maxB=10*1024*1024;
+ if(!file||file.size>maxB) throw new Error('Ficheiro demasiado grande (max 10 MB)');
+ var isPdf=file.type==='application/pdf';
+ var blob,ct;
+ if(isPdf){
+  ct='application/pdf';
+  blob=file;
+ }else{
+  var dataUrl=await gmJobsPhotoCompressPromise(file);
+  blob=typeof dataUrlToBlob==='function'?dataUrlToBlob(dataUrl):null;
+  if(!blob) throw new Error('dataUrl invalido');
+  ct=(blob.type&&blob.type.indexOf('image/')===0)?blob.type:'image/jpeg';
+  if(blob.size>maxB) throw new Error('Blob demasiado grande');
+ }
  var presRes=await fetch('/api/jobs/'+encodeURIComponent(jobId)+'/photos/presigned-url',{
   method:'POST',
   headers:{'Content-Type':'application/json'},
@@ -12955,13 +13038,16 @@ async function gmJobsPhotoUploadOne(jobId,file){
  var reg=await regRes.json().catch(function(){return null;});
  if(!regRes.ok||!reg||!reg.photo) throw new Error((reg&&reg.error)?String(reg.error):('register HTTP '+regRes.status));
  var ph=reg.photo;
- return {id:ph.id,publicUrl:ph.publicUrl,filename:ph.filename||'',uploadedAt:ph.uploadedAt||'',sizeBytes:ph.sizeBytes};
+ return {id:ph.id,publicUrl:ph.publicUrl,filename:ph.filename||'',contentType:ph.contentType||ct,uploadedAt:ph.uploadedAt||'',sizeBytes:ph.sizeBytes};
 }
 
 async function gmJobsPhotoUploadBatch(files){
  var st=window.gmJobsPhotoState;
  if(!st||!st.jobId||st.uploading)return;
- var arr=Array.prototype.slice.call(files||[]).filter(function(f){return f&&f.type&&f.type.indexOf('image/')===0;});
+ var arr=Array.prototype.slice.call(files||[]).filter(function(f){
+  if(!f||!f.type)return false;
+  return f.type.indexOf('image/')===0||f.type==='application/pdf';
+ });
  if(!arr.length)return;
  var okCount=0;
  st.uploading=true;
@@ -12996,7 +13082,7 @@ async function gmJobsPhotoUploadBatch(files){
   gmJobsPhotoSetProgress(false);
   gmJobsPhotoUpdateUploadButtonsDisabled();
  }
- if(okCount>0&&typeof showToast==='function')showToast(okCount+' foto(s) enviada(s).','success');
+ if(okCount>0&&typeof showToast==='function')showToast(okCount+' ficheiro(s) enviado(s).','success');
  if(typeof jobsRender==='function')try{jobsRender();}catch(eR){}
 }
 
@@ -13048,9 +13134,13 @@ window.gmJobsPhotoOnFileSelect=function(ev,source){
   alert('Limite de 20 fotos atingido.');
   return;
  }
- var files=slice.filter(function(f){return f&&f.type&&f.type.indexOf('image/')===0;});
+ var files=slice.filter(function(f){
+  if(!f||!f.type)return false;
+  if(source==='file')return f.type.indexOf('image/')===0||f.type==='application/pdf';
+  return f.type.indexOf('image/')===0;
+ });
  if(slice.length&&!files.length){
-  alert('Seleccione apenas imagens.');
+  alert(source==='file'?'Seleccione imagens ou PDF.':'Seleccione apenas imagens.');
   return;
  }
  if(files.length>remain){
@@ -13159,7 +13249,7 @@ async function gmJobOpenPhotoPopup(id){
  var inFile=document.createElement('input');
  inFile.type='file';
  inFile.id='jp-input-file';
- inFile.accept='image/*';
+ inFile.accept='image/*,application/pdf';
  inFile.multiple=true;
  inFile.style.display='none';
  inFile.onchange=function(ev){if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,'file');};
@@ -13218,7 +13308,7 @@ async function gmJobOpenPhotoPopup(id){
   var j=await res.json().catch(function(){return null;});
   if(res.ok&&j&&Array.isArray(j.photos)){
    st.photos=j.photos.map(function(p){
-    return {id:p.id,publicUrl:p.publicUrl,filename:p.filename||'',uploadedAt:p.uploadedAt||'',sizeBytes:p.sizeBytes};
+    return {id:p.id,publicUrl:p.publicUrl,filename:p.filename||'',contentType:p.contentType||'',uploadedAt:p.uploadedAt||'',sizeBytes:p.sizeBytes};
    });
    if(!st.countsByJob)st.countsByJob={};
    st.countsByJob[id]=st.photos.length;
@@ -14534,30 +14624,6 @@ function ltDashRender(){
   var db=Date.parse(b&&b.moveIn)||0;
   return db-da;
  });
- // Também incluir tenants do GM_TENANTS_SEED para contemplar carteira CSV
- try{
-  var seed=window.GM_TENANTS_SEED||[];
-  var seenAddr={};
-  records.forEach(function(rr){if(rr&&rr.address)seenAddr[String(rr.address).toLowerCase()]=1;});
-  seed.forEach(function(t){
-   if(!t||!t.moveIn)return;
-   var addr=String(t.propertyCsv||t.unit||'').split(' - ')[0]||t.unit||'';
-   if(!addr)return;
-   moveInRecords.push({
-    address:addr,
-    tenant:t.name||'',
-    rent:Number(t.rent)||0,
-    moveIn:t.moveIn,
-    deposit:Number(t.deposit)||0,
-    _seed:true
-   });
-  });
-  moveInRecords.sort(function(a,b){
-   var da=Date.parse(a&&a.moveIn)||0;
-   var db=Date.parse(b&&b.moveIn)||0;
-   return db-da;
-  });
- }catch(e){console.warn('moveIn seed merge',e);}
  var topMI=moveInRecords.slice(0,20);
  var escMi=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
  if(!topMI.length){
@@ -14630,21 +14696,8 @@ function ltDashRender(){
   });
  }catch(e){console.warn('alerts jobs',e);}
 
- // 3. Move In recentes (ultimos 30 dias) - records + seed
+ // 3. Move In recentes (ultimos 30 dias) — propriedades (API/cache)
  var moveInRecAll=records.filter(function(r){return r&&r.moveIn&&r.tenant;}).slice();
- try{
-  var seedT=window.GM_TENANTS_SEED||[];
-  seedT.forEach(function(t){
-   if(!t||!t.moveIn)return;
-   moveInRecAll.push({
-    address:String(t.propertyCsv||t.unit||'').split(' - ')[0]||t.unit||'',
-    tenant:t.name||'',
-    moveIn:t.moveIn,
-    leaseTo:t.leaseTo||'',
-    _seed:true
-   });
-  });
- }catch(e){}
  moveInRecAll.forEach(function(r){
   if(!r.moveIn)return;
   var d=new Date(r.moveIn);
@@ -14782,20 +14835,102 @@ async function ltpDeleteProperty(id){
  showToast(apiOk?'Propriedade removida e sincronizada':'Propriedade removida (sync pendente)');
 }
 
-/* === GM PROPERTIES STORE (seed AppFolio + cadastros manuais) === */
-window.GM_PROP_KEY='gm_properties';
-window.gmPropertiesLoad=function(){try{var r=localStorage.getItem(window.GM_PROP_KEY);var a=r?JSON.parse(r):[];if(!Array.isArray(a))return[];return a.filter(function(p){if(!p||typeof p!=='object')return false;var nm=String(p.name||'').trim().toLowerCase();var addr=String(p.address||'').trim().toLowerCase();if(nm==='total'||nm==='manager prop')return false;if(addr==='total'||addr.indexOf('admin -')===0)return false;return true;});}catch(e){return[];}};
-window.gmPropertiesSave=function(a){try{localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(a||[]));}catch(e){}};
-window.gmPropertiesBootstrap=function(){
- var cur=window.gmPropertiesLoad();
- if(cur&&cur.length>0)return false;
- var raw=(window.GM_PROPERTIES_SEED&&Array.isArray(window.GM_PROPERTIES_SEED))?window.GM_PROPERTIES_SEED:[];
- if(!raw.length)return false;
- var seed=raw.filter(function(p){if(!p||typeof p!=='object')return false;var nm=String(p.name||'').trim().toLowerCase();var addr=String(p.address||'').trim().toLowerCase();if(nm==='total'||nm==='manager prop')return false;if(addr==='total'||addr.indexOf('admin -')===0)return false;return true;});
- window.gmPropertiesSave(seed);
+/* === GM PROPERTIES STORE (cache API Postgres v2 — sem seed local) === */
+window.GM_PROP_KEY='gm_properties_v2';
+window.GM_PROP_SCHEMA_VERSION=2;
+window.__gmPropertiesBootstrapError=null;
+function gmPropertiesFilterGhostRows(arr){
+ return (arr||[]).filter(function(p){
+  if(!p||typeof p!=='object')return false;
+  var nm=String(p.name||'').trim().toLowerCase();
+  var addr=String(p.address||'').trim().toLowerCase();
+  if(nm==='total'||nm==='manager prop')return false;
+  if(addr==='total'||addr.indexOf('admin -')===0)return false;
+  return true;
+ });
+}
+/** Contagem de carteira (pos-fantasma): mesma fonte que a tabela Properties. */
+function gmPropertiesPortfolioKpiCounts(records){
+ var list=Array.isArray(records)?records:[];
+ var total=list.length;
+ var vagas=0;
+ list.forEach(function(r){
+  if(r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='VG')vagas++;
+ });
+ return {total:total,vagas:vagas,alugadas:Math.max(0,total-vagas)};
+}
+function gmPropertiesFilteredUiRecords(){
+ var raw=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ if(!raw.length)return [];
+ var toUi=typeof window.gmPropertiesToUi==='function'?window.gmPropertiesToUi:function(p){return p;};
+ return raw.map(toUi);
+}
+window.gmPropertiesPurgeStaleCacheOnce=function(){
+ if(window.__gmPropsStalePurged)return;
+ window.__gmPropsStalePurged=true;
+ try{localStorage.removeItem('gm_properties');}catch(e){}
+ try{
+  var cur=localStorage.getItem(window.GM_PROP_KEY);
+  if(cur){
+   var parsed=JSON.parse(cur);
+   if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&parsed.schemaVersion!==window.GM_PROP_SCHEMA_VERSION){
+    localStorage.removeItem(window.GM_PROP_KEY);
+   }
+  }
+ }catch(e){try{localStorage.removeItem(window.GM_PROP_KEY);}catch(e2){}}
+};
+window.gmPropertiesLoad=function(){
+ try{
+  window.gmPropertiesPurgeStaleCacheOnce();
+  var r=localStorage.getItem(window.GM_PROP_KEY);
+  if(!r)return [];
+  var parsed=JSON.parse(r);
+  var a=Array.isArray(parsed)?parsed:(parsed&&Array.isArray(parsed.items)?parsed.items:[]);
+  return gmPropertiesFilterGhostRows(a);
+ }catch(e){return[];}
+};
+window.gmPropertiesSave=function(a){
+ try{
+  var payload={schemaVersion:window.GM_PROP_SCHEMA_VERSION,savedAt:new Date().toISOString(),items:gmPropertiesFilterGhostRows(a||[])};
+  localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(payload));
+ }catch(e){console.warn('gmPropertiesSave',e);}
+};
+window.gmPropertiesBootstrap=async function(opts){
+ opts=opts||{};
+ window.__gmPropertiesBootstrapError=null;
+ window.gmPropertiesPurgeStaleCacheOnce();
+ if(typeof window.gmPropertiesRefresh!=='function'){
+  var msg='Bootstrap indisponivel: sincronizacao com API nao carregada.';
+  window.__gmPropertiesBootstrapError=msg;
+  if(!opts.silent&&typeof showToast==='function')showToast(msg,'error');
+  return false;
+ }
+ var ok=await window.gmPropertiesRefresh({silent:!!opts.silent});
+ if(!ok){
+  var errMsg='Nao foi possivel carregar propriedades do servidor. Verifique a sessao (login) e recarregue a pagina (Ctrl+Shift+R). Dados locais antigos (seed) foram ignorados.';
+  window.__gmPropertiesBootstrapError=errMsg;
+  if(!opts.silent&&typeof showToast==='function')showToast(errMsg,'error');
+  return false;
+ }
  return true;
 };
 // ===== Sync Postgres <-> localStorage (adicionado PASSO 4C) =====
+function ltpHouseNumberFromAddress(addr){
+ if(!addr)return null;
+ var m=String(addr).trim().match(/^(\d+)/);
+ if(!m)return null;
+ var n=parseInt(m[1],10);
+ return isFinite(n)?n:null;
+}
+function ltpComparePropertiesByHouseNumber(a,b){
+ var na=ltpHouseNumberFromAddress(a&&a.address);
+ var nb=ltpHouseNumberFromAddress(b&&b.address);
+ if(na==null&&nb==null)return String(a&&a.address||'').localeCompare(String(b&&b.address||''),'en',{numeric:true,sensitivity:'base'});
+ if(na==null)return 1;
+ if(nb==null)return -1;
+ if(na!==nb)return na-nb;
+ return String(a&&a.address||'').localeCompare(String(b&&b.address||''),'en',{numeric:true,sensitivity:'base'});
+}
 window.gmPropertiesFetchFromApi=async function(){
  try{
   var res=await fetch('/api/properties',{credentials:'include'});
@@ -14867,6 +15002,7 @@ window.gmPropertiesFetchFromApi=async function(){
     _apiId:p.id
    };
   });
+  return gmPropertiesFilterGhostRows(mapped).sort(ltpComparePropertiesByHouseNumber);
  }catch(e){console.warn('gmPropertiesFetchFromApi',e);return null;}
 };
 window.gmPropertiesPushToApi=async function(item){
@@ -14889,8 +15025,8 @@ window.gmPropertiesPushToApi=async function(item){
 window.gmPropertiesRefresh=async function(opts){
  opts=opts||{};
  var fromApi=await window.gmPropertiesFetchFromApi();
- if(!fromApi||!Array.isArray(fromApi)||fromApi.length===0)return false;
- // Substitui localStorage com verdade do servidor
+ if(fromApi===null||!Array.isArray(fromApi))return false;
+ // Substitui localStorage com verdade do servidor (vazio = carteira sem propriedades, nao erro)
  try{window.gmPropertiesSave(fromApi);}catch(e){console.warn('gmPropertiesRefresh save',e);}
  // Re-render se houver funcao global de render da tabela Properties
  try{
@@ -14900,17 +15036,9 @@ window.gmPropertiesRefresh=async function(opts){
  }catch(e){console.warn('gmPropertiesRefresh rerender',e);}
  return true;
 };
-// Auto-refresh ao carregar a pagina (espera 500ms para nao bloquear first paint)
-if(typeof window!=='undefined'){
- setTimeout(function(){
-  if(typeof window.gmPropertiesRefresh==='function'){
-   window.gmPropertiesRefresh().catch(function(e){console.warn('auto-refresh',e);});
-  }
- },500);
-}
 // ===== fim sync =====
 window.gmPropertiesNextId=function(){
- var arr=window.gmPropertiesLoad();var max=97;
+ var arr=window.gmPropertiesLoad();var max=0;
  arr.forEach(function(p){var m=/^P(\d+)$/.exec(String(p.id||''));if(m){var n=parseInt(m[1],10);if(n>max)max=n;}});
  return 'P'+String(max+1).padStart(4,'0');
 };
@@ -14980,12 +15108,10 @@ window.gmPropertiesToUi=function(p){
 };
 document.addEventListener('DOMContentLoaded',function(){
  try{
-  if(typeof window.gmPropertiesBootstrap==='function')window.gmPropertiesBootstrap();
- }catch(e){console.warn('gmPropertiesBootstrap',e);}
- // Apos bootstrap, re-renderiza a home com dados populados
- try{
-  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
- }catch(e){console.warn('loadHomeDashboardFromApi',e);}
+  if(typeof window.gmHomeInit==='function'){
+   window.gmHomeInit().catch(function(e){console.warn('gmHomeInit',e);});
+  }
+ }catch(e){console.warn('gmHomeInit outer',e);}
  try{ if(typeof ltPropertyModalPhotosInitOnce==='function')ltPropertyModalPhotosInitOnce(); }catch(e){}
 });
 
@@ -15111,7 +15237,7 @@ function ltpYmFromDate(d){
  if(!d||isNaN(d.getTime())) return '';
  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
-/** Indice propId -> [{start,end}] a partir de GM_TENANTS_SEED e cache /api/tenants se ja carregado. */
+/** Indice propId -> [{start,end}] a partir de /api/tenants (cache tnRender) quando disponivel. */
 function ltpGetTenantLeaseIndex(){
  var idx={};
  function push(pid,moveIn,leaseTo){
@@ -15120,13 +15246,6 @@ function ltpGetTenantLeaseIndex(){
   if(!idx[k]) idx[k]=[];
   idx[k].push({start:ltpParseYmd(moveIn),end:leaseTo?ltpParseYmd(leaseTo):null});
  }
- try{
-  (window.GM_TENANTS_SEED||[]).forEach(function(t){
-   if(!t) return;
-   push(t.propId||t.propertyId,t.moveIn,t.leaseTo);
-   if(t.propertyCode) push(t.propertyCode,t.moveIn,t.leaseTo);
-  });
- }catch(e){}
  try{
   (window.__gmTenantsTnCache||[]).forEach(function(t){
    if(!t) return;
@@ -15212,12 +15331,12 @@ function ltpFilterTableRecords(records){
  });
 }
 
-window.ltpPopulateOccupancyFilter=function(){
+window.ltpPopulateOccupancyFilter=async function(){
  var sel=document.getElementById('ltp-filter-occupancy');
  if(!sel)return;
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('ltpRender bootstrap',e);}
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  var records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
@@ -15260,7 +15379,7 @@ async function ltpRender(){
  window.__ltpPmExpensesCache={month:curMonth,markupByProp:markupByProp,totMarkup:totMarkupMonth};
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltpRender auto-bootstrap',e);}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('ltpRender auto-bootstrap',e);}
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  const records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
@@ -15269,12 +15388,13 @@ async function ltpRender(){
  var kpiMonth=fMonth||curMonth;
  var moveInKpiMonth=fMoveInCard||kpiMonth;
  var tenantIdx=ltpGetTenantLeaseIndex();
- var portfolioTotal=records.length;
+ var portKpiLtp=gmPropertiesPortfolioKpiCounts(records);
+ var portfolioTotal=portKpiLtp.total;
  /* Tabela: todas as casas; mes NAO filtra linhas (so busca/status/ocupacao). */
- const filtered=ltpFilterTableRecords(records);
- /* KPIs do mes: portfolio inteiro + criterios do mes selecionado. */
- var rentedInMonth=records.filter(function(r){return ltpLeaseActiveInMonth(r,tenantIdx,kpiMonth);}).length;
- var vacantInMonth=Math.max(0,portfolioTotal-rentedInMonth);
+ const filtered=ltpFilterTableRecords(records).slice().sort(ltpComparePropertiesByHouseNumber);
+ /* KPIs carteira: mesma base filtrada que a tabela; ALUGADAS + VAGAS = TOTAL. */
+ var vacantInMonth=portKpiLtp.vagas;
+ var rentedInMonth=portKpiLtp.alugadas;
  var moveInCount=records.filter(function(r){return ltpMoveInInMonth(r,tenantIdx,moveInKpiMonth);}).length;
  var totExpPM=0;
  var totTotalNetOwner=0;
@@ -15331,6 +15451,12 @@ async function ltpRender(){
  var tpSub=document.getElementById('ltp-kpi-tenant-place-sub');
  if(tpSub)tpSub.textContent=tenantPlaceCount+' '+(tenantPlaceCount===1?'casa com move-in no mes':'casas com move-in no mes');
  [['ltp-kpi-tenant-place',ltFmt(totTenantPlace)]].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.textContent=pair[1];});
+ var totReserva=ltPortfolioReservaSum(records);
+ var reservaCount=ltPortfolioReservaCount(records);
+ var reservaEl=document.getElementById('ltp-kpi-reserva-seguranca');
+ if(reservaEl)reservaEl.textContent=ltFmt(totReserva);
+ var reservaSub=document.getElementById('ltp-kpi-reserva-seguranca-sub');
+ if(reservaSub)reservaSub.textContent=reservaCount+' '+(reservaCount===1?'casa com reserva':'casas com reserva');
  var wrapAvg=document.getElementById('ltp-kpi-wrap-avgmgm');
  if(wrapAvg){wrapAvg.title=tipGanho;wrapAvg.setAttribute('aria-label',tipGanho);}
  try{
@@ -15342,11 +15468,27 @@ async function ltpRender(){
   gmSetLtpKpiDelta('ltp-kpi-ganho-delta',ganhoFin,prevGanhoFin);
   gmSetLtpKpiDelta('ltp-kpi-total-netowner-delta',totTotalNetOwner,prevNetOwner);
   gmSetLtpKpiDelta('ltp-kpi-total-deposit-delta',totDeposit,prevDeposit);
+  var prevReserva=ltPortfolioReservaSum(records);
+  gmSetLtpKpiDelta('ltp-kpi-reserva-seguranca-delta',totReserva,prevReserva);
  }catch(eDelta){console.warn('ltpRender kpi delta',eDelta);}
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody){if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
- if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
+ if(!filtered.length){
+  tbody.innerHTML='';
+  if(empty){
+   empty.style.display='block';
+   if(window.__gmPropertiesBootstrapError){
+    empty.textContent=window.__gmPropertiesBootstrapError;
+    empty.style.color='var(--red)';
+   }else{
+    empty.textContent='Nenhuma propriedade encontrada. Clique em + Nova Propriedade para comecar.';
+    empty.style.color='var(--ink3)';
+   }
+  }
+  if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();
+  return;
+ }
  if(empty)empty.style.display='none';
  const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
@@ -16579,10 +16721,10 @@ function listingsEnrichForCard(ui){
  if((out.desc==null||out.desc==='')&&raw.description) out.desc=raw.description;
  return out;
 }
-function listingsGetUnifiedRecords(){
+async function listingsGetUnifiedRecords(){
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{ window.gmPropertiesBootstrap(); }catch(e){}
+  try{ await window.gmPropertiesBootstrap({silent:true}); }catch(e){console.warn('listings bootstrap',e);}
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  if(Array.isArray(__gmArr)&&__gmArr.length){
@@ -16623,14 +16765,12 @@ function listingsDescSnippet(r){
 async function listingsRender(){
  try{
   var g0=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
-  if((!g0||!g0.length)&&typeof window.gmPropertiesRefresh==='function'){
-   try{ await window.gmPropertiesRefresh(); }catch(e){}
-  } else if((!g0||!g0.length)&&typeof window.gmPropertiesBootstrap==='function'){
-   try{ window.gmPropertiesBootstrap(); }catch(e){}
+  if((!g0||!g0.length)&&typeof window.gmPropertiesBootstrap==='function'){
+   try{ await window.gmPropertiesBootstrap({silent:true}); }catch(e){console.warn('listingsRender bootstrap',e);}
   }
  }catch(e){}
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- var allRecords=listingsGetUnifiedRecords();
+ var allRecords=await listingsGetUnifiedRecords();
  var base=allRecords.filter(function(r){ return r&&listingsIsVacant(r); });
  try{
   var uniques={};
@@ -16704,9 +16844,9 @@ async function listingsRender(){
    +'</div></div></div>';
  }).join('');
 }
-function tpVacantListingsRender(){
+async function tpVacantListingsRender(){
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- var vac=(listingsGetUnifiedRecords()||[]).filter(function(r){return r&&listingsIsVacant(r);});
+ var vac=(await listingsGetUnifiedRecords()||[]).filter(function(r){return r&&listingsIsVacant(r);});
  var q=((document.getElementById('tp-vacant-search')&&document.getElementById('tp-vacant-search').value)||'').toLowerCase();
  if(q) vac=vac.filter(function(r){ return (String(r.address||'').toLowerCase().indexOf(q)>=0); });
  var grid=document.getElementById('tp-vacant-grid');
@@ -17221,14 +17361,22 @@ function ltpNormalizeAddress(s){
  if(!s)return '';
  return String(s).trim().toLowerCase().replace(/\s+/g,' ');
 }
-async function ltpIsDuplicateAddress(address, excludeId){
+function ltpPropertyExcluded(p, excludeIds){
+ if(!p)return true;
+ var ids=(excludeIds||[]).map(function(x){return x!=null?String(x).trim():'';}).filter(Boolean);
+ if(!ids.length)return false;
+ return ids.some(function(exId){
+  return String(p.id||'')===exId||String(p.code||'')===exId||String(p._apiId||'')===exId;
+ });
+}
+async function ltpIsDuplicateAddress(address, excludeIds){
  var norm=ltpNormalizeAddress(address);
  if(!norm)return false;
- var exId=excludeId!=null?String(excludeId):'';
+ var exList=Array.isArray(excludeIds)?excludeIds.slice():[excludeIds];
  try{
   var lts=(typeof ltGetRecords==='function')?(ltGetRecords()||[]):[];
   var hit1=lts.find(function(r){
-   return r && ltpNormalizeAddress(r.address)===norm && String(r.id)!==exId;
+   return r && ltpNormalizeAddress(r.address)===norm && !ltpPropertyExcluded(r, exList);
   });
   if(hit1)return true;
  }catch(e){}
@@ -17237,10 +17385,7 @@ async function ltpIsDuplicateAddress(address, excludeId){
   var hit2=gm.find(function(p){
    if(!p)return false;
    if(ltpNormalizeAddress(p.address)!==norm)return false;
-   if(String(p.id)===exId)return false;
-   if(String(p.code||'')===exId)return false;
-   if(String(p._apiId||'')===exId)return false;
-   return true;
+   return !ltpPropertyExcluded(p, exList);
   });
   if(hit2)return true;
  }catch(e){}
@@ -17252,14 +17397,30 @@ async function ltpIsDuplicateAddress(address, excludeId){
    var hit3=arr.find(function(p){
     if(!p)return false;
     if(ltpNormalizeAddress(p.address)!==norm)return false;
-    if(String(p.code||'')===exId)return false;
-    if(String(p.id||'')===exId)return false;
-    return true;
+    return !ltpPropertyExcluded(p, exList);
    });
    if(hit3)return true;
   }
  }catch(e){console.warn('ltpIsDuplicateAddress API',e);}
  return false;
+}
+async function ltpResolveEditPropertyApiId(editingId, gmArrCur){
+ var ed=editingId!=null?String(editingId).trim():'';
+ if(!ed)return null;
+ var rec=window.__ltpEditingRecord;
+ if(rec&&rec._apiId)return String(rec._apiId);
+ var foundLocal=(gmArrCur||[]).find(function(p){
+  return p&&(String(p.id)===ed||String(p.code)===ed||String(p._apiId)===ed);
+ });
+ if(foundLocal&&foundLocal._apiId)return String(foundLocal._apiId);
+ try{
+  var lst=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
+  var match=(lst&&lst.properties||[]).find(function(p){
+   return p&&(String(p.code)===ed||String(p.id)===ed);
+  });
+  if(match&&match.id)return String(match.id);
+ }catch(e){console.warn('ltpResolveEditPropertyApiId',e);}
+ return null;
 }
 async function ltpSaveNewProperty(){
  if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
@@ -17274,8 +17435,16 @@ async function ltpSaveNewProperty(){
   }catch(ePs){}
  }
  var addrCheck=(document.getElementById('ltp-f-address')&&document.getElementById('ltp-f-address').value)||rec.address||'';
- var dupExcludeId=isEdit?ltEditingId:null;
- var dup=await ltpIsDuplicateAddress(addrCheck,dupExcludeId);
+ var dupExcludeIds=[];
+ if(isEdit&&ltEditingId)dupExcludeIds.push(ltEditingId);
+ if(isEdit){
+  try{
+   var __gmDup=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+   var __mDup=__gmDup.find(function(p){return p&&(String(p.id)===String(ltEditingId)||String(p.code)===String(ltEditingId));});
+   if(__mDup&&__mDup._apiId)dupExcludeIds.push(__mDup._apiId);
+  }catch(eDupId){}
+ }
+ var dup=await ltpIsDuplicateAddress(addrCheck,dupExcludeIds);
  if(dup){
   if(typeof showToast==='function')showToast('Propriedade Duplicada','error');
   alert('Propriedade Duplicada\n\nJa existe uma propriedade cadastrada com este endereco:\n'+addrCheck);
@@ -17338,21 +17507,24 @@ async function ltpSaveNewProperty(){
  };
  var apiId=null;
  if(isEdit){
-  var foundLocal=gmArrCur.find(function(p){return p&&String(p.id)===String(newCode);});
-  apiId=foundLocal&&foundLocal._apiId?foundLocal._apiId:null;
+  apiId=await ltpResolveEditPropertyApiId(ltEditingId,gmArrCur);
   if(!apiId){
-   try{
-    var lst=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
-    var match=(lst&&lst.properties||[]).find(function(p){return p.code===newCode;});
-    if(match)apiId=match.id;
-   }catch(e){console.warn('resolve apiId',e);}
+   var errMsg='Nao foi possivel actualizar esta propriedade: falta o identificador do servidor (_apiId). Recarregue a pagina (Ctrl+Shift+R) e abra a edicao de novo. Nao foi criada nem alterada nenhuma entrada.';
+   if(typeof showToast==='function')showToast('Edicao cancelada — ID em falta','error');
+   alert(errMsg);
+   return;
   }
  }
  var apiOk=false;
  try{
   var url,method;
-  if(isEdit&&apiId){url='/api/properties/'+encodeURIComponent(apiId);method='PATCH';}
-  else{url='/api/properties';method='POST';}
+  if(isEdit){
+   url='/api/properties/'+encodeURIComponent(apiId);
+   method='PATCH';
+  }else{
+   url='/api/properties';
+   method='POST';
+  }
   var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
   apiOk=res.ok;
   if(!res.ok){var eb=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,eb);}
@@ -17363,7 +17535,7 @@ async function ltpSaveNewProperty(){
    var ix=arr.findIndex(function(p){return p&&String(p.id)===String(newCode);});
    var seedRec=Object.assign({id:newCode,name:rec.address||'',source:'manual_ui'},rec);
    seedRec.id=newCode;
-   if(ix>-1){arr[ix]=Object.assign({},arr[ix],seedRec);}else{arr.push(seedRec);}
+   if(ix>-1){arr[ix]=Object.assign({},arr[ix],seedRec);}else if(!isEdit){arr.push(seedRec);}
    window.gmPropertiesSave(arr);
   }
  }catch(e){console.warn('gm sync ltpSave',e);}
@@ -17373,7 +17545,7 @@ async function ltpSaveNewProperty(){
  const all=ltGetRecords();
  if(isEdit){
   const idx=all.findIndex(function(x){return x.id===ltEditingId;});
-  if(idx>-1)all[idx]=Object.assign({},all[idx],rec);else all.push(rec);
+  if(idx>-1)all[idx]=Object.assign({},all[idx],rec);
  }else{
   all.push(rec);
  }
@@ -17396,7 +17568,7 @@ async function ltpSaveNewProperty(){
    }
   }
  }catch(ePsh){console.warn('status hist outer',ePsh);}
- showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Propriedade actualizada (sync pendente)'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),'success');
+ showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Falha ao sincronizar — verifique a rede e tente de novo'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),isEdit&&!apiOk?'error':'success');
 }
 function ltpTrapTab(e){
  if(e.key!=='Tab')return;
@@ -19523,6 +19695,195 @@ function gmResDrawChart(rows){
 var JOBS_KEY='gm_job_actions';
 var JOBS_MASTER_VENDOR_NAMES=['master vacation homes llc','master vacation homes','manager prop'];
 var JOBS_FEES={vendor:120,job:200};
+window.__jobsMarkupByJobId=window.__jobsMarkupByJobId||{};
+window.__jobsMarkupCacheAt=0;
+
+function jobsParseMarkupAmount(meta){
+ if(meta==null)return 0;
+ if(typeof meta==='object'&&meta.amount!=null)return Number(meta.amount)||0;
+ if(typeof meta==='string'){
+  try{var p=JSON.parse(meta);return Number(p&&p.amount)||0;}catch(e){return 0;}
+ }
+ return 0;
+}
+async function jobsEnsureMarkupCache(){
+ var now=Date.now();
+ if(window.__jobsMarkupCacheAt&&(now-window.__jobsMarkupCacheAt)<30000)return;
+ try{
+  var res=await fetch('/api/job-actions?action=manager_markup&limit=500',{credentials:'include'});
+  if(!res.ok)return;
+  var j=await res.json().catch(function(){return null;});
+  var map={};
+  (j&&j.actions||[]).forEach(function(a){
+   if(!a)return;
+   var jid=String(a.jobId||'');
+   if(!jid)return;
+   map[jid]=(Number(map[jid])||0)+jobsParseMarkupAmount(a.metadata);
+  });
+  window.__jobsMarkupByJobId=map;
+  window.__jobsMarkupCacheAt=now;
+ }catch(e){console.warn('jobsEnsureMarkupCache',e);}
+}
+function jobsRowMarkupAmount(r){
+ if(!r)return 0;
+ var jid=String(r.id||'');
+ return Number((window.__jobsMarkupByJobId||{})[jid])||0;
+}
+function jobsHasValueOverride(r){
+ if(!r)return false;
+ var v=r.jobValueOverride;
+ return v!=null&&v!==''&&Number.isFinite(Number(v));
+}
+function jobsRowDisplayValue(r){
+ if(!r)return 0;
+ if(jobsHasValueOverride(r))return Number(r.jobValueOverride);
+ var base=r._isPm?(Number(r.ownerCharged)||0):(Number(r.value)||0);
+ if(!r._isPm&&typeof ltExpValueWithExtras==='function')base=ltExpValueWithExtras(r);
+ var feeV=jobsHasActionFor(r.id,'vendor')?JOBS_FEES.vendor:0;
+ var feeJ=jobsHasActionFor(r.id,'job')?JOBS_FEES.job:0;
+ var mk=jobsRowMarkupAmount(r);
+ return Math.round((base+feeV+feeJ+mk)*100)/100;
+}
+function jobsUpdateRowInCache(jobId,patch){
+ var id=String(jobId||'');
+ [window.__jobsApiRowsCache,window.__jobsExpensesCache].forEach(function(arr){
+  if(!Array.isArray(arr))return;
+  var ix=arr.findIndex(function(x){return x&&String(x.id)===id;});
+  if(ix>=0)Object.assign(arr[ix],patch||{});
+ });
+}
+function jobsFmtValueCellHtml(r){
+ var idData=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr(String(r.id==null?'':r.id)):String(r.id==null?'':r.id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+ var val=jobsRowDisplayValue(r);
+ var disp=jobsMoney(val);
+ var isOv=jobsHasValueOverride(r);
+ var dispStyle=isOv
+  ?'font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:var(--blue);cursor:text;min-width:72px;display:inline-block;text-align:right'
+  :'font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--ink);cursor:text;min-width:72px;display:inline-block;text-align:right';
+ var clearBtn=isOv
+  ?'<button type="button" class="jobs-val-clear" data-job-id="'+idData+'" title="Limpar override (voltar ao calculado)" aria-label="Limpar override" style="flex-shrink:0;width:22px;height:22px;border:1px solid var(--border2);border-radius:4px;background:var(--sand);color:var(--ink3);font-size:14px;line-height:1;cursor:pointer;padding:0">&times;</button>'
+  :'';
+ return '<td data-jobs-col="amount" data-job-id="'+idData+'" style="padding:9px 12px;text-align:right;vertical-align:middle">'
+  +'<div class="jobs-val-cell" style="display:flex;align-items:center;justify-content:flex-end;gap:4px">'
+  +'<span class="jobs-val-display" data-job-id="'+idData+'" tabindex="0" title="'+(isOv?'Valor manual (override) — clique para editar':'Valor calculado — clique para override manual')+'" style="'+dispStyle+'">'+disp+'</span>'
+  +'<input type="number" class="jobs-val-input" data-job-id="'+idData+'" step="0.01" min="0" style="display:none;width:88px;padding:4px 6px;border:1px solid var(--amber);border-radius:4px;font-family:\'JetBrains Mono\',monospace;font-size:12px;text-align:right;background:var(--paper)" />'
+  +clearBtn
+  +'</div></td>';
+}
+async function jobsPatchJobValueOverride(jobId,valueOrNull){
+ var apiId=String(jobId||'');
+ var body={jobValueOverride:valueOrNull};
+ var res=await fetch('/api/pm/expenses/'+encodeURIComponent(apiId),{
+  method:'PATCH',
+  headers:{'Content-Type':'application/json'},
+  credentials:'include',
+  body:JSON.stringify(body)
+ });
+ var j=await res.json().catch(function(){return null;});
+ if(!res.ok||!j||!j.ok){
+  var msg=(j&&j.error)?String(j.error):('HTTP '+res.status);
+  throw new Error(msg);
+ }
+ var exp=j.expense;
+ var patch={jobValueOverride:exp&&exp.jobValueOverride!=null?Number(exp.jobValueOverride):null};
+ jobsUpdateRowInCache(apiId,patch);
+ return patch;
+}
+function jobsRefreshValueCell(jobId){
+ var id=String(jobId||'');
+ var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+ if(!row)return;
+ var escId=String(id).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+ var td=document.querySelector('#jobs-table td[data-jobs-col="amount"][data-job-id="'+escId+'"]');
+ if(!td)return;
+ var tmp=document.createElement('tbody');
+ tmp.innerHTML='<tr>'+jobsFmtValueCellHtml(row)+'</tr>';
+ var newTd=tmp.querySelector('td');
+ if(newTd)td.replaceWith(newTd);
+}
+function jobsBindValueCellDelegationOnce(){
+ if(window._jobsValueCellBound)return;
+ window._jobsValueCellBound=1;
+ var table=document.getElementById('jobs-table');
+ if(!table)return;
+ table.addEventListener('click',function(ev){
+  var t=ev.target;
+  if(!t)return;
+  if(t.classList&&t.classList.contains('jobs-val-clear')){
+   ev.preventDefault();ev.stopPropagation();
+   var cid=t.getAttribute('data-job-id');
+   if(!cid)return;
+   void jobsPatchJobValueOverride(cid,null).then(function(){
+    if(typeof jobsRefreshValueCell==='function')jobsRefreshValueCell(cid);
+    if(typeof showToast==='function')showToast('Override removido — valor calculado.','success');
+   }).catch(function(e){
+    if(typeof showToast==='function')showToast(String(e.message||e),'error');
+   });
+   return;
+  }
+  var disp=t.closest&&t.closest('.jobs-val-display');
+  if(!disp)return;
+  var cell=disp.closest('.jobs-val-cell');
+  if(!cell)return;
+  var inp=cell.querySelector('.jobs-val-input');
+  if(!inp)return;
+  var cur=jobsRowDisplayValue((typeof jobsFindRowById==='function')?jobsFindRowById(disp.getAttribute('data-job-id')):{})||0;
+  disp.style.display='none';
+  inp.style.display='block';
+  inp.value=String(cur);
+  inp.focus();
+  inp.select();
+ });
+ table.addEventListener('keydown',function(ev){
+  var inp=ev.target;
+  if(!inp||!inp.classList||!inp.classList.contains('jobs-val-input'))return;
+  if(ev.key==='Enter'){ev.preventDefault();inp.blur();}
+  if(ev.key==='Escape'){
+   ev.preventDefault();
+   var cell=inp.closest('.jobs-val-cell');
+   var disp=cell&&cell.querySelector('.jobs-val-display');
+   inp.style.display='none';
+   if(disp)disp.style.display='inline-block';
+  }
+ });
+ table.addEventListener('focusout',function(ev){
+  var inp=ev.target;
+  if(!inp||!inp.classList||!inp.classList.contains('jobs-val-input'))return;
+  var jid=inp.getAttribute('data-job-id');
+  var cell=inp.closest('.jobs-val-cell');
+  var disp=cell&&cell.querySelector('.jobs-val-display');
+  var raw=String(inp.value||'').trim();
+  inp.style.display='none';
+  if(disp)disp.style.display='inline-block';
+  if(!jid)return;
+  var row=(typeof jobsFindRowById==='function')?jobsFindRowById(jid):null;
+  var prevOv=row&&jobsHasValueOverride(row)?Number(row.jobValueOverride):null;
+  var prevCalc=row?jobsRowDisplayValue(row):0;
+  if(!raw){
+   if(prevOv==null)return;
+   void jobsPatchJobValueOverride(jid,null).then(function(){jobsRefreshValueCell(jid);}).catch(function(e){if(typeof showToast==='function')showToast(String(e.message||e),'error');});
+   return;
+  }
+  var num=parseFloat(raw);
+  if(!Number.isFinite(num)||num<0){
+   if(typeof showToast==='function')showToast('Valor invalido.','error');
+   jobsRefreshValueCell(jid);
+   return;
+  }
+  if(prevOv!=null&&Math.abs(num-prevOv)<0.005)return;
+  if(prevOv==null&&Math.abs(num-prevCalc)<0.005)return;
+  void jobsPatchJobValueOverride(jid,num).then(function(){
+   jobsRefreshValueCell(jid);
+   if(typeof showToast==='function')showToast('Valor guardado.','success');
+  }).catch(function(e){
+   if(typeof showToast==='function')showToast(String(e.message||e),'error');
+   jobsRefreshValueCell(jid);
+  });
+ });
+}
+window.jobsRowDisplayValue=jobsRowDisplayValue;
+window.jobsRefreshValueCell=jobsRefreshValueCell;
+window.jobsPatchJobValueOverride=jobsPatchJobValueOverride;
 
 (function jobsMigrateMarkIsJob(){
  try{
@@ -19724,9 +20085,15 @@ async function jobsManagerSave(){
   }
 
   if(fb){fb.style.color='var(--green)';fb.textContent='Markup registado: $'+amount.toFixed(2);}
+  try{
+   var jidMk=String(expenseId||'');
+   if(!window.__jobsMarkupByJobId)window.__jobsMarkupByJobId={};
+   window.__jobsMarkupByJobId[jidMk]=(Number(window.__jobsMarkupByJobId[jidMk])||0)+amount;
+  }catch(eMk){}
   setTimeout(function(){
    jobsManagerClose();
    if(typeof jobsRender==='function')jobsRender();
+   if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eVc){}
   },800);
  }catch(e){
   if(fb){fb.style.color='var(--red)';fb.textContent='Erro: '+(e.message||String(e));}
@@ -19808,9 +20175,10 @@ function jobsOnVendorClick(expenseId){
   if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
   return;
  }
- if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
- jobsRender();
- if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
+  jobsRender();
+  if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eV){}
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
 }
 function jobsOnJobClick(expenseId){
  if(jobsHasActionFor(expenseId,'vendor')){
@@ -19823,9 +20191,10 @@ function jobsOnJobClick(expenseId){
   if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
   return;
  }
- if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
- jobsRender();
- if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
+  jobsRender();
+  if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eV){}
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
 }
 
 function jobsMoney(n){
@@ -20383,15 +20752,6 @@ function jobsResolveAddress(r){
     }
    }
   }catch(e){}
-  try{
-   var seed=window.GM_PROPERTIES_SEED||[];
-   for(var j=0;j<seed.length;j++){
-    var sp=seed[j];
-    if(sp&&(String(sp.id)===code||String(sp.code)===code)){
-     if(sp.address)return String(sp.address);
-    }
-   }
-  }catch(e){}
  }
  return '-';
 }
@@ -20498,6 +20858,10 @@ async function jobsRender(){
  if(typeof window.jobsFetchFromApi==='function'){
   try{await window.jobsFetchFromApi();}catch(err){console.warn('jobsFetchFromApi',err);}
  }
+ if(typeof jobsEnsureMarkupCache==='function'){
+  try{await jobsEnsureMarkupCache();}catch(eMkC){console.warn('jobsEnsureMarkupCache',eMkC);}
+ }
+ if(typeof jobsBindValueCellDelegationOnce==='function')jobsBindValueCellDelegationOnce();
  // Reconstruir dropdown vendor com dataset filtrado por tipo+data (sem filtro vendor)
  try{
   var rangeForOpts=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
@@ -20777,6 +21141,7 @@ async function jobsRender(){
   +'<td data-label="Categoria" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
   +'<td data-label="Data" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+  +(typeof jobsFmtValueCellHtml==='function'?jobsFmtValueCellHtml(r):'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right">'+jobsMoney(jobsRowDisplayValue(r))+'</td>')
   +'<td data-label="Status" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
   +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
   +btnDismissTd

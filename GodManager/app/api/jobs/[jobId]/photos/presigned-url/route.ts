@@ -7,8 +7,14 @@ import { generateUploadUrl, publicUrlForKey } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"] as const;
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_CONTENT_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+] as const;
+const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_PHOTOS_PER_JOB = 20;
 
 function randomString(length: number): string {
@@ -61,7 +67,8 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
 
   try {
     const subtype = contentType.split("/")[1] || "";
-    const ext = subtype === "jpeg" ? "jpg" : subtype;
+    const ext =
+      contentType === "application/pdf" ? "pdf" : subtype === "jpeg" ? "jpg" : subtype;
     const safeClientId = expense.clientId || "no-client";
     const key = `job-photos/${safeClientId}/${expense.id}/${Date.now()}-${randomString(8)}.${ext}`;
 

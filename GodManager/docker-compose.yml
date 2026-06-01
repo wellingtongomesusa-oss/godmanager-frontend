@@ -2,7 +2,8 @@
 # Uso:
 #   docker compose up -d
 # No .env.local:
-#   DATABASE_URL="postgresql://godmanager:godmanager@localhost:5432/godmanager"
+#   DATABASE_URL="postgresql://godmanager:godmanager@127.0.0.1:5433/godmanager?schema=public"
+#   (5433 evita conflito com Postgres nativo do macOS em localhost:5432)
 # Depois:
 #   npx prisma migrate deploy
 #   npm run seed:demo
@@ -16,7 +17,7 @@ services:
       POSTGRES_PASSWORD: godmanager
       POSTGRES_DB: godmanager
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - godmanager_pgdata:/var/lib/postgresql/data
     healthcheck:

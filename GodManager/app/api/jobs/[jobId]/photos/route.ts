@@ -26,6 +26,7 @@ export async function GET(_req: Request, { params }: { params: { jobId: string }
       id: true,
       publicUrl: true,
       filename: true,
+      contentType: true,
       sizeBytes: true,
       uploadedAt: true,
       uploadedBy: true,
