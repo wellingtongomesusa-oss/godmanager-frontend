@@ -12117,6 +12117,7 @@ function ltExpMapApiToRow(e){
   serviceDate:e.serviceDate,
   statusPm:e.status,
   value:oc,
+  jobValueOverride:e.jobValueOverride!=null&&e.jobValueOverride!==''?Number(e.jobValueOverride):null,
   status:ui,
   vendor:String(e.vendorName||'').trim(),
   _apiRaw:e
@@ -19576,6 +19577,195 @@ function gmResDrawChart(rows){
 var JOBS_KEY='gm_job_actions';
 var JOBS_MASTER_VENDOR_NAMES=['master vacation homes llc','master vacation homes','manager prop'];
 var JOBS_FEES={vendor:120,job:200};
+window.__jobsMarkupByJobId=window.__jobsMarkupByJobId||{};
+window.__jobsMarkupCacheAt=0;
+
+function jobsParseMarkupAmount(meta){
+ if(meta==null)return 0;
+ if(typeof meta==='object'&&meta.amount!=null)return Number(meta.amount)||0;
+ if(typeof meta==='string'){
+  try{var p=JSON.parse(meta);return Number(p&&p.amount)||0;}catch(e){return 0;}
+ }
+ return 0;
+}
+async function jobsEnsureMarkupCache(){
+ var now=Date.now();
+ if(window.__jobsMarkupCacheAt&&(now-window.__jobsMarkupCacheAt)<30000)return;
+ try{
+  var res=await fetch('/api/job-actions?action=manager_markup&limit=500',{credentials:'include'});
+  if(!res.ok)return;
+  var j=await res.json().catch(function(){return null;});
+  var map={};
+  (j&&j.actions||[]).forEach(function(a){
+   if(!a)return;
+   var jid=String(a.jobId||'');
+   if(!jid)return;
+   map[jid]=(Number(map[jid])||0)+jobsParseMarkupAmount(a.metadata);
+  });
+  window.__jobsMarkupByJobId=map;
+  window.__jobsMarkupCacheAt=now;
+ }catch(e){console.warn('jobsEnsureMarkupCache',e);}
+}
+function jobsRowMarkupAmount(r){
+ if(!r)return 0;
+ var jid=String(r.id||'');
+ return Number((window.__jobsMarkupByJobId||{})[jid])||0;
+}
+function jobsHasValueOverride(r){
+ if(!r)return false;
+ var v=r.jobValueOverride;
+ return v!=null&&v!==''&&Number.isFinite(Number(v));
+}
+function jobsRowDisplayValue(r){
+ if(!r)return 0;
+ if(jobsHasValueOverride(r))return Number(r.jobValueOverride);
+ var base=r._isPm?(Number(r.ownerCharged)||0):(Number(r.value)||0);
+ if(!r._isPm&&typeof ltExpValueWithExtras==='function')base=ltExpValueWithExtras(r);
+ var feeV=jobsHasActionFor(r.id,'vendor')?JOBS_FEES.vendor:0;
+ var feeJ=jobsHasActionFor(r.id,'job')?JOBS_FEES.job:0;
+ var mk=jobsRowMarkupAmount(r);
+ return Math.round((base+feeV+feeJ+mk)*100)/100;
+}
+function jobsUpdateRowInCache(jobId,patch){
+ var id=String(jobId||'');
+ [window.__jobsApiRowsCache,window.__jobsExpensesCache].forEach(function(arr){
+  if(!Array.isArray(arr))return;
+  var ix=arr.findIndex(function(x){return x&&String(x.id)===id;});
+  if(ix>=0)Object.assign(arr[ix],patch||{});
+ });
+}
+function jobsFmtValueCellHtml(r){
+ var idData=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr(String(r.id==null?'':r.id)):String(r.id==null?'':r.id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+ var val=jobsRowDisplayValue(r);
+ var disp=jobsMoney(val);
+ var isOv=jobsHasValueOverride(r);
+ var dispStyle=isOv
+  ?'font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:var(--blue);cursor:text;min-width:72px;display:inline-block;text-align:right'
+  :'font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--ink);cursor:text;min-width:72px;display:inline-block;text-align:right';
+ var clearBtn=isOv
+  ?'<button type="button" class="jobs-val-clear" data-job-id="'+idData+'" title="Limpar override (voltar ao calculado)" aria-label="Limpar override" style="flex-shrink:0;width:22px;height:22px;border:1px solid var(--border2);border-radius:4px;background:var(--sand);color:var(--ink3);font-size:14px;line-height:1;cursor:pointer;padding:0">&times;</button>'
+  :'';
+ return '<td data-jobs-col="amount" data-job-id="'+idData+'" style="padding:9px 12px;text-align:right;vertical-align:middle">'
+  +'<div class="jobs-val-cell" style="display:flex;align-items:center;justify-content:flex-end;gap:4px">'
+  +'<span class="jobs-val-display" data-job-id="'+idData+'" tabindex="0" title="'+(isOv?'Valor manual (override) — clique para editar':'Valor calculado — clique para override manual')+'" style="'+dispStyle+'">'+disp+'</span>'
+  +'<input type="number" class="jobs-val-input" data-job-id="'+idData+'" step="0.01" min="0" style="display:none;width:88px;padding:4px 6px;border:1px solid var(--amber);border-radius:4px;font-family:\'JetBrains Mono\',monospace;font-size:12px;text-align:right;background:var(--paper)" />'
+  +clearBtn
+  +'</div></td>';
+}
+async function jobsPatchJobValueOverride(jobId,valueOrNull){
+ var apiId=String(jobId||'');
+ var body={jobValueOverride:valueOrNull};
+ var res=await fetch('/api/pm/expenses/'+encodeURIComponent(apiId),{
+  method:'PATCH',
+  headers:{'Content-Type':'application/json'},
+  credentials:'include',
+  body:JSON.stringify(body)
+ });
+ var j=await res.json().catch(function(){return null;});
+ if(!res.ok||!j||!j.ok){
+  var msg=(j&&j.error)?String(j.error):('HTTP '+res.status);
+  throw new Error(msg);
+ }
+ var exp=j.expense;
+ var patch={jobValueOverride:exp&&exp.jobValueOverride!=null?Number(exp.jobValueOverride):null};
+ jobsUpdateRowInCache(apiId,patch);
+ return patch;
+}
+function jobsRefreshValueCell(jobId){
+ var id=String(jobId||'');
+ var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+ if(!row)return;
+ var escId=String(id).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+ var td=document.querySelector('#jobs-table td[data-jobs-col="amount"][data-job-id="'+escId+'"]');
+ if(!td)return;
+ var tmp=document.createElement('tbody');
+ tmp.innerHTML='<tr>'+jobsFmtValueCellHtml(row)+'</tr>';
+ var newTd=tmp.querySelector('td');
+ if(newTd)td.replaceWith(newTd);
+}
+function jobsBindValueCellDelegationOnce(){
+ if(window._jobsValueCellBound)return;
+ window._jobsValueCellBound=1;
+ var table=document.getElementById('jobs-table');
+ if(!table)return;
+ table.addEventListener('click',function(ev){
+  var t=ev.target;
+  if(!t)return;
+  if(t.classList&&t.classList.contains('jobs-val-clear')){
+   ev.preventDefault();ev.stopPropagation();
+   var cid=t.getAttribute('data-job-id');
+   if(!cid)return;
+   void jobsPatchJobValueOverride(cid,null).then(function(){
+    if(typeof jobsRefreshValueCell==='function')jobsRefreshValueCell(cid);
+    if(typeof showToast==='function')showToast('Override removido — valor calculado.','success');
+   }).catch(function(e){
+    if(typeof showToast==='function')showToast(String(e.message||e),'error');
+   });
+   return;
+  }
+  var disp=t.closest&&t.closest('.jobs-val-display');
+  if(!disp)return;
+  var cell=disp.closest('.jobs-val-cell');
+  if(!cell)return;
+  var inp=cell.querySelector('.jobs-val-input');
+  if(!inp)return;
+  var cur=jobsRowDisplayValue((typeof jobsFindRowById==='function')?jobsFindRowById(disp.getAttribute('data-job-id')):{})||0;
+  disp.style.display='none';
+  inp.style.display='block';
+  inp.value=String(cur);
+  inp.focus();
+  inp.select();
+ });
+ table.addEventListener('keydown',function(ev){
+  var inp=ev.target;
+  if(!inp||!inp.classList||!inp.classList.contains('jobs-val-input'))return;
+  if(ev.key==='Enter'){ev.preventDefault();inp.blur();}
+  if(ev.key==='Escape'){
+   ev.preventDefault();
+   var cell=inp.closest('.jobs-val-cell');
+   var disp=cell&&cell.querySelector('.jobs-val-display');
+   inp.style.display='none';
+   if(disp)disp.style.display='inline-block';
+  }
+ });
+ table.addEventListener('focusout',function(ev){
+  var inp=ev.target;
+  if(!inp||!inp.classList||!inp.classList.contains('jobs-val-input'))return;
+  var jid=inp.getAttribute('data-job-id');
+  var cell=inp.closest('.jobs-val-cell');
+  var disp=cell&&cell.querySelector('.jobs-val-display');
+  var raw=String(inp.value||'').trim();
+  inp.style.display='none';
+  if(disp)disp.style.display='inline-block';
+  if(!jid)return;
+  var row=(typeof jobsFindRowById==='function')?jobsFindRowById(jid):null;
+  var prevOv=row&&jobsHasValueOverride(row)?Number(row.jobValueOverride):null;
+  var prevCalc=row?jobsRowDisplayValue(row):0;
+  if(!raw){
+   if(prevOv==null)return;
+   void jobsPatchJobValueOverride(jid,null).then(function(){jobsRefreshValueCell(jid);}).catch(function(e){if(typeof showToast==='function')showToast(String(e.message||e),'error');});
+   return;
+  }
+  var num=parseFloat(raw);
+  if(!Number.isFinite(num)||num<0){
+   if(typeof showToast==='function')showToast('Valor invalido.','error');
+   jobsRefreshValueCell(jid);
+   return;
+  }
+  if(prevOv!=null&&Math.abs(num-prevOv)<0.005)return;
+  if(prevOv==null&&Math.abs(num-prevCalc)<0.005)return;
+  void jobsPatchJobValueOverride(jid,num).then(function(){
+   jobsRefreshValueCell(jid);
+   if(typeof showToast==='function')showToast('Valor guardado.','success');
+  }).catch(function(e){
+   if(typeof showToast==='function')showToast(String(e.message||e),'error');
+   jobsRefreshValueCell(jid);
+  });
+ });
+}
+window.jobsRowDisplayValue=jobsRowDisplayValue;
+window.jobsRefreshValueCell=jobsRefreshValueCell;
+window.jobsPatchJobValueOverride=jobsPatchJobValueOverride;
 
 (function jobsMigrateMarkIsJob(){
  try{
@@ -19777,9 +19967,15 @@ async function jobsManagerSave(){
   }
 
   if(fb){fb.style.color='var(--green)';fb.textContent='Markup registado: $'+amount.toFixed(2);}
+  try{
+   var jidMk=String(expenseId||'');
+   if(!window.__jobsMarkupByJobId)window.__jobsMarkupByJobId={};
+   window.__jobsMarkupByJobId[jidMk]=(Number(window.__jobsMarkupByJobId[jidMk])||0)+amount;
+  }catch(eMk){}
   setTimeout(function(){
    jobsManagerClose();
    if(typeof jobsRender==='function')jobsRender();
+   if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eVc){}
   },800);
  }catch(e){
   if(fb){fb.style.color='var(--red)';fb.textContent='Erro: '+(e.message||String(e));}
@@ -19861,9 +20057,10 @@ function jobsOnVendorClick(expenseId){
   if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
   return;
  }
- if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
- jobsRender();
- if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
+  jobsRender();
+  if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eV){}
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
 }
 function jobsOnJobClick(expenseId){
  if(jobsHasActionFor(expenseId,'vendor')){
@@ -19876,9 +20073,10 @@ function jobsOnJobClick(expenseId){
   if(typeof showToast==='function')showToast(r.err,'error');else alert(r.err);
   return;
  }
- if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
- jobsRender();
- if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  if(typeof showToast==='function')showToast('Acao registrada com sucesso.','success');
+  jobsRender();
+  if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eV){}
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
 }
 
 function jobsMoney(n){
@@ -20551,6 +20749,10 @@ async function jobsRender(){
  if(typeof window.jobsFetchFromApi==='function'){
   try{await window.jobsFetchFromApi();}catch(err){console.warn('jobsFetchFromApi',err);}
  }
+ if(typeof jobsEnsureMarkupCache==='function'){
+  try{await jobsEnsureMarkupCache();}catch(eMkC){console.warn('jobsEnsureMarkupCache',eMkC);}
+ }
+ if(typeof jobsBindValueCellDelegationOnce==='function')jobsBindValueCellDelegationOnce();
  // Reconstruir dropdown vendor com dataset filtrado por tipo+data (sem filtro vendor)
  try{
   var rangeForOpts=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
@@ -20830,6 +21032,7 @@ async function jobsRender(){
   +'<td data-label="Categoria" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
   +'<td data-label="Data" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+  +(typeof jobsFmtValueCellHtml==='function'?jobsFmtValueCellHtml(r):'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right">'+jobsMoney(jobsRowDisplayValue(r))+'</td>')
   +'<td data-label="Status" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
   +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
   +btnDismissTd

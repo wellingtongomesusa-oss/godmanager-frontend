@@ -24,6 +24,7 @@ function toJson(e: {
   packageApplied: PmPackage;
   vendorCost: { toString(): string };
   ownerCharged: { toString(): string };
+  jobValueOverride?: { toString(): string } | null;
   serviceDate: Date | null;
   monthRef: string;
   status: PmExpenseStatus;
@@ -44,6 +45,7 @@ function toJson(e: {
     pmPackage: e.packageApplied,
     vendorCost: e.vendorCost.toString(),
     ownerCharged: e.ownerCharged.toString(),
+    jobValueOverride: e.jobValueOverride != null ? e.jobValueOverride.toString() : null,
     serviceDate: e.serviceDate ? e.serviceDate.toISOString().slice(0, 10) : '',
     monthRef: e.monthRef,
     status: e.status,

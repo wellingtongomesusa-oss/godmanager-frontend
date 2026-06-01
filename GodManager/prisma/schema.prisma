@@ -607,6 +607,7 @@ model PmExpense {
   packageApplied PmPackage
   vendorCost     Decimal         @db.Decimal(12, 2)
   ownerCharged   Decimal         @db.Decimal(12, 2)
+  jobValueOverride Decimal?      @db.Decimal(12, 2)
   serviceDate    DateTime?
   monthRef       String
   status         PmExpenseStatus @default(PENDING)

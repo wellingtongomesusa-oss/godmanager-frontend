@@ -23,6 +23,7 @@ function toJson(e: {
   packageApplied: PmPackage;
   vendorCost: { toString(): string };
   ownerCharged: { toString(): string };
+  jobValueOverride?: { toString(): string } | null;
   serviceDate: Date | null;
   monthRef: string;
   status: PmExpenseStatus;
@@ -46,6 +47,7 @@ function toJson(e: {
     pmPackage: e.packageApplied,
     vendorCost: e.vendorCost.toString(),
     ownerCharged: e.ownerCharged.toString(),
+    jobValueOverride: e.jobValueOverride != null ? e.jobValueOverride.toString() : null,
     serviceDate: e.serviceDate ? e.serviceDate.toISOString().slice(0, 10) : '',
     monthRef: e.monthRef,
     status: e.status,
@@ -87,6 +89,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         clientId: true,
         packageApplied: true,
         vendorCost: true,
+        jobValueOverride: true,
         serviceType: true,
         serviceDate: true,
         monthRef: true,
@@ -150,6 +153,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const ownerCharged = ownerChargedAmount(vendorCost, pkg);
+
+    let jobValueOverride: string | null | undefined;
+    if ('jobValueOverride' in body) {
+      if (body.jobValueOverride === null || body.jobValueOverride === '') {
+        jobValueOverride = null;
+      } else {
+        const jvo = Number(body.jobValueOverride);
+        if (!Number.isFinite(jvo) || jvo < 0) {
+          return NextResponse.json({ ok: false, error: 'Invalid jobValueOverride' }, { status: 400 });
+        }
+        jobValueOverride = String(jvo);
+      }
+    }
 
     let monthRef = cur.monthRef;
     if (body.monthRef != null) {
@@ -221,6 +237,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       body.description !== undefined ? String(body.description).trim() || null : cur.description;
     if (nextDesc !== cur.description) changedFields.push('description');
     if (shouldSyncExpenseClientId) changedFields.push('clientId');
+    if (jobValueOverride !== undefined) {
+      const prevJvo = cur.jobValueOverride != null ? cur.jobValueOverride.toString() : null;
+      const nextJvo = jobValueOverride;
+      if (prevJvo !== nextJvo) {
+        changedFields.push(
+          nextJvo == null ? 'jobValueOverride:clear' : `jobValueOverride:${nextJvo}`,
+        );
+      }
+    }
 
     const row = await prisma.pmExpense.update({
       where: { id: params.id },
@@ -235,6 +260,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         packageApplied: pkg,
         vendorCost,
         ownerCharged,
+        ...(jobValueOverride !== undefined ? { jobValueOverride } : {}),
         serviceDate,
         monthRef,
         status: st,
