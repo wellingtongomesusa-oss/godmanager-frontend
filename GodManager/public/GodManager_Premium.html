@@ -407,6 +407,16 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  overflow:visible;padding-bottom:0;scroll-snap-type:none;}
  .gm-kpis-row--strip > *{min-width:0;width:100%}
 }
+@media (max-width:1023px){
+ .gm-kpis-shell--hint.gm-kpis-shell--strip-12::after{
+ content:'>';
+ position:absolute;right:10px;top:50%;transform:translateY(-50%);
+ font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink3);opacity:.4;pointer-events:none;line-height:1;}
+ .gm-kpis-shell--hint.gm-kpis-shell--strip-12 .gm-kpis-row--strip-12{padding-right:28px}}
+.gm-kpis-row--strip.gm-kpis-row--strip-12 > *{min-width:min(128px,28vw)}
+@media (min-width:768px) and (max-width:1023px){
+ .gm-kpis-row--strip.gm-kpis-row--strip-12{
+ grid-template-columns:repeat(var(--gm-kpi-cols-tablet,6),minmax(0,1fr));}}
 .gm-kpis-shell--floating{margin-bottom:16px}
 @media (max-width:767px){ .gm-kpis-shell--floating:last-child{margin-bottom:20px}}
 .gm-kpis-row--floating{
@@ -986,8 +996,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .btn-save-top,
 header.topbar .btn-save-top{display:none !important;}
 </style>
-<script src="/properties_seed.js"></script>
-<script src="/tenants_seed.js"></script>
 <script src="/gm_clean_ghost_props.js"></script>
 <script>
 // Bootstrap i18n: ler NEXT_LOCALE (marketing) -> gm_lang (premium)
@@ -3545,10 +3553,10 @@ document.addEventListener('DOMContentLoaded', function(){
 <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
- <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:12;--gm-kpi-cols-tablet:5">
+ <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--strip-12" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip gm-kpis-row--strip-12" style="--gm-kpi-cols-desktop:12;--gm-kpi-cols-tablet:6" data-gm-kpi-count="12">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">lease ativo no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">total − alugadas no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">status VG (vaga)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MOVE IN NO MES</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">move-in no periodo</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">NET ATUAL</div><div id="ltp-kpi-net" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">soma coluna Rent</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
@@ -9710,7 +9718,7 @@ window.osPopulateOccupancyFilter=function(){
  if(!sel) return;
  var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('osRender bootstrap',e);}
   __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  var records=(Array.isArray(__gmArrOs)&&__gmArrOs.length)?__gmArrOs.map(window.gmPropertiesToUi):ltGetRecords();
@@ -9908,7 +9916,7 @@ window.osRender=async function(){
  }catch(e){}
  var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){console.warn('osRender auto-bootstrap',e);}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('osRender auto-bootstrap',e);}
   __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  const records=(Array.isArray(__gmArrOs)&&__gmArrOs.length)?__gmArrOs.map(window.gmPropertiesToUi):ltGetRecords();
@@ -14569,30 +14577,6 @@ function ltDashRender(){
   var db=Date.parse(b&&b.moveIn)||0;
   return db-da;
  });
- // Também incluir tenants do GM_TENANTS_SEED para contemplar carteira CSV
- try{
-  var seed=window.GM_TENANTS_SEED||[];
-  var seenAddr={};
-  records.forEach(function(rr){if(rr&&rr.address)seenAddr[String(rr.address).toLowerCase()]=1;});
-  seed.forEach(function(t){
-   if(!t||!t.moveIn)return;
-   var addr=String(t.propertyCsv||t.unit||'').split(' - ')[0]||t.unit||'';
-   if(!addr)return;
-   moveInRecords.push({
-    address:addr,
-    tenant:t.name||'',
-    rent:Number(t.rent)||0,
-    moveIn:t.moveIn,
-    deposit:Number(t.deposit)||0,
-    _seed:true
-   });
-  });
-  moveInRecords.sort(function(a,b){
-   var da=Date.parse(a&&a.moveIn)||0;
-   var db=Date.parse(b&&b.moveIn)||0;
-   return db-da;
-  });
- }catch(e){console.warn('moveIn seed merge',e);}
  var topMI=moveInRecords.slice(0,20);
  var escMi=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
  if(!topMI.length){
@@ -14665,21 +14649,8 @@ function ltDashRender(){
   });
  }catch(e){console.warn('alerts jobs',e);}
 
- // 3. Move In recentes (ultimos 30 dias) - records + seed
+ // 3. Move In recentes (ultimos 30 dias) — propriedades (API/cache)
  var moveInRecAll=records.filter(function(r){return r&&r.moveIn&&r.tenant;}).slice();
- try{
-  var seedT=window.GM_TENANTS_SEED||[];
-  seedT.forEach(function(t){
-   if(!t||!t.moveIn)return;
-   moveInRecAll.push({
-    address:String(t.propertyCsv||t.unit||'').split(' - ')[0]||t.unit||'',
-    tenant:t.name||'',
-    moveIn:t.moveIn,
-    leaseTo:t.leaseTo||'',
-    _seed:true
-   });
-  });
- }catch(e){}
  moveInRecAll.forEach(function(r){
   if(!r.moveIn)return;
   var d=new Date(r.moveIn);
@@ -14817,20 +14788,86 @@ async function ltpDeleteProperty(id){
  showToast(apiOk?'Propriedade removida e sincronizada':'Propriedade removida (sync pendente)');
 }
 
-/* === GM PROPERTIES STORE (seed AppFolio + cadastros manuais) === */
-window.GM_PROP_KEY='gm_properties';
-window.gmPropertiesLoad=function(){try{var r=localStorage.getItem(window.GM_PROP_KEY);var a=r?JSON.parse(r):[];if(!Array.isArray(a))return[];return a.filter(function(p){if(!p||typeof p!=='object')return false;var nm=String(p.name||'').trim().toLowerCase();var addr=String(p.address||'').trim().toLowerCase();if(nm==='total'||nm==='manager prop')return false;if(addr==='total'||addr.indexOf('admin -')===0)return false;return true;});}catch(e){return[];}};
-window.gmPropertiesSave=function(a){try{localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(a||[]));}catch(e){}};
-window.gmPropertiesBootstrap=function(){
- var cur=window.gmPropertiesLoad();
- if(cur&&cur.length>0)return false;
- var raw=(window.GM_PROPERTIES_SEED&&Array.isArray(window.GM_PROPERTIES_SEED))?window.GM_PROPERTIES_SEED:[];
- if(!raw.length)return false;
- var seed=raw.filter(function(p){if(!p||typeof p!=='object')return false;var nm=String(p.name||'').trim().toLowerCase();var addr=String(p.address||'').trim().toLowerCase();if(nm==='total'||nm==='manager prop')return false;if(addr==='total'||addr.indexOf('admin -')===0)return false;return true;});
- window.gmPropertiesSave(seed);
+/* === GM PROPERTIES STORE (cache API Postgres v2 — sem seed local) === */
+window.GM_PROP_KEY='gm_properties_v2';
+window.GM_PROP_SCHEMA_VERSION=2;
+window.__gmPropertiesBootstrapError=null;
+function gmPropertiesFilterGhostRows(arr){
+ return (arr||[]).filter(function(p){
+  if(!p||typeof p!=='object')return false;
+  var nm=String(p.name||'').trim().toLowerCase();
+  var addr=String(p.address||'').trim().toLowerCase();
+  if(nm==='total'||nm==='manager prop')return false;
+  if(addr==='total'||addr.indexOf('admin -')===0)return false;
+  return true;
+ });
+}
+window.gmPropertiesPurgeStaleCacheOnce=function(){
+ if(window.__gmPropsStalePurged)return;
+ window.__gmPropsStalePurged=true;
+ try{localStorage.removeItem('gm_properties');}catch(e){}
+ try{
+  var cur=localStorage.getItem(window.GM_PROP_KEY);
+  if(cur){
+   var parsed=JSON.parse(cur);
+   if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&parsed.schemaVersion!==window.GM_PROP_SCHEMA_VERSION){
+    localStorage.removeItem(window.GM_PROP_KEY);
+   }
+  }
+ }catch(e){try{localStorage.removeItem(window.GM_PROP_KEY);}catch(e2){}}
+};
+window.gmPropertiesLoad=function(){
+ try{
+  window.gmPropertiesPurgeStaleCacheOnce();
+  var r=localStorage.getItem(window.GM_PROP_KEY);
+  if(!r)return [];
+  var parsed=JSON.parse(r);
+  var a=Array.isArray(parsed)?parsed:(parsed&&Array.isArray(parsed.items)?parsed.items:[]);
+  return gmPropertiesFilterGhostRows(a);
+ }catch(e){return[];}
+};
+window.gmPropertiesSave=function(a){
+ try{
+  var payload={schemaVersion:window.GM_PROP_SCHEMA_VERSION,savedAt:new Date().toISOString(),items:gmPropertiesFilterGhostRows(a||[])};
+  localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(payload));
+ }catch(e){console.warn('gmPropertiesSave',e);}
+};
+window.gmPropertiesBootstrap=async function(opts){
+ opts=opts||{};
+ window.__gmPropertiesBootstrapError=null;
+ window.gmPropertiesPurgeStaleCacheOnce();
+ if(typeof window.gmPropertiesRefresh!=='function'){
+  var msg='Bootstrap indisponivel: sincronizacao com API nao carregada.';
+  window.__gmPropertiesBootstrapError=msg;
+  if(!opts.silent&&typeof showToast==='function')showToast(msg,'error');
+  return false;
+ }
+ var ok=await window.gmPropertiesRefresh({silent:!!opts.silent});
+ if(!ok){
+  var errMsg='Nao foi possivel carregar propriedades do servidor. Verifique a sessao (login) e recarregue a pagina (Ctrl+Shift+R). Dados locais antigos (seed) foram ignorados.';
+  window.__gmPropertiesBootstrapError=errMsg;
+  if(!opts.silent&&typeof showToast==='function')showToast(errMsg,'error');
+  return false;
+ }
  return true;
 };
 // ===== Sync Postgres <-> localStorage (adicionado PASSO 4C) =====
+function ltpHouseNumberFromAddress(addr){
+ if(!addr)return null;
+ var m=String(addr).trim().match(/^(\d+)/);
+ if(!m)return null;
+ var n=parseInt(m[1],10);
+ return isFinite(n)?n:null;
+}
+function ltpComparePropertiesByHouseNumber(a,b){
+ var na=ltpHouseNumberFromAddress(a&&a.address);
+ var nb=ltpHouseNumberFromAddress(b&&b.address);
+ if(na==null&&nb==null)return String(a&&a.address||'').localeCompare(String(b&&b.address||''),'en',{numeric:true,sensitivity:'base'});
+ if(na==null)return 1;
+ if(nb==null)return -1;
+ if(na!==nb)return na-nb;
+ return String(a&&a.address||'').localeCompare(String(b&&b.address||''),'en',{numeric:true,sensitivity:'base'});
+}
 window.gmPropertiesFetchFromApi=async function(){
  try{
   var res=await fetch('/api/properties',{credentials:'include'});
@@ -14901,7 +14938,7 @@ window.gmPropertiesFetchFromApi=async function(){
     hoaAdmin:!!p.hoaAdmin,
     _apiId:p.id
    };
-  });
+  }).sort(ltpComparePropertiesByHouseNumber);
  }catch(e){console.warn('gmPropertiesFetchFromApi',e);return null;}
 };
 window.gmPropertiesPushToApi=async function(item){
@@ -14924,8 +14961,8 @@ window.gmPropertiesPushToApi=async function(item){
 window.gmPropertiesRefresh=async function(opts){
  opts=opts||{};
  var fromApi=await window.gmPropertiesFetchFromApi();
- if(!fromApi||!Array.isArray(fromApi)||fromApi.length===0)return false;
- // Substitui localStorage com verdade do servidor
+ if(fromApi===null||!Array.isArray(fromApi))return false;
+ // Substitui localStorage com verdade do servidor (vazio = carteira sem propriedades, nao erro)
  try{window.gmPropertiesSave(fromApi);}catch(e){console.warn('gmPropertiesRefresh save',e);}
  // Re-render se houver funcao global de render da tabela Properties
  try{
@@ -14935,17 +14972,17 @@ window.gmPropertiesRefresh=async function(opts){
  }catch(e){console.warn('gmPropertiesRefresh rerender',e);}
  return true;
 };
-// Auto-refresh ao carregar a pagina (espera 500ms para nao bloquear first paint)
+// Bootstrap API ao carregar (sem seed local)
 if(typeof window!=='undefined'){
  setTimeout(function(){
-  if(typeof window.gmPropertiesRefresh==='function'){
-   window.gmPropertiesRefresh().catch(function(e){console.warn('auto-refresh',e);});
+  if(typeof window.gmPropertiesBootstrap==='function'){
+   window.gmPropertiesBootstrap({silent:true}).catch(function(e){console.warn('auto-bootstrap properties',e);});
   }
  },500);
 }
 // ===== fim sync =====
 window.gmPropertiesNextId=function(){
- var arr=window.gmPropertiesLoad();var max=97;
+ var arr=window.gmPropertiesLoad();var max=0;
  arr.forEach(function(p){var m=/^P(\d+)$/.exec(String(p.id||''));if(m){var n=parseInt(m[1],10);if(n>max)max=n;}});
  return 'P'+String(max+1).padStart(4,'0');
 };
@@ -15015,7 +15052,9 @@ window.gmPropertiesToUi=function(p){
 };
 document.addEventListener('DOMContentLoaded',function(){
  try{
-  if(typeof window.gmPropertiesBootstrap==='function')window.gmPropertiesBootstrap();
+  if(typeof window.gmPropertiesBootstrap==='function'){
+   window.gmPropertiesBootstrap({silent:true}).catch(function(e){console.warn('gmPropertiesBootstrap',e);});
+  }
  }catch(e){console.warn('gmPropertiesBootstrap',e);}
  // Apos bootstrap, re-renderiza a home com dados populados
  try{
@@ -15146,7 +15185,7 @@ function ltpYmFromDate(d){
  if(!d||isNaN(d.getTime())) return '';
  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
-/** Indice propId -> [{start,end}] a partir de GM_TENANTS_SEED e cache /api/tenants se ja carregado. */
+/** Indice propId -> [{start,end}] a partir de /api/tenants (cache tnRender) quando disponivel. */
 function ltpGetTenantLeaseIndex(){
  var idx={};
  function push(pid,moveIn,leaseTo){
@@ -15155,13 +15194,6 @@ function ltpGetTenantLeaseIndex(){
   if(!idx[k]) idx[k]=[];
   idx[k].push({start:ltpParseYmd(moveIn),end:leaseTo?ltpParseYmd(leaseTo):null});
  }
- try{
-  (window.GM_TENANTS_SEED||[]).forEach(function(t){
-   if(!t) return;
-   push(t.propId||t.propertyId,t.moveIn,t.leaseTo);
-   if(t.propertyCode) push(t.propertyCode,t.moveIn,t.leaseTo);
-  });
- }catch(e){}
  try{
   (window.__gmTenantsTnCache||[]).forEach(function(t){
    if(!t) return;
@@ -15252,7 +15284,7 @@ window.ltpPopulateOccupancyFilter=function(){
  if(!sel)return;
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('ltpRender bootstrap',e);}
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  var records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
@@ -15295,7 +15327,7 @@ async function ltpRender(){
  window.__ltpPmExpensesCache={month:curMonth,markupByProp:markupByProp,totMarkup:totMarkupMonth};
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{window.gmPropertiesBootstrap();}catch(e){console.warn('ltpRender auto-bootstrap',e);}
+  try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('ltpRender auto-bootstrap',e);}
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  const records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(window.gmPropertiesToUi):ltGetRecords();
@@ -15306,10 +15338,10 @@ async function ltpRender(){
  var tenantIdx=ltpGetTenantLeaseIndex();
  var portfolioTotal=records.length;
  /* Tabela: todas as casas; mes NAO filtra linhas (so busca/status/ocupacao). */
- const filtered=ltpFilterTableRecords(records);
+ const filtered=ltpFilterTableRecords(records).slice().sort(ltpComparePropertiesByHouseNumber);
  /* KPIs do mes: portfolio inteiro + criterios do mes selecionado. */
  var rentedInMonth=records.filter(function(r){return ltpLeaseActiveInMonth(r,tenantIdx,kpiMonth);}).length;
- var vacantInMonth=Math.max(0,portfolioTotal-rentedInMonth);
+ var vacantInMonth=records.filter(function(r){return typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='VG';}).length;
  var moveInCount=records.filter(function(r){return ltpMoveInInMonth(r,tenantIdx,moveInKpiMonth);}).length;
  var totExpPM=0;
  var totTotalNetOwner=0;
@@ -15389,7 +15421,21 @@ async function ltpRender(){
  const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody){if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
- if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
+ if(!filtered.length){
+  tbody.innerHTML='';
+  if(empty){
+   empty.style.display='block';
+   if(window.__gmPropertiesBootstrapError){
+    empty.textContent=window.__gmPropertiesBootstrapError;
+    empty.style.color='var(--red)';
+   }else{
+    empty.textContent='Nenhuma propriedade encontrada. Clique em + Nova Propriedade para comecar.';
+    empty.style.color='var(--ink3)';
+   }
+  }
+  if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();
+  return;
+ }
  if(empty)empty.style.display='none';
  const occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
  const occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
@@ -16625,7 +16671,7 @@ function listingsEnrichForCard(ui){
 function listingsGetUnifiedRecords(){
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
-  try{ window.gmPropertiesBootstrap(); }catch(e){}
+  try{ await window.gmPropertiesBootstrap({silent:true}); }catch(e){console.warn('listings bootstrap',e);}
   __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  }
  if(Array.isArray(__gmArr)&&__gmArr.length){
@@ -16666,10 +16712,8 @@ function listingsDescSnippet(r){
 async function listingsRender(){
  try{
   var g0=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
-  if((!g0||!g0.length)&&typeof window.gmPropertiesRefresh==='function'){
-   try{ await window.gmPropertiesRefresh(); }catch(e){}
-  } else if((!g0||!g0.length)&&typeof window.gmPropertiesBootstrap==='function'){
-   try{ window.gmPropertiesBootstrap(); }catch(e){}
+  if((!g0||!g0.length)&&typeof window.gmPropertiesBootstrap==='function'){
+   try{ await window.gmPropertiesBootstrap({silent:true}); }catch(e){console.warn('listingsRender bootstrap',e);}
   }
  }catch(e){}
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
@@ -17307,6 +17351,24 @@ async function ltpIsDuplicateAddress(address, excludeIds){
  }catch(e){console.warn('ltpIsDuplicateAddress API',e);}
  return false;
 }
+async function ltpResolveEditPropertyApiId(editingId, gmArrCur){
+ var ed=editingId!=null?String(editingId).trim():'';
+ if(!ed)return null;
+ var rec=window.__ltpEditingRecord;
+ if(rec&&rec._apiId)return String(rec._apiId);
+ var foundLocal=(gmArrCur||[]).find(function(p){
+  return p&&(String(p.id)===ed||String(p.code)===ed||String(p._apiId)===ed);
+ });
+ if(foundLocal&&foundLocal._apiId)return String(foundLocal._apiId);
+ try{
+  var lst=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
+  var match=(lst&&lst.properties||[]).find(function(p){
+   return p&&(String(p.code)===ed||String(p.id)===ed);
+  });
+  if(match&&match.id)return String(match.id);
+ }catch(e){console.warn('ltpResolveEditPropertyApiId',e);}
+ return null;
+}
 async function ltpSaveNewProperty(){
  if(!ltpValidate()){showToast('Corrija os campos destacados.','error');return;}
  const rec=ltpBuildRecord();
@@ -17392,21 +17454,24 @@ async function ltpSaveNewProperty(){
  };
  var apiId=null;
  if(isEdit){
-  var foundLocal=gmArrCur.find(function(p){return p&&String(p.id)===String(newCode);});
-  apiId=foundLocal&&foundLocal._apiId?foundLocal._apiId:null;
+  apiId=await ltpResolveEditPropertyApiId(ltEditingId,gmArrCur);
   if(!apiId){
-   try{
-    var lst=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
-    var match=(lst&&lst.properties||[]).find(function(p){return p.code===newCode;});
-    if(match)apiId=match.id;
-   }catch(e){console.warn('resolve apiId',e);}
+   var errMsg='Nao foi possivel actualizar esta propriedade: falta o identificador do servidor (_apiId). Recarregue a pagina (Ctrl+Shift+R) e abra a edicao de novo. Nao foi criada nem alterada nenhuma entrada.';
+   if(typeof showToast==='function')showToast('Edicao cancelada — ID em falta','error');
+   alert(errMsg);
+   return;
   }
  }
  var apiOk=false;
  try{
   var url,method;
-  if(isEdit&&apiId){url='/api/properties/'+encodeURIComponent(apiId);method='PATCH';}
-  else{url='/api/properties';method='POST';}
+  if(isEdit){
+   url='/api/properties/'+encodeURIComponent(apiId);
+   method='PATCH';
+  }else{
+   url='/api/properties';
+   method='POST';
+  }
   var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
   apiOk=res.ok;
   if(!res.ok){var eb=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,eb);}
@@ -17417,7 +17482,7 @@ async function ltpSaveNewProperty(){
    var ix=arr.findIndex(function(p){return p&&String(p.id)===String(newCode);});
    var seedRec=Object.assign({id:newCode,name:rec.address||'',source:'manual_ui'},rec);
    seedRec.id=newCode;
-   if(ix>-1){arr[ix]=Object.assign({},arr[ix],seedRec);}else{arr.push(seedRec);}
+   if(ix>-1){arr[ix]=Object.assign({},arr[ix],seedRec);}else if(!isEdit){arr.push(seedRec);}
    window.gmPropertiesSave(arr);
   }
  }catch(e){console.warn('gm sync ltpSave',e);}
@@ -17427,7 +17492,7 @@ async function ltpSaveNewProperty(){
  const all=ltGetRecords();
  if(isEdit){
   const idx=all.findIndex(function(x){return x.id===ltEditingId;});
-  if(idx>-1)all[idx]=Object.assign({},all[idx],rec);else all.push(rec);
+  if(idx>-1)all[idx]=Object.assign({},all[idx],rec);
  }else{
   all.push(rec);
  }
@@ -17450,7 +17515,7 @@ async function ltpSaveNewProperty(){
    }
   }
  }catch(ePsh){console.warn('status hist outer',ePsh);}
- showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Propriedade actualizada (sync pendente)'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),'success');
+ showToast(isEdit?(apiOk?'Propriedade actualizada e sincronizada':'Falha ao sincronizar — verifique a rede e tente de novo'):(apiOk?'Propriedade cadastrada e sincronizada':'Propriedade cadastrada (sync pendente)'),isEdit&&!apiOk?'error':'success');
 }
 function ltpTrapTab(e){
  if(e.key!=='Tab')return;
@@ -20631,15 +20696,6 @@ function jobsResolveAddress(r){
     var p=props[i];
     if(p&&(String(p.id)===code||String(p.code)===code)){
      if(p.address)return String(p.address);
-    }
-   }
-  }catch(e){}
-  try{
-   var seed=window.GM_PROPERTIES_SEED||[];
-   for(var j=0;j<seed.length;j++){
-    var sp=seed[j];
-    if(sp&&(String(sp.id)===code||String(sp.code)===code)){
-     if(sp.address)return String(sp.address);
     }
    }
   }catch(e){}

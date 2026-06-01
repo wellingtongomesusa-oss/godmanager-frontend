@@ -1,7 +1,8 @@
 // Limpeza one-time: remove entradas fantasma Total/Manager Prop do storage
 (function(){
  try{
-  var K='gm_properties';
+  var K='gm_properties_v2';
+  try{localStorage.removeItem('gm_properties');}catch(e){}
   var raw=localStorage.getItem(K);
   if(!raw)return;
   var arr=JSON.parse(raw);

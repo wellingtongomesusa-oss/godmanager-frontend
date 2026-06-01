@@ -9,6 +9,7 @@ import {
   toClientScopeUser,
 } from '@/lib/clientScope';
 import { recordAudit } from '@/lib/auditServer';
+import { comparePropertiesByHouseNumber } from '@/lib/propertyAddressSort';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,11 +21,11 @@ export async function GET() {
     const scopeUser = toClientScopeUser(user);
     const properties = await prisma.property.findMany({
       where: getClientScopeWhere(scopeUser),
-      orderBy: [{ code: 'asc' }],
     });
+    const sorted = [...properties].sort(comparePropertiesByHouseNumber);
     return NextResponse.json({
       ok: true,
-      properties: properties.map((p) => ({
+      properties: sorted.map((p) => ({
         ...p,
         rent: p.rent.toString(),
         deposit: p.deposit.toString(),
