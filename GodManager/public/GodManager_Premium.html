@@ -1065,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var msg=daysLeft===1?'Last day of your free trial':daysLeft+' days left in your free trial';
   var banner=document.createElement('div');
   banner.id='gm-trial-banner';
-  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:'+bgColor+';color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:\\'DM Sans\\',sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.1)';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:'+bgColor+';color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.1)';
   var link=document.createElement('a');
   link.href=pricingHref;
   link.style.cssText='color:#fff;text-decoration:underline;font-weight:700';
@@ -1079,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var pricingHref=gmPricingLocalePath();
   var ov=document.createElement('div');
   ov.id='gm-trial-expired';
-  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,55,0.95);display:flex;align-items:center;justify-content:center;font-family:\\'DM Sans\\',sans-serif;color:#fff';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,55,0.95);display:flex;align-items:center;justify-content:center;font-family:"DM Sans",sans-serif;color:#fff';
   var inner=document.createElement('div');
   inner.style.cssText='max-width:480px;text-align:center;padding:32px';
   var mark=document.createElement('div');
@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function(){
  function gmTrialPastDueBanner(){
   var banner=document.createElement('div');
   banner.id='gm-trial-banner-pastdue';
-  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:#b83030;color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:\\'DM Sans\\',sans-serif';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:#b83030;color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif';
   banner.appendChild(document.createTextNode('Payment failed · '));
   var btn=document.createElement('button');
   btn.type='button';
@@ -3555,7 +3555,7 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--strip-12" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip gm-kpis-row--strip-12" style="--gm-kpi-cols-desktop:12;--gm-kpi-cols-tablet:6" data-gm-kpi-count="12">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL</div><div id="ltp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">propriedades</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">lease ativo no mes</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ALUGADAS</div><div id="ltp-kpi-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">portfolio menos vagas (VG)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">VAGAS</div><div id="ltp-kpi-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">status VG (vaga)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MOVE IN NO MES</div><div id="ltp-kpi-inprog" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">move-in no periodo</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">RENT TOTAL</div><div id="ltp-kpi-rent" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">receita bruta</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
@@ -5666,6 +5666,10 @@ function applyHomeDashboardFromApi(d){
  var qp=gmHomeNum(d.qty_properties,d.total_properties);
  var ql=gmHomeNum(d.qty_leases_active,d.occupied_units);
  var qv=gmHomeNum(d.qty_vacant,d.vacant_units);
+ try{
+  var _pk=gmPropertiesPortfolioKpiCounts(gmPropertiesFilteredUiRecords());
+  if(_pk.total>0){qp=_pk.total;ql=_pk.alugadas;qv=_pk.vagas;}
+ }catch(_pkE){}
  var qo=gmHomeNum(d.qty_owners,d.total_owners);
  var qf=gmHomeNum(d.qty_future,0);
  var qnot=gmHomeNum(d.qty_notice,0);
@@ -5894,10 +5898,12 @@ function gmHomeBuildDashboardFromLocal(){
   if(typeof window.gmPropertiesLoad!=='function')return null;
   var arr=window.gmPropertiesLoad()||[];
   if(!arr.length)return null;
- var ql=0,qv=0,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
+ var uiRecs=gmPropertiesFilteredUiRecords();
+ var portKpi=gmPropertiesPortfolioKpiCounts(uiRecs);
+ var ql=portKpi.alugadas,qv=portKpi.vagas,qf=0,qnot=0,pr=0,mkt=0,tsd=0;
  var totDepSum=0,totNetOwnerSum=0,totGuaranteeSum=0,qtyGuaranteeHouses=0;
  var owners={};
- arr.forEach(function(p){
+ uiRecs.forEach(function(p){
   var rent=Number(p.currentRent!=null?p.currentRent:(p.rent||0))||0;
   var mrent=Number(p.marketRent!=null?p.marketRent:rent)||0;
   var dep=Number(p.deposit)||0;
@@ -5910,9 +5916,6 @@ function gmHomeBuildDashboardFromLocal(){
   var mPct=Number(mPctRaw)||0;
   var occ=String(p.occupancy||'').toLowerCase();
   var stt=String(p.status||'').toLowerCase();
-  var isRented=(occ==='rented')||(rent>0&&occ!=='vacant'&&occ!=='renovation'&&occ!=='inprogress');
-  var isVacant=(occ==='vacant')||(rent===0&&occ!=='rented'&&occ!=='inprogress'&&occ!=='renovation');
-  if(isRented)ql++; else if(isVacant)qv++;
   if(occ==='inprogress'||occ==='renovation'||stt==='pending')qf++;
   if(stt==='disputed'||stt==='notice')qnot++;
   var resAmt=gmHomePropertyReservaAmt(p);
@@ -5923,7 +5926,7 @@ function gmHomeBuildDashboardFromLocal(){
   var ow=String(p.owner||'').trim();
   if(ow)owners[ow]=true;
  });
- var qp=arr.length;
+ var qp=portKpi.total;
  var qo=Object.keys(owners).length;
  var occRate=qp>0?((ql/qp)*100):0;
  var ymTp=new Date().toISOString().slice(0,7);
@@ -6120,9 +6123,42 @@ async function gmHomeRenderLucroMpTable(){
  wrap.style.display='block';
 }
 
-function loadHomeDashboardFromApi(){
- // 1. Primeiro, render imediato com dados locais
- var local=gmHomeBuildDashboardFromLocal();
+/** Garante cache gm_properties_v2 antes de KPIs da Home (sem seed legado). */
+async function gmHomeEnsurePropertiesCache(){
+ try{
+  var arr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  if(arr.length)return arr;
+  if(typeof window.gmPropertiesBootstrap==='function'){
+   await window.gmPropertiesBootstrap({silent:true});
+  }
+  return (typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ }catch(e){
+  console.warn('gmHomeEnsurePropertiesCache',e);
+  return [];
+ }
+}
+function gmHomeShouldApplyEmptyDashboard(){
+ var arr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ if(arr.length)return false;
+ return !!window.__gmPropertiesBootstrapError;
+}
+async function gmHomeInit(){
+ await gmHomeEnsurePropertiesCache();
+ if(typeof loadHomeDashboardFromApi==='function')await loadHomeDashboardFromApi();
+}
+window.gmHomeRefresh=function(){
+ if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
+};
+async function loadHomeDashboardFromApi(){
+ // 1. Cache API (Postgres) antes do dashboard local — evita race com bootstrap async
+ var local=null;
+ try{
+  await gmHomeEnsurePropertiesCache();
+  local=gmHomeBuildDashboardFromLocal();
+ }catch(eInit){
+  console.warn('loadHomeDashboardFromApi bootstrap',eInit);
+  local=gmHomeBuildDashboardFromLocal();
+ }
  if(local){
   applyHomeDashboardFromApi(local);
   renderCards();
@@ -6140,8 +6176,8 @@ function loadHomeDashboardFromApi(){
   var hasRealData=o&&o.ok&&o.j&&typeof o.j==='object'&&
                   (Number(o.j.qty_properties)>0||Number(o.j.total_properties)>0);
   if(!hasRealData){
-   // API nao tem dados validos - mantem o que ja esta (local ou vazio)
-   if(!local){applyHomeDashboardFromApi(null);renderCards();}
+   // API AppFolio sem dados — nao esvaziar cards se ja temos Postgres em cache
+   if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
    return;
   }
   // API tem dados reais, sobrescreve (Tenant Place permanece local — sem campo na API)
@@ -6151,6 +6187,17 @@ function loadHomeDashboardFromApi(){
    o.j.total_tenant_place_sum=tpApi.sum;
    o.j.qty_tenant_place_movein=tpApi.count;
   }catch(eTp){}
+  try{
+   var _pkAf=gmPropertiesPortfolioKpiCounts(gmPropertiesFilteredUiRecords());
+   if(_pkAf.total>0){
+    o.j.qty_properties=_pkAf.total;
+    o.j.total_properties=_pkAf.total;
+    o.j.qty_leases_active=_pkAf.alugadas;
+    o.j.occupied_units=_pkAf.alugadas;
+    o.j.qty_vacant=_pkAf.vagas;
+    o.j.vacant_units=_pkAf.vagas;
+   }
+  }catch(_pkAf2){}
   applyHomeDashboardFromApi(o.j);
   renderCards();
   try{if(typeof gmHomeRefreshFinancialCardDeltas==='function')gmHomeRefreshFinancialCardDeltas();}catch(eD2){}
@@ -6163,8 +6210,8 @@ function loadHomeDashboardFromApi(){
   }catch(e){}
  })
  .catch(function(){
-  // Falha de rede - mantem o que ja esta (local ou vazio)
-  if(!local){applyHomeDashboardFromApi(null);renderCards();}
+  // Falha de rede — nao zerar KPIs se properties API ja populou cache
+  if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
   try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
  });
  try{ if(typeof gmHomeFetchPmMarkupMonth==='function') gmHomeFetchPmMarkupMonth(); }catch(e){}
@@ -9137,7 +9184,7 @@ function nav(r){
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
   }
-  if(typeof loadHomeDashboardFromApi==='function'){loadHomeDashboardFromApi();}
+  if(typeof loadHomeDashboardFromApi==='function'){await loadHomeDashboardFromApi();}
  },
  longterm:()=>{
   if(typeof ltExpFetchPm==='function'){void ltExpFetchPm().then(function(){if(typeof ltDashRender==='function')ltDashRender();});}
@@ -9713,7 +9760,7 @@ window.osLoadFromApi=async function(){
  }
 };
 
-window.osPopulateOccupancyFilter=function(){
+window.osPopulateOccupancyFilter=async function(){
  var sel=document.getElementById('os-filter-occupancy');
  if(!sel) return;
  var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
@@ -14802,6 +14849,22 @@ function gmPropertiesFilterGhostRows(arr){
   return true;
  });
 }
+/** Contagem de carteira (pos-fantasma): mesma fonte que a tabela Properties. */
+function gmPropertiesPortfolioKpiCounts(records){
+ var list=Array.isArray(records)?records:[];
+ var total=list.length;
+ var vagas=0;
+ list.forEach(function(r){
+  if(r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='VG')vagas++;
+ });
+ return {total:total,vagas:vagas,alugadas:Math.max(0,total-vagas)};
+}
+function gmPropertiesFilteredUiRecords(){
+ var raw=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ if(!raw.length)return [];
+ var toUi=typeof window.gmPropertiesToUi==='function'?window.gmPropertiesToUi:function(p){return p;};
+ return raw.map(toUi);
+}
 window.gmPropertiesPurgeStaleCacheOnce=function(){
  if(window.__gmPropsStalePurged)return;
  window.__gmPropsStalePurged=true;
@@ -14938,7 +15001,8 @@ window.gmPropertiesFetchFromApi=async function(){
     hoaAdmin:!!p.hoaAdmin,
     _apiId:p.id
    };
-  }).sort(ltpComparePropertiesByHouseNumber);
+  });
+  return gmPropertiesFilterGhostRows(mapped).sort(ltpComparePropertiesByHouseNumber);
  }catch(e){console.warn('gmPropertiesFetchFromApi',e);return null;}
 };
 window.gmPropertiesPushToApi=async function(item){
@@ -14972,14 +15036,6 @@ window.gmPropertiesRefresh=async function(opts){
  }catch(e){console.warn('gmPropertiesRefresh rerender',e);}
  return true;
 };
-// Bootstrap API ao carregar (sem seed local)
-if(typeof window!=='undefined'){
- setTimeout(function(){
-  if(typeof window.gmPropertiesBootstrap==='function'){
-   window.gmPropertiesBootstrap({silent:true}).catch(function(e){console.warn('auto-bootstrap properties',e);});
-  }
- },500);
-}
 // ===== fim sync =====
 window.gmPropertiesNextId=function(){
  var arr=window.gmPropertiesLoad();var max=0;
@@ -15052,14 +15108,10 @@ window.gmPropertiesToUi=function(p){
 };
 document.addEventListener('DOMContentLoaded',function(){
  try{
-  if(typeof window.gmPropertiesBootstrap==='function'){
-   window.gmPropertiesBootstrap({silent:true}).catch(function(e){console.warn('gmPropertiesBootstrap',e);});
+  if(typeof window.gmHomeInit==='function'){
+   window.gmHomeInit().catch(function(e){console.warn('gmHomeInit',e);});
   }
- }catch(e){console.warn('gmPropertiesBootstrap',e);}
- // Apos bootstrap, re-renderiza a home com dados populados
- try{
-  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
- }catch(e){console.warn('loadHomeDashboardFromApi',e);}
+ }catch(e){console.warn('gmHomeInit outer',e);}
  try{ if(typeof ltPropertyModalPhotosInitOnce==='function')ltPropertyModalPhotosInitOnce(); }catch(e){}
 });
 
@@ -15279,7 +15331,7 @@ function ltpFilterTableRecords(records){
  });
 }
 
-window.ltpPopulateOccupancyFilter=function(){
+window.ltpPopulateOccupancyFilter=async function(){
  var sel=document.getElementById('ltp-filter-occupancy');
  if(!sel)return;
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
@@ -15336,12 +15388,13 @@ async function ltpRender(){
  var kpiMonth=fMonth||curMonth;
  var moveInKpiMonth=fMoveInCard||kpiMonth;
  var tenantIdx=ltpGetTenantLeaseIndex();
- var portfolioTotal=records.length;
+ var portKpiLtp=gmPropertiesPortfolioKpiCounts(records);
+ var portfolioTotal=portKpiLtp.total;
  /* Tabela: todas as casas; mes NAO filtra linhas (so busca/status/ocupacao). */
  const filtered=ltpFilterTableRecords(records).slice().sort(ltpComparePropertiesByHouseNumber);
- /* KPIs do mes: portfolio inteiro + criterios do mes selecionado. */
- var rentedInMonth=records.filter(function(r){return ltpLeaseActiveInMonth(r,tenantIdx,kpiMonth);}).length;
- var vacantInMonth=records.filter(function(r){return typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='VG';}).length;
+ /* KPIs carteira: mesma base filtrada que a tabela; ALUGADAS + VAGAS = TOTAL. */
+ var vacantInMonth=portKpiLtp.vagas;
+ var rentedInMonth=portKpiLtp.alugadas;
  var moveInCount=records.filter(function(r){return ltpMoveInInMonth(r,tenantIdx,moveInKpiMonth);}).length;
  var totExpPM=0;
  var totTotalNetOwner=0;
@@ -16668,7 +16721,7 @@ function listingsEnrichForCard(ui){
  if((out.desc==null||out.desc==='')&&raw.description) out.desc=raw.description;
  return out;
 }
-function listingsGetUnifiedRecords(){
+async function listingsGetUnifiedRecords(){
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
   try{ await window.gmPropertiesBootstrap({silent:true}); }catch(e){console.warn('listings bootstrap',e);}
@@ -16717,7 +16770,7 @@ async function listingsRender(){
   }
  }catch(e){}
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- var allRecords=listingsGetUnifiedRecords();
+ var allRecords=await listingsGetUnifiedRecords();
  var base=allRecords.filter(function(r){ return r&&listingsIsVacant(r); });
  try{
   var uniques={};
@@ -16791,9 +16844,9 @@ async function listingsRender(){
    +'</div></div></div>';
  }).join('');
 }
-function tpVacantListingsRender(){
+async function tpVacantListingsRender(){
  var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- var vac=(listingsGetUnifiedRecords()||[]).filter(function(r){return r&&listingsIsVacant(r);});
+ var vac=(await listingsGetUnifiedRecords()||[]).filter(function(r){return r&&listingsIsVacant(r);});
  var q=((document.getElementById('tp-vacant-search')&&document.getElementById('tp-vacant-search').value)||'').toLowerCase();
  if(q) vac=vac.filter(function(r){ return (String(r.address||'').toLowerCase().indexOf(q)>=0); });
  var grid=document.getElementById('tp-vacant-grid');
