@@ -79,6 +79,7 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
         id: photo.id,
         publicUrl: photo.publicUrl,
         filename: photo.filename,
+        contentType: photo.contentType,
         uploadedAt: photo.uploadedAt.toISOString(),
         uploadedBy: photo.uploadedBy,
       },

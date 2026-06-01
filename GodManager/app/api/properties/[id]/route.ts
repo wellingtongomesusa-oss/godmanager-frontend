@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { normalizePropertyMetadata } from '@/lib/photoMetadata';
-import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
+import { canAccessClientId, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +51,27 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const scopeUser = toClientScopeUser(user);
     if (!canAccessClientId(scopeUser, existing.clientId)) {
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
+
+    if (body.address !== undefined) {
+      const addr = String(body.address).trim();
+      if (addr) {
+        const scopeWhere = getClientScopeWhere(scopeUser);
+        const conflict = await prisma.property.findFirst({
+          where: {
+            ...scopeWhere,
+            id: { not: params.id },
+            address: { equals: addr, mode: 'insensitive' },
+          },
+          select: { id: true },
+        });
+        if (conflict) {
+          return NextResponse.json(
+            { ok: false, error: 'duplicate_address', message: 'Propriedade duplicada' },
+            { status: 409 }
+          );
+        }
+      }
     }
 
     const data: Prisma.PropertyUpdateInput = {};
