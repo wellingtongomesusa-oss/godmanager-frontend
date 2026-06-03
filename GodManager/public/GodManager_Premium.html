@@ -40,6 +40,35 @@
  --slate:#4a5568;--slate-bg:#edf0f4;--sw:240px;--sw-collapsed:56px;--th:54px
 }
 
+/* Dashboard — ocultar valores (toggle LS; distinto do GAAP com senha) */
+.gm-sensitive-val{display:inline-block;min-width:1.2em}
+body.dashboard-values-hidden .gm-sensitive-val{
+ color:transparent!important;
+ -webkit-text-fill-color:transparent!important;
+ user-select:none;
+ position:relative;
+}
+body.dashboard-values-hidden .gm-sensitive-val::before{
+ content:'•••';
+ color:var(--ink2);
+ position:absolute;
+ left:0;
+ top:0;
+ font-family:'JetBrains Mono',monospace;
+ font-weight:700;
+ line-height:inherit;
+}
+#gm-dash-toggle-values{
+ display:inline-flex;align-items:center;gap:6px;
+ padding:8px 14px;border-radius:8px;font-size:11px;font-weight:600;
+ border:1px solid var(--border2);background:transparent;color:var(--ink2);
+ cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;
+}
+#gm-dash-toggle-values:hover{border-color:var(--amber);color:var(--amber)}
+#gm-dash-toggle-values[aria-pressed="true"]{
+ border-color:var(--amber-bd);background:var(--amber-bg);color:var(--amber);
+}
+
 /* Long Term — Expenses table row + status dropdown (F3) */
 #lt-exp-tbody tr.lt-exp-row.status-finalized,
 #lt-exp-tbody tr.lt-exp-row[data-status="FINALIZED"]{
@@ -1104,6 +1133,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <body>
 <script>
 try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localStorage.getItem('gm_sidebar_collapsed')==='1'){document.body.classList.add('sidebar-collapsed');}}catch(_sbPre){}
+try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.classList.add('dashboard-values-hidden');}}catch(_dvPre){}
 </script>
 <script>
 /* ============ TRIAL BANNER (billing status) ============ */
@@ -2546,16 +2576,22 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  LONG TERM — PAYMENT AUDIT
  -->
 <div class="page" id="page-longterm">
- <div class="ph">
+ <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+ <div>
  <div class="pt">Dashboard</div>
  <div class="ps">Visao geral do portfolio de alugueis · GodManager.com</div>
+ </div>
+ <button type="button" id="gm-dash-toggle-values" aria-pressed="false" title="Ocultar ou mostrar valores monetarios e contagens neste dashboard">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+ <span class="gm-dash-toggle-label">Ocultar valores</span>
+ </button>
  </div>
  <!-- Hero: CASAS VAGAS + donut portfolio -->
  <div id="ltd-hero-row">
  <div id="ltd-hero-vacant" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden;min-width:0">
  <div style="position:sticky;top:0;z-index:2;background:var(--paper);padding:14px 16px 12px;border-bottom:1px solid var(--border)">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">CASAS VAGAS</div>
- <div id="ltd-hero-vacant-count" style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;color:var(--red);line-height:1.1;margin:2px 0">0</div>
+ <div id="ltd-hero-vacant-count" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;color:var(--red);line-height:1.1;margin:2px 0">0</div>
  <div id="ltd-hero-vacant-sub" style="font-size:11px;color:var(--ink2)">unidades disponíveis · status VG</div>
  </div>
  <div id="ltd-hero-vacant-list-wrap" style="max-height:min(42vh,480px);overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -2575,7 +2611,7 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  <div class="ltd-chart-title">Distribuição do Portfolio</div>
  <div class="ltd-donut-cc">
  <canvas id="ltd-portfolio-donut" width="160" height="160"></canvas>
- <div id="ltd-portfolio-donut-ctr" class="cc-ctr ltd-donut-ctr">0</div>
+ <div id="ltd-portfolio-donut-ctr" class="cc-ctr ltd-donut-ctr gm-sensitive-val">0</div>
  </div>
  <div id="ltd-portfolio-legend" class="ltd-chart-legend"></div>
  </div>
@@ -2584,14 +2620,14 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">RECEITA DE ALUGUEL DO MES</div>
- <div id="ltd-receita-value" style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--amber);line-height:1.1;margin:2px 0">$0</div>
+ <div id="ltd-receita-value" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--amber);line-height:1.1;margin:2px 0">$0</div>
  <div id="ltd-receita-sub" style="font-size:11px;color:var(--ink2)">—</div>
  <div id="ltd-receita-delta" style="margin-top:6px;font-size:11px"></div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div>
  </div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
  <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">GANHO FINANCEIRO MP</div>
- <div id="ltd-ganho-value" style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:#7c3aed;line-height:1.1;margin:2px 0">$0</div>
+ <div id="ltd-ganho-value" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:#7c3aed;line-height:1.1;margin:2px 0">$0</div>
  <div id="ltd-ganho-sub" style="font-size:11px;color:var(--ink2)">regra do site · gestao MGM%</div>
  <div id="ltd-ganho-delta" style="margin-top:6px;font-size:11px"></div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div>
@@ -2616,11 +2652,11 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  <!-- Strip KPI secundario -->
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="margin-bottom:20px">
  <div class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:5;--gm-kpi-cols-tablet:3">
- <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TOTAL</div><div id="ltd-strip-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">ALUGADAS</div><div id="ltd-strip-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
- <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VAGAS</div><div id="ltd-strip-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
- <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">OWNERS</div><div id="ltd-strip-owners" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
- <div style="padding:12px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">DEPOSITOS</div><div id="ltd-strip-deposit" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TOTAL</div><div id="ltd-strip-total" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">ALUGADAS</div><div id="ltd-strip-rented" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VAGAS</div><div id="ltd-strip-vacant" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">OWNERS</div><div id="ltd-strip-owners" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
+ <div style="padding:12px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">DEPOSITOS</div><div id="ltd-strip-deposit" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  </div></div>
  <!-- Trabalhos do mes (+ limpezas secundario) -->
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
@@ -2631,9 +2667,9 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  </div>
  </div>
  <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border)">
- <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TRABALHOS</div><div id="ltd-jobs-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VALOR PM</div><div id="ltd-jobs-value" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
- <div style="padding:12px 16px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">PENDENTES</div><div id="ltd-jobs-pending" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
+ <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TRABALHOS</div><div id="ltd-jobs-total" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VALOR PM</div><div id="ltd-jobs-value" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:12px 16px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">PENDENTES</div><div id="ltd-jobs-pending" class="gm-sensitive-val" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  </div>
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
@@ -15141,6 +15177,104 @@ function gmDashFilterAlugadas(records){
  });
 }
 window.__ltdDashCharts={donut:null,bar:null,barReceita:null,lineNet:null};
+window.__ltdDashChartDefaults={};
+
+function gmDashValuesHidden(){
+ try{return localStorage.getItem('gm_dashboard_values_hidden')==='1';}catch(e){return false;}
+}
+
+function gmDashCaptureChartDefaults(chart){
+ if(!chart||!chart.canvas||!chart.options)return;
+ var id=chart.canvas.id||('_anon_'+Math.random());
+ if(window.__ltdDashChartDefaults[id])return;
+ var opts=chart.options;
+ var yTicks=opts.scales&&opts.scales.y&&opts.scales.y.ticks;
+ var tt=opts.plugins&&opts.plugins.tooltip;
+ window.__ltdDashChartDefaults[id]={
+  tooltipEnabled:!(tt&&tt.enabled===false),
+  yTickCallback:yTicks&&yTicks.callback?yTicks.callback:null,
+  tooltipLabel:tt&&tt.callbacks&&tt.callbacks.label?tt.callbacks.label:null
+ };
+}
+
+function gmDashApplySensitiveToChart(chart,hidden){
+ if(!chart||!chart.options)return;
+ gmDashCaptureChartDefaults(chart);
+ var id=chart.canvas.id;
+ var def=window.__ltdDashChartDefaults[id];
+ if(!def)return;
+ if(!chart.options.plugins)chart.options.plugins={};
+ if(!chart.options.plugins.tooltip)chart.options.plugins.tooltip={};
+ if(!chart.options.scales)chart.options.scales={};
+ if(!chart.options.scales.y)chart.options.scales.y={};
+ if(!chart.options.scales.y.ticks)chart.options.scales.y.ticks={};
+ if(hidden){
+  chart.options.plugins.tooltip.enabled=false;
+  chart.options.scales.y.ticks.callback=function(){return '•••';};
+  if(chart.options.plugins.tooltip.callbacks){
+   chart.options.plugins.tooltip.callbacks.label=function(){return '•••';};
+  }
+ }else{
+  chart.options.plugins.tooltip.enabled=def.tooltipEnabled;
+  chart.options.scales.y.ticks.callback=def.yTickCallback||undefined;
+  if(chart.options.plugins.tooltip.callbacks){
+   chart.options.plugins.tooltip.callbacks.label=def.tooltipLabel||undefined;
+  }
+ }
+ try{chart.update('none');}catch(eU){try{chart.update();}catch(eU2){}}
+}
+
+function gmDashApplySensitiveToAllCharts(hidden){
+ var c=window.__ltdDashCharts||{};
+ ['donut','bar','barReceita','lineNet'].forEach(function(k){
+  if(c[k])gmDashApplySensitiveToChart(c[k],hidden);
+ });
+ gmDashMaskPortfolioLegend(hidden);
+}
+
+function gmDashMaskPortfolioLegend(hidden){
+ var leg=document.getElementById('ltd-portfolio-legend');
+ if(!leg)return;
+ if(!leg.dataset.gmLegendOrig&&leg.innerHTML)leg.dataset.gmLegendOrig=leg.innerHTML;
+ if(!leg.dataset.gmLegendOrig)return;
+ if(hidden){
+  leg.innerHTML=leg.dataset.gmLegendOrig.replace(/\d+/g,'•••');
+ }else{
+  leg.innerHTML=leg.dataset.gmLegendOrig;
+ }
+}
+
+function gmDashSyncValuesHiddenUI(){
+ var hidden=gmDashValuesHidden();
+ document.body.classList.toggle('dashboard-values-hidden',hidden);
+ var btn=document.getElementById('gm-dash-toggle-values');
+ if(btn){
+  btn.setAttribute('aria-pressed',hidden?'true':'false');
+  var label=btn.querySelector('.gm-dash-toggle-label');
+  if(label)label.textContent=hidden?'Mostrar valores':'Ocultar valores';
+ }
+ gmDashApplySensitiveToAllCharts(hidden);
+}
+
+function gmDashToggleValuesHidden(){
+ var next=!gmDashValuesHidden();
+ try{localStorage.setItem('gm_dashboard_values_hidden',next?'1':'0');}catch(e){}
+ gmDashSyncValuesHiddenUI();
+}
+
+function gmDashInitValuesToggle(){
+ var btn=document.getElementById('gm-dash-toggle-values');
+ if(!btn||btn.dataset.gmDashToggleWired==='1')return;
+ btn.dataset.gmDashToggleWired='1';
+ btn.addEventListener('click',function(e){
+  e.preventDefault();
+  gmDashToggleValuesHidden();
+ });
+ gmDashSyncValuesHiddenUI();
+}
+window.gmDashToggleValuesHidden=gmDashToggleValuesHidden;
+window.gmDashSyncValuesHiddenUI=gmDashSyncValuesHiddenUI;
+window.gmDashApplySensitiveToChart=gmDashApplySensitiveToChart;
 function gmDashCssVar(name,fallback){
  try{
   var v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -15190,13 +15324,17 @@ function gmDashRenderPortfolioDonut(records,portKpi){
  var labels=['Alugadas','Vagas','Outros'];
  var empty=data.every(function(x){return !x;});
  if(empty)data=[1]; 
- if(window.__ltdDashCharts.donut){try{window.__ltdDashCharts.donut.destroy();}catch(eD){}}
+ if(window.__ltdDashCharts.donut){try{delete window.__ltdDashChartDefaults['ltd-portfolio-donut'];window.__ltdDashCharts.donut.destroy();}catch(eD){}}
  window.__ltdDashCharts.donut=new Chart(cv,{type:'doughnut',data:{labels:labels,datasets:[{data:empty?[1]:data,backgroundColor:empty?[colOut]:[colAlg,colVg,colOut],borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:!empty,callbacks:{label:function(ctx){var lab=ctx.label||'';var val=empty?0:(ctx.parsed||0);return lab+': '+val;}}}},animation:{duration:400}}});
  if(leg&&!empty){
   leg.innerHTML='<span><i style="background:'+colAlg+'"></i>Alugadas '+d.alg+'</span>'
    +'<span><i style="background:'+colVg+'"></i>Vagas '+d.vg+'</span>'
    +'<span><i style="background:'+colOut+'"></i>Outros '+d.outros+'</span>';
- }else if(leg){leg.innerHTML='';}
+  delete leg.dataset.gmLegendOrig;
+ }else if(leg){leg.innerHTML='';delete leg.dataset.gmLegendOrig;}
+ gmDashCaptureChartDefaults(window.__ltdDashCharts.donut);
+ gmDashApplySensitiveToChart(window.__ltdDashCharts.donut,gmDashValuesHidden());
+ gmDashMaskPortfolioLegend(gmDashValuesHidden());
 }
 async function gmDashGanhoFinForMonth(records,ym,tenantIdx){
  var alugadas=(typeof gmDashFilterAlugadas==='function')?gmDashFilterAlugadas(records):records;
@@ -15222,8 +15360,10 @@ async function gmDashRenderGanhoBarChart(records,tenantIdx,curMonth){
  var bg=months.map(function(ym,i){
   return ym===cur?'#6d28d9':base;
  });
- if(window.__ltdDashCharts.bar){try{window.__ltdDashCharts.bar.destroy();}catch(eB){}}
+ if(window.__ltdDashCharts.bar){try{delete window.__ltdDashChartDefaults['ltd-ganho-bar-chart'];window.__ltdDashCharts.bar.destroy();}catch(eB){}}
  window.__ltdDashCharts.bar=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:values,backgroundColor:bg,borderColor:months.map(function(ym){return ym===cur?'#5b21b6':base;}),borderWidth:months.map(function(ym){return ym===cur?2:0;}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:true,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}}});
+ gmDashCaptureChartDefaults(window.__ltdDashCharts.bar);
+ gmDashApplySensitiveToChart(window.__ltdDashCharts.bar,gmDashValuesHidden());
 }
 function gmDashBarChartOptions(fmtTip,ink3,border){
  return {responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:true,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}};
@@ -15260,8 +15400,10 @@ async function gmDashRenderReceitaBarChart(records,curMonth){
  var base=gmDashCssVar('--amber','#c9a96e');
  var cur=String(curMonth||'');
  var bg=months.map(function(ym){return ym===cur?'#b8935a':base;});
- if(window.__ltdDashCharts.barReceita){try{window.__ltdDashCharts.barReceita.destroy();}catch(eR){}}
+ if(window.__ltdDashCharts.barReceita){try{delete window.__ltdDashChartDefaults['ltd-receita-bar-chart'];window.__ltdDashCharts.barReceita.destroy();}catch(eR){}}
  window.__ltdDashCharts.barReceita=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:values,backgroundColor:bg,borderColor:months.map(function(ym){return ym===cur?'#9a7d4a':base;}),borderWidth:months.map(function(ym){return ym===cur?2:0;}),borderRadius:4}]},options:gmDashBarChartOptions(fmtTip,ink3,border)});
+ gmDashCaptureChartDefaults(window.__ltdDashCharts.barReceita);
+ gmDashApplySensitiveToChart(window.__ltdDashCharts.barReceita,gmDashValuesHidden());
 }
 async function gmDashRenderNetLineChart(records,curMonth){
  if(typeof Chart==='undefined')return;
@@ -15276,8 +15418,10 @@ async function gmDashRenderNetLineChart(records,curMonth){
  var ink3=gmDashCssVar('--ink3','#8a8478');
  var border=gmDashCssVar('--border','#e2ddd4');
  var lineCol=gmDashCssVar('--blue',gmDashCssVar('--ink2','#5c564c'));
- if(window.__ltdDashCharts.lineNet){try{window.__ltdDashCharts.lineNet.destroy();}catch(eL){}}
+ if(window.__ltdDashCharts.lineNet){try{delete window.__ltdDashChartDefaults['ltd-net-line-chart'];window.__ltdDashCharts.lineNet.destroy();}catch(eL){}}
  window.__ltdDashCharts.lineNet=new Chart(cv.getContext('2d'),{type:'line',data:{labels:labels,datasets:[{data:values,borderColor:lineCol,backgroundColor:'transparent',pointBackgroundColor:lineCol,pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:4,pointHoverRadius:5,borderWidth:2,tension:0.2,fill:false}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:false,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}}});
+ gmDashCaptureChartDefaults(window.__ltdDashCharts.lineNet);
+ gmDashApplySensitiveToChart(window.__ltdDashCharts.lineNet,gmDashValuesHidden());
 }
 async function gmDashRenderAllCharts(records,tenantIdx,curMonth){
  await Promise.all([
@@ -15334,6 +15478,7 @@ function gmDashRenderVacantHero(vagas,tenantIdx){
  }).join('');
 }
 async function ltDashRender(){
+ if(typeof gmDashInitValuesToggle==='function')gmDashInitValuesToggle();
  var records=gmDashDedupeRecords(gmDashPortfolioRecords());
  var tenantIdx=(typeof ltpGetTenantLeaseIndex==='function')?ltpGetTenantLeaseIndex():{};
  window.__gmDashTenantIdx=tenantIdx;
@@ -15374,9 +15519,11 @@ async function ltDashRender(){
   var ganDelta=document.getElementById('ltd-ganho-delta');
   if(recDelta&&typeof gmRenderDeltaHtml==='function'&&typeof gmComputeDelta==='function'){
    recDelta.innerHTML=gmRenderDeltaHtml(gmComputeDelta(receita,prevReceita));
+   recDelta.classList.add('gm-sensitive-val');
   }
   if(ganDelta&&typeof gmRenderDeltaHtml==='function'&&typeof gmComputeDelta==='function'){
    ganDelta.innerHTML=gmRenderDeltaHtml(gmComputeDelta(ganhoMp,prevGanho));
+   ganDelta.classList.add('gm-sensitive-val');
   }
  }catch(eDelta){console.warn('ltDashRender deltas',eDelta);}
 
@@ -15420,7 +15567,7 @@ async function ltDashRender(){
      +'<td style="padding:8px 12px;font-size:11px;color:var(--ink);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escJ(addr)+'">'+escJ(addr)+'</td>'
      +'<td style="padding:8px 12px;font-size:11px;color:var(--ink3)">'+escJ(dt||'—')+'</td>'
      +'<td style="padding:8px 12px;font-size:11px;color:var(--ink2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escJ(desc)+'">'+escJ(desc)+'</td>'
-     +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+ltFmt(val)+'</td>'
+     +'<td class="gm-sensitive-val" style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+ltFmt(val)+'</td>'
      +'<td style="padding:8px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;'+(stStyle[st]||stStyle.pending)+'">'+escJ(st)+'</span></td>'
      +'</tr>';
    }).join('');
@@ -15580,6 +15727,7 @@ async function ltDashRender(){
    await gmDashRenderAllCharts(records,tenantIdx,curMonth);
   }catch(eCharts){console.warn('ltDashRender charts',eCharts);}
  }
+ if(typeof gmDashSyncValuesHiddenUI==='function')gmDashSyncValuesHiddenUI();
 }
 window.ltDashRender=ltDashRender;
 
