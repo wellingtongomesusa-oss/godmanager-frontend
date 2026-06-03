@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CommentEntityType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { recordAudit } from '@/lib/auditServer';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import {
   canAccessClientId,
@@ -152,6 +153,20 @@ export async function POST(req: NextRequest) {
             }),
         isInternal: internal,
       },
+    });
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'comment.create',
+      entity: 'comment',
+      entityId: comment.id,
+      clientId,
+      details: JSON.stringify({
+        entityType,
+        entityId,
+        metadata: metadata ?? null,
+      }),
     });
 
     return NextResponse.json({ ok: true, comment });
