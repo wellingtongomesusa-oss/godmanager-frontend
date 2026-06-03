@@ -300,7 +300,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .ltd-chart-legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px;font-size:10px;color:var(--ink3)}
 .ltd-chart-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .ltd-ganho-bar-wrap{height:210px;position:relative}
-@media (max-width:960px){#ltd-hero-row{grid-template-columns:1fr!important}}
+.ltd-charts-bars-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+@media (max-width:960px){#ltd-hero-row{grid-template-columns:1fr!important}.ltd-charts-bars-row{grid-template-columns:1fr!important}}
 .cd{height:1px;background:var(--border);margin:0 -22px 10px}
 .cp{display:flex;flex-wrap:wrap;gap:5px;padding-bottom:12px}
 .card .cu{font-size:10px;color:var(--ink3);text-align:right;padding:2px 14px 0;font-family:'DM Sans',system-ui,sans-serif;margin-top:4px}
@@ -2596,10 +2597,21 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div>
  </div>
  </div>
- <!-- Bar chart Ganho MP -->
- <div id="ltd-ganho-bar-card" class="ltd-chart-card" style="margin-bottom:16px">
+ <!-- Bar charts Receita + Ganho MP -->
+ <div id="ltd-charts-bars-row" class="ltd-charts-bars-row">
+ <div id="ltd-receita-bar-card" class="ltd-chart-card">
+ <div class="ltd-chart-title">Receita de Aluguel — Últimos 6 meses</div>
+ <div class="ltd-ganho-bar-wrap"><canvas id="ltd-receita-bar-chart"></canvas></div>
+ </div>
+ <div id="ltd-ganho-bar-card" class="ltd-chart-card">
  <div class="ltd-chart-title">Ganho Financeiro MP — Últimos 6 meses</div>
  <div class="ltd-ganho-bar-wrap"><canvas id="ltd-ganho-bar-chart"></canvas></div>
+ </div>
+ </div>
+ <!-- Line chart NET Owner -->
+ <div id="ltd-net-line-card" class="ltd-chart-card" style="margin-bottom:16px">
+ <div class="ltd-chart-title">NET Owner — Últimos 6 meses</div>
+ <div class="ltd-ganho-bar-wrap"><canvas id="ltd-net-line-chart"></canvas></div>
  </div>
  <!-- Strip KPI secundario -->
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="margin-bottom:20px">
@@ -14785,7 +14797,7 @@ function gmDashFilterAlugadas(records){
   return r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='ALG';
  });
 }
-window.__ltdDashCharts={donut:null,bar:null};
+window.__ltdDashCharts={donut:null,bar:null,barReceita:null,lineNet:null};
 function gmDashCssVar(name,fallback){
  try{
   var v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -14869,6 +14881,67 @@ async function gmDashRenderGanhoBarChart(records,tenantIdx,curMonth){
  });
  if(window.__ltdDashCharts.bar){try{window.__ltdDashCharts.bar.destroy();}catch(eB){}}
  window.__ltdDashCharts.bar=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:values,backgroundColor:bg,borderColor:months.map(function(ym){return ym===cur?'#5b21b6':base;}),borderWidth:months.map(function(ym){return ym===cur?2:0;}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:true,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}}});
+}
+function gmDashBarChartOptions(fmtTip,ink3,border){
+ return {responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:true,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}};
+}
+async function gmDashReceitaForMonth(records,ym){
+ var alugadas=(typeof gmDashFilterAlugadas==='function')?gmDashFilterAlugadas(records):records;
+ var sum=0;
+ alugadas.forEach(function(r){sum+=Number(r.rent)||0;});
+ if(sum>0||!ym)return sum;
+ var pack=(typeof ltpFetchPmMonthPack==='function')?await ltpFetchPmMonthPack(ym):{summaryByCode:null};
+ if(!pack.summaryByCode)return sum;
+ alugadas.forEach(function(r){
+  var sn=pack.summaryByCode[r.id]||pack.summaryByCode[r.code]||pack.summaryByCode[r._apiId];
+  if(sn!=null&&sn.rent!=null)sum+=parseFloat(sn.rent)||0;
+ });
+ return sum;
+}
+async function gmDashNetOwnerForMonth(records,ym){
+ var pack=(typeof ltpFetchPmMonthPack==='function')?await ltpFetchPmMonthPack(ym):{expByProp:new Map(),summaryByCode:null};
+ return (typeof ltPortfolioNetOwnerSum==='function')?ltPortfolioNetOwnerSum(records,pack.expByProp,pack.summaryByCode):0;
+}
+async function gmDashRenderReceitaBarChart(records,curMonth){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById('ltd-receita-bar-chart');
+ if(!cv)return;
+ var months=gmDashLastNMonths(6,curMonth);
+ var labels=months.map(gmDashMonthLabelShort);
+ var values=await Promise.all(months.map(function(ym){
+  return gmDashReceitaForMonth(records,ym).catch(function(){return 0;});
+ }));
+ var fmtTip=(typeof ltFmt==='function')?ltFmt:function(n){return '$'+Number(n||0).toFixed(2);};
+ var ink3=gmDashCssVar('--ink3','#8a8478');
+ var border=gmDashCssVar('--border','#e2ddd4');
+ var base=gmDashCssVar('--amber','#c9a96e');
+ var cur=String(curMonth||'');
+ var bg=months.map(function(ym){return ym===cur?'#b8935a':base;});
+ if(window.__ltdDashCharts.barReceita){try{window.__ltdDashCharts.barReceita.destroy();}catch(eR){}}
+ window.__ltdDashCharts.barReceita=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:values,backgroundColor:bg,borderColor:months.map(function(ym){return ym===cur?'#9a7d4a':base;}),borderWidth:months.map(function(ym){return ym===cur?2:0;}),borderRadius:4}]},options:gmDashBarChartOptions(fmtTip,ink3,border)});
+}
+async function gmDashRenderNetLineChart(records,curMonth){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById('ltd-net-line-chart');
+ if(!cv)return;
+ var months=gmDashLastNMonths(6,curMonth);
+ var labels=months.map(gmDashMonthLabelShort);
+ var values=await Promise.all(months.map(function(ym){
+  return gmDashNetOwnerForMonth(records,ym).catch(function(){return 0;});
+ }));
+ var fmtTip=(typeof ltFmt==='function')?ltFmt:function(n){return '$'+Number(n||0).toFixed(2);};
+ var ink3=gmDashCssVar('--ink3','#8a8478');
+ var border=gmDashCssVar('--border','#e2ddd4');
+ var lineCol=gmDashCssVar('--blue',gmDashCssVar('--ink2','#5c564c'));
+ if(window.__ltdDashCharts.lineNet){try{window.__ltdDashCharts.lineNet.destroy();}catch(eL){}}
+ window.__ltdDashCharts.lineNet=new Chart(cv.getContext('2d'),{type:'line',data:{labels:labels,datasets:[{data:values,borderColor:lineCol,backgroundColor:'transparent',pointBackgroundColor:lineCol,pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:4,pointHoverRadius:5,borderWidth:2,tension:0.2,fill:false}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:false,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}}});
+}
+async function gmDashRenderAllCharts(records,tenantIdx,curMonth){
+ await Promise.all([
+  gmDashRenderGanhoBarChart(records,tenantIdx,curMonth),
+  gmDashRenderReceitaBarChart(records,curMonth),
+  gmDashRenderNetLineChart(records,curMonth)
+ ]);
 }
 function gmDashFilterVagas(records){
  return gmDashDedupeRecords((records||[]).filter(function(r){
@@ -15161,7 +15234,7 @@ async function ltDashRender(){
  if(portKpi.total>0){
   try{
    gmDashRenderPortfolioDonut(records,portKpi);
-   await gmDashRenderGanhoBarChart(records,tenantIdx,curMonth);
+   await gmDashRenderAllCharts(records,tenantIdx,curMonth);
   }catch(eCharts){console.warn('ltDashRender charts',eCharts);}
  }
 }

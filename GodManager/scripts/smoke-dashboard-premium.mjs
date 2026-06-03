@@ -81,7 +81,15 @@ await page.evaluate(async () => {
   while (Date.now() < deadline) {
     const total = parseInt(String(document.getElementById('ltd-strip-total')?.textContent || '0').replace(/\D/g, ''), 10);
     const ctr = parseInt(String(document.getElementById('ltd-portfolio-donut-ctr')?.textContent || '0').replace(/\D/g, ''), 10);
-    if (total >= 100 && ctr >= 100 && window.__ltdDashCharts?.bar) return;
+    if (
+      total >= 100 &&
+      ctr >= 100 &&
+      window.__ltdDashCharts?.bar &&
+      window.__ltdDashCharts?.barReceita &&
+      window.__ltdDashCharts?.lineNet
+    ) {
+      return;
+    }
     await new Promise((r) => setTimeout(r, 400));
   }
   throw new Error('Dashboard charts/render timeout');
@@ -94,8 +102,21 @@ const dash = await page.evaluate(() => {
   const recFs = parseFloat(getComputedStyle(document.getElementById('ltd-receita-value')).fontSize) || 0;
   const donut = !!window.__ltdDashCharts?.donut;
   const bar = !!window.__ltdDashCharts?.bar;
+  const barReceita = !!window.__ltdDashCharts?.barReceita;
+  const lineNet = !!window.__ltdDashCharts?.lineNet;
   const donutData = window.__ltdDashCharts?.donut?.data?.datasets?.[0]?.data || [];
   const barLabels = window.__ltdDashCharts?.bar?.data?.labels?.length || 0;
+  const recBarLabels = window.__ltdDashCharts?.barReceita?.data?.labels?.length || 0;
+  const recBarValues = window.__ltdDashCharts?.barReceita?.data?.datasets?.[0]?.data || [];
+  const netLinePoints = window.__ltdDashCharts?.lineNet?.data?.datasets?.[0]?.data?.length || 0;
+  const curIdx = recBarLabels > 0 ? recBarLabels - 1 : -1;
+  const recCard = parseFloat(String(g('ltd-receita-value')).replace(/[^0-9.-]/g, '')) || 0;
+  const recBarCur = curIdx >= 0 ? Number(recBarValues[curIdx]) || 0 : 0;
+  const barsRow = document.getElementById('ltd-charts-bars-row');
+  const barsGridCols = barsRow ? getComputedStyle(barsRow).gridTemplateColumns : '';
+  const netLineCard = document.getElementById('ltd-net-line-card');
+  const netLineWidth = netLineCard ? netLineCard.getBoundingClientRect().width : 0;
+  const ganhoBarWidth = document.getElementById('ltd-ganho-bar-card')?.getBoundingClientRect().width || 0;
   const donutCtr = (document.getElementById('ltd-portfolio-donut-ctr')?.textContent || '').trim();
   const rows = document.querySelectorAll('#ltd-hero-vacant-tbody tr').length;
   const firstVacant = [...document.querySelectorAll('#ltd-hero-vacant-tbody tr')].slice(0, 3).map((tr) => {
@@ -125,11 +146,28 @@ const dash = await page.evaluate(() => {
     receitaFontPx: recFs,
     chartDonut: donut,
     chartBar: bar,
+    chartReceitaBar: barReceita,
+    chartNetLine: lineNet,
     donutSegments: donutData.length,
     donutCenter: donutCtr,
     barMonthCount: barLabels,
+    receitaBarMonthCount: recBarLabels,
+    netLinePointCount: netLinePoints,
+    receitaCardVsBarCur: { card: recCard, barCur: recBarCur, ratio: recBarCur ? recCard / recBarCur : 0 },
+    barsRowGridCols: barsGridCols,
+    layoutDesktopSideBySide: ganhoBarWidth > 0 && netLineWidth > ganhoBarWidth * 1.2,
   };
 });
+
+await page.setViewportSize({ width: 720, height: 800 });
+await page.waitForTimeout(400);
+const dashMobile = await page.evaluate(() => {
+  const row = document.getElementById('ltd-charts-bars-row');
+  return {
+    barsStacked: row ? getComputedStyle(row).gridTemplateColumns.split(' ').length <= 1 : false,
+  };
+});
+await page.setViewportSize({ width: 1400, height: 900 });
 
 await page.evaluate(() => { if (typeof nav === 'function') nav('ltproperties'); });
 await page.waitForFunction(
@@ -199,6 +237,14 @@ const checks = {
   donutRendered: dash.chartDonut && dash.donutSegments >= 3,
   donutCenter110: parseInt(dash.donutCenter, 10) === expTotal,
   barSixMonths: dash.chartBar && dash.barMonthCount === 6,
+  receitaBarSixMonths: dash.chartReceitaBar && dash.receitaBarMonthCount === 6,
+  netLineSixPoints: dash.chartNetLine && dash.netLinePointCount === 6,
+  receitaCoherentWithCard:
+    dash.receitaCardVsBarCur.barCur > 0 &&
+    dash.receitaCardVsBarCur.ratio >= 0.85 &&
+    dash.receitaCardVsBarCur.ratio <= 1.15,
+  barsSideBySideDesktop: (dash.barsRowGridCols || '').includes(' ') && dash.layoutDesktopSideBySide,
+  barsStackedMobile: dashMobile.barsStacked === true,
 };
 
 console.log(JSON.stringify({ dash, checks, errors, editVacant, homeBefore, ltpBeforeDash, ltpTotal }, null, 2));
