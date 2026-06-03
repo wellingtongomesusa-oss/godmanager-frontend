@@ -13114,7 +13114,66 @@ function gmJobCloseJobPopups(){
 }
 window.gmJobCloseJobPopups=gmJobCloseJobPopups;
 
-window.gmJobsPhotoState=window.gmJobsPhotoState||{jobId:null,jobTitle:'',photos:[],uploading:false,uploadProgress:{current:0,total:0},countsByJob:{}};
+window.gmJobsPhotoState=window.gmJobsPhotoState||{jobId:null,jobTitle:'',photos:[],containers:{1:{photos:[]}},maxContainer:1,uploadContainer:1,uploading:false,uploadProgress:{current:0,total:0},countsByJob:{}};
+
+function gmJobsPhotoCanUploadRole(){
+ var ju=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var jr=String(ju.role||'').toLowerCase();
+ return jr==='admin'||jr==='super_admin'||jr==='manager'||jr==='maintenance'||jr==='field';
+}
+
+function gmJobsPhotoTotalCount(){
+ var st=window.gmJobsPhotoState;
+ return st&&st.photos?st.photos.length:0;
+}
+
+function gmJobsPhotoContainerLabel(n){
+ n=Number(n)||1;
+ if(n===1)return 'Trabalho original';
+ return 'Trabalho adicional '+(n-1);
+}
+
+function gmJobsPhotoSyncContainersFromPhotos(){
+ var st=window.gmJobsPhotoState;
+ if(!st)return;
+ var grouped={};
+ (st.photos||[]).forEach(function(p){
+  var cn=Number(p.containerNumber)||1;
+  if(!grouped[cn])grouped[cn]=[];
+  grouped[cn].push(p);
+ });
+ Object.keys(grouped).forEach(function(k){
+  grouped[k].sort(function(a,b){
+   return String(b.uploadedAt||'').localeCompare(String(a.uploadedAt||''));
+  });
+ });
+ var maxFromPhotos=1;
+ Object.keys(grouped).forEach(function(k){maxFromPhotos=Math.max(maxFromPhotos,parseInt(k,10)||1);});
+ var maxShow=Math.max(1,st.maxContainer||1,maxFromPhotos);
+ st.maxContainer=maxShow;
+ st.containers={};
+ for(var c=1;c<=maxShow;c++){
+  st.containers[c]={photos:grouped[c]?grouped[c].slice():[]};
+ }
+}
+
+function gmJobsPhotoAddContainer(){
+ var st=window.gmJobsPhotoState;
+ if(!st)return;
+ if(gmJobsPhotoTotalCount()>=20){
+  alert('Limite de 20 fotos atingido. Remova fotos antes de criar outro container.');
+  return;
+ }
+ if((st.maxContainer||1)>=5){
+  alert('Limite de 5 containers por trabalho.');
+  return;
+ }
+ st.maxContainer=(st.maxContainer||1)+1;
+ if(!st.containers)st.containers={};
+ st.containers[st.maxContainer]={photos:[]};
+ gmJobsPhotoRenderGallery();
+ gmJobsPhotoUpdateNewContainerButton();
+}
 
 function gmJobsPhotoCompressPromise(file){
  return new Promise(function(res,rej){
@@ -13129,8 +13188,25 @@ function gmJobsPhotoUpdateCounterEl(){
  var st=window.gmJobsPhotoState;
  var el=document.getElementById('jp-counter');
  if(!el||!st)return;
- var n=st.photos?st.photos.length:0;
- el.textContent=n+' / 20 fotos';
+ var n=gmJobsPhotoTotalCount();
+ var mc=st.maxContainer||1;
+ el.textContent=n+' / 20 fotos · '+mc+' / 5 containers';
+}
+
+function gmJobsPhotoUpdateNewContainerButton(){
+ var btn=document.getElementById('jp-btn-new-container');
+ if(!btn)return;
+ var st=window.gmJobsPhotoState;
+ var n=gmJobsPhotoTotalCount();
+ var mc=st?st.maxContainer||1:1;
+ var dis=(n>=20)||(mc>=5)||(st&&st.uploading)||(st&&st._jpGalleryReady===false);
+ btn.disabled=!!dis;
+ var tip='';
+ if(n>=20)tip='Limite de 20 fotos atingido';
+ else if(mc>=5)tip='Limite de 5 containers atingido';
+ else if(st&&st.uploading)tip='Aguarde o envio em curso';
+ else tip='Adicionar container para mais fotos do trabalho';
+ btn.title=tip;
 }
 
 function gmJobsPhotoSetProgress(visible){
@@ -13148,68 +13224,129 @@ function gmJobsPhotoUpdateProgress(){gmJobsPhotoUpdateProgressText();}
 
 function gmJobsPhotoUpdateUploadButtonsDisabled(){
  var st=window.gmJobsPhotoState;
- var n=st&&st.photos?st.photos.length:0;
- var dis=(n>=20)||(st&&st.uploading)||(st&&st._jpGalleryReady===false);
- var fileBtn=document.getElementById('jp-btn-file');
- var cam=document.getElementById('jp-btn-camera');
- var gal=document.getElementById('jp-btn-gallery');
- if(fileBtn)fileBtn.disabled=!!dis;
- if(cam)cam.disabled=!!dis;
- if(gal)gal.disabled=!!dis;
+ var n=gmJobsPhotoTotalCount();
+ var globalDis=(n>=20)||(st&&st.uploading)||(st&&st._jpGalleryReady===false);
+ document.querySelectorAll('[data-jp-upload-btn]').forEach(function(btn){
+  btn.disabled=!!globalDis;
+ });
+ gmJobsPhotoUpdateNewContainerButton();
+}
+
+function gmJobsPhotoAppendThumb(grid,photo){
+ var pid=photo&&photo.id?String(photo.id):'';
+ var url=photo&&photo.publicUrl?String(photo.publicUrl):'';
+ var ct=photo&&photo.contentType?String(photo.contentType):'';
+ var isPdf=ct==='application/pdf'||(!ct&&/\.pdf(\?|$)/i.test(url));
+ var wrap=document.createElement('div');
+ wrap.style.cssText='position:relative;aspect-ratio:1;background:#f0f0f0;border-radius:6px;overflow:hidden';
+ if(isPdf){
+  var pdfLink=document.createElement('a');
+  pdfLink.href=url;
+  pdfLink.target='_blank';
+  pdfLink.rel='noopener noreferrer';
+  pdfLink.title='Abrir PDF em nova aba';
+  pdfLink.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;text-decoration:none;color:var(--ink2);cursor:pointer;gap:6px;padding:8px;box-sizing:border-box';
+  pdfLink.innerHTML='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">PDF</span>';
+  wrap.appendChild(pdfLink);
+ }else{
+  var img=document.createElement('img');
+  img.src=url;
+  img.alt='';
+  img.loading='lazy';
+  img.style.cssText='width:100%;height:100%;object-fit:cover;cursor:zoom-in';
+  img.title='Ver em tamanho maior';
+  img.onclick=function(e){
+   e.preventDefault();e.stopPropagation();
+   if(typeof window.gmJobsPhotoOpenPreview==='function')window.gmJobsPhotoOpenPreview(url);
+  };
+  wrap.appendChild(img);
+ }
+ var del=document.createElement('button');
+ del.type='button';
+ del.innerHTML='&#10005;';
+ del.title='Remover ficheiro';
+ del.setAttribute('aria-label','Remover ficheiro');
+ del.style.cssText='position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(0,0,0,.72);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;padding:0;opacity:.45;transition:opacity .15s ease';
+ del.onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.gmJobsPhotoDelete==='function')window.gmJobsPhotoDelete(pid);};
+ wrap.onmouseenter=function(){del.style.opacity='1';};
+ wrap.onmouseleave=function(){del.style.opacity='0.45';};
+ wrap.appendChild(del);
+ grid.appendChild(wrap);
+}
+
+function gmJobsPhotoWireContainerUploadInputs(blockEl,containerNum){
+ var btnRowStyle='flex:1;min-width:100px;padding:10px;background:var(--cream);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2);font-family:\'DM Sans\',sans-serif';
+ var row=document.createElement('div');
+ row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
+ ['file','camera','gallery'].forEach(function(src){
+  var inEl=document.createElement('input');
+  inEl.type='file';
+  inEl.style.display='none';
+  if(src==='file'){inEl.accept='image/*,application/pdf';inEl.multiple=true;}
+  else if(src==='camera'){inEl.accept='image/*';inEl.setAttribute('capture','environment');}
+  else{inEl.accept='image/*';inEl.multiple=true;}
+  inEl.onchange=function(ev){
+   var st=window.gmJobsPhotoState;
+   if(st)st.uploadContainer=containerNum;
+   if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,src);
+  };
+  var lbl=src==='file'?'Carregar ficheiro':(src==='camera'?'Tirar foto':'Galeria');
+  var bt=document.createElement('button');
+  bt.type='button';
+  bt.textContent=lbl;
+  bt.setAttribute('data-jp-upload-btn','1');
+  bt.style.cssText=btnRowStyle;
+  bt.onclick=function(){
+   var st=window.gmJobsPhotoState;
+   if(st)st.uploadContainer=containerNum;
+   inEl.click();
+  };
+  row.appendChild(inEl);
+  row.appendChild(bt);
+ });
+ blockEl.appendChild(row);
 }
 
 function gmJobsPhotoRenderGallery(){
  var st=window.gmJobsPhotoState;
- var g=document.getElementById('jp-gallery');
- if(!g||!st)return;
- g.innerHTML='';
- if(!st.photos||!st.photos.length){
-  g.innerHTML='<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--ink3);padding:24px">Sem fotos ainda. Use Carregar ficheiro, Tirar foto ou Galeria.</div>';
-  gmJobsPhotoUpdateCounterEl();
-  gmJobsPhotoUpdateUploadButtonsDisabled();
-  return;
- }
- st.photos.forEach(function(photo){
-  var pid=photo&&photo.id?String(photo.id):'';
-  var url=photo&&photo.publicUrl?String(photo.publicUrl):'';
-  var ct=photo&&photo.contentType?String(photo.contentType):'';
-  var isPdf=ct==='application/pdf'||(!ct&&/\.pdf(\?|$)/i.test(url));
-  var wrap=document.createElement('div');
-  wrap.style.cssText='position:relative;aspect-ratio:1;background:#f0f0f0;border-radius:6px;overflow:hidden';
-  if(isPdf){
-   var pdfLink=document.createElement('a');
-   pdfLink.href=url;
-   pdfLink.target='_blank';
-   pdfLink.rel='noopener noreferrer';
-   pdfLink.title='Abrir PDF em nova aba';
-   pdfLink.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;text-decoration:none;color:var(--ink2);cursor:pointer;gap:6px;padding:8px;box-sizing:border-box';
-   pdfLink.innerHTML='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">PDF</span>';
-   wrap.appendChild(pdfLink);
+ var host=document.getElementById('jp-containers-host');
+ if(!host||!st)return;
+ gmJobsPhotoSyncContainersFromPhotos();
+ host.innerHTML='';
+ var maxC=st.maxContainer||1;
+ for(var c=1;c<=maxC;c++){
+  var block=document.createElement('div');
+  block.className='jp-container-block';
+  block.setAttribute('data-container',String(c));
+  block.style.cssText='margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)';
+  var hdr=document.createElement('div');
+  hdr.style.cssText='font-size:10px;font-weight:700;letter-spacing:.55px;text-transform:uppercase;margin-bottom:8px;padding:6px 10px;border-radius:6px;display:inline-block';
+  if(c===1){
+   hdr.style.background='var(--slate-bg)';
+   hdr.style.color='var(--slate)';
+   hdr.style.border='1px solid #c8d0dc';
   }else{
-   var img=document.createElement('img');
-   img.src=url;
-   img.alt='';
-   img.loading='lazy';
-   img.style.cssText='width:100%;height:100%;object-fit:cover;cursor:zoom-in';
-   img.title='Ver em tamanho maior';
-   img.onclick=function(e){
-    e.preventDefault();e.stopPropagation();
-    if(typeof window.gmJobsPhotoOpenPreview==='function')window.gmJobsPhotoOpenPreview(url);
-   };
-   wrap.appendChild(img);
+   hdr.style.background='var(--amber-bg)';
+   hdr.style.color='var(--amber)';
+   hdr.style.border='1px solid var(--amber-bd)';
   }
-  var del=document.createElement('button');
-  del.type='button';
-  del.innerHTML='&#10005;';
-  del.title='Remover ficheiro';
-  del.setAttribute('aria-label','Remover ficheiro');
-  del.style.cssText='position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(0,0,0,.72);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;padding:0;opacity:.45;transition:opacity .15s ease';
-  del.onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.gmJobsPhotoDelete==='function')window.gmJobsPhotoDelete(pid);};
-  wrap.onmouseenter=function(){del.style.opacity='1';};
-  wrap.onmouseleave=function(){del.style.opacity='0.45';};
-  wrap.appendChild(del);
-  g.appendChild(wrap);
- });
+  hdr.textContent=gmJobsPhotoContainerLabel(c);
+  block.appendChild(hdr);
+  var grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-height:48px';
+  var list=(st.containers&&st.containers[c]&&st.containers[c].photos)?st.containers[c].photos:[];
+  if(!list.length){
+   var empty=document.createElement('div');
+   empty.style.cssText='grid-column:1/-1;font-size:11px;color:var(--ink3);padding:8px 4px';
+   empty.textContent='Sem fotos neste container.';
+   grid.appendChild(empty);
+  }else{
+   list.forEach(function(ph){gmJobsPhotoAppendThumb(grid,ph);});
+  }
+  block.appendChild(grid);
+  gmJobsPhotoWireContainerUploadInputs(block,c);
+  host.appendChild(block);
+ }
  gmJobsPhotoUpdateCounterEl();
  gmJobsPhotoUpdateUploadButtonsDisabled();
 }
@@ -13223,6 +13360,9 @@ function gmJobsPhotoClose(){
   st.jobId=null;
   st.jobTitle='';
   st.photos=[];
+  st.containers={1:{photos:[]}};
+  st.maxContainer=1;
+  st.uploadContainer=1;
   st.uploading=false;
   st.uploadProgress={current:0,total:0};
  }
@@ -13230,7 +13370,8 @@ function gmJobsPhotoClose(){
 }
 window.gmJobsPhotoClose=gmJobsPhotoClose;
 
-async function gmJobsPhotoUploadOne(jobId,file){
+async function gmJobsPhotoUploadOne(jobId,file,containerNumber){
+ var cn=Math.max(1,Math.min(5,Math.floor(Number(containerNumber)||1)));
  var maxB=10*1024*1024;
  if(!file||file.size>maxB) throw new Error('Ficheiro demasiado grande (max 10 MB)');
  var isPdf=file.type==='application/pdf';
@@ -13249,7 +13390,7 @@ async function gmJobsPhotoUploadOne(jobId,file){
   method:'POST',
   headers:{'Content-Type':'application/json'},
   credentials:'include',
-  body:JSON.stringify({contentType:ct,sizeBytes:blob.size,originalFilename:file.name||'photo.jpg'})
+  body:JSON.stringify({contentType:ct,sizeBytes:blob.size,originalFilename:file.name||'photo.jpg',containerNumber:cn})
  });
  var pres=await presRes.json().catch(function(){return null;});
  if(!presRes.ok||!pres||!pres.uploadUrl||!pres.key){
@@ -13261,17 +13402,18 @@ async function gmJobsPhotoUploadOne(jobId,file){
   method:'POST',
   headers:{'Content-Type':'application/json'},
   credentials:'include',
-  body:JSON.stringify({r2Key:pres.key,publicUrl:pres.publicUrl,filename:file.name||null,sizeBytes:blob.size,contentType:ct})
+  body:JSON.stringify({r2Key:pres.key,publicUrl:pres.publicUrl,filename:file.name||null,sizeBytes:blob.size,contentType:ct,containerNumber:cn})
  });
  var reg=await regRes.json().catch(function(){return null;});
  if(!regRes.ok||!reg||!reg.photo) throw new Error((reg&&reg.error)?String(reg.error):('register HTTP '+regRes.status));
  var ph=reg.photo;
- return {id:ph.id,publicUrl:ph.publicUrl,filename:ph.filename||'',contentType:ph.contentType||ct,uploadedAt:ph.uploadedAt||'',sizeBytes:ph.sizeBytes};
+ return {id:ph.id,containerNumber:ph.containerNumber!=null?ph.containerNumber:cn,publicUrl:ph.publicUrl,filename:ph.filename||'',contentType:ph.contentType||ct,uploadedAt:ph.uploadedAt||'',sizeBytes:ph.sizeBytes};
 }
 
-async function gmJobsPhotoUploadBatch(files){
+async function gmJobsPhotoUploadBatch(files,containerNumber){
  var st=window.gmJobsPhotoState;
  if(!st||!st.jobId||st.uploading)return;
+ var cn=Math.max(1,Math.min(5,Math.floor(Number(containerNumber||st.uploadContainer)||1)));
  var arr=Array.prototype.slice.call(files||[]).filter(function(f){
   if(!f||!f.type)return false;
   return f.type.indexOf('image/')===0||f.type==='application/pdf';
@@ -13282,17 +13424,14 @@ async function gmJobsPhotoUploadBatch(files){
  st.uploadProgress={current:0,total:arr.length};
  gmJobsPhotoSetProgress(true);
  gmJobsPhotoUpdateProgress();
- var camBtn=document.getElementById('jp-btn-camera');
- var galBtn=document.getElementById('jp-btn-gallery');
- var fileBtn=document.getElementById('jp-btn-file');
  try{
-  if(camBtn)camBtn.disabled=true;
-  if(galBtn)galBtn.disabled=true;
-  if(fileBtn)fileBtn.disabled=true;
+  document.querySelectorAll('[data-jp-upload-btn]').forEach(function(b){b.disabled=true;});
+  var newBtn=document.getElementById('jp-btn-new-container');
+  if(newBtn)newBtn.disabled=true;
   for(var i=0;i<arr.length;i++){
    var f=arr[i];
    try{
-    var photo=await gmJobsPhotoUploadOne(st.jobId,f);
+    var photo=await gmJobsPhotoUploadOne(st.jobId,f,cn);
     st.photos.unshift(photo);
     st.uploadProgress.current++;
     okCount++;
@@ -13338,6 +13477,7 @@ window.gmJobsPhotoDelete=async function(photoId){
   st.photos=(st.photos||[]).filter(function(p){return String(p.id)!==pid;});
   if(!st.countsByJob)st.countsByJob={};
   st.countsByJob[st.jobId]=st.photos.length;
+  gmJobsPhotoSyncContainersFromPhotos();
   gmJobsPhotoRenderGallery();
   if(typeof showToast==='function')showToast('Foto removida.','success');
   if(typeof jobsRender==='function')try{jobsRender();}catch(eR){}
@@ -13357,9 +13497,9 @@ window.gmJobsPhotoOnFileSelect=function(ev,source){
  inp.value='';
  var st=window.gmJobsPhotoState;
  if(!st||!st.jobId||st.uploading)return;
- var remain=20-(st.photos?st.photos.length:0);
+ var remain=20-gmJobsPhotoTotalCount();
  if(remain<=0){
-  alert('Limite de 20 fotos atingido.');
+  alert('Limite de 20 fotos atingido no total do trabalho.');
   return;
  }
  var files=slice.filter(function(f){
@@ -13375,7 +13515,7 @@ window.gmJobsPhotoOnFileSelect=function(ev,source){
   alert('Só cabem mais '+remain+' foto(s). Os ficheiros extra serão ignorados.');
   files=files.slice(0,remain);
  }
- void gmJobsPhotoUploadBatch(files);
+ void gmJobsPhotoUploadBatch(files,st.uploadContainer||1);
 };
 
 function gmJobsPhotoClosePreview(){
@@ -13408,9 +13548,7 @@ async function gmJobOpenPhotoPopup(id){
  id=String(id||'');
  gmJobCloseJobPopups();
 
- var ju=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
- var jr=String(ju.role||'').toLowerCase();
- if(jr!=='admin'&&jr!=='super_admin'&&jr!=='manager'&&jr!=='maintenance'){
+ if(!gmJobsPhotoCanUploadRole()){
   alert('Sem permissao.');
   return;
  }
@@ -13424,6 +13562,9 @@ async function gmJobOpenPhotoPopup(id){
  st.jobId=id;
  st.jobTitle=addrShort;
  st.photos=[];
+ st.containers={1:{photos:[]}};
+ st.maxContainer=1;
+ st.uploadContainer=1;
  st.uploading=false;
  st.uploadProgress={current:0,total:0};
  st._jpGalleryReady=false;
@@ -13433,7 +13574,7 @@ async function gmJobOpenPhotoPopup(id){
  shell.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
  shell.addEventListener('click',function(e){if(e.target===shell)gmJobsPhotoClose();});
  var card=document.createElement('div');
- card.style.cssText='background:var(--paper);border-radius:12px;max-width:600px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.28)';
+ card.style.cssText='background:var(--paper);border-radius:12px;max-width:640px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.28)';
  card.addEventListener('click',function(e){e.stopPropagation();});
 
  var head=document.createElement('div');
@@ -13459,9 +13600,9 @@ async function gmJobOpenPhotoPopup(id){
  head.appendChild(xb);
 
  var gal=document.createElement('div');
- gal.id='jp-gallery';
- gal.style.cssText='flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-height:120px';
- gal.innerHTML='<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--ink3);padding:24px">A carregar fotos...</div>';
+ gal.id='jp-containers-host';
+ gal.style.cssText='flex:1;overflow-y:auto;padding:12px 14px;min-height:160px';
+ gal.innerHTML='<div style="text-align:center;font-size:12px;color:var(--ink3);padding:24px">A carregar fotos...</div>';
 
  var prog=document.createElement('div');
  prog.id='jp-progress';
@@ -13472,53 +13613,14 @@ async function gmJobOpenPhotoPopup(id){
  prog.appendChild(progt);
 
  var foot=document.createElement('div');
- foot.style.cssText='padding:16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap';
- var btnRowStyle='flex:1;min-width:140px;padding:12px;background:var(--cream);border:1px solid var(--border2);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2);font-family:Inter,sans-serif';
- var inFile=document.createElement('input');
- inFile.type='file';
- inFile.id='jp-input-file';
- inFile.accept='image/*,application/pdf';
- inFile.multiple=true;
- inFile.style.display='none';
- inFile.onchange=function(ev){if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,'file');};
- var inCam=document.createElement('input');
- inCam.type='file';
- inCam.id='jp-input-camera';
- inCam.accept='image/*';
- inCam.setAttribute('capture','environment');
- inCam.style.display='none';
- inCam.onchange=function(ev){if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,'camera');};
- var inGal=document.createElement('input');
- inGal.type='file';
- inGal.id='jp-input-gallery';
- inGal.accept='image/*';
- inGal.multiple=true;
- inGal.style.display='none';
- inGal.onchange=function(ev){if(typeof gmJobsPhotoOnFileSelect==='function')gmJobsPhotoOnFileSelect(ev,'gallery');};
- var btFile=document.createElement('button');
- btFile.type='button';
- btFile.id='jp-btn-file';
- btFile.textContent='Carregar ficheiro';
- btFile.style.cssText=btnRowStyle;
- btFile.onclick=function(){inFile.click();};
- var btCam=document.createElement('button');
- btCam.type='button';
- btCam.id='jp-btn-camera';
- btCam.textContent='Tirar foto';
- btCam.style.cssText=btnRowStyle;
- btCam.onclick=function(){inCam.click();};
- var btGal=document.createElement('button');
- btGal.type='button';
- btGal.id='jp-btn-gallery';
- btGal.textContent='Galeria';
- btGal.style.cssText=btnRowStyle;
- btGal.onclick=function(){inGal.click();};
- foot.appendChild(inFile);
- foot.appendChild(inCam);
- foot.appendChild(inGal);
- foot.appendChild(btFile);
- foot.appendChild(btCam);
- foot.appendChild(btGal);
+ foot.style.cssText='padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0';
+ var btNew=document.createElement('button');
+ btNew.type='button';
+ btNew.id='jp-btn-new-container';
+ btNew.textContent='+ Novo container';
+ btNew.style.cssText='width:100%;padding:11px 16px;background:transparent;color:var(--amber);border:1px solid var(--amber-bd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif';
+ btNew.onclick=function(){if(typeof gmJobsPhotoAddContainer==='function')gmJobsPhotoAddContainer();};
+ foot.appendChild(btNew);
 
  card.appendChild(head);
  card.appendChild(gal);
@@ -13536,8 +13638,9 @@ async function gmJobOpenPhotoPopup(id){
   var j=await res.json().catch(function(){return null;});
   if(res.ok&&j&&Array.isArray(j.photos)){
    st.photos=j.photos.map(function(p){
-    return {id:p.id,publicUrl:p.publicUrl,filename:p.filename||'',contentType:p.contentType||'',uploadedAt:p.uploadedAt||'',sizeBytes:p.sizeBytes};
+    return {id:p.id,containerNumber:p.containerNumber!=null?Number(p.containerNumber):1,publicUrl:p.publicUrl,filename:p.filename||'',contentType:p.contentType||'',uploadedAt:p.uploadedAt||'',sizeBytes:p.sizeBytes};
    });
+   gmJobsPhotoSyncContainersFromPhotos();
    if(!st.countsByJob)st.countsByJob={};
    st.countsByJob[id]=st.photos.length;
   }else if(!res.ok){
@@ -13552,9 +13655,10 @@ async function gmJobOpenPhotoPopup(id){
  }
  gmJobsPhotoRenderGallery();
  gmJobsPhotoUpdateCounterEl();
- gmJobsPhotoUpdateUploadButtonsDisabled();
+ gmJobsPhotoUpdateNewContainerButton();
 }
 window.gmJobOpenPhotoPopup=gmJobOpenPhotoPopup;
+window.gmJobsPhotoAddContainer=gmJobsPhotoAddContainer;
 function gmJobOpenCommentPopup(id){
  id=String(id);
  gmJobCloseJobPopups();

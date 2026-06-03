@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUserFromSession } from "@/lib/authServer";
 import { getClientScopeWhere, toClientScopeUser } from "@/lib/clientScope";
+import {
+  MAX_PHOTOS_PER_JOB,
+  parseContainerNumber,
+  validateJobPhotoR2Key,
+} from "@/lib/jobPhotos";
 
 export const dynamic = "force-dynamic";
-
-const MAX_PHOTOS_PER_JOB = 20;
 
 export async function POST(req: Request, { params }: { params: { jobId: string } }) {
   const user = await getCurrentUserFromSession();
@@ -39,17 +42,15 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     return NextResponse.json({ error: "publicUrl is required" }, { status: 400 });
   }
 
-  if (!r2Key.startsWith("job-photos/") || r2Key.includes("..") || r2Key.includes("//")) {
-    return NextResponse.json({ error: "Invalid r2Key" }, { status: 400 });
+  const containerNumber = parseContainerNumber(raw.containerNumber);
+  if (containerNumber === null) {
+    return NextResponse.json(
+      { error: "containerNumber must be an integer between 1 and 5" },
+      { status: 400 }
+    );
   }
 
-  const jobSegment = `/${expense.id}/`;
-  if (!r2Key.includes(jobSegment)) {
-    return NextResponse.json({ error: "Invalid r2Key" }, { status: 400 });
-  }
-
-  const expectedPrefix = `job-photos/${expense.clientId || "no-client"}/${expense.id}/`;
-  if (!r2Key.startsWith(expectedPrefix)) {
+  if (!validateJobPhotoR2Key(r2Key.trim(), expense.clientId, expense.id, containerNumber)) {
     return NextResponse.json({ error: "Invalid r2Key" }, { status: 400 });
   }
 
@@ -64,6 +65,7 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     const photo = await prisma.jobPhoto.create({
       data: {
         jobId: expense.id,
+        containerNumber,
         clientId: expense.clientId,
         r2Key: r2Key.trim(),
         publicUrl: publicUrl.trim(),
@@ -77,6 +79,7 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     return NextResponse.json({
       photo: {
         id: photo.id,
+        containerNumber: photo.containerNumber,
         publicUrl: photo.publicUrl,
         filename: photo.filename,
         contentType: photo.contentType,

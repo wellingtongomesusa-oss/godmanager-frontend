@@ -4,6 +4,11 @@ import { prisma } from "@/lib/db";
 import { getCurrentUserFromSession } from "@/lib/authServer";
 import { getClientScopeWhere, toClientScopeUser } from "@/lib/clientScope";
 import { generateUploadUrl, publicUrlForKey } from "@/lib/r2";
+import {
+  MAX_PHOTOS_PER_JOB,
+  parseContainerNumber,
+  jobPhotoR2KeyPrefix,
+} from "@/lib/jobPhotos";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +20,6 @@ const ALLOWED_CONTENT_TYPES = [
   "application/pdf",
 ] as const;
 const MAX_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_PHOTOS_PER_JOB = 20;
 
 function randomString(length: number): string {
   return randomBytes(Math.ceil(length / 2))
@@ -65,12 +69,20 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     );
   }
 
+  const containerNumber = parseContainerNumber(raw.containerNumber);
+  if (containerNumber === null) {
+    return NextResponse.json(
+      { error: "containerNumber must be an integer between 1 and 5" },
+      { status: 400 }
+    );
+  }
+
   try {
     const subtype = contentType.split("/")[1] || "";
     const ext =
       contentType === "application/pdf" ? "pdf" : subtype === "jpeg" ? "jpg" : subtype;
-    const safeClientId = expense.clientId || "no-client";
-    const key = `job-photos/${safeClientId}/${expense.id}/${Date.now()}-${randomString(8)}.${ext}`;
+    const keyPrefix = jobPhotoR2KeyPrefix(expense.clientId, expense.id, containerNumber);
+    const key = `${keyPrefix}${Date.now()}-${randomString(8)}.${ext}`;
 
     const uploadUrl = await generateUploadUrl(key, contentType, 300);
     const publicUrl = publicUrlForKey(key);
@@ -79,6 +91,7 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
       uploadUrl,
       publicUrl,
       key,
+      containerNumber,
       expiresInSeconds: 300,
     });
   } catch (err: unknown) {

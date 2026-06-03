@@ -21,9 +21,10 @@ export async function GET(_req: Request, { params }: { params: { jobId: string }
 
   const photos = await prisma.jobPhoto.findMany({
     where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
-    orderBy: { uploadedAt: "desc" },
+    orderBy: [{ containerNumber: "asc" }, { uploadedAt: "desc" }],
     select: {
       id: true,
+      containerNumber: true,
       publicUrl: true,
       filename: true,
       contentType: true,
@@ -36,6 +37,7 @@ export async function GET(_req: Request, { params }: { params: { jobId: string }
   return NextResponse.json({
     photos: photos.map((p) => ({
       ...p,
+      containerNumber: p.containerNumber,
       uploadedAt: p.uploadedAt.toISOString(),
     })),
     count: photos.length,
