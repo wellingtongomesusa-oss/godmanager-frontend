@@ -111,8 +111,29 @@ model Client {
   feeAuditSnapshots     FeeAuditSnapshot[]      @relation("FeeAuditSnapshot_clientId")
   ownerAuditSnapshots   OwnerAuditSnapshot[]    @relation("OwnerAuditSnapshot_clientId")
   bankAccountBalances   BankAccountBalance[]    @relation("BankAccountBalance_clientId")
+  teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
 
   @@map("clients")
+}
+
+model TeamNewsItem {
+  id             String   @id @default(cuid())
+  clientId       String
+  type           String
+  subtype        String?
+  title          String   @db.VarChar(120)
+  body           String?  @db.Text
+  jobId          String?
+  metadata       Json?
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+
+  client Client @relation("TeamNewsItem_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([jobId])
+  @@map("team_news_items")
 }
 
 enum BankAccountType {
