@@ -341,6 +341,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .ltd-participation-marker{position:absolute;top:0;bottom:28px;width:2px;background:var(--ink);pointer-events:none;z-index:2;transform:translateX(-1px)}
 .ltd-participation-marker::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:var(--ink);margin-top:-4px}
 .ltd-participation-marker-label{position:absolute;top:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);background:var(--cream);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;font-family:'DM Sans',sans-serif}
+.ltd-timeline-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
+.ltd-timeline-chart-wrap{position:relative;height:235px}
+.ltd-timeline-chart-wrap canvas{width:100%!important;height:100%!important}
+.ltd-timeline-goal-labels{position:absolute;top:0;right:4px;bottom:28px;width:118px;pointer-events:none;z-index:2}
+.ltd-timeline-goal-label{position:absolute;right:0;transform:translateY(-50%);font-size:8px;font-weight:600;letter-spacing:.02em;white-space:nowrap;padding:1px 5px;border-radius:3px;background:rgba(248,246,242,.92);border:1px solid var(--border2);font-family:'DM Sans',sans-serif}
+.ltd-timeline-note{font-size:10px;color:var(--ink3);margin-top:8px;line-height:1.45;font-style:italic}
 .cd{height:1px;background:var(--border);margin:0 -22px 10px}
 .cp{display:flex;flex-wrap:wrap;gap:5px;padding-bottom:12px}
 .card .cu{font-size:10px;color:var(--ink3);text-align:right;padding:2px 14px 0;font-family:'DM Sans',system-ui,sans-serif;margin-top:4px}
@@ -2655,6 +2661,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <span class="ltd-participation-marker-label">Atual: 0</span>
  </div>
  </div>
+ </div>
+ <!-- Evolucao do portfolio (timeline createdAt) -->
+ <div id="ltd-timeline-card" class="ltd-timeline-card">
+ <div class="ltd-chart-title">Evolucao do Portfolio</div>
+ <div class="ltd-timeline-chart-wrap">
+ <canvas id="ltd-portfolio-timeline-chart" aria-label="Evolucao do numero de propriedades nos ultimos 12 meses"></canvas>
+ <div id="ltd-timeline-goal-labels" class="ltd-timeline-goal-labels" aria-hidden="true"></div>
+ </div>
+ <p class="ltd-timeline-note">Estimativa por data de cadastro. Saidas do portfolio podem nao aparecer.</p>
  </div>
  <!-- Bar charts Receita + Ganho MP -->
  <div id="ltd-charts-bars-row" class="ltd-charts-bars-row">
@@ -15324,7 +15339,133 @@ function gmDashRenderParticipationCard(totalHouses){
  gmDashRenderParticipationMarker(total);
 }
 
-window.__ltdDashCharts={donut:null,bar:null,barReceita:null,lineNet:null,participation:null};
+var GM_PARTICIPATION_TIMELINE_GOALS=[142,213,320];
+var GM_PARTICIPATION_TIMELINE_GOAL_META=[
+ {value:142,colorKey:'--amber',fallback:'#c47b28',label:'Meta Fase 1: 142'},
+ {value:213,colorKey:null,fallback:'#7c3aed',label:'Meta Fase 3: 213'},
+ {value:320,colorKey:'--green',fallback:'#2d7252',label:'Meta Final: 320'}
+];
+
+async function gmDashFetchPortfolioTimeline(months){
+ var n=Math.max(1,Math.min(24,Math.floor(Number(months)||12)));
+ try{
+  var res=await fetch('/api/properties/timeline?months='+encodeURIComponent(String(n)),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  if(!res.ok||!j||!j.ok)return null;
+  return j;
+ }catch(e){console.warn('gmDashFetchPortfolioTimeline',e);return null;}
+}
+
+function gmDashPositionTimelineGoalLabels(chart,yMax){
+ var host=document.getElementById('ltd-timeline-goal-labels');
+ if(!host||!chart||!chart.scales||!chart.scales.y)return;
+ var yScale=chart.scales.y;
+ var chartArea=chart.chartArea;
+ if(!chartArea||!chartArea.height)return;
+ host.innerHTML='';
+ GM_PARTICIPATION_TIMELINE_GOAL_META.forEach(function(g){
+  var color=g.colorKey?(typeof gmDashCssVar==='function'?gmDashCssVar(g.colorKey,g.fallback):g.fallback):g.fallback;
+  var top=yScale.getPixelForValue(g.value);
+  var pct=Math.min(100,Math.max(0,((top-chartArea.top)/chartArea.height)*100));
+  var el=document.createElement('span');
+  el.className='ltd-timeline-goal-label';
+  el.textContent=g.label;
+  el.style.color=color;
+  el.style.borderColor=color;
+  el.style.top=pct+'%';
+  host.appendChild(el);
+ });
+}
+
+async function gmDashRenderPortfolioTimelineChart(currentTotalOverride){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById('ltd-portfolio-timeline-chart');
+ if(!cv)return;
+ var payload=await gmDashFetchPortfolioTimeline(12);
+ if(!payload||!Array.isArray(payload.months)||!payload.months.length)return;
+ var months=payload.months;
+ var labels=months.map(function(m){
+  return (typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(m.ym):m.ym;
+ });
+ if(currentTotalOverride!=null&&months.length){
+  var ov=Math.max(0,Math.floor(Number(currentTotalOverride)||0));
+  months[months.length-1].count=ov;
+ }
+ var counts=months.map(function(m){return Number(m.count)||0;});
+ var curYm=months[months.length-1].ym;
+ var blue=(typeof gmDashCssVar==='function'?gmDashCssVar('--blue','#22558c'):'#22558c');
+ var blueHi=(typeof gmDashCssVar==='function'?gmDashCssVar('--blue-bg','#4a7ab8'):'#4a7ab8');
+ var ink3=(typeof gmDashCssVar==='function'?gmDashCssVar('--ink3','#8a8478'):'#8a8478');
+ var border=(typeof gmDashCssVar==='function'?gmDashCssVar('--border','#e2ddd4'):'#e2ddd4');
+ var maxCount=Math.max.apply(null,counts.concat(GM_PARTICIPATION_TIMELINE_GOALS));
+ var yMax=Math.max(340,Math.ceil(maxCount*1.08));
+ var barBg=months.map(function(m){return m.ym===curYm?blueHi:blue;});
+ var barBorder=months.map(function(m){return m.ym===curYm?blue:'transparent';});
+ var barBw=months.map(function(m){return m.ym===curYm?2:0;});
+ var datasets=[{
+  type:'bar',
+  label:'Propriedades',
+  data:counts,
+  backgroundColor:barBg,
+  borderColor:barBorder,
+  borderWidth:barBw,
+  borderRadius:4,
+  order:2
+ }];
+ GM_PARTICIPATION_TIMELINE_GOAL_META.forEach(function(g){
+  var color=g.colorKey?(typeof gmDashCssVar==='function'?gmDashCssVar(g.colorKey,g.fallback):g.fallback):g.fallback;
+  datasets.push({
+   type:'line',
+   label:g.label,
+   data:months.map(function(){return g.value;}),
+   borderColor:color,
+   backgroundColor:'transparent',
+   borderWidth:1.5,
+   borderDash:[6,4],
+   pointRadius:0,
+   pointHitRadius:0,
+   fill:false,
+   order:1
+  });
+ });
+ if(window.__ltdDashCharts.timeline){try{delete window.__ltdDashChartDefaults['ltd-portfolio-timeline-chart'];window.__ltdDashCharts.timeline.destroy();}catch(eD){}}
+ window.__ltdDashCharts.timeline=new Chart(cv.getContext('2d'),{
+  data:{labels:labels,datasets:datasets},
+  options:{
+   responsive:true,
+   maintainAspectRatio:false,
+   animation:{duration:400,onComplete:function(){
+    gmDashPositionTimelineGoalLabels(window.__ltdDashCharts.timeline,yMax);
+   }},
+   plugins:{
+    legend:{display:false},
+    tooltip:{
+     filter:function(item){return item.datasetIndex===0;},
+     callbacks:{
+      label:function(ctx){return ' '+String(ctx.parsed.y)+' propriedades';}
+     }
+    }
+   },
+   scales:{
+    x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10,maxRotation:0}}},
+    y:{
+     beginAtZero:true,
+     max:yMax,
+     grid:{color:border},
+     ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},precision:0}
+    }
+   }
+  }
+ });
+ gmDashCaptureChartDefaults(window.__ltdDashCharts.timeline);
+ gmDashApplySensitiveToChart(window.__ltdDashCharts.timeline,gmDashValuesHidden());
+ setTimeout(function(){
+  gmDashPositionTimelineGoalLabels(window.__ltdDashCharts.timeline,yMax);
+ },50);
+ window.__gmDashTimelineLastPayload=payload;
+}
+
+window.__ltdDashCharts={donut:null,bar:null,barReceita:null,lineNet:null,participation:null,timeline:null};
 window.__ltdDashChartDefaults={};
 
 function gmDashValuesHidden(){
@@ -15374,9 +15515,14 @@ function gmDashApplySensitiveToChart(chart,hidden){
 
 function gmDashApplySensitiveToAllCharts(hidden){
  var c=window.__ltdDashCharts||{};
- ['donut','bar','barReceita','lineNet'].forEach(function(k){
+ ['donut','bar','barReceita','lineNet','participation','timeline'].forEach(function(k){
   if(c[k])gmDashApplySensitiveToChart(c[k],hidden);
  });
+ if(!hidden&&window.__ltdDashCharts.timeline){
+  setTimeout(function(){
+   gmDashPositionTimelineGoalLabels(window.__ltdDashCharts.timeline,window.__ltdDashCharts.timeline.options?.scales?.y?.max);
+  },30);
+ }
  gmDashMaskPortfolioLegend(hidden);
 }
 
@@ -15877,6 +16023,11 @@ async function ltDashRender(){
    await gmDashRenderAllCharts(records,tenantIdx,curMonth);
   }catch(eCharts){console.warn('ltDashRender charts',eCharts);}
  }
+ try{
+  var recordsTl=gmDashDedupeRecords(gmDashPortfolioRecords());
+  var portKpiTl=(typeof gmPropertiesPortfolioKpiCounts==='function')?gmPropertiesPortfolioKpiCounts(recordsTl):{total:recordsTl.length};
+  if(typeof gmDashRenderPortfolioTimelineChart==='function')await gmDashRenderPortfolioTimelineChart(portKpiTl.total);
+ }catch(eTl){console.warn('ltDashRender timeline',eTl);}
  if(typeof gmDashSyncValuesHiddenUI==='function')gmDashSyncValuesHiddenUI();
 }
 window.ltDashRender=ltDashRender;
@@ -16152,6 +16303,8 @@ window.gmPropertiesRefresh=async function(opts){
   if(typeof window.ltPopulate==='function')window.ltPopulate();
   if(typeof window.ltpRender==='function')window.ltpRender();
   if(typeof window.gmHomeRefresh==='function')window.gmHomeRefresh();
+  var pgLt=document.getElementById('page-longterm');
+  if(pgLt&&pgLt.classList.contains('active')&&typeof ltDashRender==='function'){void ltDashRender();}
  }catch(e){console.warn('gmPropertiesRefresh rerender',e);}
  return true;
 };
