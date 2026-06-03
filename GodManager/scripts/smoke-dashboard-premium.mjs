@@ -30,6 +30,7 @@ await context.addCookies([
   { name: 'gm_auth', value: sessionCookieValue(user.id, user.role), domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' },
 ]);
 const page = await context.newPage();
+page.setDefaultTimeout(180000);
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
 await page.goto(`${BASE}/GodManager_Premium.html`, { waitUntil: 'domcontentloaded', timeout: 120000 });
@@ -74,21 +75,28 @@ const ltpBeforeDash = await page.evaluate(() => ({
   vacant: (document.getElementById('ltp-kpi-vacant')?.textContent || '').trim(),
 }));
 
-await page.evaluate(() => { if (typeof nav === 'function') nav('longterm'); });
-await page.waitForFunction(
-  () => {
-    const v = document.getElementById('ltd-hero-vacant-count');
-    const t = document.getElementById('ltd-strip-total');
-    const n = parseInt(String(t?.textContent || '0').replace(/\D/g, ''), 10);
-    const nv = parseInt(String(v?.textContent || '0').replace(/\D/g, ''), 10);
-    return n >= 100 && nv >= 1;
-  },
-  { timeout: 120000 },
-);
-await page.waitForTimeout(2500);
+await page.evaluate(async () => {
+  if (typeof nav === 'function') nav('longterm');
+  const deadline = Date.now() + 170000;
+  while (Date.now() < deadline) {
+    const total = parseInt(String(document.getElementById('ltd-strip-total')?.textContent || '0').replace(/\D/g, ''), 10);
+    const ctr = parseInt(String(document.getElementById('ltd-portfolio-donut-ctr')?.textContent || '0').replace(/\D/g, ''), 10);
+    if (total >= 100 && ctr >= 100 && window.__ltdDashCharts?.bar) return;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  throw new Error('Dashboard charts/render timeout');
+});
+await page.waitForTimeout(800);
 
 const dash = await page.evaluate(() => {
   const g = (id) => (document.getElementById(id)?.textContent || '').trim();
+  const heroFs = parseFloat(getComputedStyle(document.getElementById('ltd-hero-vacant-count')).fontSize) || 0;
+  const recFs = parseFloat(getComputedStyle(document.getElementById('ltd-receita-value')).fontSize) || 0;
+  const donut = !!window.__ltdDashCharts?.donut;
+  const bar = !!window.__ltdDashCharts?.bar;
+  const donutData = window.__ltdDashCharts?.donut?.data?.datasets?.[0]?.data || [];
+  const barLabels = window.__ltdDashCharts?.bar?.data?.labels?.length || 0;
+  const donutCtr = (document.getElementById('ltd-portfolio-donut-ctr')?.textContent || '').trim();
   const rows = document.querySelectorAll('#ltd-hero-vacant-tbody tr').length;
   const firstVacant = [...document.querySelectorAll('#ltd-hero-vacant-tbody tr')].slice(0, 3).map((tr) => {
     const tds = tr.querySelectorAll('td');
@@ -113,6 +121,13 @@ const dash = await page.evaluate(() => {
     firstVacant,
     dupeAddrs,
     oldTableGone: !document.getElementById('ltd-all-wrap'),
+    heroFontPx: heroFs,
+    receitaFontPx: recFs,
+    chartDonut: donut,
+    chartBar: bar,
+    donutSegments: donutData.length,
+    donutCenter: donutCtr,
+    barMonthCount: barLabels,
   };
 });
 
@@ -179,6 +194,11 @@ const checks = {
   homeVacantMatches: homeVacantN === expVacant || homeVacantN === 0,
   ltpStill110: parseInt(String(ltpTotal).replace(/\D/g, ''), 10) === expTotal,
   editModalOpens: editVacant.ok === true,
+  heroFontSmaller: dash.heroFontPx >= 32 && dash.heroFontPx <= 40,
+  receitaFontSmaller: dash.receitaFontPx >= 30 && dash.receitaFontPx <= 38,
+  donutRendered: dash.chartDonut && dash.donutSegments >= 3,
+  donutCenter110: parseInt(dash.donutCenter, 10) === expTotal,
+  barSixMonths: dash.chartBar && dash.barMonthCount === 6,
 };
 
 console.log(JSON.stringify({ dash, checks, errors, editVacant, homeBefore, ltpBeforeDash, ltpTotal }, null, 2));

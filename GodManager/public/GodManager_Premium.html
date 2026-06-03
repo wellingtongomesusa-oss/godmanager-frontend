@@ -223,6 +223,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .ca{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--red);margin-top:3px}
 .cc{display:flex;justify-content:center;align-items:center;margin:12px 0 10px;height:88px;position:relative}
 .cc-ctr{position:absolute;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--ink);text-align:center;pointer-events:none}
+/* Dashboard Long Term — hero + graficos */
+#ltd-hero-row{display:grid;grid-template-columns:1fr minmax(220px,280px);gap:16px;margin-bottom:16px;align-items:stretch}
+#ltd-hero-vacant{margin-bottom:0!important}
+.ltd-donut-cc{display:flex;justify-content:center;align-items:center;height:228px;position:relative;margin:4px 0}
+.ltd-donut-cc canvas{display:block}
+.ltd-donut-cc .ltd-donut-ctr{width:88px;height:88px;font-size:22px;line-height:1.1}
+.ltd-chart-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
+.ltd-chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:10px;font-family:'DM Sans',sans-serif}
+.ltd-chart-legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px;font-size:10px;color:var(--ink3)}
+.ltd-chart-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.ltd-ganho-bar-wrap{height:210px;position:relative}
+@media (max-width:960px){#ltd-hero-row{grid-template-columns:1fr!important}}
 .cd{height:1px;background:var(--border);margin:0 -22px 10px}
 .cp{display:flex;flex-wrap:wrap;gap:5px;padding-bottom:12px}
 .card .cu{font-size:10px;color:var(--ink3);text-align:right;padding:2px 14px 0;font-family:'DM Sans',system-ui,sans-serif;margin-top:4px}
@@ -2462,11 +2474,12 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="pt">Dashboard</div>
  <div class="ps">Visao geral do portfolio de alugueis · GodManager.com</div>
  </div>
- <!-- Hero: CASAS VAGAS -->
- <div id="ltd-hero-vacant" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
- <div style="position:sticky;top:0;z-index:2;background:var(--paper);padding:18px 20px 14px;border-bottom:1px solid var(--border)">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">CASAS VAGAS</div>
- <div id="ltd-hero-vacant-count" style="font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--red);line-height:1.1;margin:4px 0">0</div>
+ <!-- Hero: CASAS VAGAS + donut portfolio -->
+ <div id="ltd-hero-row">
+ <div id="ltd-hero-vacant" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden;min-width:0">
+ <div style="position:sticky;top:0;z-index:2;background:var(--paper);padding:14px 16px 12px;border-bottom:1px solid var(--border)">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">CASAS VAGAS</div>
+ <div id="ltd-hero-vacant-count" style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;color:var(--red);line-height:1.1;margin:2px 0">0</div>
  <div id="ltd-hero-vacant-sub" style="font-size:11px;color:var(--ink2)">unidades disponíveis · status VG</div>
  </div>
  <div id="ltd-hero-vacant-list-wrap" style="max-height:min(42vh,480px);overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -2482,22 +2495,36 @@ document.addEventListener('DOMContentLoaded', function(){
  </div>
  <div id="ltd-hero-vacant-empty" style="display:none;padding:28px;text-align:center;font-size:12px;color:var(--ink3)">Nenhuma propriedade vaga no portfolio.</div>
  </div>
+ <div id="ltd-portfolio-donut-wrap" class="ltd-chart-card">
+ <div class="ltd-chart-title">Distribuição do Portfolio</div>
+ <div class="ltd-donut-cc">
+ <canvas id="ltd-portfolio-donut" width="160" height="160"></canvas>
+ <div id="ltd-portfolio-donut-ctr" class="cc-ctr ltd-donut-ctr">0</div>
+ </div>
+ <div id="ltd-portfolio-legend" class="ltd-chart-legend"></div>
+ </div>
+ </div>
  <!-- Receita + Ganho MP -->
  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px">
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">RECEITA DE ALUGUEL DO MES</div>
- <div id="ltd-receita-value" style="font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--amber);line-height:1.1;margin:4px 0">$0</div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">RECEITA DE ALUGUEL DO MES</div>
+ <div id="ltd-receita-value" style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--amber);line-height:1.1;margin:2px 0">$0</div>
  <div id="ltd-receita-sub" style="font-size:11px;color:var(--ink2)">—</div>
- <div id="ltd-receita-delta" style="margin-top:8px;font-size:11px"></div>
+ <div id="ltd-receita-delta" style="margin-top:6px;font-size:11px"></div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div>
  </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">GANHO FINANCEIRO MP</div>
- <div id="ltd-ganho-value" style="font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:#7c3aed;line-height:1.1;margin:4px 0">$0</div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">GANHO FINANCEIRO MP</div>
+ <div id="ltd-ganho-value" style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:#7c3aed;line-height:1.1;margin:2px 0">$0</div>
  <div id="ltd-ganho-sub" style="font-size:11px;color:var(--ink2)">regra do site · gestao MGM%</div>
- <div id="ltd-ganho-delta" style="margin-top:8px;font-size:11px"></div>
+ <div id="ltd-ganho-delta" style="margin-top:6px;font-size:11px"></div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div>
  </div>
+ </div>
+ <!-- Bar chart Ganho MP -->
+ <div id="ltd-ganho-bar-card" class="ltd-chart-card" style="margin-bottom:16px">
+ <div class="ltd-chart-title">Ganho Financeiro MP — Últimos 6 meses</div>
+ <div class="ltd-ganho-bar-wrap"><canvas id="ltd-ganho-bar-chart"></canvas></div>
  </div>
  <!-- Strip KPI secundario -->
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="margin-bottom:20px">
@@ -14531,6 +14558,91 @@ function gmDashFilterAlugadas(records){
   return r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='ALG';
  });
 }
+window.__ltdDashCharts={donut:null,bar:null};
+function gmDashCssVar(name,fallback){
+ try{
+  var v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v||fallback;
+ }catch(e){return fallback;}
+}
+function gmDashPortfolioDistrib(records,portKpi){
+ var alg=portKpi&&portKpi.alugadas!=null?portKpi.alugadas:0;
+ var vg=portKpi&&portKpi.vagas!=null?portKpi.vagas:0;
+ var total=portKpi&&portKpi.total!=null?portKpi.total:0;
+ var outros=Math.max(0,total-alg-vg);
+ if(total>0) return {alg:alg,vg:vg,outros:outros,total:total};
+ var a=0,v=0,o=0;
+ (records||[]).forEach(function(r){
+  if(!r)return;
+  var st=typeof gmGetEffectiveStatus==='function'?gmGetEffectiveStatus(r):'';
+  if(st==='ALG')a++;
+  else if(st==='VG')v++;
+  else o++;
+ });
+ return {alg:a,vg:v,outros:o,total:(records||[]).length};
+}
+function gmDashLastNMonths(n,endYM){
+ var out=[],m=String(endYM||new Date().toISOString().slice(0,7));
+ if(!/^\d{4}-\d{2}$/.test(m))m=new Date().toISOString().slice(0,7);
+ for(var i=0;i<n;i++){out.unshift(m);m=(typeof gmPrevMonth==='function')?gmPrevMonth(m):m;}
+ return out;
+}
+function gmDashMonthLabelShort(ym){
+ var p=String(ym||'').match(/^(\d{4})-(\d{2})$/);
+ if(!p)return ym;
+ var names=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+ return (names[parseInt(p[2],10)]||p[2])+' '+String(p[1]).slice(2);
+}
+function gmDashRenderPortfolioDonut(records,portKpi){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById('ltd-portfolio-donut');
+ var ctr=document.getElementById('ltd-portfolio-donut-ctr');
+ var leg=document.getElementById('ltd-portfolio-legend');
+ if(!cv)return;
+ var d=gmDashPortfolioDistrib(records,portKpi);
+ if(ctr)ctr.textContent=String(d.total);
+ var colAlg=gmDashCssVar('--green','#22c55e');
+ var colVg=gmDashCssVar('--red','#b83030');
+ var colOut=gmDashCssVar('--ink3','#8a8478');
+ var data=[d.alg,d.vg,d.outros];
+ var labels=['Alugadas','Vagas','Outros'];
+ var empty=data.every(function(x){return !x;});
+ if(empty)data=[1]; 
+ if(window.__ltdDashCharts.donut){try{window.__ltdDashCharts.donut.destroy();}catch(eD){}}
+ window.__ltdDashCharts.donut=new Chart(cv,{type:'doughnut',data:{labels:labels,datasets:[{data:empty?[1]:data,backgroundColor:empty?[colOut]:[colAlg,colVg,colOut],borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:!empty,callbacks:{label:function(ctx){var lab=ctx.label||'';var val=empty?0:(ctx.parsed||0);return lab+': '+val;}}}},animation:{duration:400}}});
+ if(leg&&!empty){
+  leg.innerHTML='<span><i style="background:'+colAlg+'"></i>Alugadas '+d.alg+'</span>'
+   +'<span><i style="background:'+colVg+'"></i>Vagas '+d.vg+'</span>'
+   +'<span><i style="background:'+colOut+'"></i>Outros '+d.outros+'</span>';
+ }else if(leg){leg.innerHTML='';}
+}
+async function gmDashGanhoFinForMonth(records,ym,tenantIdx){
+ var alugadas=(typeof gmDashFilterAlugadas==='function')?gmDashFilterAlugadas(records):records;
+ var gestao=(typeof ltPortfolioGanhoGestao==='function')?ltPortfolioGanhoGestao(alugadas):0;
+ var pack=(typeof ltpFetchPmMonthPack==='function')?await ltpFetchPmMonthPack(ym):{totMarkup:0};
+ var tp=(typeof ltPortfolioTenantPlaceSum==='function')?ltPortfolioTenantPlaceSum(records,ym,tenantIdx||{}):0;
+ return gestao+(pack.totMarkup||0)+tp;
+}
+async function gmDashRenderGanhoBarChart(records,tenantIdx,curMonth){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById('ltd-ganho-bar-chart');
+ if(!cv)return;
+ var months=gmDashLastNMonths(6,curMonth);
+ var labels=months.map(gmDashMonthLabelShort);
+ var values=await Promise.all(months.map(function(ym){
+  return gmDashGanhoFinForMonth(records,ym,tenantIdx).catch(function(){return 0;});
+ }));
+ var fmtTip=(typeof ltFmt==='function')?ltFmt:function(n){return '$'+Number(n||0).toFixed(2);};
+ var ink3=gmDashCssVar('--ink3','#8a8478');
+ var border=gmDashCssVar('--border','#e2ddd4');
+ var base='#7c3aed';
+ var cur=String(curMonth||'');
+ var bg=months.map(function(ym,i){
+  return ym===cur?'#6d28d9':base;
+ });
+ if(window.__ltdDashCharts.bar){try{window.__ltdDashCharts.bar.destroy();}catch(eB){}}
+ window.__ltdDashCharts.bar=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:values,backgroundColor:bg,borderColor:months.map(function(ym){return ym===cur?'#5b21b6':base;}),borderWidth:months.map(function(ym){return ym===cur?2:0;}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtTip(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{color:ink3,font:{family:'DM Sans',size:10}}},y:{beginAtZero:true,grid:{color:border},ticks:{color:ink3,font:{family:'JetBrains Mono',size:10},callback:function(v){return fmtTip(v);}}}}}});
+}
 function gmDashFilterVagas(records){
  return gmDashDedupeRecords((records||[]).filter(function(r){
   return r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='VG';
@@ -14818,6 +14930,13 @@ async function ltDashRender(){
  }
  if(typeof ltUpdateTaskNavBadge==='function') ltUpdateTaskNavBadge();
  if(typeof dashTasksRender==='function')try{dashTasksRender();}catch(eDT){console.warn('dashTasksRender',eDT);}
+
+ if(portKpi.total>0){
+  try{
+   gmDashRenderPortfolioDonut(records,portKpi);
+   await gmDashRenderGanhoBarChart(records,tenantIdx,curMonth);
+  }catch(eCharts){console.warn('ltDashRender charts',eCharts);}
+ }
 }
 window.ltDashRender=ltDashRender;
 
