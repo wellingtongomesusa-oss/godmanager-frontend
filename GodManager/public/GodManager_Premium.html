@@ -331,6 +331,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .ltd-ganho-bar-wrap{height:210px;position:relative}
 .ltd-charts-bars-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
 @media (max-width:960px){#ltd-hero-row{grid-template-columns:1fr!important}.ltd-charts-bars-row{grid-template-columns:1fr!important}}
+.ltd-participation-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
+.ltd-participation-head{font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.ltd-participation-kpi-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);line-height:1.2;margin-bottom:4px}
+.ltd-participation-kpi-count{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--ink2);margin-bottom:10px}
+.ltd-participation-split{display:inline-block;font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;padding:6px 12px;margin-bottom:12px}
+.ltd-participation-chart-wrap{position:relative;height:190px}
+.ltd-participation-chart-wrap canvas{width:100%!important;height:100%!important}
+.ltd-participation-marker{position:absolute;top:0;bottom:28px;width:2px;background:var(--ink);pointer-events:none;z-index:2;transform:translateX(-1px)}
+.ltd-participation-marker::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:var(--ink);margin-top:-4px}
+.ltd-participation-marker-label{position:absolute;top:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);background:var(--cream);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;font-family:'DM Sans',sans-serif}
 .cd{height:1px;background:var(--border);margin:0 -22px 10px}
 .cp{display:flex;flex-wrap:wrap;gap:5px;padding-bottom:12px}
 .card .cu{font-size:10px;color:var(--ink3);text-align:right;padding:2px 14px 0;font-family:'DM Sans',system-ui,sans-serif;margin-top:4px}
@@ -2631,6 +2641,19 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div id="ltd-ganho-sub" style="font-size:11px;color:var(--ink2)">regra do site · gestao MGM%</div>
  <div id="ltd-ganho-delta" style="margin-top:6px;font-size:11px"></div>
  <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div>
+ </div>
+ </div>
+ <!-- Regra de Participacao (Manager Prop only) -->
+ <div id="ltd-participation-card" class="ltd-participation-card" style="display:none" aria-hidden="true">
+ <div class="ltd-participation-head">Regra de Participacao — Master Vacation Homes</div>
+ <div id="ltd-participation-kpi-title" class="ltd-participation-kpi-title">Fase atual: —</div>
+ <div id="ltd-participation-kpi-count" class="ltd-participation-kpi-count gm-sensitive-val">— / — casas</div>
+ <div id="ltd-participation-split" class="ltd-participation-split">Lucro —% · Equity —%</div>
+ <div class="ltd-participation-chart-wrap">
+ <canvas id="ltd-participation-phases-chart" aria-label="Metas de casas por fase do contrato"></canvas>
+ <div id="ltd-participation-marker" class="ltd-participation-marker" style="left:0%;display:none">
+ <span class="ltd-participation-marker-label">Atual: 0</span>
+ </div>
  </div>
  </div>
  <!-- Bar charts Receita + Ganho MP -->
@@ -15176,7 +15199,132 @@ function gmDashFilterAlugadas(records){
   return r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='ALG';
  });
 }
-window.__ltdDashCharts={donut:null,bar:null,barReceita:null,lineNet:null};
+/** Manager Prop — card Regra de Participacao (Master Vacation Homes contract). */
+var GM_MASTER_VACATION_HOMES_MP_CLIENT_ID='cmoqec9bw0000057uu4p5h15a';
+var GM_PARTICIPATION_PHASES=[
+ {id:1,label:'Fase 1 (Atual)',goalHouses:142,lucro:25,equity:0},
+ {id:2,label:'Fase 2',goalHouses:142,lucro:35,equity:25},
+ {id:3,label:'Fase 3',goalHouses:213,lucro:45,equity:40},
+ {id:4,label:'Fase Final',goalHouses:320,lucro:50,equity:48}
+];
+var GM_PARTICIPATION_CHART_MAX=320;
+
+function gmPhaseFromCount(totalHouses){
+ var t=Math.max(0,Math.floor(Number(totalHouses)||0));
+ if(t<142)return GM_PARTICIPATION_PHASES[0];
+ if(t<213)return GM_PARTICIPATION_PHASES[1];
+ if(t<320)return GM_PARTICIPATION_PHASES[2];
+ return GM_PARTICIPATION_PHASES[3];
+}
+
+function gmDashParticipationClientVisible(){
+ try{
+  var cid='';
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var role=String(u.role||'').toLowerCase();
+  if(role==='super_admin'&&typeof getActiveClient==='function'){
+   var ac=getActiveClient();
+   if(ac&&ac.id)cid=String(ac.id).trim();
+  }
+  if(!cid&&u.clientId)cid=String(u.clientId).trim();
+  return cid===GM_MASTER_VACATION_HOMES_MP_CLIENT_ID;
+ }catch(e){return false;}
+}
+
+function gmDashRenderParticipationMarker(totalHouses){
+ var marker=document.getElementById('ltd-participation-marker');
+ if(!marker)return;
+ var t=Math.max(0,Math.floor(Number(totalHouses)||0));
+ var pct=Math.min(100,Math.max(0,(t/GM_PARTICIPATION_CHART_MAX)*100));
+ marker.style.left=pct+'%';
+ marker.style.display=t>0?'block':'none';
+ var lbl=marker.querySelector('.ltd-participation-marker-label');
+ if(lbl)lbl.textContent='Atual: '+t;
+}
+
+function gmDashRenderParticipationPhasesChart(){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById('ltd-participation-phases-chart');
+ if(!cv)return;
+ var phases=GM_PARTICIPATION_PHASES;
+ var labels=phases.map(function(p){return p.label;});
+ var data=phases.map(function(p){return p.goalHouses;});
+ var colors=[
+  (typeof gmDashCssVar==='function'?gmDashCssVar('--amber','#c47b28'):'#c47b28'),
+  (typeof gmDashCssVar==='function'?gmDashCssVar('--blue','#22558c'):'#22558c'),
+  '#7c3aed',
+  (typeof gmDashCssVar==='function'?gmDashCssVar('--green','#2d7252'):'#2d7252')
+ ];
+ var ink3=(typeof gmDashCssVar==='function'?gmDashCssVar('--ink3','#8a8478'):'#8a8478');
+ var border=(typeof gmDashCssVar==='function'?gmDashCssVar('--border','#e2ddd4'):'#e2ddd4');
+ if(window.__ltdDashCharts.participation){try{delete window.__ltdDashChartDefaults['ltd-participation-phases-chart'];window.__ltdDashCharts.participation.destroy();}catch(eD){}}
+ window.__ltdDashCharts.participation=new Chart(cv.getContext('2d'),{
+  type:'bar',
+  data:{
+   labels:labels,
+   datasets:[{data:data,backgroundColor:colors,borderRadius:4,borderWidth:0}]
+  },
+  options:{
+   indexAxis:'y',
+   responsive:true,
+   maintainAspectRatio:false,
+   animation:{duration:400},
+   plugins:{
+    legend:{display:false},
+    tooltip:{
+     callbacks:{
+      label:function(ctx){
+       var p=phases[ctx.dataIndex];
+       if(!p)return '';
+       return ['Meta: '+p.goalHouses+' casas','Lucro: '+p.lucro+'%','Equity: '+p.equity+'%'];
+      }
+     }
+    }
+   },
+   scales:{
+    x:{
+     beginAtZero:true,
+     max:GM_PARTICIPATION_CHART_MAX,
+     grid:{color:border},
+     ticks:{color:ink3,font:{family:'JetBrains Mono',size:10}}
+    },
+    y:{
+     grid:{display:false},
+     ticks:{color:ink3,font:{family:'DM Sans',size:10,weight:'600'}}
+    }
+   }
+  }
+ });
+}
+
+function gmDashRenderParticipationCard(totalHouses){
+ var card=document.getElementById('ltd-participation-card');
+ if(!card)return;
+ var visible=gmDashParticipationClientVisible();
+ card.style.display=visible?'block':'none';
+ card.setAttribute('aria-hidden',visible?'false':'true');
+ if(!visible){
+  if(window.__ltdDashCharts&&window.__ltdDashCharts.participation){
+   try{window.__ltdDashCharts.participation.destroy();}catch(eX){}
+   window.__ltdDashCharts.participation=null;
+  }
+  return;
+ }
+ var total=Math.max(0,Math.floor(Number(totalHouses)||0));
+ var phase=gmPhaseFromCount(total);
+ var goal=phase.goalHouses||1;
+ var pct=Math.min(100,Math.round((total/goal)*100));
+ var titleEl=document.getElementById('ltd-participation-kpi-title');
+ var countEl=document.getElementById('ltd-participation-kpi-count');
+ var splitEl=document.getElementById('ltd-participation-split');
+ if(titleEl)titleEl.textContent='Fase atual: '+phase.label;
+ if(countEl)countEl.textContent=total+' / '+goal+' casas ('+pct+'%)';
+ if(splitEl)splitEl.textContent='Lucro '+phase.lucro+'% · Equity '+phase.equity+'%';
+ gmDashRenderParticipationPhasesChart();
+ gmDashRenderParticipationMarker(total);
+}
+
+window.__ltdDashCharts={donut:null,bar:null,barReceita:null,lineNet:null,participation:null};
 window.__ltdDashChartDefaults={};
 
 function gmDashValuesHidden(){
@@ -15509,6 +15657,8 @@ async function ltDashRender(){
  [['ltd-strip-total',String(portKpi.total)],['ltd-strip-rented',String(portKpi.alugadas)],['ltd-strip-vacant',String(portKpi.vagas)],
  ['ltd-strip-owners',String(totOwners)],['ltd-strip-deposit',ltFmt(totDeposit)]
  ].forEach(function(arr){var el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
+
+ if(typeof gmDashRenderParticipationCard==='function')gmDashRenderParticipationCard(portKpi.total);
 
  try{
   var prevM=(typeof gmPrevMonth==='function')?gmPrevMonth(curMonth):curMonth;
