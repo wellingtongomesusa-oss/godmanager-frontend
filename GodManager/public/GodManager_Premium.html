@@ -186,7 +186,7 @@
  body.sidebar-collapsed .ss,
  body.sidebar-collapsed .sg{justify-content:center;padding-left:0;padding-right:0;margin-left:4px;margin-right:4px;gap:0;border-left-width:3px}
  body.sidebar-collapsed .si > span,
- body.sidebar-collapsed .ss > span:not(#nav-tasks-badge),
+ body.sidebar-collapsed .ss > span:not(#nav-tasks-badge):not(#nav-news-badge),
  body.sidebar-collapsed .sg > span,
  body.sidebar-collapsed .sg .cv{display:none!important}
  body.sidebar-collapsed .sb-ix-ic span{display:none!important}
@@ -205,7 +205,8 @@
  body.sidebar-collapsed .sb-ft button{display:none!important}
  body.sidebar-collapsed .sb-ft{justify-content:center;padding:12px 8px}
  body.sidebar-collapsed .sidebar .sb-copyright{display:none!important}
- body.sidebar-collapsed #nav-tasks-badge{position:absolute;top:2px;right:2px;margin:0;font-size:7px;min-width:12px;padding:0 4px}
+ body.sidebar-collapsed #nav-tasks-badge,
+ body.sidebar-collapsed #nav-news-badge{position:absolute;top:2px;right:2px;margin:0;font-size:7px;min-width:12px;padding:0 4px}
  body.sidebar-collapsed .ss[style*="space-between"]{position:relative}
  .sb-collapse-btn{
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -1245,7 +1246,7 @@ try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localS
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="communications">
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">COMMUNICATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('news')" id="nav-news" style="padding-left:16px">News</div>
+ <div class="ss" onclick="nav('news')" id="nav-news" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;padding-left:16px">News <span id="nav-news-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:8px;font-weight:700">0</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="properties" id="wrap-nav-props-rank">
@@ -9341,9 +9342,11 @@ function nav(r){
    try{if(typeof gmAdminDashClientCardsLoad==='function')await gmAdminDashClientCardsLoad();}catch(ec){console.warn('[admin-dash-client-cards]',ec);}
    try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(eb){}
   }catch(eAd){console.warn('[admin-dashboard nav]',eAd);if(typeof nav==='function')nav('home');}
- }
+ },
+ news:function(){if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){if(typeof renderMsgs==='function')renderMsgs();});}
  };
  if(renders[r]) setTimeout(renders[r],30);
+ try{if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();}catch(_gnb){}
 }
 
 window.osStatementData={};
@@ -10170,6 +10173,103 @@ function setType(t){
  }
 }
 
+window.__gmNewsApiItems=[];
+window.__gmNewsTotal24h=0;
+
+function gmNewsEsc(s){
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+
+function gmNewsSubtypePill(subtype){
+ if(subtype==='vendor_fee')return{lbl:'Vendor +$120',bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)'};
+ if(subtype==='vendor_free')return{lbl:'V Free',bg:'var(--amber-bg)',fg:'var(--amber)',bd:'var(--amber-bd)'};
+ return{lbl:'Job',bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
+}
+
+function gmNewsFormatTime(isoOrStr){
+ if(!isoOrStr)return '';
+ try{
+  var d=new Date(isoOrStr);
+  if(!isNaN(d.getTime()))return d.toLocaleString('pt-BR');
+ }catch(e){}
+ return String(isoOrStr);
+}
+
+function gmNewsUpdateNavBadge(){
+ var n=Number(window.__gmNewsTotal24h)||0;
+ var b=document.getElementById('nav-news-badge');
+ if(b){b.textContent=n>9?'9+':String(n);b.style.display=n>0?'inline-block':'none';}
+}
+
+function gmNewsRefreshBadge(){
+ return fetch('/api/news?limit=1&since=24h',{credentials:'include'})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  .then(function(res){
+   if(res.ok&&res.j){
+    window.__gmNewsTotal24h=Number(res.j.total_24h)||0;
+    gmNewsUpdateNavBadge();
+   }
+  })
+  .catch(function(){});
+}
+
+function gmNewsLoadApi(){
+ return fetch('/api/news?limit=50',{credentials:'include'})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  .then(function(res){
+   if(res.ok&&res.j&&Array.isArray(res.j.items)){
+    window.__gmNewsApiItems=res.j.items;
+    if(typeof res.j.total_24h==='number')window.__gmNewsTotal24h=res.j.total_24h;
+    gmNewsUpdateNavBadge();
+   }
+   return res;
+  })
+  .catch(function(){return{ok:false};});
+}
+
+function gmNewsPostJobAction(opts){
+ if(!opts||!opts.subtype)return;
+ var payload={
+  type:'job_action',
+  subtype:opts.subtype,
+  title:String(opts.title||'').slice(0,120),
+  body:opts.body!=null?String(opts.body):undefined,
+  jobId:opts.jobId?String(opts.jobId):undefined,
+  metadata:opts.metadata&&typeof opts.metadata==='object'?opts.metadata:undefined
+ };
+ fetch('/api/news',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  .then(function(res){
+   if(res.ok){
+    if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){if(typeof renderMsgs==='function')renderMsgs();});
+    if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();
+   }
+  })
+  .catch(function(){});
+}
+
+function gmNewsJobDescription(jobId){
+ var desc='';
+ try{
+  var cache=window.__jobsApiRowsCache||[];
+  var rec=cache.find(function(x){return x&&String(x.id)===String(jobId);});
+  if(rec)desc=String(rec.desc||rec.description||'').trim();
+  if(!desc){
+   var pm=(window._pmExpenseRows||[]).find(function(x){return x&&String(x.id)===String(jobId);});
+    if(pm)desc=String(pm.description||pm.desc||'').trim();
+  }
+  if(!desc){
+   var leg=(typeof ltExpGetRecords==='function'?ltExpGetRecords():[]).find(function(x){return x&&String(x.id)===String(jobId);});
+   if(leg)desc=String(leg.desc||leg.description||'').trim();
+  }
+ }catch(e){}
+ return desc;
+}
+
+function gmNewsOpenJob(){
+ if(typeof nav==='function')nav('jobs');
+}
+
 function sendMsg(){
  const ta=document.getElementById('news-text');
  const text=ta.value.trim();
@@ -10191,17 +10291,54 @@ function markRead(id){
 function renderMsgs(){
  const list=document.getElementById('news-list');
  if(!list)return;
- const msgs=JSON.parse(localStorage.getItem('mp_msgs')||'[]');
- if(!msgs.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Nenhum aviso publicado ainda.</div>';return;}
- list.innerHTML=msgs.map(m=>`
- <div onclick="markRead(${m.id})" style="padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
- <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
- <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;background:${m.type==='urgente'?'var(--red-bg)':'var(--blue-bg)'};color:${m.type==='urgente'?'var(--red)':'var(--blue)'};border:1px solid ${m.type==='urgente'?'var(--red-bd)':'var(--blue-bd)'}">${m.type==='urgente'?'Urgent':'Normal'}</span>
- <span style="font-size:10px;color:var(--ink3);margin-left:auto;font-family:'JetBrains Mono',monospace">${m.time}</span>
- </div>
- <div style="font-size:12px;color:var(--ink2);line-height:1.5">${m.text}</div>
- <div style="font-size:10px;color:var(--ink3);margin-top:4px"> ${m.reads||0} ${m.reads===1?'leitura':'leituras'}</div>
- </div>`).join('');
+ var apiItems=(window.__gmNewsApiItems||[]).map(function(it){
+  return{
+   _src:'api',
+   id:it.id,
+   sortAt:new Date(it.createdAt||0).getTime()||0,
+   subtype:it.subtype,
+   title:it.title,
+   body:it.body,
+   jobId:it.jobId,
+   createdAt:it.createdAt,
+   createdByEmail:it.createdByEmail
+  };
+ });
+ var manual=[];
+ try{manual=JSON.parse(localStorage.getItem('mp_msgs')||'[]');}catch(e){manual=[];}
+ var manualItems=manual.map(function(m){
+  var ts=Number(m.id)||0;
+  if(!ts&&m.time){try{var pd=new Date(m.time);if(!isNaN(pd.getTime()))ts=pd.getTime();}catch(e2){}}
+  return{_src:'manual',id:m.id,sortAt:ts||0,text:m.text,type:m.type,time:m.time,reads:m.reads||0};
+ });
+ var merged=apiItems.concat(manualItems).sort(function(a,b){return(b.sortAt||0)-(a.sortAt||0);});
+ if(!merged.length){
+  list.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Nenhum aviso publicado ainda.</div>';
+  return;
+ }
+ list.innerHTML=merged.map(function(row){
+  if(row._src==='api'){
+   var pill=gmNewsSubtypePill(row.subtype);
+   var timeStr=gmNewsFormatTime(row.createdAt);
+   var bodyHtml=row.body?'<div style="font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.45">'+gmNewsEsc(row.body)+'</div>':'';
+   var jobLink=row.jobId?'<button type="button" onclick="event.stopPropagation();gmNewsOpenJob()" style="margin-top:6px;padding:3px 10px;background:transparent;border:1px solid var(--border2);border-radius:6px;font-size:10px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:\'DM Sans\',sans-serif">Abrir job</button>':'';
+   var by=row.createdByEmail?'<span style="font-size:10px;color:var(--ink3)">'+gmNewsEsc(row.createdByEmail)+'</span>':'';
+   return '<div style="padding:12px 18px;border-bottom:1px solid var(--border)">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'
+    +'<span style="font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;background:'+pill.bg+';color:'+pill.fg+';border:1px solid '+pill.bd+'">'+gmNewsEsc(pill.lbl)+'</span>'
+    +'<span style="font-size:12px;font-weight:600;color:var(--ink);flex:1;min-width:0">'+gmNewsEsc(row.title)+'</span>'
+    +'<span style="font-size:10px;color:var(--ink3);font-family:\'JetBrains Mono\',monospace">'+gmNewsEsc(timeStr)+'</span>'
+    +'</div>'+bodyHtml+(by?'<div style="margin-top:4px">'+by+'</div>':'')+jobLink+'</div>';
+  }
+  return '<div onclick="markRead('+row.id+')" style="padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'">'
+   +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+   +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;background:'+(row.type==='urgente'?'var(--red-bg)':'var(--blue-bg)')+';color:'+(row.type==='urgente'?'var(--red)':'var(--blue)')+';border:1px solid '+(row.type==='urgente'?'var(--red-bd)':'var(--blue-bd)')+'">'+(row.type==='urgente'?'Urgent':'Normal')+'</span>'
+   +'<span style="font-size:10px;color:var(--ink3);margin-left:auto;font-family:\'JetBrains Mono\',monospace">'+gmNewsEsc(row.time)+'</span>'
+   +'</div>'
+   +'<div style="font-size:12px;color:var(--ink2);line-height:1.5">'+gmNewsEsc(row.text)+'</div>'
+   +'<div style="font-size:10px;color:var(--ink3);margin-top:4px"> '+row.reads+' '+(row.reads===1?'leitura':'leituras')+'</div>'
+   +'</div>';
+ }).join('');
 }
 
 // NORMAS PDFs 
@@ -14254,6 +14391,22 @@ function ltSaveExpense(){
     var edBody=isEd?Object.assign({},body,{propertyCode:propId}):body;
     const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(edBody)});
     if(!r.ok){var er=await r.json().catch(function(){return{};});alert(er.error||('Erro '+r.status));return;}
+    var respJson=await r.json().catch(function(){return{};});
+    if(!isEd){
+     var vfFrom=null;
+     try{vfFrom=window.__lastVendorFreeFrom;}catch(eVf){}
+     var newJobId=respJson&&respJson.expense&&respJson.expense.id?String(respJson.expense.id):'';
+     if(vfFrom&&newJobId&&typeof gmNewsPostJobAction==='function'){
+      gmNewsPostJobAction({
+       subtype:'vendor_free',
+       jobId:newJobId,
+       title:'Job sem vendor: '+descVal.slice(0,80),
+       body:descVal,
+       metadata:{fromJobId:String(vfFrom)}
+      });
+     }
+     try{window.__lastVendorFreeFrom=null;}catch(eClrVf){}
+    }
     ltExpEditingPmId=null;ltCloseNewExpense();await ltExpRenderWithPm();
     if(typeof ltpRenderNetFromApi==='function')await ltpRenderNetFromApi();
     if(typeof ltOwnerPayRender==='function')await ltOwnerPayRender();
@@ -17193,7 +17346,7 @@ function gmSidebarNavLabel(el){
  if(!el)return '';
  var cached=el.getAttribute('data-sb-label');
  if(cached)return cached;
- var sp=el.querySelector(':scope > span:not(#nav-tasks-badge)');
+ var sp=el.querySelector(':scope > span:not(#nav-tasks-badge):not(#nav-news-badge)');
  var raw=(sp?sp.textContent:el.textContent)||'';
  var label=String(raw).replace(/\s+/g,' ').trim();
  if(label)el.setAttribute('data-sb-label',label);
@@ -19194,7 +19347,10 @@ window.addEventListener('DOMContentLoaded',()=>{
  applyPermissions();
  sbInitSectionCollapse();
  updateLastSavedBar();
- renderMsgs();
+ if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){renderMsgs();});
+ else renderMsgs();
+ if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();
+ try{window.__gmNewsBadgeInterval=setInterval(function(){if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();},120000);}catch(_gni){}
  renderNormas();
  renderLicenses();
  // load data
@@ -20495,6 +20651,16 @@ function jobsOnVendorClick(expenseId){
   jobsRender();
   if(typeof jobsRefreshValueCell==='function')try{jobsRefreshValueCell(expenseId);}catch(eV){}
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
+  try{
+   var descV=typeof gmNewsJobDescription==='function'?gmNewsJobDescription(expenseId):'';
+   if(typeof gmNewsPostJobAction==='function')gmNewsPostJobAction({
+    subtype:'vendor_fee',
+    jobId:expenseId,
+    title:'Vendor fee +$120: '+String(descV||expenseId).slice(0,80),
+    body:descV||undefined,
+    metadata:{amount:120}
+   });
+  }catch(eNewsV){}
 }
 function jobsOnJobClick(expenseId){
  if(jobsHasActionFor(expenseId,'vendor')){
