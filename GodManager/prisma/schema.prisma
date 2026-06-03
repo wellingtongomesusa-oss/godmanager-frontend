@@ -507,19 +507,21 @@ model JobAction {
 }
 
 model JobPhoto {
-  id          String   @id @default(cuid())
-  jobId       String
-  clientId    String?
-  r2Key       String   @unique
-  publicUrl   String   @db.Text
-  filename    String?
-  sizeBytes   Int?
-  contentType String?
-  uploadedBy  String?
-  uploadedAt  DateTime @default(now())
-  client      Client?  @relation("JobPhoto_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+  id              String   @id @default(cuid())
+  jobId           String
+  containerNumber Int      @default(1)
+  clientId        String?
+  r2Key           String   @unique
+  publicUrl       String   @db.Text
+  filename        String?
+  sizeBytes       Int?
+  contentType     String?
+  uploadedBy      String?
+  uploadedAt      DateTime @default(now())
+  client          Client?  @relation("JobPhoto_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([jobId])
+  @@index([jobId, containerNumber])
   @@index([clientId])
   @@index([uploadedAt])
   @@map("job_photos")
