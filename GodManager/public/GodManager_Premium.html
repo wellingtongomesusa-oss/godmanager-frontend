@@ -2462,108 +2462,77 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="pt">Dashboard</div>
  <div class="ps">Visao geral do portfolio de alugueis · GodManager.com</div>
  </div>
- <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--floating" style="margin-bottom:16px">
- <div class="gm-kpis-row gm-kpis-row--floating" style="--gm-kpi-cols-desktop:4;--gm-kpi-cols-tablet:4">
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">TOTAL DE CASAS</div>
- <div id="ltd-total-houses" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--ink);margin:6px 0 4px">0</div>
- <div style="font-size:11px;color:var(--ink2)">propriedades cadastradas</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div>
+ <!-- Hero: CASAS VAGAS -->
+ <div id="ltd-hero-vacant" style="background:var(--paper);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
+ <div style="position:sticky;top:0;z-index:2;background:var(--paper);padding:18px 20px 14px;border-bottom:1px solid var(--border)">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">CASAS VAGAS</div>
+ <div id="ltd-hero-vacant-count" style="font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--red);line-height:1.1;margin:4px 0">0</div>
+ <div id="ltd-hero-vacant-sub" style="font-size:11px;color:var(--ink2)">unidades disponíveis · status VG</div>
  </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">TOTAL DE OWNERS</div>
- <div id="ltd-total-owners" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--ink);margin:6px 0 4px">0</div>
- <div style="font-size:11px;color:var(--ink2)">proprietários ativos</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">ALUGUEL MENSAL</div>
- <div id="ltd-total-rent" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--green);margin:6px 0 4px">$0</div>
- <div style="font-size:11px;color:var(--ink2)">receita bruta do mês</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">DEPOSITO DE SEGURANCA</div>
- <div id="ltd-total-deposit" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--amber);margin:6px 0 4px">$0</div>
- <div style="font-size:11px;color:var(--ink2)">security deposit total</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div>
- </div>
- </div></div>
- <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--floating" style="margin-bottom:20px">
- <div class="gm-kpis-row gm-kpis-row--floating" style="--gm-kpi-cols-desktop:4;--gm-kpi-cols-tablet:4">
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">CONTAS ABERTAS</div>
- <div id="ltd-open-statements" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--amber);margin:6px 0 4px">0</div>
- <div style="font-size:11px;color:var(--ink2)">statements pendentes</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">CASAS ALUGADAS</div>
- <div id="ltd-rented" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--green);margin:6px 0 4px">0</div>
- <div style="font-size:11px;color:var(--ink2)">unidades ocupadas</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">EM ESTOQUE / VAGAS</div>
- <div id="ltd-vacant" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--slate);margin:6px 0 4px">0</div>
- <div style="font-size:11px;color:var(--ink2)">unidades disponíveis</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div>
- </div>
- <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:18px 20px 18px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
- <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">EM ANDAMENTO</div>
- <div id="ltd-inprogress" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--ink2);margin:6px 0 4px">0</div>
- <div style="font-size:11px;color:var(--ink2)">em reforma ou transição</div>
- <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div>
- </div>
- </div></div>
- <div id="ltd-all-wrap" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
- <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;flex-wrap:wrap;gap:12px;justify-content:space-between">
- <div style="font-size:13px;font-weight:700;color:var(--ink)">Propriedades Vagas</div>
- <input type="search" id="ltd-all-search" placeholder="Buscar endereco ou owner..." autocomplete="off" style="min-width:200px;flex:1;max-width:320px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none" />
- </div>
- <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px">
- <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
- <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);width:36px">#</th>
- <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
- <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Owner</th>
- <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Tenant</th>
- <th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Ocupacao</th>
- <th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--green)">Rent</th>
- <th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--blue)">NET Owner</th>
- <th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ <div id="ltd-hero-vacant-list-wrap" style="max-height:min(42vh,480px);overflow-y:auto;-webkit-overflow-scrolling:touch">
+ <table style="width:100%;border-collapse:collapse;min-width:640px">
+ <thead style="position:sticky;top:0;z-index:1;background:var(--cream)"><tr style="border-bottom:1px solid var(--border)">
+ <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
+ <th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3)">Owner</th>
+ <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);width:100px">Dias vaga</th>
+ <th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);width:110px">Acao</th>
  </tr></thead>
- <tbody id="ltd-all-tbody"></tbody>
- </table></div>
- <div id="ltd-all-empty" style="display:none;padding:24px;text-align:center;font-size:12px;color:var(--ink3)">Nenhuma propriedade cadastrada.</div>
- <div style="padding:12px 18px;border-top:1px solid var(--border);text-align:center">
- <button type="button" id="ltd-all-more" style="display:none;padding:8px 18px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Ver mais</button>
+ <tbody id="ltd-hero-vacant-tbody"></tbody>
+ </table>
+ </div>
+ <div id="ltd-hero-vacant-empty" style="display:none;padding:28px;text-align:center;font-size:12px;color:var(--ink3)">Nenhuma propriedade vaga no portfolio.</div>
+ </div>
+ <!-- Receita + Ganho MP -->
+ <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">RECEITA DE ALUGUEL DO MES</div>
+ <div id="ltd-receita-value" style="font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--amber);line-height:1.1;margin:4px 0">$0</div>
+ <div id="ltd-receita-sub" style="font-size:11px;color:var(--ink2)">—</div>
+ <div id="ltd-receita-delta" style="margin-top:8px;font-size:11px"></div>
+ <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div>
+ </div>
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,22,12,.06);position:relative;overflow:hidden">
+ <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">GANHO FINANCEIRO MP</div>
+ <div id="ltd-ganho-value" style="font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:#7c3aed;line-height:1.1;margin:4px 0">$0</div>
+ <div id="ltd-ganho-sub" style="font-size:11px;color:var(--ink2)">regra do site · gestao MGM%</div>
+ <div id="ltd-ganho-delta" style="margin-top:8px;font-size:11px"></div>
+ <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div>
  </div>
  </div>
- <!-- Cleanings -->
+ <!-- Strip KPI secundario -->
+ <div class="gm-kpis-shell gm-kpis-shell--hint" style="margin-bottom:20px">
+ <div class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:5;--gm-kpi-cols-tablet:3">
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TOTAL</div><div id="ltd-strip-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">ALUGADAS</div><div id="ltd-strip-rented" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VAGAS</div><div id="ltd-strip-vacant" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--slate)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--slate)"></div></div>
+ <div style="padding:12px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">OWNERS</div><div id="ltd-strip-owners" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
+ <div style="padding:12px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">DEPOSITOS</div><div id="ltd-strip-deposit" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ </div></div>
+ <!-- Trabalhos do mes (+ limpezas secundario) -->
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,22,12,.06);overflow:hidden">
- <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
- <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Limpezas do Mes</div><div id="ltd-clean-period" style="font-size:11px;color:var(--ink3);margin-top:2px">Periodo: Mar 2026</div></div>
- <button onclick="ltOpenNewCleaning()" style="padding:7px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Registrar Limpeza</button>
+ <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+ <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Trabalhos do Mes</div><div id="ltd-jobs-period" style="font-size:11px;color:var(--ink3);margin-top:2px">Periodo: —</div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap">
+ <button type="button" onclick="ltOpenNewCleaning()" style="padding:7px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">+ Registrar Limpeza</button>
+ </div>
  </div>
  <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border)">
- <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TOTAL DE LIMPEZAS</div><div id="ltd-clean-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">LIMPEZAS PAGAS</div><div id="ltd-clean-paid" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>
- <div style="padding:12px 16px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VALOR TOTAL</div><div id="ltd-clean-value" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">TRABALHOS</div><div id="ltd-jobs-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:12px 16px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">VALOR PM</div><div id="ltd-jobs-value" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:12px 16px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">PENDENTES</div><div id="ltd-jobs-pending" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--red)">0</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
  </div>
- <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px">
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
  <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
  <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
- <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tipo</th>
+ <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Descricao</th>
  <th style="padding:9px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>
  <th style="padding:9px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
- <th style="padding:9px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Observacao</th>
- <th style="padding:9px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Acoes</th>
  </tr></thead>
- <tbody id="ltd-clean-tbody"></tbody>
+ <tbody id="ltd-jobs-tbody"></tbody>
  </table></div>
- <div id="ltd-clean-empty" style="display:none;padding:30px;text-align:center;font-size:12px;color:var(--ink3)">Nenhuma limpeza registrada.</div>
+ <div id="ltd-jobs-empty" style="display:none;padding:30px;text-align:center;font-size:12px;color:var(--ink3)">Nenhum trabalho neste mes.</div>
  </div>
  <!-- Bottom 2-col -->
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px">
@@ -9186,9 +9155,18 @@ function nav(r){
   }
   if(typeof loadHomeDashboardFromApi==='function'){await loadHomeDashboardFromApi();}
  },
- longterm:()=>{
-  if(typeof ltExpFetchPm==='function'){void ltExpFetchPm().then(function(){if(typeof ltDashRender==='function')ltDashRender();});}
-  if(typeof ltDashRender==='function')ltDashRender();
+ longterm:async function gmNavLongtermDashboard(){
+  try{
+   if(typeof gmPropertiesFetchFromApi==='function'){
+    var fresh=await gmPropertiesFetchFromApi();
+    if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+   }
+  }catch(eSync){console.warn('longterm properties sync',eSync);}
+  try{
+   if(typeof window.gmDashPreloadTenants==='function'){await window.gmDashPreloadTenants();}
+  }catch(eTn){console.warn('longterm tenants preload',eTn);}
+  if(typeof ltExpFetchPm==='function'){void ltExpFetchPm();}
+  if(typeof ltDashRender==='function'){await ltDashRender();}
   if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();
  },
  ltproperties:async function gmLtPropertiesNavRender(){
@@ -14484,133 +14462,214 @@ function ltClnDelete(id){
 }
 
 // 
-// LONG TERM — DASHBOARD RENDER
+// LONG TERM — DASHBOARD RENDER (gm_properties_v2 + portfolio KPIs)
 // 
-function ltDashOccRank(occ){
- if(occ==='rented')return 0; if(occ==='vacant')return 1; if(occ==='inprogress')return 2; if(occ==='renovation')return 3; return 4;
-}
-function ltDashRenderAllPropsTable(){
- var recs=(ltGetRecords()||[]).slice();
- var qEl=document.getElementById('ltd-all-search');
- var q=(qEl&&qEl.value)?String(qEl.value).toLowerCase().trim():'';
- var filtered=recs.filter(function(r){
-  if(!r)return false;
-  // Propriedades Vagas: sem tenant ou occupancy=vacant
-  var hasTenant=r.tenant&&String(r.tenant).trim()!=='';
-  var occVacant=String(r.occupancy||'').toLowerCase()==='vacant';
-  if(hasTenant&&!occVacant)return false;
-  if(!q)return true;
-  var blob=(String(r.address||'')+' '+String(r.owner||'')+' '+String(r.tenant||'')).toLowerCase();
-  return blob.indexOf(q)>=0;
- });
- filtered.sort(function(a,b){
-  var d=ltDashOccRank(a&&a.occupancy)-ltDashOccRank(b&&b.occupancy);
-  if(d!==0) return d;
-  return String(a&&a.address||'').localeCompare(String(b&&b.address||''));
- });
- var lim=window._ltdAllShown||20;
- var slice=filtered.slice(0,lim);
- var tb=document.getElementById('ltd-all-tbody');
- var em=document.getElementById('ltd-all-empty');
- var more=document.getElementById('ltd-all-more');
- if(!tb) return;
- var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
- if(!filtered.length){ tb.innerHTML=''; if(em){em.textContent='Nenhuma propriedade vaga.';em.style.display='block';} if(more) more.style.display='none'; return; }
- if(em) em.style.display='none';
- var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
- var occStyle={rented:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',vacant:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc',inprogress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',renovation:'background:rgba(139,90,0,.12);color:#8B5A00;border:1px solid rgba(212,146,62,.45)'};
- var stLab={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
- var stStyle={approved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',disputed:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
- tb.innerHTML=slice.map(function(r,idx){
-  var oid=String(r.id==null?'':r.id).replace(/"/g,'&quot;');
-  var o=r&&r.occupancy, st=r&&r.status;
-  return '<tr data-ltd-all-id="'+oid+'" style="border-bottom:1px solid var(--border);cursor:pointer" tabindex="0">'
-  +'<td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(idx+1)+'</td>'
-  +'<td style="padding:8px 10px;font-size:11px;color:var(--ink);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(r.address||'')+'">'+esc(r.address||'')+'</td>'
-  +'<td style="padding:8px 10px;font-size:11px;color:var(--ink2)">'+esc(r.owner||'')+'</td>'
-  +'<td style="padding:8px 10px;font-size:11px;color:var(--ink3)">'+esc(r.tenant||'')+'</td>'
-  +'<td style="padding:8px 10px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;'+(occStyle[o]||'')+'">'+(occLabel[o]||'—')+'</span></td>'
-  +'<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+ltFmt(r.rent)+'</td>'
-  +'<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:'+((Number(r.net)||0)>=0?'var(--blue)':'var(--red)')+'">'+ltFmt((r.net)||0)+'</td>'
-  +'<td style="padding:8px 10px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;'+(stStyle[st]||'')+'">'+(st in stLab?stLab[st]:esc(st||'—'))+'</span></td>'
-  +'</tr>';
- }).join('');
- if(more) more.style.display=(filtered.length>slice.length)?'inline-block':'none';
-}
-function ltDashAllPropsBindOnce(){
- if(window._ltdAllDashBound) return; window._ltdAllDashBound=1;
- var host=document.getElementById('ltd-all-tbody');
- if(host) host.addEventListener('click', function(ev){
-  var tr=ev.target && ev.target.closest && ev.target.closest('tr[data-ltd-all-id]');
-  if(!tr) return;
-  var id=tr.getAttribute('data-ltd-all-id');
-  if(id && typeof ltOpenDetail==='function') ltOpenDetail(id);
- });
- if(host) host.addEventListener('keydown', function(ev){
-  if(ev.key!=='Enter' && ev.key!==' ') return;
-  var tr=ev.target && ev.target.closest && ev.target.closest('tr[data-ltd-all-id]');
-  if(!tr) return; ev.preventDefault();
-  var id=tr.getAttribute('data-ltd-all-id');
-  if(id && typeof ltOpenDetail==='function') ltOpenDetail(id);
- });
- var s=document.getElementById('ltd-all-search');
- if(s) s.addEventListener('input', function(){ window._ltdAllShown=20; ltDashRenderAllPropsTable(); });
- var m=document.getElementById('ltd-all-more');
- if(m) m.addEventListener('click', function(){ window._ltdAllShown=(window._ltdAllShown||20)+20; ltDashRenderAllPropsTable(); });
-}
-function ltDashRender(){
- const records=ltGetRecords();
- ltDashAllPropsBindOnce();
- const curMonth=new Date().toISOString().slice(0,7);
- const cleaningsMonth=(ltClnGetRecords()||[]).filter(function(c){return c&&(String(c.date||'').slice(0,7)===curMonth);});
- const clnPeriodEl=document.getElementById('ltd-clean-period');
- if(clnPeriodEl) clnPeriodEl.textContent='Periodo: '+(typeof ltFmtMonth==='function'?ltFmtMonth(curMonth):curMonth);
-
- // Row 1 KPIs (fonte unica: ltGetRecords)
- const totHouses=records.length;
- const totOwners=new Set(records.map(function(r){return r.owner;})).size;
- const totRent=records.reduce(function(s,r){return s+(Number(r&&r.rent)||0);},0);
- const totDeposit=records.reduce(function(s,r){return s+(Number(r&&r.deposit)||0);},0);
- [['ltd-total-houses',String(totHouses)],['ltd-total-owners',String(totOwners)],
- ['ltd-total-rent',ltFmt(totRent)],['ltd-total-deposit',ltFmt(totDeposit)]
- ].forEach(function(arr){const el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
-
- // Row 2 KPIs
- const openStmt=records.filter(function(r){return r&&r.status==='pending';}).length;
- const rented=records.filter(function(r){return r&&r.occupancy==='rented';}).length;
- const vacant=records.filter(function(r){return r&&r.occupancy==='vacant';}).length;
- const inprog=records.filter(function(r){return r&&r.occupancy==='inprogress';}).length;
- [['ltd-open-statements',String(openStmt)],['ltd-rented',String(rented)],['ltd-vacant',String(vacant)],['ltd-inprogress',String(inprog)]
- ].forEach(function(arr){const el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
-
- // Cleanings KPIs (apenas mes atual)
- const totClean=cleaningsMonth.length;
- const paidClean=cleaningsMonth.filter(function(c){return c&&c.status==='paid';}).length;
- const valClean=cleaningsMonth.reduce(function(s,c){return s+(Number(c&&c.value)||0);},0);
- [['ltd-clean-total',String(totClean)],['ltd-clean-paid',String(paidClean)],['ltd-clean-value',ltFmt(valClean)]
- ].forEach(function(arr){const el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
-
- // Cleanings table (mes corrente)
- const ctbody=document.getElementById('ltd-clean-tbody');
- const cempty=document.getElementById('ltd-clean-empty');
- if(ctbody){
- if(!cleaningsMonth.length){ctbody.innerHTML='';if(cempty)cempty.style.display='block';}
- else{
- if(cempty)cempty.style.display='none';
- const cs={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',unpaid:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)'};
- const cl={paid:'Pago',unpaid:'Pendente'};
- ctbody.innerHTML=cleaningsMonth.map((c,i)=>`
- <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
- <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
- <td style="padding:8px 12px;font-size:11px;color:var(--ink)">${c.propAddress}</td>
- <td style="padding:8px 12px;font-size:11px;color:var(--ink3)">${c.date}</td>
- <td style="padding:8px 12px;font-size:11px;color:var(--ink2)">${c.type}</td>
- <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink)">${ltFmt(c.value)}</td>
- <td style="padding:8px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;${cs[c.status]||''}">${cl[c.status]||c.status}</span></td>
- <td style="padding:8px 12px;font-size:11px;color:var(--ink3)">${c.notes||'—'}</td>
- <td style="padding:8px 10px;text-align:center"><button onclick="ltClnDelete('${c.id}')" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button></td>
- </tr>`).join('');
+window.gmDashPreloadTenants=async function(){
+ if(window.__gmTenantsTnCache&&Array.isArray(window.__gmTenantsTnCache)&&window.__gmTenantsTnCache.length){
+  return window.__gmTenantsTnCache;
  }
+ try{
+  var r=await fetch('/api/tenants',{credentials:'include',cache:'no-store'});
+  if(!r.ok)return [];
+  var data=await r.json();
+  var arr=(data&&data.tenants)||[];
+  window.__gmTenantsTnCache=arr.map(function(t){
+   var prop=t.property||{};
+   var meta=t.metadata||{};
+   return{
+    propId:t.propertyId||'',
+    propertyId:t.propertyId||'',
+    propertyCode:t.propertyCode||(prop.code||'')||'',
+    moveIn:t.moveIn?String(t.moveIn).split('T')[0]:'',
+    leaseTo:t.leaseTo?String(t.leaseTo).split('T')[0]:'',
+    moveOut:meta.moveOut||''
+   };
+  });
+  return window.__gmTenantsTnCache;
+ }catch(e){console.warn('gmDashPreloadTenants',e);return [];}
+};
+function gmDashPortfolioRecords(){
+ var recs=(typeof gmPropertiesFilteredUiRecords==='function')?gmPropertiesFilteredUiRecords():[];
+ if(recs.length) return recs;
+ if(typeof gmHomeGetUiRecords==='function') return gmHomeGetUiRecords();
+ return [];
+}
+function gmDashDedupeRecords(arr){
+ var seen={},out=[];
+ (arr||[]).forEach(function(r){
+  if(!r)return;
+  var k=String(r._apiId||r.id||'').trim();
+  if(!k)return;
+  if(seen[k])return;
+  seen[k]=1;
+  out.push(r);
+ });
+ return out;
+}
+function gmDashVacantDaysSince(r,tenantIdx){
+ var keys=[String(r.id||''),String(r.code||''),String(r._apiId||'')].filter(Boolean);
+ var lastEnd=null,ki,li,L;
+ for(ki=0;ki<keys.length;ki++){
+  var leases=tenantIdx[keys[ki]]||[];
+  for(li=0;li<leases.length;li++){
+   L=leases[li];
+   if(L.end&&(!lastEnd||L.end>lastEnd))lastEnd=L.end;
+  }
+ }
+ var mo=r.moveOut||r.leaseTo;
+ if(mo){
+  var dMo=(typeof ltpParseYmd==='function')?ltpParseYmd(mo):null;
+  if(dMo&&(!lastEnd||dMo>lastEnd))lastEnd=dMo;
+ }
+ if(!lastEnd)return null;
+ var today=new Date();
+ today.setHours(0,0,0,0);
+ return Math.max(0,Math.floor((today.getTime()-lastEnd.getTime())/86400000));
+}
+function gmDashFilterAlugadas(records){
+ return (records||[]).filter(function(r){
+  return r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='ALG';
+ });
+}
+function gmDashFilterVagas(records){
+ return gmDashDedupeRecords((records||[]).filter(function(r){
+  return r&&typeof gmGetEffectiveStatus==='function'&&gmGetEffectiveStatus(r)==='VG';
+ })).sort(function(a,b){
+  var da=gmDashVacantDaysSince(a,window.__gmDashTenantIdx||{});
+  var db=gmDashVacantDaysSince(b,window.__gmDashTenantIdx||{});
+  var na=da==null?-1:da;
+  var nb=db==null?-1:db;
+  if(nb!==na)return nb-na;
+  if(typeof ltpComparePropertiesByHouseNumber==='function')return ltpComparePropertiesByHouseNumber(a,b);
+  return String(a.address||'').localeCompare(String(b.address||''));
+ });
+}
+function gmDashRenderVacantHero(vagas,tenantIdx){
+ var tb=document.getElementById('ltd-hero-vacant-tbody');
+ var empty=document.getElementById('ltd-hero-vacant-empty');
+ var wrap=document.getElementById('ltd-hero-vacant-list-wrap');
+ /* contador definido em ltDashRender via portKpi.vagas (alinha strip/Home/Properties) */
+ if(!tb)return;
+ var esc=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+ if(!vagas.length){
+  tb.innerHTML='';
+  if(empty)empty.style.display='block';
+  if(wrap)wrap.style.display='none';
+  return;
+ }
+ if(empty)empty.style.display='none';
+ if(wrap)wrap.style.display='block';
+ tb.innerHTML=vagas.map(function(r){
+  var days=gmDashVacantDaysSince(r,tenantIdx);
+  var rowBg='';
+  var daysStyle='color:var(--ink2)';
+  var daysTxt=days==null?'—':String(days)+' d';
+  var badge='';
+  if(days!=null&&days>30){rowBg='background:rgba(184,48,48,.06);';daysStyle='color:var(--red);font-weight:700;';}
+  if(days!=null&&days>60){
+   badge='<span style="display:inline-block;margin-left:6px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">URGENTE</span>';
+  }
+  var editId=String(r.id||r.code||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return '<tr style="border-bottom:1px solid var(--border);'+rowBg+'">'
+   +'<td style="padding:9px 12px;font-size:11px;color:var(--ink);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(r.address||'')+'">'+esc(r.address||'')+'</td>'
+   +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(r.owner||'')+'">'+esc(r.owner||'')+'</td>'
+   +'<td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;'+daysStyle+'">'+daysTxt+badge+'</td>'
+   +'<td style="padding:9px 10px;text-align:center"><button type="button" onclick="event.stopPropagation();if(typeof ltpOpenEditProperty===\'function\')ltpOpenEditProperty(\''+editId+'\')" style="padding:5px 12px;background:transparent;color:var(--amber);border:1px solid var(--amber-bd);border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">Ver / Editar</button></td>'
+   +'</tr>';
+ }).join('');
+}
+async function ltDashRender(){
+ var records=gmDashDedupeRecords(gmDashPortfolioRecords());
+ var tenantIdx=(typeof ltpGetTenantLeaseIndex==='function')?ltpGetTenantLeaseIndex():{};
+ window.__gmDashTenantIdx=tenantIdx;
+ var portKpi=(typeof gmPropertiesPortfolioKpiCounts==='function')?gmPropertiesPortfolioKpiCounts(records):{total:records.length,vagas:0,alugadas:0};
+ var curMonth=new Date().toISOString().slice(0,7);
+ var monthLbl=(typeof ltFmtMonth==='function')?ltFmtMonth(curMonth):curMonth;
+ var jobsPeriodEl=document.getElementById('ltd-jobs-period');
+ if(jobsPeriodEl)jobsPeriodEl.textContent='Periodo: '+monthLbl;
+
+ var vagas=gmDashFilterVagas(records);
+ gmDashRenderVacantHero(vagas,tenantIdx);
+ var heroCnt=document.getElementById('ltd-hero-vacant-count');
+ if(heroCnt)heroCnt.textContent=String(portKpi.vagas);
+
+ var alugadas=gmDashFilterAlugadas(records);
+ var receita=alugadas.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+ var ganhoMp=(typeof ltPortfolioGanhoGestao==='function')?ltPortfolioGanhoGestao(alugadas):0;
+ var fmtMoney=(typeof gmHomeMoney==='function')?gmHomeMoney:function(n){return (typeof ltFmt==='function'?ltFmt(n):'$'+n);};
+ var recEl=document.getElementById('ltd-receita-value');
+ var ganEl=document.getElementById('ltd-ganho-value');
+ var recSub=document.getElementById('ltd-receita-sub');
+ if(recEl)recEl.textContent=fmtMoney(receita);
+ if(ganEl)ganEl.textContent=fmtMoney(ganhoMp);
+ if(recSub)recSub.textContent=alugadas.length+' casas alugadas · '+monthLbl;
+
+ var totOwners=new Set(records.map(function(r){return String(r.owner||'').trim();}).filter(Boolean)).size;
+ var totDeposit=records.reduce(function(s,r){return s+(Number(r.deposit)||0);},0);
+ [['ltd-strip-total',String(portKpi.total)],['ltd-strip-rented',String(portKpi.alugadas)],['ltd-strip-vacant',String(portKpi.vagas)],
+ ['ltd-strip-owners',String(totOwners)],['ltd-strip-deposit',ltFmt(totDeposit)]
+ ].forEach(function(arr){var el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
+
+ try{
+  var prevM=(typeof gmPrevMonth==='function')?gmPrevMonth(curMonth):curMonth;
+  var prevAlugadas=alugadas;
+  var prevReceita=prevAlugadas.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+  var prevGanho=(typeof ltPortfolioGanhoGestao==='function')?ltPortfolioGanhoGestao(prevAlugadas):0;
+  var recDelta=document.getElementById('ltd-receita-delta');
+  var ganDelta=document.getElementById('ltd-ganho-delta');
+  if(recDelta&&typeof gmRenderDeltaHtml==='function'&&typeof gmComputeDelta==='function'){
+   recDelta.innerHTML=gmRenderDeltaHtml(gmComputeDelta(receita,prevReceita));
+  }
+  if(ganDelta&&typeof gmRenderDeltaHtml==='function'&&typeof gmComputeDelta==='function'){
+   ganDelta.innerHTML=gmRenderDeltaHtml(gmComputeDelta(ganhoMp,prevGanho));
+  }
+ }catch(eDelta){console.warn('ltDashRender deltas',eDelta);}
+
+ // Trabalhos do mes (PM expenses API)
+ var jobsMonth=[];
+ try{
+  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include',cache:'no-store'});
+  if(exRes.ok){
+   var exJ=await exRes.json();
+   jobsMonth=((exJ&&exJ.expenses)||[]).slice().sort(function(a,b){
+    var da=String(a.serviceDate||a.date||'').slice(0,10);
+    var db=String(b.serviceDate||b.date||'').slice(0,10);
+    return db.localeCompare(da);
+   });
+  }
+ }catch(eJobs){console.warn('ltDashRender jobs',eJobs);}
+ var jobsShow=jobsMonth.slice(0,20);
+ var jobsVal=jobsMonth.reduce(function(s,e){return s+(parseFloat(e.ownerCharged)||parseFloat(e.value)||0);},0);
+ var jobsPending=jobsMonth.filter(function(e){
+  var st=String(e.status||e.statusPm||'').toLowerCase();
+  return st!=='paid'&&st!=='applied'&&st!=='cancelled'&&st!=='finalized';
+ }).length;
+ [['ltd-jobs-total',String(jobsMonth.length)],['ltd-jobs-value',ltFmt(jobsVal)],['ltd-jobs-pending',String(jobsPending)]
+ ].forEach(function(arr){var el=document.getElementById(arr[0]);if(el)el.textContent=arr[1];});
+ var jtbody=document.getElementById('ltd-jobs-tbody');
+ var jempty=document.getElementById('ltd-jobs-empty');
+ if(jtbody){
+  if(!jobsShow.length){jtbody.innerHTML='';if(jempty)jempty.style.display='block';}
+  else{
+   if(jempty)jempty.style.display='none';
+   var escJ=typeof gmHtmlEscAttr==='function'?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+   var stStyle={paid:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',pending:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',cancelled:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)',finalized:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)'};
+   jtbody.innerHTML=jobsShow.map(function(e,i){
+    var addr=e.propertyAddress||e.propAddress||e.propertyCode||'—';
+    var dt=String(e.serviceDate||e.date||'').slice(0,10);
+    var desc=String(e.description||e.desc||e.serviceType||'—');
+    var st=String(e.status||e.statusPm||'pending').toLowerCase();
+    var val=parseFloat(e.ownerCharged)||parseFloat(e.value)||0;
+    return '<tr style="border-bottom:1px solid var(--border)">'
+     +'<td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(i+1)+'</td>'
+     +'<td style="padding:8px 12px;font-size:11px;color:var(--ink);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escJ(addr)+'">'+escJ(addr)+'</td>'
+     +'<td style="padding:8px 12px;font-size:11px;color:var(--ink3)">'+escJ(dt||'—')+'</td>'
+     +'<td style="padding:8px 12px;font-size:11px;color:var(--ink2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escJ(desc)+'">'+escJ(desc)+'</td>'
+     +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+ltFmt(val)+'</td>'
+     +'<td style="padding:8px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;'+(stStyle[st]||stStyle.pending)+'">'+escJ(st)+'</span></td>'
+     +'</tr>';
+   }).join('');
+  }
  }
 
  // Move In: casas com tenant + moveIn date (ordenado por moveIn desc, max 20)
@@ -14757,10 +14816,10 @@ function ltDashRender(){
   }).join('');
  }
  }
- ltDashRenderAllPropsTable();
  if(typeof ltUpdateTaskNavBadge==='function') ltUpdateTaskNavBadge();
  if(typeof dashTasksRender==='function')try{dashTasksRender();}catch(eDT){console.warn('dashTasksRender',eDT);}
 }
+window.ltDashRender=ltDashRender;
 
 // 
 // LONG TERM — SAMPLE DATA: EXPENSES & CLEANINGS
