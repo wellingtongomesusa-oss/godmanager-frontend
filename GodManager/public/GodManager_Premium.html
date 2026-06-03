@@ -37,7 +37,7 @@
  --green:#2d7252;--green-bg:#e5f4ed;--green-bd:#9fd4b8;
  --red:#b83030;--red-bg:#fce8e8;--red-bd:#e8a8a8;
  --blue:#22558c;--blue-bg:#e4eef8;--blue-bd:#a8c4e0;
- --slate:#4a5568;--slate-bg:#edf0f4;--sw:240px;--th:54px
+ --slate:#4a5568;--slate-bg:#edf0f4;--sw:240px;--sw-collapsed:56px;--th:54px
 }
 
 /* Long Term — Expenses table row + status dropdown (F3) */
@@ -105,6 +105,23 @@
 .sb-toggle span{display:block;width:16px;height:2px;background:#fff;border-radius:2px;transition:all .2s}
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:299}
 @media(max-width:768px){
+ body.sidebar-collapsed{--sw:0px!important}
+ body.sidebar-collapsed .sb-brand-text,
+ body.sidebar-collapsed .sb-sec-lbl,
+ body.sidebar-collapsed .sb-sec-head,
+ body.sidebar-collapsed .sb-un,
+ body.sidebar-collapsed .sb-ft button,
+ body.sidebar-collapsed .sidebar .sb-copyright{display:revert!important}
+ body.sidebar-collapsed .si::before,
+ body.sidebar-collapsed .ss::before,
+ body.sidebar-collapsed .sg::before{display:none!important}
+ body.sidebar-collapsed .si,
+ body.sidebar-collapsed .ss,
+ body.sidebar-collapsed .sg{justify-content:revert;padding:revert;margin:revert}
+ body.sidebar-collapsed .sb-ix-ic span{display:revert!important}
+ .sb-collapse-btn{display:none!important}
+}
+@media(max-width:768px){
  :root{--sw:0px}
  .sidebar{transform:translateX(-100%);transition:transform .25s ease;width:224px!important}
  .sidebar.open{transform:translateX(0)}
@@ -151,7 +168,54 @@
 }
 @media(min-width:769px) and (max-width:1100px){
  :root{--sw:200px}
+ body:not(.sidebar-collapsed){--sw:200px}
  .cg{grid-template-columns:repeat(2,1fr)!important}
+}
+@media(min-width:769px){
+ .sidebar,.topbar,.content,.save-bottom-bar{transition:width .2s ease-out,left .2s ease-out,margin-left .2s ease-out}
+ body.sidebar-collapsed{--sw:var(--sw-collapsed)}
+ body.sidebar-collapsed .sb-brand-text{display:none!important}
+ body.sidebar-collapsed .sb-sec-lbl,
+ body.sidebar-collapsed .sb-sec-chev{display:none!important}
+ body.sidebar-collapsed .sb-sec-head{display:none!important}
+ body.sidebar-collapsed .sb-sec-body,
+ body.sidebar-collapsed .sb-sec-collapsible.collapsed .sb-sec-body{max-height:2000px!important}
+ body.sidebar-collapsed .sb-logo{flex-direction:column;padding:14px 8px 10px;gap:8px;align-items:center}
+ body.sidebar-collapsed .sb-logo-brand-row{justify-content:center;width:100%}
+ body.sidebar-collapsed .si,
+ body.sidebar-collapsed .ss,
+ body.sidebar-collapsed .sg{justify-content:center;padding-left:0;padding-right:0;margin-left:4px;margin-right:4px;gap:0;border-left-width:3px}
+ body.sidebar-collapsed .si > span,
+ body.sidebar-collapsed .ss > span:not(#nav-tasks-badge),
+ body.sidebar-collapsed .sg > span,
+ body.sidebar-collapsed .sg .cv{display:none!important}
+ body.sidebar-collapsed .sb-ix-ic span{display:none!important}
+ body.sidebar-collapsed .sb-ix-ic{justify-content:center;padding-left:0!important}
+ body.sidebar-collapsed .si::before,
+ body.sidebar-collapsed .ss:not(.sb-ix-ic)::before,
+ body.sidebar-collapsed .sg::before{
+  content:attr(data-sb-short);
+  font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,.75);
+  width:22px;height:22px;line-height:22px;text-align:center;border-radius:6px;
+  flex-shrink:0;
+ }
+ body.sidebar-collapsed .sb-ix-ic::before{display:none!important}
+ body.sidebar-collapsed .gi.col{max-height:700px!important}
+ body.sidebar-collapsed .sb-ft .sb-un,
+ body.sidebar-collapsed .sb-ft button{display:none!important}
+ body.sidebar-collapsed .sb-ft{justify-content:center;padding:12px 8px}
+ body.sidebar-collapsed .sidebar .sb-copyright{display:none!important}
+ body.sidebar-collapsed #nav-tasks-badge{position:absolute;top:2px;right:2px;margin:0;font-size:7px;min-width:12px;padding:0 4px}
+ body.sidebar-collapsed .ss[style*="space-between"]{position:relative}
+ .sb-collapse-btn{
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:28px;height:28px;padding:0;border:1px solid rgba(255,255,255,.12);
+  border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);
+  cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .2s ease-out;
+ }
+ .sb-collapse-btn:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.22)}
+ .sb-collapse-chev{display:block;transition:transform .2s ease-out}
+ body.sidebar-collapsed .sb-collapse-chev{transform:rotate(180deg)}
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -160,7 +224,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 ::selection{background:rgba(196,123,40,.2);color:var(--ink)}
 .sidebar{position:fixed;top:0;left:0;width:var(--sw);height:100vh;background:var(--navy);z-index:300;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
-.sb-logo{display:flex;align-items:center;gap:12px;padding:20px 18px 18px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:20px 14px 18px 18px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.sb-logo-brand-row{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
 .sb-badge{width:36px;height:36px;background:#0f2840;border:2px solid rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;font-family:'Sora',sans-serif}
 .sb-brand-mark{width:40px;height:40px;flex-shrink:0;position:relative}
 .sb-client-logo-img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12);display:none;vertical-align:top}
@@ -1030,10 +1095,14 @@ header.topbar .btn-save-top{display:none !important;}
 // Garantir que UI traduz na carga inicial
 document.addEventListener('DOMContentLoaded', function(){
   if (typeof applyTranslations === 'function') applyTranslations();
+  if (typeof gmSidebarInitCollapse === 'function') gmSidebarInitCollapse();
 });
 </script>
 </head>
 <body>
+<script>
+try{if(window.matchMedia&&window.matchMedia('(min-width:769px)').matches&&localStorage.getItem('gm_sidebar_collapsed')==='1'){document.body.classList.add('sidebar-collapsed');}}catch(_sbPre){}
+</script>
 <script>
 /* ============ TRIAL BANNER (billing status) ============ */
 (function(){
@@ -1151,6 +1220,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
 <aside class="sidebar">
  <div class="sb-logo">
+ <div class="sb-logo-brand-row">
  <div class="sb-brand-mark" id="sb-brand-mark" aria-hidden="true">
  <img class="sb-client-logo-img" id="sb-client-logo-img" alt="" width="40" height="40" decoding="async" />
  <div class="sb-client-initials" id="sb-client-initials">MP</div>
@@ -1159,6 +1229,10 @@ document.addEventListener('DOMContentLoaded', function(){
  <div class="sb-name" id="sb-brand-name">Manager Prop LLC</div>
  <div class="sb-tagline sb-client-domain" id="sb-brand-tag">godmanager.com</div>
  </div>
+ </div>
+ <button type="button" class="sb-collapse-btn" id="sb-collapse-btn" onclick="gmSidebarToggleCollapse()" aria-expanded="true" aria-label="Recolher menu" title="Recolher menu">
+ <svg class="sb-collapse-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+ </button>
  </div>
  <nav style="flex:1;padding-bottom:8px">
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="home">
@@ -1292,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', function(){
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
  </button>
  </div>
- <div style="padding:10px 16px 14px;border-top:1px solid rgba(255,255,255,.08);text-align:center;flex-shrink:0">
+ <div class="sb-copyright" style="padding:10px 16px 14px;border-top:1px solid rgba(255,255,255,.08);text-align:center;flex-shrink:0">
  <div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.25px;line-height:1.5">© 2026 GodManager. All rights reserved.</div>
  </div>
 </aside>
@@ -17110,7 +17184,71 @@ function ltValidateRouting(input){
 
 
 // 
-// RESPONSIVE — SIDEBAR TOGGLE
+// SIDEBAR — DESKTOP COLLAPSE (localStorage gm_sidebar_collapsed)
+// 
+function gmSidebarIsDesktop(){
+ try{return window.matchMedia('(min-width:769px)').matches;}catch(e){return window.innerWidth>=769;}
+}
+function gmSidebarNavLabel(el){
+ if(!el)return '';
+ var cached=el.getAttribute('data-sb-label');
+ if(cached)return cached;
+ var sp=el.querySelector(':scope > span:not(#nav-tasks-badge)');
+ var raw=(sp?sp.textContent:el.textContent)||'';
+ var label=String(raw).replace(/\s+/g,' ').trim();
+ if(label)el.setAttribute('data-sb-label',label);
+ return label;
+}
+function gmSidebarInitNavLabels(){
+ document.querySelectorAll('.si, .ss, .sg').forEach(function(el){
+  if(el.id==='sb-collapse-btn')return;
+  var label=gmSidebarNavLabel(el);
+  if(!label)return;
+  if(!el.getAttribute('title'))el.setAttribute('title',label);
+  var short=label.charAt(0).toUpperCase();
+  if(label.length>1&&/^[^a-zA-Z]/.test(label))short=label.replace(/[^a-zA-Z0-9]/g,'').charAt(0).toUpperCase()||short;
+  el.setAttribute('data-sb-short',short||'·');
+ });
+}
+function gmSidebarApplyCollapsed(collapsed){
+ var onDesktop=gmSidebarIsDesktop();
+ if(!onDesktop){
+  document.body.classList.remove('sidebar-collapsed');
+  return;
+ }
+ document.body.classList.toggle('sidebar-collapsed',!!collapsed);
+ var btn=document.getElementById('sb-collapse-btn');
+ if(btn){
+  btn.setAttribute('aria-expanded',collapsed?'false':'true');
+  btn.setAttribute('aria-label',collapsed?'Expandir menu':'Recolher menu');
+  btn.setAttribute('title',collapsed?'Expandir menu':'Recolher menu');
+ }
+ try{localStorage.setItem('gm_sidebar_collapsed',collapsed?'1':'0');}catch(e){}
+}
+function gmSidebarToggleCollapse(){
+ gmSidebarApplyCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+}
+function gmSidebarInitCollapse(){
+ gmSidebarInitNavLabels();
+ var collapsed=false;
+ try{collapsed=localStorage.getItem('gm_sidebar_collapsed')==='1';}catch(e){}
+ gmSidebarApplyCollapsed(collapsed);
+ if(window.__gmSidebarResizeBound)return;
+ window.__gmSidebarResizeBound=true;
+ window.addEventListener('resize',function(){
+  if(!gmSidebarIsDesktop())document.body.classList.remove('sidebar-collapsed');
+  else{
+   var c=false;
+   try{c=localStorage.getItem('gm_sidebar_collapsed')==='1';}catch(e){}
+   gmSidebarApplyCollapsed(c);
+  }
+ });
+}
+window.gmSidebarToggleCollapse=gmSidebarToggleCollapse;
+window.gmSidebarInitCollapse=gmSidebarInitCollapse;
+
+// 
+// RESPONSIVE — SIDEBAR TOGGLE (mobile drawer)
 // 
 function toggleSidebar(){
  const sb=document.querySelector('.sidebar');
