@@ -1122,23 +1122,50 @@ header.topbar .btn-save-top{display:none !important;}
 </style>
 <script src="/gm_clean_ghost_props.js"></script>
 <script>
-// Bootstrap i18n: ler NEXT_LOCALE (marketing) -> gm_lang (premium)
-// Mapeamento: en -> en, pt-br -> pt, es -> es
+// Bootstrap i18n (antes de gm-i18n.js): prioridade gm_lang LS > NEXT_LOCALE > navigator > en
 (function gmI18nBootstrap(){
-  try {
-    var LOCALE_MAP = { 'en': 'en', 'pt-br': 'pt', 'es': 'es' };
-    var match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
-    var nextLocale = match ? decodeURIComponent(match[1]).toLowerCase() : null;
-    if (nextLocale && LOCALE_MAP[nextLocale]) {
-      localStorage.setItem('gm_lang', LOCALE_MAP[nextLocale]);
-    }
-  } catch(e) {
-    // silent fail - mantem gm_lang existente ou default 'en'
+  function norm(input){
+    if(!input)return'en';
+    var s=String(input).toLowerCase().replace(/_/g,'-');
+    if(s==='pt'||s==='pt-br'||s.indexOf('pt-')===0)return'pt';
+    if(s==='es'||s==='es-es'||s.indexOf('es-')===0)return'es';
+    return'en';
   }
+  function readCookie(name){
+    var m=document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]+)'));
+    return m?decodeURIComponent(m[1]):null;
+  }
+  var source='default';
+  var internal='en';
+  try{
+    var ls=localStorage.getItem('gm_lang');
+    if(ls){internal=norm(ls);source='localStorage.gm_lang';}
+    else{
+      var cookie=readCookie('NEXT_LOCALE');
+      if(cookie){internal=norm(cookie);source='cookie.NEXT_LOCALE';localStorage.setItem('gm_lang',internal);}
+      else if(navigator.language){internal=norm(navigator.language);source='navigator.language';localStorage.setItem('gm_lang',internal);}
+    }
+    window.__gmLangBootstrap={internal:internal,source:source};
+  }catch(e){try{window.__gmLangBootstrap={internal:'en',source:'error'};}catch(e2){}}
+  try{console.debug('[gm-i18n] bootstrap locale:',internal,'source:',source);}catch(e3){}
 })();
 </script>
 <script src="/gm-i18n.js"></script>
 <script>
+// Hook pós-mudança de idioma — refresh silos i18n sem reload
+window.gmAfterLangChange = function gmAfterLangChange(){
+  try{
+    if(typeof applyTranslations==='function')applyTranslations();
+    var activePg=document.querySelector('.page.active');
+    var pageId=activePg?activePg.id:'';
+    if(pageId==='page-vendors'&&typeof gvRender==='function')gvRender();
+    if(pageId==='page-tenantportal'&&typeof tpRender==='function')tpRender();
+    if((pageId==='page-results'||pageId==='page-results-upload')&&typeof gmResRender==='function')gmResRender();
+    if(pageId==='page-ltexpenses'&&typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+    if(typeof window.gmCurrentPageRefresh==='function')window.gmCurrentPageRefresh();
+    console.debug('[gm-i18n] gmAfterLangChange applied, page:',pageId||'(none)');
+  }catch(e){console.warn('[gm-i18n] gmAfterLangChange error',e);}
+};
 // Garantir que UI traduz na carga inicial
 document.addEventListener('DOMContentLoaded', function(){
   if (typeof applyTranslations === 'function') applyTranslations();
@@ -5314,21 +5341,29 @@ function gmLangToggle(){
   } catch(e){}
 }
 
-function gmSetLang(lang){
+function gmSetLang(lang, opts){
+  opts = opts || {};
   try {
-    // Mapeamento inverso para NEXT_LOCALE (marketing)
-    var REVERSE_MAP = { 'en': 'en', 'pt': 'pt-br', 'es': 'es' };
-    var nextLocale = REVERSE_MAP[lang] || 'en';
+    var short = (typeof gmNormalizeToInternal === 'function') ? gmNormalizeToInternal(lang) : lang;
+    var canonical = (typeof gmNormalizeToCanonical === 'function') ? gmNormalizeToCanonical(short) : short;
 
-    // Grava localmente para Premium
-    localStorage.setItem('gm_lang', lang);
+    localStorage.setItem('gm_lang', short);
 
-    // Sincroniza cookie NEXT_LOCALE para marketing (1 ano)
     var maxAge = 60 * 60 * 24 * 365;
-    document.cookie = 'NEXT_LOCALE=' + nextLocale + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+    document.cookie = 'NEXT_LOCALE=' + encodeURIComponent(canonical) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
 
-    // Reload para aplicar 100% da UI traduzida
-    window.location.reload();
+    var menu = document.getElementById('lang-menu');
+    var btn = document.getElementById('lang-current');
+    if (menu) menu.style.display = 'none';
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+
+    if (typeof setLanguage === 'function') {
+      setLanguage(short);
+    } else if (typeof gmAfterLangChange === 'function') {
+      gmAfterLangChange();
+    }
+
+    if (opts.reload) window.location.reload();
   } catch(e){
     console.error('gmSetLang error:', e);
   }
@@ -20871,7 +20906,7 @@ var GM_RES_I18N={
  pt:{results:'RESULTADOS',results_dashboard:'Painel de Resultados',upload_reports:'Upload de Relatorios',financial_performance:'Performance Financeira',monthly_closings:'Fechamentos mensais, analise de resultado e relatorios',period:'Periodo',report:'Relatorio',gross_revenue:'RECEITA BRUTA',total_expenses:'DESPESAS TOTAIS',net_income:'RESULTADO LIQUIDO',profit_margin:'MARGEM DE LUCRO',margin_pct:'MARGEM %',reports_uploaded:'RELATORIOS ENVIADOS',periods_covered:'PERIODOS COBERTOS',owner_dist:'DISTRIBUICOES OWNERS',avg_monthly_net:'MEDIA MENSAL LIQUIDA',annual_total:'TOTAL DO ANO',view_report:'Ver',open_new_tab:'Abrir em Nova Aba',upload_report:'Enviar Relatorio',report_uploaded:'Relatorio enviado',extracted:'Extraido',click_to_edit:'Clique para editar',demonstrativo:'Demonstrativo Executivo',period_start:'Inicio do Periodo',period_end:'Fim do Periodo',year:'Ano',no_reports:'Nenhum relatorio enviado ainda. Envie seus fechamentos mensais HTML para acompanhar a performance.',monthly_closings_hdr:'Fechamentos Mensais',results_dashboard_title:'Resultados — Performance Financeira'},
  es:{results:'RESULTADOS',results_dashboard:'Panel de Resultados',upload_reports:'Subir Informes',financial_performance:'Rendimiento Financiero',monthly_closings:'Cierres mensuales, analisis de resultados e informes',period:'Periodo',report:'Informe',gross_revenue:'INGRESO BRUTO',total_expenses:'GASTOS TOTALES',net_income:'RESULTADO NETO',profit_margin:'MARGEN DE GANANCIA',margin_pct:'MARGEN %',reports_uploaded:'INFORMES SUBIDOS',periods_covered:'PERIODOS CUBIERTOS',owner_dist:'DISTRIBUCIONES PROPIETARIOS',avg_monthly_net:'PROMEDIO MENSUAL NETO',annual_total:'TOTAL DEL ANO',view_report:'Ver',open_new_tab:'Abrir en Nueva Pestana',upload_report:'Subir Informe',report_uploaded:'Informe subido',extracted:'Extraido',click_to_edit:'Click para editar',demonstrativo:'Estado Ejecutivo',period_start:'Inicio del Periodo',period_end:'Fin del Periodo',year:'Ano',no_reports:'Ningun informe subido aun. Suba sus cierres mensuales HTML para seguir el rendimiento.',monthly_closings_hdr:'Cierres Mensuales',results_dashboard_title:'Resultados — Rendimiento Financiero'}
 };
-function gmResLang(){try{var l=(typeof getGmLang==='function'&&getGmLang())||(localStorage.getItem('gm_lang'))||'en';l=String(l||'en').toLowerCase();return (l==='pt'||l==='es')?l:'en';}catch(e){return 'en';}}
+function gmResLang(){try{var l=(typeof getGmLangShort==='function'&&getGmLangShort())||(localStorage.getItem('gm_lang'))||'en';l=String(l||'en').toLowerCase();if(l.indexOf('pt')===0)return'pt';if(l.indexOf('es')===0)return'es';return'en';}catch(e){return 'en';}}
 function gmResT(k){var d=GM_RES_I18N[gmResLang()]||GM_RES_I18N.en;return d[k]||GM_RES_I18N.en[k]||k;}
 window.gmResT=gmResT;
 

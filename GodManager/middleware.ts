@@ -34,11 +34,20 @@ function isAdminPlatformPage(pathname: string): boolean {
   );
 }
 
+/** Aceita cookie canónico (pt-BR, en-US) ou legado (pt-br, en) → locale App Router. */
+function cookieToAppLocale(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const s = raw.toLowerCase().replace(/_/g, '-');
+  if (s === 'en' || s === 'en-us') return 'en';
+  if (s === 'pt' || s === 'pt-br') return 'pt-br';
+  if (s === 'es' || s === 'es-es') return 'es';
+  if ((routing.locales as readonly string[]).includes(raw)) return raw;
+  return null;
+}
+
 function preferredLoginLocale(request: NextRequest): string {
-  const c = request.cookies.get('NEXT_LOCALE')?.value;
-  if (c && (routing.locales as readonly string[]).includes(c)) {
-    return c;
-  }
+  const mapped = cookieToAppLocale(request.cookies.get('NEXT_LOCALE')?.value);
+  if (mapped) return mapped;
   return routing.defaultLocale;
 }
 

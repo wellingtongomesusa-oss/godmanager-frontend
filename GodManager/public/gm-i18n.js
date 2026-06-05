@@ -1778,10 +1778,31 @@
     },
   };
 
+  /** Qualquer formato → forma interna en/pt/es (preserva dicionário). */
+  function normalizeToInternal(input) {
+    if (!input) return 'en';
+    var s = String(input).toLowerCase().replace(/_/g, '-');
+    if (s === 'pt' || s === 'pt-br' || s.indexOf('pt-') === 0) return 'pt';
+    if (s === 'es' || s === 'es-es' || s.indexOf('es-') === 0) return 'es';
+    return 'en';
+  }
+
+  /** Forma interna → ID canónico (cookie / html lang). */
+  function normalizeToCanonical(internal) {
+    if (internal === 'pt') return 'pt-BR';
+    if (internal === 'es') return 'es-ES';
+    return 'en-US';
+  }
+
   var currentLang = 'en';
   try {
-    var s = localStorage.getItem('gm_lang');
-    if (s === 'en' || s === 'pt' || s === 'es') currentLang = s;
+    var boot = window.__gmLangBootstrap;
+    if (boot && boot.internal) {
+      currentLang = normalizeToInternal(boot.internal);
+    } else {
+      var s = localStorage.getItem('gm_lang');
+      if (s) currentLang = normalizeToInternal(s);
+    }
   } catch (e) {}
 
   function t(key) {
@@ -1793,9 +1814,7 @@
 
   function setHtmlLang() {
     var h = document.documentElement;
-    if (currentLang === 'pt') h.setAttribute('lang', 'pt-BR');
-    else if (currentLang === 'es') h.setAttribute('lang', 'es');
-    else h.setAttribute('lang', 'en');
+    h.setAttribute('lang', normalizeToCanonical(currentLang));
   }
 
   function applyTranslations() {
@@ -1825,7 +1844,7 @@
   }
 
   function setLanguage(lang) {
-    if (lang !== 'en' && lang !== 'pt' && lang !== 'es') lang = 'en';
+    lang = normalizeToInternal(lang);
     currentLang = lang;
     try {
       localStorage.setItem('gm_lang', currentLang);
@@ -1858,10 +1877,15 @@
   window.applyTranslations = applyTranslations;
   window.toggleLangMenu = toggleLangMenu;
   window.getGmLang = function () {
+    return normalizeToCanonical(currentLang);
+  };
+  window.getGmLangShort = function () {
     return currentLang;
   };
+  window.gmNormalizeToInternal = normalizeToInternal;
+  window.gmNormalizeToCanonical = normalizeToCanonical;
   window.setGmLangInternal = function (l) {
-    currentLang = l;
+    currentLang = normalizeToInternal(l);
   };
 
 })();
