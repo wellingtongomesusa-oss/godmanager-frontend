@@ -8,12 +8,24 @@ import {
   isFieldRole,
 } from '@/lib/pmExpensesScope';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
-import type { PmExpenseStatus, PmPackage } from '@prisma/client';
+import type { Prisma, PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
+
+function parseMetadataInput(raw: unknown): Prisma.InputJsonValue | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null as unknown as Prisma.InputJsonValue;
+  if (typeof raw === 'object' && !Array.isArray(raw)) return raw as Prisma.InputJsonValue;
+  return undefined;
+}
+
+function parseIsVendorFree(raw: unknown): boolean | undefined {
+  if (raw === undefined) return undefined;
+  return raw === true || raw === 'true' || raw === 1 || raw === '1';
+}
 
 function toJson(e: {
   id: string;
@@ -28,6 +40,8 @@ function toJson(e: {
   monthRef: string;
   status: PmExpenseStatus;
   description: string | null;
+  isVendorFree: boolean;
+  metadata: Prisma.JsonValue | null;
   finalizedAt?: Date | null;
   finalizedBy?: string | null;
   finalizedNote?: string | null;
@@ -55,6 +69,8 @@ function toJson(e: {
     finalizedAt: e.finalizedAt ? e.finalizedAt.toISOString() : null,
     finalizedBy: e.finalizedBy ?? null,
     finalizedNote: e.finalizedNote ?? '',
+    isVendorFree: !!e.isVendorFree,
+    metadata: e.metadata ?? null,
   };
 }
 
@@ -95,6 +111,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         monthRef: true,
         status: true,
         description: true,
+        isVendorFree: true,
+        metadata: true,
       },
     });
     if (!cur || !canAccessPmExpense(user, cur)) {
@@ -120,8 +138,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       expenseClientIdForProperty = nextProp.clientId;
     }
 
+    const isVendorFreePatch = parseIsVendorFree(body.isVendorFree);
     let vendorId = cur.vendorId;
-    if (body.vendorId !== undefined) {
+    if (isVendorFreePatch === true) {
+      vendorId = null;
+    } else if (body.vendorId !== undefined) {
       const vid = String(body.vendorId || '').trim() || null;
       if (vid) {
         const v = await prisma.pmVendor.findFirst({
@@ -133,6 +154,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         vendorId = null;
       }
     }
+    const metadataPatch = parseMetadataInput(body.metadata);
 
     let pkg: PmPackage = cur.packageApplied;
     if (body.packageApplied != null) {
@@ -246,6 +268,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         );
       }
     }
+    if (isVendorFreePatch !== undefined && isVendorFreePatch !== cur.isVendorFree) {
+      changedFields.push(`isVendorFree:${cur.isVendorFree}->${isVendorFreePatch}`);
+    }
+    if (metadataPatch !== undefined) changedFields.push('metadata');
 
     const row = await prisma.pmExpense.update({
       where: { id: params.id },
@@ -290,6 +316,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(executedLng !== undefined ? { executedLng } : {}),
         ...(executedAccuracy !== undefined ? { executedAccuracy } : {}),
         ...(executedByUserId !== undefined ? { executedByUserId } : {}),
+        ...(isVendorFreePatch !== undefined ? { isVendorFree: isVendorFreePatch } : {}),
+        ...(metadataPatch !== undefined ? { metadata: metadataPatch } : {}),
       },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },

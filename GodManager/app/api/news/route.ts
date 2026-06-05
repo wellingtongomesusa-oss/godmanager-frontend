@@ -12,7 +12,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const NEWS_POST_ROLES = new Set(['admin', 'super_admin', 'manager']);
+const NEWS_POST_ROLES = new Set(['admin', 'super_admin', 'manager', 'maintenance']);
 
 function serialize(row: {
   id: string;
