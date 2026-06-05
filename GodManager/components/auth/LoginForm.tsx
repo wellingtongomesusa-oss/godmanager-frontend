@@ -4,8 +4,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { loginAsync } from '@/lib/auth';
+import { persistGmLocaleForPremium } from '@/lib/gmLocale';
 import { appendAudit } from '@/lib/audit';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,8 +28,13 @@ const inputLoginClass =
   'rounded-lg border-login-navy/12 bg-white pl-10 text-login-navy placeholder:text-login-muted/70 focus:border-login-gold focus:ring-[3px] focus:ring-login-gold/20';
 
 /** Login principal da app — `app/[locale]/login/page.tsx` */
+function isPremiumRoute(route: string): boolean {
+  return /GodManager_Premium\.html/i.test(route) || route.includes('/gm-premium');
+}
+
 export function LoginForm() {
   const t = useTranslations('login');
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -62,12 +68,12 @@ export function LoginForm() {
         } | null;
         if (!meJson?.ok || !meJson.user) return;
         const u = meJson.user;
-        router.replace(
-          getPostLoginRoute({
-            role: String(u.role ?? ''),
-            productType: (u.productType ?? null) as ProductType,
-          }),
-        );
+        const route = getPostLoginRoute({
+          role: String(u.role ?? ''),
+          productType: (u.productType ?? null) as ProductType,
+        });
+        if (isPremiumRoute(route)) persistGmLocaleForPremium(locale);
+        router.replace(route);
       } catch {
         /* rede / parse — mantém form visível */
       }
@@ -75,7 +81,7 @@ export function LoginForm() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, locale]);
 
   const from = searchParams.get('from') || '/dashboard';
   const idleBanner = searchParams.get('reason') === 'idle';
@@ -145,6 +151,8 @@ export function LoginForm() {
         productType: null,
       });
     }
+
+    if (isPremiumRoute(route)) persistGmLocaleForPremium(locale);
 
     setLoading(false);
     router.push(route);
