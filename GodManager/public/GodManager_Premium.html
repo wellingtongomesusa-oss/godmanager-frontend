@@ -21932,7 +21932,12 @@ window.gmJobsQtyBadgeHtml=function(r){
  var counts=window.gmJobsCountByProperty||{};
  var n=code?(Number(counts[code])||0):0;
  var codeEsc=String(code||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
- return '<button type="button" class="jobs-qty-badge" onclick="event.stopPropagation();gmJobsQtyFilterClick(\''+codeEsc+'\')" title="Filtrar por esta propriedade ('+n+' jobs no portfolio)" style="padding:2px 7px;border-radius:12px;font-size:9px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:var(--slate-bg);color:var(--ink2);border:1px solid var(--border2);cursor:pointer;min-width:28px;line-height:1.2">'+n+'</button>';
+ var btn='<button type="button" class="jobs-qty-badge" onclick="event.stopPropagation();gmJobsQtyFilterClick(\''+codeEsc+'\')" title="Filtrar por esta propriedade ('+n+' jobs no portfolio)" style="padding:2px 7px;border-radius:12px;font-size:9px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:var(--slate-bg);color:var(--ink2);border:1px solid var(--border2);cursor:pointer;min-width:28px;line-height:1.2">'+n+'</button>';
+ var u=(typeof gmJobIsUrgentByCategory==='function')?gmJobIsUrgentByCategory(r):{isUrgent:false};
+ if(!u.isUrgent)return btn;
+ var uTip='Urgente: '+u.type;
+ var tri='<span class="jobs-qty-urgent-mark" title="'+String(uTip).replace(/"/g,'&quot;')+'" style="display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:8px solid #dc2626;flex-shrink:0"></span>';
+ return '<span class="jobs-qty-wrap" style="display:inline-flex;align-items:center;gap:3px;justify-content:center">'+tri+btn+'</span>';
 };
 
 window.gmJobsLoadCountByProperty=async function(){
@@ -22219,6 +22224,7 @@ function gmJobsRenderCalendar(rows){
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #f59e0b"></span>Pendente</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--blue-bg);border-radius:2px;border:1px solid var(--blue)"></span>Agendado</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#ffedd5;border-radius:2px;border:1px solid #f97316"></span>Reagendado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--red-bg);border-radius:2px;border:1px solid #dc2626"></span>Urgente</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--green-bg);border-radius:2px;border:1px solid var(--green)"></span>Finalizado</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid var(--red)"></span>Cancelado</span>';
  html+='</div>';
@@ -22253,7 +22259,7 @@ function gmJobsRenderCalendar(rows){
     var addrShort=String(addr).split(',')[0].slice(0,18);
     var calKey=(typeof gmJobsCalStyleKey==='function')?gmJobsCalStyleKey(j):'SCHEDULED';
     var chipStyle=(typeof gmJobsCalChipStyle==='function')?gmJobsCalChipStyle(calKey):'';
-    var tip=(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')?gmJobsRescheduleTooltip(j):calKey;
+    var tip=(typeof gmJobsCalEventTooltip==='function')?gmJobsCalEventTooltip(j,calKey):calKey;
     html+='<div class="jobs-cal-event" title="'+String(tip).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
    });
    if(dayJobs.length>maxShow){
@@ -22582,11 +22588,58 @@ function jobsPmStatusKey(r){
  return String(r.statusPm||r.status||'').trim().toUpperCase();
 }
 
+/** Keywords urgencia Jobs (AR / encanamento) — F7, sem schema. */
+window.gmJobsAR_KEYWORDS=[
+ 'ar condicionado','a/c','a.c.','air condition','hvac','condicionador','climatizacao','climatizador'
+];
+window.gmJobsENCANAMENTO_KEYWORDS=[
+ 'encanamento','plumbing','cano','tubulacao','vazamento','leak','water leak','pipe','esgoto','drain'
+];
+
+function gmJobUrgentSearchText(r){
+ if(!r)return '';
+ var raw=r._apiRaw||{};
+ return [
+  r.serviceType,raw.serviceType,
+  r.desc,r.description,raw.description,
+  r.category
+ ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function gmJobTextMatchesKeyword(text,kw){
+ var k=String(kw||'').toLowerCase().trim();
+ if(!k||!text)return false;
+ if(text.indexOf(k)>=0)return true;
+ return false;
+}
+
+window.gmJobIsUrgentByCategory=function(r){
+ var text=gmJobUrgentSearchText(r);
+ if(!text)return {isUrgent:false,type:null};
+ var i,ar=false,enc=false;
+ for(i=0;i<window.gmJobsAR_KEYWORDS.length;i++){
+  if(gmJobTextMatchesKeyword(text,window.gmJobsAR_KEYWORDS[i])){ar=true;break;}
+ }
+ if(!ar&&/\b(ac|a\/c|a\.c\.)\b/i.test(text))ar=true;
+ if(!ar&&/\bhvac\b/i.test(text))ar=true;
+ for(i=0;i<window.gmJobsENCANAMENTO_KEYWORDS.length;i++){
+  if(gmJobTextMatchesKeyword(text,window.gmJobsENCANAMENTO_KEYWORDS[i])){enc=true;break;}
+ }
+ if(ar)return {isUrgent:true,type:'AR'};
+ if(enc)return {isUrgent:true,type:'ENCANAMENTO'};
+ return {isUrgent:false,type:null};
+};
+
+window.gmJobsRowIsUrgent=function(r){
+ return !!(gmJobIsUrgentByCategory(r).isUrgent);
+};
+
 /** Paleta unica Jobs: tabela, chips, calendario (F5). */
 window.gmJobsStatusPalette={
  PENDING:{bg:'#fef3c7',fg:'#92400e',bd:'#f59e0b',label:'Pendente'},
  SCHEDULED:{bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)',label:'Agendado'},
  RESCHEDULED:{bg:'#ffedd5',fg:'#c2410c',bd:'#f97316',label:'Reagendado'},
+ URGENT:{bg:'var(--red-bg)',fg:'var(--red)',bd:'#dc2626',label:'Urgente'},
  FINALIZED:{bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)',label:'Finalizado'},
  PAID:{bg:'#dcfce7',fg:'#15803d',bd:'#15803d',label:'Pago'},
  CANCELLED:{bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)',label:'Cancelado'}
@@ -22637,38 +22690,63 @@ function gmJobVtPillHtml(label,titleExtra){
  return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:'+(p.bg||'#ffedd5')+';color:'+(p.fg||'#c2410c')+';border:1px solid '+(p.bd||'#f97316')+'"'+(t?' title="'+t+'"':'')+'>'+lbl+'</span>';
 }
 
-function gmJobPillHtml(key,titleExtra){
+function gmJobPillHtml(key,titleExtra,labelOverride){
  var p=(window.gmJobsStatusPalette&&window.gmJobsStatusPalette[key])||{};
  var t=titleExtra?String(titleExtra).replace(/"/g,'&quot;'):'';
- return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:'+(p.bg||'var(--cream)')+';color:'+(p.fg||'var(--ink2)')+';border:1px solid '+(p.bd||'var(--border2)')+'"'+(t?' title="'+t+'"':'')+'>'+(p.label||key)+'</span>';
+ var lbl=labelOverride!=null&&labelOverride!==''?String(labelOverride):((p.label||key));
+ return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:'+(p.bg||'var(--cream)')+';color:'+(p.fg||'var(--ink2)')+';border:1px solid '+(p.bd||'var(--border2)')+'"'+(t?' title="'+t+'"':'')+'>'+lbl+'</span>';
+}
+
+function gmJobUrgentPillHtml(r){
+ var u=gmJobIsUrgentByCategory(r);
+ if(!u.isUrgent)return '';
+ return gmJobPillHtml('URGENT','Categoria urgente: '+u.type,'URGENTE');
+}
+
+function gmJobStatusBadgeWithUrgent(base,r){
+ var urgent=gmJobUrgentPillHtml(r);
+ if(!urgent)return base;
+ if(base.indexOf('jobs-status-pills')>=0){
+  return base.replace(/<\/span>\s*$/,urgent+'</span>');
+ }
+ return '<span class="jobs-status-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">'+base+urgent+'</span>';
 }
 
 function gmJobStatusBadgeHtml(r){
  if(!r)return '<span>—</span>';
  var st=jobsPmStatusKey(r);
- if(st==='CANCELLED')return gmJobPillHtml('CANCELLED',r.cancelReason||'');
- if(st==='FINALIZED')return gmJobPillHtml('FINALIZED',r.finalizedNote||'');
- if(st==='PAID')return gmJobPillHtml('PAID');
- if(st==='PENDING')return gmJobPillHtml('PENDING');
- if(st==='SCHEDULED'&&gmJobsRowWasRescheduled(r)){
+ var base;
+ if(st==='CANCELLED')base=gmJobPillHtml('CANCELLED',r.cancelReason||'');
+ else if(st==='FINALIZED')base=gmJobPillHtml('FINALIZED',r.finalizedNote||'');
+ else if(st==='PAID')base=gmJobPillHtml('PAID');
+ else if(st==='PENDING')base=gmJobPillHtml('PENDING');
+ else if(st==='SCHEDULED'&&gmJobsRowWasRescheduled(r)){
   var meta=r.metadata;
   if(!meta&&r._apiRaw)meta=r._apiRaw.metadata;
   var counts=gmJobRescheduleCounts(meta);
   var vtLbl=gmJobRescheduleVtLabel(counts);
   var vtTip=gmJobRescheduleVtTooltip(r);
   var vtPill=vtLbl?gmJobVtPillHtml(vtLbl,vtTip):gmJobPillHtml('RESCHEDULED',vtTip);
-  return '<span class="jobs-status-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">'
+  base='<span class="jobs-status-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">'
    +gmJobPillHtml('SCHEDULED')+vtPill+'</span>';
- }
- if(st==='SCHEDULED')return gmJobPillHtml('SCHEDULED');
- return gmJobPillHtml(st)||('<span style="font-size:10px">'+st+'</span>');
+ }else if(st==='SCHEDULED')base=gmJobPillHtml('SCHEDULED');
+ else base=gmJobPillHtml(st)||('<span style="font-size:10px">'+st+'</span>');
+ return gmJobStatusBadgeWithUrgent(base,r);
 }
 window.gmJobStatusBadgeHtml=gmJobStatusBadgeHtml;
 
 function gmJobsCalStyleKey(j){
  if(!j)return 'SCHEDULED';
+ if(gmJobIsUrgentByCategory(j).isUrgent)return 'URGENT';
  if(gmJobsRowWasRescheduled(j))return 'RESCHEDULED';
  return jobsPmStatusKey(j)||'SCHEDULED';
+}
+
+function gmJobsCalEventTooltip(j,calKey){
+ var u=gmJobIsUrgentByCategory(j);
+ if(calKey==='URGENT'&&u.isUrgent)return 'Urgente: '+u.type;
+ if(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')return gmJobsRescheduleTooltip(j);
+ return calKey;
 }
 
 function gmJobsCalChipStyle(key){
@@ -27065,17 +27143,19 @@ window.gmAnalyticsLoad=async function(){
   };
 
   window.gmJobsRenderStatusChips=function(rows){
-    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0};
+    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0};
     rows.forEach(function(r){
       var s=String(r.status||r.statusPm||'').toUpperCase();
       if(counts[s]!==undefined)counts[s]++;
       if(typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r))counts.rescheduled++;
+      if(typeof gmJobsRowIsUrgent==='function'&&gmJobsRowIsUrgent(r))counts.urgent++;
     });
     var chips=[
       {key:'all',label:'Todos'},
       {key:'PENDING',label:'Pendente'},
       {key:'SCHEDULED',label:'Agendado'},
       {key:'rescheduled',label:'Reagendados'},
+      {key:'urgent',label:'Urgentes'},
       {key:'FINALIZED',label:'Finalizado'},
       {key:'PAID',label:'Pago'},
       {key:'CANCELLED',label:'Cancelado'},
@@ -27097,6 +27177,11 @@ window.gmAnalyticsLoad=async function(){
     if(f==='rescheduled'){
      return rows.filter(function(r){
       return typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r);
+     });
+    }
+    if(f==='urgent'){
+     return rows.filter(function(r){
+      return typeof gmJobsRowIsUrgent==='function'&&gmJobsRowIsUrgent(r);
      });
     }
     return rows.filter(function(r){
