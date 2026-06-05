@@ -3707,7 +3707,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
  <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
-<button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
+ <button type="button" onclick="ltpExportCsv()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--strip-12" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip gm-kpis-row--strip-12" style="--gm-kpi-cols-desktop:12;--gm-kpi-cols-tablet:6" data-gm-kpi-count="12">
@@ -11875,7 +11875,7 @@ function ltRender(){
  </tr>`).join('');
 }
 
-// Export CSV 
+// Export CSV (legado — Owner Statement / LT statements via ltGetRecords)
 function ltExportCSV(){
  const records=ltGetRecords();
  if(!records.length){alert('Nenhum registro para exportar.');return;}
@@ -11887,6 +11887,161 @@ function ltExportCSV(){
  a.download='GM_Statements_Audit_'+new Date().toISOString().slice(0,10)+'.csv';
  a.click();
 }
+
+function ltpCsvEscapeCell(v){
+ if(v===null||v===undefined) return '';
+ var s=String(v);
+ if(/[",\n\r]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+ return s;
+}
+function ltpCsvNum2(n){
+ var x=parseFloat(n);
+ if(!isFinite(x)) return '';
+ return x.toFixed(2);
+}
+function ltpCsvIsoDateYmd(s){
+ if(!s) return '';
+ if(typeof ltpParseYmd==='function'){
+  var d=ltpParseYmd(s);
+  if(d&&!isNaN(d.getTime())){
+   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+ }
+ var t=String(s).trim();
+ var m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ return m?m[1]+'-'+m[2]+'-'+m[3]:'';
+}
+function ltpCsvMonthYm(s){
+ if(!s) return '';
+ var t=String(s).trim();
+ if(/^\d{4}-\d{2}$/.test(t)) return t;
+ var iso=ltpCsvIsoDateYmd(t);
+ return iso?iso.slice(0,7):'';
+}
+function ltpGetPropertiesUiRecordsSync(){
+ var raw=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ if(!raw.length) return [];
+ var toUi=typeof window.gmPropertiesToUi==='function'?window.gmPropertiesToUi:function(p){return p;};
+ return raw.map(toUi);
+}
+async function ltpEnsureExpByPropForExport(){
+ var fMonthSel=(document.getElementById('ltp-filter-month')||{}).value||'';
+ var curMonth=fMonthSel||new Date().toISOString().slice(0,7);
+ var cache=window.__ltpPmExpensesCache;
+ if(cache&&cache.month===curMonth&&cache.expByProp) return cache.expByProp;
+ var expByProp=new Map();
+ try{
+  var exRes=await fetch('/api/pm/expenses?month='+encodeURIComponent(curMonth),{credentials:'include',cache:'no-store'});
+  if(exRes.ok){
+   var exJ=await exRes.json();
+   ((exJ&&exJ.expenses)||[]).forEach(function(e){
+    if(!e) return;
+    var add=parseFloat(e.ownerCharged)||0;
+    var pUuid=String(e.propertyId||'').trim();
+    var pCode=String(e.propertyCode||'').trim();
+    if(pUuid) expByProp.set(pUuid,(expByProp.get(pUuid)||0)+add);
+    if(pCode&&pCode!==pUuid) expByProp.set(pCode,(expByProp.get(pCode)||0)+add);
+   });
+  }
+ }catch(e){console.warn('ltpEnsureExpByPropForExport',e);}
+ window.__ltpPmExpensesCache={month:curMonth,expByProp:expByProp,markupByProp:(cache&&cache.markupByProp)||new Map(),totMarkup:(cache&&cache.totMarkup)||0};
+ return expByProp;
+}
+function ltpRowNetOwnerExport(r,expByProp){
+ var ev=0;
+ if(expByProp&&typeof expByProp.get==='function') ev=expByProp.get(String(r.id))||0;
+ var sumByCode=window._pmSummaryByCode;
+ if(sumByCode&&sumByCode[r.id]!=null) return parseFloat(sumByCode[r.id].net)||0;
+ var rent=Number(r.rent)||0;
+ var mPct=typeof ltpKpiMgmPct==='function'?ltpKpiMgmPct(r):(Number(r.mgmpct||r.mgmtFeePct)||0);
+ return rent-rent*mPct/100-ev;
+}
+function ltpRowExpPmExport(r,expByProp){
+ if(!expByProp||typeof expByProp.get!=='function') return 0;
+ return parseFloat(expByProp.get(String(r.id)))||0;
+}
+async function ltpExportCsv(){
+ try{
+  var __gmArr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
+   await window.gmPropertiesBootstrap({silent:true});
+   __gmArr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  }
+  var toUi=typeof window.gmPropertiesToUi==='function'?window.gmPropertiesToUi:function(p){return p;};
+  var records=(Array.isArray(__gmArr)&&__gmArr.length)?__gmArr.map(toUi):((typeof ltGetRecords==='function')?ltGetRecords():[]);
+  if(!records.length){
+   if(typeof showToast==='function') showToast('Nenhuma propriedade para exportar.','info');
+   var emptyHdr=[
+    '#','ENDERECO','OWNER','TENANT','QUARTOS','BANHEIROS','SQFT','MOVE IN','OCUPACAO','STATUS AUTO',
+    'RENT','DEPOSIT','RESERVA DE SEGURANCA','MGM %','TENANT PLACE','NET OWNER','EXP MES (PM)','MES','STATUS'
+   ];
+   var emptyCsv=emptyHdr.join(',');
+   var emptyFn='GM_Properties_'+new Date().toISOString().slice(0,10)+'.csv';
+   window.__ltpLastExportCsv={fname:emptyFn,csv:emptyCsv,rowCount:0,headers:emptyHdr};
+   var a0=document.createElement('a');
+   a0.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(emptyCsv);
+   a0.download=emptyFn;
+   a0.click();
+   return;
+  }
+  var filtered=(typeof ltpFilterTableRecords==='function'?ltpFilterTableRecords(records):records).slice();
+  if(typeof ltpComparePropertiesByHouseNumber==='function') filtered.sort(ltpComparePropertiesByHouseNumber);
+  if(!filtered.length){
+   if(typeof showToast==='function') showToast('Nenhuma propriedade corresponde aos filtros ativos.','info');
+  }
+  var fMonthSel=(document.getElementById('ltp-filter-month')||{}).value||'';
+  var kpiMonth=fMonthSel||new Date().toISOString().slice(0,7);
+  var tenantIdx=(typeof ltpGetTenantLeaseIndex==='function')?ltpGetTenantLeaseIndex():{};
+  var expByProp=await ltpEnsureExpByPropForExport();
+  var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+  var stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
+  var headers=[
+   '#','ENDERECO','OWNER','TENANT','QUARTOS','BANHEIROS','SQFT','MOVE IN','OCUPACAO','STATUS AUTO',
+   'RENT','DEPOSIT','RESERVA DE SEGURANCA','MGM %','TENANT PLACE','NET OWNER','EXP MES (PM)','MES','STATUS'
+  ];
+  var lines=[headers.join(',')];
+  filtered.forEach(function(r,i){
+   var statusAuto=(typeof gmGetEffectiveStatus==='function')?gmGetEffectiveStatus(r):'';
+   var mgmPct=typeof ltpKpiMgmPct==='function'?ltpKpiMgmPct(r):(Number(r.mgmpct||r.mgmtFeePct)||0);
+   var tp=(typeof ltPropertyTenantPlaceForMonth==='function')?ltPropertyTenantPlaceForMonth(r,kpiMonth,tenantIdx):0;
+   var reserva=Number(r.guaranteeLimit||r.guarantee)||0;
+   var row=[
+    String(i+1),
+    r.address||'',
+    r.owner||'',
+    r.tenant||'',
+    r.bedrooms!=null&&r.bedrooms!==''?String(r.bedrooms):'',
+    r.bathrooms!=null&&r.bathrooms!==''?String(r.bathrooms):'',
+    r.sqft!=null&&r.sqft!==''?String(r.sqft):'',
+    ltpCsvIsoDateYmd(r.moveIn||r.moveInDate),
+    occLabel[r.occupancy]||String(r.occupancy||''),
+    statusAuto,
+    ltpCsvNum2(r.rent),
+    ltpCsvNum2(r.deposit),
+    ltpCsvNum2(reserva),
+    String(Math.round(mgmPct)||''),
+    ltpCsvNum2(tp),
+    ltpCsvNum2(ltpRowNetOwnerExport(r,expByProp)),
+    ltpCsvNum2(ltpRowExpPmExport(r,expByProp)),
+    ltpCsvMonthYm(r.month),
+    stLabel[r.status]||String(r.status||'')
+   ];
+   lines.push(row.map(ltpCsvEscapeCell).join(','));
+  });
+  var csv=lines.join('\n');
+  var fname='GM_Properties_'+new Date().toISOString().slice(0,10)+'.csv';
+  window.__ltpLastExportCsv={fname:fname,csv:csv,rowCount:filtered.length,headers:headers};
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=fname;
+  a.click();
+  if(typeof showToast==='function') showToast('Exportado: '+filtered.length+' propriedade(s).','success');
+ }catch(e){
+  console.warn('ltpExportCsv',e);
+  alert('Falha ao exportar CSV.');
+ }
+}
+window.ltpExportCsv=ltpExportCsv;
 
 // Expense Detail Modal 
 function ltCloseExpenseModal(){
@@ -16648,7 +16803,7 @@ async function ltpRender(){
    });
   }
  }catch(e){}
- window.__ltpPmExpensesCache={month:curMonth,markupByProp:markupByProp,totMarkup:totMarkupMonth};
+ window.__ltpPmExpensesCache={month:curMonth,markupByProp:markupByProp,totMarkup:totMarkupMonth,expByProp:expByProp};
  var __gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArr||!__gmArr.length)&&typeof window.gmPropertiesBootstrap==='function'){
   try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('ltpRender auto-bootstrap',e);}
