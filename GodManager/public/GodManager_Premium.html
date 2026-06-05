@@ -1156,6 +1156,7 @@ header.topbar .btn-save-top{display:none !important;}
 window.gmAfterLangChange = function gmAfterLangChange(){
   try{
     if(typeof applyTranslations==='function')applyTranslations();
+    if(typeof gmRefreshShellI18n==='function')gmRefreshShellI18n();
     var activePg=document.querySelector('.page.active');
     var pageId=activePg?activePg.id:'';
     if(pageId==='page-vendors'&&typeof gvRender==='function')gvRender();
@@ -1169,6 +1170,7 @@ window.gmAfterLangChange = function gmAfterLangChange(){
 // Garantir que UI traduz na carga inicial
 document.addEventListener('DOMContentLoaded', function(){
   if (typeof applyTranslations === 'function') applyTranslations();
+  if (typeof gmRefreshShellI18n === 'function') gmRefreshShellI18n();
   if (typeof gmSidebarInitCollapse === 'function') gmSidebarInitCollapse();
 });
 </script>
@@ -1305,132 +1307,132 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-tagline sb-client-domain" id="sb-brand-tag">godmanager.com</div>
  </div>
  </div>
- <button type="button" class="sb-collapse-btn" id="sb-collapse-btn" onclick="gmSidebarToggleCollapse()" aria-expanded="true" aria-label="Recolher menu" title="Recolher menu">
+ <button type="button" class="sb-collapse-btn" id="sb-collapse-btn" onclick="gmSidebarToggleCollapse()" aria-expanded="true" aria-label="Recolher menu" title="Recolher menu" data-i18n-title="nav_collapse_menu">
  <svg class="sb-collapse-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
  </button>
  </div>
  <nav style="flex:1;padding-bottom:8px">
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="home">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">HOME</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_home">HOME</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="si active" onclick="nav('home')" id="nav-home">Home</div>
- <div class="ss" onclick="nav('longterm')" id="nav-longterm">Dashboard</div>
+ <div class="si active" onclick="nav('home')" id="nav-home" data-i18n="home">Home</div>
+ <div class="ss" onclick="nav('longterm')" id="nav-longterm" data-i18n="dashboard">Dashboard</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="communications">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">COMMUNICATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="communications">COMMUNICATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('news')" id="nav-news" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;padding-left:16px">News <span id="nav-news-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:8px;font-weight:700">0</span></div>
+ <div class="ss" onclick="nav('news')" id="nav-news" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;padding-left:16px"><span data-i18n="news">News</span> <span id="nav-news-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:8px;font-weight:700">0</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="properties" id="wrap-nav-props-rank">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">PROPERTIES</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_properties">PROPERTIES</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('ltproperties')" id="nav-ltproperties">Properties</div>
- <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement">Owner Statement</div>
- <div class="ss" onclick="nav('tenants')" id="nav-tenants">Tenants</div>
- <div class="ss" onclick="nav('leases-history')" id="nav-leases-history">Lease history</div>
- <div class="ss" onclick="nav('properties')" id="nav-properties">Ranking Properties</div>
- <div class="ss" onclick="nav('renovations')" id="nav-renovations">Renovations</div>
+ <div class="ss" onclick="nav('ltproperties')" id="nav-ltproperties" data-i18n="properties">Properties</div>
+ <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement" data-i18n="nav_owner_statement">Owner Statement</div>
+ <div class="ss" onclick="nav('tenants')" id="nav-tenants" data-i18n="nav_tenants">Tenants</div>
+ <div class="ss" onclick="nav('leases-history')" id="nav-leases-history" data-i18n="nav_leases_history">Lease history</div>
+ <div class="ss" onclick="nav('properties')" id="nav-properties" data-i18n="ranking_properties">Ranking Properties</div>
+ <div class="ss" onclick="nav('renovations')" id="nav-renovations" data-i18n="renovations">Renovations</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="expenses">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">EXPENSES</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_expenses">EXPENSES</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('ltexpenses')" id="nav-ltexpenses">Expenses</div>
- <div class="ss" onclick="nav('ltcleanings')" id="nav-ltcleanings">Cleanings</div>
- <div class="ss" onclick="nav('vendors')" id="nav-vendors">Vendors</div>
- <div class="ss" onclick="nav('jobs')" id="nav-jobs">Jobs</div>
+ <div class="ss" onclick="nav('ltexpenses')" id="nav-ltexpenses" data-i18n="expenses">Expenses</div>
+ <div class="ss" onclick="nav('ltcleanings')" id="nav-ltcleanings" data-i18n="cleanings">Cleanings</div>
+ <div class="ss" onclick="nav('vendors')" id="nav-vendors" data-i18n="nav_vendors">Vendors</div>
+ <div class="ss" onclick="nav('jobs')" id="nav-jobs" data-i18n="nav_jobs">Jobs</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">OWNER PORTAL</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_owner_portal">OWNER PORTAL</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('ownerportal')" id="nav-ownerportal">Owner Portal</div>
- <div class="ss" onclick="nav('ltownerpay')" id="nav-ltownerpay" style="padding-left:16px">Owner Payment</div>
- <div class="ss" onclick="nav('owner-statement-detail')" id="nav-owner-statement-detail" style="padding-left:16px">Owner Statement (Detalhe)</div>
+ <div class="ss" onclick="nav('ownerportal')" id="nav-ownerportal" data-i18n="owner_portal">Owner Portal</div>
+ <div class="ss" onclick="nav('ltownerpay')" id="nav-ltownerpay" style="padding-left:16px" data-i18n="nav_ltownerpay">Owner Payment</div>
+ <div class="ss" onclick="nav('owner-statement-detail')" id="nav-owner-statement-detail" style="padding-left:16px" data-i18n="nav_owner_statement_detail">Owner Statement (Detalhe)</div>
  <div class="ss sb-ix-ic" onclick="nav('owner-audit')" id="nav-owner-audit" style="padding-left:16px;display:none" title="Auditoria de Repasses (super_admin)">
- <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Auditoria Repasses</span></div>
- <div class="ss" onclick="nav('listings')" id="nav-listings">Listings</div>
+ <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span data-i18n="nav_owner_audit">Auditoria Repasses</span></div>
+ <div class="ss" onclick="nav('listings')" id="nav-listings" data-i18n="listings">Listings</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="tenantsgrp">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">TENANTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_tenants_menu">TENANTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('tenantportal')" id="nav-tenantportal">Tenant Portal</div>
- <div class="ss" onclick="nav('listings')" id="nav-listings-tenants">Listings</div>
+ <div class="ss" onclick="nav('tenantportal')" id="nav-tenantportal" data-i18n="tenant_portal">Tenant Portal</div>
+ <div class="ss" onclick="nav('listings')" id="nav-listings-tenants" data-i18n="listings">Listings</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible sb-sec-headpad" data-sb-sec="compliance" id="wrap-nav-compliance">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">COMPLIANCE</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="compliance">COMPLIANCE</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('licenses')" id="nav-licenses" style="padding-left:16px">Licenses</div>
- <div class="ss" onclick="nav('1099')" id="nav-1099" style="padding-left:16px">1099 / IRS</div>
- <div class="ss" onclick="nav('gaap')" id="nav-gaap" style="padding-left:16px">GAAP</div>
+ <div class="ss" onclick="nav('licenses')" id="nav-licenses" style="padding-left:16px" data-i18n="licenses">Licenses</div>
+ <div class="ss" onclick="nav('1099')" id="nav-1099" style="padding-left:16px" data-i18n="irs_1099">1099 / IRS</div>
+ <div class="ss" onclick="nav('gaap')" id="nav-gaap" style="padding-left:16px" data-i18n="gaap">GAAP</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="operations" id="wrap-nav-operations">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">OPERATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="operations">OPERATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="sg open" onclick="togG(this)"><span>Operations</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+ <div class="sg open" onclick="togG(this)"><span data-i18n="operations">Operations</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
  <div class="gi exp">
- <div class="ss" onclick="nav('phonelines')" id="nav-phonelines">Phone Lines</div>
- <div class="ss" onclick="nav('vault')" id="nav-vault">Vault</div>
- <div class="ss" onclick="nav('cars')" id="nav-cars">Cars & Insurance</div>
- <div class="ss" onclick="nav('inspections')" id="nav-inspections">Inspections</div>
- <div class="ss" onclick="nav('tasks')" id="nav-tasks" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap">Tasks <span id="nav-tasks-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-size:8px;font-weight:700">0</span></div>
+ <div class="ss" onclick="nav('phonelines')" id="nav-phonelines" data-i18n="phone_lines">Phone Lines</div>
+ <div class="ss" onclick="nav('vault')" id="nav-vault" data-i18n="vault">Vault</div>
+ <div class="ss" onclick="nav('cars')" id="nav-cars" data-i18n="cars_insurance">Cars & Insurance</div>
+ <div class="ss" onclick="nav('inspections')" id="nav-inspections" data-i18n="inspections">Inspections</div>
+ <div class="ss" onclick="nav('tasks')" id="nav-tasks" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap"><span data-i18n="nav_tasks">Tasks</span> <span id="nav-tasks-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-size:8px;font-weight:700">0</span></div>
  </div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="integrations" id="wrap-nav-integrations">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">INTEGRATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="integrations">INTEGRATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('integrations')" id="nav-integrations" style="padding-left:16px">Connect</div>
- <div class="ss sb-ix-ic" onclick="nav('ramp')" id="nav-ramp" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span>Ramp</span></div>
- <div class="ss sb-ix-ic" onclick="nav('quickbooks')" id="nav-quickbooks" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg><span>QuickBooks</span></div>
- <div class="ss sb-ix-ic" onclick="nav('appfolio-upload')" id="nav-appfolio-upload" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>AppFolio Upload</span></div>
+ <div class="ss" onclick="nav('integrations')" id="nav-integrations" style="padding-left:16px" data-i18n="connect">Connect</div>
+ <div class="ss sb-ix-ic" onclick="nav('ramp')" id="nav-ramp" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span data-i18n="nav_ramp">Ramp</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('quickbooks')" id="nav-quickbooks" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg><span data-i18n="nav_quickbooks">QuickBooks</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('appfolio-upload')" id="nav-appfolio-upload" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span data-i18n="appfolio_upload">AppFolio Upload</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="results">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">RESULTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_results">RESULTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
- <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Bookkeeping</span></div>
- <div class="ss" onclick="window.open('/gaap.html','_blank','noopener')" id="nav-gaap" style="padding-left:16px"><span>GAAP</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span data-i18n="nav_bookkeeping">Bookkeeping</span></div>
+ <div class="ss" onclick="window.open('/gaap.html','_blank','noopener')" id="nav-gaap-results" style="padding-left:16px"><span data-i18n="gaap">GAAP</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ai-assistant" id="wrap-nav-bookkeeping-ai" style="display:none">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">AI ASSISTANT</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_ai_assistant">AI ASSISTANT</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss sb-ix-ic" onclick="nav('bookkeeping-ai')" id="nav-bookkeeping-ai" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span>Bookkeeping AI</span></div>
- <div class="ss sb-ix-ic" onclick="nav('analytics')" id="nav-analytics" style="padding-left:16px;display:none" title="Analytics (super_admin only)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></div>
- <div class="ss sb-ix-ic" onclick="nav('auditoria-2026')" id="nav-auditoria-2026" style="padding-left:16px;display:none" title="Auditoria GL 2026 (admin)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6M9 9h1"/></svg><span>Auditoria 2026</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('bookkeeping-ai')" id="nav-bookkeeping-ai" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span data-i18n="nav_bookkeeping_ai">Bookkeeping AI</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('analytics')" id="nav-analytics" style="padding-left:16px;display:none" title="Analytics (super_admin only)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span data-i18n="nav_analytics">Analytics</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('auditoria-2026')" id="nav-auditoria-2026" style="padding-left:16px;display:none" title="Auditoria GL 2026 (admin)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6M9 9h1"/></svg><span data-i18n="nav_auditoria_2026">Auditoria 2026</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="admin" id="sb-gm-admin-section" style="display:none">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">ADMIN</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="admin">ADMIN</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('admin-dashboard')" id="nav-admin-dashboard" style="padding-left:16px;display:none" title="Dashboard Admin (super_admin only)">Dashboard Admin</div>
- <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px">Clients</div>
- <div class="ss" onclick="gmAdminUsersModalOpen()" id="nav-admin-users" style="padding-left:16px">Users</div>
- <div class="ss" onclick="nav('backup')" id="nav-backup" style="padding-left:16px">Backup & Restore</div>
- <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px">Settings</div>
- <div class="ss" onclick="nav('gross-expenses')" id="nav-gross-expenses" style="padding-left:16px">Gross &amp; Expenses</div>
- <div class="ss" onclick="nav('forms-received')" id="nav-forms-received" style="padding-left:16px">Forms Received</div>
-<div class="ss" onclick="nav('admin-audit')" id="nav-admin-audit" style="padding-left:16px">Audit Log</div>
- <div class="sg open" onclick="togG(this)" id="sb-hr-group"><span>HR</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+ <div class="ss" onclick="nav('admin-dashboard')" id="nav-admin-dashboard" style="padding-left:16px;display:none" title="Dashboard Admin (super_admin only)" data-i18n="nav_admin_dashboard">Dashboard Admin</div>
+ <div class="ss" onclick="nav('clients')" id="nav-clients" style="padding-left:16px" data-i18n="clients">Clients</div>
+ <div class="ss" onclick="gmAdminUsersModalOpen()" id="nav-admin-users" style="padding-left:16px" data-i18n="users">Users</div>
+ <div class="ss" onclick="nav('backup')" id="nav-backup" style="padding-left:16px" data-i18n="nav_backup">Backup & Restore</div>
+ <div class="ss" onclick="nav('settings')" id="nav-settings-gm" style="padding-left:16px" data-i18n="settings">Settings</div>
+ <div class="ss" onclick="nav('gross-expenses')" id="nav-gross-expenses" style="padding-left:16px" data-i18n="gross_expenses">Gross &amp; Expenses</div>
+ <div class="ss" onclick="nav('forms-received')" id="nav-forms-received" style="padding-left:16px" data-i18n="forms_received">Forms Received</div>
+<div class="ss" onclick="nav('admin-audit')" id="nav-admin-audit" style="padding-left:16px" data-i18n="nav_audit_log">Audit Log</div>
+ <div class="sg open" onclick="togG(this)" id="sb-hr-group"><span data-i18n="hr">HR</span><svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
  <div class="gi exp" id="sb-hr-items">
- <div class="ss" onclick="nav('org-chart')" id="nav-org-chart" style="padding-left:16px">Org Chart</div>
+ <div class="ss" onclick="nav('org-chart')" id="nav-org-chart" style="padding-left:16px" data-i18n="org_chart">Org Chart</div>
  </div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="mycompany" id="sb-mycompany-section" style="display:none">
- <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">My company</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="my_company">My company</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
- <div class="ss" onclick="nav('client-users')" id="nav-client-users" style="padding-left:16px">Equipe</div>
- <div class="ss" onclick="nav('admin-audit')" id="nav-audit-log-tenant" style="padding-left:16px;display:none">Audit Log</div>
- <div class="ss" onclick="nav('settings')" id="nav-settings-co" style="padding-left:16px">Settings</div>
+ <div class="ss" onclick="nav('client-users')" id="nav-client-users" style="padding-left:16px" data-i18n="nav_team">Equipe</div>
+ <div class="ss" onclick="nav('admin-audit')" id="nav-audit-log-tenant" style="padding-left:16px;display:none" data-i18n="nav_audit_log">Audit Log</div>
+ <div class="ss" onclick="nav('settings')" id="nav-settings-co" style="padding-left:16px" data-i18n="settings">Settings</div>
  </div>
  </div>
  </nav>
@@ -1442,7 +1444,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </button>
  </div>
  <div class="sb-copyright" style="padding:10px 16px 14px;border-top:1px solid rgba(255,255,255,.08);text-align:center;flex-shrink:0">
- <div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.25px;line-height:1.5">© 2026 GodManager. All rights reserved.</div>
+ <div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.25px;line-height:1.5" data-i18n="footer_rights">© 2026 GodManager. All rights reserved.</div>
  </div>
 </aside>
 
@@ -1454,14 +1456,14 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <!-- Cliente ativo para auditoria 2026 (super_admin — só memória da sessão, sem storage) -->
  <div id="gm-super-active-client-bar" aria-live="polite" style="display:none;flex:1;min-width:0;margin-left:12px;align-items:center;gap:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--ink2);padding:7px 12px;border-radius:8px;border:1px solid var(--amber-bd);background:var(--amber-bg);box-sizing:border-box;flex-wrap:wrap">
   <span id="gm-super-active-client-txt"></span>
-  <button type="button" id="gm-super-active-client-swap" class="tb-clients" style="padding:6px 10px;font-size:11px;margin:0" onclick="if(typeof nav==='function')nav('admin-dashboard')">Trocar</button>
-  <button type="button" id="gm-super-active-client-clear" class="tb-clients" style="padding:6px 10px;font-size:11px;margin:0;color:var(--ink3);border-color:var(--border2);background:transparent" onclick="if(typeof gmActiveClientClearForAudit==='function')gmActiveClientClearForAudit()">Limpar</button>
+  <button type="button" id="gm-super-active-client-swap" class="tb-clients" style="padding:6px 10px;font-size:11px;margin:0" onclick="if(typeof nav==='function')nav('admin-dashboard')" data-i18n="tb_swap">Trocar</button>
+  <button type="button" id="gm-super-active-client-clear" class="tb-clients" style="padding:6px 10px;font-size:11px;margin:0;color:var(--ink3);border-color:var(--border2);background:transparent" onclick="if(typeof gmActiveClientClearForAudit==='function')gmActiveClientClearForAudit()" data-i18n="tb_clear">Limpar</button>
  </div>
  </div>
  <div class="tr">
- <button type="button" id="btn-exit-client" onclick="exitClientView()">Exit Client View</button>
- <span class="tsn">Sessão: admin</span>
- <button type="button" id="btn-topbar-clients" class="tb-clients" onclick="nav('clients')" style="display:none">Clients</button>
+ <button type="button" id="btn-exit-client" onclick="exitClientView()" data-i18n="exit_client">Exit Client View</button>
+ <span class="tsn" id="tb-session-label">Sessão: admin</span>
+ <button type="button" id="btn-topbar-clients" class="tb-clients" onclick="nav('clients')" style="display:none" data-i18n="clients">Clients</button>
  <div class="tb-lang-wrap" style="position:relative;display:inline-block">
    <button type="button" class="tb" id="lang-current" onclick="gmLangToggle()" aria-haspopup="true" aria-expanded="false" title="Change language">EN</button>
    <div id="lang-menu" style="position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.08);min-width:80px;display:none;z-index:1000">
@@ -1470,9 +1472,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      <button type="button" onclick="gmSetLang('es')" style="display:block;width:100%;padding:8px 12px;background:none;border:none;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600">ES</button>
    </div>
  </div>
- <button type="button" class="tb gm-allow-viewer" onclick="gmBackupExport()" title="Export backup JSON" style="padding:6px 12px;background:#22558c;color:#fff;border:1px solid #22558c;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;margin-right:8px">Backup</button>
- <button type="button" id="btn-topbar-historico" class="tb" onclick="if(typeof nav==='function')nav('admin-audit');" style="display:none;margin-right:8px">Historico</button>
- <button class="tb gm-allow-viewer" onclick="window.print()">Export PDF</button>
+ <button type="button" class="tb gm-allow-viewer" onclick="gmBackupExport()" title="Export backup JSON" style="padding:6px 12px;background:#22558c;color:#fff;border:1px solid #22558c;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;margin-right:8px" data-i18n="tb_backup">Backup</button>
+ <button type="button" id="btn-topbar-historico" class="tb" onclick="if(typeof nav==='function')nav('admin-audit');" style="display:none;margin-right:8px" data-i18n="tb_history">Historico</button>
+ <button class="tb gm-allow-viewer" onclick="window.print()" data-i18n="export_pdf">Export PDF</button>
  </div>
 </header>
 
@@ -9310,8 +9312,62 @@ window.ocCloseModal=ocCloseModal;
 window.ocSaveModal=ocSaveModal;
 window.ocClosePanel=ocClosePanel;
 
-// NAV 
-const TITLES={home:'Home',clients:'Client Management','admin-dashboard':'Dashboard Admin','client-users':'Equipe',settings:'Settings','admin-audit':'Audit Log',backup:'Backup & Restore',reservations:'Reservations',agencies:'Agencies',properties:'Properties',renovations:'Renovations',housekeeper:'Housekeeper',contractors:'Contractors',payroll:'Payroll',vendors:'Vendors',jobs:'Jobs',tasks:'Tarefas','1099':'1099 / IRS',upcoming:'Upcoming Payouts',longterm:'Dashboard',ltproperties:'Properties','owner-statement':'Owner Statement','owner-statement-detail':'Owner Statement — Detalhe',tenants:'Tenants','leases-history':'Lease history',ltstatements:'Statements',ltexpenses:'Expenses',ltcleanings:'Cleanings',ltownerpay:'Owner Payment — repasse (dia 15)','owner-audit':'Auditoria de Repasses',ownerportal:'Owner Portal',tenantportal:'Tenant Portal',listings:'Listings',cars:'Cars & Insurance',stock:'Stock',licenses:'Licenses',phonelines:'Phone Lines',vault:'Vault',news:'News',powerwash:'Power Wash',pool:'Pool',piscineiros:'Piscineiros',bbq:'BBQ',gaap:'GAAP Statement',integrations:'Integrações',ramp:'Ramp — Corporate Cards',quickbooks:'QuickBooks — Accounting','appfolio-upload':'AppFolio — Importar Dados','gross-expenses':'Gross & Expenses','org-chart':'Organograma',inspections:'Inspections',results:'Results — Financial Performance','results-upload':'Upload Reports',bookkeeping:'Bookkeeping','bookkeeping-ai':'Bookkeeping AI',analytics:'Analytics','auditoria-2026':'Auditoria 2026'};
+// NAV — breadcrumb titles via t() on-demand (H.2)
+var GM_TITLE_KEY_ALIASES={
+ 'gross-expenses':'title_gross',
+ 'org-chart':'title_orgchart',
+ 'appfolio-upload':'title_appfolio',
+ 'forms-received':'title_forms_received',
+ 'admin-audit':'title_admin_audit',
+ 'admin-dashboard':'title_admin_dashboard',
+ 'client-users':'title_client_users',
+ 'owner-statement':'title_owner_statement',
+ 'owner-statement-detail':'title_owner_statement_detail',
+ 'leases-history':'title_leases_history',
+ 'ltownerpay':'title_ltownerpay',
+ 'owner-audit':'title_owner_audit',
+ 'ownerportal':'title_ownerportal',
+ 'tenantportal':'title_tenantportal',
+ 'results-upload':'title_results_upload',
+ 'bookkeeping-ai':'title_bookkeeping_ai',
+ 'auditoria-2026':'title_auditoria_2026',
+ '1099':'title_1099'
+};
+function gmRouteToTitleKey(route){
+ var r=String(route||'home');
+ if(r==='home')return'home';
+ if(GM_TITLE_KEY_ALIASES[r])return GM_TITLE_KEY_ALIASES[r];
+ return'title_'+r.replace(/-/g,'_');
+}
+function gmGetPageTitle(route){
+ if(typeof t!=='function')return String(route||'home');
+ var key=gmRouteToTitleKey(route);
+ var val=t(key);
+ return(val&&val!==key)?val:String(route||'home');
+}
+function gmGetCurrentRoute(){
+ var h=(window.location.hash||'').replace(/^#/,'').trim();
+ return h||'home';
+}
+function gmRefreshShellI18n(){
+ try{
+  var route=gmGetCurrentRoute();
+  var titleEl=document.getElementById('page-title');
+  if(titleEl)titleEl.textContent=gmGetPageTitle(route);
+  var sess=document.getElementById('tb-session-label');
+  if(sess&&typeof t==='function'){
+   var role=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'admin').toLowerCase();
+   sess.textContent=t('session')+': '+role;
+  }
+  var collapseBtn=document.getElementById('sb-collapse-btn');
+  if(collapseBtn&&typeof t==='function'){
+   var lbl=t('nav_collapse_menu');
+   if(lbl&&lbl!=='nav_collapse_menu'){collapseBtn.setAttribute('aria-label',lbl);collapseBtn.setAttribute('title',lbl);}
+  }
+ }catch(e){console.warn('[gm-i18n] gmRefreshShellI18n',e);}
+}
+window.gmGetPageTitle=gmGetPageTitle;
+window.gmRefreshShellI18n=gmRefreshShellI18n;
 
 function nav(r){
  if(typeof closeSidebar==='function')closeSidebar();
@@ -9363,7 +9419,7 @@ function nav(r){
   document.querySelectorAll('.si,.ss').forEach(e=>e.classList.remove('active'));
   var nuc=document.getElementById('nav-client-users');if(nuc)nuc.classList.add('active');
   const titleEl=document.getElementById('page-title');
-  if(titleEl)titleEl.textContent=TITLES['client-users']||'Equipe';
+  if(titleEl)titleEl.textContent=gmGetPageTitle('client-users');
   openUsersModal();
   return;
  }
@@ -9378,7 +9434,7 @@ function nav(r){
  if(r==='tasks'){const elT=document.getElementById('nav-tasks');if(elT)elT.classList.add('active');}
  if(r==='home'){const hel=document.getElementById('nav-home');if(hel)hel.classList.add('active');}
  const titleEl=document.getElementById('page-title');
- if(titleEl) titleEl.textContent=TITLES[r]||r;
+ if(titleEl) titleEl.textContent=gmGetPageTitle(r);
  window.location.hash=r==='home'?'':r;
  window.scrollTo(0,0);
  try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(_gab){}
