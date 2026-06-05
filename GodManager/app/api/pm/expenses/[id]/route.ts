@@ -27,16 +27,21 @@ function parseIsVendorFree(raw: unknown): boolean | undefined {
   return raw === true || raw === 'true' || raw === 1 || raw === '1';
 }
 
+function parseRescheduleBy(raw: unknown): 'tenant' | 'vendor' {
+  return raw === 'tenant' ? 'tenant' : 'vendor';
+}
+
 function mergeRescheduleMetadata(
   curMeta: Prisma.JsonValue | null,
   newDateIso: string,
+  rescheduleBy: 'tenant' | 'vendor',
 ): Prisma.InputJsonValue {
   const base =
     curMeta && typeof curMeta === 'object' && !Array.isArray(curMeta)
       ? { ...(curMeta as Record<string, unknown>) }
       : {};
   const list = Array.isArray(base.reschedules) ? [...(base.reschedules as unknown[])] : [];
-  list.push({ date: newDateIso, atIso: new Date().toISOString() });
+  list.push({ date: newDateIso, atIso: new Date().toISOString(), by: rescheduleBy });
   base.reschedules = list;
   return base as Prisma.InputJsonValue;
 }
@@ -300,12 +305,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     let wasRescheduled = cur.wasRescheduled;
     let metadataForUpdate: Prisma.InputJsonValue | undefined = metadataPatch;
     if (isReschedulePatch) {
+      const rescheduleBy = parseRescheduleBy(body.rescheduleBy);
       wasRescheduled = true;
       if (metadataPatch === undefined) {
-        metadataForUpdate = mergeRescheduleMetadata(cur.metadata, nextSvc);
+        metadataForUpdate = mergeRescheduleMetadata(cur.metadata, nextSvc, rescheduleBy);
       }
       changedFields.push('wasRescheduled');
-      if (metadataForUpdate !== undefined) changedFields.push('reschedules:append');
+      if (metadataForUpdate !== undefined) changedFields.push(`reschedules:append:${rescheduleBy}`);
     }
 
     const row = await prisma.pmExpense.update({
