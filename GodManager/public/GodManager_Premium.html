@@ -10285,7 +10285,7 @@ function gmNewsEsc(s){
 
 function gmNewsSubtypePill(subtype){
  if(subtype==='vendor_fee')return{lbl:'Vendor +$120',bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)'};
- if(subtype==='vendor_free')return{lbl:'V Free',bg:'var(--amber-bg)',fg:'var(--amber)',bd:'var(--amber-bd)'};
+ if(subtype==='vendor_free')return{lbl:'V Free',bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7'};
  if(subtype==='container_added')return{lbl:'Container',bg:'#ede9fe',fg:'#5b21b6',bd:'#c4b5fd'};
  return{lbl:'Job',bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
 }
@@ -22224,6 +22224,7 @@ function gmJobsRenderCalendar(rows){
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #f59e0b"></span>Pendente</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--blue-bg);border-radius:2px;border:1px solid var(--blue)"></span>Agendado</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#ffedd5;border-radius:2px;border:1px solid #f97316"></span>Reagendado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(168,85,247,.2);border-radius:2px;border:1px solid #a855f7"></span>V Free</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--red-bg);border-radius:2px;border:1px solid #dc2626"></span>Urgente</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--green-bg);border-radius:2px;border:1px solid var(--green)"></span>Finalizado</span>';
  html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid var(--red)"></span>Cancelado</span>';
@@ -22639,6 +22640,7 @@ window.gmJobsStatusPalette={
  PENDING:{bg:'#fef3c7',fg:'#92400e',bd:'#f59e0b',label:'Pendente'},
  SCHEDULED:{bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)',label:'Agendado'},
  RESCHEDULED:{bg:'#ffedd5',fg:'#c2410c',bd:'#f97316',label:'Reagendado'},
+ V_FREE:{bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7',label:'V Free'},
  URGENT:{bg:'var(--red-bg)',fg:'var(--red)',bd:'#dc2626',label:'Urgente'},
  FINALIZED:{bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)',label:'Finalizado'},
  PAID:{bg:'#dcfce7',fg:'#15803d',bd:'#15803d',label:'Pago'},
@@ -22651,6 +22653,14 @@ function gmJobsRowWasRescheduled(r){
  if(r._apiRaw&&r._apiRaw.wasRescheduled===true)return true;
  return false;
 }
+
+function gmJobsRowIsVendorFree(r){
+ if(!r)return false;
+ if(r.isVendorFree===true)return true;
+ if(r._apiRaw&&r._apiRaw.isVendorFree===true)return true;
+ return false;
+}
+window.gmJobsRowIsVendorFree=gmJobsRowIsVendorFree;
 
 function gmJobRescheduleCounts(metadata){
  var list=(metadata&&metadata.reschedules)||[];
@@ -22703,13 +22713,23 @@ function gmJobUrgentPillHtml(r){
  return gmJobPillHtml('URGENT','Categoria urgente: '+u.type,'URGENTE');
 }
 
-function gmJobStatusBadgeWithUrgent(base,r){
- var urgent=gmJobUrgentPillHtml(r);
- if(!urgent)return base;
+function gmJobVendorFreePillHtml(r){
+ if(!gmJobsRowIsVendorFree(r))return '';
+ return gmJobPillHtml('V_FREE','Job V Free (sem vendor)','V FREE');
+}
+
+function gmJobStatusBadgeAppendPill(base,pill){
+ if(!pill)return base;
  if(base.indexOf('jobs-status-pills')>=0){
-  return base.replace(/<\/span>\s*$/,urgent+'</span>');
+  return base.replace(/<\/span>\s*$/,pill+'</span>');
  }
- return '<span class="jobs-status-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">'+base+urgent+'</span>';
+ return '<span class="jobs-status-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">'+base+pill+'</span>';
+}
+
+function gmJobStatusBadgeWithExtras(base,r){
+ var out=gmJobStatusBadgeAppendPill(base,gmJobVendorFreePillHtml(r));
+ out=gmJobStatusBadgeAppendPill(out,gmJobUrgentPillHtml(r));
+ return out;
 }
 
 function gmJobStatusBadgeHtml(r){
@@ -22731,13 +22751,14 @@ function gmJobStatusBadgeHtml(r){
    +gmJobPillHtml('SCHEDULED')+vtPill+'</span>';
  }else if(st==='SCHEDULED')base=gmJobPillHtml('SCHEDULED');
  else base=gmJobPillHtml(st)||('<span style="font-size:10px">'+st+'</span>');
- return gmJobStatusBadgeWithUrgent(base,r);
+ return gmJobStatusBadgeWithExtras(base,r);
 }
 window.gmJobStatusBadgeHtml=gmJobStatusBadgeHtml;
 
 function gmJobsCalStyleKey(j){
  if(!j)return 'SCHEDULED';
  if(gmJobIsUrgentByCategory(j).isUrgent)return 'URGENT';
+ if(gmJobsRowIsVendorFree(j))return 'V_FREE';
  if(gmJobsRowWasRescheduled(j))return 'RESCHEDULED';
  return jobsPmStatusKey(j)||'SCHEDULED';
 }
@@ -22745,6 +22766,7 @@ function gmJobsCalStyleKey(j){
 function gmJobsCalEventTooltip(j,calKey){
  var u=gmJobIsUrgentByCategory(j);
  if(calKey==='URGENT'&&u.isUrgent)return 'Urgente: '+u.type;
+ if(calKey==='V_FREE')return 'Job V Free (sem vendor)';
  if(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')return gmJobsRescheduleTooltip(j);
  return calKey;
 }
@@ -27143,18 +27165,20 @@ window.gmAnalyticsLoad=async function(){
   };
 
   window.gmJobsRenderStatusChips=function(rows){
-    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0};
+    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0,vfree:0};
     rows.forEach(function(r){
       var s=String(r.status||r.statusPm||'').toUpperCase();
       if(counts[s]!==undefined)counts[s]++;
       if(typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r))counts.rescheduled++;
       if(typeof gmJobsRowIsUrgent==='function'&&gmJobsRowIsUrgent(r))counts.urgent++;
+      if(typeof gmJobsRowIsVendorFree==='function'&&gmJobsRowIsVendorFree(r))counts.vfree++;
     });
     var chips=[
       {key:'all',label:'Todos'},
       {key:'PENDING',label:'Pendente'},
       {key:'SCHEDULED',label:'Agendado'},
       {key:'rescheduled',label:'Reagendados'},
+      {key:'vfree',label:'V Free'},
       {key:'urgent',label:'Urgentes'},
       {key:'FINALIZED',label:'Finalizado'},
       {key:'PAID',label:'Pago'},
@@ -27182,6 +27206,11 @@ window.gmAnalyticsLoad=async function(){
     if(f==='urgent'){
      return rows.filter(function(r){
       return typeof gmJobsRowIsUrgent==='function'&&gmJobsRowIsUrgent(r);
+     });
+    }
+    if(f==='vfree'){
+     return rows.filter(function(r){
+      return typeof gmJobsRowIsVendorFree==='function'&&gmJobsRowIsVendorFree(r);
      });
     }
     return rows.filter(function(r){
