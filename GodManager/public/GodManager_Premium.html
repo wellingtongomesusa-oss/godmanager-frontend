@@ -2899,6 +2899,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
  <span id="lt-exp-migrate-status" style="font-size:11px;color:var(--ink2);max-width:280px" aria-live="polite"></span>
  <button type="button" id="lt-exp-migrate-local-btn" onclick="if(typeof ltExpMigrateLocalToDb==='function')ltExpMigrateLocalToDb();" style="display:none;padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Migrar dados locais → Banco</button>
+ <button type="button" id="lt-exp-vfree-btn" onclick="if(typeof ltOpenVendorFreeExpense==='function')ltOpenVendorFreeExpense();" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:1px solid var(--amber-bd);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">V Free</button>
  <button onclick="ltOpenNewExpense()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Despesa</button>
  <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
@@ -3372,6 +3373,13 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">Despesa com vendor (Postgres, markup, NET owner)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
    <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR / FORNECEDOR (cadastrado) *</label><select id="lt-nexp-pm-vendor" class="lt-nexp-pm-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select></div>
+   <div id="lt-nexp-vendor-free-wrap" style="grid-column:1/-1;display:none;margin-bottom:4px">
+    <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">
+     <input type="checkbox" id="lt-nexp-vendor-free" onchange="if(typeof ltNexpOnVendorFreeToggle==='function')ltNexpOnVendorFreeToggle()" style="width:15px;height:15px;margin-top:2px;accent-color:var(--amber);cursor:pointer">
+     <span style="font-size:11px;font-weight:600;color:var(--amber);line-height:1.4">Sem vendor (V Free)</span>
+    </label>
+    <div style="font-size:10px;color:var(--ink3);margin:4px 0 0 23px;line-height:1.4">Job sem fornecedor atribuido; vendor pode ser definido depois.</div>
+   </div>
    <div id="lt-nexp-pacote-new" style="grid-column:1/-1">
     <div style="margin-bottom:12px;margin-top:12px">
      <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px">Pacote / Markup</label>
@@ -12470,6 +12478,7 @@ function ltNexpOnCatChange(){
  if(detPacote)detPacote.style.display=isVendor?'none':'block';
  if(isVendor){ltNexpPopulatePmVendorSelect();ltNexpPmRecalc();}
  else{ltNexpPopulatePmVendorSelect();}
+ if(typeof ltNexpUpdateVendorFreeWrapVisibility==='function')ltNexpUpdateVendorFreeWrapVisibility();
 }
 function ltNexpPopulatePmVendorSelect(){
  var list=(typeof gvLoad==='function')?gvLoad():[];
@@ -12631,6 +12640,8 @@ function ltExpMapApiToRow(e){
   statusPm:e.status,
   value:oc,
   jobValueOverride:e.jobValueOverride!=null&&e.jobValueOverride!==''?Number(e.jobValueOverride):null,
+  isVendorFree:!!e.isVendorFree,
+  metadata:e.metadata&&typeof e.metadata==='object'?e.metadata:null,
   status:ui,
   vendor:String(e.vendorName||'').trim(),
   _apiRaw:e
@@ -12735,6 +12746,55 @@ window.ltExpBulkRoleOk=function(){
  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
  var role=String(u.role||'').toLowerCase();
  return role==='admin'||role==='super_admin'||role==='manager'||role==='maintenance';
+};
+
+/** V Free: admin, gestor, super_admin, manutencao (nao field). */
+window.gmCanVendorFreeRole=function(){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var role=String(u.role||'').toLowerCase();
+ return role==='admin'||role==='super_admin'||role==='manager'||role==='maintenance';
+};
+
+function ltNexpIsVendorFreeChecked(){
+ var cb=document.getElementById('lt-nexp-vendor-free');
+ return !!(cb&&cb.checked);
+}
+
+function ltNexpUpdateVendorFreeWrapVisibility(){
+ var wrap=document.getElementById('lt-nexp-vendor-free-wrap');
+ var cat=(document.getElementById('lt-nexp-cat')||{}).value;
+ if(!wrap)return;
+ var show=cat==='Vendor'&&(typeof gmCanVendorFreeRole==='function'?gmCanVendorFreeRole():false);
+ wrap.style.display=show?'block':'none';
+ if(!show){
+  var cb=document.getElementById('lt-nexp-vendor-free');
+  if(cb)cb.checked=false;
+  if(typeof ltNexpOnVendorFreeToggle==='function')ltNexpOnVendorFreeToggle();
+ }
+}
+
+function ltNexpOnVendorFreeToggle(){
+ var on=ltNexpIsVendorFreeChecked();
+ var vsel=document.getElementById('lt-nexp-pm-vendor');
+ var ovn=document.getElementById('lt-nexp-optional-pm-vendor');
+ if(vsel){
+  if(on){vsel.value='';vsel.disabled=true;}else{vsel.disabled=false;}
+ }
+ if(ovn){
+  if(on){ovn.value='';ovn.disabled=true;}else{ovn.disabled=false;}
+ }
+}
+
+function ltExpUpdateVendorFreeButtonVisibility(){
+ var btn=document.getElementById('lt-exp-vfree-btn');
+ if(!btn)return;
+ btn.style.display=(typeof gmCanVendorFreeRole==='function'&&gmCanVendorFreeRole())?'inline-block':'none';
+}
+
+window.ltOpenVendorFreeExpense=function(){
+ if(typeof gmCanVendorFreeRole==='function'&&!gmCanVendorFreeRole()){alert('Sem permissao.');return;}
+ if(typeof ltOpenNewExpense!=='function')return;
+ ltOpenNewExpense({vendorFreeStandalone:true});
 };
 
 window.ltExpNormalizeYm=function(m){
@@ -14779,7 +14839,7 @@ window.gerarInvoicePDF=function(data,opts){
 
 async function ltOpenNewExpense(prefill){
  var pf=(prefill&&typeof prefill==='object')?prefill:{};
- if(!pf.vendorFreeClone){try{window.__lastVendorFreeFrom=null;}catch(eClr){}}
+ if(!pf.vendorFreeClone&&!pf.vendorFreeStandalone){try{window.__lastVendorFreeFrom=null;}catch(eClr){}}
  try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
  ltExpEditingId=null;ltExpEditingPmId=null;
  await ltPopulatePropertyDropdowns();
@@ -14800,10 +14860,13 @@ async function ltOpenNewExpense(prefill){
  var ovn=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn)ovn.value='';
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
 
- if(pf.vendorFreeClone){
+ if(pf.vendorFreeClone||pf.vendorFreeStandalone){
   try{if(pf._vendorFreeFrom!=null&&pf._vendorFreeFrom!=='')window.__lastVendorFreeFrom=String(pf._vendorFreeFrom);}catch(eVF){}
   document.getElementById('lt-nexp-cat').value='Vendor';
   if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
+  var vfcb=document.getElementById('lt-nexp-vendor-free');
+  if(vfcb){vfcb.checked=true;}
+  if(typeof ltNexpOnVendorFreeToggle==='function')ltNexpOnVendorFreeToggle();
   var propSel=document.getElementById('lt-nexp-prop');
   if(propSel){
    var pCode=String(pf.propertyCode||'').trim();
@@ -14842,10 +14905,15 @@ async function ltOpenNewExpense(prefill){
   if(!Number.isFinite(vcost))vcost=parseFloat(pf.value);
   if(!Number.isFinite(vcost))vcost=0;
   var pvc2=document.getElementById('lt-nexp-pm-vendor-cost');if(pvc2)pvc2.value=String(vcost);
-  var vsel=document.getElementById('lt-nexp-pm-vendor');if(vsel)vsel.value='';
-  var ovn2=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn2)ovn2.value='';
+  var vsel=document.getElementById('lt-nexp-pm-vendor');if(vsel&&!ltNexpIsVendorFreeChecked())vsel.value='';
+  var ovn2=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn2&&!ltNexpIsVendorFreeChecked())ovn2.value='';
   if(typeof ltNexpPmRecalc==='function')ltNexpPmRecalc();
+ }else{
+  var vfcb0=document.getElementById('lt-nexp-vendor-free');
+  if(vfcb0)vfcb0.checked=false;
+  if(typeof ltNexpOnVendorFreeToggle==='function')ltNexpOnVendorFreeToggle();
  }
+ if(typeof ltNexpUpdateVendorFreeWrapVisibility==='function')ltNexpUpdateVendorFreeWrapVisibility();
 
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
@@ -14964,10 +15032,30 @@ function ltSaveExpense(){
   const svc=String((document.getElementById('lt-nexp-pm-svc')||{}).value||'').trim();
   const sDate=(document.getElementById('lt-nexp-pm-svc-date')||{}).value;
   const st=(document.getElementById('lt-nexp-pm-status')||{}).value||'PENDING';
-  if(!propId||!vid||!descVal||!sDate){alert('Propriedade, vendor cadastrado, descrição e data do serviço são obrigatórios.');return;}
-  if(!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
+  var isVFree=(typeof ltNexpIsVendorFreeChecked==='function')&&ltNexpIsVendorFreeChecked();
+  if(!propId||!descVal||!sDate){alert('Propriedade, descrição e data do serviço são obrigatórios.');return;}
+  if(!isVFree&&!vid){alert('Selecione um vendor cadastrado ou marque Sem vendor (V Free).');return;}
+  if(!isVFree&&!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
+  if(isVFree&&!(vc>=0)){alert('Valor estimado inválido.');return;}
   (async function(){
-   const body={propertyCode:propId,vendorId:vid,packageApplied:pkg,pmPackage:pkg,vendorCost:vc,serviceType:svc,monthRef:month,serviceDate:sDate,status:st,description:descVal};
+   var vfFrom=null;
+   try{vfFrom=window.__lastVendorFreeFrom;}catch(eVf0){}
+   var meta=null;
+   if(vfFrom)meta={fromJobId:String(vfFrom)};
+   const body={
+    propertyCode:propId,
+    packageApplied:pkg,
+    pmPackage:pkg,
+    vendorCost:vc,
+    serviceType:svc,
+    monthRef:month,
+    serviceDate:sDate,
+    status:st,
+    description:descVal,
+    isVendorFree:!!isVFree,
+    vendorId:isVFree?null:vid,
+    metadata:meta||undefined
+   };
    try{
     const isEd=!!ltExpEditingPmId;
     const url=isEd?('/api/pm/expenses/'+encodeURIComponent(ltExpEditingPmId)):'/api/pm/expenses';
@@ -14977,16 +15065,16 @@ function ltSaveExpense(){
     if(!r.ok){var er=await r.json().catch(function(){return{};});alert(er.error||('Erro '+r.status));return;}
     var respJson=await r.json().catch(function(){return{};});
     if(!isEd){
-     var vfFrom=null;
-     try{vfFrom=window.__lastVendorFreeFrom;}catch(eVf){}
+     var vfFromNews=null;
+     try{vfFromNews=window.__lastVendorFreeFrom;}catch(eVf){}
      var newJobId=respJson&&respJson.expense&&respJson.expense.id?String(respJson.expense.id):'';
-     if(vfFrom&&newJobId&&typeof gmNewsPostJobAction==='function'){
+     if(isVFree&&newJobId&&typeof gmNewsPostJobAction==='function'){
       gmNewsPostJobAction({
        subtype:'vendor_free',
        jobId:newJobId,
        title:'Job sem vendor: '+descVal.slice(0,80),
        body:descVal,
-       metadata:{fromJobId:String(vfFrom)}
+       metadata:vfFromNews?{fromJobId:String(vfFromNews)}:undefined
       });
      }
      try{window.__lastVendorFreeFrom=null;}catch(eClrVf){}
@@ -15124,6 +15212,7 @@ function ltExpSchedulePmPhotoCounts(){
 }
 
 function ltExpRender(){
+ if(typeof ltExpUpdateVendorFreeButtonVisibility==='function')ltExpUpdateVendorFreeButtonVisibility();
  const records=ltExpMergeAll();
  var uPmLt=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
  var rrPmLt=String(uPmLt.role||'').toLowerCase();
@@ -22531,7 +22620,7 @@ async function jobsRender(){
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
  var isAdmin=(userRole==='admin'||userRole==='super_admin');
- var canVendorFree=(userRole==='admin'||userRole==='super_admin'||userRole==='manager');
+ var canVendorFree=(typeof gmCanVendorFreeRole==='function'?gmCanVendorFreeRole():(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance'));
  var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance');
  tbody.innerHTML=rows.map(function(r){
   var vendorDone=jobsHasActionFor(r.id,'vendor');

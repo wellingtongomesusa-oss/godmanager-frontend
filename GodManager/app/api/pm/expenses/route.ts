@@ -9,12 +9,22 @@ import {
 } from '@/lib/clientScope';
 import { getPmExpensesListWhere, isFieldRole } from '@/lib/pmExpensesScope';
 import { ownerChargedAmount, parsePmPackage } from '@/lib/pmPackages';
-import type { PmExpenseStatus, PmPackage } from '@prisma/client';
+import type { Prisma, PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { serviceDateToMonthRef } from '@/lib/pmCycleRef';
 
 export const dynamic = 'force-dynamic';
+
+function parseMetadataInput(raw: unknown): Prisma.InputJsonValue | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw === 'object' && !Array.isArray(raw)) return raw as Prisma.InputJsonValue;
+  return undefined;
+}
+
+function parseIsVendorFree(raw: unknown): boolean {
+  return raw === true || raw === 'true' || raw === 1 || raw === '1';
+}
 
 function toJson(e: {
   id: string;
@@ -29,6 +39,8 @@ function toJson(e: {
   monthRef: string;
   status: PmExpenseStatus;
   description: string | null;
+  isVendorFree: boolean;
+  metadata: Prisma.JsonValue | null;
   property: { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
 }) {
@@ -50,6 +62,8 @@ function toJson(e: {
     monthRef: e.monthRef,
     status: e.status,
     description: e.description ?? '',
+    isVendorFree: !!e.isVendorFree,
+    metadata: e.metadata ?? null,
   };
 }
 
@@ -114,13 +128,17 @@ export async function POST(req: Request) {
     const scopeClientId = getClientScopeForCreate(scopeUser);
     const expenseClientId = scopeClientId ?? prop.clientId ?? null;
 
-    const vendorId = String(body.vendorId || '').trim() || null;
-    if (vendorId) {
+    const isVendorFree = parseIsVendorFree(body.isVendorFree);
+    let vendorId = String(body.vendorId || '').trim() || null;
+    if (isVendorFree) {
+      vendorId = null;
+    } else if (vendorId) {
       const v = await prisma.pmVendor.findFirst({
         where: { id: vendorId, ...getClientScopeWhere(scopeUser) },
       });
       if (!v) return NextResponse.json({ ok: false, error: 'Vendor not found' }, { status: 404 });
     }
+    const metadata = parseMetadataInput(body.metadata);
 
     const pkg =
       parsePmPackage(String(body.packageApplied ?? body.pmPackage ?? '')) ?? 'PACOTE_1';
@@ -175,6 +193,8 @@ export async function POST(req: Request) {
         monthRef,
         status: st,
         description: String(body.description || '').trim() || null,
+        isVendorFree,
+        ...(metadata !== undefined ? { metadata } : {}),
       },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },
