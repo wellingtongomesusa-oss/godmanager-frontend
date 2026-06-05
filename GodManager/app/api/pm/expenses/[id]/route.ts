@@ -12,6 +12,11 @@ import type { Prisma, PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { recordAudit } from '@/lib/auditServer';
+import {
+  pickTenantNameForProperty,
+  pmExpensePropertyTenantSelect,
+  type PropertyTenantPickInput,
+} from '@/lib/pmPickTenantName';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,14 +70,16 @@ function toJson(e: {
   finalizedAt?: Date | null;
   finalizedBy?: string | null;
   finalizedNote?: string | null;
-  property: { code: string; address: string; ownerName: string | null };
+  property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
 }) {
+  const tenantName = pickTenantNameForProperty(e.property);
   return {
     id: e.id,
     propertyId: e.propertyId,
     propertyCode: e.property.code,
     propAddress: e.property.address,
+    tenantName,
     ownerName: e.property.ownerName ?? '',
     vendorId: e.vendorId,
     vendorName: e.vendor?.companyName ?? '',
@@ -362,7 +369,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(metadataForUpdate !== undefined ? { metadata: metadataForUpdate } : {}),
       },
       include: {
-        property: { select: { code: true, address: true, ownerName: true } },
+        property: { select: pmExpensePropertyTenantSelect },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
       },
     });
