@@ -2990,6 +2990,13 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <button type="button" id="jobs-df-week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
   <button type="button" id="jobs-df-custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
   <input type="date" id="jobs-df-custom-input" onchange="gmJobsSetDateFilter('custom',this.value)" style="display:none;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-left:4px">
+  <span id="jobs-property-filter-wrap" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
+  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Propriedade:</label>
+  <select id="jobs-property-filter" onchange="gmJobsSetPropertyFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:220px">
+   <option value="">Todas as propriedades</option>
+  </select>
+  </span>
   <span id="jobs-vendor-filter-wrap" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
   <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vendor:</label>
@@ -3063,7 +3070,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table" class="lt-jobs-table">
     <thead>
      <tr style="background:var(--cream);border-bottom:2px solid var(--border)">
+      <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:52px">Qty</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Unit</th>
+      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Tenant</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Vendor</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Categoria</th>
       <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Descricao</th>
@@ -3075,7 +3084,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      </tr>
     </thead>
     <tbody id="jobs-tbody">
-     <tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
+     <tr><td colspan="11" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
     </tbody>
    </table>
   </div>
@@ -12624,6 +12633,8 @@ function ltExpMapApiToRow(e){
   id:e.id,
   pmId:e.id,
   propAddress:e.propAddress || '\u2014',
+  propertyCode:String(e.propertyCode||'').trim(),
+  tenantName:e.tenantName!=null&&String(e.tenantName).trim()?String(e.tenantName).trim():null,
   category:cat,
   desc:e.description || '',
   month:e.monthRef,
@@ -21860,6 +21871,143 @@ window.gmJobsSetVendorFilter=function(vendorName){
  if(typeof jobsRender==='function')jobsRender();
 };
 
+window.__jobsPropertyFilter='';
+window.gmJobsCountByProperty={};
+window.__gmJobsF6BootDone=false;
+window.gmJobsTenantNameByPropertyCode={};
+
+window.gmJobsRowPropertyCode=function(r){
+ if(!r)return '';
+ var raw=r._apiRaw||{};
+ return String(r.propertyCode||raw.propertyCode||'').trim();
+};
+
+window.gmJobsResolveTenantName=function(r){
+ if(!r)return '\u2014';
+ var tn=String(r.tenantName||'').trim();
+ if(tn)return tn;
+ var raw=r._apiRaw||{};
+ if(raw.tenantName&&String(raw.tenantName).trim())return String(raw.tenantName).trim();
+ var code=(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(r):'';
+ var map=window.gmJobsTenantNameByPropertyCode||{};
+ if(code&&map[code])return map[code];
+ var pid=String(r.propertyId||(raw.propertyId)||'').trim();
+ if(pid&&map['id:'+pid])return map['id:'+pid];
+ return '\u2014';
+};
+
+window.gmJobsRowMatchesPropertyFilter=function(r){
+ var f=String(window.__jobsPropertyFilter||'').trim();
+ if(!f)return true;
+ var code=(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(r):'';
+ if(code===f)return true;
+ try{
+  var sel=document.getElementById('jobs-property-filter');
+  if(sel&&sel.selectedOptions&&sel.selectedOptions[0]){
+   var addr=sel.selectedOptions[0].getAttribute('data-address')||'';
+   if(addr){
+    var unit=(typeof jobsResolveAddress==='function')?jobsResolveAddress(r):'';
+    if(String(unit).toLowerCase().indexOf(String(addr).toLowerCase())>=0)return true;
+   }
+  }
+ }catch(e){}
+ return false;
+};
+
+window.gmJobsSetPropertyFilter=function(propertyCode){
+ window.__jobsPropertyFilter=String(propertyCode||'').trim();
+ try{
+  var sel=document.getElementById('jobs-property-filter');
+  if(sel)sel.value=window.__jobsPropertyFilter;
+ }catch(e){}
+ if(typeof jobsRender==='function')jobsRender();
+};
+
+window.gmJobsQtyFilterClick=function(propertyCode){
+ if(typeof gmJobsSetPropertyFilter==='function')gmJobsSetPropertyFilter(propertyCode);
+};
+
+window.gmJobsQtyBadgeHtml=function(r){
+ var code=(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(r):'';
+ var counts=window.gmJobsCountByProperty||{};
+ var n=code?(Number(counts[code])||0):0;
+ var codeEsc=String(code||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+ return '<button type="button" class="jobs-qty-badge" onclick="event.stopPropagation();gmJobsQtyFilterClick(\''+codeEsc+'\')" title="Filtrar por esta propriedade ('+n+' jobs no portfolio)" style="padding:2px 7px;border-radius:12px;font-size:9px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:var(--slate-bg);color:var(--ink2);border:1px solid var(--border2);cursor:pointer;min-width:28px;line-height:1.2">'+n+'</button>';
+};
+
+window.gmJobsLoadCountByProperty=async function(){
+ if(window.__gmJobsCountByPropertyLoaded)return window.gmJobsCountByProperty||{};
+ try{
+  var r=await fetch('/api/pm/expenses/count-by-property',{credentials:'include',cache:'no-store'});
+  if(r.ok){
+   var j=await r.json();
+   if(j&&j.counts&&typeof j.counts==='object')window.gmJobsCountByProperty=j.counts;
+  }
+ }catch(e){console.warn('gmJobsLoadCountByProperty',e);}
+ window.__gmJobsCountByPropertyLoaded=true;
+ return window.gmJobsCountByProperty||{};
+};
+
+window.gmJobsPopulatePropertyFilter=async function(){
+ var sel=document.getElementById('jobs-property-filter');
+ if(!sel)return;
+ var cur=String(window.__jobsPropertyFilter||sel.value||'').trim();
+ var placeholder='<option value="">Todas as propriedades</option>';
+ var records=[];
+ try{
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  if(res.ok){
+   var data=await res.json();
+   if(data&&data.ok===true&&Array.isArray(data.properties)){
+    records=data.properties.map(function(p){
+     var code=String(p.code||'').trim();
+     var addr=String(p.address||code||'\u2014').trim();
+     return{id:code||String(p.id||'').trim(),address:addr,owner:String(p.ownerName||'').trim()};
+    });
+   }
+  }
+ }catch(e){console.warn('gmJobsPopulatePropertyFilter',e);}
+ records=records.filter(function(r){return r&&r.id&&r.address&&r.address!=='Total';});
+ records.sort(function(a,b){return String(a.address).localeCompare(String(b.address));});
+ var opts=records.map(function(r){
+  return '<option value="'+String(r.id).replace(/"/g,'&quot;')+'" data-address="'+String(r.address).replace(/"/g,'&quot;')+'">'+String(r.address)+(r.owner?' \u2014 '+r.owner:'')+'</option>';
+ }).join('');
+ sel.innerHTML=placeholder+opts;
+ if(cur)sel.value=cur;
+};
+
+window.gmJobsEnsureTenantNameMap=async function(){
+ if(window.__gmJobsTenantNameMapReady)return window.gmJobsTenantNameByPropertyCode||{};
+ var map={};
+ try{
+  var r=await fetch('/api/tenants',{credentials:'include',cache:'no-store'});
+  if(r.ok){
+   var j=await r.json();
+   (j.tenants||[]).forEach(function(t){
+    var nm=String(t.name||'').trim();
+    if(!nm)return;
+    var code=String(t.propertyCode||(t.property&&t.property.code)||'').trim();
+    var pid=String(t.propertyId||(t.property&&t.property.id)||'').trim();
+    if(code&&!map[code])map[code]=nm;
+    if(pid&&!map['id:'+pid])map['id:'+pid]=nm;
+   });
+  }
+ }catch(e){console.warn('gmJobsEnsureTenantNameMap',e);}
+ window.gmJobsTenantNameByPropertyCode=map;
+ window.__gmJobsTenantNameMapReady=true;
+ return map;
+};
+
+window.gmJobsBootF6=async function(){
+ if(window.__gmJobsF6BootDone)return;
+ await Promise.all([
+  (typeof gmJobsLoadCountByProperty==='function'?gmJobsLoadCountByProperty():null),
+  (typeof gmJobsPopulatePropertyFilter==='function'?gmJobsPopulatePropertyFilter():null),
+  (typeof gmJobsEnsureTenantNameMap==='function'?gmJobsEnsureTenantNameMap():null)
+ ]);
+ window.__gmJobsF6BootDone=true;
+};
+
 (function(){
  try{
   var allowed=['table','agenda','calendar'];
@@ -22251,6 +22399,7 @@ function jobsFilteredExpensesCore(){
  var arr=jobsMergeForJobs();
  var range=(typeof gmJobsGetDateRange==='function')?gmJobsGetDateRange():{from:null,to:null};
  var vendorFilter=String(window.__jobsVendorFilter||'').trim();
+ var hasPropFilter=!!String(window.__jobsPropertyFilter||'').trim();
  return (arr||[]).filter(function(r){
   if(!r)return false;
   var passType=false;
@@ -22274,6 +22423,7 @@ function jobsFilteredExpensesCore(){
    var rv=jobsVendorSourceStr(r);
    if(!rv || rv!==vendorFilter)return false;
   }
+  if(hasPropFilter&&(typeof gmJobsRowMatchesPropertyFilter==='function')&&!gmJobsRowMatchesPropertyFilter(r))return false;
   return true;
  });
 }
@@ -22538,6 +22688,9 @@ async function jobsRender(){
  var tbody=document.getElementById('jobs-tbody');
  if(!tbody)return;
  try{
+ if(typeof gmJobsBootF6==='function'&&!window.__gmJobsF6BootDone){
+  try{await gmJobsBootF6();}catch(eBoot){console.warn('gmJobsBootF6',eBoot);}
+ }
  if(typeof window.jobsFetchFromApi==='function'){
   try{await window.jobsFetchFromApi();}catch(err){console.warn('jobsFetchFromApi',err);}
  }
@@ -22705,7 +22858,7 @@ async function jobsRender(){
   calendarHost.style.display='none';
  }
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job.</td></tr>';
   return;
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -22804,6 +22957,9 @@ async function jobsRender(){
   : '';
 
  var statusBadge=(typeof gmJobStatusBadgeHtml==='function')?gmJobStatusBadgeHtml(r):'<span>—</span>';
+ var qtyBadge=(typeof gmJobsQtyBadgeHtml==='function')?gmJobsQtyBadgeHtml(r):'<span style="font-size:9px;color:var(--ink3)">0</span>';
+ var tenantDisp=(typeof gmJobsResolveTenantName==='function')?gmJobsResolveTenantName(r):'\u2014';
+ var tenantEsc=String(tenantDisp).replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
  var pmStatusUp=jobsPmStatusKey(r);
  var statusLblMo=jobsStatusLabel(pmStatusUp);
@@ -22811,7 +22967,9 @@ async function jobsRender(){
  var lblMoEsc=String(statusLblMo).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
+  +'<td class="col-qty" data-label="Qty" style="padding:9px 8px;text-align:center;vertical-align:middle">'+qtyBadge+'</td>'
   +'<td class="col-unit" style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
+  +'<td class="col-tenant" data-label="Tenant" style="padding:9px 12px;color:var(--ink2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+tenantEsc+'">'+tenantDisp+'</td>'
   +'<td data-label="Vendor" style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
   +'<td data-label="Categoria" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'

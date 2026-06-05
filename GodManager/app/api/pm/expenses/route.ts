@@ -13,6 +13,11 @@ import type { Prisma, PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { serviceDateToMonthRef } from '@/lib/pmCycleRef';
+import {
+  pickTenantNameForProperty,
+  pmExpensePropertyTenantSelect,
+  type PropertyTenantPickInput,
+} from '@/lib/pmPickTenantName';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,14 +47,16 @@ function toJson(e: {
   isVendorFree: boolean;
   wasRescheduled: boolean;
   metadata: Prisma.JsonValue | null;
-  property: { code: string; address: string; ownerName: string | null };
+  property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
 }) {
+  const tenantName = pickTenantNameForProperty(e.property);
   return {
     id: e.id,
     propertyId: e.propertyId,
     propertyCode: e.property.code,
     propAddress: e.property.address,
+    tenantName,
     ownerName: e.property.ownerName ?? '',
     vendorId: e.vendorId,
     vendorName: e.vendor?.companyName ?? '',
@@ -82,7 +89,7 @@ export async function GET(req: Request) {
         ...getPmExpensesListWhere(user),
       },
       include: {
-        property: { select: { code: true, address: true, ownerName: true } },
+        property: { select: pmExpensePropertyTenantSelect },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
       },
       orderBy: [{ monthRef: 'desc' }, { serviceDate: 'desc' }, { createdAt: 'desc' }],
@@ -199,7 +206,7 @@ export async function POST(req: Request) {
         ...(metadata !== undefined ? { metadata } : {}),
       },
       include: {
-        property: { select: { code: true, address: true, ownerName: true } },
+        property: { select: pmExpensePropertyTenantSelect },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
       },
     });
