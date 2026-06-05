@@ -644,6 +644,7 @@ model PmExpense {
   executedAccuracy   Float?
   executedByUserId   String?
   isVendorFree       Boolean         @default(false)
+  wasRescheduled     Boolean         @default(false)
   metadata           Json?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -656,6 +657,7 @@ model PmExpense {
   @@index([clientId])
   @@index([clientId, vendorId])
   @@index([isVendorFree])
+  @@index([wasRescheduled])
   @@map("pm_expenses")
 }
 

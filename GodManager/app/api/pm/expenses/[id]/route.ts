@@ -27,6 +27,20 @@ function parseIsVendorFree(raw: unknown): boolean | undefined {
   return raw === true || raw === 'true' || raw === 1 || raw === '1';
 }
 
+function mergeRescheduleMetadata(
+  curMeta: Prisma.JsonValue | null,
+  newDateIso: string,
+): Prisma.InputJsonValue {
+  const base =
+    curMeta && typeof curMeta === 'object' && !Array.isArray(curMeta)
+      ? { ...(curMeta as Record<string, unknown>) }
+      : {};
+  const list = Array.isArray(base.reschedules) ? [...(base.reschedules as unknown[])] : [];
+  list.push({ date: newDateIso, atIso: new Date().toISOString() });
+  base.reschedules = list;
+  return base as Prisma.InputJsonValue;
+}
+
 function toJson(e: {
   id: string;
   propertyId: string;
@@ -41,6 +55,7 @@ function toJson(e: {
   status: PmExpenseStatus;
   description: string | null;
   isVendorFree: boolean;
+  wasRescheduled: boolean;
   metadata: Prisma.JsonValue | null;
   finalizedAt?: Date | null;
   finalizedBy?: string | null;
@@ -70,6 +85,7 @@ function toJson(e: {
     finalizedBy: e.finalizedBy ?? null,
     finalizedNote: e.finalizedNote ?? '',
     isVendorFree: !!e.isVendorFree,
+    wasRescheduled: !!e.wasRescheduled,
     metadata: e.metadata ?? null,
   };
 }
@@ -112,6 +128,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         status: true,
         description: true,
         isVendorFree: true,
+        wasRescheduled: true,
         metadata: true,
       },
     });
@@ -273,6 +290,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (metadataPatch !== undefined) changedFields.push('metadata');
 
+    const isReschedulePatch =
+      body.serviceDate !== undefined &&
+      body.status != null &&
+      st === 'SCHEDULED' &&
+      nextSvc !== '' &&
+      prevSvc !== nextSvc;
+
+    let wasRescheduled = cur.wasRescheduled;
+    let metadataForUpdate: Prisma.InputJsonValue | undefined = metadataPatch;
+    if (isReschedulePatch) {
+      wasRescheduled = true;
+      if (metadataPatch === undefined) {
+        metadataForUpdate = mergeRescheduleMetadata(cur.metadata, nextSvc);
+      }
+      changedFields.push('wasRescheduled');
+      if (metadataForUpdate !== undefined) changedFields.push('reschedules:append');
+    }
+
     const row = await prisma.pmExpense.update({
       where: { id: params.id },
       data: {
@@ -317,7 +352,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(executedAccuracy !== undefined ? { executedAccuracy } : {}),
         ...(executedByUserId !== undefined ? { executedByUserId } : {}),
         ...(isVendorFreePatch !== undefined ? { isVendorFree: isVendorFreePatch } : {}),
-        ...(metadataPatch !== undefined ? { metadata: metadataPatch } : {}),
+        wasRescheduled,
+        ...(metadataForUpdate !== undefined ? { metadata: metadataForUpdate } : {}),
       },
       include: {
         property: { select: { code: true, address: true, ownerName: true } },
