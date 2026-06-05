@@ -40,6 +40,7 @@ function toJson(e: {
   status: PmExpenseStatus;
   description: string | null;
   isVendorFree: boolean;
+  wasRescheduled: boolean;
   metadata: Prisma.JsonValue | null;
   property: { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
@@ -63,6 +64,7 @@ function toJson(e: {
     status: e.status,
     description: e.description ?? '',
     isVendorFree: !!e.isVendorFree,
+    wasRescheduled: !!e.wasRescheduled,
     metadata: e.metadata ?? null,
   };
 }

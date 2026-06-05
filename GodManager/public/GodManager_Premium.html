@@ -12641,6 +12641,7 @@ function ltExpMapApiToRow(e){
   value:oc,
   jobValueOverride:e.jobValueOverride!=null&&e.jobValueOverride!==''?Number(e.jobValueOverride):null,
   isVendorFree:!!e.isVendorFree,
+  wasRescheduled:!!e.wasRescheduled,
   metadata:e.metadata&&typeof e.metadata==='object'?e.metadata:null,
   status:ui,
   vendor:String(e.vendorName||'').trim(),
@@ -22067,10 +22068,11 @@ function gmJobsRenderCalendar(rows){
  var totalMes=(rows||[]).filter(function(r){var d=gmJobsRowDateStr(r);return d&&d.slice(0,7)===ymStr;}).length;
  html+='<div style="display:flex;align-items:center;gap:14px">';
  html+='<div style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--ink3)">';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #fbbf24"></span>Pendente</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#e2e8f0;border-radius:2px;border:1px solid #94a3b8"></span>Agendado</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#166534;border-radius:2px"></span>Finalizado</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid #fca5a5"></span>Cancelado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #f59e0b"></span>Pendente</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--blue-bg);border-radius:2px;border:1px solid var(--blue)"></span>Agendado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#ffedd5;border-radius:2px;border:1px solid #f97316"></span>Reagendado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--green-bg);border-radius:2px;border:1px solid var(--green)"></span>Finalizado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid var(--red)"></span>Cancelado</span>';
  html+='</div>';
  html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+totalMes+' jobs</div>';
  html+='</div>';
@@ -22098,19 +22100,13 @@ function gmJobsRenderCalendar(rows){
   html+='<div class="jobs-cal-day-num" data-day-num="'+d+'" style="font-size:11px;font-weight:'+(isToday?'700':'600')+';color:'+(isToday?'#92400e':'var(--ink2)')+';margin-bottom:4px">'+d+'</div>';
   if(dayJobs.length>0){
    var maxShow=3;
-   var stColors={
-    PENDING:'background:#fef3c7;color:#92400e',
-    SCHEDULED:'background:#e2e8f0;color:#475569',
-    PAID:'background:#dcfce7;color:#166534',
-    FINALIZED:'background:#166534;color:#fff;font-weight:600',
-    CANCELLED:'background:#fee2e2;color:#991b1b'
-   };
    dayJobs.slice(0,maxShow).forEach(function(j){
     var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(j):(j.unit||'');
     var addrShort=String(addr).split(',')[0].slice(0,18);
-    var st=String(j.status||j.statusPm||'').trim().toUpperCase();
-    var chipStyle=stColors[st]||'background:#f1f5f9;color:#475569';
-    html+='<div class="jobs-cal-event" title="'+String(st).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
+    var calKey=(typeof gmJobsCalStyleKey==='function')?gmJobsCalStyleKey(j):'SCHEDULED';
+    var chipStyle=(typeof gmJobsCalChipStyle==='function')?gmJobsCalChipStyle(calKey):'';
+    var tip=(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')?gmJobsRescheduleTooltip(j):calKey;
+    html+='<div class="jobs-cal-event" title="'+String(tip).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
    });
    if(dayJobs.length>maxShow){
     html+='<div class="jobs-cal-event jobs-cal-extra" style="font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px">+'+(dayJobs.length-maxShow)+' mais</div>';
@@ -22435,6 +22431,66 @@ function jobsPmStatusKey(r){
  if(lo==='scheduled') return 'SCHEDULED';
  return String(r.statusPm||r.status||'').trim().toUpperCase();
 }
+
+/** Paleta unica Jobs: tabela, chips, calendario (F5). */
+window.gmJobsStatusPalette={
+ PENDING:{bg:'#fef3c7',fg:'#92400e',bd:'#f59e0b',label:'Pendente'},
+ SCHEDULED:{bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)',label:'Agendado'},
+ RESCHEDULED:{bg:'#ffedd5',fg:'#c2410c',bd:'#f97316',label:'Reagendado'},
+ FINALIZED:{bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)',label:'Finalizado'},
+ PAID:{bg:'#dcfce7',fg:'#15803d',bd:'#15803d',label:'Pago'},
+ CANCELLED:{bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)',label:'Cancelado'}
+};
+
+function gmJobsRowWasRescheduled(r){
+ if(!r)return false;
+ if(r.wasRescheduled===true)return true;
+ if(r._apiRaw&&r._apiRaw.wasRescheduled===true)return true;
+ return false;
+}
+
+function gmJobsRescheduleTooltip(r){
+ var meta=r.metadata;
+ if(!meta&&r._apiRaw)meta=r._apiRaw.metadata;
+ var list=meta&&meta.reschedules;
+ if(!Array.isArray(list)||!list.length)return 'Reagendado';
+ var last=list[list.length-1];
+ var d=last&&last.date!=null?String(last.date).slice(0,10):'';
+ return d?('Reagendado em '+d):'Reagendado';
+}
+
+function gmJobPillHtml(key,titleExtra){
+ var p=(window.gmJobsStatusPalette&&window.gmJobsStatusPalette[key])||{};
+ var t=titleExtra?String(titleExtra).replace(/"/g,'&quot;'):'';
+ return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:'+(p.bg||'var(--cream)')+';color:'+(p.fg||'var(--ink2)')+';border:1px solid '+(p.bd||'var(--border2)')+'"'+(t?' title="'+t+'"':'')+'>'+(p.label||key)+'</span>';
+}
+
+function gmJobStatusBadgeHtml(r){
+ if(!r)return '<span>—</span>';
+ var st=jobsPmStatusKey(r);
+ if(st==='CANCELLED')return gmJobPillHtml('CANCELLED',r.cancelReason||'');
+ if(st==='FINALIZED')return gmJobPillHtml('FINALIZED',r.finalizedNote||'');
+ if(st==='PAID')return gmJobPillHtml('PAID');
+ if(st==='PENDING')return gmJobPillHtml('PENDING');
+ if(st==='SCHEDULED'&&gmJobsRowWasRescheduled(r)){
+  return '<span class="jobs-status-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">'
+   +gmJobPillHtml('SCHEDULED')+gmJobPillHtml('RESCHEDULED',gmJobsRescheduleTooltip(r))+'</span>';
+ }
+ if(st==='SCHEDULED')return gmJobPillHtml('SCHEDULED');
+ return gmJobPillHtml(st)||('<span style="font-size:10px">'+st+'</span>');
+}
+window.gmJobStatusBadgeHtml=gmJobStatusBadgeHtml;
+
+function gmJobsCalStyleKey(j){
+ if(!j)return 'SCHEDULED';
+ if(gmJobsRowWasRescheduled(j))return 'RESCHEDULED';
+ return jobsPmStatusKey(j)||'SCHEDULED';
+}
+
+function gmJobsCalChipStyle(key){
+ var p=(window.gmJobsStatusPalette&&window.gmJobsStatusPalette[key])||{};
+ return 'background:'+(p.bg||'#f1f5f9')+';color:'+(p.fg||'#475569')+';border:1px solid '+(p.bd||'var(--border2)');
+}
 function jobsStatusLabel(s){
  var u=String(s||'').toUpperCase();
  if(u==='PENDING') return 'Open';
@@ -22713,15 +22769,7 @@ async function jobsRender(){
   ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="Criar novo Job clonado, escolher novo vendor" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">V Free</button>'
   : '';
 
- var statusLow=String(r.status||'').toLowerCase();
- var statusBadge;
- if((r.statusPm==='CANCELLED')||statusLow==='cancelled'){
-  statusBadge='<span title="'+String(r.cancelReason||'').replace(/"/g,'&quot;')+'" style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-weight:600">Cancelado</span>';
- } else if(statusLow==='finalized'){
-  statusBadge='<span title="'+String(r.finalizedNote||'').replace(/"/g,'&quot;')+'" style="padding:2px 8px;border-radius:3px;font-size:10px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">Finalizado</span>';
- } else {
-  statusBadge='<span style="padding:2px 8px;border-radius:3px;font-size:10px;background:var(--cream);color:var(--ink2)">'+(r.statusPm||(r.status||'—'))+'</span>';
- }
+ var statusBadge=(typeof gmJobStatusBadgeHtml==='function')?gmJobStatusBadgeHtml(r):'<span>—</span>';
 
  var pmStatusUp=jobsPmStatusKey(r);
  var statusLblMo=jobsStatusLabel(pmStatusUp);
@@ -23163,6 +23211,13 @@ function gmJobApplyReschedule(id,newDate){
       arr[ix].monthRef=monthRef;
       arr[ix].status='SCHEDULED';
       if(arr[ix].statusPm!==undefined) arr[ix].statusPm='SCHEDULED';
+      arr[ix].wasRescheduled=true;
+      var meta=arr[ix].metadata;
+      if(!meta||typeof meta!=='object')meta={reschedules:[]};
+      if(!Array.isArray(meta.reschedules))meta.reschedules=[];
+      meta.reschedules=meta.reschedules.slice();
+      meta.reschedules.push({date:newDate,atIso:new Date().toISOString()});
+      arr[ix].metadata=meta;
      }
     }
    });
@@ -23176,7 +23231,24 @@ function gmJobApplyReschedule(id,newDate){
    headers:{'Content-Type':'application/json'},
    body:JSON.stringify({status:'SCHEDULED',serviceDate:newDate,monthRef:monthRef})
   }).then(function(r){
-   if(!r.ok){console.warn('jobsReschedule backend status',r.status);}
+   if(!r.ok){console.warn('jobsReschedule backend status',r.status);return;}
+   return r.json().then(function(j){
+    if(j&&j.expense){
+     try{
+      var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+      caches.forEach(function(arr){
+       if(!Array.isArray(arr))return;
+       var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+       if(ix<0)return;
+       arr[ix].wasRescheduled=!!j.expense.wasRescheduled;
+       arr[ix].metadata=j.expense.metadata||arr[ix].metadata;
+       arr[ix].serviceDate=j.expense.serviceDate||newDate;
+       if(arr[ix].statusPm!==undefined)arr[ix].statusPm=j.expense.status||'SCHEDULED';
+      });
+      if(typeof jobsRender==='function')jobsRender();
+     }catch(eSync){console.warn('reschedule sync',eSync);}
+    }
+   });
   }).catch(function(e){console.warn('jobsReschedule.api',e);});
   // Audit
   try{
@@ -26788,15 +26860,17 @@ window.gmAnalyticsLoad=async function(){
   };
 
   window.gmJobsRenderStatusChips=function(rows){
-    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0};
+    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0};
     rows.forEach(function(r){
       var s=String(r.status||r.statusPm||'').toUpperCase();
       if(counts[s]!==undefined)counts[s]++;
+      if(typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r))counts.rescheduled++;
     });
     var chips=[
       {key:'all',label:'Todos'},
       {key:'PENDING',label:'Pendente'},
       {key:'SCHEDULED',label:'Agendado'},
+      {key:'rescheduled',label:'Reagendados'},
       {key:'FINALIZED',label:'Finalizado'},
       {key:'PAID',label:'Pago'},
       {key:'CANCELLED',label:'Cancelado'},
@@ -26815,6 +26889,11 @@ window.gmAnalyticsLoad=async function(){
   window.gmJobsApplyStatusFilter=function(rows){
     var f=window.__jobsStatusFilter||'all';
     if(f==='all')return rows;
+    if(f==='rescheduled'){
+     return rows.filter(function(r){
+      return typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r);
+     });
+    }
     return rows.filter(function(r){
       return String(r.status||r.statusPm||'').toUpperCase()===f;
     });
