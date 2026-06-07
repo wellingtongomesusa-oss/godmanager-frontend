@@ -1163,6 +1163,7 @@ window.gmAfterLangChange = function gmAfterLangChange(){
     if(pageId==='page-tenantportal'&&typeof tpRender==='function')tpRender();
     if((pageId==='page-results'||pageId==='page-results-upload')&&typeof gmResRender==='function')gmResRender();
     if(pageId==='page-ltexpenses'&&typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
+    if(pageId==='page-jobs'&&typeof gmJobsRefreshI18n==='function')gmJobsRefreshI18n();
     if(typeof window.gmCurrentPageRefresh==='function')window.gmCurrentPageRefresh();
     console.debug('[gm-i18n] gmAfterLangChange applied, page:',pageId||'(none)');
   }catch(e){console.warn('[gm-i18n] gmAfterLangChange error',e);}
@@ -2978,120 +2979,120 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <!-- JOBS PAGE -->
 <div class="page" id="page-jobs">
  <div id="jobs-field-vendor-banner" style="display:none;margin:0 0 16px;padding:14px 18px;border-radius:10px;border:1px solid var(--amber-bd);background:var(--amber-bg);align-items:center;gap:12px;flex-wrap:wrap;font-family:'DM Sans',sans-serif">
-  <span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3)">Sua equipe</span>
+  <span data-i18n="jobs_field_team_label" style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3)">Sua equipe</span>
   <span id="jobs-field-vendor-name" style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)"></span>
-  <span style="font-size:12px;color:var(--ink2)">Agenda filtrada automaticamente para os jobs desta equipe.</span>
+  <span data-i18n="jobs_field_team_hint" style="font-size:12px;color:var(--ink2)">Agenda filtrada automaticamente para os jobs desta equipe.</span>
  </div>
  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start">
   <div>
-   <div class="pt">Jobs</div>
-   <div class="ps" id="jobs-page-subtitle">Acoes de manutencao sobre expenses abertos</div>
+   <div class="pt" data-i18n="title_jobs">Jobs</div>
+   <div class="ps" id="jobs-page-subtitle" data-i18n="jobs_subtitle">Acoes de manutencao sobre expenses abertos</div>
   </div>
   <div style="display:flex;gap:12px;align-items:center">
-   <button id="jobs-new-btn" type="button" style="padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:none;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(45,114,82,.22)" onclick="if(typeof jobsOpenNewModal==='function')jobsOpenNewModal();else if(typeof ltExpOpenNewModal==='function')ltExpOpenNewModal();else if(typeof openExpenseModal==='function')openExpenseModal();else if(typeof ltOpenNewExpense==='function')ltOpenNewExpense();">+ Novo Job</button>
+   <button id="jobs-new-btn" type="button" data-i18n="jobs_new_btn" style="padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:none;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(45,114,82,.22)" onclick="if(typeof jobsOpenNewModal==='function')jobsOpenNewModal();else if(typeof ltExpOpenNewModal==='function')ltExpOpenNewModal();else if(typeof openExpenseModal==='function')openExpenseModal();else if(typeof ltOpenNewExpense==='function')ltOpenNewExpense();">+ Novo Job</button>
    <div id="jobs-user-badge" style="font-size:12px;color:var(--ink3);padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"></div>
   </div>
  </div>
 
- <button type="button" class="jobs-filters-toggle" id="jobs-filters-toggle" aria-expanded="false" aria-controls="jobs-filters-block">Filtros</button>
+ <button type="button" class="jobs-filters-toggle" id="jobs-filters-toggle" aria-expanded="false" aria-controls="jobs-filters-block" data-i18n="jobs_filters_toggle">Filtros</button>
  <div id="jobs-view-toggle-mobile" class="jobs-view-toggle-mobile">
-  <button type="button" class="jobs-vt-btn" data-view="table" onclick="gmJobsSetViewModeMobile('table')">Tabela</button>
-  <button type="button" class="jobs-vt-btn" data-view="calendar" onclick="gmJobsSetViewModeMobile('calendar')">Calendário</button>
+  <button type="button" class="jobs-vt-btn" data-view="table" data-i18n="jobs_view_table" onclick="gmJobsSetViewModeMobile('table')">Tabela</button>
+  <button type="button" class="jobs-vt-btn" data-view="calendar" data-i18n="jobs_view_calendar" onclick="gmJobsSetViewModeMobile('calendar')">Calendário</button>
  </div>
  <div class="jobs-filters-block" id="jobs-filters-block">
  <div id="jobs-filter-row" style="display:flex;gap:12px;align-items:center;margin:16px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
-  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap">Filtrar por mes (fechamento):</label>
+  <label data-i18n="jobs_filter_month_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap">Filtrar por mes (fechamento):</label>
   <select id="jobs-filter-month" style="padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;min-width:200px;background:var(--sand);color:var(--ink)">
-   <option value="">Todos os meses</option>
+   <option value="" data-i18n="jobs_all_months">Todos os meses</option>
   </select>
-  <button type="button" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
+  <button type="button" data-i18n="jobs_apply" onclick="if(typeof jobsRender==='function')jobsRender()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(201,169,110,.25)">Aplicar</button>
  </div>
  <!-- jobsFilterDate=all --><!-- filtro todas default -->
  <div id="jobs-date-filter-row" style="display:flex;gap:8px;align-items:center;margin:8px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
-  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vista:</label>
-  <button type="button" id="jobs-vm-table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Tabela</button>
-  <button type="button" id="jobs-vm-agenda" onclick="gmJobsSetViewMode('agenda')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Agenda</button>
-  <button type="button" id="jobs-vm-calendar" onclick="gmJobsSetViewMode('calendar')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Calendário</button>
+  <label data-i18n="jobs_view_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vista:</label>
+  <button type="button" id="jobs-vm-table" data-i18n="jobs_view_table" onclick="gmJobsSetViewMode('table')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Tabela</button>
+  <button type="button" id="jobs-vm-agenda" data-i18n="jobs_view_agenda" onclick="gmJobsSetViewMode('agenda')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Agenda</button>
+  <button type="button" id="jobs-vm-calendar" data-i18n="jobs_view_calendar" onclick="gmJobsSetViewMode('calendar')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700">Calendário</button>
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
-  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
-  <button type="button" id="jobs-df-today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Hoje</button>
-  <button type="button" id="jobs-df-tomorrow" onclick="gmJobsSetDateFilter('tomorrow')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Amanhã</button>
-  <button type="button" id="jobs-df-week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
-  <button type="button" id="jobs-df-custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
+  <label data-i18n="jobs_date_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
+  <button type="button" id="jobs-df-today" data-i18n="jobs_date_today" onclick="gmJobsSetDateFilter('today')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Hoje</button>
+  <button type="button" id="jobs-df-tomorrow" data-i18n="jobs_date_tomorrow" onclick="gmJobsSetDateFilter('tomorrow')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Amanhã</button>
+  <button type="button" id="jobs-df-week" data-i18n="jobs_date_week" onclick="gmJobsSetDateFilter('week')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Esta semana</button>
+  <button type="button" id="jobs-df-custom" data-i18n="jobs_date_custom" onclick="gmJobsSetDateFilter('custom')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#1e2b3d;font-weight:500">Customizado</button>
   <input type="date" id="jobs-df-custom-input" onchange="gmJobsSetDateFilter('custom',this.value)" style="display:none;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-left:4px">
   <span id="jobs-property-filter-wrap" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
-  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Propriedade:</label>
+  <label data-i18n="jobs_property_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Propriedade:</label>
   <select id="jobs-property-filter" onchange="gmJobsSetPropertyFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:220px">
-   <option value="">Todas as propriedades</option>
+   <option value="" data-i18n="jobs_all_properties">Todas as propriedades</option>
   </select>
   </span>
   <span id="jobs-vendor-filter-wrap" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
-  <label style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vendor:</label>
+  <label data-i18n="jobs_vendor_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vendor:</label>
   <select id="jobs-vendor-filter" onchange="gmJobsSetVendorFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px">
-   <option value="">Todos os vendors</option>
+   <option value="" data-i18n="jobs_all_vendors">Todos os vendors</option>
   </select>
   </span>
-  <button type="button" id="jobs-df-all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
+  <button type="button" id="jobs-df-all" data-i18n="jobs_date_all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
  </div>
  </div>
 
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="padding:0 32px;margin-top:16px"><div class="gm-kpis-row gm-kpis-row--jobs">
   <div class="kpi-card" data-kpi-filter="total" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Total Jobs</div>
+   <div data-i18n="jobs_kpi_total" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Total Jobs</div>
    <div id="jobs-kpi-total" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
   </div>
   <div data-jobs-card="fees-vendor" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Vendor Fees Applied</div>
+   <div data-i18n="jobs_kpi_vendor_fees" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Vendor Fees Applied</div>
    <div id="jobs-kpi-vendor" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">$0.00</div>
   </div>
   <div data-jobs-card="fees-job" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
+   <div data-i18n="jobs_kpi_job_fees" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Job Fees Applied</div>
    <div id="jobs-kpi-job" style="font-size:22px;font-weight:700;color:var(--amber);margin-top:4px">$0.00</div>
   </div>
   <div class="kpi-card" data-kpi-filter="expenses-abertos" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper);position:relative">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Expenses Abertos</div>
+   <div data-i18n="jobs_kpi_expenses_open" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Expenses Abertos</div>
    <div id="jobs-kpi-expenses-abertos" style="font-size:22px;font-weight:700;color:#92400e;margin-top:4px">0</div>
-   <div style="font-size:10px;color:var(--ink3);margin-top:2px">aguardam acao</div>
+   <div data-i18n="jobs_kpi_expenses_open_hint" style="font-size:10px;color:var(--ink3);margin-top:2px">aguardam acao</div>
   </div>
   <div data-jobs-card="kpi-open" class="kpi-card" data-kpi-filter="jobs-abertos" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs abertos</div>
+   <div data-i18n="jobs_kpi_jobs_open" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs abertos</div>
    <div id="jobs-kpi-open" style="font-size:22px;font-weight:700;color:var(--red);margin-top:4px">0</div>
-   <div style="font-size:10px;color:var(--ink3);margin-top:2px">sem applied e sem cancelado</div>
+   <div data-i18n="jobs_kpi_jobs_open_hint" style="font-size:10px;color:var(--ink3);margin-top:2px">sem applied e sem cancelado</div>
   </div>
   <div data-jobs-card="kpi-closed" class="kpi-card" data-kpi-filter="jobs-fechados" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs fechados</div>
+   <div data-i18n="jobs_kpi_jobs_closed" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Jobs fechados</div>
    <div id="jobs-kpi-closed" style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px">0</div>
-   <div style="font-size:10px;color:var(--ink3);margin-top:2px">mes do applied ou cancelamento</div>
+   <div data-i18n="jobs_kpi_jobs_closed_hint" style="font-size:10px;color:var(--ink3);margin-top:2px">mes do applied ou cancelamento</div>
   </div>
   <div id="kpi-invoices-generated" data-jobs-card="kpi-invoices" class="kpi-card" data-kpi-filter="invoices-geradas" tabindex="0" role="button" onclick="if(typeof gmJobsKpiClickMobile==='function')gmJobsKpiClickMobile(this.getAttribute('data-kpi-filter'))" style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--paper)">
-   <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Invoices Geradas</div>
+   <div data-i18n="jobs_kpi_invoices" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:600">Invoices Geradas</div>
    <div id="jobs-kpi-invoices-qty" style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px">0</div>
    <div id="jobs-kpi-invoices-total" style="font-size:10px;color:var(--ink3);margin-top:2px">Total: USD 0.00</div>
   </div>
  </div></div>
 
  <div id="jobs-table-legend" role="note" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--sand);color:var(--ink3);font-size:11px;padding:8px 12px;border-radius:6px;border:1px solid var(--border);margin:0 32px 12px;font-family:'DM Sans',sans-serif;line-height:1.45">
-  <span style="display:inline-flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Foto</span>
+  <span style="display:inline-flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> <span data-i18n="jobs_legend_photo">Foto</span></span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span style="display:inline-flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Coment.</span>
+  <span style="display:inline-flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span data-i18n="jobs_legend_comment">Coment.</span></span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span style="display:inline-flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Doc</span>
+  <span style="display:inline-flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span data-i18n="jobs_legend_doc">Doc</span></span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span>V +$120 = Vendor Fee</span>
+  <span data-i18n="jobs_legend_vendor_fee">V +$120 = Vendor Fee</span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span>J +$200 = Job Fee</span>
+  <span data-i18n="jobs_legend_job_fee">J +$200 = Job Fee</span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span>Mgr = Markup Manager</span>
+  <span data-i18n="jobs_legend_mgr">Mgr = Markup Manager</span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span>✓ OK = Finalizar</span>
+  <span data-i18n="jobs_legend_ok">✓ OK = Finalizar</span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span>Adiar = Reagendar</span>
+  <span data-i18n="jobs_legend_postpone">Adiar = Reagendar</span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span>V Free = Job sem vendor</span>
+  <span data-i18n="jobs_legend_v_free">V Free = Job sem vendor</span>
   <span aria-hidden="true" style="opacity:.55"> · </span>
-  <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-size:14px;line-height:1;font-weight:400" aria-hidden="true">&#10005;</span> = Cancelar</span>
+  <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-size:14px;line-height:1;font-weight:400" aria-hidden="true">&#10005;</span> <span data-i18n="jobs_legend_cancel">= Cancelar</span></span>
  </div>
 
  <div style="padding:24px 32px 32px">
@@ -3099,21 +3100,21 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table" class="lt-jobs-table">
     <thead>
      <tr style="background:var(--cream);border-bottom:2px solid var(--border)">
-      <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:52px">Qty</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Unit</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Tenant</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Vendor</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Categoria</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Descricao</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data</th>
-      <th data-jobs-col="amount" style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Valor</th>
-      <th style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
-      <th style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Acoes</th>
+      <th data-i18n="jobs_col_qty" style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:52px">Qty</th>
+      <th data-i18n="jobs_col_unit" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Unit</th>
+      <th data-i18n="jobs_col_tenant" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Tenant</th>
+      <th data-i18n="jobs_col_vendor" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Vendor</th>
+      <th data-i18n="jobs_col_category" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Categoria</th>
+      <th data-i18n="jobs_col_description" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Descricao</th>
+      <th data-i18n="jobs_col_date" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data</th>
+      <th data-i18n="jobs_col_amount" data-jobs-col="amount" style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Valor</th>
+      <th data-i18n="jobs_col_status" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
+      <th data-i18n="jobs_col_actions" style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Acoes</th>
       <th style="padding:6px 4px;width:32px;min-width:32px;max-width:36px"></th>
      </tr>
     </thead>
     <tbody id="jobs-tbody">
-     <tr><td colspan="11" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
+     <tr><td colspan="11" data-i18n="loading" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
     </tbody>
    </table>
   </div>
@@ -3124,20 +3125,20 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <!-- JOBS MANAGER MARKUP MODAL -->
 <div id="jobs-manager-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9400;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)jobsManagerClose()">
   <div style="background:#fff;border-radius:10px;padding:24px;max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">Manager Markup</div>
+    <div data-i18n="jobs_manager_title" style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">Manager Markup</div>
     <div id="jobs-manager-modal-context" style="font-size:12px;color:var(--ink2);margin-bottom:16px">—</div>
 
-    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">VALOR (USD)</label>
+    <label data-i18n="jobs_manager_amount_label" style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">VALOR (USD)</label>
     <input type="number" id="jobs-manager-amount" step="0.01" min="0" placeholder="0.00" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;font-size:14px;font-family:'JetBrains Mono',monospace;margin-bottom:14px">
 
-    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">DESCRIcAO (OPCIONAL)</label>
-    <textarea id="jobs-manager-description" rows="3" placeholder="Justificacao do markup..." style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
+    <label data-i18n="jobs_manager_desc_label" style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">DESCRIcAO (OPCIONAL)</label>
+    <textarea id="jobs-manager-description" rows="3" data-i18n-placeholder="jobs_manager_desc_placeholder" placeholder="Justificacao do markup..." style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:14px"></textarea>
 
     <div id="jobs-manager-feedback" style="font-size:12px;margin-bottom:10px;min-height:16px"></div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button type="button" onclick="jobsManagerClose()" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>
-      <button type="button" id="jobs-manager-save-btn" onclick="jobsManagerSave()" style="padding:8px 16px;background:#6b46c1;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Confirmar e Registar</button>
+      <button type="button" data-i18n="cancel" onclick="jobsManagerClose()" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>
+      <button type="button" id="jobs-manager-save-btn" data-i18n="jobs_manager_confirm" onclick="jobsManagerSave()" style="padding:8px 16px;background:#6b46c1;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Confirmar e Registar</button>
     </div>
   </div>
 </div>
@@ -3414,9 +3415,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div id="lt-nexp-vendor-free-wrap" style="grid-column:1/-1;display:none;margin-bottom:4px">
     <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">
      <input type="checkbox" id="lt-nexp-vendor-free" onchange="if(typeof ltNexpOnVendorFreeToggle==='function')ltNexpOnVendorFreeToggle()" style="width:15px;height:15px;margin-top:2px;accent-color:var(--amber);cursor:pointer">
-     <span style="font-size:11px;font-weight:600;color:var(--amber);line-height:1.4">Sem vendor (V Free)</span>
+     <span data-i18n="jobs_vendor_free_checkbox" style="font-size:11px;font-weight:600;color:var(--amber);line-height:1.4">Sem vendor (V Free)</span>
     </label>
-    <div style="font-size:10px;color:var(--ink3);margin:4px 0 0 23px;line-height:1.4">Job sem fornecedor atribuido; vendor pode ser definido depois.</div>
+    <div data-i18n="jobs_vendor_free_hint" style="font-size:10px;color:var(--ink3);margin:4px 0 0 23px;line-height:1.4">Job sem fornecedor atribuido; vendor pode ser definido depois.</div>
    </div>
    <div id="lt-nexp-pacote-new" style="grid-column:1/-1">
     <div style="margin-bottom:12px;margin-top:12px">
@@ -12895,7 +12896,7 @@ function ltExpUpdateVendorFreeButtonVisibility(){
 }
 
 window.ltOpenVendorFreeExpense=function(){
- if(typeof gmCanVendorFreeRole==='function'&&!gmCanVendorFreeRole()){alert('Sem permissao.');return;}
+ if(typeof gmCanVendorFreeRole==='function'&&!gmCanVendorFreeRole()){alert(typeof t==='function'?t('alert_no_permission'):'Sem permissao.');return;}
  if(typeof ltOpenNewExpense!=='function')return;
  ltOpenNewExpense({vendorFreeStandalone:true});
 };
@@ -14167,7 +14168,7 @@ async function gmJobOpenPhotoPopup(id){
  gmJobCloseJobPopups();
 
  if(!gmJobsPhotoCanUploadRole()){
-  alert('Sem permissao.');
+  alert(typeof t==='function'?t('alert_no_permission'):'Sem permissao.');
   return;
  }
 
@@ -14207,17 +14208,17 @@ async function gmJobOpenPhotoPopup(id){
  var t1=document.createElement('div');
  t1.id='jp-title';
  t1.style.cssText='font-weight:600;font-size:14px;color:var(--ink)';
- t1.textContent='Fotos do trabalho';
+ t1.textContent=gmJobsT('jobs_photo_title');
  var t2=document.createElement('div');
  t2.id='jp-counter';
  t2.style.cssText='font-size:12px;color:var(--ink3);margin-top:2px';
- t2.textContent='A carregar...';
+ t2.textContent=(typeof t==='function'?t('loading'):'A carregar...');
  headLeft.appendChild(t1);
  headLeft.appendChild(t2);
  var xb=document.createElement('button');
  xb.type='button';
  xb.innerHTML='&times;';
- xb.setAttribute('aria-label','Fechar');
+ xb.setAttribute('aria-label',gmJobsT('jobs_photo_close_aria'));
  xb.style.cssText='border:none;background:transparent;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1;padding:4px';
  xb.onclick=function(){gmJobsPhotoClose();};
  head.appendChild(headLeft);
@@ -14226,14 +14227,14 @@ async function gmJobOpenPhotoPopup(id){
  var gal=document.createElement('div');
  gal.id='jp-containers-host';
  gal.style.cssText='flex:1;overflow-y:auto;padding:12px 14px;min-height:160px';
- gal.innerHTML='<div style="text-align:center;font-size:12px;color:var(--ink3);padding:24px">A carregar fotos...</div>';
+ gal.innerHTML='<div style="text-align:center;font-size:12px;color:var(--ink3);padding:24px">'+gmJobsT('jobs_photo_loading')+'</div>';
 
  var prog=document.createElement('div');
  prog.id='jp-progress';
  prog.style.cssText='display:none;padding:8px 16px;background:var(--amber-bg);border-top:1px solid var(--amber-bd);font-size:12px;color:var(--ink2)';
  var progt=document.createElement('span');
  progt.id='jp-progress-text';
- progt.textContent='A enviar 0 / 0...';
+ progt.textContent=gmJobsT('jobs_photo_upload_progress',{current:0,total:0});
  prog.appendChild(progt);
 
  var foot=document.createElement('div');
@@ -14241,7 +14242,7 @@ async function gmJobOpenPhotoPopup(id){
  var btNew=document.createElement('button');
  btNew.type='button';
  btNew.id='jp-btn-new-container';
- btNew.textContent='+ Novo container';
+ btNew.textContent=gmJobsT('jobs_photo_new_container');
  btNew.style.cssText='width:100%;padding:11px 16px;background:transparent;color:var(--amber);border:1px solid var(--amber-bd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif';
  btNew.onclick=function(){if(typeof gmJobsPhotoAddContainer==='function')gmJobsPhotoAddContainer();};
  foot.appendChild(btNew);
@@ -14253,7 +14254,7 @@ async function gmJobOpenPhotoPopup(id){
  shell.appendChild(card);
  document.body.appendChild(shell);
 
- document.getElementById('jp-title').textContent='Fotos do trabalho — '+addrShort;
+ document.getElementById('jp-title').textContent=gmJobsT('jobs_photo_title')+' — '+addrShort;
  gmJobsPhotoUpdateUploadButtonsDisabled();
 
  var res=null;
@@ -14558,7 +14559,7 @@ function jobsUpdateInvoicesKpi(){
  var el1=document.getElementById('jobs-kpi-invoices-qty');
  var el2=document.getElementById('jobs-kpi-invoices-total');
  if(el1)el1.textContent=String(qty);
- if(el2)el2.textContent='Total: USD '+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+ if(el2)el2.textContent=gmJobsT('jobs_kpi_invoices_total',{amount:total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})});
 }
 window.jobsUpdateInvoicesKpi=jobsUpdateInvoicesKpi;
 async function jobsJobInvoiceGenerateAndSave(jid){
@@ -22228,7 +22229,7 @@ function gmJobsRenderAgenda(rows){
   var arr=groups[key];
   var label='';
   if(key==='__sem-data'){
-   label='Sem data definida';
+   label=gmJobsT('jobs_agenda_no_date');
   }else{
    try{
     var dt=new Date(key+'T12:00:00');
@@ -22239,16 +22240,16 @@ function gmJobsRenderAgenda(rows){
     label=wd+' '+(dd<10?'0'+dd:dd)+' '+mm+' '+yy;
    }catch(e){label=key;}
   }
-  html+='<div style="margin-top:18px;padding:8px 14px;background:#1e2b3d;color:#fff;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.05em">'+label+' <span style="opacity:.6;font-weight:500;margin-left:8px">'+arr.length+' '+(arr.length===1?'job':'jobs')+'</span></div>';
+  html+='<div style="margin-top:18px;padding:8px 14px;background:#1e2b3d;color:#fff;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.05em">'+label+' <span style="opacity:.6;font-weight:500;margin-left:8px">'+arr.length+' '+(arr.length===1?gmJobsT('jobs_agenda_job_singular'):gmJobsT('jobs_agenda_job_plural'))+'</span></div>';
   html+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">';
   arr.forEach(function(r){
-   var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(r):(r.unit||r.propertyAddress||'(sem endereço)');
+   var addr=(typeof jobsResolveAddress==='function')?jobsResolveAddress(r):(r.unit||r.propertyAddress||gmJobsT('jobs_agenda_no_address'));
    var vendor=(typeof jobsVendorSourceStr==='function')?jobsVendorSourceStr(r):'';
    var vendorAcr=(vendor && typeof gmGetVendorAcronymByName==='function')?gmGetVendorAcronymByName(vendor):vendor;
    var desc=r.desc||r.description||r.serviceType||'';
    var val=parseFloat(r.value||r.ownerCharged||r.amount||0)||0;
    var st=String(r.status||r.statusPm||'').trim();
-   var stLabel=({SCHEDULED:'Agendado',PENDING:'Pendente',PAID:'Pago',CANCELLED:'Cancelado',FINALIZED:'Finalizado'})[st]||st;
+   var stLabel=({SCHEDULED:gmJobsT('jobs_status_scheduled'),PENDING:gmJobsT('jobs_status_pending'),PAID:gmJobsT('jobs_status_paid'),CANCELLED:gmJobsT('jobs_status_cancelled'),FINALIZED:gmJobsT('jobs_status_finalized')})[st]||st;
    var stStyle=({SCHEDULED:'background:#e2e8f0;color:#475569',PENDING:'background:#fef3c7;color:#92400e',PAID:'background:#dcfce7;color:#166534',CANCELLED:'background:#fee2e2;color:#991b1b',FINALIZED:'background:#dcfce7;color:#166534;font-weight:700'})[st]||'background:#f1f5f9;color:#475569';
    var idAttr=String(r.id||'').replace(/'/g,"\\'");
    var canEdit=(typeof ltOpenEditExpense==='function');
@@ -22263,12 +22264,12 @@ function gmJobsRenderAgenda(rows){
     +'</div>'
     +'</div>'
     +(desc?'<div style="font-size:12px;color:var(--ink2);margin-bottom:8px">'+String(desc).slice(0,140)+(String(desc).length>140?'...':'')+'</div>':'')
-    +'<div style="font-size:11px;color:var(--ink3)">'+(vendor||'')+(val>0?' • $'+val.toFixed(2):'')+(canEdit?' • <span style="color:#1e2b3d;font-weight:600">Click para editar</span>':'')+'</div>'
+    +'<div style="font-size:11px;color:var(--ink3)">'+(vendor||'')+(val>0?' • $'+val.toFixed(2):'')+(canEdit?' • <span style="color:#1e2b3d;font-weight:600">'+gmJobsT('jobs_agenda_click_edit')+'</span>':'')+'</div>'
     +'</div>';
   });
   html+='</div>';
  });
- if(!html) html='<div style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job.</div>';
+ if(!html) html='<div style="padding:40px;text-align:center;color:var(--ink3)">'+gmJobsT('jobs_no_jobs')+'</div>';
  return html;
 }
 
@@ -22304,21 +22305,21 @@ function gmJobsRenderCalendar(rows){
  var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">';
  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
  html+='<div style="display:flex;align-items:center;gap:10px">';
- html+='<button type="button" onclick="gmJobsCalendarPrevMonth()" title="Mês anterior" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">‹</button>';
- html+='<button type="button" onclick="gmJobsCalendarToday()" title="Mês corrente" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:11px;font-weight:600;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">Hoje</button>';
- html+='<button type="button" onclick="gmJobsCalendarNextMonth()" title="Mês seguinte" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">›</button>';
+ html+='<button type="button" onclick="gmJobsCalendarPrevMonth()" title="'+gmJobsT('jobs_cal_prev_month').replace(/"/g,'&quot;')+'" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">‹</button>';
+ html+='<button type="button" onclick="gmJobsCalendarToday()" title="'+gmJobsT('jobs_cal_today').replace(/"/g,'&quot;')+'" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:11px;font-weight:600;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">'+gmJobsT('jobs_cal_today')+'</button>';
+ html+='<button type="button" onclick="gmJobsCalendarNextMonth()" title="'+gmJobsT('jobs_cal_next_month').replace(/"/g,'&quot;')+'" style="width:32px;height:32px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background 0.15s" onmouseover="this.style.background=\'var(--sand)\'" onmouseout="this.style.background=\'var(--paper)\'">›</button>';
  html+='<div style="font-size:18px;font-weight:700;color:var(--ink);margin-left:8px">'+months[monthIdx]+' '+year+'</div>';
  html+='</div>';
  var totalMes=(rows||[]).filter(function(r){var d=gmJobsRowDateStr(r);return d&&d.slice(0,7)===ymStr;}).length;
  html+='<div style="display:flex;align-items:center;gap:14px">';
  html+='<div style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--ink3)">';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #f59e0b"></span>Pendente</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--blue-bg);border-radius:2px;border:1px solid var(--blue)"></span>Agendado</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#ffedd5;border-radius:2px;border:1px solid #f97316"></span>Reagendado</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(168,85,247,.2);border-radius:2px;border:1px solid #a855f7"></span>V Free</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--red-bg);border-radius:2px;border:1px solid #dc2626"></span>Urgente</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--green-bg);border-radius:2px;border:1px solid var(--green)"></span>Finalizado</span>';
- html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid var(--red)"></span>Cancelado</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fef3c7;border-radius:2px;border:1px solid #f59e0b"></span>'+gmJobsT('jobs_status_pending')+'</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--blue-bg);border-radius:2px;border:1px solid var(--blue)"></span>'+gmJobsT('jobs_status_scheduled')+'</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#ffedd5;border-radius:2px;border:1px solid #f97316"></span>'+gmJobsT('jobs_status_rescheduled')+'</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(168,85,247,.2);border-radius:2px;border:1px solid #a855f7"></span>'+gmJobsT('jobs_chip_vfree')+'</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--red-bg);border-radius:2px;border:1px solid #dc2626"></span>'+gmJobsT('jobs_chip_urgent')+'</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--green-bg);border-radius:2px;border:1px solid var(--green)"></span>'+gmJobsT('jobs_status_finalized')+'</span>';
+ html+='<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;border:1px solid var(--red)"></span>'+gmJobsT('jobs_status_cancelled')+'</span>';
  html+='</div>';
  html+='<div style="font-size:11px;color:var(--ink3)">Total mês: '+totalMes+' jobs</div>';
  html+='</div>';
@@ -22680,6 +22681,101 @@ function jobsPmStatusKey(r){
  return String(r.statusPm||r.status||'').trim().toUpperCase();
 }
 
+/** H.5 — i18n helpers Jobs (t() + placeholders {{var}}). */
+function gmJobsT(key, vars){
+ var s=(typeof t==='function')?t(key):key;
+ if(vars&&typeof vars==='object'){
+  Object.keys(vars).forEach(function(k){
+   s=String(s).replace(new RegExp('\\{\\{'+k+'\\}\\}','g'),String(vars[k]));
+  });
+ }
+ return s;
+}
+window.gmJobsT=gmJobsT;
+
+function gmJobsStatusLabel(key, labelOverride){
+ if(labelOverride!=null&&labelOverride!=='')return String(labelOverride);
+ var map={
+  PENDING:'jobs_status_pending',
+  SCHEDULED:'jobs_status_scheduled',
+  RESCHEDULED:'jobs_status_rescheduled',
+  V_FREE:'jobs_status_v_free_pill',
+  URGENT:'jobs_status_urgent_pill',
+  FINALIZED:'jobs_status_finalized',
+  PAID:'jobs_status_paid',
+  CANCELLED:'jobs_status_cancelled'
+ };
+ var i18nKey=map[key];
+ if(i18nKey)return gmJobsT(i18nKey);
+ return key;
+}
+
+function gmJobsApplyPageI18nStatic(){
+ var pg=document.getElementById('page-jobs');
+ if(!pg||typeof t!=='function')return;
+ pg.querySelectorAll('[data-i18n]').forEach(function(el){
+  var key=el.getAttribute('data-i18n');
+  if(key)el.textContent=t(key);
+ });
+ pg.querySelectorAll('[data-i18n-title]').forEach(function(el){
+  var key=el.getAttribute('data-i18n-title');
+  if(key)el.title=t(key);
+ });
+ pg.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+  var key=el.getAttribute('data-i18n-placeholder');
+  if(key)el.placeholder=t(key);
+ });
+ pg.querySelectorAll('[data-i18n-aria]').forEach(function(el){
+  var key=el.getAttribute('data-i18n-aria');
+  if(key)el.setAttribute('aria-label',t(key));
+ });
+ var mgr=document.getElementById('jobs-manager-modal');
+ if(mgr){
+  mgr.querySelectorAll('[data-i18n]').forEach(function(el){
+   var key=el.getAttribute('data-i18n');
+   if(key)el.textContent=t(key);
+  });
+  mgr.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+   var key=el.getAttribute('data-i18n-placeholder');
+   if(key)el.placeholder=t(key);
+  });
+ }
+ var vfw=document.getElementById('lt-nexp-vendor-free-wrap');
+ if(vfw){
+  vfw.querySelectorAll('[data-i18n]').forEach(function(el){
+   var key=el.getAttribute('data-i18n');
+   if(key)el.textContent=t(key);
+  });
+ }
+}
+
+function gmJobsRefreshRescheduleModalI18n(){
+ var modal=document.getElementById('gm-job-reschedule-modal');
+ if(!modal)return;
+ var set=function(id,key){var el=document.getElementById(id);if(el)el.textContent=gmJobsT(key);};
+ set('gm-job-resched-title','jobs_reschedule_title');
+ set('gm-job-resched-reason-label','jobs_reschedule_reason_label');
+ set('gm-job-resched-radio-vendor','jobs_reschedule_vendor_radio');
+ set('gm-job-resched-radio-tenant','jobs_reschedule_tenant_radio');
+ set('gm-job-resched-date-label','jobs_reschedule_date_label');
+ set('gm-job-resched-cancel','cancel');
+ set('gm-job-resched-ok','jobs_reschedule_confirm');
+ var help=document.getElementById('gm-job-resched-help');
+ if(help)help.title=gmJobsT('jobs_reschedule_reason_tooltip');
+}
+
+function gmJobsRefreshI18n(){
+ try{
+  gmJobsApplyPageI18nStatic();
+  gmJobsRefreshRescheduleModalI18n();
+  var activePg=document.querySelector('.page.active');
+  if(activePg&&activePg.id==='page-jobs'&&typeof jobsRender==='function'){
+   jobsRender();
+  }
+ }catch(e){console.warn('[gm-i18n] gmJobsRefreshI18n',e);}
+}
+window.gmJobsRefreshI18n=gmJobsRefreshI18n;
+
 /** Keywords urgencia Jobs (AR / encanamento) — F7, sem schema. */
 window.gmJobsAR_KEYWORDS=[
  'ar condicionado','a/c','a.c.','air condition','hvac','condicionador','climatizacao','climatizador'
@@ -22726,16 +22822,16 @@ window.gmJobsRowIsUrgent=function(r){
  return !!(gmJobIsUrgentByCategory(r).isUrgent);
 };
 
-/** Paleta unica Jobs: tabela, chips, calendario (F5). */
+/** Paleta unica Jobs: tabela, chips, calendario (F5). Labels via gmJobsStatusLabel + i18n. */
 window.gmJobsStatusPalette={
- PENDING:{bg:'#fef3c7',fg:'#92400e',bd:'#f59e0b',label:'Pendente'},
- SCHEDULED:{bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)',label:'Agendado'},
- RESCHEDULED:{bg:'#ffedd5',fg:'#c2410c',bd:'#f97316',label:'Reagendado'},
- V_FREE:{bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7',label:'V Free'},
- URGENT:{bg:'var(--red-bg)',fg:'var(--red)',bd:'#dc2626',label:'Urgente'},
- FINALIZED:{bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)',label:'Finalizado'},
- PAID:{bg:'#dcfce7',fg:'#15803d',bd:'#15803d',label:'Pago'},
- CANCELLED:{bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)',label:'Cancelado'}
+ PENDING:{bg:'#fef3c7',fg:'#92400e',bd:'#f59e0b'},
+ SCHEDULED:{bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)'},
+ RESCHEDULED:{bg:'#ffedd5',fg:'#c2410c',bd:'#f97316'},
+ V_FREE:{bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7'},
+ URGENT:{bg:'var(--red-bg)',fg:'var(--red)',bd:'#dc2626'},
+ FINALIZED:{bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)'},
+ PAID:{bg:'#dcfce7',fg:'#15803d',bd:'#15803d'},
+ CANCELLED:{bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)'}
 };
 
 function gmJobsRowWasRescheduled(r){
@@ -22776,8 +22872,8 @@ function gmJobRescheduleVtTooltip(r){
  if(!meta&&r._apiRaw)meta=r._apiRaw.metadata;
  var c=gmJobRescheduleCounts(meta);
  var n=c.rescheduleEvents||0;
- if(!n)return 'Reagendado';
- return 'Reagendado '+n+' vezes (V'+c.vendorCount+' visitas tecnico, T'+c.tenantCount+' tentativas tenant)';
+ if(!n)return gmJobsT('jobs_reschedule_tooltip_short');
+ return gmJobsT('jobs_reschedule_tooltip',{n:n,v:c.vendorCount,t:c.tenantCount});
 }
 
 function gmJobsRescheduleTooltip(r){
@@ -22794,19 +22890,19 @@ function gmJobVtPillHtml(label,titleExtra){
 function gmJobPillHtml(key,titleExtra,labelOverride){
  var p=(window.gmJobsStatusPalette&&window.gmJobsStatusPalette[key])||{};
  var t=titleExtra?String(titleExtra).replace(/"/g,'&quot;'):'';
- var lbl=labelOverride!=null&&labelOverride!==''?String(labelOverride):((p.label||key));
+ var lbl=labelOverride!=null&&labelOverride!==''?String(labelOverride):gmJobsStatusLabel(key);
  return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:'+(p.bg||'var(--cream)')+';color:'+(p.fg||'var(--ink2)')+';border:1px solid '+(p.bd||'var(--border2)')+'"'+(t?' title="'+t+'"':'')+'>'+lbl+'</span>';
 }
 
 function gmJobUrgentPillHtml(r){
  var u=gmJobIsUrgentByCategory(r);
  if(!u.isUrgent)return '';
- return gmJobPillHtml('URGENT','Categoria urgente: '+u.type,'URGENTE');
+ return gmJobPillHtml('URGENT',gmJobsT('jobs_urgent_category_tooltip',{type:u.type}));
 }
 
 function gmJobVendorFreePillHtml(r){
  if(!gmJobsRowIsVendorFree(r))return '';
- return gmJobPillHtml('V_FREE','Job V Free (sem vendor)','V FREE');
+ return gmJobPillHtml('V_FREE',gmJobsT('jobs_v_free_tooltip'));
 }
 
 function gmJobStatusBadgeAppendPill(base,pill){
@@ -22856,8 +22952,8 @@ function gmJobsCalStyleKey(j){
 
 function gmJobsCalEventTooltip(j,calKey){
  var u=gmJobIsUrgentByCategory(j);
- if(calKey==='URGENT'&&u.isUrgent)return 'Urgente: '+u.type;
- if(calKey==='V_FREE')return 'Job V Free (sem vendor)';
+ if(calKey==='URGENT'&&u.isUrgent)return gmJobsT('jobs_cal_urgent_tooltip',{type:u.type});
+ if(calKey==='V_FREE')return gmJobsT('jobs_v_free_tooltip');
  if(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')return gmJobsRescheduleTooltip(j);
  return calKey;
 }
@@ -22868,10 +22964,9 @@ function gmJobsCalChipStyle(key){
 }
 function jobsStatusLabel(s){
  var u=String(s||'').toUpperCase();
- if(u==='PENDING') return 'Open';
- if(u==='SCHEDULED') return 'Open';
- if(u==='PAID'||u==='FINALIZED') return 'Closed';
- if(u==='CANCELLED') return 'Cancel';
+ if(u==='PENDING'||u==='SCHEDULED') return gmJobsT('jobs_mo_open');
+ if(u==='PAID'||u==='FINALIZED') return gmJobsT('jobs_mo_closed');
+ if(u==='CANCELLED') return gmJobsT('jobs_mo_cancel');
  return String(s||'').trim()||'\u2014';
 }
 
@@ -23049,7 +23144,7 @@ async function jobsRender(){
   calendarHost.style.display='none';
  }
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--ink3)">Nenhum job.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--ink3)">'+gmJobsT('jobs_no_jobs')+'</td></tr>';
   return;
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -23083,10 +23178,10 @@ async function jobsRender(){
  var svgChat='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
  var svgDoc='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
  var jobTick=function(on){return on?'<span style="color:#2d7252;font-weight:700;font-size:12px;margin-left:1px" aria-hidden="true">&#10003;</span>':'';};
- var btnJobPhoto='<button type="button" class="btn-job-photo" data-id="'+idData+'" title="Foto do trabalho" style="'+btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)">'+svgCam+jobTick(hasPhoto)+'</button>';
- var btnJobComment='<button type="button" class="btn-job-comment" data-id="'+idData+'" title="Comentario" style="'+btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)">'+svgChat+jobTick(hasComment)+'</button>';
+ var btnJobPhoto='<button type="button" class="btn-job-photo" data-id="'+idData+'" title="'+gmJobsT('jobs_btn_photo_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)">'+svgCam+jobTick(hasPhoto)+'</button>';
+ var btnJobComment='<button type="button" class="btn-job-comment" data-id="'+idData+'" title="'+gmJobsT('jobs_btn_comment_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)">'+svgChat+jobTick(hasComment)+'</button>';
  var hasInv=!!(typeof getInvoice==='function'&&getInvoice(r.id));
- var invTitle=hasInv?'Invoice gerada - clicar para ver opcoes':'Gerar invoice';
+ var invTitle=hasInv?gmJobsT('jobs_btn_invoice_has'):gmJobsT('jobs_btn_invoice_gen');
  var invBtnStyle=hasInv
   ?(btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--green-bg);border-color:var(--green-bd);color:var(--green)')
   :(btnStyleBase+';display:inline-flex;align-items:center;gap:3px;background:var(--slate-bg);border-color:#c8d0dc;color:var(--ink2)');
@@ -23095,18 +23190,18 @@ async function jobsRender(){
  // Mutualmente exclusivo: vendor e job nao podem estar ambos applied
  var btnVendor;
  if(vendorDone){
-  btnVendor='<button disabled title="Vendor fee aplicado" style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.85">&#10003; Applied</button>';
+  btnVendor='<button disabled title="'+gmJobsT('jobs_vendor_applied').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#2d7252;border-color:#2d7252;color:#fff;cursor:not-allowed;opacity:.85">&#10003; '+gmJobsT('jobs_applied_label')+'</button>';
  } else if(jobDone){
-  btnVendor='<button disabled title="Bloqueado: Job fee ja aplicado. Use Retornar para reverter." style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff;cursor:not-allowed;opacity:.35">V +$120</button>';
+  btnVendor='<button disabled title="'+gmJobsT('jobs_vendor_blocked').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff;cursor:not-allowed;opacity:.35">V +$120</button>';
  } else {
   btnVendor='<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnVendorClick(\''+idAttr+'\')" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">V +$120</button>';
  }
 
  var btnJob;
  if(jobDone){
-  btnJob='<button disabled title="Job fee aplicado" style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.85">&#10003; Applied</button>';
+  btnJob='<button disabled title="'+gmJobsT('jobs_job_applied').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#c47b28;border-color:#c47b28;color:#fff;cursor:not-allowed;opacity:.85">&#10003; '+gmJobsT('jobs_applied_label')+'</button>';
  } else if(vendorDone){
-  btnJob='<button disabled title="Bloqueado: Vendor fee ja aplicado. Use Retornar para reverter." style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a;cursor:not-allowed;opacity:.35">J +$200</button>';
+  btnJob='<button disabled title="'+gmJobsT('jobs_job_blocked').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a;cursor:not-allowed;opacity:.35">J +$200</button>';
  } else {
   btnJob='<button type="button" '+(isCancelled?'disabled':'')+' onclick="jobsOnJobClick(\''+idAttr+'\')" style="'+btnStyleBase+';background:#c9a96e;border-color:#c9a96e;color:#1a1a1a'+(isCancelled?';opacity:.4;cursor:not-allowed':'')+'">J +$200</button>';
  }
@@ -23123,28 +23218,28 @@ async function jobsRender(){
 
  var hasActions=vendorDone||jobDone;
  var btnReturn=hasActions
-  ? '<button type="button" onclick="jobsReturn(\''+idAttr+'\')" title="Remover acoes Vendor/Job aplicadas e voltar a pendente" style="'+btnStyleBase+';background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)">Retornar</button>'
+  ? '<button type="button" onclick="jobsReturn(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_return_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)">'+gmJobsT('jobs_btn_return')+'</button>'
   : '';
  var btnDismissTd=isCancelled
   ? '<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>'
-  : '<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"><button type="button" onclick="jobsCancel(\''+idAttr+'\')" aria-label="Cancelar Job" title="Cancelar" style="padding:0;min-width:26px;height:26px;border:none;background:transparent;cursor:pointer;color:var(--ink3);font-size:14px;line-height:1;font-weight:400;display:inline-flex;align-items:center;justify-content:center;border-radius:4px" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--ink3)\'">&#10005;</button></td>';
+  : '<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"><button type="button" onclick="jobsCancel(\''+idAttr+'\')" aria-label="'+gmJobsT('jobs_btn_cancel_aria').replace(/"/g,'&quot;')+'" title="'+gmJobsT('jobs_btn_cancel_title').replace(/"/g,'&quot;')+'" style="padding:0;min-width:26px;height:26px;border:none;background:transparent;cursor:pointer;color:var(--ink3);font-size:14px;line-height:1;font-weight:400;display:inline-flex;align-items:center;justify-content:center;border-radius:4px" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--ink3)\'">&#10005;</button></td>';
 
  var btnFinalize=(canFinalize&&canBeFinalized)
-  ? '<button type="button" onclick="jobsFinalize(\''+idAttr+'\')" title="Marcar trabalho como concluído" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff;font-weight:600">✓ OK</button>'
+  ? '<button type="button" onclick="jobsFinalize(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_finalize_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff;font-weight:600">✓ OK</button>'
   : '';
  var pmFin=(r.statusPm==='FINALIZED');
  var canReopenJob=(userRole==='admin'||userRole==='super_admin'||userRole==='manager');
  var btnReopen=(isFinalized||pmFin)&&!isCancelled&&canReopenJob
-  ? '<button type="button" onclick="jobsReopen(\''+idAttr+'\')" title="Reabrir job (volta a pendente)" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff;font-weight:600">Reabrir</button>'
+  ? '<button type="button" onclick="jobsReopen(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_reopen_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff;font-weight:600">'+gmJobsT('jobs_btn_reopen')+'</button>'
   : '';
  var btnReschedule=canReschedule
-  ? '<button type="button" onclick="jobsReschedule(\''+idAttr+'\')" title="Reagendar para nova data" style="'+btnStyleBase+';background:#fef3c7;border-color:#fbbf24;color:#92400e;font-weight:600">Adiar</button>'
+  ? '<button type="button" onclick="jobsReschedule(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_reschedule_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#fef3c7;border-color:#fbbf24;color:#92400e;font-weight:600">'+gmJobsT('jobs_btn_postpone')+'</button>'
   : '';
  var btnReactivate=((isCancelled||isFinalized)&&isAdmin)
-  ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="Reverter (volta a pendente)" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">Reativar</button>'
+  ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_reactivate_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">'+gmJobsT('jobs_btn_reactivate')+'</button>'
   : '';
  var btnVendorFree=canVendorFree
-  ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="Criar novo Job clonado, escolher novo vendor" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">V Free</button>'
+  ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">V Free</button>'
   : '';
 
  var statusBadge=(typeof gmJobStatusBadgeHtml==='function')?gmJobStatusBadgeHtml(r):'<span>—</span>';
@@ -23158,15 +23253,15 @@ async function jobsRender(){
  var lblMoEsc=String(statusLblMo).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
  return '<tr style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
-  +'<td class="col-qty" data-label="Qty" style="padding:9px 8px;text-align:center;vertical-align:middle">'+qtyBadge+'</td>'
+  +'<td class="col-qty" data-label="'+gmJobsT('jobs_col_qty')+'" style="padding:9px 8px;text-align:center;vertical-align:middle">'+qtyBadge+'</td>'
   +'<td class="col-unit" style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
-  +'<td class="col-tenant" data-label="Tenant" style="padding:9px 12px;color:var(--ink2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+tenantEsc+'">'+tenantDisp+'</td>'
-  +'<td data-label="Vendor" style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
-  +'<td data-label="Categoria" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
-  +'<td data-label="Descrição" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="Ver descrição completa" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="Ver descrição completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
-  +'<td data-label="Data" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+  +'<td class="col-tenant" data-label="'+gmJobsT('jobs_col_tenant')+'" style="padding:9px 12px;color:var(--ink2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+tenantEsc+'">'+tenantDisp+'</td>'
+  +'<td data-label="'+gmJobsT('jobs_col_vendor')+'" style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
+  +'<td data-label="'+gmJobsT('jobs_col_category')+'" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
+  +'<td data-label="'+gmJobsT('jobs_col_description')+'" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="'+gmJobsT('jobs_view_full_desc').replace(/"/g,'&quot;')+'" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="'+gmJobsT('jobs_view_full_desc').replace(/"/g,'&quot;')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
+  +'<td data-label="'+gmJobsT('jobs_col_date')+'" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +(typeof jobsFmtValueCellHtml==='function'?jobsFmtValueCellHtml(r):'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right">'+jobsMoney(jobsRowDisplayValue(r))+'</td>')
-  +'<td data-label="Status" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
+  +'<td data-label="'+gmJobsT('jobs_col_status')+'" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
   +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
   +btnDismissTd
   +'</tr>';
@@ -23182,7 +23277,7 @@ async function jobsRender(){
 }
 
 window.jobsReturn=function(id){
- if(!confirm('Remover as acoes Vendor/Job aplicadas a esta despesa e voltar a pendente?'))return;
+ if(!confirm(gmJobsT('jobs_return_confirm')))return;
  try{
   var arr=ltExpGetRecords()||[];
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
@@ -23364,8 +23459,8 @@ window.jobsFinalize=function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
-  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){alert('Apenas admin, gestor ou técnicos podem finalizar.');return;}
-  var nota=prompt('Observação do trabalho concluído (opcional):','');
+  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){alert(gmJobsT('jobs_finalize_role_denied'));return;}
+  var nota=prompt(gmJobsT('jobs_finalize_note_prompt'),'');
   if(nota===null) return;
   var arr=ltExpGetRecords()||[];
   var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
@@ -23395,8 +23490,8 @@ window.jobsFinalize=function(id){
      if(rec0) expValue=parseFloat(rec0.value||rec0.ownerCharged||rec0.amount||0)||0;
     }catch(eVal){}
     var msg=expValue>0
-     ? 'Job finalizado. Lançado no Statement: $'+expValue.toFixed(2)
-     : 'Job finalizado e lançado no Statement.';
+     ? gmJobsT('jobs_finalize_success_stmt',{amount:expValue.toFixed(2)})
+     : gmJobsT('jobs_finalize_success_stmt_empty');
     if(typeof showToast==='function')showToast(msg,'success');
     // Persistir no backend em background (não bloqueia UI)
     fetch('/api/pm/expenses/'+encodeURIComponent(id),{
@@ -23409,7 +23504,7 @@ window.jobsFinalize=function(id){
     }).catch(function(e){console.warn('jobsFinalize.api',e);});
     return;
    }
-   alert('Despesa não encontrada');return;
+   alert(gmJobsT('jobs_expense_not_found'));return;
   }
   var rec=arr[idx];
   rec.status='finalized';
@@ -23429,8 +23524,8 @@ window.jobsFinalize=function(id){
   }catch(eApi){console.warn('jobsFinalize.api',eApi);}
   if(typeof jobsRender==='function')jobsRender();
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
-  if(typeof showToast==='function')showToast('Job finalizado.','success');
- }catch(e){console.warn('jobsFinalize',e);alert('Erro: '+e.message);}
+  if(typeof showToast==='function')showToast(gmJobsT('jobs_finalize_success'),'success');
+ }catch(e){console.warn('jobsFinalize',e);alert((typeof t==='function'?t('error'):'Erro')+': '+e.message);}
 };
 
 window.jobsReopen=function(id){
@@ -23482,7 +23577,7 @@ window.jobsVendorFree=function(id){
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
   if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){
-   alert('Sem permissao.');
+   alert(typeof t==='function'?t('alert_no_permission'):'Sem permissao.');
    return;
   }
   id=String(id);
@@ -23514,7 +23609,7 @@ window.jobsVendorFree=function(id){
     var list=(j&&j.expenses)||[];
     var e=list.find(function(x){return x&&String(x.id)===id;});
     if(!e){
-     alert('Job nao encontrado.');
+     alert(gmJobsT('jobs_job_not_found'));
      return;
     }
     if(typeof ltOpenNewExpense!=='function')return;
@@ -23534,7 +23629,7 @@ window.jobsVendorFree=function(id){
    })
    .catch(function(err){
     console.error('jobsVendorFree fetch error:',err);
-    alert('Erro ao carregar o Job. Tenta de novo.');
+    alert(gmJobsT('jobs_load_error'));
    });
  }catch(e){
   console.error('jobsVendorFree error:',e);
@@ -23560,29 +23655,29 @@ window.jobsReschedule=function(id){
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
   var card=document.createElement('div');
   card.style.cssText='background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
-  card.innerHTML='<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px">Reagendar trabalho</div>'
+  card.innerHTML='<div id="gm-job-resched-title" style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px">'+gmJobsT('jobs_reschedule_title')+'</div>'
    +'<div style="margin-bottom:14px">'
    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
-   +'<span style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Motivo</span>'
-   +'<span title="Tecnico vai voltar: nova visita do fornecedor (conta em V). Tenant nao pode atender: conflito com o inquilino (conta em T)." style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--border2);font-size:10px;font-weight:700;color:var(--ink3);cursor:help">?</span>'
+   +'<span id="gm-job-resched-reason-label" style="font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">'+gmJobsT('jobs_reschedule_reason_label')+'</span>'
+   +'<span id="gm-job-resched-help" title="'+gmJobsT('jobs_reschedule_reason_tooltip').replace(/"/g,'&quot;')+'" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--border2);font-size:10px;font-weight:700;color:var(--ink3);cursor:help">?</span>'
    +'</div>'
    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin-bottom:8px;cursor:pointer">'
-   +'<input type="radio" name="gm-job-resched-by" value="vendor" checked style="accent-color:var(--amber)"> Tecnico vai voltar</label>'
+   +'<input type="radio" name="gm-job-resched-by" value="vendor" checked style="accent-color:var(--amber)"> <span id="gm-job-resched-radio-vendor">'+gmJobsT('jobs_reschedule_vendor_radio')+'</span></label>'
    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);cursor:pointer">'
-   +'<input type="radio" name="gm-job-resched-by" value="tenant" style="accent-color:var(--amber)"> Tenant nao pode atender</label>'
+   +'<input type="radio" name="gm-job-resched-by" value="tenant" style="accent-color:var(--amber)"> <span id="gm-job-resched-radio-tenant">'+gmJobsT('jobs_reschedule_tenant_radio')+'</span></label>'
    +'</div>'
-   +'<label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px">NOVA DATA DO SERVIÇO</label>'
+   +'<label id="gm-job-resched-date-label" style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px">'+gmJobsT('jobs_reschedule_date_label')+'</label>'
    +'<input type="date" id="gm-job-resched-date" value="'+currentDate+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;margin-bottom:18px">'
    +'<div style="display:flex;gap:10px;justify-content:flex-end">'
-   +'<button type="button" id="gm-job-resched-cancel" style="padding:8px 16px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>'
-   +'<button type="button" id="gm-job-resched-ok" style="padding:8px 18px;border:1px solid #1e2b3d;border-radius:6px;background:#1e2b3d;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Reagendar</button>'
+   +'<button type="button" id="gm-job-resched-cancel" style="padding:8px 16px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">'+gmJobsT('cancel')+'</button>'
+   +'<button type="button" id="gm-job-resched-ok" style="padding:8px 18px;border:1px solid #1e2b3d;border-radius:6px;background:#1e2b3d;color:#fff;font-size:12px;font-weight:600;cursor:pointer">'+gmJobsT('jobs_reschedule_confirm')+'</button>'
    +'</div>';
   overlay.appendChild(card);
   document.body.appendChild(overlay);
   document.getElementById('gm-job-resched-cancel').onclick=function(){overlay.remove();};
   document.getElementById('gm-job-resched-ok').onclick=function(){
    var newDate=document.getElementById('gm-job-resched-date').value;
-   if(!newDate){alert('Selecione uma data.');return;}
+   if(!newDate){alert(gmJobsT('jobs_select_date'));return;}
    var byEl=document.querySelector('input[name="gm-job-resched-by"]:checked');
    var rescheduleBy=(byEl&&byEl.value==='tenant')?'tenant':'vendor';
    overlay.remove();
@@ -23619,7 +23714,7 @@ function gmJobApplyReschedule(id,newDate,rescheduleBy){
    });
   }catch(eOpt){console.warn('reschedule optimistic failed',eOpt);}
   if(typeof jobsRender==='function')jobsRender();
-  if(typeof showToast==='function')showToast('Trabalho reagendado para '+newDate,'success');
+  if(typeof showToast==='function')showToast(gmJobsT('jobs_rescheduled_toast',{date:newDate}),'success');
   // Persistir no backend em background
   fetch('/api/pm/expenses/'+encodeURIComponent(id),{
    method:'PATCH',
@@ -27265,15 +27360,15 @@ window.gmAnalyticsLoad=async function(){
       if(typeof gmJobsRowIsVendorFree==='function'&&gmJobsRowIsVendorFree(r))counts.vfree++;
     });
     var chips=[
-      {key:'all',label:'Todos'},
-      {key:'PENDING',label:'Pendente'},
-      {key:'SCHEDULED',label:'Agendado'},
-      {key:'rescheduled',label:'Reagendados'},
-      {key:'vfree',label:'V Free'},
-      {key:'urgent',label:'Urgentes'},
-      {key:'FINALIZED',label:'Finalizado'},
-      {key:'PAID',label:'Pago'},
-      {key:'CANCELLED',label:'Cancelado'},
+      {key:'all',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_all'):'Todos')},
+      {key:'PENDING',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_pending'):'Pendente')},
+      {key:'SCHEDULED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_scheduled'):'Agendado')},
+      {key:'rescheduled',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_rescheduled'):'Reagendados')},
+      {key:'vfree',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_vfree'):'V Free')},
+      {key:'urgent',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_urgent'):'Urgentes')},
+      {key:'FINALIZED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_finalized'):'Finalizado')},
+      {key:'PAID',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_paid'):'Pago')},
+      {key:'CANCELLED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_cancelled'):'Cancelado')},
     ];
     var active=window.__jobsStatusFilter||'all';
     return '<div class="gmjs-chips" id="gmjs-status-chips">'+
