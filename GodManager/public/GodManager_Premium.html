@@ -3755,6 +3755,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
  <button type="button" onclick="ltpExportCsv()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
+ <button type="button" onclick="window.print()" data-i18n="export_pdf" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Exportar PDF</button>
+ <button type="button" onclick="ltpExportAudit()" data-i18n="export_audit" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Exportar Auditoria</button>
  </div>
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--strip-12" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden"><div id="page-ltp-kpis-strip" class="gm-kpis-row gm-kpis-row--strip gm-kpis-row--strip-12" style="--gm-kpi-cols-desktop:12;--gm-kpi-cols-tablet:6" data-gm-kpi-count="12">
@@ -12151,6 +12153,161 @@ async function ltpExportCsv(){
  }
 }
 window.ltpExportCsv=ltpExportCsv;
+
+function ltpAuditT(key,vars){
+ var s=(typeof t==='function')?t(key):key;
+ if(vars&&typeof vars==='object'){
+  Object.keys(vars).forEach(function(k){
+   s=String(s).replace(new RegExp('\\{\\{'+k+'\\}\\}','g'),String(vars[k]));
+  });
+ }
+ return s;
+}
+function ltpAuditEsc(s){
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function ltpAuditMoney(n){
+ return 'US$ '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function ltpAuditClientName(){
+ var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+ if(ac&&(ac.company||ac.companyName))return String(ac.company||ac.companyName);
+ var el=document.getElementById('sb-brand-name');
+ if(el&&(el.textContent||'').trim())return el.textContent.trim();
+ return (window.gmPlatformCompanyName||clientConfig.company_name||'Manager Prop LLC');
+}
+function ltpAuditClientId(){
+ var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+ if(ac&&ac.id)return String(ac.id).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,12);
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ if(u.clientId)return String(u.clientId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,12);
+ return 'MP';
+}
+function ltpAuditFilterSummary(){
+ var parts=[];
+ var search=((document.getElementById('ltp-search')||{}).value||'').trim();
+ var st=(document.getElementById('ltp-filter-occ')||{}).value||'';
+ var occ=(document.getElementById('ltp-filter-occupancy')||{}).value||'';
+ var month=(document.getElementById('ltp-filter-month')||{}).value||'';
+ if(search)parts.push('Busca: '+search);
+ if(st)parts.push('Status: '+((typeof GM_STATUS_LABEL!=='undefined'&&GM_STATUS_LABEL[st])?GM_STATUS_LABEL[st]:st));
+ if(occ){
+  var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+  parts.push('Ocupacao: '+(occLabel[occ]||occ));
+ }
+ if(month)parts.push('Mes: '+month);
+ return parts.length?parts.join(' · '):ltpAuditT('audit_filters_none');
+}
+function ltpAuditStatusPill(code){
+ var colors={
+  ALG:{bg:'#dcfce7',fg:'#2d6a4f',bd:'#2d6a4f'},
+  VG:{bg:'#fee2e2',fg:'#b03a2e',bd:'#b03a2e'},
+  ADM:{bg:'#fef3c7',fg:'#92400e',bd:'#d4a843'},
+  WTC:{bg:'#ffedd5',fg:'#c2410c',bd:'#f59e0b'},
+  INT:{bg:'#f3e8ff',fg:'#7c3aed',bd:'#a855f7'}
+ };
+ var c=colors[code]||{bg:'#f5f3ef',fg:'#555568',bd:'#d9d4cb'};
+ return '<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.08em;background:'+c.bg+';color:'+c.fg+';border:1px solid '+c.bd+'">'+ltpAuditEsc(code)+'</span>';
+}
+function ltpAuditCss(){
+ return ':root{--navy:#1a1a2e;--navy-2:#252544;--gold:#d4a843;--gold-soft:#e8c876;--cream:#f5f3ef;--cream-2:#ebe7df;--ink:#1a1a2e;--ink-2:#555568;--ink-3:#888899;--line:#d9d4cb;--line-2:#ecebe5;--bg:#ffffff;--red:#b03a2e;--green:#2d6a4f}*{box-sizing:border-box;margin:0;padding:0}html,body{background:var(--bg);color:var(--ink);font-family:\'Inter\',-apple-system,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}.num{font-family:\'IBM Plex Mono\',\'Courier New\',monospace;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}.doc{max-width:920px;margin:32px auto;background:var(--bg);padding:48px 56px 40px;border:1px solid var(--line)}header.doc-header{padding-bottom:18px;border-bottom:3px solid var(--gold);margin-bottom:28px}.doc-header .row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px}.company-block .company{font-weight:700;font-size:11px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase}.company-block .dept{font-size:12px;color:var(--ink-2);margin-top:2px;letter-spacing:.04em}.doc-title{font-size:26px;font-weight:700;line-height:1.2;color:var(--navy);margin-top:14px;letter-spacing:-.01em}.doc-title .sub{display:block;font-size:14px;font-weight:500;color:var(--ink-2);margin-top:6px;letter-spacing:.02em}.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--gold);color:var(--navy);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}.status-pill::before{content:\'\';width:6px;height:6px;background:var(--navy);border-radius:50%}.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}.meta-cell{padding:10px 14px;border-right:1px solid var(--line-2)}.meta-cell:last-child{border-right:none}.meta-cell .meta-label{font-size:10px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px}.meta-cell .meta-value{font-size:13px;color:var(--navy);font-weight:500}.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px}.kpi{background:var(--cream);border:1px solid var(--line);padding:18px 20px;position:relative;overflow:hidden}.kpi::before{content:\'\';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--gold)}.kpi.dark{background:var(--navy);border-color:var(--navy);color:#fff}.kpi .kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-2);margin-bottom:8px}.kpi.dark .kpi-label{color:var(--gold-soft)}.kpi .kpi-value{font-size:22px;font-weight:600;color:var(--navy);letter-spacing:-.01em}.kpi.dark .kpi-value{color:#fff}.kpi .kpi-foot{margin-top:6px;font-size:11px;color:var(--ink-3);letter-spacing:.02em}.kpi.dark .kpi-foot{color:var(--gold-soft)}.section-bar{background:var(--navy);color:#fff;padding:9px 16px;margin:28px 0 16px;display:flex;align-items:center;gap:12px}.section-bar .num-tag{background:var(--gold);color:var(--navy);font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 8px;font-family:\'IBM Plex Mono\',monospace}.section-bar h2{font-size:13px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;margin:0}.prose{color:var(--ink-2);line-height:1.65;font-size:13.5px;text-align:justify;padding:0 2px}.prose strong{color:var(--navy);font-weight:600}table.audit{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}table.audit thead th{background:var(--navy);color:#fff;text-align:left;padding:10px 12px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.10em;border-right:1px solid var(--navy-2)}table.audit thead th.r{text-align:right}table.audit thead th:last-child{border-right:none}table.audit tbody td{padding:11px 12px;border-bottom:1px solid var(--line-2);color:var(--ink-2)}table.audit tbody tr:nth-child(even) td{background:var(--cream)}table.audit tbody td.val{text-align:right;color:var(--navy);font-weight:500}table.audit tbody tr.total-row td{background:var(--navy);color:var(--gold);font-weight:600;border-bottom:none}table.audit tbody tr.total-row td.val{color:var(--gold);font-size:13.5px}.opinion-box{margin-top:10px;background:var(--cream);border:1px solid var(--line);padding:22px 26px;position:relative}.opinion-box::before{content:\'\';position:absolute;top:0;left:0;height:4px;width:80px;background:var(--gold)}.opinion-box .opinion-prose{color:var(--ink);font-size:13.5px;line-height:1.7;text-align:justify}.integrity-check{margin-top:22px;background:var(--cream);border-left:4px solid var(--gold);padding:14px 18px;font-size:12.5px;color:var(--ink-2);display:flex;justify-content:space-between;align-items:center;gap:14px}.integrity-check .check-label{text-transform:uppercase;letter-spacing:.10em;font-size:10.5px;font-weight:600;color:var(--navy);margin-bottom:3px}.integrity-check .check-status{font-size:11px;font-weight:700;color:var(--green);letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;border:1px solid var(--green);white-space:nowrap}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:48px;padding-top:12px}.sig-block .sig-role{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.18em;margin-bottom:22px;padding-bottom:6px;border-bottom:1px solid var(--gold)}.sig-field{margin-bottom:22px}.sig-field .sig-line{height:28px;border-bottom:1px solid var(--navy)}.sig-field .sig-label{margin-top:5px;font-size:10px;color:var(--ink-3);letter-spacing:.10em;text-transform:uppercase;font-weight:600}footer.doc-footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-size:10.5px;color:var(--ink-3);text-align:center;letter-spacing:.06em}footer.doc-footer .ref{margin-top:4px;font-family:\'IBM Plex Mono\',monospace;color:var(--ink-2);font-weight:500}@media print{body{background:#fff}.doc{margin:0;border:none;padding:24px 32px;max-width:100%}.kpi,.opinion-box,.integrity-check{break-inside:avoid}table.audit{break-inside:avoid}.signatures{break-inside:avoid}}@media(max-width:768px){.doc{padding:24px 22px;margin:12px}.meta-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr}.signatures{grid-template-columns:1fr}}';
+}
+async function ltpExportAudit(){
+ try{
+  if((typeof window.gmPropertiesBootstrap==='function')){
+   var pre=(typeof gmPropertiesFilteredUiRecords==='function')?gmPropertiesFilteredUiRecords():[];
+   if(!pre.length) await window.gmPropertiesBootstrap({silent:true});
+  }
+  var records=(typeof gmPropertiesFilteredUiRecords==='function')?gmPropertiesFilteredUiRecords():[];
+  var filtered=(typeof ltpFilterTableRecords==='function'?ltpFilterTableRecords(records):records).slice();
+  if(typeof ltpComparePropertiesByHouseNumber==='function') filtered.sort(ltpComparePropertiesByHouseNumber);
+  if(!filtered.length){
+   if(typeof showToast==='function') showToast('Nenhuma propriedade para exportar.','info');
+   return;
+  }
+  var fMonthSel=(document.getElementById('ltp-filter-month')||{}).value||'';
+  var kpiMonth=fMonthSel||new Date().toISOString().slice(0,7);
+  var tenantIdx=(typeof ltpGetTenantLeaseIndex==='function')?ltpGetTenantLeaseIndex():{};
+  var expByProp=await ltpEnsureExpByPropForExport();
+  var portKpi=(typeof gmPropertiesPortfolioKpiCounts==='function')?gmPropertiesPortfolioKpiCounts(filtered):{total:filtered.length,vagas:0,alugadas:filtered.length};
+  var totRent=filtered.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+  var occPct=portKpi.total>0?Math.round((portKpi.alugadas/portKpi.total)*100):0;
+  var company=ltpAuditClientName();
+  var today=new Date();
+  var dateStr=today.toLocaleDateString(typeof getGmLangShort==='function'&&getGmLangShort()==='en'?'en-US':'pt-BR');
+  var yyyymm=today.toISOString().slice(0,7).replace('-','');
+  var refCode='PROP-AUDIT-'+ltpAuditClientId()+'-'+yyyymm;
+  var occLabel={rented:'Alugada',vacant:'Vaga',inprogress:'Em Andamento',renovation:'Reforma'};
+  var stLabel={approved:'Aprovado',pending:'Pendente',disputed:'Disputa'};
+  var headers=[
+   '#','ENDERECO','OWNER','TENANT','QUARTOS','BANHEIROS','SQFT','MOVE IN','OCUPACAO','STATUS AUTO',
+   'RENT','DEPOSIT','RESERVA DE SEGURANCA','MGM %','TENANT PLACE','NET OWNER','EXP MES (PM)','MES','STATUS'
+  ];
+  var rowsHtml=filtered.map(function(r,i){
+   var statusAuto=(typeof gmGetEffectiveStatus==='function')?gmGetEffectiveStatus(r):'';
+   var mgmPct=typeof ltpKpiMgmPct==='function'?ltpKpiMgmPct(r):(Number(r.mgmpct||r.mgmtFeePct)||0);
+   var tp=(typeof ltPropertyTenantPlaceForMonth==='function')?ltPropertyTenantPlaceForMonth(r,kpiMonth,tenantIdx):0;
+   var reserva=Number(r.guaranteeLimit||r.guarantee)||0;
+   var cells=[
+    String(i+1),r.address||'',r.owner||'',r.tenant||'',
+    r.bedrooms!=null&&r.bedrooms!==''?String(r.bedrooms):'',
+    r.bathrooms!=null&&r.bathrooms!==''?String(r.bathrooms):'',
+    r.sqft!=null&&r.sqft!==''?String(r.sqft):'',
+    ltpCsvIsoDateYmd(r.moveIn||r.moveInDate),
+    occLabel[r.occupancy]||String(r.occupancy||''),
+    ltpAuditStatusPill(statusAuto),
+    ltpAuditMoney(r.rent),ltpAuditMoney(r.deposit),ltpAuditMoney(reserva),
+    String(Math.round(mgmPct)||''),
+    ltpAuditMoney(tp),
+    ltpAuditMoney(ltpRowNetOwnerExport(r,expByProp)),
+    ltpAuditMoney(ltpRowExpPmExport(r,expByProp)),
+    ltpCsvMonthYm(r.month),
+    stLabel[r.status]||String(r.status||'')
+   ];
+   var moneyCols={10:1,11:1,12:1,14:1,15:1,16:1};
+   return '<tr>'+cells.map(function(c,ci){
+    var cls=(moneyCols[ci]?' val num':'')+(ci===9?'':'');
+    return '<td class="'+cls.trim()+'">'+((ci===9)?c:ltpAuditEsc(c))+'</td>';
+   }).join('')+'</tr>';
+  }).join('');
+  var statusAgg={};
+  var countAlg=0,countVg=0,countOther=0;
+  filtered.forEach(function(r){
+   var st=(typeof gmGetEffectiveStatus==='function')?gmGetEffectiveStatus(r):'OTR';
+   if(!statusAgg[st])statusAgg[st]={count:0,rent:0,label:(typeof GM_STATUS_LABEL!=='undefined'&&GM_STATUS_LABEL[st])?GM_STATUS_LABEL[st]:st};
+   statusAgg[st].count++;
+   statusAgg[st].rent+=Number(r.rent)||0;
+   if(st==='ALG')countAlg++;
+   else if(st==='VG')countVg++;
+   else countOther++;
+  });
+  var summaryRows=Object.keys(statusAgg).sort().map(function(k){
+   var a=statusAgg[k];
+   return '<tr><td>'+ltpAuditEsc(a.label||k)+' ('+ltpAuditEsc(k)+')</td><td class="num val">'+a.count+'</td><td class="num val">'+ltpAuditMoney(a.rent)+'</td></tr>';
+  }).join('');
+  var summaryTotalRent=filtered.reduce(function(s,r){return s+(Number(r.rent)||0);},0);
+  summaryRows+='<tr class="total-row"><td>'+ltpAuditEsc('TOTAL')+'</td><td class="num val">'+filtered.length+'</td><td class="num val">'+ltpAuditMoney(summaryTotalRent)+'</td></tr>';
+  var integrityOk=(countAlg+countVg+countOther)===filtered.length;
+  var html='<!DOCTYPE html><html lang="'+(typeof getGmLangShort==='function'?getGmLangShort():'pt')+'"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+ltpAuditEsc(refCode)+'</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style>'+ltpAuditCss()+'</style></head><body><div class="doc"><header class="doc-header"><div class="row-top"><div class="company-block"><div class="company">'+ltpAuditEsc(company)+'</div><div class="dept">'+ltpAuditT('audit_dept')+'</div><div class="doc-title">'+ltpAuditT('audit_title')+'<span class="sub">'+ltpAuditT('audit_subtitle')+'</span></div></div><div><div class="status-pill">'+ltpAuditT('audit_status_pill')+'</div></div></div><div class="meta-grid"><div class="meta-cell"><div class="meta-label">'+ltpAuditT('audit_ref_label')+'</div><div class="meta-value num">'+ltpAuditEsc(refCode)+'</div></div><div class="meta-cell"><div class="meta-label">'+ltpAuditT('audit_date_label')+'</div><div class="meta-value num">'+ltpAuditEsc(dateStr)+'</div></div><div class="meta-cell"><div class="meta-label">'+ltpAuditT('audit_filters_label')+'</div><div class="meta-value">'+ltpAuditEsc(ltpAuditFilterSummary())+'</div></div></div></header><div class="kpi-row"><div class="kpi"><div class="kpi-label">'+ltpAuditT('audit_kpi_total')+'</div><div class="kpi-value num">'+portKpi.total+'</div></div><div class="kpi"><div class="kpi-label">'+ltpAuditT('audit_kpi_rented_vacant')+'</div><div class="kpi-value num">'+portKpi.alugadas+' / '+portKpi.vagas+'</div><div class="kpi-foot">'+occPct+'% '+ltpAuditT('audit_kpi_highlight').toLowerCase()+'</div></div><div class="kpi dark"><div class="kpi-label">'+ltpAuditT('audit_kpi_rent_total')+'</div><div class="kpi-value num">'+ltpAuditMoney(totRent)+'</div><div class="kpi-foot">'+portKpi.total+'</div></div></div><div class="section-bar"><span class="num-tag">01</span><h2>'+ltpAuditT('audit_sec1_title')+'</h2></div><p class="prose">'+ltpAuditT('audit_sec1_prose')+'</p><div class="section-bar"><span class="num-tag">02</span><h2>'+ltpAuditT('audit_sec2_title')+'</h2></div><table class="audit"><thead><tr>'+headers.map(function(h,i){return '<th'+(i>=10?' class="r"':'')+'>'+ltpAuditEsc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+rowsHtml+'</tbody></table><div class="section-bar"><span class="num-tag">03</span><h2>'+ltpAuditT('audit_sec3_title')+'</h2></div><table class="audit"><thead><tr><th>'+ltpAuditT('audit_sec3_col_status')+'</th><th class="r">'+ltpAuditT('audit_sec3_col_count')+'</th><th class="r">'+ltpAuditT('audit_sec3_col_rent')+'</th></tr></thead><tbody>'+summaryRows+'</tbody></table><div class="section-bar"><span class="num-tag">04</span><h2>'+ltpAuditT('audit_sec4_title')+'</h2></div><div class="opinion-box"><div class="opinion-prose">'+ltpAuditT('audit_sec4_prose',{total:portKpi.total,rented:portKpi.alugadas,vacant:portKpi.vagas,occPct:occPct,rentTotal:ltpAuditMoney(totRent)})+'</div></div><div class="integrity-check"><div><div class="check-label">'+ltpAuditT('audit_integrity_title')+'</div><div class="check-formula">'+ltpAuditT('audit_integrity_formula',{rented:countAlg,vacant:countVg,other:countOther,total:filtered.length})+'</div></div><div class="check-status">'+(integrityOk?ltpAuditT('audit_integrity_ok'):'CHECK')+'</div></div><div class="signatures"><div class="sig-block"><div class="sig-role">'+ltpAuditT('audit_sig_ops')+'</div><div class="sig-field"><div class="sig-line"></div><div class="sig-label">'+ltpAuditT('audit_sig_name')+'</div></div><div class="sig-field"><div class="sig-line"></div><div class="sig-label">'+ltpAuditT('audit_sig_date')+'</div></div></div><div class="sig-block"><div class="sig-role">'+ltpAuditT('audit_sig_mgmt')+'</div><div class="sig-field"><div class="sig-line"></div><div class="sig-label">'+ltpAuditT('audit_sig_name')+'</div></div><div class="sig-field"><div class="sig-line"></div><div class="sig-label">'+ltpAuditT('audit_sig_date')+'</div></div></div></div><footer class="doc-footer">'+ltpAuditT('audit_footer',{company:company})+'<div class="ref">'+ltpAuditEsc(refCode)+'</div></footer></div></body></html>';
+  var fname='GM_Properties_Auditoria_'+today.toISOString().slice(0,10)+'.html';
+  var blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.__ltpLastExportAudit={fname:fname,rowCount:filtered.length,refCode:refCode,html:html};
+  window.__ltpLastExportAuditHtml=html;
+  if(typeof showToast==='function') showToast('Auditoria exportada: '+filtered.length+' propriedade(s).','success');
+ }catch(e){
+  console.warn('ltpExportAudit',e);
+  alert('Falha ao exportar auditoria.');
+ }
+}
+window.ltpExportAudit=ltpExportAudit;
 
 // Expense Detail Modal 
 function ltCloseExpenseModal(){
