@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getCurrentAdminFromSession } from '@/lib/authServer';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +16,8 @@ function serialize(s: { id: string; key: string; value: unknown; updatedAt: Date
 }
 
 export async function GET(_req: Request, { params }: { params: { key: string } }) {
-  const admin = await getCurrentAdminFromSession();
-  if (!admin) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   try {
     const s = await prisma.appSetting.findUnique({ where: { key: params.key } });
     return NextResponse.json({ ok: true, setting: serialize(s) });
@@ -28,8 +28,10 @@ export async function GET(_req: Request, { params }: { params: { key: string } }
 }
 
 export async function PUT(req: Request, { params }: { params: { key: string } }) {
-  const admin = await getCurrentAdminFromSession();
-  if (!admin) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
+  const admin = gate.user;
+  if (!admin) return NextResponse.json({ ok: false, error: 'Nao autenticado' }, { status: 401 });
   try {
     const body = await req.json().catch(() => ({}));
     const value = body?.value;
@@ -50,8 +52,8 @@ export async function PUT(req: Request, { params }: { params: { key: string } })
 }
 
 export async function DELETE(_req: Request, { params }: { params: { key: string } }) {
-  const admin = await getCurrentAdminFromSession();
-  if (!admin) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   try {
     await prisma.appSetting.delete({ where: { key: params.key } }).catch(() => {});
     return NextResponse.json({ ok: true });

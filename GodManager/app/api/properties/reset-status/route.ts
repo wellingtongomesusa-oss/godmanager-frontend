@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getCurrentAdminFromSession } from '@/lib/authServer';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  const admin = await getCurrentAdminFromSession();
+  const gate = await requireSuperAdmin();
+  if (gate.error) {
+    return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
+  }
+  const admin = gate.user;
   if (!admin) {
-    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Nao autenticado' }, { status: 401 });
   }
   try {
     const toReset = await prisma.property.findMany({

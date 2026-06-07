@@ -7508,14 +7508,15 @@ function applyPermissions(level){
  var myCo=document.getElementById('sb-mycompany-section');
  var tbc=document.getElementById('btn-topbar-clients');
  if(tbc)tbc.style.display=(isPlatform&&lvl==='ADMIN')?'inline-flex':'none';
- if(gmAd)gmAd.style.display=(isPlatform&&lvl==='ADMIN')?'block':'none';
- var canAudit=typeof gmCanViewAuditLog==='function'&&gmCanViewAuditLog();
+ var rPermSa=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ var isSuperAdmin=rPermSa==='super_admin';
+ if(gmAd)gmAd.style.display=(isPlatform&&lvl==='ADMIN'&&isSuperAdmin)?'block':'none';
  var navAuditPlat=document.getElementById('nav-admin-audit');
  var navAuditTenant=document.getElementById('nav-audit-log-tenant');
- if(navAuditPlat)navAuditPlat.style.display=(isPlatform&&lvl==='ADMIN'&&canAudit)?'':'none';
- if(navAuditTenant)navAuditTenant.style.display=(canAudit&&!isPlatform)?'':'none';
+ if(navAuditPlat)navAuditPlat.style.display=(isPlatform&&lvl==='ADMIN'&&isSuperAdmin)?'':'none';
+ if(navAuditTenant)navAuditTenant.style.display=(isSuperAdmin&&!isPlatform)?'':'none';
  var btnHist=document.getElementById('btn-topbar-historico');
- if(btnHist)btnHist.style.display=canAudit?'inline-flex':'none';
+ if(btnHist)btnHist.style.display=isSuperAdmin?'inline-flex':'none';
  var isTenantAdmin=false;
  try{
   var uTm=window.__gmCurrentUser;
@@ -9391,9 +9392,10 @@ function nav(r){
   var rOu=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
   if(rOu!=='super_admin')r='home';
  }
- if(r==='admin-dashboard'&&window.__gmCurrentUser){
-  var rAdDash=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
-  if(rAdDash!=='super_admin')r='home';
+ var ADMIN_PLATFORM_ROUTES=['admin-dashboard','clients','backup','settings','gross-expenses','forms-received','admin-audit','org-chart'];
+ var rNavSa=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(ADMIN_PLATFORM_ROUTES.indexOf(r)>=0&&rNavSa!=='super_admin'){
+  if(r!=='settings'||!(window.__gmCurrentUser&&window.__gmCurrentUser.clientId))r='home';
  }
  if(r==='bookkeeping'){
   var rrBk=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -9409,10 +9411,6 @@ function nav(r){
    if(!window._cuMgmtClientId)r='home';
   }
  }
- if(r==='gross-expenses'&&lvl!=='ADMIN')r='home';
- if(r==='backup'&&lvl!=='ADMIN')r='home';
- if(r==='org-chart'&&lvl!=='ADMIN')r='home';
- if(r==='admin-audit'&&!(typeof gmCanViewAuditLog==='function'&&gmCanViewAuditLog()))r='home';
  if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(vb.indexOf(r)>=0)r='home';}
  if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
  if(r==='client-users'){
@@ -24046,6 +24044,11 @@ window.jobsOnJobClick=jobsOnJobClick;
 
 /* Modal fullscreen com iframe para /admin/users */
 function gmAdminUsersModalOpen(){
+ var rAu=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(rAu!=='super_admin'){
+  if(typeof showToast==='function')showToast('Acesso negado.','error');
+  return;
+ }
  var existing=document.getElementById('gm-admin-users-modal');
  if(existing){existing.style.display='flex';return;}
  var overlay=document.createElement('div');
@@ -24400,8 +24403,8 @@ async function jobsApplyRoleGateV2(){
   if(!user)return;
   var role=String(user.role||'').toLowerCase();
 
-  // Nao admin nao pode ver secção ADMIN (inteira)
-  if(role!=='admin'&&role!=='super_admin'){
+  // Secção ADMIN — apenas super_admin
+  if(role!=='super_admin'){
    var adminSec=document.querySelector('.sb-sec[data-sb-sec="admin"]');
    if(adminSec)adminSec.style.display='none';
   }

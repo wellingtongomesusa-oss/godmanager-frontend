@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
-import { canViewAuditLog } from '@/lib/auditAccess';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const user = await getCurrentUserFromSession();
-  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  if (!canViewAuditLog(user.role)) {
-    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
-  }
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
+  const user = gate.user;
+  if (!user) return NextResponse.json({ ok: false, error: 'Nao autenticado' }, { status: 401 });
 
   try {
     const scopeUser = toClientScopeUser(user);

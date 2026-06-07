@@ -164,7 +164,7 @@ export function middleware(request: NextRequest) {
     if (isAdminPlatformPage(pathname) && session.role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    if (pathname.startsWith('/admin') && session.role !== 'admin' && session.role !== 'super_admin') {
+    if (pathname.startsWith('/admin') && session.role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();

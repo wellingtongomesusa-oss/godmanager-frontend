@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import { getCurrentAdminFromSession } from '@/lib/authServer';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const admin = await getCurrentAdminFromSession();
+  const gate = await requireSuperAdmin();
+  if (gate.error) {
+    return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
+  }
+  const admin = gate.user;
   if (!admin) {
-    return NextResponse.json({ ok: false, error: 'Forbidden - admin only' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Nao autenticado' }, { status: 401 });
   }
   try {
     const scopeUser = toClientScopeUser(admin);

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import type { Prisma } from '@prisma/client';
 import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
-import { canViewAuditLog } from '@/lib/auditAccess';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,10 +95,10 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const user = await getCurrentUserFromSession();
-  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  if (!canViewAuditLog(user.role))
-    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
+  const user = gate.user;
+  if (!user) return NextResponse.json({ ok: false, error: 'Nao autenticado' }, { status: 401 });
   try {
     const url = new URL(req.url);
     const entity = url.searchParams.get('entity');
