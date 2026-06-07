@@ -124,7 +124,33 @@ function parseAuditHtml(html) {
   const hasFonts = /IBM Plex Mono/.test(html) && /Inter/.test(html);
   const company = (html.match(/<div class="company">([^<]+)<\/div>/) || [])[1] || '';
   const statusPill = /AUDITADO|AUDITED/.test(html);
-  return { dataRows, cols, hasNavy, hasFonts, company, statusPill };
+  const hasFontSize7 = /font-size:7px/.test(html);
+  const hasTableHeaderGroup = /display:table-header-group/.test(html);
+  const noTableBreakAvoid = !/table\.audit\{break-inside:avoid\}/.test(html);
+  return { dataRows, cols, hasNavy, hasFonts, company, statusPill, hasFontSize7, hasTableHeaderGroup, noTableBreakAvoid };
+}
+
+function countKpiCardsInExport(html) {
+  const row = html.match(/<div class="kpi-row">([\s\S]*?)<\/div>\s*<div class="section-bar">/);
+  if (!row) return 0;
+  return (row[1].match(/class="kpi[\s"]/g) || []).length;
+}
+
+function readLtpKpiPanel(page) {
+  return page.evaluate(() => {
+    const strip = document.getElementById('page-ltp-kpis-strip');
+    const cards = strip ? Array.from(strip.children).filter((n) => n.nodeType === 1) : [];
+    return {
+      count: cards.length,
+      samples: cards.map((card) => {
+        const label = (card.children[0]?.textContent || '').trim();
+        const valEl = card.querySelector(
+          '[id^="ltp-kpi-"]:not([id*="-delta"]):not([id*="-sub"]):not([id*="-wrap"])',
+        );
+        return { label, value: (valEl?.textContent || '').trim() };
+      }),
+    };
+  });
 }
 
 const prisma = new PrismaClient();
@@ -153,6 +179,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   await gotoProperties(page);
   const btn = await page.$('[data-i18n="export_audit"]');
+  const kpiPanel = await readLtpKpiPanel(page);
   const audit = await page.evaluate(async () => {
     if (typeof gmPropertiesBootstrap === 'function') await gmPropertiesBootstrap({ silent: true });
     if (typeof ltpRender === 'function') await ltpRender();
@@ -193,6 +220,10 @@ try {
   });
   const html = await page.evaluate(() => window.__ltpLastExportAuditHtml || '');
   const parsed = parseAuditHtml(html);
+  const exportKpiCount = countKpiCardsInExport(html);
+  const kpiSamplesInHtml = (kpiPanel.samples || []).filter(
+    (s) => s.label && s.value && html.includes(s.label) && html.includes(s.value),
+  ).length;
   const bs = captured.btnStyles || {};
   results.c1 = {
     ok:
@@ -206,14 +237,23 @@ try {
       !bs.pdfHasNavy &&
       audit &&
       audit.rowCount >= 3 &&
+      kpiPanel.count >= 1 &&
+      exportKpiCount === kpiPanel.count &&
+      kpiSamplesInHtml >= 2 &&
       parsed.cols === 19 &&
       parsed.hasNavy &&
       parsed.hasFonts &&
+      parsed.hasFontSize7 &&
+      parsed.hasTableHeaderGroup &&
+      parsed.noTableBreakAvoid &&
       parsed.statusPill &&
       errors.length === 0,
     audit,
     captured,
     parsed,
+    kpiPanel,
+    exportKpiCount,
+    kpiSamplesInHtml,
     errors,
   };
   await browser.close();
@@ -232,14 +272,39 @@ try {
       occ.value = 'VG';
       if (typeof ltpRender === 'function') await ltpRender();
     }
+    const strip = document.getElementById('page-ltp-kpis-strip');
+    const domCount = strip ? Array.from(strip.children).filter((n) => n.nodeType === 1).length : 0;
+    const totalEl = document.getElementById('ltp-kpi-total');
+    const domTotal = (totalEl?.textContent || '').trim();
     const records = gmPropertiesFilteredUiRecords();
     const filtered = ltpFilterTableRecords(records);
     const allVg = filtered.length > 0 && filtered.every((r) => gmGetEffectiveStatus(r) === 'VG');
     await ltpExportAudit();
-    return { rowCount: filtered.length, allVg, export: window.__ltpLastExportAudit };
+    const exp = window.__ltpLastExportAudit || {};
+    const exportDom = exp.kpiDom || [];
+    const exportTotal = exportDom[0]?.value || '';
+    const html = window.__ltpLastExportAuditHtml || '';
+    const exportKpiCount = (html.match(/class="kpi[\s"]/g) || []).length;
+    return {
+      rowCount: filtered.length,
+      allVg,
+      domCount,
+      exportKpiCount,
+      domTotal,
+      exportTotal,
+      kpiCountsMatch: domCount === exportKpiCount && domCount > 0,
+      totalsMatch: domTotal === exportTotal,
+      export: exp,
+    };
   });
   results.c2 = {
-    ok: vg.rowCount >= 1 && vg.allVg && vg.export && vg.export.rowCount === vg.rowCount,
+    ok:
+      vg.rowCount >= 1 &&
+      vg.allVg &&
+      vg.export &&
+      vg.export.rowCount === vg.rowCount &&
+      vg.kpiCountsMatch &&
+      vg.totalsMatch,
     vg,
   };
   await browser.close();
