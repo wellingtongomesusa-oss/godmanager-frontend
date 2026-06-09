@@ -139,30 +139,29 @@ const RENDER_HTML_PROBE_JS = `function(row){
  var labels=host.querySelectorAll('.gm-jf-label');
  var sr=host.querySelectorAll('.gm-jf-sr');
  var current=host.querySelector('.gm-jf-step.is-current');
- var caption=host.querySelector('.gm-jf-current-caption');
  return{
   ok:true,
   htmlLen:html.length,
-  hasStepperWrap:!!host.querySelector('.gm-jf-stepper-wrap'),
+  hasStepper:!!stepper,
   ringCount:rings.length,
   labelCount:labels.length,
   srCount:sr.length,
   htmlHasLabelClass:html.indexOf('gm-jf-label')>=0,
   hasCurrent:!!current,
   currentStage:current?current.getAttribute('data-stage'):null,
-  hasCaption:!!caption,
-  captionHasText:caption?String(caption.textContent||'').trim().length>0:false,
-  htmlHasCurrentRing28:html.indexOf('is-current')>=0&&html.indexOf('width:28px')>=0,
-  htmlHasDoneRing12:html.indexOf('is-done')>=0&&html.indexOf('width:12px')>=0
+  htmlHasCurrentRing36:html.indexOf('is-current')>=0&&html.indexOf('width:36px')>=0,
+  htmlHasDoneRing16:html.indexOf('is-done')>=0&&html.indexOf('width:16px')>=0,
+  htmlHasFutureRing18:html.indexOf('is-future')>=0&&html.indexOf('width:18px')>=0
  };
 }`;
 
 /** Snapshot do card renderizado no DOM (#jobs-follow-cards). */
 const DOM_CARD_SNAPSHOT_JS = `function(card){
  if(!card)return{ok:false};
+ var row=card.querySelector('.gm-jf-row');
+ var info=card.querySelector('.gm-jf-info');
  var stepper=card.querySelector('.gm-jf-stepper');
- var wrap=card.querySelector('.gm-jf-stepper-wrap');
- var caption=card.querySelector('.gm-jf-current-caption');
+ var stagelabel=card.querySelector('.gm-jf-stagelabel');
  var current=card.querySelector('.gm-jf-step.is-current');
  var doneCount=card.querySelectorAll('.gm-jf-step.is-done').length;
  var futureCount=card.querySelectorAll('.gm-jf-step.is-future').length;
@@ -194,15 +193,24 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
    for(var gi=1;gi<xs.length;gi++){if(xs[gi]<=xs[gi-1]+1)xIncreasing=false;}
    var ySpread=Math.max.apply(null,ys)-Math.min.apply(null,ys);
    var xSpread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
-   var horizontal=xIncreasing&&xSpread>=24&&ySpread<=28;
+   var horizontal=xIncreasing&&xSpread>=24&&ySpread<=40;
    var verticalStack=!xIncreasing&&ySpread>=24&&xSpread<=16;
    geometry={ok:true,stepCount:steps.length,xs:xs,ys:ys,xSpread:xSpread,ySpread:ySpread,xIncreasing:xIncreasing,horizontal:horizontal,verticalStack:verticalStack};
   }
  }
+ var rowLayout={ok:false};
+ if(row&&info&&stepper){
+  var infoR=info.getBoundingClientRect();
+  var stepR=stepper.getBoundingClientRect();
+  var infoCy=infoR.top+infoR.height/2;
+  var stepCy=stepR.top+stepR.height/2;
+  var yDelta=Math.abs(infoCy-stepCy);
+  rowLayout={ok:true,sameLine:yDelta<=40,infoCy:infoCy,stepCy:stepCy,yDelta:yDelta,hasRow:!!row,hasInfo:!!info};
+ }
  return{
-  ok:true,hasWrap:!!wrap,
-  hasCaption:!!caption&&String(caption.textContent||'').trim().length>0,
-  captionText:caption?String(caption.textContent||'').trim():'',
+  ok:true,hasRow:!!row,hasInfo:!!info,
+  hasStagelabel:!!stagelabel&&String(stagelabel.textContent||'').trim().length>0,
+  stagelabelText:stagelabel?String(stagelabel.textContent||'').trim():'',
   flexDirection:stepperStyle?stepperStyle.flexDirection:null,
   flexWrap:stepperStyle?stepperStyle.flexWrap:null,
   ringCount:card.querySelectorAll('.gm-jf-ring').length,
@@ -216,7 +224,8 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   doneCount:doneCount,futureCount:futureCount,
   visibleLabelCount:visibleLabels.length,
   visibleStepTextCount:visibleStepText.length,
-  geometry:geometry
+  geometry:geometry,
+  rowLayout:rowLayout
  };
 }`;
 
@@ -327,9 +336,9 @@ async function smokeAdmin() {
       !rp.htmlHasLabelClass &&
       rp.hasCurrent &&
       rp.currentStage === 'vendor_requested' &&
-      rp.hasCaption &&
-      rp.htmlHasCurrentRing28 &&
-      rp.htmlHasDoneRing12 &&
+      rp.htmlHasCurrentRing36 &&
+      rp.htmlHasDoneRing16 &&
+      rp.htmlHasFutureRing18 &&
       rpInt.ok &&
       rpInt.currentStage === 'closed_internal' &&
       !rpInt.htmlHasLabelClass;
@@ -349,16 +358,22 @@ async function smokeAdmin() {
       s1.visibleLabelCount === 0 &&
       s1.visibleStepTextCount === 0 &&
       s1.currentStage === 'vendor_requested' &&
-      s1.hasCaption &&
-      s1.currentRingInline.indexOf('28px') >= 0 &&
-      s1.doneRingInline.indexOf('12px') >= 0 &&
+      s1.hasRow &&
+      s1.hasInfo &&
+      s1.hasStagelabel &&
+      s1.rowLayout?.ok &&
+      s1.rowLayout.sameLine &&
+      s1.currentRingInline.indexOf('36px') >= 0 &&
+      s1.doneRingInline.indexOf('16px') >= 0 &&
       s1.currentHasHalo &&
       s2.ok &&
       s2.currentStage === 'closed_internal' &&
       s2.visibleLabelCount === 0 &&
       s2.visibleStepTextCount === 0 &&
       s2.flexDirection === 'row' &&
-      s2.hasCaption &&
+      s2.hasStagelabel &&
+      s2.rowLayout?.ok &&
+      s2.rowLayout.sameLine &&
       s2.geometry?.ok &&
       s2.geometry.horizontal &&
       !s2.geometry.verticalStack;
