@@ -839,48 +839,53 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-jobs-follow .gm-jf-value{
   font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap;justify-self:start;
  }
- /* Stepper: ROW horizontal obrigatoria (aneis maiores) */
+ /* Stepper: bolas uniformes 20px + caption + conector (ROW horizontal) */
  #page-jobs-follow .gm-jf-stepper{
   min-width:0;
   display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;
-  align-items:center !important;justify-content:flex-start !important;gap:0 !important;
-  box-sizing:border-box;padding:4px 0;overflow-x:auto;overflow-y:hidden;
+  align-items:flex-start !important;justify-content:flex-start !important;gap:0 !important;
+  box-sizing:border-box;padding-top:14px;overflow-x:auto;overflow-y:hidden;
   -webkit-overflow-scrolling:touch;scrollbar-width:thin;
  }
- #page-jobs-follow .gm-jf-stepper > .gm-jf-step,
+ #page-jobs-follow .gm-jf-stepper > .gm-jf-step{
+  flex:0 0 34px !important;display:flex !important;flex-direction:column !important;
+  align-items:center !important;width:34px !important;min-width:34px !important;max-width:34px !important;
+  position:relative;float:none !important;
+ }
  #page-jobs-follow .gm-jf-stepper > .gm-jf-connector{
-  flex:0 0 auto !important;float:none !important;width:auto !important;max-width:none !important;
+  flex:0 0 18px !important;width:18px !important;min-width:18px !important;max-width:18px !important;
+  float:none !important;
  }
- #page-jobs-follow .gm-jf-step{
-  display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;
-  align-items:center !important;justify-content:center !important;position:relative;
-  min-height:40px;
+ #page-jobs-follow .gm-jf-ball{
+  width:20px !important;height:20px !important;min-width:20px !important;max-width:20px !important;
+  min-height:20px !important;max-height:20px !important;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;line-height:1;border:2px solid var(--border);background:#fff;
+  color:var(--ink3);box-sizing:border-box;flex:0 0 20px !important;font-family:'DM Sans',sans-serif;
  }
- #page-jobs-follow .gm-jf-ring{
-  width:18px;height:18px;border-radius:50%;border:2px solid var(--border2);background:var(--paper);
-  flex:0 0 auto;flex-shrink:0;max-width:36px;min-width:16px;box-sizing:border-box;
-  transition:width .15s,height .15s,background .15s,border-color .15s,box-shadow .15s,opacity .15s;
+ #page-jobs-follow .gm-jf-step.is-done .gm-jf-ball{background:#b9b09c;border-color:#b9b09c;color:#fff}
+ #page-jobs-follow .gm-jf-step.is-current .gm-jf-ball{
+  background:var(--sand);border-color:var(--sand);color:#fff;
+  box-shadow:0 0 0 4px rgba(201,169,110,.22);
  }
- #page-jobs-follow .gm-jf-step.is-done .gm-jf-ring{
-  width:16px;height:16px;background:currentColor;border-color:currentColor;opacity:.4;
+ #page-jobs-follow .gm-jf-cap{
+  position:absolute;top:-13px;font-size:8px;font-weight:600;letter-spacing:.2px;
+  color:var(--ink3);white-space:nowrap;text-transform:uppercase;font-family:'DM Sans',sans-serif;
  }
- #page-jobs-follow .gm-jf-step.is-current .gm-jf-ring{
-  width:36px;height:36px;background:currentColor;border-color:currentColor;opacity:1;
-  box-shadow:0 0 0 5px rgba(201,169,110,.2);
- }
- #page-jobs-follow .gm-jf-step.is-future .gm-jf-ring{width:18px;height:18px;background:var(--paper);border-color:var(--border2)}
+ #page-jobs-follow .gm-jf-step.is-current .gm-jf-cap{color:var(--sand)}
  #page-jobs-follow .gm-jf-label,
- #page-jobs-follow .gm-jf-sr{
+ #page-jobs-follow .gm-jf-sr,
+ #page-jobs-follow .gm-jf-ring{
   display:none!important;visibility:hidden!important;width:0!important;height:0!important;
   overflow:hidden!important;position:absolute!important;clip:rect(0,0,0,0)!important;
   clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;padding:0!important;margin:-1px!important;
  }
  #page-jobs-follow .gm-jf-connector{
-  display:block !important;flex:1 0 24px !important;flex-shrink:0 !important;
-  min-width:16px !important;max-width:56px !important;width:auto !important;
-  height:3px !important;background:var(--border);align-self:center !important;
+  display:block !important;flex:0 0 18px !important;width:18px !important;
+  min-width:18px !important;max-width:18px !important;
+  height:2px !important;background:var(--border);margin:9px 0 0;align-self:flex-start !important;
  }
- #page-jobs-follow .gm-jf-connector.is-done{background:currentColor;opacity:.38}
+ #page-jobs-follow .gm-jf-connector.is-done{background:#b9b09c}
  #page-jobs-follow .gm-jf-stagelabel{
   font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;line-height:1.4;white-space:nowrap;justify-self:end;
  }
@@ -22045,6 +22050,17 @@ var GM_JF_STAGE_COLORS={
  followup_closed:'var(--green)',
  escalated:'var(--red)'
 };
+var GM_JF_CAP_SHORT={
+ opened:'Open',
+ maintenance_scheduled:'Maint',
+ vendor_requested:'Vendor',
+ awaiting_quote:'Quote',
+ awaiting_vendor:'Wait',
+ vendor_done:'Done',
+ followup_closed:'Closed',
+ closed_internal:'Closed',
+ escalated:'Esc'
+};
 
 function gmJobsFollowStepperPath(r){
  var hasVendor=!!jobsVendorSourceStr(r)&&!gmJobsRowIsVendorFree(r);
@@ -22063,26 +22079,22 @@ function gmJobsFollowRenderStepper(r){
  var current=gmJobFollowUpDisplayStage(r);
  var curIdx=path.indexOf(current);
  if(curIdx<0)curIdx=0;
- var html='<div class="gm-jf-stepper" role="list" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;overflow-x:auto;min-width:120px">';
+ var html='<div class="gm-jf-stepper" role="list" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:flex-start;overflow-x:auto;min-width:0;padding-top:14px">';
  path.forEach(function(st,i){
   if(i>0){
    var connDone=i<=curIdx;
-   var connCol=connDone?(GM_JF_STAGE_COLORS[path[i-1]]||'var(--amber)'):'';
-   html+='<div class="gm-jf-connector'+(connDone?' is-done':'')+'"'+(connCol?' style="color:'+connCol+'"':'')+' aria-hidden="true"></div>';
+   html+='<div class="gm-jf-connector'+(connDone?' is-done':'')+'" style="flex:0 0 18px;width:18px;min-width:18px;height:2px;margin-top:9px" aria-hidden="true"></div>';
   }
   var cls='gm-jf-step';
   if(i<curIdx)cls+=' is-done';
   else if(i===curIdx)cls+=' is-current';
   else cls+=' is-future';
-  var col=GM_JF_STAGE_COLORS[st]||'var(--ink3)';
   var lbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(st):st;
-  var ringPx=i<curIdx?16:(i===curIdx?36:18);
-  var ringSt='width:'+ringPx+'px;height:'+ringPx+'px;flex:0 0 auto;box-sizing:border-box;border-radius:50%;border:2px solid var(--border2)';
-  if(i<curIdx)ringSt+=';background:currentColor;border-color:currentColor;opacity:.4';
-  else if(i===curIdx)ringSt+=';background:currentColor;border-color:currentColor;box-shadow:0 0 0 5px rgba(201,169,110,.2)';
-  else ringSt+=';background:var(--paper)';
-  html+='<div class="'+cls+'" role="listitem" style="color:'+col+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'" aria-label="'+String(lbl).replace(/"/g,'&quot;')+'">'
-   +'<div class="gm-jf-ring" aria-hidden="true" style="'+ringSt+'"></div>'
+  var cap=GM_JF_CAP_SHORT[st]||String(st).slice(0,5);
+  var num=String(i+1);
+  html+='<div class="'+cls+'" role="listitem" style="display:flex;flex-direction:column;align-items:center;width:34px;min-width:34px;flex:0 0 34px;position:relative" data-stage="'+String(st).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'" aria-label="'+String(lbl).replace(/"/g,'&quot;')+'">'
+   +'<span class="gm-jf-cap">'+String(cap).replace(/</g,'&lt;')+'</span>'
+   +'<div class="gm-jf-ball" style="width:20px;height:20px;flex:0 0 20px;box-sizing:border-box">'+num+'</div>'
    +'</div>';
  });
  html+='</div>';

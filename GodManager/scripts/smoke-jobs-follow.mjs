@@ -135,23 +135,30 @@ const RENDER_HTML_PROBE_JS = `function(row){
  var host=document.createElement('div');
  host.innerHTML=html;
  var stepper=host.querySelector('.gm-jf-stepper');
- var rings=host.querySelectorAll('.gm-jf-ring');
+ var balls=host.querySelectorAll('.gm-jf-ball');
+ var caps=host.querySelectorAll('.gm-jf-cap');
  var labels=host.querySelectorAll('.gm-jf-label');
  var sr=host.querySelectorAll('.gm-jf-sr');
  var current=host.querySelector('.gm-jf-step.is-current');
+ var steps=[].slice.call(host.querySelectorAll('.gm-jf-step'));
+ var numsOk=steps.length>0&&steps.every(function(s,idx){
+  var b=s.querySelector('.gm-jf-ball');
+  var c=s.querySelector('.gm-jf-cap');
+  return b&&String(b.textContent||'').trim()===String(idx+1)&&c&&String(c.textContent||'').trim().length>0;
+ });
  return{
   ok:true,
   htmlLen:html.length,
   hasStepper:!!stepper,
-  ringCount:rings.length,
+  ballCount:balls.length,
+  capCount:caps.length,
   labelCount:labels.length,
   srCount:sr.length,
-  htmlHasLabelClass:html.indexOf('gm-jf-label')>=0,
+  htmlHasBallClass:html.indexOf('gm-jf-ball')>=0,
+  htmlHasCapClass:html.indexOf('gm-jf-cap')>=0,
   hasCurrent:!!current,
   currentStage:current?current.getAttribute('data-stage'):null,
-  htmlHasCurrentRing36:html.indexOf('is-current')>=0&&html.indexOf('width:36px')>=0,
-  htmlHasDoneRing16:html.indexOf('is-done')>=0&&html.indexOf('width:16px')>=0,
-  htmlHasFutureRing18:html.indexOf('is-future')>=0&&html.indexOf('width:18px')>=0
+  numsOk:numsOk
  };
 }`;
 
@@ -173,34 +180,44 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   var cs=window.getComputedStyle(el);
   return cs.display!=='none'&&cs.visibility!=='hidden'&&parseFloat(cs.width)>1&&parseFloat(cs.height)>1;
  });
- var visibleStepText=[].slice.call(stepper?stepper.querySelectorAll('.gm-jf-step *'):[]).filter(function(el){
-  if(el.classList.contains('gm-jf-ring')||el.classList.contains('gm-jf-connector'))return false;
-  var cs=window.getComputedStyle(el);
-  if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)===0)return false;
-  var t=String(el.textContent||'').trim();
-  return t.length>0;
- });
  var stepperStyle=stepper?window.getComputedStyle(stepper):null;
- var currentRing=current?current.querySelector('.gm-jf-ring'):null;
- var doneRing=card.querySelector('.gm-jf-step.is-done .gm-jf-ring');
- var ringW=function(el){return el?(el.offsetWidth||parseFloat(window.getComputedStyle(el).width)||0):0;};
- var currentRingInline=currentRing?String(currentRing.getAttribute('style')||''):'';
- var doneRingInline=doneRing?String(doneRing.getAttribute('style')||''):'';
+ var balls=stepper?[].slice.call(stepper.querySelectorAll('.gm-jf-ball')):[];
+ var ballW=function(el){return el?(el.offsetWidth||parseFloat(window.getComputedStyle(el).width)||0):0;};
+ var ballH=function(el){return el?(el.offsetHeight||parseFloat(window.getComputedStyle(el).height)||0):0;};
+ var ballsUniform={ok:false};
+ var equalGaps={ok:false};
+ if(balls.length>=2){
+  var widths=balls.map(ballW);
+  var heights=balls.map(ballH);
+  var uniform=widths.every(function(w){return Math.abs(w-20)<=1;})&&heights.every(function(h){return Math.abs(h-20)<=1;});
+  var wSpread=Math.max.apply(null,widths)-Math.min.apply(null,widths);
+  var hSpread=Math.max.apply(null,heights)-Math.min.apply(null,heights);
+  ballsUniform={ok:true,uniform:uniform,count:balls.length,widths:widths,heights:heights,wSpread:wSpread,hSpread:hSpread};
+  var ballRects=balls.map(function(b){return b.getBoundingClientRect();});
+  var ballXs=ballRects.map(function(r){return r.left+r.width/2;});
+  var gaps=[];
+  for(var bi=1;bi<ballXs.length;bi++)gaps.push(ballXs[bi]-ballXs[bi-1]);
+  var gapSpread=gaps.length?Math.max.apply(null,gaps)-Math.min.apply(null,gaps):0;
+  equalGaps={ok:true,gaps:gaps,gapSpread:gapSpread,equal:gapSpread<=4};
+ }
+ var steps=stepper?[].slice.call(stepper.querySelectorAll('.gm-jf-step')):[];
+ var numsCapsOk=steps.length>0&&steps.every(function(s,idx){
+  var b=s.querySelector('.gm-jf-ball');
+  var c=s.querySelector('.gm-jf-cap');
+  return b&&String(b.textContent||'').trim()===String(idx+1)&&c&&String(c.textContent||'').trim().length>0;
+ });
  var geometry={ok:false};
- if(stepper){
-  var steps=[].slice.call(stepper.querySelectorAll('.gm-jf-step'));
-  if(steps.length>=2){
-   var rects=steps.map(function(s){return s.getBoundingClientRect();});
-   var xs=rects.map(function(r){return r.left+r.width/2;});
-   var ys=rects.map(function(r){return r.top+r.height/2;});
-   var xIncreasing=true;
-   for(var gi=1;gi<xs.length;gi++){if(xs[gi]<=xs[gi-1]+1)xIncreasing=false;}
-   var ySpread=Math.max.apply(null,ys)-Math.min.apply(null,ys);
-   var xSpread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
-   var horizontal=xIncreasing&&xSpread>=24&&ySpread<=40;
-   var verticalStack=!xIncreasing&&ySpread>=24&&xSpread<=16;
-   geometry={ok:true,stepCount:steps.length,xs:xs,ys:ys,xSpread:xSpread,ySpread:ySpread,xIncreasing:xIncreasing,horizontal:horizontal,verticalStack:verticalStack};
-  }
+ if(stepper&&balls.length>=2){
+  var ballRectsG=balls.map(function(b){return b.getBoundingClientRect();});
+  var xs=ballRectsG.map(function(r){return r.left+r.width/2;});
+  var ys=ballRectsG.map(function(r){return r.top+r.height/2;});
+  var xIncreasing=true;
+  for(var gi=1;gi<xs.length;gi++){if(xs[gi]<=xs[gi-1]+1)xIncreasing=false;}
+  var ySpread=Math.max.apply(null,ys)-Math.min.apply(null,ys);
+  var xSpread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+  var horizontal=xIncreasing&&xSpread>=24&&ySpread<=40;
+  var verticalStack=!xIncreasing&&ySpread>=24&&xSpread<=16;
+  geometry={ok:true,stepCount:balls.length,xs:xs,ys:ys,xSpread:xSpread,ySpread:ySpread,xIncreasing:xIncreasing,horizontal:horizontal,verticalStack:verticalStack};
  }
  var rowLayout={ok:false};
  var columns={ok:false};
@@ -223,17 +240,16 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   noStagePrefix:!stagelabel||(!/current stage|etapa atual/i.test(String(stagelabel.textContent||''))),
   flexDirection:stepperStyle?stepperStyle.flexDirection:null,
   flexWrap:stepperStyle?stepperStyle.flexWrap:null,
-  ringCount:card.querySelectorAll('.gm-jf-ring').length,
+  ballCount:balls.length,
+  capCount:card.querySelectorAll('.gm-jf-cap').length,
   connectorCount:card.querySelectorAll('.gm-jf-connector').length,
   currentStage:current?current.getAttribute('data-stage'):null,
-  currentRingW:ringW(currentRing),
-  doneRingW:ringW(doneRing),
-  currentRingInline:currentRingInline,
-  doneRingInline:doneRingInline,
-  currentHasHalo:currentRingInline.indexOf('box-shadow')>=0,
+  currentBallW:balls.length&&current?ballW(current.querySelector('.gm-jf-ball')):0,
   doneCount:doneCount,futureCount:futureCount,
   visibleLabelCount:visibleLabels.length,
-  visibleStepTextCount:visibleStepText.length,
+  numsCapsOk:numsCapsOk,
+  ballsUniform:ballsUniform,
+  equalGaps:equalGaps,
   geometry:geometry,
   rowLayout:rowLayout,
   columns:columns
@@ -341,18 +357,18 @@ async function smokeAdmin() {
 
     const renderOk =
       rp.ok &&
-      rp.ringCount >= 5 &&
+      rp.ballCount >= 5 &&
+      rp.capCount >= 5 &&
       rp.labelCount === 0 &&
       rp.srCount === 0 &&
-      !rp.htmlHasLabelClass &&
+      rp.htmlHasBallClass &&
+      rp.htmlHasCapClass &&
+      rp.numsOk &&
       rp.hasCurrent &&
       rp.currentStage === 'vendor_requested' &&
-      rp.htmlHasCurrentRing36 &&
-      rp.htmlHasDoneRing16 &&
-      rp.htmlHasFutureRing18 &&
       rpInt.ok &&
       rpInt.currentStage === 'closed_internal' &&
-      !rpInt.htmlHasLabelClass;
+      rpInt.numsOk;
 
     const domOk =
       c1.pageActive &&
@@ -364,10 +380,15 @@ async function smokeAdmin() {
       s1.geometry.horizontal &&
       !s1.geometry.verticalStack &&
       s1.geometry.xIncreasing &&
-      s1.ringCount >= 5 &&
+      s1.ballCount >= 5 &&
+      s1.capCount >= 5 &&
       s1.connectorCount >= 4 &&
       s1.visibleLabelCount === 0 &&
-      s1.visibleStepTextCount === 0 &&
+      s1.numsCapsOk &&
+      s1.ballsUniform?.ok &&
+      s1.ballsUniform.uniform &&
+      s1.equalGaps?.ok &&
+      s1.equalGaps.equal &&
       s1.currentStage === 'vendor_requested' &&
       s1.hasRow &&
       s1.gridDisplay === 'grid' &&
@@ -382,13 +403,14 @@ async function smokeAdmin() {
       s1.rowLayout.fieldCount === 6 &&
       s1.columns?.ok &&
       s1.columns.xIncreasing &&
-      s1.currentRingInline.indexOf('36px') >= 0 &&
-      s1.doneRingInline.indexOf('16px') >= 0 &&
-      s1.currentHasHalo &&
       s2.ok &&
       s2.currentStage === 'closed_internal' &&
       s2.visibleLabelCount === 0 &&
-      s2.visibleStepTextCount === 0 &&
+      s2.numsCapsOk &&
+      s2.ballsUniform?.ok &&
+      s2.ballsUniform.uniform &&
+      s2.equalGaps?.ok &&
+      s2.equalGaps.equal &&
       s2.flexDirection === 'row' &&
       s2.gridDisplay === 'grid' &&
       s2.hasAddr &&
