@@ -17,8 +17,15 @@ import {
   pmExpensePropertyTenantSelect,
   type PropertyTenantPickInput,
 } from '@/lib/pmPickTenantName';
+import { FollowUpMergeError, mergeFollowUpMetadata } from '@/lib/jobFollowUp';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * PATCH followUp — ver contrato em lib/jobFollowUp.ts (metadata.followUp).
+ * Campo body.followUp faz deep-merge em metadata.followUp apenas;
+ * stage/stageAt/stageBy derivados da sessão; history append-only.
+ */
 
 function parseMetadataInput(raw: unknown): Prisma.InputJsonValue | undefined {
   if (raw === undefined) return undefined;
@@ -302,6 +309,32 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (metadataPatch !== undefined) changedFields.push('metadata');
 
+    const followUpPatch = (body as { followUp?: unknown }).followUp;
+    let metadataBase: Prisma.JsonValue | null = cur.metadata;
+    let metadataForUpdate: Prisma.InputJsonValue | undefined =
+      metadataPatch !== undefined ? metadataPatch : undefined;
+
+    if (metadataPatch !== undefined) {
+      metadataBase = metadataPatch as Prisma.JsonValue;
+    }
+
+    if (followUpPatch !== undefined) {
+      try {
+        const mergedFollowUp = mergeFollowUpMetadata(metadataBase, followUpPatch, {
+          by: user.email || user.id,
+          at: new Date().toISOString(),
+        });
+        metadataForUpdate = mergedFollowUp as Prisma.InputJsonValue;
+        metadataBase = mergedFollowUp as Prisma.JsonValue;
+        changedFields.push('followUp');
+      } catch (e) {
+        if (e instanceof FollowUpMergeError) {
+          return NextResponse.json({ ok: false, error: e.message }, { status: 400 });
+        }
+        throw e;
+      }
+    }
+
     const isReschedulePatch =
       body.serviceDate !== undefined &&
       body.status != null &&
@@ -310,15 +343,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       prevSvc !== nextSvc;
 
     let wasRescheduled = cur.wasRescheduled;
-    let metadataForUpdate: Prisma.InputJsonValue | undefined = metadataPatch;
     if (isReschedulePatch) {
       const rescheduleBy = parseRescheduleBy(body.rescheduleBy);
       wasRescheduled = true;
-      if (metadataPatch === undefined) {
-        metadataForUpdate = mergeRescheduleMetadata(cur.metadata, nextSvc, rescheduleBy);
-      }
+      const rescheduleBase =
+        metadataForUpdate !== undefined
+          ? (metadataForUpdate as Prisma.JsonValue)
+          : cur.metadata;
+      metadataForUpdate = mergeRescheduleMetadata(rescheduleBase, nextSvc, rescheduleBy);
       changedFields.push('wasRescheduled');
-      if (metadataForUpdate !== undefined) changedFields.push(`reschedules:append:${rescheduleBy}`);
+      changedFields.push(`reschedules:append:${rescheduleBy}`);
     }
 
     const row = await prisma.pmExpense.update({

@@ -21691,6 +21691,70 @@ var JOBS_FEES={vendor:120,job:200};
 window.__jobsMarkupByJobId=window.__jobsMarkupByJobId||{};
 window.__jobsMarkupCacheAt=0;
 
+var GM_JOB_FOLLOWUP_STAGES=[
+ 'opened','maintenance_scheduled','closed_internal','vendor_requested',
+ 'awaiting_quote','awaiting_vendor','vendor_done','followup_closed','escalated'
+];
+
+function gmJobFollowUpRowMetadata(r){
+ if(!r)return null;
+ var meta=r.metadata;
+ if((!meta||typeof meta!=='object'||Array.isArray(meta))&&r._apiRaw){
+  meta=r._apiRaw.metadata;
+ }
+ if(!meta||typeof meta!=='object'||Array.isArray(meta))return null;
+ return meta;
+}
+
+function gmJobFollowUpGet(r){
+ try{
+  var meta=gmJobFollowUpRowMetadata(r);
+  if(!meta)return 'opened';
+  var fu=meta.followUp;
+  if(!fu||typeof fu!=='object'||Array.isArray(fu))return 'opened';
+  var st=String(fu.stage||'').trim();
+  return GM_JOB_FOLLOWUP_STAGES.indexOf(st)>=0?st:'opened';
+ }catch(e){return 'opened';}
+}
+window.gmJobFollowUpGet=gmJobFollowUpGet;
+
+function gmJobFollowUpStageLabel(stage){
+ var s=String(stage||'opened').trim();
+ var key='followup_stage_'+s;
+ if(typeof t==='function'){
+  var lbl=t(key);
+  if(lbl&&lbl!==key)return lbl;
+ }
+ var fb={
+  opened:'Opened',maintenance_scheduled:'Maint. scheduled',closed_internal:'Closed (internal)',
+  vendor_requested:'Vendor requested',awaiting_quote:'Awaiting quote',awaiting_vendor:'Awaiting vendor',
+  vendor_done:'Vendor done',followup_closed:'Follow-up closed',escalated:'Escalated'
+ };
+ return fb[s]||s;
+}
+window.gmJobFollowUpStageLabel=gmJobFollowUpStageLabel;
+
+async function gmJobFollowUpPatch(jobId,partial){
+ if(!jobId||!partial||typeof partial!=='object')return{ok:false,error:'Parametros invalidos'};
+ try{
+  var res=await fetch('/api/pm/expenses/'+encodeURIComponent(String(jobId)),{
+   method:'PATCH',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({followUp:partial})
+  });
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data||!data.ok){
+   return{ok:false,error:(data&&data.error)||('HTTP '+res.status)};
+  }
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  return{ok:true,expense:data.expense||null};
+ }catch(e){
+  return{ok:false,error:e&&e.message?e.message:'Falha de rede'};
+ }
+}
+window.gmJobFollowUpPatch=gmJobFollowUpPatch;
+
 function jobsParseMarkupAmount(meta){
  if(meta==null)return 0;
  if(typeof meta==='object'&&meta.amount!=null)return Number(meta.amount)||0;
