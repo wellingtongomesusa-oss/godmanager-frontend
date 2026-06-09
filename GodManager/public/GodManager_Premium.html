@@ -814,13 +814,26 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   box-shadow:0 1px 3px rgba(26,26,28,.05);transition:border-color .15s,box-shadow .15s,transform .15s;
  }
  #page-jobs-follow .gm-jf-card:hover{border-color:var(--amber-bd);box-shadow:0 4px 14px rgba(201,169,110,.08);transform:translateY(-1px)}
- #page-jobs-follow .gm-jf-stepper-wrap{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+ #page-jobs-follow .gm-jf-stepper-wrap{
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
+  display:block;width:100%;overflow:visible;
+ }
+ /* Container dos aneis: ROW horizontal obrigatoria (sem column herdada) */
  #page-jobs-follow .gm-jf-stepper{
-  display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:0;
-  padding:10px 6px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;
+  align-items:center !important;justify-content:flex-start !important;gap:0 !important;
+  width:100%;min-width:0;box-sizing:border-box;
+  padding:10px 6px 6px;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;
+ }
+ #page-jobs-follow .gm-jf-stepper > .gm-jf-step,
+ #page-jobs-follow .gm-jf-stepper > .gm-jf-connector{
+  flex:0 0 auto !important;float:none !important;width:auto !important;max-width:none !important;
  }
  #page-jobs-follow .gm-jf-step{
-  flex:0 0 auto;display:flex;flex-direction:row;align-items:center;justify-content:center;position:relative;
+  display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;
+  align-items:center !important;justify-content:center !important;position:relative;
+  min-height:32px;
  }
  #page-jobs-follow .gm-jf-ring{
   width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:var(--paper);
@@ -842,8 +855,9 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;padding:0!important;margin:-1px!important;
  }
  #page-jobs-follow .gm-jf-connector{
-  flex:1 1 auto;min-width:18px;max-width:52px;height:2px;background:var(--border);
-  align-self:center;flex-shrink:1;
+  display:block !important;flex:1 0 18px !important;flex-shrink:0 !important;
+  min-width:12px !important;max-width:48px !important;width:auto !important;
+  height:2px !important;background:var(--border);align-self:center !important;
  }
  #page-jobs-follow .gm-jf-connector.is-done{background:currentColor;opacity:.38}
  #page-jobs-follow .gm-jf-current-caption{
@@ -22033,7 +22047,7 @@ function gmJobsFollowRenderStepper(r){
  if(!capPrefix||capPrefix==='jobs_follow_current_stage')capPrefix='Etapa atual';
  var curCol=GM_JF_STAGE_COLORS[current]||'var(--ink)';
  var html='<div class="gm-jf-stepper-wrap">';
- html+='<div class="gm-jf-stepper" role="list">';
+ html+='<div class="gm-jf-stepper" role="list" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;overflow-x:auto;width:100%">';
  path.forEach(function(st,i){
   if(i>0){
    var connDone=i<=curIdx;

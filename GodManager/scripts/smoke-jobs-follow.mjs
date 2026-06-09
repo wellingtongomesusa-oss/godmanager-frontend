@@ -183,6 +183,22 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
  var ringW=function(el){return el?(el.offsetWidth||parseFloat(window.getComputedStyle(el).width)||0):0;};
  var currentRingInline=currentRing?String(currentRing.getAttribute('style')||''):'';
  var doneRingInline=doneRing?String(doneRing.getAttribute('style')||''):'';
+ var geometry={ok:false};
+ if(stepper){
+  var steps=[].slice.call(stepper.querySelectorAll('.gm-jf-step'));
+  if(steps.length>=2){
+   var rects=steps.map(function(s){return s.getBoundingClientRect();});
+   var xs=rects.map(function(r){return r.left+r.width/2;});
+   var ys=rects.map(function(r){return r.top+r.height/2;});
+   var xIncreasing=true;
+   for(var gi=1;gi<xs.length;gi++){if(xs[gi]<=xs[gi-1]+1)xIncreasing=false;}
+   var ySpread=Math.max.apply(null,ys)-Math.min.apply(null,ys);
+   var xSpread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+   var horizontal=xIncreasing&&xSpread>=24&&ySpread<=28;
+   var verticalStack=!xIncreasing&&ySpread>=24&&xSpread<=16;
+   geometry={ok:true,stepCount:steps.length,xs:xs,ys:ys,xSpread:xSpread,ySpread:ySpread,xIncreasing:xIncreasing,horizontal:horizontal,verticalStack:verticalStack};
+  }
+ }
  return{
   ok:true,hasWrap:!!wrap,
   hasCaption:!!caption&&String(caption.textContent||'').trim().length>0,
@@ -199,7 +215,8 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   currentHasHalo:currentRingInline.indexOf('box-shadow')>=0,
   doneCount:doneCount,futureCount:futureCount,
   visibleLabelCount:visibleLabels.length,
-  visibleStepTextCount:visibleStepText.length
+  visibleStepTextCount:visibleStepText.length,
+  geometry:geometry
  };
 }`;
 
@@ -323,6 +340,10 @@ async function smokeAdmin() {
       s1.ok &&
       s1.flexDirection === 'row' &&
       s1.flexWrap === 'nowrap' &&
+      s1.geometry?.ok &&
+      s1.geometry.horizontal &&
+      !s1.geometry.verticalStack &&
+      s1.geometry.xIncreasing &&
       s1.ringCount >= 5 &&
       s1.connectorCount >= 4 &&
       s1.visibleLabelCount === 0 &&
@@ -337,7 +358,10 @@ async function smokeAdmin() {
       s2.visibleLabelCount === 0 &&
       s2.visibleStepTextCount === 0 &&
       s2.flexDirection === 'row' &&
-      s2.hasCaption;
+      s2.hasCaption &&
+      s2.geometry?.ok &&
+      s2.geometry.horizontal &&
+      !s2.geometry.verticalStack;
 
     const ok =
       renderOk &&
