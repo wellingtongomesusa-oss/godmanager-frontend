@@ -327,6 +327,33 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 .ltd-donut-cc{display:flex;justify-content:center;align-items:center;height:228px;position:relative;margin:4px 0}
 .ltd-donut-cc canvas{display:block}
 .ltd-donut-cc .ltd-donut-ctr{width:88px;height:88px;font-size:22px;line-height:1.1}
+/* ===== FORMS RECEIVED (page-forms-received) — dark escopado, NUNCA dentro de @media ===== */
+#page-forms-received{background:#0a0906;border-radius:14px;padding:26px 28px 34px;border:1px solid rgba(201,169,110,.16)}
+#page-forms-received .fr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+#page-forms-received .fr-title{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:#e7cb88;margin:0;letter-spacing:.4px}
+#page-forms-received .fr-sub{font-family:'DM Sans',sans-serif;font-size:12px;color:#9c937d;margin-top:3px}
+#page-forms-received .fr-sec-label{font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#9c937d;margin:18px 0 10px}
+#page-forms-received .fr-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+#page-forms-received .fr-card{background:#141009;border:1px solid rgba(201,169,110,.16);border-radius:12px;padding:14px 14px 12px;position:relative;overflow:hidden}
+#page-forms-received .fr-card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#9a7d44,#e7cb88)}
+#page-forms-received .fr-card-label{font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:#9c937d;margin-bottom:6px}
+#page-forms-received .fr-card-num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:#e7cb88;line-height:1}
+#page-forms-received .fr-donut{display:flex;justify-content:center;align-items:center;height:92px;position:relative;margin-top:8px}
+#page-forms-received .fr-donut-ctr{position:absolute;display:flex;align-items:center;justify-content:center;width:62px;height:62px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#f2ecdd;pointer-events:none;text-align:center}
+#page-forms-received .fr-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+#page-forms-received .fr-chart-card{background:#141009;border:1px solid rgba(201,169,110,.16);border-radius:12px;padding:14px 16px}
+#page-forms-received .fr-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+#page-forms-received .fr-chart-head span{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:#f2ecdd}
+#page-forms-received .fr-chart-body{height:220px;position:relative}
+#page-forms-received .fr-chart-body canvas{transition:filter .2s ease}
+#page-forms-received .fr-eye-btn{background:transparent;border:1px solid rgba(201,169,110,.3);color:#c9a96e;border-radius:8px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1}
+#page-forms-received .fr-eye-btn:hover{border-color:#c9a96e;color:#e7cb88}
+#page-forms-received .fr-eye-btn svg{display:block}
+#page-forms-received .fr-mask-overlay{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;letter-spacing:8px;color:#c9a96e;pointer-events:none}
+#page-forms-received .fr-masked .fr-chart-body canvas{filter:blur(14px)}
+#page-forms-received .fr-masked .fr-mask-overlay{display:flex}
+#page-forms-received .fr-empty-note{font-family:'DM Sans',sans-serif;font-size:11px;color:#9c937d;padding:10px 0}
+/* ===== fim FORMS RECEIVED ===== */
 .ltd-chart-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
 .ltd-chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:10px;font-family:'DM Sans',sans-serif}
 .ltd-chart-legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px;font-size:10px;color:var(--ink3)}
@@ -1551,6 +1578,48 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <!-- CONTENT -->
 <main class="content">
+
+<!-- FORMS RECEIVED (Manager Prop 2026 — dark, super_admin via ADMIN_PLATFORM_ROUTES) -->
+<div class="page" id="page-forms-received">
+ <div class="fr-head">
+  <div>
+   <h1 class="fr-title">Manager Prop 2026</h1>
+   <div class="fr-sub">Visão executiva do portfólio — contagens e evolução</div>
+  </div>
+  <button type="button" id="fr-master-hide" class="fr-eye-btn" onclick="frToggleMaster()" aria-pressed="false">
+   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+   <span id="fr-master-hide-lbl">Ocultar financeiro</span>
+  </button>
+ </div>
+ <div class="fr-sec-label">Contagens</div>
+ <div class="fr-cards" id="fr-cards">
+  <div class="fr-card"><div class="fr-card-label">Total Houses</div><div class="fr-card-num" id="fr-num-houses">—</div><div class="fr-donut"><canvas id="fr-card-houses" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-houses">—</div></div></div>
+  <div class="fr-card"><div class="fr-card-label">Total Rented</div><div class="fr-card-num" id="fr-num-rented">—</div><div class="fr-donut"><canvas id="fr-card-rented" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-rented">—</div></div></div>
+  <div class="fr-card"><div class="fr-card-label">Total Owners</div><div class="fr-card-num" id="fr-num-owners">—</div><div class="fr-donut"><canvas id="fr-card-owners" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-owners">—</div></div></div>
+  <div class="fr-card"><div class="fr-card-label">Vacant Houses</div><div class="fr-card-num" id="fr-num-vacant">—</div><div class="fr-donut"><canvas id="fr-card-vacant" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-vacant">—</div></div></div>
+  <div class="fr-card"><div class="fr-card-label">Move-out</div><div class="fr-card-num" id="fr-num-moveout">—</div><div class="fr-donut"><canvas id="fr-card-moveout" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-moveout">—</div></div></div>
+  <div class="fr-card"><div class="fr-card-label">Total Tenants</div><div class="fr-card-num" id="fr-num-tenants">—</div><div class="fr-donut"><canvas id="fr-card-tenants" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-tenants">—</div></div></div>
+ </div>
+ <div class="fr-sec-label">Evolução</div>
+ <div class="fr-charts">
+  <div class="fr-chart-card" id="fr-wrap-houses">
+   <div class="fr-chart-head"><span>Crescimento mensal de casas</span></div>
+   <div class="fr-chart-body"><canvas id="fr-chart-houses"></canvas></div>
+  </div>
+  <div class="fr-chart-card" id="fr-wrap-net">
+   <div class="fr-chart-head"><span>Ganho financeiro — Net Owner / mês</span>
+    <button type="button" class="fr-eye-btn" id="fr-eye-net" onclick="frToggleHide('net')" aria-label="Ocultar gráfico" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+   </div>
+   <div class="fr-chart-body"><canvas id="fr-chart-net"></canvas><div class="fr-mask-overlay">•••</div></div>
+  </div>
+  <div class="fr-chart-card" id="fr-wrap-portfolio">
+   <div class="fr-chart-head"><span>Evolução do portfólio</span>
+    <button type="button" class="fr-eye-btn" id="fr-eye-portfolio" onclick="frToggleHide('portfolio')" aria-label="Ocultar gráfico" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+   </div>
+   <div class="fr-chart-body"><canvas id="fr-chart-portfolio"></canvas><div class="fr-mask-overlay">•••</div></div>
+  </div>
+ </div>
+</div>
 
 <!-- HOME -->
 <div class="page active" id="page-home">
@@ -9636,6 +9705,7 @@ function nav(r){
  settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditEnterPage==='function')adminAuditEnterPage();},
+ 'forms-received':()=>{if(typeof gmFormsReceivedRender==='function')void gmFormsReceivedRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
@@ -28651,6 +28721,145 @@ window.gmAnalyticsLoad=async function(){
   console.log('[GodManager] notify-tenant loaded');
 })();
 
+</script>
+<script>
+/* ===== FORMS RECEIVED (Manager Prop 2026) — registry e render PRÓPRIOS (não tocar CI/__ltdDashCharts) ===== */
+(function(){
+'use strict';
+window.__frCharts={};
+var FR_HIDE_KEY='fr_hide_v1';
+var FR_GOLD='#e7cb88',FR_GOLD_DK='#9a7d44',FR_MUTED='#9c937d',FR_GRID='rgba(201,169,110,.12)',FR_DARK='#2a2316';
+
+function frHideState(){
+ try{var o=JSON.parse(sessionStorage.getItem(FR_HIDE_KEY)||'{}');return(o&&typeof o==='object')?o:{};}catch(e){return{};}
+}
+function frHideSave(o){try{sessionStorage.setItem(FR_HIDE_KEY,JSON.stringify(o||{}));}catch(e){}}
+function frApplyHideUi(){
+ var st=frHideState();
+ [['net','fr-wrap-net','fr-eye-net'],['portfolio','fr-wrap-portfolio','fr-eye-portfolio']].forEach(function(row){
+  var on=!!st[row[0]];
+  var wrap=document.getElementById(row[1]);
+  if(wrap)wrap.classList.toggle('fr-masked',on);
+  var eye=document.getElementById(row[2]);
+  if(eye)eye.setAttribute('aria-pressed',on?'true':'false');
+ });
+ var allOn=!!st.net&&!!st.portfolio;
+ var lbl=document.getElementById('fr-master-hide-lbl');
+ if(lbl)lbl.textContent=allOn?'Mostrar financeiro':'Ocultar financeiro';
+ var master=document.getElementById('fr-master-hide');
+ if(master)master.setAttribute('aria-pressed',allOn?'true':'false');
+}
+window.frToggleHide=function(key){
+ var st=frHideState();st[key]=!st[key];frHideSave(st);frApplyHideUi();
+};
+window.frToggleMaster=function(){
+ var st=frHideState();
+ var target=!(st.net&&st.portfolio);
+ st.net=target;st.portfolio=target;
+ frHideSave(st);frApplyHideUi();
+};
+
+function frDestroyChart(key){
+ if(window.__frCharts[key]){try{window.__frCharts[key].destroy();}catch(e){}delete window.__frCharts[key];}
+}
+function frGoldBar(ctx,area){
+ if(!area)return FR_GOLD;
+ var g=ctx.createLinearGradient(0,area.top,0,area.bottom);
+ g.addColorStop(0,FR_GOLD);g.addColorStop(1,FR_GOLD_DK);
+ return g;
+}
+function frDonut(key,canvasId,ctrId,total,parts,colors){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById(canvasId);
+ if(!cv)return;
+ frDestroyChart(key);
+ var data=(parts||[]).map(function(v){return Math.max(0.01,Number(v)||0);});
+ window.__frCharts[key]=new Chart(cv,{type:'doughnut',data:{labels:[],datasets:[{data:data,backgroundColor:colors,borderWidth:0,hoverOffset:3}]},options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{duration:350}}});
+ var ctr=document.getElementById(ctrId);
+ if(ctr)ctr.textContent=String(total);
+}
+function frBarChart(key,canvasId,labels,values,opts){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById(canvasId);
+ if(!cv)return;
+ frDestroyChart(key);
+ var money=!!(opts&&opts.money);
+ var fmt=(typeof ltFmt==='function')?ltFmt:function(n){return '$'+Number(n||0).toFixed(2);};
+ window.__frCharts[key]=new Chart(cv.getContext('2d'),{
+  type:'bar',
+  data:{labels:labels,datasets:[{data:values,backgroundColor:function(c){return frGoldBar(c.chart.ctx,c.chart.chartArea);},borderRadius:4,borderWidth:0}]},
+  options:{
+   responsive:true,maintainAspectRatio:false,animation:{duration:350},
+   plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return money?fmt(c.parsed.y):(' '+String(c.parsed.y));}}}},
+   scales:{
+    x:{grid:{display:false},ticks:{color:FR_MUTED,font:{family:'DM Sans',size:10}}},
+    y:{beginAtZero:true,grid:{color:FR_GRID},ticks:{color:FR_MUTED,font:{family:'JetBrains Mono',size:10},precision:0,callback:function(v){return money?fmt(v):v;}}}
+   }
+  }
+ });
+}
+async function frFetchTenants(){
+ try{
+  var r=await fetch('/api/tenants',{credentials:'include',cache:'no-store'});
+  if(!r.ok)return [];
+  var j=await r.json().catch(function(){return null;});
+  var arr=(j&&(j.tenants||j.items||j.data))||[];
+  return Array.isArray(arr)?arr:[];
+ }catch(e){return [];}
+}
+window.gmFormsReceivedRender=async function(){
+ /* refresh do cache de properties — mesma estratégia das outras páginas */
+ try{
+  if(typeof gmPropertiesFetchFromApi==='function'){
+   var fresh=await gmPropertiesFetchFromApi();
+   if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function')gmPropertiesSave(fresh);
+  }
+ }catch(e){console.warn('forms-received properties sync',e);}
+ var records=(typeof gmPropertiesFilteredUiRecords==='function')?gmPropertiesFilteredUiRecords():[];
+ var kpi=(typeof gmPropertiesPortfolioKpiCounts==='function')?gmPropertiesPortfolioKpiCounts(records):{total:records.length,vagas:0,alugadas:records.length};
+ var ownersSet={};
+ records.forEach(function(r){var o=String((r&&(r.owner||r.ownerName))||'').trim().toLowerCase();if(o)ownersSet[o]=1;});
+ var owners=Object.keys(ownersSet).length;
+ var tenants=await frFetchTenants();
+ var totalTenants=tenants.length;
+ var moveOut=tenants.filter(function(t){return String((t&&t.status)||'').toLowerCase()==='notice';}).length;
+ var activeTen=tenants.filter(function(t){return String((t&&t.status)||'').toLowerCase()==='active';}).length;
+ [['fr-num-houses',kpi.total],['fr-num-rented',kpi.alugadas],['fr-num-owners',owners],['fr-num-vacant',kpi.vagas],['fr-num-moveout',moveOut],['fr-num-tenants',totalTenants]].forEach(function(p){
+  var el=document.getElementById(p[0]);if(el)el.textContent=String(p[1]);
+ });
+ frDonut('cardHouses','fr-card-houses','fr-ctr-houses',kpi.total,[kpi.alugadas,kpi.vagas],[FR_GOLD,FR_DARK]);
+ frDonut('cardRented','fr-card-rented','fr-ctr-rented',kpi.alugadas,[kpi.alugadas,kpi.vagas],[FR_GOLD,FR_DARK]);
+ frDonut('cardOwners','fr-card-owners','fr-ctr-owners',owners,[owners,Math.max(0,kpi.total-owners)],[FR_GOLD,FR_DARK]);
+ frDonut('cardVacant','fr-card-vacant','fr-ctr-vacant',kpi.vagas,[kpi.vagas,kpi.alugadas],[FR_GOLD,FR_DARK]);
+ frDonut('cardMoveout','fr-card-moveout','fr-ctr-moveout',moveOut,[moveOut,Math.max(0,totalTenants-moveOut)],[FR_GOLD,FR_DARK]);
+ frDonut('cardTenants','fr-card-tenants','fr-ctr-tenants',totalTenants,[activeTen,Math.max(0,totalTenants-activeTen)],[FR_GOLD,FR_DARK]);
+ /* Evolução — séries reutilizadas do Dashboard (fetch puro), render próprio */
+ try{
+  var t6=(typeof gmDashFetchPortfolioTimeline==='function')?await gmDashFetchPortfolioTimeline(6):null;
+  if(t6&&Array.isArray(t6.months)&&t6.months.length){
+   frBarChart('houses','fr-chart-houses',
+    t6.months.map(function(m){return(typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(m.ym):m.ym;}),
+    t6.months.map(function(m){return Number(m.count)||0;}),{money:false});
+  }
+ }catch(e1){console.warn('fr houses chart',e1);}
+ try{
+  if(typeof gmDashLastNMonths==='function'&&typeof gmDashNetOwnerForMonth==='function'){
+   var months=gmDashLastNMonths(6);
+   var nets=await Promise.all(months.map(function(ym){return gmDashNetOwnerForMonth(records,ym).catch(function(){return 0;});}));
+   frBarChart('net','fr-chart-net',months.map(function(ym){return(typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(ym):ym;}),nets,{money:true});
+  }
+ }catch(e2){console.warn('fr net chart',e2);}
+ try{
+  var t12=(typeof gmDashFetchPortfolioTimeline==='function')?await gmDashFetchPortfolioTimeline(12):null;
+  if(t12&&Array.isArray(t12.months)&&t12.months.length){
+   frBarChart('portfolio','fr-chart-portfolio',
+    t12.months.map(function(m){return(typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(m.ym):m.ym;}),
+    t12.months.map(function(m){return Number(m.count)||0;}),{money:false});
+  }
+ }catch(e3){console.warn('fr portfolio chart',e3);}
+ frApplyHideUi();
+};
+})();
 </script>
 <footer style="border-top:1px solid var(--border);background:var(--sand);padding:16px 20px;margin-top:40px;font-size:12px;color:var(--ink3);text-align:center">
   <div>© 2026 Godroox LLC. All rights reserved. GodManager™ is a trademark of Godroox LLC.</div>
