@@ -757,7 +757,73 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 .page ::-webkit-scrollbar-track{background:rgba(226,221,212,.35);border-radius:8px;margin:2px}
 .page ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(196,123,40,.55),rgba(212,146,62,.7));border-radius:8px;border:2px solid rgba(248,246,242,0);background-clip:padding-box;min-height:30px;min-width:30px;transition:background .18s ease}
 .page ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(196,123,40,.85),rgba(212,146,62,.95));background-clip:padding-box;border:2px solid rgba(248,246,242,0)}
-.page ::-webkit-scrollbar-corner{background:transparent}
+ .page ::-webkit-scrollbar-corner{background:transparent}
+
+/* Jobs Follow — tabela grid alinhada (TOP-LEVEL — não dentro de @media) */
+#page-jobs-follow .gm-jf-panel-scroll{
+ overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table{
+ display:grid;
+ grid-template-columns:minmax(170px,1.3fr) 52px 90px 66px repeat(7,40px) 118px;
+ align-items:center;
+ background:var(--paper);border:1px solid var(--border);border-radius:12px;
+ min-width:max-content;box-sizing:border-box;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-th,
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td{
+ box-sizing:border-box;border-bottom:1px solid var(--border);
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-th{
+ font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+ color:var(--ink3);font-family:'DM Sans',sans-serif;padding:10px 8px;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-th-addr{
+ font-size:9px;padding:10px 14px;text-align:left;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-th-stage{
+ text-align:center;padding:10px 2px;white-space:nowrap;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-th-status{
+ text-align:right;padding:10px 14px;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td{
+ padding:10px 8px;display:flex;align-items:center;min-height:44px;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-addr{
+ font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--ink);
+ padding:10px 14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-badge{
+ font-size:10px;font-weight:700;color:var(--ink2);background:var(--sand);
+ padding:3px 9px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;
+ justify-content:center;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-date{
+ font-size:12px;color:var(--ink3);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap;
+ justify-content:flex-start;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-value{
+ font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap;
+ justify-content:flex-start;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-stage{
+ justify-content:center;position:relative;padding:10px 0;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-stage:not(.gm-jf-col-last)::after{
+ content:"";position:absolute;left:calc(50% + 9px);right:0;top:50%;height:2px;
+ transform:translateY(-50%);background:var(--border);pointer-events:none;z-index:0;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-stage.is-conn-done:not(.gm-jf-col-last)::after{
+ background:#b9b09c;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-status{
+ font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;line-height:1.4;
+ white-space:nowrap;justify-content:flex-end;padding:10px 14px;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-last-row{
+ border-bottom:none !important;
+}
 
 /* Jobs: botão de filtros visível apenas em mobile (bloco abaixo em @media) */
 #page-jobs .jobs-filters-toggle{display:none}
@@ -807,93 +873,6 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  }
  #page-jobs .jobs-filters-block{display:none}
  #page-jobs .jobs-filters-block.is-open{display:block}
-
- /* Jobs Follow — grid 6 colunas por job (read-only) */
- #page-jobs-follow #jobs-follow-cards{
-  display:flex;flex-direction:column;gap:0;
-  background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;
- }
- #page-jobs-follow .gm-jf-card{
-  padding:0;background:transparent;border:none;border-radius:0;box-shadow:none;
- }
- #page-jobs-follow .gm-jf-card:hover{border-color:transparent;box-shadow:none;transform:none}
- #page-jobs-follow .gm-jf-row{
-  display:grid !important;
-  grid-template-columns:minmax(180px,1.2fr) max-content max-content max-content minmax(140px,2fr) max-content !important;
-  align-items:center;column-gap:16px;
-  padding:12px 16px;border-bottom:1px solid var(--border);
-  width:100%;box-sizing:border-box;
- }
- #page-jobs-follow .gm-jf-card:last-child .gm-jf-row{border-bottom:none}
- #page-jobs-follow .gm-jf-addr{
-  font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--ink);
-  min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
- }
- #page-jobs-follow .gm-jf-badge{
-  font-size:10px;font-weight:700;color:var(--ink2);background:var(--sand);
-  padding:3px 9px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;justify-self:start;
- }
- #page-jobs-follow .gm-jf-date{
-  font-size:12px;color:var(--ink3);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap;justify-self:start;
- }
- #page-jobs-follow .gm-jf-value{
-  font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap;justify-self:start;
- }
- /* Stepper: bolas uniformes 20px + caption + conector (ROW horizontal) */
- #page-jobs-follow .gm-jf-stepper{
-  min-width:0;
-  display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;
-  align-items:flex-start !important;justify-content:flex-start !important;gap:0 !important;
-  box-sizing:border-box;padding-top:14px;overflow-x:auto;overflow-y:hidden;
-  -webkit-overflow-scrolling:touch;scrollbar-width:thin;
- }
- #page-jobs-follow .gm-jf-stepper > .gm-jf-step{
-  flex:0 0 34px !important;display:flex !important;flex-direction:column !important;
-  align-items:center !important;width:34px !important;min-width:34px !important;max-width:34px !important;
-  position:relative;float:none !important;
- }
- #page-jobs-follow .gm-jf-stepper > .gm-jf-connector{
-  flex:0 0 18px !important;width:18px !important;min-width:18px !important;max-width:18px !important;
-  float:none !important;
- }
- #page-jobs-follow .gm-jf-ball{
-  width:20px !important;height:20px !important;min-width:20px !important;max-width:20px !important;
-  min-height:20px !important;max-height:20px !important;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:700;line-height:1;border:2px solid var(--border);background:#fff;
-  color:var(--ink3);box-sizing:border-box;flex:0 0 20px !important;font-family:'DM Sans',sans-serif;
- }
- #page-jobs-follow .gm-jf-step.is-done .gm-jf-ball{background:#b9b09c;border-color:#b9b09c;color:#fff}
- #page-jobs-follow .gm-jf-step.is-current .gm-jf-ball{
-  background:var(--sand);border-color:var(--sand);color:#fff;
-  box-shadow:0 0 0 4px rgba(201,169,110,.22);
- }
- #page-jobs-follow .gm-jf-cap{
-  position:absolute;top:-13px;font-size:8px;font-weight:600;letter-spacing:.2px;
-  color:var(--ink3);white-space:nowrap;text-transform:uppercase;font-family:'DM Sans',sans-serif;
- }
- #page-jobs-follow .gm-jf-step.is-current .gm-jf-cap{color:var(--sand)}
- #page-jobs-follow .gm-jf-label,
- #page-jobs-follow .gm-jf-sr,
- #page-jobs-follow .gm-jf-ring{
-  display:none!important;visibility:hidden!important;width:0!important;height:0!important;
-  overflow:hidden!important;position:absolute!important;clip:rect(0,0,0,0)!important;
-  clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;padding:0!important;margin:-1px!important;
- }
- #page-jobs-follow .gm-jf-connector{
-  display:block !important;flex:0 0 18px !important;width:18px !important;
-  min-width:18px !important;max-width:18px !important;
-  height:2px !important;background:var(--border);margin:9px 0 0;align-self:flex-start !important;
- }
- #page-jobs-follow .gm-jf-connector.is-done{background:#b9b09c}
- #page-jobs-follow .gm-jf-stagelabel{
-  font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;line-height:1.4;white-space:nowrap;justify-self:end;
- }
- @media (max-width:768px){
-  #page-jobs-follow .gm-jf-row{grid-template-columns:1fr;row-gap:6px}
-  #page-jobs-follow .gm-jf-stepper{overflow-x:auto}
-  #page-jobs-follow .gm-jf-stagelabel{justify-self:start}
- }
 
  /* F1: Tabela -> Cards verticais */
  #page-jobs .lt-jobs-table thead{display:none}
@@ -3242,7 +3221,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div style="padding:24px 32px 32px">
   <div id="jobs-follow-count" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:12px" data-i18n="jobs_follow_count_label">Jobs</div>
-  <div id="jobs-follow-cards"></div>
+  <div class="gm-jf-panel-scroll">
+   <div id="jobs-follow-cards"></div>
+  </div>
   <div id="jobs-follow-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:13px" data-i18n="jobs_follow_empty">Nenhum job encontrado com os filtros actuais.</div>
  </div>
 </div>
@@ -22068,54 +22049,94 @@ function gmJobsFollowStepperPath(r){
  return ['opened','maintenance_scheduled','closed_internal','followup_closed'];
 }
 
+var GM_JF_CANONICAL_COLS=['opened','maintenance_scheduled','vendor_requested','awaiting_quote','awaiting_vendor','vendor_done','followup_closed'];
+var GM_JF_CANONICAL_HDR=['Open','Maint','Vendor','Quote','Wait','Done','Closed'];
+
 function gmJobsFollowRowAddress(r){
  var meta=gmJobFollowUpRowMetadata(r);
  if(meta&&meta.houseLabel)return String(meta.houseLabel).trim();
  return (typeof jobsResolveAddress==='function')?jobsResolveAddress(r):'\u2014';
 }
 
-function gmJobsFollowRenderStepper(r){
+function gmJobsFollowIsVendorPath(r){
+ var path=gmJobsFollowStepperPath(r);
+ return path.indexOf('vendor_requested')>=0;
+}
+
+function gmJobsFollowCellState(r,colStage){
  var path=gmJobsFollowStepperPath(r);
  var current=gmJobFollowUpDisplayStage(r);
  var curIdx=path.indexOf(current);
  if(curIdx<0)curIdx=0;
- var stepperSt='display:flex !important;flex-direction:row !important;align-items:flex-start !important;flex-wrap:nowrap !important;overflow-x:auto;min-width:0;padding-top:14px;box-sizing:border-box';
- var html='<div class="gm-jf-stepper" role="list" style="'+stepperSt+'">';
- path.forEach(function(st,i){
-  if(i>0){
-   var connDone=i<=curIdx;
-   var connSt='flex:0 0 18px !important;width:18px !important;min-width:18px !important;height:2px !important;margin:9px 0 0 !important;align-self:flex-start !important;display:block !important;box-sizing:border-box;background:'+(connDone?'#b9b09c':'var(--border)');
-   html+='<div class="gm-jf-connector'+(connDone?' is-done':'')+'" style="'+connSt+'" aria-hidden="true"></div>';
-  }
-  var cls='gm-jf-step';
-  var isDone=i<curIdx;
-  var isCurrent=i===curIdx;
-  if(isDone)cls+=' is-done';
-  else if(isCurrent)cls+=' is-current';
-  else cls+=' is-future';
-  var lbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(st):st;
-  var cap=GM_JF_CAP_SHORT[st]||String(st).slice(0,5);
-  var num=String(i+1);
-  var stepSt='display:flex !important;flex-direction:column !important;align-items:center !important;width:34px !important;min-width:34px !important;max-width:34px !important;flex:0 0 34px !important;position:relative;box-sizing:border-box';
-  var capSt='position:absolute;top:-13px;font-size:8px;font-weight:600;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap;font-family:\'DM Sans\',sans-serif;color:'+(isCurrent?'#c9a96e !important':'var(--ink3)');
-  var ballSt='width:20px !important;height:20px !important;min-width:20px !important;max-width:20px !important;flex:0 0 20px !important;box-sizing:border-box;border-radius:50% !important;display:flex !important;align-items:center !important;justify-content:center !important;font-size:9px;font-weight:700;line-height:1;font-family:\'DM Sans\',sans-serif;';
-  if(isDone){
-   ballSt+='background:#b9b09c !important;border:2px solid #b9b09c !important;color:#fff !important';
-  }else if(isCurrent){
-   ballSt+='background:#c9a96e !important;border:2px solid #c9a96e !important;color:#fff !important;box-shadow:0 0 0 4px rgba(201,169,110,.22) !important';
-  }else{
-   ballSt+='background:#fff !important;border:2px solid var(--border) !important;color:var(--ink3) !important';
-  }
-  html+='<div class="'+cls+'" role="listitem" style="'+stepSt+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'" aria-label="'+String(lbl).replace(/"/g,'&quot;')+'">'
-   +'<span class="gm-jf-cap" style="'+capSt+'">'+String(cap).replace(/</g,'&lt;')+'</span>'
-   +'<div class="gm-jf-ball" style="'+ballSt+'">'+num+'</div>'
-   +'</div>';
+ var isVendor=gmJobsFollowIsVendorPath(r);
+ if(isVendor){
+  var pathIdx=path.indexOf(colStage);
+  if(pathIdx<0)return{type:'skip',num:'',connectorDone:false};
+  var st=pathIdx<curIdx?'done':(pathIdx===curIdx?'current':'future');
+  return{type:st,num:String(pathIdx+1),stage:colStage,connectorDone:pathIdx<curIdx};
+ }
+ if(colStage==='vendor_requested'||colStage==='awaiting_quote'||colStage==='awaiting_vendor'||colStage==='vendor_done'){
+  return{type:'skip',num:'',connectorDone:false};
+ }
+ if(colStage==='opened'){
+  var pi0=0;
+  var st0=pi0<curIdx?'done':(pi0===curIdx?'current':'future');
+  return{type:st0,num:'1',stage:'opened',connectorDone:pi0<curIdx};
+ }
+ if(colStage==='maintenance_scheduled'){
+  var pi1=1;
+  var st1=pi1<curIdx?'done':(pi1===curIdx?'current':'future');
+  return{type:st1,num:'2',stage:'maintenance_scheduled',connectorDone:pi1<curIdx};
+ }
+ if(colStage==='followup_closed'){
+  if(current==='closed_internal')return{type:'current',num:'3',stage:'closed_internal',connectorDone:false};
+  if(current==='followup_closed')return{type:'done',num:'4',stage:'followup_closed',connectorDone:true};
+  return{type:'future',num:'',stage:'followup_closed',connectorDone:false};
+ }
+ return{type:'skip',num:'',connectorDone:false};
+}
+
+function gmJobsFollowBallInline(state){
+ var base='width:18px !important;height:18px !important;min-width:18px !important;max-width:18px !important;box-sizing:border-box;border-radius:50% !important;display:flex !important;align-items:center !important;justify-content:center !important;font-size:8px;font-weight:700;line-height:1;font-family:\'DM Sans\',sans-serif;position:relative;z-index:1;';
+ if(state.type==='skip'){
+  return '<div class="gm-jf-ball is-skip" style="'+base+'background:#fff !important;border:2px dashed var(--border) !important;color:transparent !important"></div>';
+ }
+ if(state.type==='done'){
+  return '<div class="gm-jf-ball is-done" style="'+base+'background:#b9b09c !important;border:2px solid #b9b09c !important;color:#fff !important">'+String(state.num||'')+'</div>';
+ }
+ if(state.type==='current'){
+  return '<div class="gm-jf-ball is-current" style="'+base+'background:#c9a96e !important;border:2px solid #c9a96e !important;color:#fff !important;box-shadow:0 0 0 4px rgba(201,169,110,.22) !important">'+String(state.num||'')+'</div>';
+ }
+ return '<div class="gm-jf-ball is-future" style="'+base+'background:#fff !important;border:2px solid var(--border) !important;color:var(--ink3) !important">'+String(state.num||'')+'</div>';
+}
+
+function gmJobsFollowRenderStageCell(r,colStage,colIdx,isLast,isLastRow){
+ var state=gmJobsFollowCellState(r,colStage);
+ var connCls=state.connectorDone?' is-conn-done':'';
+ var lastCls=isLast?' gm-jf-col-last':'';
+ var rowCls=isLastRow?' gm-jf-last-row':'';
+ var lbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(state.stage||colStage):colStage;
+ return '<div class="gm-jf-td gm-jf-td-stage'+connCls+lastCls+rowCls+'" data-stage="'+String(colStage).replace(/"/g,'&quot;')+'" data-ball-state="'+String(state.type).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'">'+gmJobsFollowBallInline(state)+'</div>';
+}
+
+function gmJobsFollowRenderHeader(){
+ var propLbl=(typeof t==='function')?t('jobs_property_label'):'Propriedade';
+ if(!propLbl||propLbl==='jobs_property_label')propLbl='Propriedade';
+ var statusLbl=(typeof t==='function')?t('jobs_col_status'):'Status';
+ if(!statusLbl||statusLbl==='jobs_col_status')statusLbl='Status';
+ var html='<div class="gm-jf-thead" style="display:contents" role="row">'
+  +'<div class="gm-jf-th gm-jf-th-addr" role="columnheader">'+String(propLbl).replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-th gm-jf-th-badge" role="columnheader" aria-hidden="true"></div>'
+  +'<div class="gm-jf-th gm-jf-th-date" role="columnheader" aria-hidden="true"></div>'
+  +'<div class="gm-jf-th gm-jf-th-value" role="columnheader" aria-hidden="true"></div>';
+ GM_JF_CANONICAL_HDR.forEach(function(lbl,i){
+  html+='<div class="gm-jf-th gm-jf-th-stage" role="columnheader" data-col-stage="'+String(GM_JF_CANONICAL_COLS[i]).replace(/"/g,'&quot;')+'">'+String(lbl).replace(/</g,'&lt;')+'</div>';
  });
- html+='</div>';
+ html+='<div class="gm-jf-th gm-jf-th-status" role="columnheader">'+String(statusLbl).replace(/</g,'&lt;')+'</div></div>';
  return html;
 }
 
-function gmJobsFollowRenderCard(r){
+function gmJobsFollowRenderJobRow(r,isLastRow){
  var addr=gmJobsFollowRowAddress(r);
  var vendor=jobsVendorSourceStr(r);
  var isVFree=(typeof gmJobsRowIsVendorFree==='function')&&gmJobsRowIsVendorFree(r);
@@ -22127,16 +22148,18 @@ function gmJobsFollowRenderCard(r){
  var currentLbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(stage):stage;
  var curCol=GM_JF_STAGE_COLORS[stage]||'var(--ink)';
  var addrEsc=String(addr).replace(/</g,'&lt;').replace(/"/g,'&quot;');
- var rowGridSt='display:grid;grid-template-columns:minmax(180px,1.2fr) max-content max-content max-content minmax(140px,2fr) max-content;align-items:center;column-gap:16px;width:100%';
- return '<div class="gm-jf-card" data-job-id="'+String(r.id||'').replace(/"/g,'&quot;')+'" data-follow-stage="'+String(stage).replace(/"/g,'&quot;')+'">'
-  +'<div class="gm-jf-row" style="'+rowGridSt+'">'
-  +'<div class="gm-jf-addr" title="'+addrEsc+'">'+String(addr).replace(/</g,'&lt;')+'</div>'
-  +'<div class="gm-jf-badge">'+String(badgeLbl||'').replace(/</g,'&lt;')+'</div>'
-  +'<div class="gm-jf-date">'+String(dt||'').replace(/</g,'&lt;')+'</div>'
-  +'<div class="gm-jf-value">'+valStr+'</div>'
-  +gmJobsFollowRenderStepper(r)
-  +'<div class="gm-jf-stagelabel" style="color:'+curCol+'">'+String(currentLbl).replace(/</g,'&lt;')+'</div>'
-  +'</div></div>';
+ var idAttr=String(r.id||'').replace(/"/g,'&quot;');
+ var rowCls=isLastRow?' gm-jf-last-row':'';
+ var html='<div class="gm-jf-row" data-job-id="'+idAttr+'" data-follow-stage="'+String(stage).replace(/"/g,'&quot;')+'" style="display:contents" role="row">'
+  +'<div class="gm-jf-td gm-jf-td-addr'+rowCls+'" title="'+addrEsc+'">'+String(addr).replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-td gm-jf-td-badge'+rowCls+'">'+String(badgeLbl||'').replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-td gm-jf-td-date'+rowCls+'">'+String(dt||'').replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-td gm-jf-td-value'+rowCls+'">'+valStr+'</div>';
+ GM_JF_CANONICAL_COLS.forEach(function(colStage,i){
+  html+=gmJobsFollowRenderStageCell(r,colStage,i,i===GM_JF_CANONICAL_COLS.length-1,isLastRow);
+ });
+ html+='<div class="gm-jf-td gm-jf-td-status'+rowCls+'" style="color:'+curCol+'">'+String(currentLbl).replace(/</g,'&lt;')+'</div></div>';
+ return html;
 }
 
 function gmJobsFollowSyncDateFilterUi(){
@@ -22198,12 +22221,20 @@ function gmJobsFollowRender(){
   countEl.textContent=cntLbl+': '+rows.length;
  }
  if(!rows.length){
+  host.className='';
+  host.removeAttribute('style');
   host.innerHTML='';
   if(emptyEl)emptyEl.style.display='block';
   return;
  }
  if(emptyEl)emptyEl.style.display='none';
- host.innerHTML=rows.map(gmJobsFollowRenderCard).join('');
+ host.className='gm-jf-table';
+ host.setAttribute('style','display:grid;grid-template-columns:minmax(170px,1.3fr) 52px 90px 66px repeat(7,40px) 118px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:12px;min-width:max-content;box-sizing:border-box');
+ var bodyHtml=gmJobsFollowRenderHeader();
+ for(var ri=0;ri<rows.length;ri++){
+  bodyHtml+=gmJobsFollowRenderJobRow(rows[ri],ri===rows.length-1);
+ }
+ host.innerHTML=bodyHtml;
 }
 
 async function gmJobsFollowInit(){

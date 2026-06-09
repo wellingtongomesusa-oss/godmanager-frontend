@@ -1,8 +1,7 @@
 /**
- * Smoke — Jobs Follow (read-only acompanhamento + horizontal ring stepper).
- * Valida DOM REAL: gmJobsFollowRenderStepper HTML + gmJobsFollowRender no #page-jobs-follow.
- * C1: vendor_requested — aneis horizontais, etapa atual destacada, sem lista vertical
- * C2: closed_internal — caminho interno, etapa atual em closed_internal
+ * Smoke — Jobs Follow (read-only tabela grid alinhada + bolas por coluna).
+ * C1: vendor_requested — colunas alinhadas, header único, current dourada
+ * C2: closed_internal — skip tracejado nas colunas vendor, closed current
  * C3: read-only, filtros, Jobs page intacta
  */
 import { chromium } from 'playwright';
@@ -128,100 +127,53 @@ function injectMocks(page) {
   });
 }
 
-/** Inspeciona HTML gerado por gmJobsFollowRenderStepper (render real, nao mock estrutural). */
-const RENDER_HTML_PROBE_JS = `function(row){
- if(!row||typeof gmJobsFollowRenderStepper!=='function')return{ok:false,reason:'gmJobsFollowRenderStepper missing'};
- var html=gmJobsFollowRenderStepper(row);
- var host=document.createElement('div');
- host.innerHTML=html;
- var stepper=host.querySelector('.gm-jf-stepper');
- var balls=host.querySelectorAll('.gm-jf-ball');
- var caps=host.querySelectorAll('.gm-jf-cap');
- var labels=host.querySelectorAll('.gm-jf-label');
- var sr=host.querySelectorAll('.gm-jf-sr');
- var current=host.querySelector('.gm-jf-step.is-current');
- var steps=[].slice.call(host.querySelectorAll('.gm-jf-step'));
- var numsOk=steps.length>0&&steps.every(function(s,idx){
-  var b=s.querySelector('.gm-jf-ball');
-  var c=s.querySelector('.gm-jf-cap');
-  return b&&String(b.textContent||'').trim()===String(idx+1)&&c&&String(c.textContent||'').trim().length>0;
- });
- return{
-  ok:true,
-  htmlLen:html.length,
-  hasStepper:!!stepper,
-  ballCount:balls.length,
-  capCount:caps.length,
-  labelCount:labels.length,
-  srCount:sr.length,
-  htmlHasBallClass:html.indexOf('gm-jf-ball')>=0,
-  htmlHasCapClass:html.indexOf('gm-jf-cap')>=0,
-  hasCurrent:!!current,
-  currentStage:current?current.getAttribute('data-stage'):null,
-  numsOk:numsOk
+/** Snapshot da tabela #jobs-follow-cards (grid único). */
+const DOM_TABLE_SNAPSHOT_JS = `function(){
+ var host=document.getElementById('jobs-follow-cards');
+ if(!host)return{ok:false,reason:'no host'};
+ var hostStyle=window.getComputedStyle(host);
+ var rows=[].slice.call(host.querySelectorAll('.gm-jf-row[data-job-id]'));
+ var thead=host.querySelector('.gm-jf-thead');
+ var hdrStages=thead?[].slice.call(thead.querySelectorAll('.gm-jf-th-stage')):[];
+ var hdrLabels=hdrStages.map(function(el){return String(el.textContent||'').trim();});
+ function centerX(el){
+  var r=el.getBoundingClientRect();
+  return r.left+r.width/2;
+ }
+ function colAligned(stageKey){
+  var hdr=host.querySelector('.gm-jf-th-stage[data-col-stage="'+stageKey+'"]');
+  if(!hdr)return{ok:false,reason:'no header '+stageKey};
+  var hx=centerX(hdr);
+  var cells=rows.map(function(row){
+   return row.querySelector('.gm-jf-td-stage[data-stage="'+stageKey+'"] .gm-jf-ball');
+  }).filter(Boolean);
+  if(cells.length<3)return{ok:false,reason:'need 3 rows',count:cells.length};
+  var xs=cells.map(function(b){return centerX(b);});
+  var allNearHdr=xs.every(function(x){return Math.abs(x-hx)<=2;});
+  var spread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+  return{ok:allNearHdr&&spread<=2,hx:hx,xs:xs,spread:spread,stage:stageKey};
+ }
+ var colsAligned={
+  vendor:colAligned('vendor_requested'),
+  closed:colAligned('followup_closed')
  };
-}`;
-
-/** Snapshot do card renderizado no DOM (#jobs-follow-cards). */
-const DOM_CARD_SNAPSHOT_JS = `function(card){
- if(!card)return{ok:false};
- var row=card.querySelector('.gm-jf-row');
- var addr=card.querySelector('.gm-jf-addr');
- var badge=card.querySelector('.gm-jf-badge');
- var dateEl=card.querySelector('.gm-jf-date');
- var valueEl=card.querySelector('.gm-jf-value');
- var stepper=card.querySelector('.gm-jf-stepper');
- var stagelabel=card.querySelector('.gm-jf-stagelabel');
- var rowStyle=row?window.getComputedStyle(row):null;
- var current=card.querySelector('.gm-jf-step.is-current');
- var doneCount=card.querySelectorAll('.gm-jf-step.is-done').length;
- var futureCount=card.querySelectorAll('.gm-jf-step.is-future').length;
- var visibleLabels=[].slice.call(card.querySelectorAll('.gm-jf-label,.gm-jf-sr')).filter(function(el){
-  var cs=window.getComputedStyle(el);
-  return cs.display!=='none'&&cs.visibility!=='hidden'&&parseFloat(cs.width)>1&&parseFloat(cs.height)>1;
- });
- var stepperStyle=stepper?window.getComputedStyle(stepper):null;
- var balls=stepper?[].slice.call(stepper.querySelectorAll('.gm-jf-ball')):[];
- var ballW=function(el){return el?(el.offsetWidth||parseFloat(window.getComputedStyle(el).width)||0):0;};
- var ballH=function(el){return el?(el.offsetHeight||parseFloat(window.getComputedStyle(el).height)||0):0;};
- var ballsUniform={ok:false};
- var equalGaps={ok:false};
- if(balls.length>=2){
-  var widths=balls.map(ballW);
-  var heights=balls.map(ballH);
-  var uniform=widths.every(function(w){return Math.abs(w-20)<=1;})&&heights.every(function(h){return Math.abs(h-20)<=1;});
-  var wSpread=Math.max.apply(null,widths)-Math.min.apply(null,widths);
-  var hSpread=Math.max.apply(null,heights)-Math.min.apply(null,heights);
-  ballsUniform={ok:true,uniform:uniform,count:balls.length,widths:widths,heights:heights,wSpread:wSpread,hSpread:hSpread};
-  var ballRects=balls.map(function(b){return b.getBoundingClientRect();});
-  var ballXs=ballRects.map(function(r){return r.left+r.width/2;});
-  var gaps=[];
-  for(var bi=1;bi<ballXs.length;bi++)gaps.push(ballXs[bi]-ballXs[bi-1]);
-  var gapSpread=gaps.length?Math.max.apply(null,gaps)-Math.min.apply(null,gaps):0;
-  equalGaps={ok:true,gaps:gaps,gapSpread:gapSpread,equal:gapSpread<=4};
+ var headerOnce={
+  theadCount:host.querySelectorAll('.gm-jf-thead').length,
+  hdrStageCount:hdrStages.length,
+  hdrLabels:hdrLabels,
+  rowStageLabels:rows.reduce(function(n,row){
+   return n+row.querySelectorAll('.gm-jf-th-stage,.gm-jf-cap').length;
+  },0)
+ };
+ function isGoldRgb(bg){
+  var m=String(bg||'').match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+  if(!m)return false;
+  return parseInt(m[1],10)===201&&parseInt(m[2],10)===169&&parseInt(m[3],10)===110;
  }
- var steps=stepper?[].slice.call(stepper.querySelectorAll('.gm-jf-step')):[];
- var numsCapsOk=steps.length>0&&steps.every(function(s,idx){
-  var b=s.querySelector('.gm-jf-ball');
-  var c=s.querySelector('.gm-jf-cap');
-  return b&&String(b.textContent||'').trim()===String(idx+1)&&c&&String(c.textContent||'').trim().length>0;
- });
- var geometry={ok:false};
- if(stepper&&balls.length>=2){
-  var ballRectsG=balls.map(function(b){return b.getBoundingClientRect();});
-  var xs=ballRectsG.map(function(r){return r.left+r.width/2;});
-  var ys=ballRectsG.map(function(r){return r.top+r.height/2;});
-  var xIncreasing=true;
-  for(var gi=1;gi<xs.length;gi++){if(xs[gi]<=xs[gi-1]+1)xIncreasing=false;}
-  var ySpread=Math.max.apply(null,ys)-Math.min.apply(null,ys);
-  var xSpread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
-  var horizontal=xIncreasing&&xSpread>=24&&ySpread<=40;
-  var verticalStack=!xIncreasing&&ySpread>=24&&xSpread<=16;
-  geometry={ok:true,stepCount:balls.length,xs:xs,ys:ys,xSpread:xSpread,ySpread:ySpread,xIncreasing:xIncreasing,horizontal:horizontal,verticalStack:verticalStack};
- }
- var ballPaint={ok:false,balls:[],currentOk:false};
- if(balls.length){
-  ballPaint.balls=balls.map(function(b){
+ var allBalls=[].slice.call(host.querySelectorAll('.gm-jf-ball'));
+ var ballPaint={ok:false,balls:[],currentOk:false,currentBg:null};
+ if(allBalls.length){
+  ballPaint.balls=allBalls.map(function(b){
    var cs=window.getComputedStyle(b);
    var br=parseFloat(cs.borderRadius)||0;
    var w=parseFloat(cs.width)||0;
@@ -229,135 +181,95 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
    var bg=cs.backgroundColor;
    var bw=parseFloat(cs.borderTopWidth)||parseFloat(cs.borderWidth)||0;
    var bs=cs.boxShadow;
+   var bst=cs.borderTopStyle||cs.borderStyle||'';
    var transparent=bg==='transparent'||bg==='rgba(0, 0, 0, 0)';
    var painted=!transparent||bw>=2;
-   var circle=br>=10||(w>0&&br>=w/2-1);
-   var stepEl=b.closest('.gm-jf-step');
-   var isCur=!!(stepEl&&stepEl.classList.contains('is-current'));
-   return{borderRadius:cs.borderRadius,width:cs.width,height:cs.height,backgroundColor:bg,borderWidth:cs.borderWidth,boxShadow:bs,painted:!!painted,circle:!!circle,isCurrent:isCur};
+   var circle=br>=9||(w>0&&br>=w/2-1);
+   var isCur=b.classList.contains('is-current');
+   var isSkip=b.classList.contains('is-skip');
+   return{borderRadius:cs.borderRadius,width:cs.width,height:cs.height,backgroundColor:bg,borderWidth:cs.borderWidth,borderStyle:bst,boxShadow:bs,painted:!!painted,circle:!!circle,isCurrent:isCur,isSkip:isSkip,text:String(b.textContent||'').trim()};
   });
-  ballPaint.ok=ballPaint.balls.every(function(bp){
-   return bp.circle&&Math.abs(parseFloat(bp.width)-20)<=2&&Math.abs(parseFloat(bp.height)-20)<=2&&bp.painted;
+  var nonSkip=ballPaint.balls.filter(function(bp){return !bp.isSkip;});
+  ballPaint.ok=nonSkip.length>0&&nonSkip.every(function(bp){
+   return bp.circle&&Math.abs(parseFloat(bp.width)-18)<=2&&Math.abs(parseFloat(bp.height)-18)<=2&&bp.painted;
   });
-  function isGoldRgb(bg){
-   var m=String(bg||'').match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
-   if(!m)return false;
-   return parseInt(m[1],10)===201&&parseInt(m[2],10)===169&&parseInt(m[3],10)===110;
-  }
   var curBp=ballPaint.balls.find(function(bp){return bp.isCurrent;});
   ballPaint.currentOk=!!curBp&&curBp.painted&&curBp.circle&&curBp.boxShadow&&curBp.boxShadow!=='none'&&isGoldRgb(curBp.backgroundColor);
   ballPaint.currentBg=curBp?curBp.backgroundColor:null;
  }
- var rowLayout={ok:false};
- var columns={ok:false};
- if(row&&addr&&badge&&dateEl&&valueEl&&stepper&&stagelabel){
-  var colEls=[addr,badge,dateEl,valueEl,stepper,stagelabel];
-  var colRects=colEls.map(function(el){return el.getBoundingClientRect();});
-  var cys=colRects.map(function(r){return r.top+r.height/2;});
-  var colXs=colRects.map(function(r){return r.left+r.width/2;});
-  var ySpread=Math.max.apply(null,cys)-Math.min.apply(null,cys);
-  var xIncreasing=true;
-  for(var ci=1;ci<colXs.length;ci++){if(colXs[ci]<=colXs[ci-1]+2)xIncreasing=false;}
-  rowLayout={ok:true,sameLine:ySpread<=24,ySpread:ySpread,cys:cys,fieldCount:6};
-  columns={ok:true,xIncreasing:xIncreasing,xs:colXs,fields:['addr','badge','date','value','stepper','stage']};
+ var internalRow=host.querySelector('.gm-jf-row[data-job-id="smoke-follow-internal"]');
+ var skipOk=false;
+ if(internalRow){
+  var skipCols=['vendor_requested','awaiting_quote','awaiting_vendor','vendor_done'];
+  skipOk=skipCols.every(function(st){
+   var ball=internalRow.querySelector('.gm-jf-td-stage[data-stage="'+st+'"] .gm-jf-ball');
+   if(!ball||!ball.classList.contains('is-skip'))return false;
+   var cs=window.getComputedStyle(ball);
+   var dashed=String(cs.borderTopStyle||cs.borderStyle||'').indexOf('dashed')>=0;
+   return dashed&&String(ball.textContent||'').trim()==='';
+  });
  }
+ var baseCols={ok:false};
+ if(rows.length>=2){
+  var fields=['.gm-jf-td-addr','.gm-jf-td-badge','.gm-jf-td-date','.gm-jf-td-value','.gm-jf-td-status'];
+  var aligned=fields.every(function(sel){
+   var rects=rows.map(function(row){var el=row.querySelector(sel);return el?el.getBoundingClientRect():null;}).filter(Boolean);
+   if(rects.length<2)return false;
+   var xs=rects.map(function(r){return r.left+r.width/2;});
+   var spread=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+   return spread<=3;
+  });
+  baseCols={ok:aligned,rowCount:rows.length};
+ }
+ var vreqRow=host.querySelector('.gm-jf-row[data-job-id="smoke-follow-vreq"]');
+ var vreqCurrent=vreqRow?vreqRow.querySelector('.gm-jf-td-stage[data-ball-state="current"]'):null;
+ var vreqStage=vreqRow?vreqRow.getAttribute('data-follow-stage'):null;
+ var internalCurrent=internalRow?internalRow.querySelector('.gm-jf-td-stage[data-ball-state="current"]'):null;
+ var internalStage=internalRow?internalRow.getAttribute('data-follow-stage'):null;
  return{
-  ok:true,hasRow:!!row,gridDisplay:rowStyle?rowStyle.display:null,
-  hasAddr:!!addr,hasBadge:!!badge,hasDate:!!dateEl,hasValue:!!valueEl,
-  hasStagelabel:!!stagelabel&&String(stagelabel.textContent||'').trim().length>0,
-  stagelabelText:stagelabel?String(stagelabel.textContent||'').trim():'',
-  noStagePrefix:!stagelabel||(!/current stage|etapa atual/i.test(String(stagelabel.textContent||''))),
-  flexDirection:stepperStyle?stepperStyle.flexDirection:null,
-  flexWrap:stepperStyle?stepperStyle.flexWrap:null,
-  ballCount:balls.length,
-  capCount:card.querySelectorAll('.gm-jf-cap').length,
-  connectorCount:card.querySelectorAll('.gm-jf-connector').length,
-  currentStage:current?current.getAttribute('data-stage'):null,
-  currentBallW:balls.length&&current?ballW(current.querySelector('.gm-jf-ball')):0,
-  doneCount:doneCount,futureCount:futureCount,
-  visibleLabelCount:visibleLabels.length,
-  numsCapsOk:numsCapsOk,
-  ballsUniform:ballsUniform,
-  equalGaps:equalGaps,
+  ok:true,
+  gridDisplay:hostStyle.display,
+  rowCount:rows.length,
+  colsAligned:colsAligned,
+  headerOnce:headerOnce,
   ballPaint:ballPaint,
-  geometry:geometry,
-  rowLayout:rowLayout,
-  columns:columns
+  skipOk:skipOk,
+  baseCols:baseCols,
+  vreqStage:vreqStage,
+  vreqCurrentStage:vreqCurrent?vreqCurrent.getAttribute('data-stage'):null,
+  internalStage:internalStage,
+  internalCurrentStage:internalCurrent?internalCurrent.getAttribute('data-stage'):null
  };
 }`;
 
 async function smokeAdmin() {
   return runAsUser(users.admin, async (page) => {
     await followReady(page);
-
-    const renderProbe = await page.evaluate((probeSrc) => {
-      const probe = new Function('return ' + probeSrc)();
-      const mockApi = {
-        id: 'probe-vendor',
-        vendorId: 'v-probe',
-        vendorName: 'Probe Vendor',
-        status: 'SCHEDULED',
-        ownerCharged: 80,
-        serviceDate: '2026-05-20',
-        metadata: { followUp: { stage: 'vendor_requested' } },
-      };
-      const row = ltExpMapApiToRow(mockApi);
-      const vendor = probe(row);
-      const internalApi = {
-        id: 'probe-internal',
-        status: 'SCHEDULED',
-        isVendorFree: true,
-        ownerCharged: 50,
-        serviceDate: '2026-05-21',
-        metadata: { followUp: { stage: 'closed_internal' } },
-      };
-      const rowInt = ltExpMapApiToRow(internalApi);
-      const internal = probe(rowInt);
-      return { vendor, internal };
-    }, RENDER_HTML_PROBE_JS);
-
     await injectMocks(page);
     await page.waitForTimeout(800);
 
-    const c1 = await page.evaluate((snapSrc) => {
+    const table = await page.evaluate((snapSrc) => {
       const snap = new Function('return ' + snapSrc)();
-      const pg = document.getElementById('page-jobs-follow');
-      const vreq = document.querySelector('[data-job-id="smoke-follow-vreq"]');
-      return {
-        pageActive: !!(pg && pg.classList.contains('active')),
-        cardCount: document.querySelectorAll('#jobs-follow-cards .gm-jf-card').length,
-        snap: snap(vreq),
-      };
-    }, DOM_CARD_SNAPSHOT_JS);
-
-    const c2 = await page.evaluate((snapSrc) => {
-      const snap = new Function('return ' + snapSrc)();
-      const internal = document.querySelector('[data-job-id="smoke-follow-internal"]');
-      const row = (window.__jobsApiRowsCache || []).find((r) => r.id === 'smoke-follow-internal');
-      const path =
-        row && typeof gmJobsFollowStepperPath === 'function' ? gmJobsFollowStepperPath(row) : [];
-      return {
-        snap: snap(internal),
-        path,
-        stage:
-          row && typeof gmJobFollowUpDisplayStage === 'function'
-            ? gmJobFollowUpDisplayStage(row)
-            : null,
-      };
-    }, DOM_CARD_SNAPSHOT_JS);
+      const snapResult = snap();
+      snapResult.pageActive = !!(
+        document.getElementById('page-jobs-follow') &&
+        document.getElementById('page-jobs-follow').classList.contains('active')
+      );
+      return snapResult;
+    }, DOM_TABLE_SNAPSHOT_JS);
 
     const c2filters = await page.evaluate(async () => {
       if (typeof gmJobsFollowSetDateFilter === 'function') gmJobsFollowSetDateFilter('all');
       const oldDateVisible = !!document.querySelector('[data-job-id="smoke-follow-vreq"]');
       if (typeof gmJobsSetPropertyFilter === 'function') gmJobsSetPropertyFilter('P0099');
       if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
-      const afterProp = [...document.querySelectorAll('#jobs-follow-cards .gm-jf-card')].map((c) =>
+      const afterProp = [...document.querySelectorAll('.gm-jf-row[data-job-id]')].map((c) =>
         c.getAttribute('data-job-id'),
       );
       if (typeof gmJobsSetPropertyFilter === 'function') gmJobsSetPropertyFilter('');
       if (typeof gmJobsSetVendorFilter === 'function') gmJobsSetVendorFilter('ACME Plumbing Co');
       if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
-      const afterVendor = [...document.querySelectorAll('#jobs-follow-cards .gm-jf-card')].map((c) =>
+      const afterVendor = [...document.querySelectorAll('.gm-jf-row[data-job-id]')].map((c) =>
         c.getAttribute('data-job-id'),
       );
       if (typeof gmJobsSetVendorFilter === 'function') gmJobsSetVendorFilter('');
@@ -370,6 +282,17 @@ async function smokeAdmin() {
       };
     });
 
+    const c2path = await page.evaluate(() => {
+      const row = (window.__jobsApiRowsCache || []).find((r) => r.id === 'smoke-follow-internal');
+      const path =
+        row && typeof gmJobsFollowStepperPath === 'function' ? gmJobsFollowStepperPath(row) : [];
+      const stage =
+        row && typeof gmJobFollowUpDisplayStage === 'function'
+          ? gmJobFollowUpDisplayStage(row)
+          : null;
+      return { path, stage };
+    });
+
     const c3 = await page.evaluate(() => {
       const followPatchBtn = !!document.querySelector(
         '#page-jobs-follow [onclick*="gmJobFollowUpPatch"],#page-jobs-follow [onclick*="followUpPatch"]',
@@ -380,97 +303,36 @@ async function smokeAdmin() {
       return { followPatchBtn, jobsTable, jobsSubtitleLen };
     });
 
-    const rp = renderProbe.vendor;
-    const rpInt = renderProbe.internal;
-    const s1 = c1.snap;
-    const s2 = c2.snap;
-
-    const renderOk =
-      rp.ok &&
-      rp.ballCount >= 5 &&
-      rp.capCount >= 5 &&
-      rp.labelCount === 0 &&
-      rp.srCount === 0 &&
-      rp.htmlHasBallClass &&
-      rp.htmlHasCapClass &&
-      rp.numsOk &&
-      rp.hasCurrent &&
-      rp.currentStage === 'vendor_requested' &&
-      rpInt.ok &&
-      rpInt.currentStage === 'closed_internal' &&
-      rpInt.numsOk;
-
-    const domOk =
-      c1.pageActive &&
-      c1.cardCount >= 3 &&
-      s1.ok &&
-      s1.flexDirection === 'row' &&
-      s1.flexWrap === 'nowrap' &&
-      s1.geometry?.ok &&
-      s1.geometry.horizontal &&
-      !s1.geometry.verticalStack &&
-      s1.geometry.xIncreasing &&
-      s1.ballCount >= 5 &&
-      s1.capCount >= 5 &&
-      s1.connectorCount >= 4 &&
-      s1.visibleLabelCount === 0 &&
-      s1.numsCapsOk &&
-      s1.ballsUniform?.ok &&
-      s1.ballsUniform.uniform &&
-      s1.equalGaps?.ok &&
-      s1.equalGaps.equal &&
-      s1.ballPaint?.ok &&
-      s1.ballPaint?.currentOk &&
-      s1.currentStage === 'vendor_requested' &&
-      s1.hasRow &&
-      s1.gridDisplay === 'grid' &&
-      s1.hasAddr &&
-      s1.hasBadge &&
-      s1.hasDate &&
-      s1.hasValue &&
-      s1.hasStagelabel &&
-      s1.noStagePrefix &&
-      s1.rowLayout?.ok &&
-      s1.rowLayout.sameLine &&
-      s1.rowLayout.fieldCount === 6 &&
-      s1.columns?.ok &&
-      s1.columns.xIncreasing &&
-      s2.ok &&
-      s2.currentStage === 'closed_internal' &&
-      s2.visibleLabelCount === 0 &&
-      s2.numsCapsOk &&
-      s2.ballsUniform?.ok &&
-      s2.ballsUniform.uniform &&
-      s2.equalGaps?.ok &&
-      s2.equalGaps.equal &&
-      s2.ballPaint?.ok &&
-      s2.ballPaint?.currentOk &&
-      s2.flexDirection === 'row' &&
-      s2.gridDisplay === 'grid' &&
-      s2.hasAddr &&
-      s2.hasBadge &&
-      s2.hasStagelabel &&
-      s2.noStagePrefix &&
-      s2.rowLayout?.ok &&
-      s2.rowLayout.sameLine &&
-      s2.columns?.ok &&
-      s2.columns.xIncreasing &&
-      s2.geometry?.ok &&
-      s2.geometry.horizontal &&
-      !s2.geometry.verticalStack;
+    const hdrExpected = ['Open', 'Maint', 'Vendor', 'Quote', 'Wait', 'Done', 'Closed'];
 
     const ok =
-      renderOk &&
-      domOk &&
-      c2.path.includes('closed_internal') &&
-      !c2.path.includes('vendor_requested') &&
+      table.pageActive &&
+      table.ok &&
+      table.gridDisplay === 'grid' &&
+      table.rowCount >= 3 &&
+      table.colsAligned?.vendor?.ok &&
+      table.colsAligned?.closed?.ok &&
+      table.headerOnce?.theadCount === 1 &&
+      table.headerOnce?.hdrStageCount === 7 &&
+      hdrExpected.every((l, i) => table.headerOnce?.hdrLabels?.[i] === l) &&
+      table.headerOnce?.rowStageLabels === 0 &&
+      table.ballPaint?.ok &&
+      table.ballPaint?.currentOk &&
+      table.skipOk &&
+      table.baseCols?.ok &&
+      table.vreqStage === 'vendor_requested' &&
+      table.vreqCurrentStage === 'vendor_requested' &&
+      table.internalStage === 'closed_internal' &&
+      table.internalCurrentStage === 'followup_closed' &&
+      c2path.path.includes('closed_internal') &&
+      !c2path.path.includes('vendor_requested') &&
       c2filters.dateFilter === 'all' &&
       c2filters.propFilterOk &&
       c2filters.vendorFilterOk &&
       c3.jobsTable &&
       !c3.followPatchBtn;
 
-    return { ok, role: 'admin', renderProbe, c1, c2, c2filters, c3, renderOk, domOk };
+    return { ok, role: 'admin', table, c2path, c2filters, c3 };
   });
 }
 
