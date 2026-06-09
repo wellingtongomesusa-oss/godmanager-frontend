@@ -3836,7 +3836,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div class="page" id="page-ltproperties">
  <div class="ph"><div class="pt">Properties</div><div class="ps">Cadastro geral de propriedades · Gestao completa do portfolio</div></div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
- <input id="ltp-search" oninput="ltpRender()" placeholder="Buscar por endereco, owner ou tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:260px">
+ <input id="ltp-search" oninput="ltpRender()" placeholder="Buscar por código, endereço, owner ou tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:260px">
  <select id="ltp-filter-occ" onchange="ltpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todos os Status</option>
  <option value="ALG">Alugada</option>
@@ -3908,8 +3908,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div id="ltp-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
  <div style="overflow-x:auto">
- <table style="width:100%;border-collapse:collapse;min-width:1820px">
+ <table style="width:100%;border-collapse:collapse;min-width:1890px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:64px">Código</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereco</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Owner</th>
@@ -17490,7 +17491,7 @@ function ltpFilterTableRecords(records){
  var fStatusCode=(document.getElementById('ltp-filter-occ')||{}).value||'';
  var fOccFilter=(document.getElementById('ltp-filter-occupancy')||{}).value||'';
  return (records||[]).filter(function(r){
-  if(fSearch&&!(r.address+r.owner+(r.tenant||'')).toLowerCase().includes(fSearch)) return false;
+  if(fSearch&&!(r.address+r.owner+(r.tenant||'')+(r.id||'')+(r._apiId||'')+(r.code||'')).toLowerCase().includes(fSearch)) return false;
   if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode) return false;
   if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter) return false;
   return true;
@@ -17667,6 +17668,7 @@ async function ltpRender(){
  const _isManual=gmHasOverride(r);
  return `
  <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''" onclick="ltOpenDetail('${r.id}')">
+ <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums">${r.id||''}</td>
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
  <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">${r.address}</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">${r.baths||'—'}</div></td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${r.owner}</td>
