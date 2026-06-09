@@ -219,6 +219,35 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   var verticalStack=!xIncreasing&&ySpread>=24&&xSpread<=16;
   geometry={ok:true,stepCount:balls.length,xs:xs,ys:ys,xSpread:xSpread,ySpread:ySpread,xIncreasing:xIncreasing,horizontal:horizontal,verticalStack:verticalStack};
  }
+ var ballPaint={ok:false,balls:[],currentOk:false};
+ if(balls.length){
+  ballPaint.balls=balls.map(function(b){
+   var cs=window.getComputedStyle(b);
+   var br=parseFloat(cs.borderRadius)||0;
+   var w=parseFloat(cs.width)||0;
+   var h=parseFloat(cs.height)||0;
+   var bg=cs.backgroundColor;
+   var bw=parseFloat(cs.borderTopWidth)||parseFloat(cs.borderWidth)||0;
+   var bs=cs.boxShadow;
+   var transparent=bg==='transparent'||bg==='rgba(0, 0, 0, 0)';
+   var painted=!transparent||bw>=2;
+   var circle=br>=10||(w>0&&br>=w/2-1);
+   var stepEl=b.closest('.gm-jf-step');
+   var isCur=!!(stepEl&&stepEl.classList.contains('is-current'));
+   return{borderRadius:cs.borderRadius,width:cs.width,height:cs.height,backgroundColor:bg,borderWidth:cs.borderWidth,boxShadow:bs,painted:!!painted,circle:!!circle,isCurrent:isCur};
+  });
+  ballPaint.ok=ballPaint.balls.every(function(bp){
+   return bp.circle&&Math.abs(parseFloat(bp.width)-20)<=2&&Math.abs(parseFloat(bp.height)-20)<=2&&bp.painted;
+  });
+  function isGoldRgb(bg){
+   var m=String(bg||'').match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+   if(!m)return false;
+   return parseInt(m[1],10)===201&&parseInt(m[2],10)===169&&parseInt(m[3],10)===110;
+  }
+  var curBp=ballPaint.balls.find(function(bp){return bp.isCurrent;});
+  ballPaint.currentOk=!!curBp&&curBp.painted&&curBp.circle&&curBp.boxShadow&&curBp.boxShadow!=='none'&&isGoldRgb(curBp.backgroundColor);
+  ballPaint.currentBg=curBp?curBp.backgroundColor:null;
+ }
  var rowLayout={ok:false};
  var columns={ok:false};
  if(row&&addr&&badge&&dateEl&&valueEl&&stepper&&stagelabel){
@@ -250,6 +279,7 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   numsCapsOk:numsCapsOk,
   ballsUniform:ballsUniform,
   equalGaps:equalGaps,
+  ballPaint:ballPaint,
   geometry:geometry,
   rowLayout:rowLayout,
   columns:columns
@@ -389,6 +419,8 @@ async function smokeAdmin() {
       s1.ballsUniform.uniform &&
       s1.equalGaps?.ok &&
       s1.equalGaps.equal &&
+      s1.ballPaint?.ok &&
+      s1.ballPaint?.currentOk &&
       s1.currentStage === 'vendor_requested' &&
       s1.hasRow &&
       s1.gridDisplay === 'grid' &&
@@ -411,6 +443,8 @@ async function smokeAdmin() {
       s2.ballsUniform.uniform &&
       s2.equalGaps?.ok &&
       s2.equalGaps.equal &&
+      s2.ballPaint?.ok &&
+      s2.ballPaint?.currentOk &&
       s2.flexDirection === 'row' &&
       s2.gridDisplay === 'grid' &&
       s2.hasAddr &&
