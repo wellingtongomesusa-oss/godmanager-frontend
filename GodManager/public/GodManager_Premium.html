@@ -10463,6 +10463,80 @@ function gmNewsResolvePropertyCode(row){
 }
 window.gmNewsResolvePropertyCode=gmNewsResolvePropertyCode;
 
+function gmNewsCompactHouseLabel(raw){
+ var s=String(raw==null?'':raw).trim();
+ if(!s||s==='\u2014'||s==='-')return '';
+ var street=s.split(',')[0].trim();
+ return street||s;
+}
+window.gmNewsCompactHouseLabel=gmNewsCompactHouseLabel;
+
+function gmNewsHouseLabelFromJob(jobId){
+ try{
+  if(!jobId)return '';
+  var row=null;
+  if(typeof jobsFindRowById==='function')row=jobsFindRowById(jobId);
+  if(!row){
+   var cache=window.__jobsApiRowsCache||[];
+   row=cache.find(function(x){return x&&String(x.id)===String(jobId);})||null;
+  }
+  if(!row)return '';
+  var full=(typeof jobsResolveAddress==='function')?jobsResolveAddress(row):'';
+  return gmNewsCompactHouseLabel(full);
+ }catch(e){}
+ return '';
+}
+window.gmNewsHouseLabelFromJob=gmNewsHouseLabelFromJob;
+
+function gmNewsHouseLabelFromPropertyRef(propRef){
+ try{
+  var ref=String(propRef||'').trim();
+  if(!ref)return '';
+  var sel=document.getElementById('lt-nexp-prop');
+  if(sel&&sel.options){
+   for(var i=0;i<sel.options.length;i++){
+    var opt=sel.options[i];
+    if(String(opt.value)===ref){
+     var addr=opt.getAttribute('data-address')||opt.textContent||'';
+     var lbl=gmNewsCompactHouseLabel(addr);
+     if(lbl)return lbl;
+    }
+   }
+  }
+  try{
+   var props=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+   for(var j=0;j<props.length;j++){
+    var p=props[j];
+    if(p&&(String(p.id)===ref||String(p.code)===ref)&&p.address){
+     return gmNewsCompactHouseLabel(p.address);
+    }
+   }
+  }catch(e2){}
+ }catch(e){}
+ return '';
+}
+window.gmNewsHouseLabelFromPropertyRef=gmNewsHouseLabelFromPropertyRef;
+
+function gmNewsResolveHouseLabel(row){
+ if(!row)return '';
+ try{
+  var meta=row.metadata;
+  if(meta&&typeof meta==='object'&&!Array.isArray(meta)){
+   var hl=String(meta.houseLabel||'').trim();
+   if(hl)return hl;
+  }
+  if(row.jobId&&typeof gmNewsHouseLabelFromJob==='function'){
+   var fromJob=gmNewsHouseLabelFromJob(row.jobId);
+   if(fromJob)return fromJob;
+  }
+  if(typeof gmNewsResolvePropertyCode==='function'){
+   return gmNewsResolvePropertyCode(row)||'';
+  }
+ }catch(e){}
+ return '';
+}
+window.gmNewsResolveHouseLabel=gmNewsResolveHouseLabel;
+
 function gmNewsPostJobAction(opts){
  if(!opts||!opts.subtype)return;
  var jobId=opts.jobId?String(opts.jobId):'';
@@ -10470,6 +10544,12 @@ function gmNewsPostJobAction(opts){
  var propCode=String(opts.propertyCode||meta.propertyCode||'').trim();
  if(!propCode&&jobId)propCode=gmNewsPropertyCodeFromJob(jobId);
  if(propCode)meta.propertyCode=propCode;
+ var houseLabel=String(opts.houseLabel||meta.houseLabel||'').trim();
+ if(!houseLabel&&jobId)houseLabel=gmNewsHouseLabelFromJob(jobId);
+ if(!houseLabel&&propCode&&typeof gmNewsHouseLabelFromPropertyRef==='function'){
+  houseLabel=gmNewsHouseLabelFromPropertyRef(propCode);
+ }
+ if(houseLabel)meta.houseLabel=gmNewsCompactHouseLabel(houseLabel)||houseLabel;
  var payload={
   type:'job_action',
   subtype:opts.subtype,
@@ -10607,8 +10687,8 @@ function renderMsgs(){
    var pill=gmNewsSubtypePill(row.subtype);
    var timeStr=gmNewsFormatTime(row.createdAt);
    var bodyHtml=row.body?'<div style="font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.45">'+gmNewsEsc(row.body)+'</div>':'';
-   var houseCode=(typeof gmNewsResolvePropertyCode==='function')?gmNewsResolvePropertyCode(row):'';
-   var houseTag=houseCode?'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:\'JetBrains Mono\',monospace;background:var(--slate-bg);color:var(--ink2);border:1px solid var(--border2);letter-spacing:.3px">'+gmNewsEsc(houseCode)+'</span>':'';
+   var houseLbl=(typeof gmNewsResolveHouseLabel==='function')?gmNewsResolveHouseLabel(row):'';
+   var houseTag=houseLbl?'<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;font-family:\'DM Sans\',sans-serif;background:var(--slate-bg);color:var(--ink2);border:1px solid var(--border2);letter-spacing:.2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+gmNewsEsc(houseLbl)+'">'+gmNewsEsc(houseLbl)+'</span>':'';
    var jobIdAttr=row.jobId?String(row.jobId).replace(/\\/g,'\\\\').replace(/'/g,"\\'"):'';
    var jobLink=row.jobId?'<button type="button" onclick="event.stopPropagation();gmNewsOpenJob(\''+jobIdAttr+'\')" style="margin-top:6px;padding:3px 10px;background:transparent;border:1px solid var(--border2);border-radius:6px;font-size:10px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:\'DM Sans\',sans-serif">Abrir job</button>':'';
    var by=row.createdByEmail?'<span style="font-size:10px;color:var(--ink3)">'+gmNewsEsc(row.createdByEmail)+'</span>':'';
@@ -14081,13 +14161,15 @@ function gmJobsPhotoAddContainer(){
   var desc=(typeof gmNewsJobDescription==='function'?gmNewsJobDescription(st.jobId):'')||st.jobTitle||'';
   var rowC=(typeof jobsFindRowById==='function')?jobsFindRowById(st.jobId):null;
   var propCodeC=rowC&&(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(rowC):'';
+  var houseLblC=rowC&&(typeof jobsResolveAddress==='function')?gmNewsCompactHouseLabel(jobsResolveAddress(rowC)):'';
   gmNewsPostJobAction({
    subtype:'container_added',
    title:'Container '+newN+' adicionado: '+String(desc).slice(0,80),
    body:desc,
    jobId:st.jobId,
    propertyCode:propCodeC||undefined,
-   metadata:{containerNumber:newN,propertyCode:propCodeC||undefined}
+   houseLabel:houseLblC||undefined,
+   metadata:{containerNumber:newN,propertyCode:propCodeC||undefined,houseLabel:houseLblC||undefined}
   });
  }
 }
@@ -15478,12 +15560,15 @@ function ltSaveExpense(){
      if(isVFree&&newJobId&&typeof gmNewsPostJobAction==='function'){
       var vfMeta=vfFromNews?{fromJobId:String(vfFromNews)}:{};
       vfMeta.propertyCode=propId;
+      var houseLblVf=(typeof gmNewsHouseLabelFromPropertyRef==='function')?gmNewsHouseLabelFromPropertyRef(propId):'';
+      if(houseLblVf)vfMeta.houseLabel=houseLblVf;
       gmNewsPostJobAction({
        subtype:'vendor_free',
        jobId:newJobId,
        title:'Job sem vendor: '+descVal.slice(0,80),
        body:descVal,
        propertyCode:propId,
+       houseLabel:houseLblVf||undefined,
        metadata:vfMeta
       });
      }
@@ -22240,13 +22325,15 @@ function jobsOnVendorClick(expenseId){
    var descV=typeof gmNewsJobDescription==='function'?gmNewsJobDescription(expenseId):'';
    var rowV=(typeof jobsFindRowById==='function')?jobsFindRowById(expenseId):null;
    var propCodeV=rowV&&(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(rowV):'';
+   var houseLblV=rowV&&(typeof jobsResolveAddress==='function')?gmNewsCompactHouseLabel(jobsResolveAddress(rowV)):'';
    if(typeof gmNewsPostJobAction==='function')gmNewsPostJobAction({
     subtype:'vendor_fee',
     jobId:expenseId,
     title:'Vendor fee +$120: '+String(descV||expenseId).slice(0,80),
     body:descV||undefined,
     propertyCode:propCodeV||undefined,
-    metadata:{amount:120,propertyCode:propCodeV||undefined}
+    houseLabel:houseLblV||undefined,
+    metadata:{amount:120,propertyCode:propCodeV||undefined,houseLabel:houseLblV||undefined}
    });
   }catch(eNewsV){}
 }
