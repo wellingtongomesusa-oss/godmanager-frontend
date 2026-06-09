@@ -10461,10 +10461,16 @@ function gmNewsEsc(s){
 }
 
 function gmNewsSubtypePill(subtype){
- if(subtype==='vendor_fee')return{lbl:'Vendor +$120',bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)'};
- if(subtype==='vendor_free')return{lbl:'V Free',bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7'};
+ var lbl=function(key,fb){
+  if(typeof t==='function'){var v=t(key);if(v&&v!==key)return v;}
+  return fb;
+ };
+ if(subtype==='vendor_fee')return{lbl:lbl('news_subtype_vendor_fee','Vendor +$120'),bg:'var(--blue-bg)',fg:'var(--blue)',bd:'var(--blue-bd)'};
+ if(subtype==='vendor_free')return{lbl:lbl('news_subtype_vendor_free','V Free'),bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7'};
+ if(subtype==='vendor_requested')return{lbl:lbl('news_subtype_vendor_requested','Vendor requested'),bg:'rgba(124,58,237,.12)',fg:'#7c3aed',bd:'#a78bfa'};
+ if(subtype==='job_closed_internal')return{lbl:lbl('news_subtype_job_closed_internal','Closed (internal)'),bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
  if(subtype==='container_added')return{lbl:'Container',bg:'#ede9fe',fg:'#5b21b6',bd:'#c4b5fd'};
- return{lbl:'Job',bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
+ return{lbl:lbl('news_subtype_job','Job'),bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
 }
 
 function gmNewsFormatTime(isoOrStr){
@@ -15653,6 +15659,27 @@ function ltSaveExpense(){
        houseLabel:houseLblVf||undefined,
        metadata:vfMeta
       });
+     }
+     if(isVFree&&vfFromNews&&typeof gmJobFollowUpPatch==='function'){
+      try{
+       await gmJobFollowUpPatch(String(vfFromNews),{stage:'closed_internal',note:'fechado sem vendor'});
+       var houseLblOrig=(typeof gmNewsHouseLabelFromJob==='function')?gmNewsHouseLabelFromJob(vfFromNews):'';
+       if(!houseLblOrig&&typeof gmNewsHouseLabelFromPropertyRef==='function')houseLblOrig=gmNewsHouseLabelFromPropertyRef(propId);
+       if(typeof gmNewsPostJobAction==='function'){
+        var titClosed=(typeof t==='function'?t('news_title_job_closed_internal'):'Job fechado (interno)');
+        if(!titClosed||titClosed==='news_title_job_closed_internal')titClosed='Job fechado (interno)';
+        gmNewsPostJobAction({
+         subtype:'job_closed_internal',
+         jobId:String(vfFromNews),
+         title:titClosed+': '+descVal.slice(0,80),
+         body:descVal,
+         propertyCode:propId,
+         houseLabel:houseLblOrig||undefined,
+         metadata:{propertyCode:propId,houseLabel:houseLblOrig||undefined,fromJobId:String(vfFromNews)}
+        });
+       }
+       if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+      }catch(eVfFu){console.warn('[VFree followUp]',eVfFu);}
      }
      try{window.__lastVendorFreeFrom=null;}catch(eClrVf){}
     }
@@ -22552,6 +22579,75 @@ function jobsExpenseTotalWithFees(rec){
  return ltExpValueWithExtras(rec);
 }
 
+function gmJobFollowUpOptimisticLocal(jobId,partial){
+ if(!jobId||!partial||typeof partial!=='object')return;
+ var id=String(jobId);
+ var cache=window.__jobsApiRowsCache;
+ if(!Array.isArray(cache))return;
+ cache.forEach(function(row){
+  if(!row||String(row.id)!==id)return;
+  var meta=row.metadata&&typeof row.metadata==='object'&&!Array.isArray(row.metadata)?Object.assign({},row.metadata):{};
+  meta.followUp=Object.assign({},meta.followUp&&typeof meta.followUp==='object'&&!Array.isArray(meta.followUp)?meta.followUp:{},partial);
+  row.metadata=meta;
+  if(row._apiRaw){
+   var rawMeta=row._apiRaw.metadata&&typeof row._apiRaw.metadata==='object'&&!Array.isArray(row._apiRaw.metadata)?Object.assign({},row._apiRaw.metadata):{};
+   rawMeta.followUp=Object.assign({},rawMeta.followUp&&typeof rawMeta.followUp==='object'&&!Array.isArray(rawMeta.followUp)?rawMeta.followUp:{},partial);
+   row._apiRaw.metadata=rawMeta;
+  }
+ });
+}
+window.gmJobFollowUpOptimisticLocal=gmJobFollowUpOptimisticLocal;
+
+window.jobsVendorEscalate=async function(expenseId){
+ try{
+  var u=window.__gmCurrentUser||{};
+  if(String(u.role||'').toLowerCase()!=='maintenance'){
+   alert(typeof t==='function'?t('alert_no_permission'):'Sem permissao.');
+   return;
+  }
+  expenseId=String(expenseId||'').trim();
+  if(!expenseId)return;
+  var partial={stage:'vendor_requested',note:'escalado pela manutencao'};
+  if(typeof gmJobFollowUpOptimisticLocal==='function')gmJobFollowUpOptimisticLocal(expenseId,partial);
+  if(typeof jobsRender==='function')jobsRender();
+  var desc=(typeof gmNewsJobDescription==='function')?gmNewsJobDescription(expenseId):'';
+  var row=(typeof jobsFindRowById==='function')?jobsFindRowById(expenseId):null;
+  var propCode=row&&(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(row):'';
+  var houseLbl='';
+  if(typeof gmNewsHouseLabelFromJob==='function')houseLbl=gmNewsHouseLabelFromJob(expenseId)||'';
+  if(!houseLbl&&row&&(typeof jobsResolveAddress==='function'))houseLbl=gmNewsCompactHouseLabel(jobsResolveAddress(row))||'';
+  if(typeof gmJobFollowUpPatch==='function'){
+   var res=await gmJobFollowUpPatch(expenseId,partial);
+   if(!res.ok){
+    if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+    if(typeof jobsFetchFromApi==='function'){try{await jobsFetchFromApi();}catch(eF){}}
+    if(typeof jobsRender==='function')jobsRender();
+    var errMsg=res.error||'Erro ao escalar vendor';
+    if(typeof showToast==='function')showToast(errMsg,'error');else alert(errMsg);
+    return;
+   }
+  }
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  if(typeof gmNewsPostJobAction==='function'){
+   var titBase=(typeof t==='function'?t('news_title_vendor_requested'):'Vendor solicitado');
+   if(!titBase||titBase==='news_title_vendor_requested')titBase='Vendor solicitado';
+   gmNewsPostJobAction({
+    subtype:'vendor_requested',
+    jobId:expenseId,
+    title:titBase+': '+String(desc||expenseId).slice(0,80),
+    body:desc||undefined,
+    propertyCode:propCode||undefined,
+    houseLabel:houseLbl||undefined,
+    metadata:{propertyCode:propCode||undefined,houseLabel:houseLbl||undefined}
+   });
+  }
+  if(typeof showToast==='function')showToast(gmJobsT('jobs_vendor_escalate_ok'),'success');
+ }catch(e){
+  console.warn('jobsVendorEscalate',e);
+  if(typeof showToast==='function')showToast('Erro: '+(e&&e.message||''),'error');else alert('Erro: '+(e&&e.message||''));
+ }
+};
+
 function jobsRecordAction(expenseId,type){
  if(!expenseId||!type)return{ok:false,err:'Parametros invalidos'};
  if(jobsHasActionFor(expenseId,type))return{ok:false,err:'Esta acao ja foi registrada para esta despesa.'};
@@ -23874,6 +23970,7 @@ async function jobsRender(){
   return;
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ var isMaintenanceOnly=(userRole==='maintenance');
  var isAdmin=(userRole==='admin'||userRole==='super_admin');
  var canVendorFree=(typeof gmCanVendorFreeRole==='function'?gmCanVendorFreeRole():(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance'));
  var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance');
@@ -23968,6 +24065,21 @@ async function jobsRender(){
   ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">V Free</button>'
   : '';
 
+ var btnMaintVendor='';
+ if(isMaintenanceOnly&&!isCancelled&&!isFinalized){
+  btnMaintVendor='<button type="button" onclick="jobsVendorEscalate(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_vendor_escalate_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff">'+gmJobsT('jobs_btn_vendor_escalate')+'</button>';
+ }
+
+ var actionsInner;
+ var dismissCellHtml;
+ if(isMaintenanceOnly){
+  actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnVendorFree+btnFinalize;
+  dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
+ }else{
+  actionsInner=btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree;
+  dismissCellHtml=btnDismissTd;
+ }
+
  var statusBadge=(typeof gmJobStatusBadgeHtml==='function')?gmJobStatusBadgeHtml(r):'<span>—</span>';
  var qtyBadge=(typeof gmJobsQtyBadgeHtml==='function')?gmJobsQtyBadgeHtml(r):'<span style="font-size:9px;color:var(--ink3)">0</span>';
  var tenantDisp=(typeof gmJobsResolveTenantName==='function')?gmJobsResolveTenantName(r):'\u2014';
@@ -23988,8 +24100,8 @@ async function jobsRender(){
   +'<td data-label="'+gmJobsT('jobs_col_date')+'" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
   +(typeof jobsFmtValueCellHtml==='function'?jobsFmtValueCellHtml(r):'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right">'+jobsMoney(jobsRowDisplayValue(r))+'</td>')
   +'<td data-label="'+gmJobsT('jobs_col_status')+'" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
-  +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree+'</div></td>'
-  +btnDismissTd
+  +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+actionsInner+'</div></td>'
+  +dismissCellHtml
   +'</tr>';
  }).join('');
  if(typeof gmJobsApplyDeepLinkHighlight==='function')gmJobsApplyDeepLinkHighlight();
@@ -24563,6 +24675,7 @@ window.jobsFilteredExpenses=jobsFilteredExpenses;
 window.jobsFilteredExpensesCore=jobsFilteredExpensesCore;
 window.jobsRender=jobsRender;
 window.jobsOnVendorClick=jobsOnVendorClick;
+window.jobsVendorEscalate=window.jobsVendorEscalate;
 window.jobsOnJobClick=jobsOnJobClick;
 /* ========== /JOBS MODULE ========== */
 
