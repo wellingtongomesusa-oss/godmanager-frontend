@@ -808,6 +808,24 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-jobs .jobs-filters-block{display:none}
  #page-jobs .jobs-filters-block.is-open{display:block}
 
+ /* Jobs Follow — read-only stepper cards */
+ #page-jobs-follow .gm-jf-card{
+  padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 1px 3px rgba(26,26,28,.05);transition:border-color .15s,box-shadow .15s,transform .15s;
+ }
+ #page-jobs-follow .gm-jf-card:hover{border-color:var(--amber-bd);box-shadow:0 4px 14px rgba(201,169,110,.08);transform:translateY(-1px)}
+ #page-jobs-follow .gm-jf-stepper{display:flex;align-items:flex-start;gap:0;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);overflow-x:auto}
+ #page-jobs-follow .gm-jf-step{flex:1;min-width:72px;display:flex;flex-direction:column;align-items:center;position:relative}
+ #page-jobs-follow .gm-jf-ring{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);background:var(--cream);flex-shrink:0;transition:background .15s,border-color .15s,box-shadow .15s}
+ #page-jobs-follow .gm-jf-step.is-done .gm-jf-ring{background:currentColor;border-color:currentColor;opacity:.85}
+ #page-jobs-follow .gm-jf-step.is-current .gm-jf-ring{background:currentColor;border-color:currentColor;box-shadow:0 0 0 3px rgba(201,169,110,.18)}
+ #page-jobs-follow .gm-jf-step.is-future .gm-jf-ring{background:var(--cream)}
+ #page-jobs-follow .gm-jf-label{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-top:6px;text-align:center;line-height:1.25;max-width:76px}
+ #page-jobs-follow .gm-jf-step.is-current .gm-jf-label{color:var(--ink);font-weight:700}
+ #page-jobs-follow .gm-jf-step.is-done .gm-jf-label{color:var(--ink2)}
+ #page-jobs-follow .gm-jf-connector{flex:1;min-width:12px;height:2px;background:var(--border);margin-top:11px;align-self:flex-start}
+ #page-jobs-follow .gm-jf-connector.is-done{background:var(--amber);opacity:.45}
+
  /* F1: Tabela -> Cards verticais */
  #page-jobs .lt-jobs-table thead{display:none}
  #page-jobs .lt-jobs-table,
@@ -1347,6 +1365,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="ss" onclick="nav('ltcleanings')" id="nav-ltcleanings" data-i18n="cleanings">Cleanings</div>
  <div class="ss" onclick="nav('vendors')" id="nav-vendors" data-i18n="nav_vendors">Vendors</div>
  <div class="ss" onclick="nav('jobs')" id="nav-jobs" data-i18n="nav_jobs">Jobs</div>
+ <div class="ss" onclick="nav('jobs-follow')" id="nav-jobs-follow" data-i18n="nav_follow">Acompanhamento</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
@@ -3124,6 +3143,41 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
 </div>
 <!-- /JOBS PAGE -->
+
+<!-- JOBS FOLLOW — read-only acompanhamento -->
+<div class="page" id="page-jobs-follow">
+ <div class="ph">
+  <div>
+   <div class="pt" data-i18n="title_jobs_follow">Acompanhamento</div>
+   <div class="ps" data-i18n="jobs_follow_subtitle">Etapas de follow-up por job (somente leitura)</div>
+  </div>
+ </div>
+ <div id="jobs-follow-filter-row" style="display:flex;gap:8px;align-items:center;margin:8px 32px 0;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap">
+  <label data-i18n="jobs_date_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Data:</label>
+  <button type="button" id="jobs-follow-df-today" data-i18n="jobs_date_today" onclick="gmJobsFollowSetDateFilter('today')" style="padding:6px 14px;border:1px solid var(--navy);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--navy);font-weight:500">Hoje</button>
+  <button type="button" id="jobs-follow-df-tomorrow" data-i18n="jobs_date_tomorrow" onclick="gmJobsFollowSetDateFilter('tomorrow')" style="padding:6px 14px;border:1px solid var(--navy);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--navy);font-weight:500">Amanhã</button>
+  <button type="button" id="jobs-follow-df-week" data-i18n="jobs_date_week" onclick="gmJobsFollowSetDateFilter('week')" style="padding:6px 14px;border:1px solid var(--navy);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--navy);font-weight:500">Esta semana</button>
+  <button type="button" id="jobs-follow-df-custom" data-i18n="jobs_date_custom" onclick="gmJobsFollowSetDateFilter('custom')" style="padding:6px 14px;border:1px solid var(--navy);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--navy);font-weight:500">Customizado</button>
+  <input type="date" id="jobs-follow-df-custom-input" onchange="gmJobsFollowSetDateFilter('custom',this.value)" style="display:none;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-left:4px">
+  <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
+  <label data-i18n="jobs_property_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Propriedade:</label>
+  <select id="jobs-follow-property-filter" onchange="gmJobsSetPropertyFilter(this.value);if(typeof gmJobsFollowRender==='function')gmJobsFollowRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:220px">
+   <option value="" data-i18n="jobs_all_properties">Todas as propriedades</option>
+  </select>
+  <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
+  <label data-i18n="jobs_vendor_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Vendor:</label>
+  <select id="jobs-follow-vendor-filter" onchange="gmJobsSetVendorFilter(this.value);if(typeof gmJobsFollowRender==='function')gmJobsFollowRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px">
+   <option value="" data-i18n="jobs_all_vendors">Todos os vendors</option>
+  </select>
+  <button type="button" id="jobs-follow-df-all" data-i18n="jobs_date_all" onclick="gmJobsFollowSetDateFilter('all')" style="padding:6px 14px;border:1px solid var(--navy);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:var(--navy);color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
+ </div>
+ <div style="padding:24px 32px 32px">
+  <div id="jobs-follow-count" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:12px" data-i18n="jobs_follow_count_label">Jobs</div>
+  <div id="jobs-follow-cards" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div id="jobs-follow-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:13px" data-i18n="jobs_follow_empty">Nenhum job encontrado com os filtros actuais.</div>
+ </div>
+</div>
+<!-- /JOBS FOLLOW -->
 
 <!-- JOBS MANAGER MARKUP MODAL -->
 <div id="jobs-manager-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9400;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)jobsManagerClose()">
@@ -9541,7 +9595,8 @@ function nav(r){
    try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(eb){}
   }catch(eAd){console.warn('[admin-dashboard nav]',eAd);if(typeof nav==='function')nav('home');}
  },
- news:function(){if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){if(typeof renderMsgs==='function')renderMsgs();});}
+ news:function(){if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){if(typeof renderMsgs==='function')renderMsgs();});},
+ 'jobs-follow':function(){if(typeof gmJobsFollowInit==='function')void gmJobsFollowInit();}
  };
  if(renders[r]) setTimeout(renders[r],30);
  try{if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();}catch(_gnb){}
@@ -21840,6 +21895,182 @@ async function gmJobFollowUpPatch(jobId,partial){
 }
 window.gmJobFollowUpPatch=gmJobFollowUpPatch;
 
+/** Read-only display stage: metadata.followUp.stage ou derivação documentada. */
+function gmJobFollowUpDisplayStage(r){
+ if(!r)return 'opened';
+ try{
+  var meta=gmJobFollowUpRowMetadata(r);
+  if(meta&&meta.followUp&&typeof meta.followUp==='object'&&!Array.isArray(meta.followUp)){
+   var explicit=String(meta.followUp.stage||'').trim();
+   if(explicit&&GM_JOB_FOLLOWUP_STAGES.indexOf(explicit)>=0)return explicit;
+  }
+ }catch(e){}
+ var pm=jobsPmStatusKey(r);
+ if(pm==='CANCELLED')return 'followup_closed';
+ if(pm==='FINALIZED'||pm==='PAID'){
+  if(gmJobsRowIsVendorFree(r))return 'closed_internal';
+  var vFin=jobsVendorSourceStr(r);
+  return vFin?'vendor_done':'closed_internal';
+ }
+ if(gmJobsRowIsVendorFree(r))return 'closed_internal';
+ var vend=jobsVendorSourceStr(r);
+ if(vend)return 'vendor_requested';
+ if(pm==='SCHEDULED'||gmJobsRowWasRescheduled(r))return 'maintenance_scheduled';
+ return 'opened';
+}
+window.gmJobFollowUpDisplayStage=gmJobFollowUpDisplayStage;
+
+var GM_JF_STAGE_COLORS={
+ opened:'var(--amber)',
+ maintenance_scheduled:'var(--blue)',
+ closed_internal:'var(--slate)',
+ vendor_requested:'#7c3aed',
+ awaiting_quote:'#7c3aed',
+ awaiting_vendor:'#7c3aed',
+ vendor_done:'var(--green)',
+ followup_closed:'var(--green)',
+ escalated:'var(--red)'
+};
+
+function gmJobsFollowStepperPath(r){
+ var hasVendor=!!jobsVendorSourceStr(r)&&!gmJobsRowIsVendorFree(r);
+ if(hasVendor)return ['opened','maintenance_scheduled','vendor_requested','awaiting_quote','awaiting_vendor','vendor_done','followup_closed'];
+ return ['opened','maintenance_scheduled','closed_internal','followup_closed'];
+}
+
+function gmJobsFollowRowAddress(r){
+ var meta=gmJobFollowUpRowMetadata(r);
+ if(meta&&meta.houseLabel)return String(meta.houseLabel).trim();
+ return (typeof jobsResolveAddress==='function')?jobsResolveAddress(r):'\u2014';
+}
+
+function gmJobsFollowRenderStepper(r){
+ var path=gmJobsFollowStepperPath(r);
+ var current=gmJobFollowUpDisplayStage(r);
+ var curIdx=path.indexOf(current);
+ if(curIdx<0)curIdx=0;
+ var html='<div class="gm-jf-stepper" role="list">';
+ path.forEach(function(st,i){
+  if(i>0){
+   var connDone=i<=curIdx;
+   html+='<div class="gm-jf-connector'+(connDone?' is-done':'')+'" aria-hidden="true"></div>';
+  }
+  var cls='gm-jf-step';
+  if(i<curIdx)cls+=' is-done';
+  else if(i===curIdx)cls+=' is-current';
+  else cls+=' is-future';
+  var col=GM_JF_STAGE_COLORS[st]||'var(--ink3)';
+  var lbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(st):st;
+  html+='<div class="'+cls+'" role="listitem" style="color:'+col+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'">'
+   +'<div class="gm-jf-ring" aria-hidden="true"></div>'
+   +'<div class="gm-jf-label">'+String(lbl).replace(/</g,'&lt;')+'</div>'
+   +'</div>';
+ });
+ html+='</div>';
+ return html;
+}
+
+function gmJobsFollowRenderCard(r){
+ var addr=gmJobsFollowRowAddress(r);
+ var vendor=jobsVendorSourceStr(r);
+ var vendorAcr=(vendor&&typeof gmGetVendorAcronymByName==='function')?gmGetVendorAcronymByName(vendor):vendor;
+ var dt=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
+ var val=parseFloat(r.value||r.ownerCharged||r.amount||0)||0;
+ var valStr=val>0?((typeof jobsMoney==='function')?jobsMoney(val):'$'+val.toFixed(2)):'';
+ var stage=gmJobFollowUpDisplayStage(r);
+ return '<div class="gm-jf-card" data-job-id="'+String(r.id||'').replace(/"/g,'&quot;')+'" data-follow-stage="'+String(stage).replace(/"/g,'&quot;')+'">'
+  +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'
+  +'<div style="flex:1;min-width:180px">'
+  +'<div style="font-family:\'Cormorant Garamond\',serif;font-size:17px;font-weight:600;color:var(--ink);line-height:1.3">'+String(addr).replace(/</g,'&lt;')+'</div>'
+  +'<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--ink3)">'
+  +(vendorAcr?'<span style="font-size:10px;font-weight:700;color:var(--ink2);background:var(--sand);padding:3px 9px;border-radius:20px;border:1px solid var(--border)">'+String(vendorAcr).replace(/</g,'&lt;')+'</span>':'')
+  +(dt?'<span style="font-family:\'JetBrains Mono\',monospace;font-weight:600;color:var(--ink2)">'+String(dt).replace(/</g,'&lt;')+'</span>':'')
+  +(valStr?'<span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;color:var(--ink)">'+valStr+'</span>':'')
+  +'</div></div></div>'
+  +gmJobsFollowRenderStepper(r)
+  +'</div>';
+}
+
+function gmJobsFollowSyncDateFilterUi(){
+ try{
+  var f=window.__jobsDateFilter||'all';
+  ['today','tomorrow','week','custom','all'].forEach(function(k){
+   var b=document.getElementById('jobs-follow-df-'+k);
+   if(b){
+    var active=(k===f);
+    b.style.background=active?'var(--navy)':'transparent';
+    b.style.color=active?'#fff':(k==='all'?'var(--ink3)':'var(--navy)');
+    b.style.fontWeight=active?'700':'500';
+   }
+  });
+  var custInput=document.getElementById('jobs-follow-df-custom-input');
+  if(custInput)custInput.style.display=(f==='custom')?'inline-block':'none';
+ }catch(e){}
+}
+
+window.gmJobsFollowSetDateFilter=function(f,custom){
+ if(typeof gmJobsSetDateFilter==='function')gmJobsSetDateFilter(f,custom);
+ gmJobsFollowSyncDateFilterUi();
+ if(typeof gmJobsFollowRender==='function')gmJobsFollowRender();
+};
+
+async function gmJobsFollowPopulateFilters(){
+ if(typeof gmJobsPopulatePropertyFilter==='function')await gmJobsPopulatePropertyFilter();
+ var srcP=document.getElementById('jobs-property-filter');
+ var dstP=document.getElementById('jobs-follow-property-filter');
+ if(srcP&&dstP){
+  dstP.innerHTML=srcP.innerHTML;
+  dstP.value=String(window.__jobsPropertyFilter||'').trim();
+ }
+ var rows=(typeof jobsMergeForJobs==='function')?jobsMergeForJobs():(window.__jobsApiRowsCache||[]);
+ if(typeof gmJobsRebuildVendorOptions==='function')gmJobsRebuildVendorOptions(rows);
+ var srcV=document.getElementById('jobs-vendor-filter');
+ var dstV=document.getElementById('jobs-follow-vendor-filter');
+ if(srcV&&dstV){
+  dstV.innerHTML=srcV.innerHTML;
+  dstV.value=String(window.__jobsVendorFilter||'').trim();
+ }
+ gmJobsFollowSyncDateFilterUi();
+}
+
+function gmJobsFollowRender(){
+ var host=document.getElementById('jobs-follow-cards');
+ var emptyEl=document.getElementById('jobs-follow-empty');
+ var countEl=document.getElementById('jobs-follow-count');
+ if(!host)return;
+ var rows=(typeof jobsFilteredExpensesCore==='function')?jobsFilteredExpensesCore():[];
+ rows.sort(function(a,b){
+  var da=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(a):'';
+  var db=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(b):'';
+  return db.localeCompare(da);
+ });
+ if(countEl){
+  var cntLbl=(typeof t==='function')?t('jobs_follow_count_label'):'Jobs';
+  if(!cntLbl||cntLbl==='jobs_follow_count_label')cntLbl='Jobs';
+  countEl.textContent=cntLbl+': '+rows.length;
+ }
+ if(!rows.length){
+  host.innerHTML='';
+  if(emptyEl)emptyEl.style.display='block';
+  return;
+ }
+ if(emptyEl)emptyEl.style.display='none';
+ host.innerHTML=rows.map(gmJobsFollowRenderCard).join('');
+}
+
+async function gmJobsFollowInit(){
+ try{
+  if(typeof gmJobsSetDateFilter==='function')gmJobsSetDateFilter('all');
+  window.__jobsExpensesCacheAt=0;
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  if(typeof jobsFetchFromApi==='function')await jobsFetchFromApi();
+  await gmJobsFollowPopulateFilters();
+  gmJobsFollowRender();
+ }catch(e){console.warn('[gmJobsFollowInit]',e);}
+}
+window.gmJobsFollowInit=gmJobsFollowInit;
+window.gmJobsFollowRender=gmJobsFollowRender;
+
 function jobsParseMarkupAmount(meta){
  if(meta==null)return 0;
  if(typeof meta==='object'&&meta.amount!=null)return Number(meta.amount)||0;
@@ -24224,6 +24455,11 @@ function gmJobApplyReschedule(id,newDate,rescheduleBy){
     window.__jobsExpensesCacheAt=0;
     if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
     setTimeout(function(){if(typeof jobsRender==='function')jobsRender();},10);
+   }
+   if(route==='jobs-follow'){
+    window.__jobsExpensesCacheAt=0;
+    if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+    setTimeout(function(){if(typeof gmJobsFollowInit==='function')gmJobsFollowInit();},10);
    }
   }catch(e){}
   return ret;
