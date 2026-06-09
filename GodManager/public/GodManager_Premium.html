@@ -808,7 +808,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-jobs .jobs-filters-block{display:none}
  #page-jobs .jobs-filters-block.is-open{display:block}
 
- /* Jobs Follow — single horizontal row per job (read-only) */
+ /* Jobs Follow — grid 6 colunas por job (read-only) */
  #page-jobs-follow #jobs-follow-cards{
   display:flex;flex-direction:column;gap:0;
   background:var(--paper);border:1px solid var(--border);border-radius:12px;overflow:hidden;
@@ -818,30 +818,30 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  }
  #page-jobs-follow .gm-jf-card:hover{border-color:transparent;box-shadow:none;transform:none}
  #page-jobs-follow .gm-jf-row{
-  display:flex;flex-direction:row;align-items:center;gap:14px;flex-wrap:nowrap;
+  display:grid !important;
+  grid-template-columns:minmax(180px,1.2fr) max-content max-content max-content minmax(140px,2fr) max-content !important;
+  align-items:center;column-gap:16px;
   padding:12px 16px;border-bottom:1px solid var(--border);
+  width:100%;box-sizing:border-box;
  }
  #page-jobs-follow .gm-jf-card:last-child .gm-jf-row{border-bottom:none}
- #page-jobs-follow .gm-jf-info{
-  display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0;
- }
  #page-jobs-follow .gm-jf-addr{
   font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--ink);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;
+  min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
  }
  #page-jobs-follow .gm-jf-badge{
   font-size:10px;font-weight:700;color:var(--ink2);background:var(--sand);
-  padding:3px 9px;border-radius:20px;border:1px solid var(--border);flex-shrink:0;white-space:nowrap;
+  padding:3px 9px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;justify-self:start;
  }
  #page-jobs-follow .gm-jf-date{
-  font-size:12px;color:var(--ink3);font-family:'JetBrains Mono',monospace;font-weight:600;flex-shrink:0;white-space:nowrap;
+  font-size:12px;color:var(--ink3);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap;justify-self:start;
  }
- #page-jobs-follow .gm-jf-val{
-  font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:700;flex-shrink:0;white-space:nowrap;
+ #page-jobs-follow .gm-jf-value{
+  font-size:12px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap;justify-self:start;
  }
  /* Stepper: ROW horizontal obrigatoria (aneis maiores) */
  #page-jobs-follow .gm-jf-stepper{
-  flex:1 1 auto;min-width:120px;
+  min-width:0;
   display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;
   align-items:center !important;justify-content:flex-start !important;gap:0 !important;
   box-sizing:border-box;padding:4px 0;overflow-x:auto;overflow-y:hidden;
@@ -882,18 +882,12 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  }
  #page-jobs-follow .gm-jf-connector.is-done{background:currentColor;opacity:.38}
  #page-jobs-follow .gm-jf-stagelabel{
-  flex:0 0 auto;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
-  color:var(--ink3);font-family:'DM Sans',sans-serif;line-height:1.4;white-space:nowrap;
- }
- #page-jobs-follow .gm-jf-stagelabel strong{
-  font-size:12px;font-weight:700;text-transform:none;letter-spacing:.02em;
-  font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;line-height:1.4;white-space:nowrap;justify-self:end;
  }
  @media (max-width:768px){
-  #page-jobs-follow .gm-jf-row{flex-wrap:wrap}
-  #page-jobs-follow .gm-jf-info{flex:1 1 100%}
-  #page-jobs-follow .gm-jf-stepper{flex:1 1 100%;overflow-x:auto}
-  #page-jobs-follow .gm-jf-stagelabel{flex:0 0 auto}
+  #page-jobs-follow .gm-jf-row{grid-template-columns:1fr;row-gap:6px}
+  #page-jobs-follow .gm-jf-stepper{overflow-x:auto}
+  #page-jobs-follow .gm-jf-stagelabel{justify-self:start}
  }
 
  /* F1: Tabela -> Cards verticais */
@@ -22105,20 +22099,17 @@ function gmJobsFollowRenderCard(r){
  var valStr=val>0?((typeof jobsMoney==='function')?jobsMoney(val):'$'+val.toFixed(2)):'';
  var stage=gmJobFollowUpDisplayStage(r);
  var currentLbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(stage):stage;
- var capPrefix=(typeof t==='function')?t('jobs_follow_current_stage'):'Etapa atual';
- if(!capPrefix||capPrefix==='jobs_follow_current_stage')capPrefix='Etapa atual';
  var curCol=GM_JF_STAGE_COLORS[stage]||'var(--ink)';
  var addrEsc=String(addr).replace(/</g,'&lt;').replace(/"/g,'&quot;');
+ var rowGridSt='display:grid;grid-template-columns:minmax(180px,1.2fr) max-content max-content max-content minmax(140px,2fr) max-content;align-items:center;column-gap:16px;width:100%';
  return '<div class="gm-jf-card" data-job-id="'+String(r.id||'').replace(/"/g,'&quot;')+'" data-follow-stage="'+String(stage).replace(/"/g,'&quot;')+'">'
-  +'<div class="gm-jf-row">'
-  +'<div class="gm-jf-info">'
-  +'<span class="gm-jf-addr" title="'+addrEsc+'">'+String(addr).replace(/</g,'&lt;')+'</span>'
-  +(badgeLbl?'<span class="gm-jf-badge">'+String(badgeLbl).replace(/</g,'&lt;')+'</span>':'')
-  +(dt?'<span class="gm-jf-date">'+String(dt).replace(/</g,'&lt;')+'</span>':'')
-  +(valStr?'<span class="gm-jf-val">'+valStr+'</span>':'')
-  +'</div>'
+  +'<div class="gm-jf-row" style="'+rowGridSt+'">'
+  +'<div class="gm-jf-addr" title="'+addrEsc+'">'+String(addr).replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-badge">'+String(badgeLbl||'').replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-date">'+String(dt||'').replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-value">'+valStr+'</div>'
   +gmJobsFollowRenderStepper(r)
-  +'<div class="gm-jf-stagelabel">'+String(capPrefix).replace(/</g,'&lt;')+': <strong style="color:'+curCol+'">'+String(currentLbl).replace(/</g,'&lt;')+'</strong></div>'
+  +'<div class="gm-jf-stagelabel" style="color:'+curCol+'">'+String(currentLbl).replace(/</g,'&lt;')+'</div>'
   +'</div></div>';
 }
 

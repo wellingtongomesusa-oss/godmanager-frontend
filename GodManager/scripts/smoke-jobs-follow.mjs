@@ -159,9 +159,13 @@ const RENDER_HTML_PROBE_JS = `function(row){
 const DOM_CARD_SNAPSHOT_JS = `function(card){
  if(!card)return{ok:false};
  var row=card.querySelector('.gm-jf-row');
- var info=card.querySelector('.gm-jf-info');
+ var addr=card.querySelector('.gm-jf-addr');
+ var badge=card.querySelector('.gm-jf-badge');
+ var dateEl=card.querySelector('.gm-jf-date');
+ var valueEl=card.querySelector('.gm-jf-value');
  var stepper=card.querySelector('.gm-jf-stepper');
  var stagelabel=card.querySelector('.gm-jf-stagelabel');
+ var rowStyle=row?window.getComputedStyle(row):null;
  var current=card.querySelector('.gm-jf-step.is-current');
  var doneCount=card.querySelectorAll('.gm-jf-step.is-done').length;
  var futureCount=card.querySelectorAll('.gm-jf-step.is-future').length;
@@ -199,18 +203,24 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   }
  }
  var rowLayout={ok:false};
- if(row&&info&&stepper){
-  var infoR=info.getBoundingClientRect();
-  var stepR=stepper.getBoundingClientRect();
-  var infoCy=infoR.top+infoR.height/2;
-  var stepCy=stepR.top+stepR.height/2;
-  var yDelta=Math.abs(infoCy-stepCy);
-  rowLayout={ok:true,sameLine:yDelta<=40,infoCy:infoCy,stepCy:stepCy,yDelta:yDelta,hasRow:!!row,hasInfo:!!info};
+ var columns={ok:false};
+ if(row&&addr&&badge&&dateEl&&valueEl&&stepper&&stagelabel){
+  var colEls=[addr,badge,dateEl,valueEl,stepper,stagelabel];
+  var colRects=colEls.map(function(el){return el.getBoundingClientRect();});
+  var cys=colRects.map(function(r){return r.top+r.height/2;});
+  var colXs=colRects.map(function(r){return r.left+r.width/2;});
+  var ySpread=Math.max.apply(null,cys)-Math.min.apply(null,cys);
+  var xIncreasing=true;
+  for(var ci=1;ci<colXs.length;ci++){if(colXs[ci]<=colXs[ci-1]+2)xIncreasing=false;}
+  rowLayout={ok:true,sameLine:ySpread<=24,ySpread:ySpread,cys:cys,fieldCount:6};
+  columns={ok:true,xIncreasing:xIncreasing,xs:colXs,fields:['addr','badge','date','value','stepper','stage']};
  }
  return{
-  ok:true,hasRow:!!row,hasInfo:!!info,
+  ok:true,hasRow:!!row,gridDisplay:rowStyle?rowStyle.display:null,
+  hasAddr:!!addr,hasBadge:!!badge,hasDate:!!dateEl,hasValue:!!valueEl,
   hasStagelabel:!!stagelabel&&String(stagelabel.textContent||'').trim().length>0,
   stagelabelText:stagelabel?String(stagelabel.textContent||'').trim():'',
+  noStagePrefix:!stagelabel||(!/current stage|etapa atual/i.test(String(stagelabel.textContent||''))),
   flexDirection:stepperStyle?stepperStyle.flexDirection:null,
   flexWrap:stepperStyle?stepperStyle.flexWrap:null,
   ringCount:card.querySelectorAll('.gm-jf-ring').length,
@@ -225,7 +235,8 @@ const DOM_CARD_SNAPSHOT_JS = `function(card){
   visibleLabelCount:visibleLabels.length,
   visibleStepTextCount:visibleStepText.length,
   geometry:geometry,
-  rowLayout:rowLayout
+  rowLayout:rowLayout,
+  columns:columns
  };
 }`;
 
@@ -359,10 +370,18 @@ async function smokeAdmin() {
       s1.visibleStepTextCount === 0 &&
       s1.currentStage === 'vendor_requested' &&
       s1.hasRow &&
-      s1.hasInfo &&
+      s1.gridDisplay === 'grid' &&
+      s1.hasAddr &&
+      s1.hasBadge &&
+      s1.hasDate &&
+      s1.hasValue &&
       s1.hasStagelabel &&
+      s1.noStagePrefix &&
       s1.rowLayout?.ok &&
       s1.rowLayout.sameLine &&
+      s1.rowLayout.fieldCount === 6 &&
+      s1.columns?.ok &&
+      s1.columns.xIncreasing &&
       s1.currentRingInline.indexOf('36px') >= 0 &&
       s1.doneRingInline.indexOf('16px') >= 0 &&
       s1.currentHasHalo &&
@@ -371,9 +390,15 @@ async function smokeAdmin() {
       s2.visibleLabelCount === 0 &&
       s2.visibleStepTextCount === 0 &&
       s2.flexDirection === 'row' &&
+      s2.gridDisplay === 'grid' &&
+      s2.hasAddr &&
+      s2.hasBadge &&
       s2.hasStagelabel &&
+      s2.noStagePrefix &&
       s2.rowLayout?.ok &&
       s2.rowLayout.sameLine &&
+      s2.columns?.ok &&
+      s2.columns.xIncreasing &&
       s2.geometry?.ok &&
       s2.geometry.horizontal &&
       !s2.geometry.verticalStack;
