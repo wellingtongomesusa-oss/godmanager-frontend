@@ -1,8 +1,9 @@
 /**
  * Smoke — Jobs Follow (read-only acompanhamento + horizontal ring stepper).
- * C1: vendor_requested — current ring highlighted, done/future states
- * C2: closed_internal — internal path, current ring on closed_internal
- * C3: horizontal layout, read-only, other pages unchanged
+ * Valida DOM REAL: gmJobsFollowRenderStepper HTML + gmJobsFollowRender no #page-jobs-follow.
+ * C1: vendor_requested — aneis horizontais, etapa atual destacada, sem lista vertical
+ * C2: closed_internal — caminho interno, etapa atual em closed_internal
+ * C3: read-only, filtros, Jobs page intacta
  */
 import { chromium } from 'playwright';
 import { readFileSync } from 'fs';
@@ -127,7 +128,37 @@ function injectMocks(page) {
   });
 }
 
-const STEPPER_SNAPSHOT_JS = `function(card){
+/** Inspeciona HTML gerado por gmJobsFollowRenderStepper (render real, nao mock estrutural). */
+const RENDER_HTML_PROBE_JS = `function(row){
+ if(!row||typeof gmJobsFollowRenderStepper!=='function')return{ok:false,reason:'gmJobsFollowRenderStepper missing'};
+ var html=gmJobsFollowRenderStepper(row);
+ var host=document.createElement('div');
+ host.innerHTML=html;
+ var stepper=host.querySelector('.gm-jf-stepper');
+ var rings=host.querySelectorAll('.gm-jf-ring');
+ var labels=host.querySelectorAll('.gm-jf-label');
+ var sr=host.querySelectorAll('.gm-jf-sr');
+ var current=host.querySelector('.gm-jf-step.is-current');
+ var caption=host.querySelector('.gm-jf-current-caption');
+ return{
+  ok:true,
+  htmlLen:html.length,
+  hasStepperWrap:!!host.querySelector('.gm-jf-stepper-wrap'),
+  ringCount:rings.length,
+  labelCount:labels.length,
+  srCount:sr.length,
+  htmlHasLabelClass:html.indexOf('gm-jf-label')>=0,
+  hasCurrent:!!current,
+  currentStage:current?current.getAttribute('data-stage'):null,
+  hasCaption:!!caption,
+  captionHasText:caption?String(caption.textContent||'').trim().length>0:false,
+  htmlHasCurrentRing28:html.indexOf('is-current')>=0&&html.indexOf('width:28px')>=0,
+  htmlHasDoneRing12:html.indexOf('is-done')>=0&&html.indexOf('width:12px')>=0
+ };
+}`;
+
+/** Snapshot do card renderizado no DOM (#jobs-follow-cards). */
+const DOM_CARD_SNAPSHOT_JS = `function(card){
  if(!card)return{ok:false};
  var stepper=card.querySelector('.gm-jf-stepper');
  var wrap=card.querySelector('.gm-jf-stepper-wrap');
@@ -135,13 +166,23 @@ const STEPPER_SNAPSHOT_JS = `function(card){
  var current=card.querySelector('.gm-jf-step.is-current');
  var doneCount=card.querySelectorAll('.gm-jf-step.is-done').length;
  var futureCount=card.querySelectorAll('.gm-jf-step.is-future').length;
- var visibleLabels=[].slice.call(card.querySelectorAll('.gm-jf-label')).filter(function(el){
+ var visibleLabels=[].slice.call(card.querySelectorAll('.gm-jf-label,.gm-jf-sr')).filter(function(el){
   var cs=window.getComputedStyle(el);
-  return cs.display!=='none'&&cs.visibility!=='hidden';
+  return cs.display!=='none'&&cs.visibility!=='hidden'&&parseFloat(cs.width)>1&&parseFloat(cs.height)>1;
+ });
+ var visibleStepText=[].slice.call(stepper?stepper.querySelectorAll('.gm-jf-step *'):[]).filter(function(el){
+  if(el.classList.contains('gm-jf-ring')||el.classList.contains('gm-jf-connector'))return false;
+  var cs=window.getComputedStyle(el);
+  if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)===0)return false;
+  var t=String(el.textContent||'').trim();
+  return t.length>0;
  });
  var stepperStyle=stepper?window.getComputedStyle(stepper):null;
  var currentRing=current?current.querySelector('.gm-jf-ring'):null;
- var currentRingStyle=currentRing?window.getComputedStyle(currentRing):null;
+ var doneRing=card.querySelector('.gm-jf-step.is-done .gm-jf-ring');
+ var ringW=function(el){return el?(el.offsetWidth||parseFloat(window.getComputedStyle(el).width)||0):0;};
+ var currentRingInline=currentRing?String(currentRing.getAttribute('style')||''):'';
+ var doneRingInline=doneRing?String(doneRing.getAttribute('style')||''):'';
  return{
   ok:true,hasWrap:!!wrap,
   hasCaption:!!caption&&String(caption.textContent||'').trim().length>0,
@@ -149,15 +190,49 @@ const STEPPER_SNAPSHOT_JS = `function(card){
   flexDirection:stepperStyle?stepperStyle.flexDirection:null,
   flexWrap:stepperStyle?stepperStyle.flexWrap:null,
   ringCount:card.querySelectorAll('.gm-jf-ring').length,
+  connectorCount:card.querySelectorAll('.gm-jf-connector').length,
   currentStage:current?current.getAttribute('data-stage'):null,
-  currentRingW:currentRingStyle?parseFloat(currentRingStyle.width):0,
-  doneCount:doneCount,futureCount:futureCount,visibleLabelCount:visibleLabels.length
+  currentRingW:ringW(currentRing),
+  doneRingW:ringW(doneRing),
+  currentRingInline:currentRingInline,
+  doneRingInline:doneRingInline,
+  currentHasHalo:currentRingInline.indexOf('box-shadow')>=0,
+  doneCount:doneCount,futureCount:futureCount,
+  visibleLabelCount:visibleLabels.length,
+  visibleStepTextCount:visibleStepText.length
  };
 }`;
 
 async function smokeAdmin() {
   return runAsUser(users.admin, async (page) => {
     await followReady(page);
+
+    const renderProbe = await page.evaluate((probeSrc) => {
+      const probe = new Function('return ' + probeSrc)();
+      const mockApi = {
+        id: 'probe-vendor',
+        vendorId: 'v-probe',
+        vendorName: 'Probe Vendor',
+        status: 'SCHEDULED',
+        ownerCharged: 80,
+        serviceDate: '2026-05-20',
+        metadata: { followUp: { stage: 'vendor_requested' } },
+      };
+      const row = ltExpMapApiToRow(mockApi);
+      const vendor = probe(row);
+      const internalApi = {
+        id: 'probe-internal',
+        status: 'SCHEDULED',
+        isVendorFree: true,
+        ownerCharged: 50,
+        serviceDate: '2026-05-21',
+        metadata: { followUp: { stage: 'closed_internal' } },
+      };
+      const rowInt = ltExpMapApiToRow(internalApi);
+      const internal = probe(rowInt);
+      return { vendor, internal };
+    }, RENDER_HTML_PROBE_JS);
+
     await injectMocks(page);
     await page.waitForTimeout(800);
 
@@ -170,7 +245,7 @@ async function smokeAdmin() {
         cardCount: document.querySelectorAll('#jobs-follow-cards .gm-jf-card').length,
         snap: snap(vreq),
       };
-    }, STEPPER_SNAPSHOT_JS);
+    }, DOM_CARD_SNAPSHOT_JS);
 
     const c2 = await page.evaluate((snapSrc) => {
       const snap = new Function('return ' + snapSrc)();
@@ -186,7 +261,7 @@ async function smokeAdmin() {
             ? gmJobFollowUpDisplayStage(row)
             : null,
       };
-    }, STEPPER_SNAPSHOT_JS);
+    }, DOM_CARD_SNAPSHOT_JS);
 
     const c2filters = await page.evaluate(async () => {
       if (typeof gmJobsFollowSetDateFilter === 'function') gmJobsFollowSetDateFilter('all');
@@ -216,40 +291,66 @@ async function smokeAdmin() {
       const followPatchBtn = !!document.querySelector(
         '#page-jobs-follow [onclick*="gmJobFollowUpPatch"],#page-jobs-follow [onclick*="followUpPatch"]',
       );
-      const jobsTableBefore = !!document.getElementById('jobs-table');
       nav('jobs');
       const jobsTable = !!document.getElementById('jobs-table');
       const jobsSubtitleLen = (document.getElementById('jobs-page-subtitle') || {}).textContent.length;
-      return { followPatchBtn, jobsTableBefore, jobsTable, jobsSubtitleLen };
+      return { followPatchBtn, jobsTable, jobsSubtitleLen };
     });
 
+    const rp = renderProbe.vendor;
+    const rpInt = renderProbe.internal;
     const s1 = c1.snap;
     const s2 = c2.snap;
-    const ok =
+
+    const renderOk =
+      rp.ok &&
+      rp.ringCount >= 5 &&
+      rp.labelCount === 0 &&
+      rp.srCount === 0 &&
+      !rp.htmlHasLabelClass &&
+      rp.hasCurrent &&
+      rp.currentStage === 'vendor_requested' &&
+      rp.hasCaption &&
+      rp.htmlHasCurrentRing28 &&
+      rp.htmlHasDoneRing12 &&
+      rpInt.ok &&
+      rpInt.currentStage === 'closed_internal' &&
+      !rpInt.htmlHasLabelClass;
+
+    const domOk =
       c1.pageActive &&
       c1.cardCount >= 3 &&
       s1.ok &&
-      s1.currentStage === 'vendor_requested' &&
       s1.flexDirection === 'row' &&
       s1.flexWrap === 'nowrap' &&
-      s1.hasCaption &&
+      s1.ringCount >= 5 &&
+      s1.connectorCount >= 4 &&
       s1.visibleLabelCount === 0 &&
-      s1.doneCount >= 2 &&
-      s1.futureCount >= 1 &&
-      s1.currentRingW >= 24 &&
+      s1.visibleStepTextCount === 0 &&
+      s1.currentStage === 'vendor_requested' &&
+      s1.hasCaption &&
+      s1.currentRingInline.indexOf('28px') >= 0 &&
+      s1.doneRingInline.indexOf('12px') >= 0 &&
+      s1.currentHasHalo &&
       s2.ok &&
       s2.currentStage === 'closed_internal' &&
+      s2.visibleLabelCount === 0 &&
+      s2.visibleStepTextCount === 0 &&
+      s2.flexDirection === 'row' &&
+      s2.hasCaption;
+
+    const ok =
+      renderOk &&
+      domOk &&
       c2.path.includes('closed_internal') &&
       !c2.path.includes('vendor_requested') &&
-      s2.flexDirection === 'row' &&
-      s2.hasCaption &&
       c2filters.dateFilter === 'all' &&
       c2filters.propFilterOk &&
       c2filters.vendorFilterOk &&
       c3.jobsTable &&
       !c3.followPatchBtn;
 
-    return { ok, role: 'admin', c1, c2, c2filters, c3 };
+    return { ok, role: 'admin', renderProbe, c1, c2, c2filters, c3, renderOk, domOk };
   });
 }
 

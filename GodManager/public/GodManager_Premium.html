@@ -820,11 +820,12 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   padding:10px 6px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
  }
  #page-jobs-follow .gm-jf-step{
-  flex:0 0 auto;display:flex;align-items:center;justify-content:center;position:relative;
+  flex:0 0 auto;display:flex;flex-direction:row;align-items:center;justify-content:center;position:relative;
  }
  #page-jobs-follow .gm-jf-ring{
   width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:var(--paper);
-  flex-shrink:0;box-sizing:border-box;transition:width .15s,height .15s,background .15s,border-color .15s,box-shadow .15s,opacity .15s;
+  flex:0 0 auto;flex-shrink:0;max-width:28px;min-width:12px;box-sizing:border-box;
+  transition:width .15s,height .15s,background .15s,border-color .15s,box-shadow .15s,opacity .15s;
  }
  #page-jobs-follow .gm-jf-step.is-done .gm-jf-ring{
   width:12px;height:12px;background:currentColor;border-color:currentColor;opacity:.42;
@@ -834,10 +835,11 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
   box-shadow:0 0 0 4px rgba(201,169,110,.2);
  }
  #page-jobs-follow .gm-jf-step.is-future .gm-jf-ring{background:var(--paper);border-color:var(--border2)}
- #page-jobs-follow .gm-jf-label{display:none}
+ #page-jobs-follow .gm-jf-label,
  #page-jobs-follow .gm-jf-sr{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
-  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  display:none!important;visibility:hidden!important;width:0!important;height:0!important;
+  overflow:hidden!important;position:absolute!important;clip:rect(0,0,0,0)!important;
+  clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;padding:0!important;margin:-1px!important;
  }
  #page-jobs-follow .gm-jf-connector{
   flex:1 1 auto;min-width:18px;max-width:52px;height:2px;background:var(--border);
@@ -22021,9 +22023,13 @@ function gmJobsFollowRenderStepper(r){
   else cls+=' is-future';
   var col=GM_JF_STAGE_COLORS[st]||'var(--ink3)';
   var lbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(st):st;
-  html+='<div class="'+cls+'" role="listitem" style="color:'+col+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'">'
-   +'<div class="gm-jf-ring" aria-hidden="true"></div>'
-   +'<span class="gm-jf-sr">'+String(lbl).replace(/</g,'&lt;')+'</span>'
+  var ringPx=i<curIdx?12:(i===curIdx?28:14);
+  var ringSt='width:'+ringPx+'px;height:'+ringPx+'px;flex:0 0 auto;box-sizing:border-box;border-radius:50%;border:2px solid var(--border2)';
+  if(i<curIdx)ringSt+=';background:currentColor;border-color:currentColor;opacity:.42';
+  else if(i===curIdx)ringSt+=';background:currentColor;border-color:currentColor;box-shadow:0 0 0 4px rgba(201,169,110,.2)';
+  else ringSt+=';background:var(--paper)';
+  html+='<div class="'+cls+'" role="listitem" style="color:'+col+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'" aria-label="'+String(lbl).replace(/"/g,'&quot;')+'">'
+   +'<div class="gm-jf-ring" aria-hidden="true" style="'+ringSt+'"></div>'
    +'</div>';
  });
  html+='</div>';
