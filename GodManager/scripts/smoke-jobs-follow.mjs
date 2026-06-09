@@ -1,8 +1,8 @@
 /**
- * Smoke — Jobs Follow (read-only acompanhamento).
- * C1: nav + cards + stage explicit/derived
- * C2: property/vendor filters + date default all
- * C3: read-only, Jobs unchanged, nav gates
+ * Smoke — Jobs Follow (read-only acompanhamento + horizontal ring stepper).
+ * C1: vendor_requested — current ring highlighted, done/future states
+ * C2: closed_internal — internal path, current ring on closed_internal
+ * C3: horizontal layout, read-only, other pages unchanged
  */
 import { chromium } from 'playwright';
 import { readFileSync } from 'fs';
@@ -85,6 +85,16 @@ function injectMocks(page) {
         metadata: { followUp: { stage: 'vendor_requested' }, houseLabel: '123 Smoke Test St' },
       },
       {
+        id: 'smoke-follow-internal',
+        propertyCode: 'P0102',
+        propAddress: '222 Internal Path Way',
+        status: 'SCHEDULED',
+        isVendorFree: true,
+        ownerCharged: 90,
+        serviceDate: '2025-01-10',
+        metadata: { followUp: { stage: 'closed_internal' }, houseLabel: '222 Internal Path Way' },
+      },
+      {
         id: 'smoke-follow-final',
         vendorId: 'v-smoke-2',
         vendorName: 'Beta HVAC LLC',
@@ -95,29 +105,55 @@ function injectMocks(page) {
         serviceDate: '2025-06-01',
         metadata: { houseLabel: '456 Finalized Ave' },
       },
-      {
-        id: 'smoke-follow-vfree',
-        propertyCode: 'P0101',
-        propAddress: '789 Internal Close',
-        status: 'FINALIZED',
-        isVendorFree: true,
-        ownerCharged: 80,
-        serviceDate: '2023-03-10',
-        metadata: {},
-      },
     ];
     if (typeof ltExpMapApiToRow !== 'function') return { ok: false, reason: 'ltExpMapApiToRow missing' };
-    window.__jobsApiRowsCache = mocks.map((e) => ltExpMapApiToRow(e));
+    const mapped = mocks.map((e) => ltExpMapApiToRow(e));
+    window.__jobsApiRowsCache = mapped;
+    window.__jobsExpensesCacheAt = Date.now();
+    const origFetch = window.jobsFetchFromApi;
+    window.jobsFetchFromApi = async function () {
+      window.__jobsApiRowsCache = mapped;
+      return mapped;
+    };
+    const done = () => {
+      if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
+      window.jobsFetchFromApi = origFetch;
+      return { ok: true, count: mapped.length };
+    };
     if (typeof gmJobsFollowPopulateFilters === 'function') {
-      return gmJobsFollowPopulateFilters().then(() => {
-        if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
-        return { ok: true, count: window.__jobsApiRowsCache.length };
-      });
+      return gmJobsFollowPopulateFilters().then(done);
     }
-    if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
-    return { ok: true, count: window.__jobsApiRowsCache.length };
+    return done();
   });
 }
+
+const STEPPER_SNAPSHOT_JS = `function(card){
+ if(!card)return{ok:false};
+ var stepper=card.querySelector('.gm-jf-stepper');
+ var wrap=card.querySelector('.gm-jf-stepper-wrap');
+ var caption=card.querySelector('.gm-jf-current-caption');
+ var current=card.querySelector('.gm-jf-step.is-current');
+ var doneCount=card.querySelectorAll('.gm-jf-step.is-done').length;
+ var futureCount=card.querySelectorAll('.gm-jf-step.is-future').length;
+ var visibleLabels=[].slice.call(card.querySelectorAll('.gm-jf-label')).filter(function(el){
+  var cs=window.getComputedStyle(el);
+  return cs.display!=='none'&&cs.visibility!=='hidden';
+ });
+ var stepperStyle=stepper?window.getComputedStyle(stepper):null;
+ var currentRing=current?current.querySelector('.gm-jf-ring'):null;
+ var currentRingStyle=currentRing?window.getComputedStyle(currentRing):null;
+ return{
+  ok:true,hasWrap:!!wrap,
+  hasCaption:!!caption&&String(caption.textContent||'').trim().length>0,
+  captionText:caption?String(caption.textContent||'').trim():'',
+  flexDirection:stepperStyle?stepperStyle.flexDirection:null,
+  flexWrap:stepperStyle?stepperStyle.flexWrap:null,
+  ringCount:card.querySelectorAll('.gm-jf-ring').length,
+  currentStage:current?current.getAttribute('data-stage'):null,
+  currentRingW:currentRingStyle?parseFloat(currentRingStyle.width):0,
+  doneCount:doneCount,futureCount:futureCount,visibleLabelCount:visibleLabels.length
+ };
+}`;
 
 async function smokeAdmin() {
   return runAsUser(users.admin, async (page) => {
@@ -125,44 +161,35 @@ async function smokeAdmin() {
     await injectMocks(page);
     await page.waitForTimeout(800);
 
-    const c1 = await page.evaluate(() => {
+    const c1 = await page.evaluate((snapSrc) => {
+      const snap = new Function('return ' + snapSrc)();
       const pg = document.getElementById('page-jobs-follow');
-      const active = pg && pg.classList.contains('active');
-      const cards = [...document.querySelectorAll('#jobs-follow-cards .gm-jf-card')];
       const vreq = document.querySelector('[data-job-id="smoke-follow-vreq"]');
-      const fin = document.querySelector('[data-job-id="smoke-follow-final"]');
-      const vfree = document.querySelector('[data-job-id="smoke-follow-vfree"]');
-      const vreqCurrent = vreq
-        ? !!vreq.querySelector('.gm-jf-step.is-current[data-stage="vendor_requested"]')
-        : false;
-      const finStage =
-        fin && typeof gmJobFollowUpDisplayStage === 'function'
-          ? gmJobFollowUpDisplayStage(
-              (window.__jobsApiRowsCache || []).find((r) => r.id === 'smoke-follow-final'),
-            )
-          : null;
-      const finCurrent = fin
-        ? !!fin.querySelector('.gm-jf-step.is-current[data-stage="vendor_done"]')
-        : false;
-      const vfreeStage =
-        vfree && typeof gmJobFollowUpDisplayStage === 'function'
-          ? gmJobFollowUpDisplayStage(
-              (window.__jobsApiRowsCache || []).find((r) => r.id === 'smoke-follow-vfree'),
-            )
-          : null;
       return {
-        pageActive: !!active,
-        cardCount: cards.length,
-        vreqCurrent,
-        finStage,
-        finCurrent,
-        vfreeStage,
+        pageActive: !!(pg && pg.classList.contains('active')),
+        cardCount: document.querySelectorAll('#jobs-follow-cards .gm-jf-card').length,
+        snap: snap(vreq),
       };
-    });
+    }, STEPPER_SNAPSHOT_JS);
 
-    const c2 = await page.evaluate(async () => {
+    const c2 = await page.evaluate((snapSrc) => {
+      const snap = new Function('return ' + snapSrc)();
+      const internal = document.querySelector('[data-job-id="smoke-follow-internal"]');
+      const row = (window.__jobsApiRowsCache || []).find((r) => r.id === 'smoke-follow-internal');
+      const path =
+        row && typeof gmJobsFollowStepperPath === 'function' ? gmJobsFollowStepperPath(row) : [];
+      return {
+        snap: snap(internal),
+        path,
+        stage:
+          row && typeof gmJobFollowUpDisplayStage === 'function'
+            ? gmJobFollowUpDisplayStage(row)
+            : null,
+      };
+    }, STEPPER_SNAPSHOT_JS);
+
+    const c2filters = await page.evaluate(async () => {
       if (typeof gmJobsFollowSetDateFilter === 'function') gmJobsFollowSetDateFilter('all');
-      const allDateCount = document.querySelectorAll('#jobs-follow-cards .gm-jf-card').length;
       const oldDateVisible = !!document.querySelector('[data-job-id="smoke-follow-vreq"]');
       if (typeof gmJobsSetPropertyFilter === 'function') gmJobsSetPropertyFilter('P0099');
       if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
@@ -179,7 +206,6 @@ async function smokeAdmin() {
       if (typeof gmJobsFollowRender === 'function') gmJobsFollowRender();
       return {
         dateFilter: window.__jobsDateFilter,
-        allDateCount,
         oldDateVisible,
         propFilterOk: afterProp.length === 1 && afterProp[0] === 'smoke-follow-vreq',
         vendorFilterOk: afterVendor.length === 1 && afterVendor[0] === 'smoke-follow-vreq',
@@ -187,41 +213,43 @@ async function smokeAdmin() {
     });
 
     const c3 = await page.evaluate(() => {
-      const navFollow = document.getElementById('nav-jobs-follow');
-      const navVisible = navFollow && navFollow.style.display !== 'none' && navFollow.offsetParent !== null;
-      const jobsTable = !!document.getElementById('jobs-table');
-      const jobsNewBtn = !!document.getElementById('jobs-new-btn');
       const followPatchBtn = !!document.querySelector(
         '#page-jobs-follow [onclick*="gmJobFollowUpPatch"],#page-jobs-follow [onclick*="followUpPatch"]',
       );
+      const jobsTableBefore = !!document.getElementById('jobs-table');
       nav('jobs');
-      const jobsSubtitle = (document.getElementById('jobs-page-subtitle') || {}).textContent || '';
-      return {
-        navFollowVisible: navVisible,
-        jobsTable,
-        jobsNewBtn,
-        followPatchBtn,
-        jobsSubtitleLen: jobsSubtitle.length,
-      };
+      const jobsTable = !!document.getElementById('jobs-table');
+      const jobsSubtitleLen = (document.getElementById('jobs-page-subtitle') || {}).textContent.length;
+      return { followPatchBtn, jobsTableBefore, jobsTable, jobsSubtitleLen };
     });
 
+    const s1 = c1.snap;
+    const s2 = c2.snap;
     const ok =
       c1.pageActive &&
       c1.cardCount >= 3 &&
-      c1.vreqCurrent &&
-      c1.finStage === 'vendor_done' &&
-      c1.finCurrent &&
-      c1.vfreeStage === 'closed_internal' &&
-      c2.dateFilter === 'all' &&
-      c2.oldDateVisible &&
-      c2.propFilterOk &&
-      c2.vendorFilterOk &&
-      c3.navFollowVisible &&
+      s1.ok &&
+      s1.currentStage === 'vendor_requested' &&
+      s1.flexDirection === 'row' &&
+      s1.flexWrap === 'nowrap' &&
+      s1.hasCaption &&
+      s1.visibleLabelCount === 0 &&
+      s1.doneCount >= 2 &&
+      s1.futureCount >= 1 &&
+      s1.currentRingW >= 24 &&
+      s2.ok &&
+      s2.currentStage === 'closed_internal' &&
+      c2.path.includes('closed_internal') &&
+      !c2.path.includes('vendor_requested') &&
+      s2.flexDirection === 'row' &&
+      s2.hasCaption &&
+      c2filters.dateFilter === 'all' &&
+      c2filters.propFilterOk &&
+      c2filters.vendorFilterOk &&
       c3.jobsTable &&
-      c3.jobsNewBtn &&
       !c3.followPatchBtn;
 
-    return { ok, role: 'admin', c1, c2, c3 };
+    return { ok, role: 'admin', c1, c2, c2filters, c3 };
   });
 }
 
@@ -231,26 +259,16 @@ async function smokeMaintenance() {
     await page.waitForTimeout(4000);
     const gate = await page.evaluate(async () => {
       if (typeof gmAuthHydrateUserBadge === 'function') await gmAuthHydrateUserBadge();
-      const role = String((window.__gmCurrentUser && window.__gmCurrentUser.role) || '').toLowerCase();
       if (typeof jobsApplyRoleGateV2 === 'function') await jobsApplyRoleGateV2();
-      const el = document.getElementById('nav-jobs-follow');
-      const hiddenAfterGate = !el || el.style.display === 'none' || el.offsetParent === null;
       if (typeof gmApplyJobsOnlySidebarMode === 'function') gmApplyJobsOnlySidebarMode();
-      const hiddenAfterJobsOnly = !el || el.style.display === 'none' || el.offsetParent === null;
+      const el = document.getElementById('nav-jobs-follow');
       const jobsOnly = document.getElementById('nav-jobs');
-      const jobsVisible = jobsOnly && jobsOnly.style.display !== 'none' && jobsOnly.offsetParent !== null;
       return {
-        role,
-        navFollowHidden: hiddenAfterGate,
-        jobsOnlyHidesFollow: hiddenAfterJobsOnly,
-        navJobsVisible: !!jobsVisible,
+        navFollowHidden: !el || el.style.display === 'none' || el.offsetParent === null,
+        navJobsVisible: !!(jobsOnly && jobsOnly.offsetParent !== null),
       };
     });
-    return {
-      ok: gate.jobsOnlyHidesFollow && gate.navJobsVisible,
-      role: 'maintenance',
-      gate,
-    };
+    return { ok: gate.navFollowHidden && gate.navJobsVisible, role: 'maintenance', gate };
   });
 }
 

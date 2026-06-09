@@ -808,23 +808,50 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
  #page-jobs .jobs-filters-block{display:none}
  #page-jobs .jobs-filters-block.is-open{display:block}
 
- /* Jobs Follow — read-only stepper cards */
+ /* Jobs Follow — read-only horizontal ring stepper */
  #page-jobs-follow .gm-jf-card{
   padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;
   box-shadow:0 1px 3px rgba(26,26,28,.05);transition:border-color .15s,box-shadow .15s,transform .15s;
  }
  #page-jobs-follow .gm-jf-card:hover{border-color:var(--amber-bd);box-shadow:0 4px 14px rgba(201,169,110,.08);transform:translateY(-1px)}
- #page-jobs-follow .gm-jf-stepper{display:flex;align-items:flex-start;gap:0;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);overflow-x:auto}
- #page-jobs-follow .gm-jf-step{flex:1;min-width:72px;display:flex;flex-direction:column;align-items:center;position:relative}
- #page-jobs-follow .gm-jf-ring{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);background:var(--cream);flex-shrink:0;transition:background .15s,border-color .15s,box-shadow .15s}
- #page-jobs-follow .gm-jf-step.is-done .gm-jf-ring{background:currentColor;border-color:currentColor;opacity:.85}
- #page-jobs-follow .gm-jf-step.is-current .gm-jf-ring{background:currentColor;border-color:currentColor;box-shadow:0 0 0 3px rgba(201,169,110,.18)}
- #page-jobs-follow .gm-jf-step.is-future .gm-jf-ring{background:var(--cream)}
- #page-jobs-follow .gm-jf-label{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-top:6px;text-align:center;line-height:1.25;max-width:76px}
- #page-jobs-follow .gm-jf-step.is-current .gm-jf-label{color:var(--ink);font-weight:700}
- #page-jobs-follow .gm-jf-step.is-done .gm-jf-label{color:var(--ink2)}
- #page-jobs-follow .gm-jf-connector{flex:1;min-width:12px;height:2px;background:var(--border);margin-top:11px;align-self:flex-start}
- #page-jobs-follow .gm-jf-connector.is-done{background:var(--amber);opacity:.45}
+ #page-jobs-follow .gm-jf-stepper-wrap{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+ #page-jobs-follow .gm-jf-stepper{
+  display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:0;
+  padding:10px 6px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+ }
+ #page-jobs-follow .gm-jf-step{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;position:relative;
+ }
+ #page-jobs-follow .gm-jf-ring{
+  width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:var(--paper);
+  flex-shrink:0;box-sizing:border-box;transition:width .15s,height .15s,background .15s,border-color .15s,box-shadow .15s,opacity .15s;
+ }
+ #page-jobs-follow .gm-jf-step.is-done .gm-jf-ring{
+  width:12px;height:12px;background:currentColor;border-color:currentColor;opacity:.42;
+ }
+ #page-jobs-follow .gm-jf-step.is-current .gm-jf-ring{
+  width:28px;height:28px;background:currentColor;border-color:currentColor;opacity:1;
+  box-shadow:0 0 0 4px rgba(201,169,110,.2);
+ }
+ #page-jobs-follow .gm-jf-step.is-future .gm-jf-ring{background:var(--paper);border-color:var(--border2)}
+ #page-jobs-follow .gm-jf-label{display:none}
+ #page-jobs-follow .gm-jf-sr{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+ }
+ #page-jobs-follow .gm-jf-connector{
+  flex:1 1 auto;min-width:18px;max-width:52px;height:2px;background:var(--border);
+  align-self:center;flex-shrink:1;
+ }
+ #page-jobs-follow .gm-jf-connector.is-done{background:currentColor;opacity:.38}
+ #page-jobs-follow .gm-jf-current-caption{
+  margin-top:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink3);font-family:'DM Sans',sans-serif;line-height:1.4;
+ }
+ #page-jobs-follow .gm-jf-current-caption strong{
+  font-size:12px;font-weight:700;text-transform:none;letter-spacing:.02em;
+  font-family:'DM Sans',sans-serif;
+ }
 
  /* F1: Tabela -> Cards verticais */
  #page-jobs .lt-jobs-table thead{display:none}
@@ -21949,11 +21976,17 @@ function gmJobsFollowRenderStepper(r){
  var current=gmJobFollowUpDisplayStage(r);
  var curIdx=path.indexOf(current);
  if(curIdx<0)curIdx=0;
- var html='<div class="gm-jf-stepper" role="list">';
+ var currentLbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(current):current;
+ var capPrefix=(typeof t==='function')?t('jobs_follow_current_stage'):'Etapa atual';
+ if(!capPrefix||capPrefix==='jobs_follow_current_stage')capPrefix='Etapa atual';
+ var curCol=GM_JF_STAGE_COLORS[current]||'var(--ink)';
+ var html='<div class="gm-jf-stepper-wrap">';
+ html+='<div class="gm-jf-stepper" role="list">';
  path.forEach(function(st,i){
   if(i>0){
    var connDone=i<=curIdx;
-   html+='<div class="gm-jf-connector'+(connDone?' is-done':'')+'" aria-hidden="true"></div>';
+   var connCol=connDone?(GM_JF_STAGE_COLORS[path[i-1]]||'var(--amber)'):'';
+   html+='<div class="gm-jf-connector'+(connDone?' is-done':'')+'"'+(connCol?' style="color:'+connCol+'"':'')+' aria-hidden="true"></div>';
   }
   var cls='gm-jf-step';
   if(i<curIdx)cls+=' is-done';
@@ -21961,11 +21994,13 @@ function gmJobsFollowRenderStepper(r){
   else cls+=' is-future';
   var col=GM_JF_STAGE_COLORS[st]||'var(--ink3)';
   var lbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(st):st;
-  html+='<div class="'+cls+'" role="listitem" style="color:'+col+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'">'
+  html+='<div class="'+cls+'" role="listitem" style="color:'+col+'" data-stage="'+String(st).replace(/"/g,'&quot;')+'" title="'+String(lbl).replace(/"/g,'&quot;')+'">'
    +'<div class="gm-jf-ring" aria-hidden="true"></div>'
-   +'<div class="gm-jf-label">'+String(lbl).replace(/</g,'&lt;')+'</div>'
+   +'<span class="gm-jf-sr">'+String(lbl).replace(/</g,'&lt;')+'</span>'
    +'</div>';
  });
+ html+='</div>';
+ html+='<div class="gm-jf-current-caption">'+String(capPrefix).replace(/</g,'&lt;')+': <strong style="color:'+curCol+'">'+String(currentLbl).replace(/</g,'&lt;')+'</strong></div>';
  html+='</div>';
  return html;
 }
