@@ -3229,6 +3229,27 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
 </div>
 
+<!-- JOBS FINALIZE — valor obrigatorio -->
+<div id="jobs-finalize-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9450;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)jobsFinalizeModalClose()">
+ <div style="background:var(--paper);border-radius:12px;padding:24px;max-width:440px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid var(--border)">
+  <div data-i18n="jobs_finalize_modal_title" style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:6px">Finalizar job</div>
+  <div id="jobs-finalize-modal-context" style="font-size:12px;color:var(--ink2);margin-bottom:16px;line-height:1.45">—</div>
+  <label data-i18n="jobs_finalize_amount_label" style="display:block;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Valor do trabalho (USD)</label>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+   <button type="button" data-i18n="jobs_finalize_quick_120" onclick="jobsFinalizeModalPick(120)" style="padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">$120</button>
+   <button type="button" data-i18n="jobs_finalize_quick_200" onclick="jobsFinalizeModalPick(200)" style="padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">$200</button>
+  </div>
+  <input type="number" id="jobs-finalize-amount" step="0.01" min="0" placeholder="0.00" oninput="jobsFinalizeModalSyncConfirm()" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;font-size:16px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink);margin-bottom:14px">
+  <label data-i18n="jobs_finalize_note_label" style="display:block;font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Observacao (opcional)</label>
+  <textarea id="jobs-finalize-note" rows="2" data-i18n-placeholder="jobs_finalize_note_prompt" placeholder="Nota do trabalho concluido..." style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;margin-bottom:14px;background:var(--sand);color:var(--ink)"></textarea>
+  <div id="jobs-finalize-feedback" style="font-size:11px;color:var(--ink3);margin-bottom:12px;min-height:14px"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+   <button type="button" data-i18n="cancel" onclick="jobsFinalizeModalClose()" style="padding:8px 16px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+   <button type="button" id="jobs-finalize-confirm-btn" data-i18n="jobs_finalize_confirm" onclick="jobsFinalizeConfirm()" disabled style="padding:8px 18px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:not-allowed;opacity:.45;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Confirmar</button>
+  </div>
+ </div>
+</div>
+
 <!-- 
  LONG TERM — MODAL: New / Edit Property
  -->
@@ -10471,6 +10492,8 @@ function gmNewsSubtypePill(subtype){
  if(subtype==='vendor_free')return{lbl:lbl('news_subtype_vendor_free','V Free'),bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7'};
  if(subtype==='vendor_requested')return{lbl:lbl('news_subtype_vendor_requested','Vendor requested'),bg:'rgba(124,58,237,.12)',fg:'#7c3aed',bd:'#a78bfa'};
  if(subtype==='job_closed_internal')return{lbl:lbl('news_subtype_job_closed_internal','Closed (internal)'),bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
+ if(subtype==='job_finalized')return{lbl:lbl('news_subtype_job_finalized','Finalized'),bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)'};
+ if(subtype==='finalized_no_value')return{lbl:lbl('news_subtype_finalized_no_value','Finalized w/o value'),bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)'};
  if(subtype==='container_added')return{lbl:'Container',bg:'#ede9fe',fg:'#5b21b6',bd:'#c4b5fd'};
  return{lbl:lbl('news_subtype_job','Job'),bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
 }
@@ -23837,6 +23860,12 @@ async function jobsRender(){
   if(typeof gmJobsRebuildVendorOptions==='function') gmJobsRebuildVendorOptions(rowsForOpts);
  }catch(eOpts){console.warn('vendor options rebuild',eOpts);}
  var rows=jobsFilteredExpenses();
+ try{
+  if(typeof gmJobsFinalizedNoValueBackstop==='function'){
+   var poolBk=typeof jobsMergeForJobs==='function'?jobsMergeForJobs():rows;
+   gmJobsFinalizedNoValueBackstop(poolBk);
+  }
+ }catch(eBk){console.warn('gmJobsFinalizedNoValueBackstop',eBk);}
  var rowsKpi=jobsFilteredExpensesCore();
  var user=jobsGetCurrentUser();
  var badge=document.getElementById('jobs-user-badge');
@@ -24300,77 +24329,236 @@ window.jobsReactivate=function(id){
  }catch(e){console.warn('jobsReactivate',e);alert('Erro: '+e.message);}
 };
 
+window.__jobsFinalizePendingId=null;
+
+function gmJobsFinalizeFollowUpStage(r){
+ if(!r)return 'closed_internal';
+ var st='';
+ try{
+  var meta=gmJobFollowUpRowMetadata(r);
+  if(meta&&meta.followUp&&typeof meta.followUp==='object'&&!Array.isArray(meta.followUp)){
+   st=String(meta.followUp.stage||'').trim();
+  }
+ }catch(e){}
+ if(!st&&typeof gmJobFollowUpDisplayStage==='function')st=gmJobFollowUpDisplayStage(r);
+ var vendorPath=['vendor_requested','awaiting_quote','awaiting_vendor'];
+ if(vendorPath.indexOf(st)>=0)return 'vendor_done';
+ return 'closed_internal';
+}
+window.gmJobsFinalizeFollowUpStage=gmJobsFinalizeFollowUpStage;
+
+function gmJobsFinalizedNoValueBackstop(rows){
+ if(typeof gmNewsPostJobAction!=='function')return;
+ window.__gmFinalizedNoValueAlerted=window.__gmFinalizedNoValueAlerted||{};
+ (rows||[]).forEach(function(r){
+  if(!r)return;
+  if(jobsPmStatusKey(r)!=='FINALIZED')return;
+  var val=(typeof jobsRowDisplayValue==='function')?jobsRowDisplayValue(r):0;
+  if(val>0)return;
+  var jid=String(r.id||'');
+  if(!jid||window.__gmFinalizedNoValueAlerted[jid])return;
+  window.__gmFinalizedNoValueAlerted[jid]=true;
+  var propCode=(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(r):'';
+  var houseLbl=(typeof gmNewsHouseLabelFromJob==='function')?gmNewsHouseLabelFromJob(jid):'';
+  var titBase=(typeof t==='function'?t('news_title_finalized_no_value'):'Job finalizado sem valor');
+  if(!titBase||titBase==='news_title_finalized_no_value')titBase='Job finalizado sem valor';
+  gmNewsPostJobAction({
+   subtype:'finalized_no_value',
+   jobId:jid,
+   title:titBase+': '+((typeof gmJobsFollowRowAddress==='function')?gmJobsFollowRowAddress(r):jid),
+   propertyCode:propCode||undefined,
+   houseLabel:houseLbl||undefined,
+   metadata:{propertyCode:propCode||undefined,houseLabel:houseLbl||undefined}
+  });
+ });
+}
+window.gmJobsFinalizedNoValueBackstop=gmJobsFinalizedNoValueBackstop;
+
+window.jobsFinalizeModalClose=function(){
+ var modal=document.getElementById('jobs-finalize-modal');
+ if(modal)modal.style.display='none';
+ window.__jobsFinalizePendingId=null;
+};
+
+window.jobsFinalizeModalPick=function(amt){
+ var inp=document.getElementById('jobs-finalize-amount');
+ if(inp)inp.value=String(amt);
+ if(typeof jobsFinalizeModalSyncConfirm==='function')jobsFinalizeModalSyncConfirm();
+};
+
+window.jobsFinalizeModalSyncConfirm=function(){
+ var inp=document.getElementById('jobs-finalize-amount');
+ var btn=document.getElementById('jobs-finalize-confirm-btn');
+ var v=parseFloat(inp&&inp.value)||0;
+ var ok=v>0;
+ if(btn){
+  btn.disabled=!ok;
+  btn.style.opacity=ok?'1':'.45';
+  btn.style.cursor=ok?'pointer':'not-allowed';
+ }
+};
+
+window.jobsFinalizeModalOpen=function(id,row){
+ window.__jobsFinalizePendingId=String(id);
+ var modal=document.getElementById('jobs-finalize-modal');
+ var ctx=document.getElementById('jobs-finalize-modal-context');
+ var inp=document.getElementById('jobs-finalize-amount');
+ var note=document.getElementById('jobs-finalize-note');
+ var pre=(typeof jobsRowDisplayValue==='function')?jobsRowDisplayValue(row):0;
+ if(ctx){
+  var addr=(typeof gmJobsFollowRowAddress==='function')?gmJobsFollowRowAddress(row):'';
+  ctx.textContent=addr||String(id);
+ }
+ if(inp){
+  inp.value=pre>0?String(pre):'';
+ }
+ if(note)note.value='';
+ jobsFinalizeModalSyncConfirm();
+ if(modal)modal.style.display='flex';
+ try{setTimeout(function(){if(inp)inp.focus();},80);}catch(eF){}
+};
+
 window.jobsFinalize=function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
   if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){alert(gmJobsT('jobs_finalize_role_denied'));return;}
-  var nota=prompt(gmJobsT('jobs_finalize_note_prompt'),'');
-  if(nota===null) return;
-  var arr=ltExpGetRecords()||[];
-  var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
-  if(idx<0){
-   if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
-    // Optimistic UI: atualiza cache local imediatamente
-    try{
-     var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
-     caches.forEach(function(arr){
-      if(Array.isArray(arr)){
-       var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
-       if(ix>=0){
-        arr[ix].status='finalized';
-        arr[ix].finalizedAt=new Date().toISOString();
-        arr[ix].finalizedBy=u.name||u.email||'admin';
-        arr[ix].finalizedNote=String(nota||'').trim();
-       }
-      }
-     });
-    }catch(eOpt){console.warn('optimistic update failed',eOpt);}
+  id=String(id||'').trim();
+  if(!id)return;
+  var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+  if(!row){
+   var cache=window.__jobsApiRowsCache||[];
+   row=cache.find(function(x){return x&&String(x.id)===id;})||null;
+  }
+  if(row&&jobsPmStatusKey(row)==='FINALIZED')return;
+  if(!row&&(typeof jobsIsPmExpenseId!=='function'||!jobsIsPmExpenseId(id))){
+   var arr=ltExpGetRecords()||[];
+   var idx=arr.findIndex(function(x){return x&&String(x.id)===id;});
+   if(idx<0){alert(gmJobsT('jobs_expense_not_found'));return;}
+   row=arr[idx];
+   if(String(row.status||'').toLowerCase()==='finalized')return;
+  }
+  jobsFinalizeModalOpen(id,row||{id:id});
+ }catch(e){console.warn('jobsFinalize',e);alert((typeof t==='function'?t('error'):'Erro')+': '+e.message);}
+};
+
+window.jobsFinalizeConfirm=async function(){
+ try{
+  var id=window.__jobsFinalizePendingId;
+  if(!id)return;
+  var inp=document.getElementById('jobs-finalize-amount');
+  var noteEl=document.getElementById('jobs-finalize-note');
+  var val=parseFloat(inp&&inp.value)||0;
+  if(val<=0){
+   if(typeof showToast==='function')showToast(gmJobsT('jobs_finalize_value_required'),'error');
+   return;
+  }
+  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var role=String(u.role||'').toLowerCase();
+  if(role!=='admin'&&role!=='super_admin'&&role!=='manager'&&role!=='maintenance'){alert(gmJobsT('jobs_finalize_role_denied'));return;}
+  var nota=noteEl?String(noteEl.value||'').trim():'';
+  var byName=String(u.name||u.email||'admin').trim();
+  var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+  if(!row){
+   var cache=window.__jobsApiRowsCache||[];
+   row=cache.find(function(x){return x&&String(x.id)===String(id);})||null;
+  }
+  var fuStage=gmJobsFinalizeFollowUpStage(row);
+  var btn=document.getElementById('jobs-finalize-confirm-btn');
+  if(btn){btn.disabled=true;btn.style.opacity='.6';}
+
+  if(typeof jobsIsPmExpenseId==='function'&&jobsIsPmExpenseId(id)){
+   try{
+    var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+    caches.forEach(function(arr){
+     if(!Array.isArray(arr))return;
+     var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+     if(ix>=0){
+      arr[ix].status='finalized';
+      arr[ix].statusPm='FINALIZED';
+      arr[ix].jobValueOverride=val;
+      arr[ix].finalizedAt=new Date().toISOString();
+      arr[ix].finalizedBy=byName;
+      arr[ix].finalizedNote=nota;
+      if(typeof gmJobFollowUpOptimisticLocal==='function')gmJobFollowUpOptimisticLocal(id,{stage:fuStage,note:'finalizado com valor'});
+     }
+    });
+   }catch(eOpt){console.warn('jobsFinalize optimistic',eOpt);}
+   jobsFinalizeModalClose();
+   if(typeof jobsRender==='function')jobsRender();
+   var res=await fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+    method:'PATCH',
+    credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+     status:'FINALIZED',
+     jobValueOverride:val,
+     finalizedNote:nota||null,
+     finalizedBy:byName,
+     followUp:{stage:fuStage,note:'finalizado com valor'}
+    })
+   });
+   var data=await res.json().catch(function(){return{};});
+   if(!res.ok||!data||!data.ok){
+    if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+    if(typeof jobsFetchFromApi==='function'){try{await jobsFetchFromApi();}catch(eF){}}
     if(typeof jobsRender==='function')jobsRender();
-    // Buscar valor da expense para mostrar no toast
-    var expValue=0;
-    try{
-     var arr0=window.__jobsApiRowsCache||[];
-     var rec0=arr0.find(function(x){return x&&String(x.id)===String(id);});
-     if(rec0) expValue=parseFloat(rec0.value||rec0.ownerCharged||rec0.amount||0)||0;
-    }catch(eVal){}
-    var msg=expValue>0
-     ? gmJobsT('jobs_finalize_success_stmt',{amount:expValue.toFixed(2)})
-     : gmJobsT('jobs_finalize_success_stmt_empty');
-    if(typeof showToast==='function')showToast(msg,'success');
-    // Persistir no backend em background (não bloqueia UI)
-    fetch('/api/pm/expenses/'+encodeURIComponent(id),{
-     method:'PATCH',
-     credentials:'include',
-     headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({status:'FINALIZED',finalizedNote:String(nota||'').trim(),finalizedBy:(u.name||u.email||'admin')})
-    }).then(function(r){
-     if(!r.ok){console.warn('jobsFinalize backend status',r.status);}
-    }).catch(function(e){console.warn('jobsFinalize.api',e);});
+    var errMsg=(data&&data.error)||('HTTP '+res.status);
+    if(typeof showToast==='function')showToast(errMsg,'error');else alert(errMsg);
     return;
    }
-   alert(gmJobsT('jobs_expense_not_found'));return;
+   if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+   var propCode=row&&(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(row):'';
+   var houseLbl=(typeof gmNewsHouseLabelFromJob==='function')?gmNewsHouseLabelFromJob(id):'';
+   if(typeof gmNewsPostJobAction==='function'){
+    var titFin=(typeof t==='function'?t('news_title_job_finalized'):'Job finalizado');
+    if(!titFin||titFin==='news_title_job_finalized')titFin='Job finalizado';
+    gmNewsPostJobAction({
+     subtype:'job_finalized',
+     jobId:id,
+     title:titFin+': $'+val.toFixed(2),
+     body:nota||undefined,
+     propertyCode:propCode||undefined,
+     houseLabel:houseLbl||undefined,
+     metadata:{amount:val,propertyCode:propCode||undefined,houseLabel:houseLbl||undefined,followUpStage:fuStage}
+    });
+   }
+   if(typeof showToast==='function')showToast(gmJobsT('jobs_finalize_success_stmt',{amount:val.toFixed(2)}),'success');
+   return;
   }
+
+  var arr=ltExpGetRecords()||[];
+  var idx=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
+  if(idx<0){alert(gmJobsT('jobs_expense_not_found'));return;}
   var rec=arr[idx];
   rec.status='finalized';
+  rec.jobValueOverride=val;
+  rec.value=val;
+  if(rec._isPm)rec.ownerCharged=val;
   rec.finalizedAt=new Date().toISOString();
-  rec.finalizedBy=u.name||u.email||'admin';
-  rec.finalizedNote=String(nota||'').trim();
+  rec.finalizedBy=byName;
+  rec.finalizedNote=nota;
   rec.savedAt=new Date().toLocaleString('pt-BR');
   arr[idx]=rec;
   ltExpSaveRecords(arr);
+  jobsFinalizeModalClose();
   try{
    fetch('/api/job-actions',{
     method:'POST',
     credentials:'include',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({jobId:id,action:'finalize',finalizedBy:rec.finalizedBy,note:rec.finalizedNote})
+    body:JSON.stringify({jobId:id,action:'finalize',finalizedBy:rec.finalizedBy,note:rec.finalizedNote,amount:val})
    });
   }catch(eApi){console.warn('jobsFinalize.api',eApi);}
   if(typeof jobsRender==='function')jobsRender();
   if(typeof ltExpRender==='function')try{ltExpRender();}catch(e){}
-  if(typeof showToast==='function')showToast(gmJobsT('jobs_finalize_success'),'success');
- }catch(e){console.warn('jobsFinalize',e);alert((typeof t==='function'?t('error'):'Erro')+': '+e.message);}
+  if(typeof showToast==='function')showToast(gmJobsT('jobs_finalize_success_stmt',{amount:val.toFixed(2)}),'success');
+ }catch(e){
+  console.warn('jobsFinalizeConfirm',e);
+  if(typeof showToast==='function')showToast('Erro: '+(e&&e.message||''),'error');else alert('Erro: '+(e&&e.message||''));
+ }finally{
+  if(typeof jobsFinalizeModalSyncConfirm==='function')jobsFinalizeModalSyncConfirm();
+ }
 };
 
 window.jobsReopen=function(id){
