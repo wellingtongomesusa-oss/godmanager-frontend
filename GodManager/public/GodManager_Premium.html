@@ -356,6 +356,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #page-forms-received .fr-masked .fr-chart-body canvas{filter:blur(14px)}
 #page-forms-received .fr-masked .fr-mask-overlay{display:flex}
 #page-forms-received .fr-empty-note{font-family:'DM Sans',sans-serif;font-size:11px;color:#9c937d;padding:10px 0}
+#page-forms-received .fr-news-card{margin-top:14px}
+#page-forms-received #fr-news-list{min-height:48px}
 /* ===== fim FORMS RECEIVED ===== */
 .ltd-chart-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
 .ltd-chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:10px;font-family:'DM Sans',sans-serif}
@@ -1627,6 +1629,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div class="fr-chart-card fr-chart-card-wide" id="fr-wrap-phases">
    <div class="fr-chart-head"><span>Regra de evolução — meta 284 casas (base 71)</span></div>
    <div class="fr-chart-body"><canvas id="fr-chart-phases"></canvas></div>
+  </div>
+ </div>
+ <div class="fr-charts-wide fr-news-card" id="fr-wrap-news">
+  <div class="fr-chart-card fr-chart-card-wide" id="fr-card-news">
+   <div class="fr-chart-head"><span>Avisos & Comunicados</span></div>
+   <div id="fr-news-list" style="max-height:340px;overflow-y:auto"></div>
   </div>
  </div>
 </div>
@@ -29009,6 +29017,43 @@ function frPhasePlanChart(key,canvasId,currentLive){
   }
  });
 }
+function frRenderNewsList(){
+ var list=document.getElementById('fr-news-list');
+ if(!list)return;
+ var esc=(typeof gmNewsEsc==='function')?gmNewsEsc:function(s){return String(s==null?'':s);};
+ var items=(window.__gmNewsApiItems||[]).slice().sort(function(a,b){
+  return new Date(b.createdAt||0).getTime()-new Date(a.createdAt||0).getTime();
+ });
+ if(!items.length){
+  list.innerHTML='<div style="padding:24px;text-align:center;color:#9c937d;font-size:12px;font-family:\'DM Sans\',sans-serif">Sem avisos recentes</div>';
+  return;
+ }
+ list.innerHTML=items.map(function(it){
+  var row={
+   subtype:it.subtype,
+   title:it.title,
+   body:it.body,
+   jobId:it.jobId,
+   metadata:it.metadata||null,
+   createdAt:it.createdAt,
+   createdByEmail:it.createdByEmail
+  };
+  var pill=(typeof gmNewsSubtypePill==='function')?gmNewsSubtypePill(row.subtype):{lbl:'',bg:'#2a2316',fg:'#9c937d',bd:'rgba(201,169,110,.2)'};
+  var timeStr=(typeof gmNewsFormatTime==='function')?gmNewsFormatTime(row.createdAt):'';
+  var bodyHtml=row.body?'<div style="font-size:11px;color:#9c937d;margin-top:4px;line-height:1.45">'+esc(row.body)+'</div>':'';
+  var houseLbl=(typeof gmNewsResolveHouseLabel==='function')?gmNewsResolveHouseLabel(row):'';
+  var houseTag=houseLbl?'<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;font-family:\'DM Sans\',sans-serif;background:rgba(42,35,22,.85);color:#c9a96e;border:1px solid rgba(201,169,110,.25);letter-spacing:.2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(houseLbl)+'">'+esc(houseLbl)+'</span>':'';
+  var by=row.createdByEmail?'<span style="font-size:10px;color:#9c937d">'+esc(row.createdByEmail)+'</span>':'';
+  return '<div style="padding:12px 16px;border-bottom:1px solid rgba(201,169,110,.12)">'
+   +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'
+   +'<span style="font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;background:'+pill.bg+';color:'+pill.fg+';border:1px solid '+pill.bd+'">'+esc(pill.lbl)+'</span>'
+   +houseTag
+   +'<span style="font-size:12px;font-weight:600;color:#f2ecdd;flex:1;min-width:0">'+esc(row.title)+'</span>'
+   +'<span style="font-size:10px;color:#9c937d;font-family:\'JetBrains Mono\',monospace">'+esc(timeStr)+'</span>'
+   +'</div>'+bodyHtml+(by?'<div style="margin-top:4px">'+by+'</div>':'')+'</div>';
+ }).join('');
+}
+window.frRenderNewsList=frRenderNewsList;
 async function frFetchTenants(){
  try{
   var r=await fetch('/api/tenants',{credentials:'include',cache:'no-store'});
@@ -29082,6 +29127,13 @@ window.gmFormsReceivedRender=async function(){
  try{
   frPhasePlanChart('phases','fr-chart-phases',frCurrentPortfolioHouses());
  }catch(e4){console.warn('fr phases chart',e4);}
+ try{
+  if(typeof gmNewsLoadApi==='function'){
+   gmNewsLoadApi().then(function(){
+    if(typeof frRenderNewsList==='function')frRenderNewsList();
+   }).catch(function(){});
+  }else if(typeof frRenderNewsList==='function')frRenderNewsList();
+ }catch(e5){console.warn('fr news list',e5);}
  frApplyHideUi();
 };
 })();
