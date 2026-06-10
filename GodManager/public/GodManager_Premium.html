@@ -9643,7 +9643,7 @@ function nav(r){
   try{
    if(typeof gmPropertiesFetchFromApi==='function'){
     var fresh=await gmPropertiesFetchFromApi();
-    if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
    }
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
@@ -9654,7 +9654,7 @@ function nav(r){
   try{
    if(typeof gmPropertiesFetchFromApi==='function'){
     var fresh=await gmPropertiesFetchFromApi();
-    if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
    }
   }catch(eSync){console.warn('longterm properties sync',eSync);}
   try{
@@ -9668,7 +9668,7 @@ function nav(r){
   try{
    if(typeof gmPropertiesFetchFromApi==='function'){
     var fresh=await gmPropertiesFetchFromApi();
-    if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
+    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
    }
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
@@ -9680,7 +9680,7 @@ function nav(r){
   try{
    if(typeof gmPropertiesFetchFromApi==='function'){
     var freshOs=await gmPropertiesFetchFromApi();
-    if(freshOs!==null&&Array.isArray(freshOs)&&freshOs.length>0&&typeof gmPropertiesSave==='function'){gmPropertiesSave(freshOs);}
+    if(freshOs!==null&&Array.isArray(freshOs)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(freshOs);}
    }
   }catch(e){
    console.warn('Sync API falhou, usando localStorage cache:',e);
@@ -17114,24 +17114,71 @@ window.gmPropertiesPurgeStaleCacheOnce=function(){
   }
  }catch(e){try{localStorage.removeItem(window.GM_PROP_KEY);}catch(e2){}}
 };
+/** Chave do dono do cache: user atual (id > userId > clientId). Vazio = user ainda não hidratado (/api/auth/me). */
+window.gmPropertiesOwnerKey=function(){
+ var u=window.__gmCurrentUser;
+ if(!u||typeof u!=='object')return '';
+ return String(u.id||u.userId||u.clientId||'').trim();
+};
+/** Cache de outro usuário/escopo: re-sync da API; se falhar, PURGA (nunca renderizar dado alheio). */
+window.gmPropertiesHandleOwnerMismatch=function(curKey){
+ if(window.__gmPropsOwnerSyncKey===curKey)return;
+ window.__gmPropsOwnerSyncKey=curKey;
+ console.warn('[gm_properties_v2] cache pertence a outro usuario/escopo (ownerKey mismatch) — re-sync da API');
+ (async function(){
+  var ok=false;
+  try{
+   if(typeof window.gmPropertiesRefresh==='function')ok=await window.gmPropertiesRefresh({silent:true});
+  }catch(e){console.warn('[gm_properties_v2] re-sync excecao',e);}
+  if(!ok){
+   try{localStorage.removeItem(window.GM_PROP_KEY);}catch(e){}
+   console.warn('[gm_properties_v2] re-sync falhou — cache purgado (privacidade > dado de outro escopo)');
+  }
+ })();
+};
 window.gmPropertiesLoad=function(){
  try{
   window.gmPropertiesPurgeStaleCacheOnce();
   var r=localStorage.getItem(window.GM_PROP_KEY);
   if(!r)return [];
   var parsed=JSON.parse(r);
+  var curKey=window.gmPropertiesOwnerKey();
+  if(curKey){
+   var cacheKey=(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))?String(parsed.ownerKey||'').trim():'';
+   if(cacheKey!==curKey){
+    window.gmPropertiesHandleOwnerMismatch(curKey);
+    return [];
+   }
+  }
   var a=Array.isArray(parsed)?parsed:(parsed&&Array.isArray(parsed.items)?parsed.items:[]);
   return gmPropertiesFilterGhostRows(a);
  }catch(e){return[];}
 };
 window.gmPropertiesSave=function(a){
  try{
-  var payload={schemaVersion:window.GM_PROP_SCHEMA_VERSION,savedAt:new Date().toISOString(),items:gmPropertiesFilterGhostRows(a||[])};
+  var payload={schemaVersion:window.GM_PROP_SCHEMA_VERSION,savedAt:new Date().toISOString(),ownerKey:window.gmPropertiesOwnerKey(),items:gmPropertiesFilterGhostRows(a||[])};
   localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(payload));
  }catch(e){console.warn('gmPropertiesSave',e);}
 };
+/** Cache já é verdade do servidor para o user atual (payload válido, mesmo com carteira vazia). */
+window.gmPropertiesCacheReady=function(){
+ try{
+  var r=localStorage.getItem(window.GM_PROP_KEY);
+  if(!r)return false;
+  var parsed=JSON.parse(r);
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return false;
+  if(parsed.schemaVersion!==window.GM_PROP_SCHEMA_VERSION)return false;
+  if(!Array.isArray(parsed.items))return false;
+  var curKey=window.gmPropertiesOwnerKey();
+  if(curKey&&String(parsed.ownerKey||'').trim()!==curKey)return false;
+  return true;
+ }catch(e){return false;}
+};
 window.gmPropertiesBootstrap=async function(opts){
  opts=opts||{};
+ // Evita loop bootstrap->refresh->render->bootstrap quando o servidor devolveu carteira vazia:
+ // payload valido do user atual (mesmo items:[]) ja e verdade do servidor — nada a fazer.
+ if(!opts.force&&typeof window.gmPropertiesCacheReady==='function'&&window.gmPropertiesCacheReady()){return true;}
  window.__gmPropertiesBootstrapError=null;
  window.gmPropertiesPurgeStaleCacheOnce();
  if(typeof window.gmPropertiesRefresh!=='function'){
@@ -17169,10 +17216,16 @@ function ltpComparePropertiesByHouseNumber(a,b){
 window.gmPropertiesFetchFromApi=async function(){
  try{
   var res=await fetch('/api/properties',{credentials:'include'});
-  if(!res.ok){console.warn('gmPropertiesFetchFromApi HTTP',res.status);return null;}
+  if(!res.ok){
+   console.warn('[gm_properties_v2] sync FAIL HTTP '+res.status+(res.status===401?' — sessao expirada/nao autenticado':(res.status>=500?' — erro de servidor':'')));
+   return null;
+  }
   var data=null;
-  try{data=await res.json();}catch(parseErr){console.warn('gmPropertiesFetchFromApi JSON',parseErr);return null;}
-  if(!data||typeof data!=='object'||data.ok!==true||!Array.isArray(data.properties))return null;
+  try{data=await res.json();}catch(parseErr){console.warn('[gm_properties_v2] sync FAIL JSON parse',parseErr);return null;}
+  if(!data||typeof data!=='object'||data.ok!==true||!Array.isArray(data.properties)){
+   console.warn('[gm_properties_v2] sync FAIL payload inesperado (ok='+(data&&data.ok)+')');
+   return null;
+  }
   // Mapear do formato API (Postgres) para formato UI (compatible com gm_properties local)
   return data.properties.map(function(p){
    var meta=p.metadata||{};
@@ -17238,7 +17291,7 @@ window.gmPropertiesFetchFromApi=async function(){
    };
   });
   return gmPropertiesFilterGhostRows(mapped).sort(ltpComparePropertiesByHouseNumber);
- }catch(e){console.warn('gmPropertiesFetchFromApi',e);return null;}
+ }catch(e){console.warn('[gm_properties_v2] sync FAIL rede/excecao',e);return null;}
 };
 window.gmPropertiesPushToApi=async function(item){
  try{
@@ -28812,7 +28865,7 @@ window.gmFormsReceivedRender=async function(){
  try{
   if(typeof gmPropertiesFetchFromApi==='function'){
    var fresh=await gmPropertiesFetchFromApi();
-   if(fresh!==null&&Array.isArray(fresh)&&fresh.length>0&&typeof gmPropertiesSave==='function')gmPropertiesSave(fresh);
+   if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function')gmPropertiesSave(fresh);
   }
  }catch(e){console.warn('forms-received properties sync',e);}
  var records=(typeof gmPropertiesFilteredUiRecords==='function')?gmPropertiesFilteredUiRecords():[];
