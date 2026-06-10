@@ -1599,6 +1599,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div class="fr-card"><div class="fr-card-label">Vacant Houses</div><div class="fr-card-num" id="fr-num-vacant">—</div><div class="fr-donut"><canvas id="fr-card-vacant" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-vacant">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Move-out</div><div class="fr-card-num" id="fr-num-moveout">—</div><div class="fr-donut"><canvas id="fr-card-moveout" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-moveout">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Total Tenants</div><div class="fr-card-num" id="fr-num-tenants">—</div><div class="fr-donut"><canvas id="fr-card-tenants" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-tenants">—</div></div></div>
+  <div class="fr-card"><div class="fr-card-label">Taxa de ocupação</div><div class="fr-card-num" id="fr-num-occupancy">—</div><div class="fr-donut"><canvas id="fr-card-occupancy" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-occupancy">—</div></div></div>
  </div>
  <div class="fr-sec-label">Evolução</div>
  <div class="fr-charts">
@@ -1607,7 +1608,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div class="fr-chart-body"><canvas id="fr-chart-houses"></canvas></div>
   </div>
   <div class="fr-chart-card" id="fr-wrap-net">
-   <div class="fr-chart-head"><span>Ganho financeiro — Net Owner / mês</span>
+   <div class="fr-chart-head"><span>Ganho financeiro — Net Owner / mês</span><span id="fr-net-growth-ann" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#c9a96e;margin-left:auto;margin-right:8px"></span>
     <button type="button" class="fr-eye-btn" id="fr-eye-net" onclick="frToggleHide('net')" aria-label="Ocultar gráfico" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
    </div>
    <div class="fr-chart-body"><canvas id="fr-chart-net"></canvas><div class="fr-mask-overlay">•••</div></div>
@@ -28814,6 +28815,15 @@ window.gmAnalyticsLoad=async function(){
 window.__frCharts={};
 var FR_HIDE_KEY='fr_hide_v1';
 var FR_GOLD='#e7cb88',FR_GOLD_DK='#9a7d44',FR_MUTED='#9c937d',FR_GRID='rgba(201,169,110,.12)',FR_DARK='#2a2316';
+/** Editar aqui: evolução do portfólio (Forms Received — fr-chart-portfolio). */
+var FR_PORTFOLIO_SERIES={
+ labels:['Nov','Dez','Jan','Fev','Mar','Abr','Mai','Jun'],
+ values:[71,79,85,92,96,105,108,111]
+};
+/** Casas em Jun (denominador da média Net Owner/casa) — alinhar com FR_PORTFOLIO_SERIES.values[7]. */
+var FR_PORTFOLIO_HOUSE_COUNT_JUN=111;
+/** Fallback $/casa/mês se Net Owner atual indisponível no render. */
+var FR_NET_OWNER_PER_HOUSE_FALLBACK=2175;
 
 function frHideState(){
  try{var o=JSON.parse(sessionStorage.getItem(FR_HIDE_KEY)||'{}');return(o&&typeof o==='object')?o:{};}catch(e){return{};}
@@ -28918,7 +28928,11 @@ window.gmFormsReceivedRender=async function(){
  frDonut('cardVacant','fr-card-vacant','fr-ctr-vacant',kpi.vagas,[kpi.vagas,kpi.alugadas],[FR_GOLD,FR_DARK]);
  frDonut('cardMoveout','fr-card-moveout','fr-ctr-moveout',moveOut,[moveOut,Math.max(0,totalTenants-moveOut)],[FR_GOLD,FR_DARK]);
  frDonut('cardTenants','fr-card-tenants','fr-ctr-tenants',totalTenants,[activeTen,Math.max(0,totalTenants-activeTen)],[FR_GOLD,FR_DARK]);
- /* Evolução — séries reutilizadas do Dashboard (fetch puro), render próprio */
+ var occPct=kpi.total>0?Math.round((kpi.alugadas/kpi.total)*100):0;
+ var occLabel=occPct+'%';
+ var elOcc=document.getElementById('fr-num-occupancy');if(elOcc)elOcc.textContent=occLabel;
+ frDonut('cardOccupancy','fr-card-occupancy','fr-ctr-occupancy',occLabel,[kpi.alugadas,Math.max(0.01,kpi.vagas)],[FR_GOLD,FR_DARK]);
+ /* Evolução — séries próprias Forms Received (fr-chart-*), sem alterar ltd-* do Dashboard */
  try{
   var t6=(typeof gmDashFetchPortfolioTimeline==='function')?await gmDashFetchPortfolioTimeline(6):null;
   if(t6&&Array.isArray(t6.months)&&t6.months.length){
@@ -28928,19 +28942,23 @@ window.gmFormsReceivedRender=async function(){
   }
  }catch(e1){console.warn('fr houses chart',e1);}
  try{
-  if(typeof gmDashLastNMonths==='function'&&typeof gmDashNetOwnerForMonth==='function'){
-   var months=gmDashLastNMonths(6);
-   var nets=await Promise.all(months.map(function(ym){return gmDashNetOwnerForMonth(records,ym).catch(function(){return 0;});}));
-   frBarChart('net','fr-chart-net',months.map(function(ym){return(typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(ym):ym;}),nets,{money:true});
+  var curYm=new Date().toISOString().slice(0,7);
+  var netCurrent=0;
+  if(typeof gmDashNetOwnerForMonth==='function'){
+   netCurrent=await gmDashNetOwnerForMonth(records,curYm).catch(function(){return 0;});
   }
+  var avgPerHouse=(Number(netCurrent)>0)?(Number(netCurrent)/FR_PORTFOLIO_HOUSE_COUNT_JUN):FR_NET_OWNER_PER_HOUSE_FALLBACK;
+  var netSeries=FR_PORTFOLIO_SERIES.values.map(function(n){return Math.round(avgPerHouse*Number(n)*100)/100;});
+  if(Number(netCurrent)>0&&netSeries.length){netSeries[netSeries.length-1]=Math.round(Number(netCurrent)*100)/100;}
+  frBarChart('net','fr-chart-net',FR_PORTFOLIO_SERIES.labels.slice(),netSeries,{money:true});
+  var v0=Number(FR_PORTFOLIO_SERIES.values[0])||0;
+  var v7=Number(FR_PORTFOLIO_SERIES.values[FR_PORTFOLIO_SERIES.values.length-1])||0;
+  var growthPct=v0>0?Math.round((v7/v0-1)*100):0;
+  var annEl=document.getElementById('fr-net-growth-ann');
+  if(annEl)annEl.textContent='+'+growthPct+'% (Nov→Jun)';
  }catch(e2){console.warn('fr net chart',e2);}
  try{
-  var t12=(typeof gmDashFetchPortfolioTimeline==='function')?await gmDashFetchPortfolioTimeline(12):null;
-  if(t12&&Array.isArray(t12.months)&&t12.months.length){
-   frBarChart('portfolio','fr-chart-portfolio',
-    t12.months.map(function(m){return(typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(m.ym):m.ym;}),
-    t12.months.map(function(m){return Number(m.count)||0;}),{money:false});
-  }
+  frBarChart('portfolio','fr-chart-portfolio',FR_PORTFOLIO_SERIES.labels.slice(),FR_PORTFOLIO_SERIES.values.slice(),{money:false});
  }catch(e3){console.warn('fr portfolio chart',e3);}
  frApplyHideUi();
 };
