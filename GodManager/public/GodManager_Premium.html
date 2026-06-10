@@ -341,6 +341,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #page-forms-received .fr-donut{display:flex;justify-content:center;align-items:center;height:92px;position:relative;margin-top:8px}
 #page-forms-received .fr-donut-ctr{position:absolute;display:flex;align-items:center;justify-content:center;width:62px;height:62px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#f2ecdd;pointer-events:none;text-align:center}
 #page-forms-received .fr-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+#page-forms-received .fr-charts-wide{margin-top:14px}
+#page-forms-received .fr-chart-card-wide{width:100%}
+#page-forms-received .fr-chart-card-wide .fr-chart-body{height:260px}
 #page-forms-received .fr-chart-card{background:#141009;border:1px solid rgba(201,169,110,.16);border-radius:12px;padding:14px 16px}
 #page-forms-received .fr-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 #page-forms-received .fr-chart-head span{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:#f2ecdd}
@@ -1604,7 +1607,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="fr-sec-label">Evolução</div>
  <div class="fr-charts">
   <div class="fr-chart-card" id="fr-wrap-houses">
-   <div class="fr-chart-head"><span>Crescimento mensal de casas</span></div>
+   <div class="fr-chart-head"><span>Crescimento mensal de casas</span><span id="fr-houses-growth-ann" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#c9a96e;margin-left:auto"></span></div>
    <div class="fr-chart-body"><canvas id="fr-chart-houses"></canvas></div>
   </div>
   <div class="fr-chart-card" id="fr-wrap-net">
@@ -1618,6 +1621,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <button type="button" class="fr-eye-btn" id="fr-eye-portfolio" onclick="frToggleHide('portfolio')" aria-label="Ocultar gráfico" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
    </div>
    <div class="fr-chart-body"><canvas id="fr-chart-portfolio"></canvas><div class="fr-mask-overlay">•••</div></div>
+  </div>
+ </div>
+ <div class="fr-charts-wide">
+  <div class="fr-chart-card fr-chart-card-wide" id="fr-wrap-phases">
+   <div class="fr-chart-head"><span>Regra de evolução — meta 284 casas (base 71)</span></div>
+   <div class="fr-chart-body"><canvas id="fr-chart-phases"></canvas></div>
   </div>
  </div>
 </div>
@@ -28820,10 +28829,37 @@ var FR_PORTFOLIO_SERIES={
  labels:['Nov','Dez','Jan','Fev','Mar','Abr','Mai','Jun'],
  values:[71,79,85,92,96,105,108,111]
 };
+/** Base Nov para badge de crescimento (fr-chart-houses). */
+var FR_BASE_HOUSES=71;
+/** Índice do 1º mês Jan–Jun dentro de FR_PORTFOLIO_SERIES (Nov=0, Jan=2). */
+var FR_JAN_JUN_START_IDX=2;
+/** Plano de fases — metas de casas (fr-chart-phases). Editar aqui. */
+var FR_PHASE_PLAN=[
+ {label:'Base',houses:71},
+ {label:'Fase 1',houses:91},
+ {label:'Fase 2',houses:142},
+ {label:'Fase 3',houses:213},
+ {label:'Fase 4',houses:284}
+];
 /** Casas em Jun (denominador da média Net Owner/casa) — alinhar com FR_PORTFOLIO_SERIES.values[7]. */
 var FR_PORTFOLIO_HOUSE_COUNT_JUN=111;
 /** Fallback $/casa/mês se Net Owner atual indisponível no render. */
 var FR_NET_OWNER_PER_HOUSE_FALLBACK=2175;
+
+function frPortfolioJanJunSlice(){
+ return {
+  labels:FR_PORTFOLIO_SERIES.labels.slice(FR_JAN_JUN_START_IDX),
+  values:FR_PORTFOLIO_SERIES.values.slice(FR_JAN_JUN_START_IDX)
+ };
+}
+function frCurrentPortfolioHouses(){
+ return Number(FR_PORTFOLIO_SERIES.values[FR_PORTFOLIO_SERIES.values.length-1])||FR_BASE_HOUSES;
+}
+function frMomPct(prev,cur){
+ var p=Number(prev)||0,c=Number(cur)||0;
+ if(p<=0)return null;
+ return Math.round((c/p-1)*100);
+}
 
 function frHideState(){
  try{var o=JSON.parse(sessionStorage.getItem(FR_HIDE_KEY)||'{}');return(o&&typeof o==='object')?o:{};}catch(e){return{};}
@@ -28893,6 +28929,78 @@ function frBarChart(key,canvasId,labels,values,opts){
   }
  });
 }
+function frBarChartWithMom(key,canvasId,labels,values,opts){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById(canvasId);
+ if(!cv)return;
+ frDestroyChart(key);
+ var momPcts=(values||[]).map(function(v,i){return i===0?null:frMomPct(values[i-1],v);});
+ var momPlugin={
+  id:'frMomLabels_'+key,
+  afterDatasetsDraw:function(chart){
+   var ctx=chart.ctx;
+   var meta=chart.getDatasetMeta(0);
+   if(!meta||!meta.data)return;
+   meta.data.forEach(function(bar,i){
+    var pct=momPcts[i];
+    if(pct===null||typeof pct!=='number')return;
+    var sign=pct>=0?'+':'';
+    ctx.save();
+    ctx.font='600 10px "JetBrains Mono", monospace';
+    ctx.fillStyle=FR_GOLD;
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText(sign+pct+'%',bar.x,bar.y-4);
+    ctx.restore();
+   });
+  }
+ };
+ window.__frCharts[key]=new Chart(cv.getContext('2d'),{
+  type:'bar',
+  data:{labels:labels,datasets:[{data:values,backgroundColor:function(c){return frGoldBar(c.chart.ctx,c.chart.chartArea);},borderRadius:4,borderWidth:0}]},
+  options:{
+   responsive:true,maintainAspectRatio:false,animation:{duration:350},
+   layout:{padding:{top:18}},
+   plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+String(c.parsed.y);}}}},
+   scales:{
+    x:{grid:{display:false},ticks:{color:FR_MUTED,font:{family:'DM Sans',size:10}}},
+    y:{beginAtZero:true,grid:{color:FR_GRID},ticks:{color:FR_MUTED,font:{family:'JetBrains Mono',size:10},precision:0}}
+   }
+  },
+  plugins:[momPlugin]
+ });
+}
+function frPhasePlanChart(key,canvasId,currentLive){
+ if(typeof Chart==='undefined')return;
+ var cv=document.getElementById(canvasId);
+ if(!cv)return;
+ frDestroyChart(key);
+ var labels=FR_PHASE_PLAN.map(function(p){return p.label;});
+ var targets=FR_PHASE_PLAN.map(function(p){return Number(p.houses)||0;});
+ var live=Number(currentLive)||frCurrentPortfolioHouses();
+ var liveLine=labels.map(function(){return live;});
+ window.__frCharts[key]=new Chart(cv.getContext('2d'),{
+  type:'bar',
+  data:{
+   labels:labels,
+   datasets:[
+    {type:'bar',label:'Meta fase',data:targets,backgroundColor:function(c){return frGoldBar(c.chart.ctx,c.chart.chartArea);},borderRadius:4,borderWidth:0,order:2},
+    {type:'line',label:'Portfólio atual ('+live+' casas)',data:liveLine,borderColor:'#c9a96e',backgroundColor:'transparent',borderDash:[7,5],borderWidth:2,pointRadius:0,pointHoverRadius:0,tension:0,fill:false,order:1}
+   ]
+  },
+  options:{
+   responsive:true,maintainAspectRatio:false,animation:{duration:350},
+   plugins:{
+    legend:{display:true,labels:{color:FR_MUTED,font:{family:'DM Sans',size:10},boxWidth:12,padding:14},position:'top',align:'end'},
+    tooltip:{callbacks:{label:function(c){return c.dataset.type==='line'?(' Hoje: '+live+' casas'):(' Meta: '+c.parsed.y+' casas');}}}
+   },
+   scales:{
+    x:{grid:{display:false},ticks:{color:FR_MUTED,font:{family:'DM Sans',size:10}}},
+    y:{beginAtZero:true,suggestedMax:Math.max.apply(null,targets.concat([live]))+20,grid:{color:FR_GRID},ticks:{color:FR_MUTED,font:{family:'JetBrains Mono',size:10},precision:0}}
+   }
+  }
+ });
+}
 async function frFetchTenants(){
  try{
   var r=await fetch('/api/tenants',{credentials:'include',cache:'no-store'});
@@ -28934,12 +29042,12 @@ window.gmFormsReceivedRender=async function(){
  frDonut('cardOccupancy','fr-card-occupancy','fr-ctr-occupancy',occLabel,[kpi.alugadas,Math.max(0.01,kpi.vagas)],[FR_GOLD,FR_DARK]);
  /* Evolução — séries próprias Forms Received (fr-chart-*), sem alterar ltd-* do Dashboard */
  try{
-  var t6=(typeof gmDashFetchPortfolioTimeline==='function')?await gmDashFetchPortfolioTimeline(6):null;
-  if(t6&&Array.isArray(t6.months)&&t6.months.length){
-   frBarChart('houses','fr-chart-houses',
-    t6.months.map(function(m){return(typeof gmDashMonthLabelShort==='function')?gmDashMonthLabelShort(m.ym):m.ym;}),
-    t6.months.map(function(m){return Number(m.count)||0;}),{money:false});
-  }
+  var janJun=frPortfolioJanJunSlice();
+  frBarChartWithMom('houses','fr-chart-houses',janJun.labels.slice(),janJun.values.slice(),{money:false});
+  var housesCurrent=frCurrentPortfolioHouses();
+  var housesGrowthPct=FR_BASE_HOUSES>0?Math.round((housesCurrent/FR_BASE_HOUSES-1)*100):0;
+  var hAnnEl=document.getElementById('fr-houses-growth-ann');
+  if(hAnnEl)hAnnEl.textContent='+'+housesGrowthPct+'% ('+FR_BASE_HOUSES+' → '+housesCurrent+')';
  }catch(e1){console.warn('fr houses chart',e1);}
  try{
   var curYm=new Date().toISOString().slice(0,7);
@@ -28960,6 +29068,9 @@ window.gmFormsReceivedRender=async function(){
  try{
   frBarChart('portfolio','fr-chart-portfolio',FR_PORTFOLIO_SERIES.labels.slice(),FR_PORTFOLIO_SERIES.values.slice(),{money:false});
  }catch(e3){console.warn('fr portfolio chart',e3);}
+ try{
+  frPhasePlanChart('phases','fr-chart-phases',frCurrentPortfolioHouses());
+ }catch(e4){console.warn('fr phases chart',e4);}
  frApplyHideUi();
 };
 })();
