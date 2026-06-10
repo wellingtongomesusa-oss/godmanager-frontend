@@ -28853,8 +28853,16 @@ function frPortfolioJanJunSlice(){
  };
 }
 function frCurrentPortfolioHouses(){
+ try{
+  if(typeof gmPropertiesFilteredUiRecords==='function'&&typeof gmPropertiesPortfolioKpiCounts==='function'){
+   var recs=gmPropertiesFilteredUiRecords();
+   var k=gmPropertiesPortfolioKpiCounts(recs);
+   if(k&&Number(k.total)>0)return Number(k.total);
+  }
+ }catch(e){}
  return Number(FR_PORTFOLIO_SERIES.values[FR_PORTFOLIO_SERIES.values.length-1])||FR_BASE_HOUSES;
 }
+window.frCurrentPortfolioHouses=frCurrentPortfolioHouses;
 function frMomPct(prev,cur){
  var p=Number(prev)||0,c=Number(cur)||0;
  if(p<=0)return null;
@@ -29043,6 +29051,8 @@ window.gmFormsReceivedRender=async function(){
  /* Evolução — séries próprias Forms Received (fr-chart-*), sem alterar ltd-* do Dashboard */
  try{
   var janJun=frPortfolioJanJunSlice();
+  var liveHouses=frCurrentPortfolioHouses();
+  if(liveHouses>0)janJun.values[janJun.values.length-1]=liveHouses;
   frBarChartWithMom('houses','fr-chart-houses',janJun.labels.slice(),janJun.values.slice(),{money:false});
   var housesCurrent=frCurrentPortfolioHouses();
   var housesGrowthPct=FR_BASE_HOUSES>0?Math.round((housesCurrent/FR_BASE_HOUSES-1)*100):0;
@@ -29055,7 +29065,8 @@ window.gmFormsReceivedRender=async function(){
   if(typeof gmDashNetOwnerForMonth==='function'){
    netCurrent=await gmDashNetOwnerForMonth(records,curYm).catch(function(){return 0;});
   }
-  var avgPerHouse=(Number(netCurrent)>0)?(Number(netCurrent)/FR_PORTFOLIO_HOUSE_COUNT_JUN):FR_NET_OWNER_PER_HOUSE_FALLBACK;
+  var denom=frCurrentPortfolioHouses()||FR_PORTFOLIO_HOUSE_COUNT_JUN;
+  var avgPerHouse=(Number(netCurrent)>0)?(Number(netCurrent)/denom):FR_NET_OWNER_PER_HOUSE_FALLBACK;
   var netSeries=FR_PORTFOLIO_SERIES.values.map(function(n){return Math.round(avgPerHouse*Number(n)*100)/100;});
   if(Number(netCurrent)>0&&netSeries.length){netSeries[netSeries.length-1]=Math.round(Number(netCurrent)*100)/100;}
   frBarChart('net','fr-chart-net',FR_PORTFOLIO_SERIES.labels.slice(),netSeries,{money:true});
