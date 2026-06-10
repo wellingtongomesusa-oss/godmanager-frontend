@@ -5887,6 +5887,20 @@ function gmBankAccountsClientPayload(){
  var cid=ac&&ac.id?String(ac.id):(u.clientId?String(u.clientId):'');
  return cid?{clientId:cid}:{};
 }
+/** Escopo de cliente para CREATE de properties (super_admin exige active client). */
+function gmPropertiesClientPayload(){
+ var u=window.__gmCurrentUser;
+ if(!u||String(u.role||'').toLowerCase()!=='super_admin')return {};
+ var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+ var cid=ac&&ac.id?String(ac.id):(u.clientId?String(u.clientId):'');
+ return cid?{clientId:cid}:null;
+}
+window.gmPropertiesClientPayload=gmPropertiesClientPayload;
+function gmPropertiesBlockCreateWithoutClient(){
+ var msg='Selecione um cliente antes de criar uma casa.';
+ if(typeof showToast==='function')showToast(msg,'error');
+ else alert(msg);
+}
 function gmBankAccountsClientQuery(){
  var p=gmBankAccountsClientPayload();
  return p.clientId?'?clientId='+encodeURIComponent(p.clientId):'';
@@ -11966,6 +11980,12 @@ function ltSaveRecord(){
       if(!patchRes.ok){var eb=await patchRes.json().catch(function(){return{};});console.warn('ltSaveRecord PATCH',patchRes.status,eb);}
      } else {
       // Sem apiId -> POST novo (casa nova no modal LT)
+      var scopeP=(typeof window.gmPropertiesClientPayload==='function')?window.gmPropertiesClientPayload():{};
+      if(scopeP===null){
+       gmPropertiesBlockCreateWithoutClient();
+       return;
+      }
+      Object.assign(payload,scopeP);
       var postRes=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
       apiOk=postRes.ok;
       if(!postRes.ok){var eb2=await postRes.json().catch(function(){return{};});console.warn('ltSaveRecord POST',postRes.status,eb2);}
@@ -17297,6 +17317,12 @@ window.gmPropertiesPushToApi=async function(item){
  try{
   if(!item||!item.id)return false;
   var payload={code:item.id,address:item.address||'',city:item.city||'',state:item.state||'',zip:item.zip||'',ownerName:item.owner||'',rent:Number(item.currentRent)||0,mgmtFeePct:Number(item.mgmtPct)||0,hoaAdmin:!!item.hoaAdmin,status:item.status||'active',notes:item.notes||'',metadata:{name:item.name||'',marketRent:Number(item.marketRent)||0,mgmtFeeUsd:Number(item.mgmtFeeUsd)||0,mgmtFlatFee:Number(item.mgmtFlatFee)||0,minFee:Number(item.minFee)||0,waiveWhenVacant:!!item.waiveWhenVacant,hoa:Number(item.hoa)||0,maintenance:Number(item.maintenance)||0,reserve:Number(item.reserve)||0,netOwner:Number(item.netOwner)||0,homeWarrantyExp:item.homeWarrantyExp||'',insuranceExp:item.insuranceExp||'',taxYearEnd:item.taxYearEnd||'',sqft:Number(item.sqft)||0,units:Number(item.units)||0,source:item.source||'ui'}};
+  var scopeP=(typeof window.gmPropertiesClientPayload==='function')?window.gmPropertiesClientPayload():{};
+  if(scopeP===null){
+   gmPropertiesBlockCreateWithoutClient();
+   return false;
+  }
+  Object.assign(payload,scopeP);
   // Tenta POST; se der 409 (ja existe), faz PATCH
   var res=await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
   if(res.status===409){
@@ -19877,6 +19903,12 @@ async function ltpSaveNewProperty(){
    url='/api/properties/'+encodeURIComponent(apiId);
    method='PATCH';
   }else{
+   var scopeP=(typeof window.gmPropertiesClientPayload==='function')?window.gmPropertiesClientPayload():{};
+   if(scopeP===null){
+    gmPropertiesBlockCreateWithoutClient();
+    return;
+   }
+   Object.assign(apiPayload,scopeP);
    url='/api/properties';
    method='POST';
   }
