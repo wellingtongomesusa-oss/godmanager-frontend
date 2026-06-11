@@ -3329,11 +3329,13 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <option value="" data-i18n="jobs_all_vendors">Todos os vendors</option>
   </select>
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
-  <label data-i18n="jobs_follow_queue_filter_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Fila:</label>
+  <label data-i18n="jobs_queue_filter_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Fila:</label>
   <select id="jobs-follow-queue-filter" onchange="if(typeof gmJobsFollowSetQueueFilter==='function')gmJobsFollowSetQueueFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:140px">
-   <option value="all" data-i18n="jobs_follow_queue_all">Todas</option>
-   <option value="maintenance" data-i18n="jobs_follow_queue_maintenance">Manutenção</option>
-   <option value="supervisor" data-i18n="jobs_follow_queue_supervisor">Supervisor</option>
+   <option value="all" data-i18n="jobs_queue_filter_all">Todas</option>
+   <option value="maintenance" data-i18n="jobs_queue_filter_maintenance">Manutenção</option>
+   <option value="supervisor" data-i18n="jobs_queue_filter_supervisor">Supervisão</option>
+   <option value="supervisor_2" data-i18n="jobs_queue_filter_supervisor_2">Supervisão 2</option>
+   <option value="vendor" data-i18n="jobs_queue_filter_vendor">Vendor</option>
   </select>
   <button type="button" id="jobs-follow-df-all" data-i18n="jobs_date_all" onclick="gmJobsFollowSetDateFilter('all')" style="padding:6px 14px;border:1px solid var(--navy);border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:var(--navy);color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
  </div>
@@ -22383,13 +22385,22 @@ function gmJobsFollowBallInline(state){
 function gmJobsFollowQueuePillHtml(r){
  if(!r)return '';
  var q=(typeof jobFollowUpQueue==='function')?jobFollowUpQueue(r):'maintenance';
- if(q==='supervisor'){
-  return (typeof gmJobPillHtml==='function')
-   ?gmJobPillHtml('SUPERVISOR',gmJobsT('jobs_supervisor_badge_tooltip'))
-   :'<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:#e0e7ff;color:#4338ca;border:1px solid #6366f1">Supervisor</span>';
+ if(q==='maintenance'){
+  var lbl=(typeof gmJobsT==='function')?gmJobsT('jobs_queue_maintenance'):'Manutenção';
+  var tipM=gmJobsT('jobs_queue_badge_tooltip');
+  var tipAttr=(tipM&&tipM!=='jobs_queue_badge_tooltip')?' title="'+String(tipM).replace(/"/g,'&quot;')+'"':'';
+  return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:var(--cream);color:var(--ink2);border:1px solid var(--border2)"'+tipAttr+'>'+String(lbl).replace(/</g,'&lt;')+'</span>';
  }
- var lbl=(typeof gmJobsT==='function')?gmJobsT('jobs_queue_maintenance'):'Manutenção';
- return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:var(--cream);color:var(--ink2);border:1px solid var(--border2)">'+String(lbl).replace(/</g,'&lt;')+'</span>';
+ var paletteMap={supervisor:'SUPERVISOR',supervisor_2:'SUPERVISOR_2',vendor:'VENDOR_QUEUE'};
+ var paletteKey=paletteMap[q];
+ if(paletteKey&&typeof gmJobPillHtml==='function'){
+  var tipKey='jobs_queue_badge_tooltip_'+q;
+  var tip=gmJobsT(tipKey);
+  if(!tip||tip===tipKey)tip=gmJobsT('jobs_queue_badge_tooltip');
+  return gmJobPillHtml(paletteKey,tip);
+ }
+ var lblFb=(typeof gmJobsT==='function')?gmJobsT('jobs_queue_maintenance'):'Manutenção';
+ return '<span style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;background:var(--cream);color:var(--ink2);border:1px solid var(--border2)">'+String(lblFb).replace(/</g,'&lt;')+'</span>';
 }
 
 function gmJobsFollowRenderStageCell(r,colStage,colIdx,isLast,isLastRow){
