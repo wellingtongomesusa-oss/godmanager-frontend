@@ -23884,6 +23884,7 @@ function gmJobsStatusLabel(key, labelOverride){
   RESCHEDULED:'jobs_status_rescheduled',
   V_FREE:'jobs_status_v_free_pill',
   URGENT:'jobs_status_urgent_pill',
+  SUPERVISOR:'jobs_status_supervisor_pill',
   FINALIZED:'jobs_status_finalized',
   PAID:'jobs_status_paid',
   CANCELLED:'jobs_status_cancelled'
@@ -24012,9 +24013,32 @@ window.gmJobsStatusPalette={
  RESCHEDULED:{bg:'#ffedd5',fg:'#c2410c',bd:'#f97316'},
  V_FREE:{bg:'rgba(168,85,247,.14)',fg:'#7c3aed',bd:'#a855f7'},
  URGENT:{bg:'var(--red-bg)',fg:'var(--red)',bd:'#dc2626'},
+ SUPERVISOR:{bg:'#e0e7ff',fg:'#4338ca',bd:'#6366f1'},
  FINALIZED:{bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)'},
  PAID:{bg:'#dcfce7',fg:'#15803d',bd:'#15803d'},
  CANCELLED:{bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)'}
+};
+
+/** Espelho de lib/jobFollowUp.ts jobFollowUpQueue — manter em sync. */
+function gmJobFollowUpAsRecord(v){
+ if(v&&typeof v==='object'&&!Array.isArray(v))return v;
+ return null;
+}
+window.jobFollowUpQueue=function jobFollowUpQueue(expenseOrFollowUp){
+ if(expenseOrFollowUp==null)return 'maintenance';
+ var obj=gmJobFollowUpAsRecord(expenseOrFollowUp);
+ if(!obj)return 'maintenance';
+ var fu=null;
+ var nestedFu=gmJobFollowUpAsRecord(obj.followUp);
+ if(nestedFu)fu=nestedFu;
+ else{
+  var meta=gmJobFollowUpAsRecord(obj.metadata);
+  if(meta)fu=gmJobFollowUpAsRecord(meta.followUp);
+  else if('stage'in obj||'assignees'in obj||'queue'in obj||'history'in obj)fu=obj;
+ }
+ var q=String((fu&&fu.queue)||'').trim();
+ if(q==='supervisor'||q==='maintenance')return q;
+ return 'maintenance';
 };
 
 function gmJobsRowWasRescheduled(r){
@@ -24088,6 +24112,13 @@ function gmJobVendorFreePillHtml(r){
  return gmJobPillHtml('V_FREE',gmJobsT('jobs_v_free_tooltip'));
 }
 
+function gmJobSupervisorPillHtml(r){
+ if(!r)return '';
+ if(typeof jobFollowUpQueue!=='function')return '';
+ if(jobFollowUpQueue(r)!=='supervisor')return '';
+ return gmJobPillHtml('SUPERVISOR',gmJobsT('jobs_supervisor_badge_tooltip'));
+}
+
 function gmJobStatusBadgeAppendPill(base,pill){
  if(!pill)return base;
  if(base.indexOf('jobs-status-pills')>=0){
@@ -24099,6 +24130,7 @@ function gmJobStatusBadgeAppendPill(base,pill){
 function gmJobStatusBadgeWithExtras(base,r){
  var out=gmJobStatusBadgeAppendPill(base,gmJobVendorFreePillHtml(r));
  out=gmJobStatusBadgeAppendPill(out,gmJobUrgentPillHtml(r));
+ out=gmJobStatusBadgeAppendPill(out,gmJobSupervisorPillHtml(r));
  return out;
 }
 
@@ -28726,14 +28758,30 @@ window.gmAnalyticsLoad=async function(){
     if(typeof jobsRender==='function')jobsRender();
   };
 
+  window.gmJobsSupervisorQueueSummaryHtml=function(rows){
+    var pending=0,done=0;
+    (rows||[]).forEach(function(r){
+      if(!r)return;
+      if(typeof jobFollowUpQueue!=='function'||jobFollowUpQueue(r)!=='supervisor')return;
+      var st=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(r):String(r.status||r.statusPm||'').toUpperCase();
+      if(st==='FINALIZED'||st==='PAID')done++;
+      else if(st!=='CANCELLED')pending++;
+    });
+    var txt=(typeof gmJobsT==='function')
+      ?gmJobsT('jobs_supervisor_summary',{pending:pending,done:done})
+      :'Fila supervisor: '+pending+' pendentes · '+done+' concluídas';
+    return '<div id="gmjs-supervisor-summary" style="font-size:12px;color:var(--ink2);margin-bottom:8px;font-family:\'DM Sans\',sans-serif;line-height:1.45">'+txt+'</div>';
+  };
+
   window.gmJobsRenderStatusChips=function(rows){
-    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0,vfree:0};
+    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0,vfree:0,supervisor:0};
     rows.forEach(function(r){
       var s=String(r.status||r.statusPm||'').toUpperCase();
       if(counts[s]!==undefined)counts[s]++;
       if(typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r))counts.rescheduled++;
       if(typeof gmJobsRowIsUrgent==='function'&&gmJobsRowIsUrgent(r))counts.urgent++;
       if(typeof gmJobsRowIsVendorFree==='function'&&gmJobsRowIsVendorFree(r))counts.vfree++;
+      if(typeof jobFollowUpQueue==='function'&&jobFollowUpQueue(r)==='supervisor')counts.supervisor++;
     });
     var chips=[
       {key:'all',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_all'):'Todos')},
@@ -28742,12 +28790,14 @@ window.gmAnalyticsLoad=async function(){
       {key:'rescheduled',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_rescheduled'):'Reagendados')},
       {key:'vfree',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_vfree'):'V Free')},
       {key:'urgent',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_urgent'):'Urgentes')},
+      {key:'supervisor',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_supervisor'):'Supervisor')},
       {key:'FINALIZED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_finalized'):'Finalizado')},
       {key:'PAID',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_paid'):'Pago')},
       {key:'CANCELLED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_cancelled'):'Cancelado')},
     ];
     var active=window.__jobsStatusFilter||'all';
-    return '<div class="gmjs-chips" id="gmjs-status-chips">'+
+    var summary=(typeof gmJobsSupervisorQueueSummaryHtml==='function')?gmJobsSupervisorQueueSummaryHtml(rows):'';
+    return summary+'<div class="gmjs-chips" id="gmjs-status-chips">'+
       chips.map(function(c){
         var cls='gmjs-chip'+(active===c.key?' active':'');
         var cnt=(c.key==='all')?counts.all:(counts[c.key]||0);
@@ -28760,6 +28810,11 @@ window.gmAnalyticsLoad=async function(){
   window.gmJobsApplyStatusFilter=function(rows){
     var f=window.__jobsStatusFilter||'all';
     if(f==='all')return rows;
+    if(f==='supervisor'){
+     return rows.filter(function(r){
+      return typeof jobFollowUpQueue==='function'&&jobFollowUpQueue(r)==='supervisor';
+     });
+    }
     if(f==='rescheduled'){
      return rows.filter(function(r){
       return typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r);
