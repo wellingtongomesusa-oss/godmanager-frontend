@@ -358,6 +358,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #page-forms-received .fr-empty-note{font-family:'DM Sans',sans-serif;font-size:11px;color:#9c937d;padding:10px 0}
 #page-forms-received .fr-news-card{margin-top:14px}
 #page-forms-received #fr-news-list{min-height:48px}
+#page-forms-received:fullscreen{background:#0d0a05;overflow:auto;padding:24px}
 /* ===== fim FORMS RECEIVED ===== */
 .ltd-chart-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
 .ltd-chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:10px;font-family:'DM Sans',sans-serif}
@@ -1595,6 +1596,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
    <span id="fr-master-hide-lbl">Ocultar financeiro</span>
   </button>
+  <button type="button" id="fr-tv-mode-btn" class="fr-eye-btn" onclick="frToggleTvMode()" aria-pressed="false">
+   <span id="fr-tv-mode-lbl">Tela cheia</span>
+  </button>
  </div>
  <div class="fr-sec-label">Contagens</div>
  <div class="fr-cards" id="fr-cards">
@@ -1603,7 +1607,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div class="fr-card"><div class="fr-card-label">Total Owners</div><div class="fr-card-num" id="fr-num-owners">—</div><div class="fr-donut"><canvas id="fr-card-owners" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-owners">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Vacant Houses</div><div class="fr-card-num" id="fr-num-vacant">—</div><div class="fr-donut"><canvas id="fr-card-vacant" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-vacant">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Move-out</div><div class="fr-card-num" id="fr-num-moveout">—</div><div class="fr-donut"><canvas id="fr-card-moveout" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-moveout">—</div></div></div>
-  <div class="fr-card"><div class="fr-card-label">Total Tenants</div><div class="fr-card-num" id="fr-num-tenants">—</div><div class="fr-donut"><canvas id="fr-card-tenants" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-tenants">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Taxa de ocupação</div><div class="fr-card-num" id="fr-num-occupancy">—</div><div class="fr-donut"><canvas id="fr-card-occupancy" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-occupancy">—</div></div></div>
  </div>
  <div class="fr-sec-label">Evolução</div>
@@ -1623,6 +1626,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <button type="button" class="fr-eye-btn" id="fr-eye-portfolio" onclick="frToggleHide('portfolio')" aria-label="Ocultar gráfico" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
    </div>
    <div class="fr-chart-body"><canvas id="fr-chart-portfolio"></canvas><div class="fr-mask-overlay">•••</div></div>
+  </div>
+  <div class="fr-chart-card" id="fr-wrap-checkins">
+   <div class="fr-chart-head"><span>Quantidade de Check-ins</span></div>
+   <div class="fr-chart-body"><canvas id="fr-chart-checkins"></canvas></div>
   </div>
  </div>
  <div class="fr-charts-wide">
@@ -28853,6 +28860,11 @@ var FR_PHASE_PLAN=[
 var FR_PORTFOLIO_HOUSE_COUNT_JUN=111;
 /** Fallback $/casa/mês se Net Owner atual indisponível no render. */
 var FR_NET_OWNER_PER_HOUSE_FALLBACK=2175;
+/** Check-ins mensais (fr-chart-checkins). Editar aqui. */
+var FR_CHECKINS_SERIES={
+ labels:['Nov','Dez','Jan','Fev','Mar','Abr','Mai'],
+ values:[4,6,5,6,8,13,9]
+};
 
 function frPortfolioJanJunSlice(){
  return {
@@ -28905,6 +28917,38 @@ window.frToggleMaster=function(){
  st.net=target;st.portfolio=target;
  frHideSave(st);frApplyHideUi();
 };
+function frResizeAllCharts(){
+ try{
+  Object.keys(window.__frCharts||{}).forEach(function(k){
+   var ch=window.__frCharts[k];
+   if(ch&&typeof ch.resize==='function')ch.resize();
+  });
+ }catch(e){}
+}
+function frUpdateTvModeLabel(){
+ var lbl=document.getElementById('fr-tv-mode-lbl');
+ var btn=document.getElementById('fr-tv-mode-btn');
+ var on=!!document.fullscreenElement;
+ if(lbl)lbl.textContent=on?'Sair tela cheia':'Tela cheia';
+ if(btn)btn.setAttribute('aria-pressed',on?'true':'false');
+}
+window.frToggleTvMode=function(){
+ try{
+  var pg=document.getElementById('page-forms-received');
+  if(!pg)return;
+  if(!document.fullscreenElement){
+   if(pg.requestFullscreen)pg.requestFullscreen();
+   else if(pg.webkitRequestFullscreen)pg.webkitRequestFullscreen();
+  }else{
+   if(document.exitFullscreen)document.exitFullscreen();
+  }
+ }catch(e){console.warn('frToggleTvMode',e);}
+};
+document.addEventListener('fullscreenchange',function(){
+ frUpdateTvModeLabel();
+ frResizeAllCharts();
+});
+frUpdateTvModeLabel();
 
 function frDestroyChart(key){
  if(window.__frCharts[key]){try{window.__frCharts[key].destroy();}catch(e){}delete window.__frCharts[key];}
@@ -29079,8 +29123,7 @@ window.gmFormsReceivedRender=async function(){
  var tenants=await frFetchTenants();
  var totalTenants=tenants.length;
  var moveOut=tenants.filter(function(t){return String((t&&t.status)||'').toLowerCase()==='notice';}).length;
- var activeTen=tenants.filter(function(t){return String((t&&t.status)||'').toLowerCase()==='active';}).length;
- [['fr-num-houses',kpi.total],['fr-num-rented',kpi.alugadas],['fr-num-owners',owners],['fr-num-vacant',kpi.vagas],['fr-num-moveout',moveOut],['fr-num-tenants',totalTenants]].forEach(function(p){
+ [['fr-num-houses',kpi.total],['fr-num-rented',kpi.alugadas],['fr-num-owners',owners],['fr-num-vacant',kpi.vagas],['fr-num-moveout',moveOut]].forEach(function(p){
   var el=document.getElementById(p[0]);if(el)el.textContent=String(p[1]);
  });
  frDonut('cardHouses','fr-card-houses','fr-ctr-houses',kpi.total,[kpi.alugadas,kpi.vagas],[FR_GOLD,FR_DARK]);
@@ -29088,7 +29131,6 @@ window.gmFormsReceivedRender=async function(){
  frDonut('cardOwners','fr-card-owners','fr-ctr-owners',owners,[owners,Math.max(0,kpi.total-owners)],[FR_GOLD,FR_DARK]);
  frDonut('cardVacant','fr-card-vacant','fr-ctr-vacant',kpi.vagas,[kpi.vagas,kpi.alugadas],[FR_GOLD,FR_DARK]);
  frDonut('cardMoveout','fr-card-moveout','fr-ctr-moveout',moveOut,[moveOut,Math.max(0,totalTenants-moveOut)],[FR_GOLD,FR_DARK]);
- frDonut('cardTenants','fr-card-tenants','fr-ctr-tenants',totalTenants,[activeTen,Math.max(0,totalTenants-activeTen)],[FR_GOLD,FR_DARK]);
  var occPct=kpi.total>0?Math.round((kpi.alugadas/kpi.total)*100):0;
  var occLabel=occPct+'%';
  var elOcc=document.getElementById('fr-num-occupancy');if(elOcc)elOcc.textContent=occLabel;
@@ -29124,6 +29166,9 @@ window.gmFormsReceivedRender=async function(){
  try{
   frBarChart('portfolio','fr-chart-portfolio',FR_PORTFOLIO_SERIES.labels.slice(),FR_PORTFOLIO_SERIES.values.slice(),{money:false});
  }catch(e3){console.warn('fr portfolio chart',e3);}
+ try{
+  frBarChart('checkins','fr-chart-checkins',FR_CHECKINS_SERIES.labels.slice(),FR_CHECKINS_SERIES.values.slice(),{money:false});
+ }catch(e6){console.warn('fr checkins chart',e6);}
  try{
   frPhasePlanChart('phases','fr-chart-phases',frCurrentPortfolioHouses());
  }catch(e4){console.warn('fr phases chart',e4);}
