@@ -8,7 +8,7 @@
  *   stageBy: email | userId | 'auto'
  *   history: [{ stage, at, by, note? }]   // append-only
  *   assignees: string[]
- *   queue?: maintenance | supervisor   // fila (default implícito: maintenance)
+ *   queue?: maintenance | supervisor | supervisor_2 | vendor   // fila (default implícito: maintenance)
  *   nextActionAt: ISO | null
  *   vendorQuote: { photoIds: string[], amount: number | null, receivedAt: ISO | null }
  *   autoRollover: { enabled: boolean, lastAt: ISO | null, count: number }
@@ -37,8 +37,15 @@ export const DEFAULT_FOLLOW_UP_STAGE: FollowUpStage = 'opened';
 
 export const JOB_QUEUE_MAINTENANCE = 'maintenance';
 export const JOB_QUEUE_SUPERVISOR = 'supervisor';
+export const JOB_QUEUE_SUPERVISOR_2 = 'supervisor_2';
+export const JOB_QUEUE_VENDOR = 'vendor';
 
-export const JOB_QUEUES = [JOB_QUEUE_MAINTENANCE, JOB_QUEUE_SUPERVISOR] as const;
+export const JOB_QUEUES = [
+  JOB_QUEUE_MAINTENANCE,
+  JOB_QUEUE_SUPERVISOR,
+  JOB_QUEUE_SUPERVISOR_2,
+  JOB_QUEUE_VENDOR,
+] as const;
 
 export type JobQueue = (typeof JOB_QUEUES)[number];
 
@@ -76,7 +83,7 @@ export function parseFollowUpQueue(raw: unknown): JobQueue | null {
 }
 
 /**
- * Retorna a fila do followUp: 'maintenance' (default) ou 'supervisor'.
+ * Retorna a fila do followUp: um dos JOB_QUEUES ou 'maintenance' (default).
  * Aceita expense ({ metadata }), metadata, ou o objeto followUp direto.
  */
 export function jobFollowUpQueue(expenseOrFollowUp: unknown): JobQueue {

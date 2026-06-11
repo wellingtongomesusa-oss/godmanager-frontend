@@ -24084,7 +24084,7 @@ window.jobFollowUpQueue=function jobFollowUpQueue(expenseOrFollowUp){
   else if('stage'in obj||'assignees'in obj||'queue'in obj||'history'in obj)fu=obj;
  }
  var q=String((fu&&fu.queue)||'').trim();
- if(q==='supervisor'||q==='maintenance')return q;
+ if(q==='maintenance'||q==='supervisor'||q==='supervisor_2'||q==='vendor')return q;
  return 'maintenance';
 };
 
