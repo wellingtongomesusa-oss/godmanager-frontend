@@ -8,6 +8,7 @@
  *   stageBy: email | userId | 'auto'
  *   history: [{ stage, at, by, note? }]   // append-only
  *   assignees: string[]
+ *   queue?: maintenance | supervisor   // fila (default implícito: maintenance)
  *   nextActionAt: ISO | null
  *   vendorQuote: { photoIds: string[], amount: number | null, receivedAt: ISO | null }
  *   autoRollover: { enabled: boolean, lastAt: ISO | null, count: number }
@@ -34,7 +35,15 @@ export type FollowUpStage = (typeof FOLLOW_UP_STAGES)[number];
 
 export const DEFAULT_FOLLOW_UP_STAGE: FollowUpStage = 'opened';
 
+export const JOB_QUEUE_MAINTENANCE = 'maintenance';
+export const JOB_QUEUE_SUPERVISOR = 'supervisor';
+
+export const JOB_QUEUES = [JOB_QUEUE_MAINTENANCE, JOB_QUEUE_SUPERVISOR] as const;
+
+export type JobQueue = (typeof JOB_QUEUES)[number];
+
 const STAGE_SET = new Set<string>(FOLLOW_UP_STAGES);
+const QUEUE_SET = new Set<string>(JOB_QUEUES);
 
 export class FollowUpMergeError extends Error {
   constructor(message: string) {
@@ -58,6 +67,42 @@ export function getFollowUpStage(metadata: unknown): FollowUpStage {
   const meta = asRecord(metadata);
   const fu = asRecord(meta?.followUp);
   return parseFollowUpStage(fu?.stage) ?? DEFAULT_FOLLOW_UP_STAGE;
+}
+
+export function parseFollowUpQueue(raw: unknown): JobQueue | null {
+  const s = String(raw ?? '').trim();
+  if (!s || !QUEUE_SET.has(s)) return null;
+  return s as JobQueue;
+}
+
+/**
+ * Retorna a fila do followUp: 'maintenance' (default) ou 'supervisor'.
+ * Aceita expense ({ metadata }), metadata, ou o objeto followUp direto.
+ */
+export function jobFollowUpQueue(expenseOrFollowUp: unknown): JobQueue {
+  if (expenseOrFollowUp == null) return JOB_QUEUE_MAINTENANCE;
+  const obj = asRecord(expenseOrFollowUp);
+  if (!obj) return JOB_QUEUE_MAINTENANCE;
+
+  let fu: Record<string, unknown> | null = null;
+  const nestedFu = asRecord(obj.followUp);
+  if (nestedFu) {
+    fu = nestedFu;
+  } else {
+    const meta = asRecord(obj.metadata);
+    if (meta) {
+      fu = asRecord(meta.followUp);
+    } else if (
+      'stage' in obj ||
+      'assignees' in obj ||
+      'queue' in obj ||
+      'history' in obj
+    ) {
+      fu = obj;
+    }
+  }
+
+  return parseFollowUpQueue(fu?.queue) ?? JOB_QUEUE_MAINTENANCE;
 }
 
 function defaultFollowUpShell(
@@ -126,6 +171,14 @@ export function mergeFollowUpMetadata(
     at,
     by,
   );
+
+  if ('queue' in patchObj && patchObj.queue !== undefined) {
+    const queue = parseFollowUpQueue(patchObj.queue);
+    if (!queue) {
+      throw new FollowUpMergeError(`Invalid followUp queue: ${String(patchObj.queue)}`);
+    }
+    nextFu.queue = queue;
+  }
 
   if ('stage' in patchObj && patchObj.stage !== undefined) {
     const stage = parseFollowUpStage(patchObj.stage);
