@@ -3707,10 +3707,14 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">STATUS DO PAGAMENTO *</label><select id="lt-nexp-status" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="unpaid">Pendente — não pago</option><option value="paid">Pago — confirmado</option><option value="overdue">Vencido — requer atenção</option></select></div>
  <div style="grid-column:1/-1">
-  <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-top:4px">
-   <input type="checkbox" id="lt-nexp-supervisor" style="width:15px;height:15px;margin-top:2px;accent-color:var(--amber);cursor:pointer">
-   <span style="font-size:11px;color:var(--ink2);line-height:1.4">Supervisor (fila do supervisor)</span>
-  </label>
+  <label data-i18n="lt_nexp_queue_label" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">FILA / DESTINO</label>
+  <select id="lt-nexp-queue" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer">
+   <option value="maintenance" data-i18n="lt_nexp_queue_maintenance">Manutenção</option>
+   <option value="supervisor" data-i18n="lt_nexp_queue_supervisor">Supervisão</option>
+   <option value="supervisor_2" data-i18n="lt_nexp_queue_supervisor_2">Supervisão 2</option>
+   <option value="vendor" data-i18n="lt_nexp_queue_vendor">Vendor (equipe)</option>
+  </select>
+  <p data-i18n="lt_nexp_queue_hint" style="font-size:10px;color:var(--ink3);margin:6px 0 0;line-height:1.45">Equipe responsável pelo job — não é a categoria da despesa.</p>
  </div>
  <div style="display:flex;align-items:flex-end;gap:8px;padding-bottom:2px"><input type="checkbox" id="lt-nexp-link" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer"><label for="lt-nexp-link" style="font-size:11px;color:var(--ink2);cursor:pointer;line-height:1.4">Atualizar automaticamente o valor desta categoria no Statement desta propriedade/mês</label></div>
  </div>
@@ -15595,20 +15599,26 @@ window.gerarInvoicePDF=function(data,opts){
  });
 })();
 
-function ltNexpSupervisorChecked(){
- var el=document.getElementById('lt-nexp-supervisor');
- return !!(el&&el.checked);
+var LT_NEXP_QUEUE_VALUES=['maintenance','supervisor','supervisor_2','vendor'];
+function ltNexpNormalizeQueue(raw){
+ var q=String(raw||'').trim();
+ return LT_NEXP_QUEUE_VALUES.indexOf(q)>=0?q:'maintenance';
 }
-function ltNexpFollowUpQueueFromMeta(meta){
+function ltNexpGetQueueSelectValue(){
+ var el=document.getElementById('lt-nexp-queue');
+ return ltNexpNormalizeQueue(el&&el.value);
+}
+function ltNexpQueueFromMeta(meta){
+ if(typeof jobFollowUpQueue==='function')return ltNexpNormalizeQueue(jobFollowUpQueue({metadata:meta}));
  if(!meta||typeof meta!=='object'||Array.isArray(meta))return 'maintenance';
  var fu=meta.followUp;
  if(!fu||typeof fu!=='object'||Array.isArray(fu))return 'maintenance';
- return String(fu.queue||'').trim()==='supervisor'?'supervisor':'maintenance';
+ return ltNexpNormalizeQueue(fu.queue);
 }
-function ltNexpSetSupervisorToggleFromMeta(meta){
- var el=document.getElementById('lt-nexp-supervisor');
+function ltNexpSetQueueSelectFromMeta(meta){
+ var el=document.getElementById('lt-nexp-queue');
  if(!el)return;
- el.checked=ltNexpFollowUpQueueFromMeta(meta)==='supervisor';
+ el.value=ltNexpQueueFromMeta(meta);
 }
 function ltNexpGetEditExpenseMeta(){
  var id=ltExpEditingPmId||ltExpEditingId;
@@ -15620,24 +15630,13 @@ function ltNexpCloneMeta(meta){
  if(!meta||typeof meta!=='object'||Array.isArray(meta))return null;
  try{return JSON.parse(JSON.stringify(meta));}catch(e){return Object.assign({},meta);}
 }
-function ltNexpApplySupervisorMeta(meta,isEd){
- var checked=ltNexpSupervisorChecked();
- var hadSupervisor=ltNexpFollowUpQueueFromMeta(meta)==='supervisor';
+function ltNexpApplyQueueMeta(meta,isEd){
+ var queue=ltNexpGetQueueSelectValue();
  var out=ltNexpCloneMeta(meta);
- if(checked){
-  if(!out)out={};
-  var fuOn=out.followUp&&typeof out.followUp==='object'&&!Array.isArray(out.followUp)?Object.assign({},out.followUp):{};
-  fuOn.queue='supervisor';
-  out.followUp=fuOn;
-  return out;
- }
- if(isEd&&hadSupervisor){
-  if(!out)out={};
-  var fuOff=out.followUp&&typeof out.followUp==='object'&&!Array.isArray(out.followUp)?Object.assign({},out.followUp):{};
-  fuOff.queue='maintenance';
-  out.followUp=fuOff;
-  return out;
- }
+ if(!out)out={};
+ var fu=out.followUp&&typeof out.followUp==='object'&&!Array.isArray(out.followUp)?Object.assign({},out.followUp):{};
+ fu.queue=queue;
+ out.followUp=fu;
  return out;
 }
 
@@ -15654,7 +15653,7 @@ async function ltOpenNewExpense(prefill){
  document.getElementById('lt-nexp-month').value='2026-04';
  document.getElementById('lt-nexp-status').value='unpaid';
  document.getElementById('lt-nexp-link').checked=true;
- var supNew=document.getElementById('lt-nexp-supervisor');if(supNew)supNew.checked=false;
+ var qNew=document.getElementById('lt-nexp-queue');if(qNew)qNew.value='maintenance';
  document.getElementById('lt-nexp-prop').value='';
  var pv=document.getElementById('lt-nexp-pm-vendor-cost');if(pv)pv.value='';
  var ps=document.getElementById('lt-nexp-pm-svc');if(ps)ps.value='';
@@ -15760,7 +15759,7 @@ async function ltOpenEditExpense(id){
   ltNexpPmRecalc();
   var sdt=document.getElementById('lt-nexp-pm-svc-date'); if(sdt && e.serviceDate) sdt.value=String(e.serviceDate).slice(0,10);
   var st=document.getElementById('lt-nexp-pm-status'); if(st) st.value = e.status || 'PENDING';
-  ltNexpSetSupervisorToggleFromMeta(e.metadata);
+  ltNexpSetQueueSelectFromMeta(e.metadata);
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
@@ -15795,7 +15794,7 @@ async function ltOpenEditExpense(id){
    if(ov && e.vendorId) ov.value=String(e.vendorId);
   },0);
   if(e.packageApplied && typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects(e.packageApplied);
-  ltNexpSetSupervisorToggleFromMeta(e.metadata);
+  ltNexpSetQueueSelectFromMeta(e.metadata);
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
@@ -15822,6 +15821,7 @@ async function ltOpenEditExpense(id){
  document.getElementById('lt-nexp-paid').value=r.paid||'';
  document.getElementById('lt-nexp-status').value=r.status||'unpaid';
  document.getElementById('lt-nexp-link').checked=!!r.linkToStatement;
+ ltNexpSetQueueSelectFromMeta(null);
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
 
@@ -15854,7 +15854,7 @@ function ltSaveExpense(){
     if(!metaBase)metaBase={};
     metaBase.fromJobId=String(vfFrom);
    }
-   var meta=ltNexpApplySupervisorMeta(metaBase,isEd);
+   var meta=ltNexpApplyQueueMeta(metaBase,isEd);
    const body={
     propertyCode:propId,
     packageApplied:pkg,
@@ -15951,7 +15951,7 @@ function ltSaveExpense(){
   var pkgStr=String((pDet&&pDet.value)||'').trim();
   var pmPkg=pkgStr?pkgStr:'PACOTE_4';
   var isEd = !!ltExpEditingId;
-  var metaLegacy=ltNexpApplySupervisorMeta(isEd?ltNexpGetEditExpenseMeta():null,isEd);
+  var metaLegacy=ltNexpApplyQueueMeta(isEd?ltNexpGetEditExpenseMeta():null,isEd);
   var body = {
    propertyCode: propId,
    vendorId: optVid?optVid:null,
