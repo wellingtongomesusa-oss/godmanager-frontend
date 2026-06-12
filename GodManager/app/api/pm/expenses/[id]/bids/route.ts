@@ -4,11 +4,37 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { recordAudit } from '@/lib/auditServer';
 import { FollowUpMergeError, mergeFollowUpMetadata } from '@/lib/jobFollowUp';
-import type { Prisma } from '@prisma/client';
+import { publicUrlForKey } from '@/lib/r2';
+import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 const INVITE_ROLES = new Set(['super_admin', 'admin', 'manager', 'supervisor', 'supervisor_2']);
+
+const SUBMIT_ALLOWED_STATUSES = new Set(['invited', 'submitted']);
+
+const SUBMIT_ALLOWED_MIMES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
+
+function jobBidInvoiceKeyPrefix(
+  clientId: string | null | undefined,
+  expenseId: string,
+  vendorId: string,
+): string {
+  return `job-bids/${clientId || 'no-client'}/${expenseId}/${vendorId}/`;
+}
+
+function isVendorSubmitUser(user: { role?: string | null; vendorId?: string | null }): string | null {
+  const role = String(user.role || '').toLowerCase();
+  const vendorId = String(user.vendorId || '').trim();
+  if (role !== 'vendor' || !vendorId) return null;
+  return vendorId;
+}
 
 function parseVendorIds(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
@@ -161,5 +187,111 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch (e) {
     console.error('[POST /api/pm/expenses/:id/bids]', e);
     return NextResponse.json({ ok: false, error: 'Failed to invite vendors' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const user = await getCurrentUserFromSession();
+  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+
+  const vendorId = isVendorSubmitUser(user);
+  if (!vendorId) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
+
+  const expenseId = String(params.id || '').trim();
+  if (!expenseId) {
+    return NextResponse.json({ ok: false, error: 'Invalid expense id' }, { status: 400 });
+  }
+
+  const bid = await prisma.jobBid.findUnique({
+    where: { expenseId_vendorId: { expenseId, vendorId } },
+    select: { id: true, status: true, clientId: true, expenseId: true, vendorId: true },
+  });
+  if (!bid) {
+    return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+  }
+
+  const bidStatus = String(bid.status || '').toLowerCase();
+  if (!SUBMIT_ALLOWED_STATUSES.has(bidStatus)) {
+    return NextResponse.json({ ok: false, error: 'Bid is not open for submission' }, { status: 409 });
+  }
+
+  try {
+    const body = await req.json();
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
+    }
+
+    const amountRaw = (body as { amount?: unknown }).amount;
+    const amountNum = Number(amountRaw);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      return NextResponse.json({ ok: false, error: 'amount must be a number greater than 0' }, { status: 400 });
+    }
+
+    const invoiceR2Key = String((body as { invoiceR2Key?: unknown }).invoiceR2Key ?? '').trim();
+    if (!invoiceR2Key) {
+      return NextResponse.json({ ok: false, error: 'invoiceR2Key is required' }, { status: 400 });
+    }
+
+    const expectedPrefix = jobBidInvoiceKeyPrefix(bid.clientId, expenseId, vendorId);
+    if (!invoiceR2Key.startsWith(expectedPrefix) || invoiceR2Key.includes('..') || invoiceR2Key.includes('//')) {
+      return NextResponse.json({ ok: false, error: 'Invalid invoiceR2Key' }, { status: 400 });
+    }
+
+    const invoiceMime = String((body as { invoiceMime?: unknown }).invoiceMime ?? '').trim().toLowerCase();
+    if (!invoiceMime || !SUBMIT_ALLOWED_MIMES.has(invoiceMime)) {
+      return NextResponse.json(
+        { ok: false, error: 'invoiceMime must be pdf, jpeg, jpg, png, or webp' },
+        { status: 400 },
+      );
+    }
+
+    const now = new Date();
+    const amountDec = new Prisma.Decimal(String(amountNum));
+    const invoiceUrl = publicUrlForKey(invoiceR2Key);
+
+    const updated = await prisma.jobBid.update({
+      where: { id: bid.id },
+      data: {
+        amount: amountDec,
+        invoiceR2Key,
+        invoiceUrl,
+        invoiceMime,
+        submittedAt: now,
+        status: 'submitted',
+      },
+      select: {
+        id: true,
+        status: true,
+        amount: true,
+        submittedAt: true,
+        invoiceUrl: true,
+      },
+    });
+
+    await recordAudit({
+      request: req,
+      actor: { id: user.id, email: user.email },
+      action: 'job_bid.submit',
+      entity: 'pm_expense',
+      entityId: expenseId,
+      details: JSON.stringify({ amount: amountNum, vendorId }),
+      clientId: bid.clientId,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      bid: {
+        id: updated.id,
+        status: updated.status,
+        amount: updated.amount != null ? updated.amount.toString() : null,
+        submittedAt: updated.submittedAt ? updated.submittedAt.toISOString() : null,
+        invoiceUrl: updated.invoiceUrl,
+      },
+    });
+  } catch (e) {
+    console.error('[PATCH /api/pm/expenses/:id/bids]', e);
+    return NextResponse.json({ ok: false, error: 'Failed to submit bid' }, { status: 500 });
   }
 }
