@@ -22239,7 +22239,7 @@ window.__jobsMarkupCacheAt=0;
 
 var GM_JOB_FOLLOWUP_STAGES=[
  'opened','maintenance_scheduled','closed_internal','vendor_requested',
- 'awaiting_quote','awaiting_vendor','vendor_done','followup_closed','escalated'
+ 'awaiting_quote','awaiting_vendor','vendor_done','followup_closed','escalated','bidding'
 ];
 
 function gmJobFollowUpRowMetadata(r){
@@ -22274,7 +22274,7 @@ function gmJobFollowUpStageLabel(stage){
  var fb={
   opened:'Opened',maintenance_scheduled:'Maint. scheduled',closed_internal:'Closed (internal)',
   vendor_requested:'Vendor requested',awaiting_quote:'Awaiting quote',awaiting_vendor:'Awaiting vendor',
-  vendor_done:'Vendor done',followup_closed:'Follow-up closed',escalated:'Escalated'
+  vendor_done:'Vendor done',followup_closed:'Follow-up closed',escalated:'Escalated',bidding:'Em orçamento'
  };
  return fb[s]||s;
 }
@@ -24618,8 +24618,10 @@ async function jobsRender(){
  var btnReactivate=((isCancelled||isFinalized)&&isAdmin)
   ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_reactivate_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">'+gmJobsT('jobs_btn_reactivate')+'</button>'
   : '';
+ var isSupQueue=(typeof jobFollowUpQueue==='function')&&jobFollowUpQueue(r)==='supervisor';
+ var vendorFreeOnclick=isSupQueue?'jobsOpenRfqModal(\''+idAttr+'\')':'jobsVendorFree(\''+idAttr+'\')';
  var btnVendorFree=canVendorFree
-  ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">+Vendor</button>'
+  ? '<button type="button" onclick="'+vendorFreeOnclick+'" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">+Vendor</button>'
   : '';
 
  var btnMaintVendor='';
@@ -24865,7 +24867,7 @@ function gmJobsFinalizeFollowUpStage(r){
   }
  }catch(e){}
  if(!st&&typeof gmJobFollowUpDisplayStage==='function')st=gmJobFollowUpDisplayStage(r);
- var vendorPath=['vendor_requested','awaiting_quote','awaiting_vendor'];
+ var vendorPath=['vendor_requested','awaiting_quote','awaiting_vendor','bidding'];
  if(vendorPath.indexOf(st)>=0)return 'vendor_done';
  return 'closed_internal';
 }
@@ -25127,6 +25129,223 @@ window.jobsReopen=function(id){
    else alert('Job reaberto com sucesso.');
   }).catch(function(err){alert('Erro de rede: '+(err&&err.message||''));});
  }catch(e){alert('Erro: '+e.message);}
+};
+
+window.jobsRfqCanInviteRole=function(){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var role=String(u.role||'').toLowerCase();
+ return role==='super_admin'||role==='admin'||role==='manager'||role==='supervisor'||role==='supervisor_2';
+};
+
+function jobsRfqModalEscHandler(e){
+ if(e.key==='Escape'&&typeof jobsCloseRfqModal==='function')jobsCloseRfqModal();
+}
+
+window.jobsCloseRfqModal=function(){
+ var o=document.getElementById('rfq-overlay');
+ if(o)o.remove();
+ document.removeEventListener('keydown',jobsRfqModalEscHandler);
+ window.__rfqModalJobId=null;
+ window.__rfqVendorsCache=null;
+};
+
+window.jobsRfqUpdateSelection=function(){
+ var checks=document.querySelectorAll('#rfq-vendor-list .rfq-vendor-chk:checked');
+ var n=checks.length;
+ var counter=document.getElementById('rfq-counter');
+ if(counter)counter.textContent=n+'/3';
+ var submitBtn=document.getElementById('rfq-submit-btn');
+ if(submitBtn){
+  submitBtn.textContent='Enviar convites ('+n+')';
+  submitBtn.disabled=n===0;
+ }
+ var all=document.querySelectorAll('#rfq-vendor-list .rfq-vendor-chk');
+ for(var i=0;i<all.length;i++){
+  var chk=all[i];
+  if(chk.checked)chk.disabled=false;
+  else chk.disabled=n>=3;
+ }
+};
+
+window.jobsRfqRenderVendorList=function(){
+ var listEl=document.getElementById('rfq-vendor-list');
+ var searchEl=document.getElementById('rfq-search');
+ if(!listEl)return;
+ var q=String((searchEl&&searchEl.value)||'').trim().toLowerCase();
+ var vendors=Array.isArray(window.__rfqVendorsCache)?window.__rfqVendorsCache:[];
+ var filtered=vendors.filter(function(v){
+  if(!q)return true;
+  var blob=(String(v.company_name||'')+' '+String(v.trade||'')+' '+String(v.service_type||'')).toLowerCase();
+  return blob.indexOf(q)>=0;
+ });
+ if(!filtered.length){
+  listEl.innerHTML='<div id="rfq-empty" style="padding:16px;text-align:center;color:var(--ink3);font-size:12px">'+(vendors.length?'Nenhum vendor encontrado':'Nenhum vendor cadastrado')+'</div>';
+  if(typeof jobsRfqUpdateSelection==='function')jobsRfqUpdateSelection();
+  return;
+ }
+ var html='';
+ for(var i=0;i<filtered.length;i++){
+  var v=filtered[i];
+  var vid=String(v.id||'').trim();
+  if(!vid)continue;
+  var cn=String(v.company_name||vid).replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  var trade=String(v.trade||'—').replace(/</g,'&lt;');
+  var stype=String(v.service_type||'—').replace(/</g,'&lt;');
+  html+='<label class="rfq-vendor-row" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border2);cursor:pointer">'
+   +'<input type="checkbox" class="rfq-vendor-chk" value="'+vid.replace(/"/g,'&quot;')+'" onchange="jobsRfqUpdateSelection()"/>'
+   +'<span style="flex:1;font-size:12px;font-weight:600;color:var(--ink)">'+cn+'</span>'
+   +'<span style="font-size:10px;background:var(--slate-bg);padding:2px 8px;border-radius:4px;color:var(--ink2)">'+trade+'</span>'
+   +'<span style="font-size:10px;background:var(--amber-bg);padding:2px 8px;border-radius:4px;color:var(--amber)">'+stype+'</span>'
+   +'</label>';
+ }
+ listEl.innerHTML=html;
+ if(typeof jobsRfqUpdateSelection==='function')jobsRfqUpdateSelection();
+};
+
+window.jobsOpenRfqModal=async function(id){
+ if(typeof jobsRfqCanInviteRole==='function'&&!jobsRfqCanInviteRole()){
+  alert(typeof t==='function'?t('alert_no_permission'):'Sem permissão.');
+  return;
+ }
+ id=String(id||'').trim();
+ if(!id)return;
+ if(typeof jobsCloseRfqModal==='function')jobsCloseRfqModal();
+ var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+ if(!row){
+  alert(typeof gmJobsT==='function'?gmJobsT('jobs_job_not_found'):'Job não encontrado.');
+  return;
+ }
+ var jobLabel=String(row.jobLabel||id).trim();
+ var addr=(typeof jobsResolveAddress==='function')?String(jobsResolveAddress(row)||'').trim():'';
+ if(!window._pmVendorsList||!window._pmVendorsList.length||window._pmVendorsLoadState!=='ok'){
+  if(typeof gvFetchFromApi==='function')await gvFetchFromApi();
+ }
+ if((!window._pmVendorsList||!window._pmVendorsList.length)&&typeof gmCuEnsureVendorsLoaded==='function'){
+  try{await gmCuEnsureVendorsLoaded();}catch(eV){console.warn('[jobsOpenRfqModal] vendors',eV);}
+ }
+ window.__rfqVendorsCache=(typeof gvLoad==='function')?gvLoad():[];
+ window.__rfqModalJobId=id;
+ var overlay=document.createElement('div');
+ overlay.id='rfq-overlay';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+ overlay.onclick=function(e){if(e.target===overlay&&typeof jobsCloseRfqModal==='function')jobsCloseRfqModal();};
+ var card=document.createElement('div');
+ card.id='rfq-card';
+ card.style.cssText='background:var(--sand);border:1px solid var(--border2);border-radius:12px;padding:20px 24px;max-width:560px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.18);color:var(--ink)';
+ var head=document.createElement('div');
+ head.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border2)';
+ var titleWrap=document.createElement('div');
+ var title=document.createElement('div');
+ title.id='rfq-title';
+ title.textContent='Solicitar orçamentos — WO '+jobLabel;
+ title.style.cssText='font-size:14px;font-weight:700;color:var(--ink)';
+ titleWrap.appendChild(title);
+ if(addr){
+  var sub=document.createElement('div');
+  sub.id='rfq-subtitle';
+  sub.textContent=addr;
+  sub.style.cssText='font-size:11px;color:var(--ink3);margin-top:4px';
+  titleWrap.appendChild(sub);
+ }
+ var closeBtn=document.createElement('button');
+ closeBtn.type='button';
+ closeBtn.id='rfq-close-btn';
+ closeBtn.innerHTML='&times;';
+ closeBtn.title='Fechar (ESC)';
+ closeBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:24px;line-height:1;color:var(--ink3);padding:0 4px';
+ closeBtn.onclick=function(){if(typeof jobsCloseRfqModal==='function')jobsCloseRfqModal();};
+ head.appendChild(titleWrap);
+ head.appendChild(closeBtn);
+ var searchWrap=document.createElement('div');
+ searchWrap.style.cssText='margin-bottom:10px';
+ var search=document.createElement('input');
+ search.type='search';
+ search.id='rfq-search';
+ search.placeholder='Buscar vendor (nome, trade, serviço)';
+ search.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);font-family:inherit;box-sizing:border-box';
+ search.oninput=function(){if(typeof jobsRfqRenderVendorList==='function')jobsRfqRenderVendorList();};
+ searchWrap.appendChild(search);
+ var metaRow=document.createElement('div');
+ metaRow.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;color:var(--ink2)';
+ var counter=document.createElement('span');
+ counter.id='rfq-counter';
+ counter.textContent='0/3';
+ var note=document.createElement('span');
+ note.id='rfq-deadline-note';
+ note.textContent='Prazo: 24h';
+ note.style.cssText='color:var(--ink3)';
+ metaRow.appendChild(counter);
+ metaRow.appendChild(note);
+ var list=document.createElement('div');
+ list.id='rfq-vendor-list';
+ list.style.cssText='flex:1;min-height:120px;max-height:320px;overflow-y:auto;border:1px solid var(--border2);border-radius:8px;background:var(--sand)';
+ var footer=document.createElement('div');
+ footer.style.cssText='margin-top:16px;display:flex;justify-content:flex-end;gap:10px';
+ var cancelBtn=document.createElement('button');
+ cancelBtn.type='button';
+ cancelBtn.id='rfq-cancel-btn';
+ cancelBtn.textContent='Cancelar';
+ cancelBtn.style.cssText='padding:8px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer';
+ cancelBtn.onclick=function(){if(typeof jobsCloseRfqModal==='function')jobsCloseRfqModal();};
+ var submitBtn=document.createElement('button');
+ submitBtn.type='button';
+ submitBtn.id='rfq-submit-btn';
+ submitBtn.textContent='Enviar convites (0)';
+ submitBtn.disabled=true;
+ submitBtn.style.cssText='padding:8px 14px;border:none;border-radius:6px;background:var(--amber);color:#fff;font-size:12px;font-weight:600;cursor:pointer';
+ submitBtn.onclick=function(){if(typeof jobsSubmitRfq==='function')jobsSubmitRfq(id);};
+ footer.appendChild(cancelBtn);
+ footer.appendChild(submitBtn);
+ card.appendChild(head);
+ card.appendChild(searchWrap);
+ card.appendChild(metaRow);
+ card.appendChild(list);
+ card.appendChild(footer);
+ overlay.appendChild(card);
+ document.body.appendChild(overlay);
+ if(typeof jobsRfqRenderVendorList==='function')jobsRfqRenderVendorList();
+ document.addEventListener('keydown',jobsRfqModalEscHandler);
+};
+
+window.jobsSubmitRfq=async function(id){
+ id=String(id||window.__rfqModalJobId||'').trim();
+ if(!id)return;
+ var checks=document.querySelectorAll('#rfq-vendor-list .rfq-vendor-chk:checked');
+ var vendorIds=[];
+ for(var i=0;i<checks.length;i++){
+  var v=String(checks[i].value||'').trim();
+  if(v)vendorIds.push(v);
+ }
+ if(!vendorIds.length){
+  alert('Selecione de 1 a 3 vendors.');
+  return;
+ }
+ var submitBtn=document.getElementById('rfq-submit-btn');
+ if(submitBtn)submitBtn.disabled=true;
+ try{
+  var res=await fetch('/api/pm/expenses/'+encodeURIComponent(id)+'/bids',{
+   method:'POST',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({vendorIds:vendorIds,deadlineHours:24})
+  });
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data||!data.ok){
+   var err=(data&&data.error)||('HTTP '+res.status);
+   if(typeof showToast==='function')showToast(err,'error');else alert(err);
+   if(submitBtn)submitBtn.disabled=false;
+   return;
+  }
+  if(typeof showToast==='function')showToast('Convites enviados','success');
+  if(typeof jobsCloseRfqModal==='function')jobsCloseRfqModal();
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  if(typeof jobsFetchFromApi==='function')await jobsFetchFromApi();
+  if(typeof jobsRender==='function')jobsRender();
+ }catch(e){
+  var msg=e&&e.message?e.message:'Falha de rede';
+  if(typeof showToast==='function')showToast(msg,'error');else alert(msg);
+  if(submitBtn)submitBtn.disabled=false;
+ }
 };
 
 window.jobsVendorFree=async function(id){
