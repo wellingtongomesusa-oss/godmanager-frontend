@@ -61,6 +61,7 @@ function mergeRescheduleMetadata(
 function toJson(e: {
   id: string;
   propertyId: string;
+  jobNumber?: number | null;
   vendorId: string | null;
   serviceType: string | null;
   packageApplied: PmPackage;
@@ -79,11 +80,18 @@ function toJson(e: {
   finalizedNote?: string | null;
   property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
+  client?: { jobPrefix: string | null } | null;
 }) {
   const tenantName = pickTenantNameForProperty(e.property);
+  const jobNum = e.jobNumber ?? null;
   return {
     id: e.id,
     propertyId: e.propertyId,
+    jobNumber: jobNum,
+    jobLabel:
+      jobNum != null
+        ? `${e.client?.jobPrefix || 'JOB'}-${String(jobNum).padStart(4, '0')}`
+        : null,
     propertyCode: e.property.code,
     propAddress: e.property.address,
     tenantName,
@@ -405,6 +413,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       include: {
         property: { select: pmExpensePropertyTenantSelect },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
+        client: { select: { jobPrefix: true } },
       },
     });
 

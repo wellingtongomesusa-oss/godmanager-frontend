@@ -3281,6 +3281,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <table style="width:100%;border-collapse:collapse;font-size:12px" id="jobs-table" class="lt-jobs-table">
     <thead>
      <tr style="background:var(--cream);border-bottom:2px solid var(--border)">
+      <th data-i18n="jobs_col_jobnum" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Job #</th>
       <th data-i18n="jobs_col_qty" style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:52px">Qty</th>
       <th data-i18n="jobs_col_unit" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Unit</th>
       <th data-i18n="jobs_col_tenant" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Tenant</th>
@@ -3295,7 +3296,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      </tr>
     </thead>
     <tbody id="jobs-tbody">
-     <tr><td colspan="11" data-i18n="loading" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
+     <tr><td colspan="12" data-i18n="loading" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
     </tbody>
    </table>
   </div>
@@ -13392,6 +13393,8 @@ function ltExpMapApiToRow(e){
   _isVendorPm:hasVendor,
   id:e.id,
   pmId:e.id,
+  jobNumber:e.jobNumber ?? null,
+  jobLabel:e.jobLabel || '',
   propAddress:e.propAddress || '\u2014',
   propertyCode:String(e.propertyCode||'').trim(),
   tenantName:e.tenantName!=null&&String(e.tenantName).trim()?String(e.tenantName).trim():null,
@@ -24462,7 +24465,7 @@ async function jobsRender(){
   calendarHost.style.display='none';
  }
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--ink3)">'+gmJobsT('jobs_no_jobs')+'</td></tr>';
+  tbody.innerHTML='<tr><td colspan="12" style="padding:40px;text-align:center;color:var(--ink3)">'+gmJobsT('jobs_no_jobs')+'</td></tr>';
   return;
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -24587,6 +24590,7 @@ async function jobsRender(){
  var lblMoEsc=String(statusLblMo).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 
  return '<tr data-job-id="'+idData+'" style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
+  +'<td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2);white-space:nowrap">'+(r.jobLabel||'\u2014')+'</td>'
   +'<td class="col-qty" data-label="'+gmJobsT('jobs_col_qty')+'" style="padding:9px 8px;text-align:center;vertical-align:middle">'+qtyBadge+'</td>'
   +'<td class="col-unit" style="padding:9px 12px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+unitEsc+'">'+unit+'</td>'
   +'<td class="col-tenant" data-label="'+gmJobsT('jobs_col_tenant')+'" style="padding:9px 12px;color:var(--ink2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+tenantEsc+'">'+tenantDisp+'</td>'

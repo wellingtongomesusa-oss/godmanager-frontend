@@ -34,6 +34,7 @@ function parseIsVendorFree(raw: unknown): boolean {
 function toJson(e: {
   id: string;
   propertyId: string;
+  jobNumber?: number | null;
   vendorId: string | null;
   serviceType: string | null;
   packageApplied: PmPackage;
@@ -49,11 +50,18 @@ function toJson(e: {
   metadata: Prisma.JsonValue | null;
   property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
+  client?: { jobPrefix: string | null } | null;
 }) {
   const tenantName = pickTenantNameForProperty(e.property);
+  const jobNum = e.jobNumber ?? null;
   return {
     id: e.id,
     propertyId: e.propertyId,
+    jobNumber: jobNum,
+    jobLabel:
+      jobNum != null
+        ? `${e.client?.jobPrefix || 'JOB'}-${String(jobNum).padStart(4, '0')}`
+        : null,
     propertyCode: e.property.code,
     propAddress: e.property.address,
     tenantName,
@@ -91,6 +99,7 @@ export async function GET(req: Request) {
       include: {
         property: { select: pmExpensePropertyTenantSelect },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
+        client: { select: { jobPrefix: true } },
       },
       orderBy: [{ monthRef: 'desc' }, { serviceDate: 'desc' }, { createdAt: 'desc' }],
     });
@@ -189,26 +198,39 @@ export async function POST(req: Request) {
 
     const ownerCh = ownerChargedAmount(vendorCost, pkg);
 
-    const row = await prisma.pmExpense.create({
-      data: {
-        propertyId: resolved.id,
-        clientId: expenseClientId,
-        vendorId,
-        serviceType: String(body.serviceType || '').trim() || null,
-        packageApplied: pkg,
-        vendorCost,
-        ownerCharged: ownerCh,
-        serviceDate: serviceDate && !Number.isNaN(serviceDate.getTime()) ? serviceDate : null,
-        monthRef,
-        status: st,
-        description: String(body.description || '').trim() || null,
-        isVendorFree,
-        ...(metadata !== undefined ? { metadata } : {}),
-      },
-      include: {
-        property: { select: pmExpensePropertyTenantSelect },
-        vendor: { select: { id: true, companyName: true, defaultPackage: true } },
-      },
+    const row = await prisma.$transaction(async (tx) => {
+      let jobNumber: number | null = null;
+      if (expenseClientId) {
+        const c = await tx.client.update({
+          where: { id: expenseClientId },
+          data: { lastJobNumber: { increment: 1 } },
+          select: { lastJobNumber: true },
+        });
+        jobNumber = c.lastJobNumber;
+      }
+      return tx.pmExpense.create({
+        data: {
+          propertyId: resolved.id,
+          clientId: expenseClientId,
+          vendorId,
+          serviceType: String(body.serviceType || '').trim() || null,
+          packageApplied: pkg,
+          vendorCost,
+          ownerCharged: ownerCh,
+          serviceDate: serviceDate && !Number.isNaN(serviceDate.getTime()) ? serviceDate : null,
+          monthRef,
+          status: st,
+          description: String(body.description || '').trim() || null,
+          isVendorFree,
+          ...(metadata !== undefined ? { metadata } : {}),
+          ...(jobNumber != null ? { jobNumber } : {}),
+        },
+        include: {
+          property: { select: pmExpensePropertyTenantSelect },
+          vendor: { select: { id: true, companyName: true, defaultPackage: true } },
+          client: { select: { jobPrefix: true } },
+        },
+      });
     });
     return NextResponse.json({ ok: true, expense: toJson(row) });
   } catch (e) {

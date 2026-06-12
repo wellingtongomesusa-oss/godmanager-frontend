@@ -77,6 +77,8 @@ model Client {
   productType ClientProductType @default(PROPERTY_MANAGEMENT)
   active      Boolean    @default(true)
   logoUrl     String?
+  jobPrefix     String?
+  lastJobNumber Int        @default(0)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   users       User[]
@@ -646,11 +648,13 @@ model PmExpense {
   isVendorFree       Boolean         @default(false)
   wasRescheduled     Boolean         @default(false)
   metadata           Json?
+  jobNumber          Int?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   clientId       String?
   client         Client?         @relation("PmExpense_clientId", fields: [clientId], references: [id], onDelete: SetNull)
 
+  @@unique([clientId, jobNumber])
   @@index([propertyId, monthRef])
   @@index([monthRef])
   @@index([vendorId])
