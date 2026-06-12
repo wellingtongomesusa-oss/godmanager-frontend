@@ -3214,6 +3214,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <option value="supervisor_2" data-i18n="jobs_queue_filter_supervisor_2">Supervisão 2</option>
    <option value="vendor" data-i18n="jobs_queue_filter_vendor">Vendor</option>
   </select>
+  <input id="jobs-jobnum-search" type="search" data-i18n-placeholder="jobs_jobnum_search_ph" placeholder="Buscar Nº Job" oninput="window.__jobsJobNumFilter=this.value;jobsRender();" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:140px;width:140px;font-family:inherit"/>
   </span>
   <button type="button" id="jobs-df-all" data-i18n="jobs_date_all" onclick="gmJobsSetDateFilter('all')" style="padding:6px 14px;border:1px solid #1e2b3d;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;background:#1e2b3d;color:#fff;font-weight:700;margin-left:auto">Todas as datas</button>
  </div>
@@ -23221,6 +23222,7 @@ window.gmJobsSetVendorFilter=function(vendorName){
 };
 
 window.__jobsQueueFilter='all';
+window.__jobsJobNumFilter='';
 window.gmJobsSetQueueFilter=function(queueKey){
  var q=String(queueKey||'').trim();
  window.__jobsQueueFilter=q||'all';
@@ -24418,6 +24420,7 @@ async function jobsRender(){
    if(chipsContainer)chipsContainer.innerHTML=chipsHtml;
    rows=gmJobsApplyStatusFilter(rows);
    if(typeof gmJobsApplyQueueFilter==='function')rows=gmJobsApplyQueueFilter(rows);
+   if(typeof gmJobsApplyJobNumFilter==='function')rows=gmJobsApplyJobNumFilter(rows);
   }catch(e){console.warn('Status chips failed:',e);}
  }
  var qSel=document.getElementById('jobs-queue-filter');
@@ -28857,6 +28860,7 @@ window.gmAnalyticsLoad=async function(){
   if(!window.__jobsStatusFilter)window.__jobsStatusFilter='all';
   if(window.__jobsStatusFilter==='supervisor')window.__jobsStatusFilter='all';
   if(!window.__jobsQueueFilter)window.__jobsQueueFilter='all';
+  if(!window.__jobsJobNumFilter)window.__jobsJobNumFilter='';
 
   window.gmJobsSetStatusFilter=function(key){
     window.__jobsStatusFilter=key||'all';
@@ -28931,6 +28935,17 @@ window.gmAnalyticsLoad=async function(){
     if(!qf||qf==='all')return rows;
     return rows.filter(function(r){
       return typeof jobFollowUpQueue==='function'&&jobFollowUpQueue(r)===qf;
+    });
+  };
+
+  window.gmJobsApplyJobNumFilter=function(rows){
+    var q=String(window.__jobsJobNumFilter||'').trim().toLowerCase();
+    if(!q)return rows;
+    var digits=q.replace(/\D/g,'');
+    return rows.filter(function(r){
+      var label=String(r.jobLabel||'').toLowerCase();
+      var num=r.jobNumber!=null?String(r.jobNumber):'';
+      return label.includes(q)||(digits&&num.includes(digits));
     });
   };
 
