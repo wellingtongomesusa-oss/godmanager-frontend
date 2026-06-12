@@ -3097,7 +3097,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <option value="Vendor">Vendor</option>
  <option value="__PM__">Vendor (markup / API)</option>
  </select>
- <input id="lt-exp-search" oninput="ltExpRender()" placeholder="Buscar por propriedade ou descrição..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:280px">
+ <input id="lt-exp-search" oninput="ltExpRender()" placeholder="Buscar por propriedade, descrição ou Nº WO..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:280px">
  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
  <span id="lt-exp-migrate-status" style="font-size:11px;color:var(--ink2);max-width:280px" aria-live="polite"></span>
  <button type="button" id="lt-exp-migrate-local-btn" onclick="if(typeof ltExpMigrateLocalToDb==='function')ltExpMigrateLocalToDb();" style="display:none;padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Migrar dados locais → Banco</button>
@@ -3120,12 +3120,13 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="font-size:13px;font-weight:700;color:var(--ink)">Registro de Despesas</div>
  <div id="lt-exp-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
  </div>
- <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1310px">
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1400px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 8px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:36px" title="Selecionar despesas PM">
   <input type="checkbox" id="lt-exp-select-all" onchange="if(this.disabled)return;if(typeof ltExpToggleAllSelection===&#39;function&#39;)ltExpToggleAllSelection(this.checked)" style="cursor:pointer">
  </th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:30px">#</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Work Order</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vendor</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Serviço</th>
@@ -16089,7 +16090,7 @@ function ltExpRender(){
    if(fCat==='Vendor'){if(r.category!=='Vendor'&&r.category!=='Vendor (API)'&&!(r._isPm&&r._isVendorPm))return false;}
    else{if(r.category!==fCat)return false;}
   }
-  if(fSearch&&!String((r.propAddress||'')+(r.desc||'')+(r.vendor||r.vendorName||'')).toLowerCase().includes(fSearch))return false;
+  if(fSearch&&!String((r.propAddress||'')+(r.desc||'')+(r.vendor||r.vendorName||'')+(r.jobLabel||'')+(r.jobNumber!=null?r.jobNumber:'')).toLowerCase().includes(fSearch))return false;
   return true;
  });
  const tot=filtered.reduce((s,r)=>s+ltExpValueWithExtras(r),0);
@@ -16154,6 +16155,7 @@ function ltExpRender(){
   return `<tr class="lt-exp-row status-${String(stNorm).toLowerCase()}" data-status="${stNorm}" data-lt-photo-job="${photoJobAttr}" style="border-bottom:1px solid var(--border)">
  `+cbTd+`
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
+ <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${esc(r.jobLabel||'—')}</td>
  <td style="padding:9px 12px;font-size:12px;color:var(--ink)">${esc(r.propAddress||'—')}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">${ven}</td>
  <td style="padding:9px 12px;font-size:11px;color:var(--ink3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${svc}">${svc}</td>
@@ -16187,7 +16189,7 @@ function ltExpRender(){
 function ltExpExportCSV(){
  const records=(typeof ltExpMergeAll==='function')?ltExpMergeAll():ltExpGetRecords();
  if(!records.length){alert('Nenhum registro.');return;}
- const headers=['Propriedade','Categoria','Descricao','Valor','Mes','Status','Approval'];
+ const headers=['Propriedade','Work Order','Categoria','Descricao','Valor','Mes','Status','Approval'];
  const rows=records.map(function(r){
   var isPm=!!(r && r._isPm);
   var desc=isPm?((r._isVendorPm?(r.serviceType||r.desc):r.desc)||''):(r.desc||'');
@@ -16195,7 +16197,7 @@ function ltExpExportCSV(){
   var val=ltExpValueWithExtras(r);
   var appr=(!isPm && r.approvalInvoice && r.approvalAppfolio && r.approvalApproved)?'Approved':'Pending';
   if(isPm) appr='';
-  return [(r.propAddress),(r.category),desc,val,ltFmtMonth(r.month),st,appr].map(function(v){ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; });
+  return [(r.propAddress),(r.jobLabel||''),(r.category),desc,val,ltFmtMonth(r.month),st,appr].map(function(v){ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; });
  });
  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='LT_Despesas.csv'; a.click();
