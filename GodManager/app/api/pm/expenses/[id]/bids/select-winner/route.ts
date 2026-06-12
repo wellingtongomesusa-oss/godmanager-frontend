@@ -92,6 +92,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const ownerCharged = ownerChargedAmount(winnerAmount, expense.packageApplied);
+    const serviceDate = new Date(String(d1));
+    if (Number.isNaN(serviceDate.getTime())) {
+      return NextResponse.json({ ok: false, error: 'Invalid serviceDate' }, { status: 400 });
+    }
     const now = new Date();
     const atIso = now.toISOString();
     const auditBy = String(user.email || user.id || 'unknown').trim();
@@ -135,6 +139,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           vendorId: winnerVendorId,
           vendorCost: new Prisma.Decimal(String(winnerAmount)),
           ownerCharged: new Prisma.Decimal(String(ownerCharged)),
+          serviceDate,
           metadata: nextMeta as Prisma.InputJsonValue,
         },
       });
