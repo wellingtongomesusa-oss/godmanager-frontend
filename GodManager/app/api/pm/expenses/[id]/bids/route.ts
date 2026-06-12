@@ -55,6 +55,69 @@ function clampDeadlineHours(raw: unknown): number {
   return Math.min(168, Math.max(1, h));
 }
 
+function serializeBid(bid: {
+  id: string;
+  vendorId: string;
+  amount: Prisma.Decimal | null;
+  status: string;
+  invoiceUrl: string | null;
+  invoiceMime: string | null;
+  submittedAt: Date | null;
+  deadline: Date;
+  invitedAt: Date;
+  vendor: { id: string; companyName: string } | null;
+}) {
+  return {
+    id: bid.id,
+    vendorId: bid.vendorId,
+    vendorName: bid.vendor?.companyName ?? '',
+    amount: bid.amount != null ? bid.amount.toString() : null,
+    status: bid.status,
+    invoiceUrl: bid.invoiceUrl,
+    invoiceMime: bid.invoiceMime,
+    submittedAt: bid.submittedAt ? bid.submittedAt.toISOString() : null,
+    deadline: bid.deadline.toISOString(),
+    invitedAt: bid.invitedAt.toISOString(),
+  };
+}
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const user = await getCurrentUserFromSession();
+  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+
+  const role = String(user.role || '').toLowerCase();
+  if (!INVITE_ROLES.has(role)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
+
+  const expenseId = String(params.id || '').trim();
+  if (!expenseId) {
+    return NextResponse.json({ ok: false, error: 'Invalid expense id' }, { status: 400 });
+  }
+
+  try {
+    const scopeUser = toClientScopeUser(user);
+    const expense = await prisma.pmExpense.findFirst({
+      where: { id: expenseId, ...getClientScopeWhere(scopeUser) },
+      select: { id: true },
+    });
+    if (!expense) {
+      return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    }
+
+    const rows = await prisma.jobBid.findMany({
+      where: { expenseId },
+      include: { vendor: { select: { id: true, companyName: true } } },
+      orderBy: [{ amount: 'asc' }, { submittedAt: 'asc' }],
+    });
+
+    return NextResponse.json({ ok: true, bids: rows.map(serializeBid) });
+  } catch (e) {
+    console.error('[GET /api/pm/expenses/:id/bids]', e);
+    return NextResponse.json({ ok: false, error: 'Failed to list bids' }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });

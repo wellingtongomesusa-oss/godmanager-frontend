@@ -24624,6 +24624,10 @@ async function jobsRender(){
  var btnVendorFree=canVendorFree
   ? '<button type="button" onclick="'+vendorFreeOnclick+'" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">+Vendor</button>'
   : '';
+ var btnPropostas='';
+ if(typeof jobsRfqCanInviteRole==='function'&&jobsRfqCanInviteRole()&&typeof gmJobFollowUpDisplayStage==='function'&&gmJobFollowUpDisplayStage(r)==='bidding'){
+  btnPropostas='<button type="button" onclick="jobsOpenBidsModal(\''+idAttr+'\')" title="Ver propostas recebidas" style="'+btnStyleBase+';background:#1e2b3d;border-color:#1e2b3d;color:#fff">Propostas</button>';
+ }
 
  var btnMaintVendor='';
  if(isMaintenanceOnly&&!isCancelled&&!isFinalized){
@@ -24643,7 +24647,7 @@ async function jobsRender(){
   }
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else{
-  actionsInner=btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree;
+  actionsInner=btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnPropostas+btnVendorFree;
   dismissCellHtml=btnDismissTd;
  }
 
@@ -25313,6 +25317,138 @@ window.jobsOpenRfqModal=async function(id){
  document.body.appendChild(overlay);
  if(typeof jobsRfqRenderVendorList==='function')jobsRfqRenderVendorList();
  document.addEventListener('keydown',jobsRfqModalEscHandler);
+};
+
+function jobsBidsModalEscHandler(e){
+ if(e.key==='Escape'&&typeof jobsCloseBidsModal==='function')jobsCloseBidsModal();
+}
+
+window.jobsCloseBidsModal=function(){
+ var o=document.getElementById('bids-overlay');
+ if(o)o.remove();
+ document.removeEventListener('keydown',jobsBidsModalEscHandler);
+ window.__bidsModalJobId=null;
+};
+
+window.jobsOpenBidsModal=async function(id){
+ if(typeof jobsRfqCanInviteRole==='function'&&!jobsRfqCanInviteRole()){
+  alert(typeof t==='function'?t('alert_no_permission'):'Sem permissão.');
+  return;
+ }
+ id=String(id||'').trim();
+ if(!id)return;
+ if(typeof jobsCloseBidsModal==='function')jobsCloseBidsModal();
+ var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+ if(!row){
+  alert(typeof gmJobsT==='function'?gmJobsT('jobs_job_not_found'):'Job não encontrado.');
+  return;
+ }
+ var jobLabel=String(row.jobLabel||id).trim();
+ var addr=(typeof jobsResolveAddress==='function')?String(jobsResolveAddress(row)||'').trim():'';
+ window.__bidsModalJobId=id;
+ var overlay=document.createElement('div');
+ overlay.id='bids-overlay';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+ overlay.onclick=function(e){if(e.target===overlay&&typeof jobsCloseBidsModal==='function')jobsCloseBidsModal();};
+ var card=document.createElement('div');
+ card.id='bids-card';
+ card.style.cssText='background:var(--sand);border:1px solid var(--border2);border-radius:12px;padding:20px 24px;max-width:560px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.18);color:var(--ink)';
+ var head=document.createElement('div');
+ head.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border2)';
+ var titleWrap=document.createElement('div');
+ var title=document.createElement('div');
+ title.id='bids-title';
+ title.textContent='Propostas — WO '+jobLabel;
+ title.style.cssText='font-size:14px;font-weight:700;color:var(--ink)';
+ titleWrap.appendChild(title);
+ if(addr){
+  var sub=document.createElement('div');
+  sub.id='bids-subtitle';
+  sub.textContent=addr;
+  sub.style.cssText='font-size:11px;color:var(--ink3);margin-top:4px';
+  titleWrap.appendChild(sub);
+ }
+ var closeBtn=document.createElement('button');
+ closeBtn.type='button';
+ closeBtn.id='bids-close-btn';
+ closeBtn.innerHTML='&times;';
+ closeBtn.title='Fechar (ESC)';
+ closeBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:24px;line-height:1;color:var(--ink3);padding:0 4px';
+ closeBtn.onclick=function(){if(typeof jobsCloseBidsModal==='function')jobsCloseBidsModal();};
+ head.appendChild(titleWrap);
+ head.appendChild(closeBtn);
+ var list=document.createElement('div');
+ list.id='bids-list';
+ list.style.cssText='flex:1;min-height:80px;max-height:400px;overflow-y:auto';
+ list.innerHTML='<div id="bids-loading" style="padding:16px;text-align:center;color:var(--ink3);font-size:12px">Carregando...</div>';
+ var footer=document.createElement('div');
+ footer.style.cssText='margin-top:16px;display:flex;justify-content:flex-end';
+ var closeFooterBtn=document.createElement('button');
+ closeFooterBtn.type='button';
+ closeFooterBtn.id='bids-close-footer-btn';
+ closeFooterBtn.textContent='Fechar';
+ closeFooterBtn.style.cssText='padding:8px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer';
+ closeFooterBtn.onclick=function(){if(typeof jobsCloseBidsModal==='function')jobsCloseBidsModal();};
+ footer.appendChild(closeFooterBtn);
+ card.appendChild(head);
+ card.appendChild(list);
+ card.appendChild(footer);
+ overlay.appendChild(card);
+ document.body.appendChild(overlay);
+ document.addEventListener('keydown',jobsBidsModalEscHandler);
+ try{
+  var res=await fetch('/api/pm/expenses/'+encodeURIComponent(id)+'/bids',{credentials:'include'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data||!data.ok){
+   var errMsg=(data&&data.error)||('HTTP '+res.status);
+   list.innerHTML='<div id="bids-error" style="padding:16px;text-align:center;color:var(--red);font-size:12px">'+String(errMsg).replace(/</g,'&lt;')+'</div>';
+   return;
+  }
+  var bids=Array.isArray(data.bids)?data.bids:[];
+  if(!bids.length){
+   list.innerHTML='<div id="bids-empty" style="padding:16px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma proposta ainda</div>';
+   return;
+  }
+  var html='';
+  for(var i=0;i<bids.length;i++){
+   var b=bids[i];
+   var vName=String(b.vendorName||b.vendorId||'—').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+   var amtRaw=b.amount;
+   var amtDisp;
+   if(amtRaw!=null&&amtRaw!==''&&Number.isFinite(Number(amtRaw))){
+    amtDisp=(typeof jobsMoney==='function')?jobsMoney(Number(amtRaw)):'$'+Number(amtRaw).toFixed(2);
+   }else{
+    amtDisp='— aguardando';
+   }
+   var st=String(b.status||'').toLowerCase();
+   var badgeLbl=st==='submitted'?'Proposta enviada':(st==='invited'?'Convidado':st);
+   var badgeBg=st==='submitted'?'var(--green-bg)':'var(--slate-bg)';
+   var badgeFg=st==='submitted'?'var(--green)':'var(--ink2)';
+   var subAt=b.submittedAt?String(b.submittedAt).slice(0,10):'';
+   var subDisp='';
+   if(subAt){
+    try{
+     var d=new Date(b.submittedAt);
+     if(!Number.isNaN(d.getTime()))subDisp=d.toLocaleDateString('pt-BR');
+    }catch(eD){subDisp=subAt;}
+   }
+   var invUrl=String(b.invoiceUrl||'').trim();
+   var linkHtml=invUrl
+    ?'<a href="'+invUrl.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--blue);font-weight:600;text-decoration:none">Ver orçamento</a>'
+    :'';
+   html+='<div class="bids-row" style="padding:10px 12px;border-bottom:1px solid var(--border2);display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px">'
+    +'<span style="flex:1;min-width:140px;font-size:12px;font-weight:700;color:var(--ink)">'+vName+'</span>'
+    +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--ink)">'+amtDisp+'</span>'
+    +'<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:'+badgeBg+';color:'+badgeFg+'">'+badgeLbl+'</span>';
+   if(subDisp)html+='<span style="font-size:10px;color:var(--ink3)">'+subDisp+'</span>';
+   if(linkHtml)html+=linkHtml;
+   html+='</div>';
+  }
+  list.innerHTML=html;
+ }catch(e){
+  var msg=e&&e.message?e.message:'Falha de rede';
+  list.innerHTML='<div id="bids-error" style="padding:16px;text-align:center;color:var(--red);font-size:12px">'+String(msg).replace(/</g,'&lt;')+'</div>';
+ }
 };
 
 function vendorBidModalEscHandler(e){
