@@ -141,9 +141,42 @@ export async function GET(req: Request) {
       }),
       prisma.auditEntry.count({ where: fullWhere }),
     ]);
+
+    const pmIds = [
+      ...new Set(
+        entries
+          .filter((e) => e.entity === 'pm_expense' && e.entityId)
+          .map((e) => e.entityId as string),
+      ),
+    ];
+    const pmRows =
+      pmIds.length > 0
+        ? await prisma.pmExpense.findMany({
+            where: { id: { in: pmIds } },
+            select: {
+              id: true,
+              property: { select: { code: true, address: true } },
+            },
+          })
+        : [];
+    const propByExp = new Map(pmRows.map((r) => [r.id, r.property]));
+
+    const serialized = entries.map(serialize);
+    for (const out of serialized) {
+      if (out.entity === 'pm_expense' && out.entityId) {
+        const pr = propByExp.get(out.entityId);
+        if (pr) {
+          (out as { propertyCode?: string | null; propertyAddress?: string | null }).propertyCode =
+            pr.code || null;
+          (out as { propertyCode?: string | null; propertyAddress?: string | null }).propertyAddress =
+            pr.address || null;
+        }
+      }
+    }
+
     return NextResponse.json({
       ok: true,
-      entries: entries.map(serialize),
+      entries: serialized,
       total,
       offset,
       limit,
