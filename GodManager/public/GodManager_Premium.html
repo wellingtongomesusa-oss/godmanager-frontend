@@ -24528,6 +24528,7 @@ async function jobsRender(){
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
  var isMaintenanceOnly=(userRole==='maintenance');
+ var isVendorRole=(userRole==='vendor');
  var isAdmin=(userRole==='admin'||userRole==='super_admin');
  var canVendorFree=(typeof gmCanVendorFreeRole==='function'?gmCanVendorFreeRole():(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance'));
  var canFinalize=(userRole==='admin'||userRole==='super_admin'||userRole==='manager'||userRole==='maintenance');
@@ -24633,6 +24634,13 @@ async function jobsRender(){
  var dismissCellHtml;
  if(isMaintenanceOnly){
   actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnFinalize;
+  dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
+ }else if(isVendorRole){
+  if(!isCancelled&&!isFinalized){
+   actionsInner='<button type="button" onclick="vendorOpenBidModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">Enviar proposta</button>';
+  }else{
+   actionsInner='';
+  }
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else{
   actionsInner=btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree;
@@ -25305,6 +25313,205 @@ window.jobsOpenRfqModal=async function(id){
  document.body.appendChild(overlay);
  if(typeof jobsRfqRenderVendorList==='function')jobsRfqRenderVendorList();
  document.addEventListener('keydown',jobsRfqModalEscHandler);
+};
+
+function vendorBidModalEscHandler(e){
+ if(e.key==='Escape'&&typeof vendorCloseBidModal==='function')vendorCloseBidModal();
+}
+
+window.vendorCloseBidModal=function(){
+ var o=document.getElementById('bid-overlay');
+ if(o)o.remove();
+ document.removeEventListener('keydown',vendorBidModalEscHandler);
+ window.__vendorBidModalJobId=null;
+};
+
+window.vendorBidUpdateSubmitState=function(){
+ var fileEl=document.getElementById('bid-file');
+ var amtEl=document.getElementById('bid-amount');
+ var submitBtn=document.getElementById('bid-submit-btn');
+ if(!submitBtn)return;
+ var hasFile=fileEl&&fileEl.files&&fileEl.files.length>0;
+ var amt=parseFloat(amtEl&&amtEl.value);
+ var ok=hasFile&&Number.isFinite(amt)&&amt>0;
+ submitBtn.disabled=!ok;
+ submitBtn.style.opacity=ok?'1':'0.45';
+ submitBtn.style.cursor=ok?'pointer':'not-allowed';
+};
+
+window.vendorOpenBidModal=function(id){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var role=String(u.role||'').toLowerCase();
+ if(role!=='vendor'){
+  alert(typeof t==='function'?t('alert_no_permission'):'Sem permissão.');
+  return;
+ }
+ id=String(id||'').trim();
+ if(!id)return;
+ if(typeof vendorCloseBidModal==='function')vendorCloseBidModal();
+ var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+ if(!row){
+  alert(typeof gmJobsT==='function'?gmJobsT('jobs_job_not_found'):'Job não encontrado.');
+  return;
+ }
+ var jobLabel=String(row.jobLabel||id).trim();
+ var addr=(typeof jobsResolveAddress==='function')?String(jobsResolveAddress(row)||'').trim():'';
+ window.__vendorBidModalJobId=id;
+ var overlay=document.createElement('div');
+ overlay.id='bid-overlay';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+ overlay.onclick=function(e){if(e.target===overlay&&typeof vendorCloseBidModal==='function')vendorCloseBidModal();};
+ var card=document.createElement('div');
+ card.id='bid-card';
+ card.style.cssText='background:var(--sand);border:1px solid var(--border2);border-radius:12px;padding:20px 24px;max-width:480px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.18);color:var(--ink)';
+ var head=document.createElement('div');
+ head.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border2)';
+ var titleWrap=document.createElement('div');
+ var title=document.createElement('div');
+ title.textContent='Enviar proposta — WO '+jobLabel;
+ title.style.cssText='font-size:14px;font-weight:700;color:var(--ink)';
+ titleWrap.appendChild(title);
+ if(addr){
+  var sub=document.createElement('div');
+  sub.textContent=addr;
+  sub.style.cssText='font-size:11px;color:var(--ink3);margin-top:4px';
+  titleWrap.appendChild(sub);
+ }
+ var closeBtn=document.createElement('button');
+ closeBtn.type='button';
+ closeBtn.innerHTML='&times;';
+ closeBtn.title='Fechar (ESC)';
+ closeBtn.style.cssText='background:transparent;border:none;cursor:pointer;font-size:24px;line-height:1;color:var(--ink3);padding:0 4px';
+ closeBtn.onclick=function(){if(typeof vendorCloseBidModal==='function')vendorCloseBidModal();};
+ head.appendChild(titleWrap);
+ head.appendChild(closeBtn);
+ var fileWrap=document.createElement('div');
+ fileWrap.style.cssText='margin-bottom:12px';
+ var fileLbl=document.createElement('label');
+ fileLbl.textContent='Anexar orçamento (PDF ou foto)';
+ fileLbl.style.cssText='display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px';
+ var fileInput=document.createElement('input');
+ fileInput.type='file';
+ fileInput.id='bid-file';
+ fileInput.accept='application/pdf,image/*';
+ fileInput.style.cssText='width:100%;font-size:12px;color:var(--ink)';
+ fileInput.onchange=function(){if(typeof vendorBidUpdateSubmitState==='function')vendorBidUpdateSubmitState();};
+ fileWrap.appendChild(fileLbl);
+ fileWrap.appendChild(fileInput);
+ var amtWrap=document.createElement('div');
+ amtWrap.style.cssText='margin-bottom:16px';
+ var amtLbl=document.createElement('label');
+ amtLbl.textContent='Valor da proposta ($)';
+ amtLbl.style.cssText='display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px';
+ var amtInput=document.createElement('input');
+ amtInput.type='number';
+ amtInput.id='bid-amount';
+ amtInput.min='0.01';
+ amtInput.step='0.01';
+ amtInput.placeholder='0.00';
+ amtInput.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:14px;font-family:\'JetBrains Mono\',monospace;background:var(--sand);color:var(--ink);box-sizing:border-box';
+ amtInput.oninput=function(){if(typeof vendorBidUpdateSubmitState==='function')vendorBidUpdateSubmitState();};
+ amtWrap.appendChild(amtLbl);
+ amtWrap.appendChild(amtInput);
+ var footer=document.createElement('div');
+ footer.style.cssText='display:flex;justify-content:flex-end;gap:10px';
+ var cancelBtn=document.createElement('button');
+ cancelBtn.type='button';
+ cancelBtn.textContent='Cancelar';
+ cancelBtn.style.cssText='padding:8px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer';
+ cancelBtn.onclick=function(){if(typeof vendorCloseBidModal==='function')vendorCloseBidModal();};
+ var submitBtn=document.createElement('button');
+ submitBtn.type='button';
+ submitBtn.id='bid-submit-btn';
+ submitBtn.textContent='Enviar proposta';
+ submitBtn.disabled=true;
+ submitBtn.style.cssText='padding:8px 14px;border:none;border-radius:6px;background:var(--amber);color:#fff;font-size:12px;font-weight:600;cursor:not-allowed;opacity:0.45';
+ submitBtn.onclick=function(){if(typeof vendorSubmitBid==='function')vendorSubmitBid(id);};
+ footer.appendChild(cancelBtn);
+ footer.appendChild(submitBtn);
+ card.appendChild(head);
+ card.appendChild(fileWrap);
+ card.appendChild(amtWrap);
+ card.appendChild(footer);
+ overlay.appendChild(card);
+ document.body.appendChild(overlay);
+ if(typeof vendorBidUpdateSubmitState==='function')vendorBidUpdateSubmitState();
+ document.addEventListener('keydown',vendorBidModalEscHandler);
+};
+
+window.vendorSubmitBid=async function(id){
+ id=String(id||window.__vendorBidModalJobId||'').trim();
+ if(!id)return;
+ var fileEl=document.getElementById('bid-file');
+ var amtEl=document.getElementById('bid-amount');
+ var file=fileEl&&fileEl.files&&fileEl.files[0];
+ var amount=parseFloat(amtEl&&amtEl.value);
+ if(!file){
+  alert('Selecione um arquivo (PDF ou foto).');
+  return;
+ }
+ if(!Number.isFinite(amount)||amount<=0){
+  alert('Informe um valor maior que zero.');
+  return;
+ }
+ var maxB=10*1024*1024;
+ if(file.size>maxB){
+  alert('Arquivo demasiado grande (max 10 MB).');
+  return;
+ }
+ var contentType=String(file.type||'').trim();
+ if(!contentType&&/\.pdf$/i.test(String(file.name||'')))contentType='application/pdf';
+ if(!contentType)contentType='application/octet-stream';
+ var submitBtn=document.getElementById('bid-submit-btn');
+ var submitLbl='Enviar proposta';
+ if(submitBtn){
+  submitBtn.disabled=true;
+  submitBtn.textContent='Enviando...';
+ }
+ try{
+  var presRes=await fetch('/api/pm/expenses/'+encodeURIComponent(id)+'/bids/invoice-presigned',{
+   method:'POST',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({contentType:contentType,sizeBytes:file.size})
+  });
+  var pres=await presRes.json().catch(function(){return{};});
+  if(!presRes.ok||!pres||!pres.ok||!pres.uploadUrl||!pres.key){
+   var presErr=(pres&&pres.error)||('HTTP '+presRes.status);
+   if(typeof showToast==='function')showToast(presErr,'error');else alert(presErr);
+   if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=submitLbl;}
+   return;
+  }
+  var putRes=await fetch(pres.uploadUrl,{method:'PUT',headers:{'Content-Type':contentType},body:file});
+  if(!putRes.ok){
+   var putErr='Upload R2 falhou ('+putRes.status+')';
+   if(typeof showToast==='function')showToast(putErr,'error');else alert(putErr);
+   if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=submitLbl;}
+   return;
+  }
+  var patchRes=await fetch('/api/pm/expenses/'+encodeURIComponent(id)+'/bids',{
+   method:'PATCH',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({amount:amount,invoiceR2Key:pres.key,invoiceMime:contentType})
+  });
+  var patchData=await patchRes.json().catch(function(){return{};});
+  if(!patchRes.ok||!patchData||!patchData.ok){
+   var patchErr=(patchData&&patchData.error)||('HTTP '+patchRes.status);
+   if(typeof showToast==='function')showToast(patchErr,'error');else alert(patchErr);
+   if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=submitLbl;}
+   return;
+  }
+  if(typeof showToast==='function')showToast('Proposta enviada','success');
+  if(typeof vendorCloseBidModal==='function')vendorCloseBidModal();
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  if(typeof jobsFetchFromApi==='function')await jobsFetchFromApi();
+  if(typeof jobsRender==='function')jobsRender();
+ }catch(e){
+  var msg=e&&e.message?e.message:'Falha de rede';
+  if(typeof showToast==='function')showToast(msg,'error');else alert(msg);
+  if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=submitLbl;}
+ }
 };
 
 window.jobsSubmitRfq=async function(id){
