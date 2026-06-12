@@ -41,7 +41,18 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
 
   if (String(user.role || "").toLowerCase() === "vendor") {
     const userVendorId = String(user.vendorId || "").trim();
-    if (!userVendorId || String(expense.vendorId || "").trim() !== userVendorId) {
+    if (!userVendorId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const vbid = await prisma.jobBid.findFirst({
+      where: {
+        expenseId: expense.id,
+        vendorId: userVendorId,
+        status: { in: ["invited", "submitted", "won"] },
+      },
+      select: { id: true },
+    });
+    if (!vbid) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
   }
