@@ -129,6 +129,7 @@ export function EditUserPanel({
             <option value="viewer">Viewer</option>
             <option value="supervisor">Supervisor</option>
             <option value="supervisor_2">Supervisor 2</option>
+            <option value="vendor">Vendor</option>
           </select>
         </div>
 

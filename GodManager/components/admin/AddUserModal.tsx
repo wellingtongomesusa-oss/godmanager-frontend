@@ -268,6 +268,7 @@ export function AddUserModal({
               <option value="viewer">Viewer</option>
               <option value="supervisor">Supervisor</option>
               <option value="supervisor_2">Supervisor 2</option>
+              <option value="vendor">Vendor</option>
             </select>
           </div>
           <div className="mt-3 space-y-2">

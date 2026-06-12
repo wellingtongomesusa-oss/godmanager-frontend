@@ -18,6 +18,16 @@ export function getPmExpensesListWhere(user: PmExpenseScopeUser): Prisma.PmExpen
     return { clientId: cid, vendorId: vid };
   }
 
+  if (user.role === 'vendor') {
+    const cid = (user.clientId || '').trim();
+    const vid = (user.vendorId || '').trim();
+    if (!cid || !vid) return NO_ACCESS;
+    return {
+      clientId: cid,
+      bids: { some: { vendorId: vid, status: { in: ['invited', 'submitted', 'won'] } } },
+    } as Prisma.PmExpenseWhereInput;
+  }
+
   return getClientScopeWhere(toClientScopeUser(user)) as Prisma.PmExpenseWhereInput;
 }
 
@@ -33,6 +43,11 @@ export function canAccessPmExpense(
     if ((expense.clientId || '').trim() !== cid) return false;
     if ((expense.vendorId || '').trim() !== vid) return false;
     return true;
+  }
+
+  // Vendor: sem acesso single ainda — refinado na fase de submissão de orçamento (job_bids).
+  if (user.role === 'vendor') {
+    return false;
   }
 
   return canAccessClientId(toClientScopeUser(user), expense.clientId);

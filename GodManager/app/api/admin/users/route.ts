@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Email ja existe.' }, { status: 409 });
     }
 
-    const validRoles = ['super_admin', 'admin', 'manager', 'accountant', 'leasing', 'maintenance', 'viewer', 'supervisor', 'supervisor_2'];
+    const validRoles = ['super_admin', 'admin', 'manager', 'accountant', 'leasing', 'maintenance', 'viewer', 'supervisor', 'supervisor_2', 'vendor'];
     const validStatuses = ['active', 'suspended', 'pending'];
     if (!validRoles.includes(role)) return NextResponse.json({ ok: false, error: 'Role invalido.' }, { status: 400 });
     if (!validStatuses.includes(status)) return NextResponse.json({ ok: false, error: 'Status invalido.' }, { status: 400 });

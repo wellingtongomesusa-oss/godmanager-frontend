@@ -10,7 +10,7 @@ import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance', 'field', 'supervisor', 'supervisor_2'];
+const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance', 'field', 'supervisor', 'supervisor_2', 'vendor'];
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     }
     if (!ALLOWED_CREATE_ROLES.includes(role as UserRole)) {
       return NextResponse.json(
-        { ok: false, error: 'Role inválido. Permitidos: admin, manager, maintenance, field, supervisor, supervisor_2.' },
+        { ok: false, error: 'Role inválido. Permitidos: admin, manager, maintenance, field, supervisor, supervisor_2, vendor.' },
         { status: 400 },
       );
     }
