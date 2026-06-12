@@ -3652,7 +3652,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Informações da Despesa</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
  <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PROPRIEDADE *</label><select id="lt-nexp-prop" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="">— Selecionar propriedade —</option></select></div>
- <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
+ <div id="lt-nexp-cat-wrap"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-nexp-month" type="month" value="2026-04" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div id="lt-nexp-legacy-value-wrap"><label style="font-size:11px;font-weight:600;color:var(--red);display:block;margin-bottom:4px">VALOR ($) *</label><input id="lt-nexp-value" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--red-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div id="lt-nexp-optional-pm-vendor-wrap" style="grid-column:1/-1">
@@ -3726,7 +3726,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">STATUS DO PAGAMENTO *</label><select id="lt-nexp-status" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="unpaid">Pendente — não pago</option><option value="paid">Pago — confirmado</option><option value="overdue">Vencido — requer atenção</option></select></div>
  <div style="grid-column:1/-1">
   <label data-i18n="lt_nexp_queue_label" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">FILA / DESTINO</label>
-  <select id="lt-nexp-queue" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer">
+  <select id="lt-nexp-queue" onchange="if(typeof ltNexpOnQueueChange==='function')ltNexpOnQueueChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;cursor:pointer">
    <option value="maintenance" data-i18n="lt_nexp_queue_maintenance">Manutenção</option>
    <option value="supervisor" data-i18n="lt_nexp_queue_supervisor">Supervisão</option>
    <option value="supervisor_2" data-i18n="lt_nexp_queue_supervisor_2">Supervisão 2</option>
@@ -15642,6 +15642,21 @@ function ltNexpSetQueueSelectFromMeta(meta){
  if(!el)return;
  el.value=ltNexpQueueFromMeta(meta);
 }
+function ltNexpSyncCatFromQueue(){
+ var q=ltNexpGetQueueSelectValue();
+ var catEl=document.getElementById('lt-nexp-cat');
+ if(!catEl)return;
+ catEl.value=q==='vendor'?'Vendor':'Manutenção';
+ if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
+}
+function ltNexpOnQueueChange(){
+ if(window.__ltNewExpJobContext&&typeof ltNexpSyncCatFromQueue==='function')ltNexpSyncCatFromQueue();
+}
+function jobsOpenNewModal(){
+ if(typeof ltOpenNewExpense!=='function')return;
+ ltOpenNewExpense({jobContext:true});
+}
+window.jobsOpenNewModal=jobsOpenNewModal;
 function ltNexpGetEditExpenseMeta(){
  var id=ltExpEditingPmId||ltExpEditingId;
  if(!id)return null;
@@ -15664,11 +15679,15 @@ function ltNexpApplyQueueMeta(meta,isEd){
 
 async function ltOpenNewExpense(prefill){
  var pf=(prefill&&typeof prefill==='object')?prefill:{};
+ var isJobCtx=!!pf.jobContext;
+ try{window.__ltNewExpJobContext=isJobCtx;}catch(eCtx){}
+ var catWrap=document.getElementById('lt-nexp-cat-wrap');
+ if(catWrap)catWrap.style.display=isJobCtx?'none':'';
  if(!pf.vendorFreeClone&&!pf.vendorFreeStandalone){try{window.__lastVendorFreeFrom=null;}catch(eClr){}}
  try{ltNexpPopulateVendorSelect('');}catch(e){console.warn('vendor populate',e);}
  ltExpEditingId=null;ltExpEditingPmId=null;
  await ltPopulatePropertyDropdowns();
- document.getElementById('lt-newexp-title').textContent='Nova Despesa';
+ document.getElementById('lt-newexp-title').textContent=isJobCtx?'Novo Job':'Nova Despesa';
  ['lt-nexp-desc','lt-nexp-docnum'].forEach(id=>document.getElementById(id).value='');
  ['lt-nexp-due','lt-nexp-paid','lt-nexp-value'].forEach(id=>document.getElementById(id).value='');
  document.getElementById('lt-nexp-cat').value='HOA';
@@ -15740,10 +15759,16 @@ async function ltOpenNewExpense(prefill){
   if(typeof ltNexpOnVendorFreeToggle==='function')ltNexpOnVendorFreeToggle();
  }
  if(typeof ltNexpUpdateVendorFreeWrapVisibility==='function')ltNexpUpdateVendorFreeWrapVisibility();
+ if(isJobCtx&&typeof ltNexpSyncCatFromQueue==='function')ltNexpSyncCatFromQueue();
 
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
-function ltCloseNewExpense(){document.getElementById('lt-newexp-modal').style.display='none';}
+function ltCloseNewExpense(){
+ document.getElementById('lt-newexp-modal').style.display='none';
+ try{window.__ltNewExpJobContext=false;}catch(e){}
+ var catWrap=document.getElementById('lt-nexp-cat-wrap');
+ if(catWrap)catWrap.style.display='';
+}
 
 async function ltOpenEditExpense(id){
  id=String(id);
@@ -15848,6 +15873,7 @@ async function ltOpenEditExpense(id){
 }
 
 function ltSaveExpense(){
+ const isJobCtx=!!window.__ltNewExpJobContext;
  const category=document.getElementById('lt-nexp-cat').value;
  const month=document.getElementById('lt-nexp-month').value;
  if(category==='Vendor'){
@@ -15864,7 +15890,7 @@ function ltSaveExpense(){
   var isVFree=(typeof ltNexpIsVendorFreeChecked==='function')&&ltNexpIsVendorFreeChecked();
   if(!propId||!descVal||!sDate){alert('Propriedade, descrição e data do serviço são obrigatórios.');return;}
   if(!isVFree&&!vid){alert('Selecione um vendor cadastrado ou marque Sem vendor (V Free).');return;}
-  if(!isVFree&&!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
+  if(!isJobCtx&&!isVFree&&!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
   if(isVFree&&!(vc>=0)){alert('Valor estimado inválido.');return;}
   (async function(){
    var vfFrom=null;
@@ -15955,7 +15981,7 @@ function ltSaveExpense(){
  const value=parseFloat(document.getElementById('lt-nexp-value').value)||0;
  var descEl=document.getElementById('lt-nexp-desc');
  var descVal=descEl?String(descEl.value||'').trim():'';
- if(!propId || !value){ alert('Propriedade e Valor sao obrigatorios.'); return; }
+ if(!propId || (!isJobCtx && !value)){ alert('Propriedade e Valor sao obrigatorios.'); return; }
  if(!descVal){
   if(typeof showToast==='function') showToast('Preencha a Descricao', 'error');
   else alert('Preencha a Descricao');
