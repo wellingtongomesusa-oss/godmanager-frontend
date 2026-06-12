@@ -3101,7 +3101,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
  <span id="lt-exp-migrate-status" style="font-size:11px;color:var(--ink2);max-width:280px" aria-live="polite"></span>
  <button type="button" id="lt-exp-migrate-local-btn" onclick="if(typeof ltExpMigrateLocalToDb==='function')ltExpMigrateLocalToDb();" style="display:none;padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Migrar dados locais → Banco</button>
- <button type="button" id="lt-exp-vfree-btn" onclick="if(typeof ltOpenVendorFreeExpense==='function')ltOpenVendorFreeExpense();" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:1px solid var(--amber-bd);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">V Free</button>
+ <button type="button" id="lt-exp-vfree-btn" onclick="if(typeof ltOpenVendorFreeExpense==='function')ltOpenVendorFreeExpense();" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:1px solid var(--amber-bd);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">+Vendor</button>
  <button onclick="ltOpenNewExpense()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Despesa</button>
  <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
@@ -24593,7 +24593,7 @@ async function jobsRender(){
   ? '<button type="button" onclick="jobsReactivate(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_reactivate_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600">'+gmJobsT('jobs_btn_reactivate')+'</button>'
   : '';
  var btnVendorFree=canVendorFree
-  ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">V Free</button>'
+  ? '<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">+Vendor</button>'
   : '';
 
  var btnMaintVendor='';
