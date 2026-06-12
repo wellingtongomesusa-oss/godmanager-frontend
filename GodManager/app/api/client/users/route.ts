@@ -10,7 +10,7 @@ import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance', 'field'];
+const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance', 'field', 'supervisor', 'supervisor_2'];
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -143,17 +143,17 @@ export async function POST(req: Request) {
     }
     if (!ALLOWED_CREATE_ROLES.includes(role as UserRole)) {
       return NextResponse.json(
-        { ok: false, error: 'Role inválido. Permitidos: admin, manager, maintenance, field.' },
+        { ok: false, error: 'Role inválido. Permitidos: admin, manager, maintenance, field, supervisor, supervisor_2.' },
         { status: 400 },
       );
     }
 
     const vendorIdRaw = String(body?.vendorId ?? '').trim();
     let vendorId: string | null = null;
-    if (role === 'field') {
+    if (role === 'field' || role === 'vendor') {
       if (!vendorIdRaw) {
         return NextResponse.json(
-          { ok: false, error: 'vendorId é obrigatório para utilizadores de campo (field).' },
+          { ok: false, error: 'vendorId é obrigatório para utilizadores de campo (field) ou vendor.' },
           { status: 400 },
         );
       }
@@ -235,7 +235,7 @@ export async function POST(req: Request) {
         permissions: [],
         passwordHash,
         clientId: scope.clientId,
-        vendorId: role === 'field' ? vendorId : null,
+        vendorId: role === 'field' || role === 'vendor' ? vendorId : null,
       },
       select: {
         id: true,

@@ -7,7 +7,10 @@ export type UserRole =
   | 'maintenance'
   | 'field'
   | 'viewer'
-  | 'owner';
+  | 'owner'
+  | 'supervisor'
+  | 'supervisor_2'
+  | 'vendor';
 
 export type UserStatus = 'active' | 'suspended' | 'pending';
 

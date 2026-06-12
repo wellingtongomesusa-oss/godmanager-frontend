@@ -1950,7 +1950,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="cl-fg"><label>Nome *</label><input class="fi" id="cu-first-name" type="text" required autocomplete="given-name"></div>
  <div class="cl-fg"><label>Sobrenome *</label><input class="fi" id="cu-last-name" type="text" required autocomplete="family-name"></div>
  <div class="cl-fg"><label>Email (login) *</label><input class="fi" id="cu-em" type="email" required autocomplete="email"></div>
- <div class="cl-fg"><label>Função *</label><select class="fi" id="cu-lvl" required onchange="if(typeof gmCuOnRoleChange==='function')gmCuOnRoleChange()"><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="maintenance">Manutenção</option><option value="field">Piscineiro (field)</option></select></div>
+ <div class="cl-fg"><label>Função *</label><select class="fi" id="cu-lvl" required onchange="if(typeof gmCuOnRoleChange==='function')gmCuOnRoleChange()"><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="maintenance">Manutenção</option><option value="field">Piscineiro (field)</option><option value="supervisor">Supervisor</option><option value="supervisor_2">Supervisor 2</option></select></div>
  <div class="cl-fg" id="cu-vendor-wrap" style="display:none"><label>Equipe (fornecedor) *</label><select class="fi" id="cu-vendor-id"><option value="">— Selecione a equipe —</option></select><div style="font-size:11px;color:var(--ink3);margin-top:4px">Obrigatório para piscineiros — só vê jobs desta equipe.</div></div>
  <div class="cl-fg" style="grid-column:1/-1"><label>Senha *</label><div style="display:flex;gap:8px;align-items:stretch"><input class="fi" id="cu-pass" type="text" required minlength="8" autocomplete="new-password" style="flex:1"><button type="button" class="cl-btn-sec" onclick="var el=document.getElementById('cu-pass');if(el&amp;&amp;window.gmGenerateStrongPassword)el.value=window.gmGenerateStrongPassword(20);" style="flex-shrink:0;background:var(--amber);color:#fff;border-color:var(--amber);padding:0 16px;border-radius:8px;font-weight:600;font-family:'DM Sans',sans-serif">Gerar senha forte</button></div><div style="font-size:11px;color:var(--ink3);margin-top:4px">A senha será mostrada uma vez após o cadastro.</div></div>
  </div>
@@ -8080,10 +8080,10 @@ async function gmCuOnRoleChange(){
  var wrap=document.getElementById('cu-vendor-wrap');
  var vsel=document.getElementById('cu-vendor-id');
  if(!rl||!wrap)return;
- var isField=rl.value==='field';
- wrap.style.display=isField?'':'none';
- if(vsel)vsel.required=!!isField;
- if(isField){
+ var needsVendor=rl.value==='field'||rl.value==='vendor';
+ wrap.style.display=needsVendor?'':'none';
+ if(vsel)vsel.required=!!needsVendor;
+ if(needsVendor){
   await gmCuEnsureVendorsLoaded();
   gmCuPopulateVendorSelect();
  }else if(vsel){vsel.value='';}
@@ -8208,9 +8208,9 @@ async function gmClientUsersCreateSubmit(e){
  var rl=document.getElementById('cu-lvl');
  var vsel=document.getElementById('cu-vendor-id');
  if(!fn||!ln||!em||!pw||!rl)return false;
- if(rl.value==='field'){
+ if(rl.value==='field'||rl.value==='vendor'){
   if(!vsel||!String(vsel.value||'').trim()){
-   alert('Selecione a equipe (fornecedor) para o piscineiro.');
+   alert('Selecione a equipe (fornecedor) para este utilizador.');
    return false;
   }
  }
@@ -8221,7 +8221,7 @@ async function gmClientUsersCreateSubmit(e){
   password:pw.value.trim(),
   role:rl.value
  };
- if(rl.value==='field'&&vsel)payload.vendorId=String(vsel.value||'').trim();
+ if((rl.value==='field'||rl.value==='vendor')&&vsel)payload.vendorId=String(vsel.value||'').trim();
  var scopeId=gmClientUsersResolveScopeId();
  if(scopeId)payload.clientId=scopeId;
  var btn=document.getElementById('cu-btn-add');

@@ -168,6 +168,8 @@ export function UsersAdminPage() {
           <option value="leasing">Leasing</option>
           <option value="maintenance">Maintenance</option>
           <option value="viewer">Viewer</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="supervisor_2">Supervisor 2</option>
         </select>
         <select
           value={statusFilter}
