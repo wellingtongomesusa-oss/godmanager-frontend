@@ -15,9 +15,16 @@ export async function GET(_req: Request, { params }: { params: { jobId: string }
   const scopeUser = toClientScopeUser(user);
   const expense = await prisma.pmExpense.findFirst({
     where: { id: jobId, ...getClientScopeWhere(scopeUser) },
-    select: { id: true, clientId: true },
+    select: { id: true, clientId: true, vendorId: true },
   });
   if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (String(user.role || "").toLowerCase() === "vendor") {
+    const userVendorId = String(user.vendorId || "").trim();
+    if (!userVendorId || String(expense.vendorId || "").trim() !== userVendorId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  }
 
   const photos = await prisma.jobPhoto.findMany({
     where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
