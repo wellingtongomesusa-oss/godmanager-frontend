@@ -24421,6 +24421,7 @@ async function jobsRender(){
    rows=gmJobsApplyStatusFilter(rows);
    if(typeof gmJobsApplyQueueFilter==='function')rows=gmJobsApplyQueueFilter(rows);
    if(typeof gmJobsApplyJobNumFilter==='function')rows=gmJobsApplyJobNumFilter(rows);
+   if(typeof gmJobsApplyActiveOnlyFilter==='function')rows=gmJobsApplyActiveOnlyFilter(rows);
   }catch(e){console.warn('Status chips failed:',e);}
  }
  var qSel=document.getElementById('jobs-queue-filter');
@@ -28946,6 +28947,15 @@ window.gmAnalyticsLoad=async function(){
       var label=String(r.jobLabel||'').toLowerCase();
       var num=r.jobNumber!=null?String(r.jobNumber):'';
       return label.includes(q)||(digits&&num.includes(digits));
+    });
+  };
+
+  window.gmJobsApplyActiveOnlyFilter=function(rows){
+    var sf=String(window.__jobsStatusFilter||'all').toLowerCase();
+    if(sf!=='all')return rows;
+    return rows.filter(function(r){
+      var k=jobsPmStatusKey(r);
+      return k!=='FINALIZED'&&k!=='PAID'&&k!=='CANCELLED';
     });
   };
 
