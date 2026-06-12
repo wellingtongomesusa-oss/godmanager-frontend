@@ -21,6 +21,8 @@ enum UserRole {
   field
   viewer
   owner
+  supervisor
+  vendor
 }
 
 enum UserStatus {
@@ -595,6 +597,7 @@ model PmVendor {
   updatedAt      DateTime        @updatedAt
   expenses       PmExpense[]
   payments       VendorPayment[]
+  bids           JobBid[]        @relation("PmVendor_bids")
   fieldUsers     User[]          @relation("User_fieldVendor")
   clientId       String?
   client         Client?         @relation("PmVendor_clientId", fields: [clientId], references: [id], onDelete: SetNull)
@@ -653,6 +656,7 @@ model PmExpense {
   updatedAt      DateTime        @updatedAt
   clientId       String?
   client         Client?         @relation("PmExpense_clientId", fields: [clientId], references: [id], onDelete: SetNull)
+  bids           JobBid[]        @relation("PmExpense_bids")
 
   @@unique([clientId, jobNumber])
   @@index([propertyId, monthRef])
@@ -663,6 +667,35 @@ model PmExpense {
   @@index([isVendorFree])
   @@index([wasRescheduled])
   @@map("pm_expenses")
+}
+
+model JobBid {
+  id           String    @id @default(cuid())
+  expenseId    String
+  vendorId     String
+  clientId     String?
+  invitedById  String?
+  invitedAt    DateTime  @default(now())
+  deadline     DateTime
+  amount       Decimal?  @db.Decimal(12, 2)
+  invoiceR2Key String?
+  invoiceUrl   String?
+  invoiceMime  String?
+  submittedAt  DateTime?
+  status       String    @default("invited")
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  expense      PmExpense @relation("PmExpense_bids", fields: [expenseId], references: [id], onDelete: Cascade)
+  vendor       PmVendor  @relation("PmVendor_bids", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, vendorId])
+  @@index([expenseId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([deadline])
+  @@index([clientId])
+  @@map("job_bids")
 }
 
 model OwnerMonthPayout {
