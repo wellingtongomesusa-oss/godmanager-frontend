@@ -3,7 +3,7 @@
  *
  * metadata.followUp = {
  *   stage: opened | maintenance_scheduled | closed_internal | vendor_requested |
- *          awaiting_quote | awaiting_vendor | vendor_done | followup_closed | escalated
+ *          awaiting_quote | awaiting_vendor | vendor_done | followup_closed | escalated | bidding
  *   stageAt: ISO string
  *   stageBy: email | userId | 'auto'
  *   history: [{ stage, at, by, note? }]   // append-only
@@ -29,6 +29,7 @@ export const FOLLOW_UP_STAGES = [
   'vendor_done',
   'followup_closed',
   'escalated',
+  'bidding',
 ] as const;
 
 export type FollowUpStage = (typeof FOLLOW_UP_STAGES)[number];
