@@ -24624,13 +24624,13 @@ async function jobsRender(){
 
  var btnMaintVendor='';
  if(isMaintenanceOnly&&!isCancelled&&!isFinalized){
-  btnMaintVendor='<button type="button" onclick="jobsVendorEscalate(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_vendor_escalate_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff">'+gmJobsT('jobs_btn_vendor_escalate')+'</button>';
+  btnMaintVendor='<button type="button" onclick="jobsVendorFree(\''+idAttr+'\')" title="'+gmJobsT('jobs_btn_v_free_title').replace(/"/g,'&quot;')+'" style="'+btnStyleBase+';background:#22558c;border-color:#22558c;color:#fff">'+gmJobsT('jobs_btn_vendor_escalate')+'</button>';
  }
 
  var actionsInner;
  var dismissCellHtml;
  if(isMaintenanceOnly){
-  actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnVendorFree+btnFinalize;
+  actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnFinalize;
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else{
   actionsInner=btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnVendorFree;
@@ -25129,7 +25129,7 @@ window.jobsReopen=function(id){
  }catch(e){alert('Erro: '+e.message);}
 };
 
-window.jobsVendorFree=function(id){
+window.jobsVendorFree=async function(id){
  try{
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
   var role=String(u.role||'').toLowerCase();
@@ -25137,59 +25137,120 @@ window.jobsVendorFree=function(id){
    alert(typeof t==='function'?t('alert_no_permission'):'Sem permissao.');
    return;
   }
-  id=String(id);
-  var arr=ltExpGetRecords()||[];
-  var idx=arr.findIndex(function(x){return x&&String(x.id)===id;});
-  if(idx>=0){
-   var orig=arr[idx];
-   if(typeof ltOpenNewExpense!=='function')return;
-   ltOpenNewExpense({
-    vendorFreeClone:true,
-    propertyId:orig.propertyId||orig.property_id||'',
-    propertyCode:orig.propertyCode||orig.property_code||'',
-    propId:orig.propId||'',
-    monthRef:orig.monthRef||orig.month||'',
-    description:orig.description||orig.desc||'',
-    serviceType:orig.serviceType||orig.category||'',
-    serviceDate:(orig.serviceDate||orig.dueDate||orig.due||'').toString().slice(0,10),
-    vendorCost:orig.vendorCost,
-    ownerCharged:orig.ownerCharged||orig.amount||orig.value,
-    value:orig.value,
-    packageApplied:orig.packageApplied||orig.pmPackage,
-    _vendorFreeFrom:id
-   });
+  id=String(id||'').trim();
+  if(!id)return;
+  if(!confirm('Registrar taxa de manutenção de $120 e enviar a work order ao Supervisor?'))return;
+  var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
+  if(!row){
+   var cache=window.__jobsApiRowsCache||[];
+   row=cache.find(function(x){return x&&String(x.id)===id;})||null;
+  }
+  if(!row){
+   alert(gmJobsT('jobs_job_not_found'));
    return;
   }
-  fetch('/api/pm/expenses',{credentials:'include'})
-   .then(function(r){return r.json();})
-   .then(function(j){
-    var list=(j&&j.expenses)||[];
-    var e=list.find(function(x){return x&&String(x.id)===id;});
-    if(!e){
-     alert(gmJobsT('jobs_job_not_found'));
-     return;
-    }
-    if(typeof ltOpenNewExpense!=='function')return;
-    ltOpenNewExpense({
-     vendorFreeClone:true,
-     propertyId:String(e.propertyId||''),
-     propertyCode:String(e.propertyCode||''),
-     monthRef:String(e.monthRef||''),
-     description:String(e.description||''),
-     serviceType:String(e.serviceType||''),
-     serviceDate:(e.serviceDate||'').toString().slice(0,10),
-     vendorCost:parseFloat(e.vendorCost)||0,
-     ownerCharged:parseFloat(e.ownerCharged)||0,
-     packageApplied:String(e.packageApplied||e.pmPackage||'PACOTE_1'),
-     _vendorFreeFrom:id
-    });
+  if(jobsPmStatusKey(row)==='FINALIZED')return;
+  var propRef=String(row.propertyId||row.propertyCode||row.property_code||'').trim();
+  var monthRef=String(row.monthRef||row.month||'').trim();
+  if(!propRef||!monthRef){
+   alert('Work order sem property ou mês de referência.');
+   return;
+  }
+  var serviceDate=(row.serviceDate||'').toString().slice(0,10);
+  if(!serviceDate)serviceDate=new Date().toISOString().slice(0,10);
+  var jobLbl=String(row.jobLabel||id).trim();
+  var feeDesc='Taxa de manutenção (+Vendor) — WO '+jobLbl;
+  var fuNote='Enviado ao Supervisor (+Vendor); taxa $120 a parte';
+  var byName=String(u.name||u.email||'admin').trim();
+  var feePostBody={
+   propertyId:propRef,
+   monthRef:monthRef,
+   serviceType:'Manutenção',
+   packageApplied:'PACOTE_4',
+   pmPackage:'PACOTE_4',
+   vendorCost:120,
+   vendorId:null,
+   serviceDate:serviceDate,
+   description:feeDesc,
+   metadata:{maintenanceFeeFor:id}
+  };
+  var postRes=await fetch('/api/pm/expenses',{
+   method:'POST',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify(feePostBody)
+  });
+  var postData=await postRes.json().catch(function(){return{};});
+  if(!postRes.ok||!postData||!postData.ok||!postData.expense||!postData.expense.id){
+   var postErr=(postData&&postData.error)||('HTTP '+postRes.status);
+   if(typeof showToast==='function')showToast(postErr,'error');else alert(postErr);
+   return;
+  }
+  var feeId=String(postData.expense.id);
+  var finRes=await fetch('/api/pm/expenses/'+encodeURIComponent(feeId),{
+   method:'PATCH',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    status:'FINALIZED',
+    jobValueOverride:120,
+    finalizedNote:'Taxa manutenção +Vendor',
+    finalizedBy:byName
    })
-   .catch(function(err){
-    console.error('jobsVendorFree fetch error:',err);
-    alert(gmJobsT('jobs_load_error'));
+  });
+  var finData=await finRes.json().catch(function(){return{};});
+  if(!finRes.ok||!finData||!finData.ok){
+   if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+   if(typeof jobsFetchFromApi==='function'){try{await jobsFetchFromApi();}catch(eF){}}
+   var finErr=(finData&&finData.error)||('HTTP '+finRes.status);
+   if(typeof showToast==='function')showToast('Taxa criada mas falha ao finalizar: '+finErr,'error');else alert('Taxa criada mas falha ao finalizar: '+finErr);
+   return;
+  }
+  try{
+   if(typeof gmJobFollowUpOptimisticLocal==='function')gmJobFollowUpOptimisticLocal(id,{queue:'supervisor',note:fuNote});
+  }catch(eOpt){console.warn('jobsVendorFree optimistic',eOpt);}
+  if(typeof gmJobCloseDescriptionPopup==='function')gmJobCloseDescriptionPopup();
+  if(typeof jobsRender==='function')jobsRender();
+  var woRes=await fetch('/api/pm/expenses/'+encodeURIComponent(id),{
+   method:'PATCH',
+   credentials:'include',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({followUp:{queue:'supervisor',note:fuNote}})
+  });
+  var woData=await woRes.json().catch(function(){return{};});
+  if(!woRes.ok||!woData||!woData.ok){
+   if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+   if(typeof jobsFetchFromApi==='function'){try{await jobsFetchFromApi();}catch(eF){}}
+   if(typeof jobsRender==='function')jobsRender();
+   var woErr=(woData&&woData.error)||('HTTP '+woRes.status);
+   if(typeof showToast==='function')showToast('Taxa $120 finalizada; falha ao enviar WO ao Supervisor: '+woErr,'error');else alert('Taxa $120 finalizada; falha ao enviar WO ao Supervisor: '+woErr);
+   return;
+  }
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  var desc=(typeof gmNewsJobDescription==='function')?gmNewsJobDescription(id):'';
+  var propCode=row&&(typeof gmJobsRowPropertyCode==='function')?gmJobsRowPropertyCode(row):'';
+  var houseLbl=(typeof gmNewsHouseLabelFromJob==='function')?gmNewsHouseLabelFromJob(id):'';
+  if(!houseLbl&&row&&(typeof jobsResolveAddress==='function'))houseLbl=gmNewsCompactHouseLabel(jobsResolveAddress(row))||'';
+  if(typeof gmNewsPostJobAction==='function'){
+   gmNewsPostJobAction({
+    subtype:'vendor_fee',
+    jobId:id,
+    title:'+Vendor → supervisor; taxa $120 criada: '+String(desc||id).slice(0,80),
+    body:feeDesc,
+    propertyCode:propCode||undefined,
+    houseLabel:houseLbl||undefined,
+    metadata:{amount:120,queue:'supervisor',feeExpenseId:feeId,propertyCode:propCode||undefined,houseLabel:houseLbl||undefined}
    });
+  }
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof ltExpRender==='function')try{ltExpRender();}catch(eLt){}
+  if(typeof showToast==='function')showToast('+Vendor: Supervisor; taxa $120 lançada (despesa separada)','success');
  }catch(e){
   console.error('jobsVendorFree error:',e);
+  if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
+  if(typeof jobsFetchFromApi==='function'){try{await jobsFetchFromApi();}catch(eF){}}
+  if(typeof jobsRender==='function')jobsRender();
+  if(typeof showToast==='function')showToast('Erro: '+(e&&e.message||''),'error');else alert('Erro: '+(e&&e.message||''));
  }
 };
 
