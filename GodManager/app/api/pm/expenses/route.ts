@@ -199,6 +199,7 @@ export async function POST(req: Request) {
     const ownerCh = ownerChargedAmount(vendorCost, pkg);
 
     const row = await prisma.$transaction(async (tx) => {
+      const now = new Date();
       let jobNumber: number | null = null;
       if (expenseClientId) {
         const c = await tx.client.update({
@@ -208,7 +209,7 @@ export async function POST(req: Request) {
         });
         jobNumber = c.lastJobNumber;
       }
-      return tx.pmExpense.create({
+      const created = await tx.pmExpense.create({
         data: {
           propertyId: resolved.id,
           clientId: expenseClientId,
@@ -231,6 +232,22 @@ export async function POST(req: Request) {
           client: { select: { jobPrefix: true } },
         },
       });
+      if (vendorId && !isVendorFree) {
+        await tx.jobBid.create({
+          data: {
+            expenseId: created.id,
+            vendorId,
+            clientId: expenseClientId,
+            invitedById: user.id,
+            invitedAt: now,
+            submittedAt: now,
+            deadline: now,
+            amount: vendorCost,
+            status: 'won',
+          },
+        });
+      }
+      return created;
     });
     return NextResponse.json({ ok: true, expense: toJson(row) });
   } catch (e) {

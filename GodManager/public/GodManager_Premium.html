@@ -24699,27 +24699,20 @@ async function jobsRender(){
   var metaV=(typeof gmJobFollowUpRowMetadata==='function')?gmJobFollowUpRowMetadata(r):null;
   var stageV=(metaV&&metaV.followUp&&metaV.followUp.stage)?String(metaV.followUp.stage).trim():'';
   var execDates=(metaV&&metaV.execution&&Array.isArray(metaV.execution.dates))?metaV.execution.dates:null;
-  var isWinnerForMe=rowVendorId&&currentVendorId&&rowVendorId===currentVendorId&&execDates&&execDates.length>=1;
   var pmStatusV=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(r):String(r.statusPm||'').toUpperCase();
   var isMyWinnerJob=rowVendorId&&currentVendorId&&rowVendorId===currentVendorId;
-  var isWinnerContext=isWinnerForMe||stageV==='vendor_done'||(pmStatusV==='FINALIZED'&&isMyWinnerJob);
+  var isWinnerContext=isMyWinnerJob||stageV==='vendor_done';
   var okBtn='<button type="button" onclick="vendorOpenCompleteModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">OK</button>';
   if(!isCancelled){
    if(isWinnerContext){
     var vendorExtras='';
     if(stageV==='vendor_done'||pmStatusV==='FINALIZED'){
      vendorExtras='<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">Concluído ✓</span>'+okBtn;
-    }else if(isWinnerForMe){
-     var d1Fmt=String(execDates[0]||'').trim();
-     var d2Fmt=execDates.length>=2?String(execDates[1]||'').trim():'';
-     try{
-      if(d1Fmt){var d1d=new Date(d1Fmt);if(!Number.isNaN(d1d.getTime()))d1Fmt=d1d.toLocaleDateString('pt-BR');}
-      if(d2Fmt){var d2d=new Date(d2Fmt);if(!Number.isNaN(d2d.getTime()))d2Fmt=d2d.toLocaleDateString('pt-BR');}
-     }catch(eDf){}
-     var schedLbl='Agendado: '+d1Fmt+(d2Fmt?' e '+d2Fmt:'');
-     vendorExtras='<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">'+String(schedLbl).replace(/</g,'&lt;')+'</span>'+okBtn;
     }else{
-     vendorExtras=okBtn;
+     var schedLbl='';
+     if(execDates&&execDates.length>=1){schedLbl='Agendado: '+execDates.join(' e ');}
+     else{var sd=(r.serviceDate?String(r.serviceDate).slice(0,10):'');if(sd)schedLbl='Agendado: '+sd;}
+     vendorExtras=(schedLbl?'<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">'+String(schedLbl).replace(/</g,'&lt;')+'</span>':'')+okBtn;
     }
     actionsInner=btnJobPhoto+btnJobComment+vendorExtras;
    }else if(!isFinalized){
