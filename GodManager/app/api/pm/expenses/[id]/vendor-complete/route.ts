@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 const MIN_DESC = 3;
 const MAX_DESC = 2000;
+const FINALIZED_NOTE_MAX = 500;
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUserFromSession();
@@ -43,7 +44,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const scopeUser = toClientScopeUser(user);
     const expense = await prisma.pmExpense.findFirst({
       where: { id: expenseId, ...getClientScopeWhere(scopeUser) },
-      select: { id: true, clientId: true, vendorId: true, metadata: true },
+      select: { id: true, clientId: true, vendorId: true, metadata: true, status: true },
     });
     if (!expense) {
       return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
@@ -64,6 +65,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const at = new Date().toISOString();
     const by = user.email || user.id;
+    const isFirstFinalize = expense.status !== 'FINALIZED';
 
     let merged: Record<string, unknown>;
     try {
@@ -87,9 +89,23 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       },
     };
 
+    const now = new Date();
+    const updateData: Prisma.PmExpenseUpdateInput = {
+      status: 'FINALIZED',
+      metadata: nextMeta as Prisma.InputJsonValue,
+    };
+
+    if (isFirstFinalize) {
+      updateData.executedAt = now;
+      updateData.executedByUserId = user.id;
+      updateData.finalizedAt = now;
+      updateData.finalizedBy = user.email ? String(user.email).trim() : null;
+      updateData.finalizedNote = description.slice(0, FINALIZED_NOTE_MAX);
+    }
+
     await prisma.pmExpense.update({
       where: { id: expense.id },
-      data: { metadata: nextMeta as Prisma.InputJsonValue },
+      data: updateData,
     });
 
     await recordAudit({
@@ -99,10 +115,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       entity: 'pm_expense',
       entityId: expense.id,
       clientId: expense.clientId,
-      details: JSON.stringify({ len: description.length }),
+      details: JSON.stringify({ len: description.length, firstFinalize: isFirstFinalize }),
     });
 
-    return NextResponse.json({ ok: true, stage: 'vendor_done' });
+    return NextResponse.json({ ok: true, stage: 'vendor_done', status: 'FINALIZED' });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed';
     console.error('[POST /api/pm/expenses/:id/vendor-complete]', e);

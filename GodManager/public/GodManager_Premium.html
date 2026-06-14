@@ -24646,24 +24646,33 @@ async function jobsRender(){
   var stageV=(metaV&&metaV.followUp&&metaV.followUp.stage)?String(metaV.followUp.stage).trim():'';
   var execDates=(metaV&&metaV.execution&&Array.isArray(metaV.execution.dates))?metaV.execution.dates:null;
   var isWinnerForMe=rowVendorId&&currentVendorId&&rowVendorId===currentVendorId&&execDates&&execDates.length>=1;
-  if(!isCancelled&&!isFinalized){
-   var vendorExtras='';
-   if(stageV==='vendor_done'){
-    vendorExtras='<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">Concluído ✓</span>';
-   }else if(isWinnerForMe){
-    var d1Fmt=String(execDates[0]||'').trim();
-    var d2Fmt=execDates.length>=2?String(execDates[1]||'').trim():'';
-    try{
-     if(d1Fmt){var d1d=new Date(d1Fmt);if(!Number.isNaN(d1d.getTime()))d1Fmt=d1d.toLocaleDateString('pt-BR');}
-     if(d2Fmt){var d2d=new Date(d2Fmt);if(!Number.isNaN(d2d.getTime()))d2Fmt=d2d.toLocaleDateString('pt-BR');}
-    }catch(eDf){}
-    var schedLbl='Agendado: '+d1Fmt+(d2Fmt?' e '+d2Fmt:'');
-    vendorExtras='<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">'+String(schedLbl).replace(/</g,'&lt;')+'</span>'
-     +'<button type="button" onclick="vendorOpenCompleteModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">OK</button>';
+  var pmStatusV=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(r):String(r.statusPm||'').toUpperCase();
+  var isMyWinnerJob=rowVendorId&&currentVendorId&&rowVendorId===currentVendorId;
+  var isWinnerContext=isWinnerForMe||stageV==='vendor_done'||(pmStatusV==='FINALIZED'&&isMyWinnerJob);
+  var okBtn='<button type="button" onclick="vendorOpenCompleteModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">OK</button>';
+  if(!isCancelled){
+   if(isWinnerContext){
+    var vendorExtras='';
+    if(stageV==='vendor_done'||pmStatusV==='FINALIZED'){
+     vendorExtras='<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">Concluído ✓</span>'+okBtn;
+    }else if(isWinnerForMe){
+     var d1Fmt=String(execDates[0]||'').trim();
+     var d2Fmt=execDates.length>=2?String(execDates[1]||'').trim():'';
+     try{
+      if(d1Fmt){var d1d=new Date(d1Fmt);if(!Number.isNaN(d1d.getTime()))d1Fmt=d1d.toLocaleDateString('pt-BR');}
+      if(d2Fmt){var d2d=new Date(d2Fmt);if(!Number.isNaN(d2d.getTime()))d2Fmt=d2d.toLocaleDateString('pt-BR');}
+     }catch(eDf){}
+     var schedLbl='Agendado: '+d1Fmt+(d2Fmt?' e '+d2Fmt:'');
+     vendorExtras='<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">'+String(schedLbl).replace(/</g,'&lt;')+'</span>'+okBtn;
+    }else{
+     vendorExtras=okBtn;
+    }
+    actionsInner=btnJobPhoto+btnJobComment+vendorExtras;
+   }else if(!isFinalized){
+    actionsInner=btnJobPhoto+btnJobComment+'<button type="button" onclick="vendorOpenBidModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">Enviar proposta</button>';
    }else{
-    vendorExtras='<button type="button" onclick="vendorOpenBidModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">Enviar proposta</button>';
+    actionsInner='';
    }
-   actionsInner=btnJobPhoto+btnJobComment+vendorExtras;
   }else{
    actionsInner='';
   }
@@ -25821,6 +25830,42 @@ window.vendorCompleteUpdateSubmitState=function(){
  submitBtn.style.cursor=ok?'pointer':'not-allowed';
 };
 
+function vendorCompleteRenderPhotos(hostEl,photos){
+ if(!hostEl)return;
+ hostEl.innerHTML='';
+ var arr=Array.isArray(photos)?photos:[];
+ if(!arr.length){
+  hostEl.innerHTML='<span style="font-size:11px;color:var(--ink3)">Nenhuma foto anexada.</span>';
+  return;
+ }
+ arr.forEach(function(p){
+  if(!p||!p.publicUrl)return;
+  var url=String(p.publicUrl);
+  var ct=String(p.contentType||'');
+  var isPdf=ct==='application/pdf'||(!ct&&/\.pdf(\?|$)/i.test(url));
+  var wrap=document.createElement('div');
+  wrap.style.cssText='width:72px;height:72px;border-radius:6px;overflow:hidden;background:#f0f0f0;border:1px solid var(--border2);flex-shrink:0';
+  if(isPdf){
+   var pdfLink=document.createElement('a');
+   pdfLink.href=url;
+   pdfLink.target='_blank';
+   pdfLink.rel='noopener noreferrer';
+   pdfLink.title='Abrir PDF';
+   pdfLink.style.cssText='display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:9px;font-weight:700;color:var(--ink2);text-decoration:none';
+   pdfLink.textContent='PDF';
+   wrap.appendChild(pdfLink);
+  }else{
+   var img=document.createElement('img');
+   img.src=url;
+   img.alt='';
+   img.loading='lazy';
+   img.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+   wrap.appendChild(img);
+  }
+  hostEl.appendChild(wrap);
+ });
+}
+
 window.vendorOpenCompleteModal=function(id){
  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
  var role=String(u.role||'').toLowerCase();
@@ -25838,6 +25883,14 @@ window.vendorOpenCompleteModal=function(id){
  }
  var jobLabel=String(row.jobLabel||id).trim();
  var addr=(typeof jobsResolveAddress==='function')?String(jobsResolveAddress(row)||'').trim():'';
+ var metaRow=(typeof gmJobFollowUpRowMetadata==='function')?gmJobFollowUpRowMetadata(row):null;
+ var stageRow=(metaRow&&metaRow.followUp&&metaRow.followUp.stage)?String(metaRow.followUp.stage).trim():'';
+ var pmSt=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(row):String(row.statusPm||'').toUpperCase();
+ var isUpdate=stageRow==='vendor_done'||pmSt==='FINALIZED';
+ var preDesc='';
+ if(metaRow&&metaRow.completion&&metaRow.completion.description){
+  preDesc=String(metaRow.completion.description).trim();
+ }
  window.__vendorCompleteModalJobId=id;
  var overlay=document.createElement('div');
  overlay.id='vcomp-overlay';
@@ -25845,12 +25898,12 @@ window.vendorOpenCompleteModal=function(id){
  overlay.onclick=function(e){if(e.target===overlay&&typeof vendorCloseCompleteModal==='function')vendorCloseCompleteModal();};
  var card=document.createElement('div');
  card.id='vcomp-card';
- card.style.cssText='background:var(--sand);border:1px solid var(--border2);border-radius:12px;padding:20px 24px;max-width:480px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.18);color:var(--ink)';
+ card.style.cssText='background:var(--sand);border:1px solid var(--border2);border-radius:12px;padding:20px 24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.18);color:var(--ink)';
  var head=document.createElement('div');
  head.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border2)';
  var titleWrap=document.createElement('div');
  var title=document.createElement('div');
- title.textContent='Concluir job — WO '+jobLabel;
+ title.textContent=(isUpdate?'Atualizar conclusão':'Concluir job')+' — WO '+jobLabel;
  title.style.cssText='font-size:14px;font-weight:700;color:var(--ink)';
  titleWrap.appendChild(title);
  if(addr){
@@ -25867,6 +25920,17 @@ window.vendorOpenCompleteModal=function(id){
  closeBtn.onclick=function(){if(typeof vendorCloseCompleteModal==='function')vendorCloseCompleteModal();};
  head.appendChild(titleWrap);
  head.appendChild(closeBtn);
+ var photosWrap=document.createElement('div');
+ photosWrap.style.cssText='margin-bottom:16px';
+ var photosLbl=document.createElement('div');
+ photosLbl.textContent='Fotos anexadas';
+ photosLbl.style.cssText='font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px';
+ var photosHost=document.createElement('div');
+ photosHost.id='vcomp-photos-host';
+ photosHost.style.cssText='display:flex;flex-wrap:wrap;gap:8px;min-height:48px';
+ photosHost.innerHTML='<span style="font-size:11px;color:var(--ink3)">Carregando...</span>';
+ photosWrap.appendChild(photosLbl);
+ photosWrap.appendChild(photosHost);
  var descWrap=document.createElement('div');
  descWrap.style.cssText='margin-bottom:16px';
  var descLbl=document.createElement('label');
@@ -25877,6 +25941,7 @@ window.vendorOpenCompleteModal=function(id){
  descTa.rows=4;
  descTa.placeholder='Descreva o trabalho realizado (mín. 3 caracteres)...';
  descTa.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:\'DM Sans\',sans-serif;background:var(--sand);color:var(--ink);box-sizing:border-box;resize:vertical;min-height:88px';
+ if(preDesc)descTa.value=preDesc;
  descTa.oninput=function(){if(typeof vendorCompleteUpdateSubmitState==='function')vendorCompleteUpdateSubmitState();};
  descWrap.appendChild(descLbl);
  descWrap.appendChild(descTa);
@@ -25890,19 +25955,35 @@ window.vendorOpenCompleteModal=function(id){
  var submitBtn=document.createElement('button');
  submitBtn.type='button';
  submitBtn.id='vcomp-submit-btn';
- submitBtn.textContent='Concluir job';
+ submitBtn.textContent=isUpdate?'Atualizar':'Concluir job';
  submitBtn.disabled=true;
  submitBtn.style.cssText='padding:8px 14px;border:none;border-radius:6px;background:var(--amber);color:#fff;font-size:12px;font-weight:600;cursor:not-allowed;opacity:0.45';
  submitBtn.onclick=function(){if(typeof vendorCompleteJob==='function')vendorCompleteJob(id);};
  footer.appendChild(cancelBtn);
  footer.appendChild(submitBtn);
  card.appendChild(head);
+ card.appendChild(photosWrap);
  card.appendChild(descWrap);
  card.appendChild(footer);
  overlay.appendChild(card);
  document.body.appendChild(overlay);
  if(typeof vendorCompleteUpdateSubmitState==='function')vendorCompleteUpdateSubmitState();
  document.addEventListener('keydown',vendorCompleteModalEscHandler);
+ fetch('/api/jobs/'+encodeURIComponent(id)+'/photos',{credentials:'include'})
+  .then(function(res){return res.json().then(function(j){return{res:res,j:j};});})
+  .then(function(o){
+   var host=document.getElementById('vcomp-photos-host');
+   if(!host)return;
+   if(o.res.ok&&o.j&&Array.isArray(o.j.photos)){
+    vendorCompleteRenderPhotos(host,o.j.photos);
+   }else{
+    host.innerHTML='<span style="font-size:11px;color:var(--ink3)">Não foi possível carregar fotos.</span>';
+   }
+  })
+  .catch(function(){
+   var host=document.getElementById('vcomp-photos-host');
+   if(host)host.innerHTML='<span style="font-size:11px;color:var(--ink3)">Erro ao carregar fotos.</span>';
+  });
 };
 
 window.vendorCompleteJob=async function(id){
@@ -25915,10 +25996,10 @@ window.vendorCompleteJob=async function(id){
   return;
  }
  var submitBtn=document.getElementById('vcomp-submit-btn');
- var submitLbl='Concluir job';
+ var submitLbl=submitBtn?String(submitBtn.textContent||'Concluir job'):'Concluir job';
  if(submitBtn){
   submitBtn.disabled=true;
-  submitBtn.textContent='Concluindo...';
+  submitBtn.textContent=(submitLbl.indexOf('Atualizar')>=0?'Atualizando...':'Concluindo...');
  }
  try{
   var res=await fetch('/api/pm/expenses/'+encodeURIComponent(id)+'/vendor-complete',{
@@ -25934,7 +26015,7 @@ window.vendorCompleteJob=async function(id){
    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=submitLbl;if(typeof vendorCompleteUpdateSubmitState==='function')vendorCompleteUpdateSubmitState();}
    return;
   }
-  if(typeof showToast==='function')showToast('Job concluído','success');
+  if(typeof showToast==='function')showToast(submitLbl.indexOf('Atualizar')>=0?'Conclusão atualizada':'Job concluído','success');
   if(typeof vendorCloseCompleteModal==='function')vendorCloseCompleteModal();
   if(typeof jobsInvalidateApiCache==='function')jobsInvalidateApiCache();
   if(typeof jobsFetchFromApi==='function')await jobsFetchFromApi();
