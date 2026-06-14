@@ -1468,6 +1468,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="ss" onclick="nav('jobs-follow')" id="nav-jobs-follow" data-i18n="nav_follow">Acompanhamento</div>
  </div>
  </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="billing">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl">BILLING</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
+ <div class="ss sb-ix-ic" onclick="nav('billing')" id="nav-billing" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg><span>Invoice / Bill</span></div>
+ </div>
+ </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_owner_portal">OWNER PORTAL</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
@@ -3165,6 +3171,49 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </table></div>
  <div id="lt-exp-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma despesa cadastrada. Clique em + Nova Despesa para começar.</div>
  <div id="lt-exp-appr-pop" onclick="event.stopPropagation()" style="display:none;position:fixed;z-index:9005;max-width:300px;padding:12px 14px;background:var(--paper);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:11px;color:var(--ink2);line-height:1.45"></div>
+ </div>
+</div>
+
+<!-- BILLING — Invoice / Bill -->
+<div class="page" id="page-billing">
+ <div class="ph"><div class="pt">Invoice / Bill</div><div class="ps">Faturas a receber e contas a pagar</div></div>
+ <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+  <button type="button" id="billing-tab-receive" onclick="if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('receive')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--amber);background:var(--amber);color:#fff">A Receber</button>
+  <button type="button" id="billing-tab-pay" onclick="if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('pay')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">A Pagar</button>
+ </div>
+ <div id="billing-view-receive">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+   <select id="billing-filter-status" onchange="if(typeof gmBillingRenderInvoices==='function')gmBillingRenderInvoices()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+    <option value="">Todos</option>
+    <option value="DRAFT">Rascunho</option>
+    <option value="SENT">Enviada</option>
+    <option value="PAID">Paga</option>
+    <option value="CANCELLED">Cancelada</option>
+   </select>
+   <input type="month" id="billing-filter-month" onchange="if(typeof gmBillingRenderInvoices==='function')gmBillingRenderInvoices()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+   <input id="billing-filter-q" oninput="if(typeof gmBillingRenderInvoices==='function')gmBillingRenderInvoices()" placeholder="Buscar por número ou pagador..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:280px">
+  </div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">Invoices (A Receber)</div>
+    <div id="billing-invoice-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
+   </div>
+   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Número</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Pagador</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Emissão</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Total</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
+    </tr></thead>
+    <tbody id="billing-invoice-tbody"></tbody>
+   </table></div>
+  </div>
+ </div>
+ <div id="billing-view-pay" style="display:none">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center;color:var(--ink3);font-size:13px">Em breve (Fase C)</div>
  </div>
 </div>
 
@@ -9892,7 +9941,18 @@ function nav(r){
   }catch(eAd){console.warn('[admin-dashboard nav]',eAd);if(typeof nav==='function')nav('home');}
  },
  news:function(){if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){if(typeof renderMsgs==='function')renderMsgs();});},
- 'jobs-follow':function(){if(typeof gmJobsFollowInit==='function')void gmJobsFollowInit();}
+ 'jobs-follow':function(){if(typeof gmJobsFollowInit==='function')void gmJobsFollowInit();},
+ billing:async function(){
+  try{
+   if(typeof ltCurrentMonthRef==='function'){
+    var cur=ltCurrentMonthRef();
+    var mel=document.getElementById('billing-filter-month');
+    if(mel)mel.value=cur;
+   }
+  }catch(eBillM){console.warn('[billing] month filter',eBillM);}
+  if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('receive');
+  if(typeof gmBillingRenderInvoices==='function')await gmBillingRenderInvoices();
+ }
  };
  if(renders[r]) setTimeout(renders[r],30);
  try{if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();}catch(_gnb){}
@@ -28371,6 +28431,111 @@ window.adminAuditRender=async function(){
  }
 };
 /* ========== /AUDIT LOG ========== */
+
+/* ========== BILLING — Invoice / Bill (Fase B.2) ========== */
+function gmBillingEsc(s){
+ if(typeof gmHtmlEscAttr==='function')return gmHtmlEscAttr(s);
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+function gmBillingFmtMoney(n){
+ if(typeof ltFmt==='function')return ltFmt(n);
+ if(typeof gmHomeMoney==='function')return gmHomeMoney(n);
+ var v=parseFloat(n)||0;
+ return '$'+v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+}
+function gmBillingFmtDate(iso){
+ if(!iso)return '—';
+ try{
+  var d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return '—';
+  return d.toLocaleDateString('pt-BR');
+ }catch(e){return '—';}
+}
+function gmBillingStatusPill(status){
+ var st=String(status||'').toUpperCase();
+ var map={
+  DRAFT:{cls:'ps2',lbl:'Rascunho'},
+  SENT:{cls:'pb',lbl:'Enviada'},
+  PAID:{cls:'pg',lbl:'Paga'},
+  CANCELLED:{cls:'pr',lbl:'Cancelada'}
+ };
+ var m=map[st]||{cls:'ps2',lbl:st||'—'};
+ return '<span class="pill '+m.cls+'">'+gmBillingEsc(m.lbl)+'</span>';
+}
+function gmBillingSwitchTab(tab){
+ var recv=document.getElementById('billing-view-receive');
+ var pay=document.getElementById('billing-view-pay');
+ var btnR=document.getElementById('billing-tab-receive');
+ var btnP=document.getElementById('billing-tab-pay');
+ var isRecv=tab!=='pay';
+ if(recv)recv.style.display=isRecv?'':'none';
+ if(pay)pay.style.display=isRecv?'none':'';
+ if(btnR){
+  btnR.style.background=isRecv?'var(--amber)':'var(--sand)';
+  btnR.style.color=isRecv?'#fff':'var(--ink2)';
+  btnR.style.borderColor=isRecv?'var(--amber)':'var(--border2)';
+  btnR.style.fontWeight=isRecv?'600':'500';
+ }
+ if(btnP){
+  btnP.style.background=!isRecv?'var(--amber)':'var(--sand)';
+  btnP.style.color=!isRecv?'#fff':'var(--ink2)';
+  btnP.style.borderColor=!isRecv?'var(--amber)':'var(--border2)';
+  btnP.style.fontWeight=!isRecv?'600':'500';
+ }
+}
+async function gmBillingRenderInvoices(){
+ var tbody=document.getElementById('billing-invoice-tbody');
+ var counter=document.getElementById('billing-invoice-counter');
+ if(!tbody)return;
+ tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
+ var statusEl=document.getElementById('billing-filter-status');
+ var monthEl=document.getElementById('billing-filter-month');
+ var qEl=document.getElementById('billing-filter-q');
+ var status=statusEl?String(statusEl.value||'').trim():'';
+ var month=monthEl?String(monthEl.value||'').trim():'';
+ var q=qEl?String(qEl.value||'').trim():'';
+ var params=new URLSearchParams();
+ params.set('docType','INVOICE');
+ if(status)params.set('status',status);
+ if(month)params.set('month',month);
+ if(q)params.set('q',q);
+ try{
+  var res=await fetch('/api/billing/documents?'+params.toString(),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=gmBillingEsc((data&&data.error)||'Falha ao listar invoices');
+   tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
+   if(counter)counter.textContent='';
+   return;
+  }
+  var docs=Array.isArray(data.documents)?data.documents:[];
+  if(counter)counter.textContent=docs.length+' registro(s)';
+  if(!docs.length){
+   tbody.innerHTML='<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum invoice ainda.</td></tr>';
+   return;
+  }
+  var html='';
+  docs.forEach(function(doc){
+   html+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+gmBillingEsc(doc.number||'')+'</td>'
+    +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmBillingEsc(doc.contactName||'')+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.issueDate))+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.dueDate))+'</td>'
+    +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</td>'
+    +'<td style="padding:9px 12px;text-align:center">'+gmBillingStatusPill(doc.status)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center"><button type="button" style="padding:4px 10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:default;font-family:\'Inter\',sans-serif">Ver</button></td>'
+    +'</tr>';
+  });
+  tbody.innerHTML=html;
+ }catch(e){
+  console.warn('[gmBillingRenderInvoices]',e);
+  tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar invoices.</td></tr>';
+  if(counter)counter.textContent='';
+ }
+}
+window.gmBillingSwitchTab=gmBillingSwitchTab;
+window.gmBillingRenderInvoices=gmBillingRenderInvoices;
+/* ========== /BILLING ========== */
 
 // Forcar limpeza do cache antigo de Jobs ao carregar a pagina
 (function(){
