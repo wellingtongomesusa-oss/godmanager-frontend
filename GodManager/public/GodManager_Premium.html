@@ -4183,7 +4183,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-bulk-send" onclick="if(typeof osdBulkSend==='function')osdBulkSend()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar em lote (todos os owners do mês)</button>
  </div>
  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+ <button type="button" onclick="if(typeof osdShiftProperty==='function')osdShiftProperty(-1)" title="Propriedade anterior" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">◀</button>
  <select id="osd-property" style="flex:1;min-width:280px;max-width:560px;padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
+ <button type="button" onclick="if(typeof osdShiftProperty==='function')osdShiftProperty(1)" title="Próxima propriedade" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">▶</button>
  <button type="button" onclick="if(typeof osdShiftPeriod==='function')osdShiftPeriod(-1)" title="Mês anterior" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">◀</button>
  <select id="osd-period" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
  <button type="button" onclick="if(typeof osdShiftPeriod==='function')osdShiftPeriod(1)" title="Próximo mês" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">▶</button>
@@ -4208,6 +4210,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  </div>
+ <div id="osd-closing-summary" style="display:none;border-bottom:1px solid var(--border)"></div>
  <div style="overflow-x:auto">
  <table style="width:100%;border-collapse:collapse;min-width:920px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
@@ -10025,7 +10028,7 @@ window.osdInitPage=async function(){
    return;
   }
   window.OSD_STATE.propertiesCache=(data.properties||[]).map(function(p){
-   return{id:p.id,code:p.code||'',address:p.address||'',ownerName:p.ownerName||'',metadata:p.metadata};
+   return{id:p.id,code:p.code||'',address:p.address||'',ownerName:p.ownerName||'',metadata:p.metadata,rent:Number(p.rent)||0,mgmtFeePct:p.mgmtFeePct};
   });
   window.osdRebuildPropertySelect();
  }catch(e){
@@ -10042,8 +10045,23 @@ window.osdResolveCurrentDetail=function(pid,yearMonth){
   code:row?row.code:'',
   address:row?row.address:'',
   ownerName:row?row.ownerName:'',
-  yearMonth:yearMonth
+  yearMonth:yearMonth,
+  rent:row?Number(row.rent)||0:0,
+  mgmtFeePct:row?row.mgmtFeePct:null
  };
+};
+
+window.osdShiftProperty=function(delta){
+ var cache=(window.OSD_STATE&&window.OSD_STATE.propertiesCache)||[];
+ if(!cache.length)return;
+ var curId=(window.OSD_STATE.currentDetail&&window.OSD_STATE.currentDetail.propertyId)||'';
+ var idx=cache.findIndex(function(p){return String(p.id)===String(curId);});
+ if(idx<0)idx=0;
+ var ni=idx+delta;
+ if(ni<0||ni>=cache.length)return;
+ var sel=document.getElementById('osd-property');
+ if(sel)sel.value=cache[ni].id;
+ if(typeof osdLoadStatement==='function')osdLoadStatement();
 };
 
 window.osdSourceCellHtml=function(src){
@@ -10142,6 +10160,51 @@ window.osdRenderLineItems=function(data){
  window.osdRenderDetailBadges(payout||null);
 };
 
+window.osdRenderClosingSummary=async function(){
+ var wrap=document.getElementById('osd-closing-summary');
+ if(!wrap)return;
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){wrap.innerHTML='';wrap.style.display='none';return;}
+ var fmt=window.osdFmtCurrency;
+ var esc=window.osdEscHtml;
+ try{
+  var rent=Number(cd.rent||0);
+  var pct=(typeof ltDetailMgmtFeePct==='function')?ltDetailMgmtFeePct(cd.mgmtFeePct):(Number(cd.mgmtFeePct)||8);
+  var mgm=rent*pct/100;
+  var despesas=0;
+  var res=await fetch('/api/pm/expenses?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'same-origin',cache:'no-store'});
+  var bodyText=await res.text();
+  var data={};
+  try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
+  if(res.ok&&data.ok){
+   (data.expenses||[]).forEach(function(e){
+    if(!e||String(e.propertyId||'')!==String(cd.propertyId))return;
+    if(String(e.status||'').toUpperCase()==='CANCELLED')return;
+    despesas+=Number(e.ownerCharged||0);
+   });
+  }
+  despesas=Math.round(despesas*100)/100;
+  mgm=Math.round(mgm*100)/100;
+  var netEst=Math.round((rent-mgm-despesas)*100)/100;
+  var pctLbl=String(pct).replace(/%/g,'')+'%';
+  var html='<div style="padding:14px 18px;background:var(--cream)">';
+  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:10px">Resumo de fechamento (estimativa)</div>';
+  html+='<div style="font-size:11px;color:var(--ink3);margin-bottom:12px;line-height:1.45">Valores estimados para conferência. O NET oficial lançado é o do ledger abaixo (totais do statement).</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr><td style="padding:6px 0;color:var(--green);font-weight:600">Aluguel</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">+'+esc(typeof fmt==='function'?fmt(rent):String(rent))+'</td></tr>';
+  html+='<tr><td style="padding:6px 0;color:var(--ink2)">Taxa de gestão MGM ('+esc(pctLbl)+')</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--amber)">−'+esc(typeof fmt==='function'?fmt(mgm):String(mgm))+'</td></tr>';
+  html+='<tr><td style="padding:6px 0;color:var(--ink2)">Despesas do mês</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">−'+esc(typeof fmt==='function'?fmt(despesas):String(despesas))+'</td></tr>';
+  html+='<tr style="border-top:2px solid var(--border)"><td style="padding:10px 0;font-size:13px;font-weight:700;color:var(--blue)">NET estimado ao Owner</td><td style="padding:10px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:'+(netEst>=0?'var(--blue)':'var(--red)')+'">'+esc(typeof fmt==='function'?fmt(netEst):String(netEst))+'</td></tr>';
+  html+='</table></div>';
+  wrap.innerHTML=html;
+  wrap.style.display='block';
+ }catch(e){
+  console.warn('osdRenderClosingSummary',e);
+  wrap.innerHTML='';
+  wrap.style.display='none';
+ }
+};
+
 window.osdRenderWorkOrders=async function(){
  var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
  var wrap=document.getElementById('osd-work-orders-wrap');
@@ -10238,6 +10301,7 @@ window.osdLoadStatement=async function(){
    return;
   }
   window.osdRenderLineItems(data);
+  try{if(typeof osdRenderClosingSummary==='function')await osdRenderClosingSummary();}catch(eCs){console.warn('osdRenderClosingSummary',eCs);}
   try{if(typeof osdRenderWorkOrders==='function')await osdRenderWorkOrders();}catch(eWo){console.warn('osdRenderWorkOrders',eWo);}
  }catch(e){
   console.error(e);
