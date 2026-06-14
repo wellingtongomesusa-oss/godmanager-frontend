@@ -3653,7 +3653,11 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
  <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PROPRIEDADE *</label><select id="lt-nexp-prop" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="">— Selecionar propriedade —</option></select></div>
  <div id="lt-nexp-cat-wrap"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
- <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-nexp-month" type="month" value="2026-04" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-nexp-month" type="month" value="" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+ <div id="lt-nexp-agenda-row" style="display:none">
+  <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE AGENDA (EXECUÇÃO) *</label>
+  <input id="lt-nexp-agenda-date" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+ </div>
  <div id="lt-nexp-legacy-value-wrap"><label style="font-size:11px;font-weight:600;color:var(--red);display:block;margin-bottom:4px">VALOR ($) *</label><input id="lt-nexp-value" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;padding:8px 11px;border:1px solid var(--red-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div id="lt-nexp-optional-pm-vendor-wrap" style="grid-column:1/-1">
   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENDOR (opcional) — cadastrado</label>
@@ -3700,7 +3704,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TIPO DE SERVIÇO</label><input id="lt-nexp-pm-svc" placeholder="Sobrescreve / complementa" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VALOR PAGO AO VENDOR ($) *</label><input id="lt-nexp-pm-vendor-cost" type="number" min="0" step="0.01" oninput="ltNexpPmRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--green);display:block;margin-bottom:4px">VALOR COBRADO AO OWNER ($)</label><input id="lt-nexp-pm-owner-charged" readonly tabindex="-1" style="width:100%;padding:8px 11px;border:1px solid var(--green-bd);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;background:var(--green-bg);color:var(--green)"></div>
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DO SERVIÇO *</label><input id="lt-nexp-pm-svc-date" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
+   <div id="lt-nexp-pm-svc-date-wrap"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DO SERVIÇO *</label><input id="lt-nexp-pm-svc-date" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">STATUS *</label><select id="lt-nexp-pm-status" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="SCHEDULED">Agendado</option><option value="PENDING">Pendente</option><option value="PAID">Pago</option><option value="CANCELLED">Cancelado</option><option value="FINALIZED">Finalizado</option></select></div>
   </div>
   <p style="font-size:10px;color:var(--ink3);margin:12px 0 0;line-height:1.45">Rent do inquilino menos a soma destes valores (com markup) alimenta o NET do owner. Mesma lógica que Owner Payment e Properties.</p>
@@ -15621,6 +15625,16 @@ window.gerarInvoicePDF=function(data,opts){
  });
 })();
 
+(function ltNexpAgendaDateInit(){
+ if(window.__ltNexpAgendaDateWired)return;
+ window.__ltNexpAgendaDateWired=true;
+ var agEl=document.getElementById('lt-nexp-agenda-date');
+ if(!agEl)return;
+ agEl.addEventListener('change',function(){
+  if(typeof ltNexpMirrorAgendaToPmSvc==='function')ltNexpMirrorAgendaToPmSvc();
+ });
+})();
+
 var LT_NEXP_QUEUE_VALUES=['maintenance','supervisor','supervisor_2','vendor'];
 function ltNexpNormalizeQueue(raw){
  var q=String(raw||'').trim();
@@ -15677,6 +15691,21 @@ function ltNexpApplyQueueMeta(meta,isEd){
  return out;
 }
 
+function ltCurrentMonthRef(){
+ var d=new Date();
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function ltTodayYmd(){
+ var d=new Date();
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function ltNexpMirrorAgendaToPmSvc(){
+ if(!window.__ltNewExpJobContext)return;
+ var ag=document.getElementById('lt-nexp-agenda-date');
+ var pdt=document.getElementById('lt-nexp-pm-svc-date');
+ if(ag&&pdt)pdt.value=String(ag.value||'').trim();
+}
+
 async function ltOpenNewExpense(prefill){
  var pf=(prefill&&typeof prefill==='object')?prefill:{};
  var isJobCtx=!!pf.jobContext;
@@ -15691,7 +15720,7 @@ async function ltOpenNewExpense(prefill){
  ['lt-nexp-desc','lt-nexp-docnum'].forEach(id=>document.getElementById(id).value='');
  ['lt-nexp-due','lt-nexp-paid','lt-nexp-value'].forEach(id=>document.getElementById(id).value='');
  document.getElementById('lt-nexp-cat').value='HOA';
- document.getElementById('lt-nexp-month').value='2026-04';
+ document.getElementById('lt-nexp-month').value=ltCurrentMonthRef();
  document.getElementById('lt-nexp-status').value='unpaid';
  document.getElementById('lt-nexp-link').checked=true;
  var qNew=document.getElementById('lt-nexp-queue');if(qNew)qNew.value='maintenance';
@@ -15761,6 +15790,20 @@ async function ltOpenNewExpense(prefill){
  if(typeof ltNexpUpdateVendorFreeWrapVisibility==='function')ltNexpUpdateVendorFreeWrapVisibility();
  if(isJobCtx&&typeof ltNexpSyncCatFromQueue==='function')ltNexpSyncCatFromQueue();
 
+ var agendaRow=document.getElementById('lt-nexp-agenda-row');
+ var agendaEl=document.getElementById('lt-nexp-agenda-date');
+ var pmSvcDateWrap=document.getElementById('lt-nexp-pm-svc-date-wrap');
+ if(isJobCtx){
+  if(agendaRow)agendaRow.style.display='';
+  if(agendaEl)agendaEl.value=ltTodayYmd();
+  if(pmSvcDateWrap)pmSvcDateWrap.style.display='none';
+  if(typeof ltNexpMirrorAgendaToPmSvc==='function')ltNexpMirrorAgendaToPmSvc();
+ }else{
+  if(agendaRow)agendaRow.style.display='none';
+  if(agendaEl)agendaEl.value='';
+  if(pmSvcDateWrap)pmSvcDateWrap.style.display='';
+ }
+
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
 function ltCloseNewExpense(){
@@ -15771,6 +15814,10 @@ function ltCloseNewExpense(){
 }
 
 async function ltOpenEditExpense(id){
+ try{window.__ltNewExpJobContext=false;}catch(e){}
+ var _agRow=document.getElementById('lt-nexp-agenda-row');if(_agRow)_agRow.style.display='none';
+ var _agInp=document.getElementById('lt-nexp-agenda-date');if(_agInp)_agInp.value='';
+ var _svcWrap=document.getElementById('lt-nexp-pm-svc-date-wrap');if(_svcWrap)_svcWrap.style.display='';
  id=String(id);
  var e=(window._pmExpenseRows || []).find(function(x){ return String(x.id) === id; });
  var nexpFixedCatList=['HOA','Água','Luz / Electric','Manutenção'];
@@ -15792,7 +15839,7 @@ async function ltOpenEditExpense(id){
    });
    if(opt) propSel.value=opt.value; else propSel.value=pCode||pId||'';
   }
-  document.getElementById('lt-nexp-month').value = e.monthRef || '2026-04';
+  document.getElementById('lt-nexp-month').value = e.monthRef || ltCurrentMonthRef();
   document.getElementById('lt-nexp-desc').value = e.description || '';
   ltNexpPopulatePmVendorSelect();
   setTimeout(function(){
@@ -15827,7 +15874,7 @@ async function ltOpenEditExpense(id){
   }
   document.getElementById('lt-nexp-cat').value = nexpFixedCatList.indexOf(stNexp0) >= 0 ? stNexp0 : (e.serviceType || 'HOA');
   if(typeof ltNexpOnCatChange==='function') ltNexpOnCatChange();
-  document.getElementById('lt-nexp-month').value = e.monthRef || '2026-04';
+  document.getElementById('lt-nexp-month').value = e.monthRef || ltCurrentMonthRef();
   document.getElementById('lt-nexp-value').value = e.vendorCost != null ? String(e.vendorCost) : '';
   document.getElementById('lt-nexp-desc').value = e.description || '';
   document.getElementById('lt-nexp-docnum').value = '';
@@ -15859,7 +15906,7 @@ async function ltOpenEditExpense(id){
  document.getElementById('lt-nexp-prop').value=r.propId||'';
  document.getElementById('lt-nexp-cat').value=r.category||'HOA';
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
- document.getElementById('lt-nexp-month').value=r.month||'2026-04';
+ document.getElementById('lt-nexp-month').value=r.month||ltCurrentMonthRef();
  document.getElementById('lt-nexp-value').value=r.value||'';
  document.getElementById('lt-nexp-desc').value=r.desc||'';
  try{ltNexpPopulateVendorSelect((r&&r.vendor)||'');}catch(e2){}
@@ -15874,6 +15921,13 @@ async function ltOpenEditExpense(id){
 
 function ltSaveExpense(){
  const isJobCtx=!!window.__ltNewExpJobContext;
+ const agEl=document.getElementById('lt-nexp-agenda-date');
+ const agVal=(isJobCtx&&agEl)?String(agEl.value||'').trim():'';
+ if(isJobCtx&&!agVal){
+  alert('Informe a Data de Agenda (execução).');
+  if(agEl)agEl.focus();
+  return;
+ }
  const category=document.getElementById('lt-nexp-cat').value;
  const month=document.getElementById('lt-nexp-month').value;
  if(category==='Vendor'){
@@ -15888,7 +15942,7 @@ function ltSaveExpense(){
   const sDate=(document.getElementById('lt-nexp-pm-svc-date')||{}).value;
   const st=(document.getElementById('lt-nexp-pm-status')||{}).value||'PENDING';
   var isVFree=(typeof ltNexpIsVendorFreeChecked==='function')&&ltNexpIsVendorFreeChecked();
-  if(!propId||!descVal||!sDate){alert('Propriedade, descrição e data do serviço são obrigatórios.');return;}
+  if(!propId||!descVal||(isJobCtx?!agVal:!sDate)){alert('Propriedade, descrição e data do serviço são obrigatórios.');return;}
   if(!isVFree&&!vid){alert('Selecione um vendor cadastrado ou marque Sem vendor (V Free).');return;}
   if(!isJobCtx&&!isVFree&&!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
   if(isVFree&&!(vc>=0)){alert('Valor estimado inválido.');return;}
@@ -15910,7 +15964,7 @@ function ltSaveExpense(){
     vendorCost:vc,
     serviceType:svc,
     monthRef:month,
-    serviceDate:sDate,
+    serviceDate:isJobCtx?agVal:sDate,
     status:st,
     description:descVal,
     isVendorFree:!!isVFree,
@@ -16008,7 +16062,7 @@ function ltSaveExpense(){
    vendorCost: value,
    serviceType: category,
    monthRef: month,
-   serviceDate: sDate,
+   serviceDate: isJobCtx ? agVal : sDate,
    status: stPm,
    description: descVal
   };
