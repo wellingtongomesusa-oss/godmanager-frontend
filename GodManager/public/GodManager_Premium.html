@@ -798,7 +798,7 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 }
 #page-jobs-follow #jobs-follow-cards.gm-jf-table{
  display:grid;
- grid-template-columns:minmax(170px,1.3fr) 52px 88px 90px 66px repeat(7,40px) 118px;
+ grid-template-columns:minmax(170px,1.3fr) 150px 88px 90px 66px repeat(7,40px) 118px;
  align-items:center;
  background:var(--paper);border:1px solid var(--border);border-radius:12px;
  min-width:max-content;box-sizing:border-box;
@@ -825,15 +825,26 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 }
 #page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-addr{
  font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--ink);
- padding:10px 14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ padding:10px 14px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;white-space:normal;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-addr .gm-jf-wo{
+ font-size:11px;font-weight:700;opacity:.5;line-height:1.15;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-addr .gm-jf-addrtext{
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 #page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-th-queue{
  text-align:center;padding:10px 6px;white-space:nowrap;
 }
 #page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-badge{
- font-size:10px;font-weight:700;color:var(--ink2);background:var(--sand);
- padding:3px 9px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;
- justify-content:center;
+ display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;
+ padding:6px 8px;white-space:normal;font-size:12px;font-weight:600;color:var(--ink2);
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-badge .gm-jf-vname{
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-badge .gm-jf-vaccept{
+ font-size:10px;font-weight:500;opacity:.6;white-space:nowrap;
 }
 #page-jobs-follow #jobs-follow-cards.gm-jf-table .gm-jf-td-queue{
  justify-content:center;padding:10px 6px;
@@ -22525,9 +22536,11 @@ function gmJobsFollowRenderHeader(){
  if(!statusLbl||statusLbl==='jobs_col_status')statusLbl='Status';
  var queueLbl=(typeof t==='function')?t('jobs_follow_col_queue'):'Fila';
  if(!queueLbl||queueLbl==='jobs_follow_col_queue')queueLbl='Fila';
+ var vendorLbl=(typeof t==='function')?t('jobs_follow_col_vendor'):'Vendor';
+ if(!vendorLbl||vendorLbl==='jobs_follow_col_vendor')vendorLbl='Vendor';
  var html='<div class="gm-jf-thead" style="display:contents" role="row">'
   +'<div class="gm-jf-th gm-jf-th-addr" role="columnheader">'+String(propLbl).replace(/</g,'&lt;')+'</div>'
-  +'<div class="gm-jf-th gm-jf-th-badge" role="columnheader" aria-hidden="true"></div>'
+  +'<div class="gm-jf-th gm-jf-th-badge" role="columnheader">'+String(vendorLbl).replace(/</g,'&lt;')+'</div>'
   +'<div class="gm-jf-th gm-jf-th-queue" role="columnheader">'+String(queueLbl).replace(/</g,'&lt;')+'</div>'
   +'<div class="gm-jf-th gm-jf-th-date" role="columnheader" aria-hidden="true"></div>'
   +'<div class="gm-jf-th gm-jf-th-value" role="columnheader" aria-hidden="true"></div>';
@@ -22546,8 +22559,7 @@ function gmJobsFollowRenderJobRow(r,isLastRow){
  var badgeTitle=isVFree?'V Free':gmHtmlEscAttr(String(vendor||''));
  var acc=r.vendorRespondedAt?('Aceite: '+String(r.vendorRespondedAt).slice(0,10)):'';
  var nameEsc=isVFree?'V Free':gmHtmlEscAttr(String(badgeLbl||''));
- var badgeInner=nameEsc;
- if(acc)badgeInner+='<div style="font-size:11px;opacity:.7">'+gmHtmlEscAttr(String(acc))+'</div>';
+ var badgeInner='<div class="gm-jf-vname">'+nameEsc+'</div>'+(acc?'<div class="gm-jf-vaccept">'+gmHtmlEscAttr(String(acc))+'</div>':'');
  var dt=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
  var val=parseFloat(r.value||r.ownerCharged||r.amount||0)||0;
  var valStr=val>0?((typeof jobsMoney==='function')?jobsMoney(val):'$'+val.toFixed(2)):'';
@@ -22556,12 +22568,12 @@ function gmJobsFollowRenderJobRow(r,isLastRow){
  var curCol=GM_JF_STAGE_COLORS[stage]||'var(--ink)';
  var addrEsc=String(addr).replace(/</g,'&lt;').replace(/"/g,'&quot;');
  var woLbl=r.jobLabel||(r.jobNumber!=null?('#'+String(r.jobNumber)):'');
- var addrHtml=(woLbl?'<div style="font-size:11px;font-weight:600;opacity:.7">'+gmHtmlEscAttr(String(woLbl))+'</div>':'')+addr;
+ var addrHtml=(woLbl?'<div class="gm-jf-wo">'+gmHtmlEscAttr(String(woLbl))+'</div>':'')+'<div class="gm-jf-addrtext">'+gmHtmlEscAttr(String(addr))+'</div>';
  var idAttr=String(r.id||'').replace(/"/g,'&quot;');
  var rowCls=isLastRow?' gm-jf-last-row':'';
  var html='<div class="gm-jf-row" data-job-id="'+idAttr+'" data-follow-stage="'+String(stage).replace(/"/g,'&quot;')+'" style="display:contents" role="row">'
   +'<div class="gm-jf-td gm-jf-td-addr'+rowCls+'" title="'+addrEsc+'">'+addrHtml+'</div>'
-  +'<div class="gm-jf-td gm-jf-td-badge'+rowCls+'" title="'+badgeTitle+'" style="overflow:hidden;text-overflow:ellipsis">'+badgeInner+'</div>'
+  +'<div class="gm-jf-td gm-jf-td-badge'+rowCls+'" title="'+badgeTitle+'">'+badgeInner+'</div>'
   +'<div class="gm-jf-td gm-jf-td-queue'+rowCls+'">'+gmJobsFollowQueuePillHtml(r)+'</div>'
   +'<div class="gm-jf-td gm-jf-td-date'+rowCls+'">'+String(dt||'').replace(/</g,'&lt;')+'</div>'
   +'<div class="gm-jf-td gm-jf-td-value'+rowCls+'">'+valStr+'</div>';
@@ -22656,7 +22668,7 @@ function gmJobsFollowRender(){
  }
  if(emptyEl)emptyEl.style.display='none';
  host.className='gm-jf-table';
- host.setAttribute('style','display:grid;grid-template-columns:minmax(170px,1.3fr) 52px 88px 90px 66px repeat(7,40px) 118px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:12px;min-width:max-content;box-sizing:border-box');
+ host.setAttribute('style','display:grid;grid-template-columns:minmax(170px,1.3fr) 150px 88px 90px 66px repeat(7,40px) 118px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:12px;min-width:max-content;box-sizing:border-box');
  var bodyHtml=gmJobsFollowRenderHeader();
  for(var ri=0;ri<rows.length;ri++){
   bodyHtml+=gmJobsFollowRenderJobRow(rows[ri],ri===rows.length-1);
