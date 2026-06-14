@@ -51,9 +51,24 @@ function toJson(e: {
   property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
   client?: { jobPrefix: string | null } | null;
+  bids?: Array<{
+    vendorId: string;
+    status: string;
+    submittedAt: Date | null;
+    invitedAt: Date;
+  }>;
 }) {
   const tenantName = pickTenantNameForProperty(e.property);
   const jobNum = e.jobNumber ?? null;
+  let vendorRespondedAt: string | null = null;
+  if (e.vendorId && Array.isArray(e.bids)) {
+    const wb = e.bids.find((b) => String(b.vendorId) === String(e.vendorId) && b.status === 'won');
+    const b = wb || e.bids.find((b) => String(b.vendorId) === String(e.vendorId));
+    if (b) {
+      const dt = b.submittedAt || b.invitedAt || null;
+      vendorRespondedAt = dt instanceof Date ? dt.toISOString() : dt ? String(dt) : null;
+    }
+  }
   return {
     id: e.id,
     propertyId: e.propertyId,
@@ -81,6 +96,7 @@ function toJson(e: {
     isVendorFree: !!e.isVendorFree,
     wasRescheduled: !!e.wasRescheduled,
     metadata: e.metadata ?? null,
+    vendorRespondedAt,
   };
 }
 
@@ -100,6 +116,7 @@ export async function GET(req: Request) {
         property: { select: pmExpensePropertyTenantSelect },
         vendor: { select: { id: true, companyName: true, defaultPackage: true } },
         client: { select: { jobPrefix: true } },
+        bids: { select: { vendorId: true, status: true, submittedAt: true, invitedAt: true } },
       },
       orderBy: [{ monthRef: 'desc' }, { serviceDate: 'desc' }, { createdAt: 'desc' }],
     });

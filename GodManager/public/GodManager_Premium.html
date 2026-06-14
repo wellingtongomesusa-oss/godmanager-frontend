@@ -13427,6 +13427,7 @@ function ltExpMapApiToRow(e){
   metadata:e.metadata&&typeof e.metadata==='object'?e.metadata:null,
   status:ui,
   vendor:String(e.vendorName||'').trim(),
+  vendorRespondedAt:e.vendorRespondedAt||null,
   _apiRaw:e
  };
 }
@@ -22524,7 +22525,12 @@ function gmJobsFollowRenderJobRow(r,isLastRow){
  var addr=gmJobsFollowRowAddress(r);
  var vendor=jobsVendorSourceStr(r);
  var isVFree=(typeof gmJobsRowIsVendorFree==='function')&&gmJobsRowIsVendorFree(r);
- var badgeLbl=isVFree?'V Free':((vendor&&typeof gmGetVendorAcronymByName==='function')?gmGetVendorAcronymByName(vendor):(vendor||''));
+ var badgeLbl=isVFree?'V Free':(vendor||'');
+ var badgeTitle=isVFree?'V Free':gmHtmlEscAttr(String(vendor||''));
+ var acc=r.vendorRespondedAt?('Aceite: '+String(r.vendorRespondedAt).slice(0,10)):'';
+ var nameEsc=isVFree?'V Free':gmHtmlEscAttr(String(badgeLbl||''));
+ var badgeInner=nameEsc;
+ if(acc)badgeInner+='<div style="font-size:11px;opacity:.7">'+gmHtmlEscAttr(String(acc))+'</div>';
  var dt=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
  var val=parseFloat(r.value||r.ownerCharged||r.amount||0)||0;
  var valStr=val>0?((typeof jobsMoney==='function')?jobsMoney(val):'$'+val.toFixed(2)):'';
@@ -22532,11 +22538,13 @@ function gmJobsFollowRenderJobRow(r,isLastRow){
  var currentLbl=(typeof gmJobFollowUpStageLabel==='function')?gmJobFollowUpStageLabel(stage):stage;
  var curCol=GM_JF_STAGE_COLORS[stage]||'var(--ink)';
  var addrEsc=String(addr).replace(/</g,'&lt;').replace(/"/g,'&quot;');
+ var woLbl=r.jobLabel||(r.jobNumber!=null?('#'+String(r.jobNumber)):'');
+ var addrHtml=(woLbl?'<div style="font-size:11px;font-weight:600;opacity:.7">'+gmHtmlEscAttr(String(woLbl))+'</div>':'')+addr;
  var idAttr=String(r.id||'').replace(/"/g,'&quot;');
  var rowCls=isLastRow?' gm-jf-last-row':'';
  var html='<div class="gm-jf-row" data-job-id="'+idAttr+'" data-follow-stage="'+String(stage).replace(/"/g,'&quot;')+'" style="display:contents" role="row">'
-  +'<div class="gm-jf-td gm-jf-td-addr'+rowCls+'" title="'+addrEsc+'">'+String(addr).replace(/</g,'&lt;')+'</div>'
-  +'<div class="gm-jf-td gm-jf-td-badge'+rowCls+'">'+String(badgeLbl||'').replace(/</g,'&lt;')+'</div>'
+  +'<div class="gm-jf-td gm-jf-td-addr'+rowCls+'" title="'+addrEsc+'">'+addrHtml+'</div>'
+  +'<div class="gm-jf-td gm-jf-td-badge'+rowCls+'" title="'+badgeTitle+'" style="overflow:hidden;text-overflow:ellipsis">'+badgeInner+'</div>'
   +'<div class="gm-jf-td gm-jf-td-queue'+rowCls+'">'+gmJobsFollowQueuePillHtml(r)+'</div>'
   +'<div class="gm-jf-td gm-jf-td-date'+rowCls+'">'+String(dt||'').replace(/</g,'&lt;')+'</div>'
   +'<div class="gm-jf-td gm-jf-td-value'+rowCls+'">'+valStr+'</div>';
