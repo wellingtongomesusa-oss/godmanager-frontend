@@ -4229,6 +4229,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </tr></tfoot>
  </table>
  </div>
+ <div id="osd-work-orders-wrap" style="margin-top:14px"></div>
  </div>
  </div>
 
@@ -10141,6 +10142,64 @@ window.osdRenderLineItems=function(data){
  window.osdRenderDetailBadges(payout||null);
 };
 
+window.osdRenderWorkOrders=async function(){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ var wrap=document.getElementById('osd-work-orders-wrap');
+ if(!wrap)return;
+ if(!cd||!cd.propertyId){wrap.innerHTML='';return;}
+ wrap.innerHTML='<div style="font-size:12px;opacity:.6;color:var(--ink3);padding:8px 14px">Carregando work orders…</div>';
+ try{
+  var res=await fetch('/api/pm/expenses?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'same-origin',cache:'no-store'});
+  var bodyText=await res.text();
+  var data={};
+  try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
+  if(!res.ok||!data.ok)throw new Error('expenses fetch failed');
+  var list=(data.expenses||[]).filter(function(e){return e&&String(e.propertyId||'')===String(cd.propertyId);});
+  var esc=window.osdEscHtml;
+  var fmt=window.osdFmtCurrency;
+  var html='<div style="padding:12px 14px;border-top:1px solid var(--border)">';
+  html+='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3);margin-bottom:10px">Work Orders do mês ('+list.length+')</div>';
+  if(!list.length){
+   html+='<div style="opacity:.6;font-size:13px;padding:8px 0;color:var(--ink2)">Nenhuma work order neste mês.</div>';
+  }else{
+   html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:720px;font-size:12px">';
+   html+='<thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">';
+   html+='<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">WO</th>';
+   html+='<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Descrição</th>';
+   html+='<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Vendor</th>';
+   html+='<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Status</th>';
+   html+='<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Valor</th>';
+   html+='<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Data</th>';
+   html+='<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Ações</th>';
+   html+='</tr></thead><tbody>';
+   list.forEach(function(e){
+    var woLbl=e.jobLabel||(e.jobNumber!=null?('#'+String(e.jobNumber)):'');
+    var desc=String(e.description||e.serviceType||'');
+    var vendor=e.vendorName||(e.isVendorFree?'V Free':'—');
+    var st=String(e.status||'');
+    var val=(typeof fmt==='function')?fmt(Number(e.ownerCharged||0)):String(e.ownerCharged||'');
+    var dt=String(e.serviceDate||'').slice(0,10);
+    var eidJs=String(e.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html+='<tr style="border-bottom:1px solid var(--border)">';
+    html+='<td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+esc(woLbl||'—')+'</td>';
+    html+='<td style="padding:8px 10px;color:var(--ink);max-width:220px">'+esc(desc||'—')+'</td>';
+    html+='<td style="padding:8px 10px;color:var(--ink2)">'+esc(vendor)+'</td>';
+    html+='<td style="padding:8px 10px;text-align:center;color:var(--ink2)">'+esc(st||'—')+'</td>';
+    html+='<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+esc(val)+'</td>';
+    html+='<td style="padding:8px 10px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt||'—')+'</td>';
+    html+='<td style="padding:8px 10px;text-align:center"><button type="button" onclick="event.stopPropagation();if(typeof gmJobOpenPhotoPopup===\'function\')gmJobOpenPhotoPopup(\''+eidJs+'\')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">Ver fotos</button></td>';
+    html+='</tr>';
+   });
+   html+='</tbody></table></div>';
+  }
+  html+='</div>';
+  wrap.innerHTML=html;
+ }catch(e){
+  console.warn('osdRenderWorkOrders',e);
+  wrap.innerHTML='<div style="opacity:.6;font-size:13px;padding:8px 14px;color:var(--ink3)">Erro ao carregar work orders.</div>';
+ }
+};
+
 window.osdLoadStatement=async function(){
  var pid=(document.getElementById('osd-property')&&document.getElementById('osd-property').value)||'';
  var ymSel=document.getElementById('osd-period');
@@ -10179,6 +10238,7 @@ window.osdLoadStatement=async function(){
    return;
   }
   window.osdRenderLineItems(data);
+  try{if(typeof osdRenderWorkOrders==='function')await osdRenderWorkOrders();}catch(eWo){console.warn('osdRenderWorkOrders',eWo);}
  }catch(e){
   console.error(e);
   if(tbody)tbody.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">Erro de rede.</td></tr>';
