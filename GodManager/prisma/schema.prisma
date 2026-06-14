@@ -1167,3 +1167,86 @@ model TrialInvite {
   @@index([expiresAt])
   @@map("trial_invites")
 }
+
+// === BILLING MODULE (AR/AP) — Fase A.1 fundação ===
+
+model BillingContact {
+  id          String   @id @default(cuid())
+  clientId    String?
+  name        String
+  email       String?
+  phone       String?
+  kind        String   @default("both")
+  isVendorRef Boolean  @default(false)
+  vendorId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clientId])
+  @@map("billing_contacts")
+}
+
+model BillingCategory {
+  id        String   @id @default(cuid())
+  clientId  String?
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([clientId])
+  @@map("billing_categories")
+}
+
+model BillingDescription {
+  id        String   @id @default(cuid())
+  clientId  String?
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([clientId])
+  @@map("billing_descriptions")
+}
+
+model BillingDocument {
+  id               String            @id @default(cuid())
+  clientId         String?
+  docType          String
+  number           String
+  status           String            @default("DRAFT")
+  contactName      String
+  contactEmail     String?
+  contactPhone     String?
+  billingContactId String?
+  vendorId         String?
+  propertyId       String?
+  issueDate        DateTime          @default(now())
+  dueDate          DateTime?
+  total            Decimal           @default(0) @db.Decimal(12, 2)
+  notes            String?
+  createdByUserId  String?
+  approvedByUserId String?
+  approvedAt       DateTime?
+  paidAt           DateTime?
+  sentAt           DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  items            BillingLineItem[]
+
+  @@index([clientId, docType, status])
+  @@map("billing_documents")
+}
+
+model BillingLineItem {
+  id          String          @id @default(cuid())
+  documentId  String
+  clientId    String?
+  categoryId  String?
+  description String
+  quantity    Decimal         @default(1) @db.Decimal(12, 2)
+  unitPrice   Decimal         @default(0) @db.Decimal(12, 2)
+  lineTotal   Decimal         @default(0) @db.Decimal(12, 2)
+  sortOrder   Int             @default(0)
+  document    BillingDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("billing_line_items")
+}
