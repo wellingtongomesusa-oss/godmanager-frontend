@@ -203,6 +203,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
       data.contactName = contactName;
     }
+    if (body.number != null) {
+      const n = String(body.number).trim();
+      if (!n) {
+        return NextResponse.json({ ok: false, error: 'number cannot be empty' }, { status: 400 });
+      }
+      data.number = n;
+    }
     if (body.contactEmail != null) {
       data.contactEmail = String(body.contactEmail).trim() || null;
     }
