@@ -6783,7 +6783,11 @@ async function gmHomeEnsurePropertiesCache(){
   if(typeof window.gmPropertiesBootstrap==='function'){
    await window.gmPropertiesBootstrap({silent:true});
   }
-  return (typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  arr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  if(!arr.length&&!window.gmPropertiesOwnerKey()&&localStorage.getItem(window.GM_PROP_KEY)){
+   window.__gmPropertiesPendingAuthRefresh=true;
+  }
+  return arr;
  }catch(e){
   console.warn('gmHomeEnsurePropertiesCache',e);
   return [];
@@ -17666,6 +17670,7 @@ async function ltpDeleteProperty(id){
 window.GM_PROP_KEY='gm_properties_v2';
 window.GM_PROP_SCHEMA_VERSION=2;
 window.__gmPropertiesBootstrapError=null;
+window.__gmPropertiesPendingAuthRefresh=false;
 function gmPropertiesFilterGhostRows(arr){
  return (arr||[]).filter(function(p){
   if(!p||typeof p!=='object')return false;
@@ -17735,21 +17740,36 @@ window.gmPropertiesLoad=function(){
   if(!r)return [];
   var parsed=JSON.parse(r);
   var curKey=window.gmPropertiesOwnerKey();
-  if(curKey){
-   var cacheKey=(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))?String(parsed.ownerKey||'').trim():'';
-   if(cacheKey!==curKey){
-    window.gmPropertiesHandleOwnerMismatch(curKey);
-    return [];
-   }
+  var hasStoredData=Array.isArray(parsed)&&parsed.length>0||(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&Array.isArray(parsed.items)&&parsed.items.length>0);
+  // Fail-safe: usuário ainda desconhecido — nunca retornar cache velho
+  if(!curKey){
+   if(hasStoredData)window.__gmPropertiesPendingAuthRefresh=true;
+   return [];
   }
-  var a=Array.isArray(parsed)?parsed:(parsed&&Array.isArray(parsed.items)?parsed.items:[]);
+  // Cache legado (array puro, sem ownerKey) → mismatch → refetch
+  if(Array.isArray(parsed)){
+   window.gmPropertiesHandleOwnerMismatch(curKey);
+   return [];
+  }
+  if(!parsed||typeof parsed!=='object'){
+   return [];
+  }
+  var cacheKey=String(parsed.ownerKey||'').trim();
+  if(!cacheKey||cacheKey!==curKey){
+   window.gmPropertiesHandleOwnerMismatch(curKey);
+   return [];
+  }
+  var a=Array.isArray(parsed.items)?parsed.items:[];
   return gmPropertiesFilterGhostRows(a);
  }catch(e){return[];}
 };
 window.gmPropertiesSave=function(a){
  try{
-  var payload={schemaVersion:window.GM_PROP_SCHEMA_VERSION,savedAt:new Date().toISOString(),ownerKey:window.gmPropertiesOwnerKey(),items:gmPropertiesFilterGhostRows(a||[])};
+  var ownerKey=window.gmPropertiesOwnerKey();
+  if(!ownerKey)return;
+  var payload={schemaVersion:window.GM_PROP_SCHEMA_VERSION,savedAt:new Date().toISOString(),ownerKey:ownerKey,items:gmPropertiesFilterGhostRows(a||[])};
   localStorage.setItem(window.GM_PROP_KEY,JSON.stringify(payload));
+  window.__gmPropertiesPendingAuthRefresh=false;
  }catch(e){console.warn('gmPropertiesSave',e);}
 };
 /** Cache já é verdade do servidor para o user atual (payload válido, mesmo com carteira vazia). */
@@ -17762,7 +17782,8 @@ window.gmPropertiesCacheReady=function(){
   if(parsed.schemaVersion!==window.GM_PROP_SCHEMA_VERSION)return false;
   if(!Array.isArray(parsed.items))return false;
   var curKey=window.gmPropertiesOwnerKey();
-  if(curKey&&String(parsed.ownerKey||'').trim()!==curKey)return false;
+  if(!curKey)return false;
+  if(String(parsed.ownerKey||'').trim()!==curKey)return false;
   return true;
  }catch(e){return false;}
 };
@@ -27064,13 +27085,15 @@ window.gmApplyExpensesJobsMode=gmApplyExpensesJobsMode;
 
 /**
  * Limpa APENAS caches localStorage recarregáveis via API (whitelist).
- * NÃO apaga mp_*, lt_*, gm_job_*, gm_lt_*, gm_properties nem outras fontes legadas.
+ * NÃO apaga mp_*, lt_*, gm_job_*, gm_lt_* nem outras fontes legadas fora da whitelist.
  * Auth/UI (gm_auth_token_v1, gm_lang, etc.) nunca entram na whitelist.
  */
 var GM_TENANT_CACHE_WHITELIST=[
  'gm_vendors',
  'gm_clients',
- 'gm_active_client'
+ 'gm_active_client',
+ 'gm_properties_v2',
+ 'gm_properties'
 ];
 var GM_LAST_KNOWN_USER_KEY='gm_last_known_user_id';
 
@@ -27106,6 +27129,8 @@ function gmClearTenantDataCaches(reason){
   window.__jobsExpensesCacheAt=0;
   window.__jobsApiFetchInFlight=null;
   window._pmExpenseRows=[];
+  window.__gmPropsOwnerSyncKey=null;
+  window.__gmPropertiesPendingAuthRefresh=false;
  }catch(_m){}
  if(reason)console.info('[gmClearTenantDataCaches]',reason,'whitelist removidas:',cleared);
 }
@@ -27162,9 +27187,33 @@ async function gmAuthHydrateUserBadge(){
   }catch(_eTr){}
   try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(_gab){}
   try{if(typeof applyPermissions==='function')applyPermissions();}catch(_ePerm){}
+  try{if(typeof gmAuthRefreshPropertiesAfterHydrate==='function')await gmAuthRefreshPropertiesAfterHydrate();}catch(_ePropHydr){}
   return u;
  }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
 }
+
+/** Após /api/auth/me: refetch properties + Home se cache inválido ou carga inicial sem dono conhecido. */
+async function gmAuthRefreshPropertiesAfterHydrate(){
+ try{
+  var curKey=window.gmPropertiesOwnerKey();
+  if(!curKey)return;
+  window.__gmPropsOwnerSyncKey=null;
+  var needRefresh=false;
+  if(window.__gmPropertiesPendingAuthRefresh)needRefresh=true;
+  if(typeof window.gmPropertiesCacheReady==='function'&&!window.gmPropertiesCacheReady())needRefresh=true;
+  if(!needRefresh)return;
+  window.__gmPropertiesPendingAuthRefresh=false;
+  if(typeof window.gmPropertiesRefresh==='function'){
+   await window.gmPropertiesRefresh({silent:true});
+  }
+  if(typeof loadHomeDashboardFromApi==='function'){
+   await loadHomeDashboardFromApi();
+  }else if(typeof window.gmHomeRefresh==='function'){
+   window.gmHomeRefresh();
+  }
+ }catch(e){console.warn('[gmAuth] properties/home refresh apos hydrate',e);}
+}
+window.gmAuthRefreshPropertiesAfterHydrate=gmAuthRefreshPropertiesAfterHydrate;
 
 /* Logout handler */
 async function gmAuthLogout(){
