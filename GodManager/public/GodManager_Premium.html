@@ -2039,6 +2039,20 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <p id="admin-company-name-current" style="font-size:11px;color:var(--ink3);margin-top:8px;font-style:italic">A carregar…</p>
   </div>
   <div style="padding:22px 24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);position:relative">
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue);border-radius:0 0 12px 12px"></div>
+   <h3 style="margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Logo da empresa</h3>
+   <p style="font-size:12px;color:var(--ink3);margin:0 0 16px">Exibido em documentos e comunicações do seu cliente. Apenas administradores do cliente podem alterar.</p>
+   <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+    <img id="gm-client-logo-preview" alt="Logo da empresa" style="display:none;max-width:200px;max-height:120px;object-fit:contain;border:1px solid var(--border2);border-radius:8px;padding:8px;background:var(--sand)">
+    <div id="gm-client-logo-placeholder" style="width:160px;height:80px;border:1px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink3);background:var(--sand)">Sem logo</div>
+   </div>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input type="file" id="gm-client-logo-file" accept="image/png,image/jpeg" style="display:none" onchange="if(typeof window.gmClientLogoOnFile==='function')window.gmClientLogoOnFile(this);">
+    <button type="button" onclick="if(typeof window.gmClientLogoPick==='function')window.gmClientLogoPick();" style="padding:9px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;font-family:'DM Sans',sans-serif">Subir / Trocar logo</button>
+   </div>
+   <p style="font-size:11px;color:var(--ink3);margin-top:10px">Recomendado: PNG com fundo transparente, até ~500px</p>
+  </div>
+  <div style="padding:22px 24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);position:relative">
    <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber);border-radius:0 0 12px 12px"></div>
    <h3 style="margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Acesso GAAP</h3>
    <p style="font-size:12px;color:var(--ink3);margin:0 0 16px">Gera uma senha numérica de 6 dígitos para libertar o GAAP a um colaborador. Cada senha é válida apenas uma vez.</p>
@@ -10066,7 +10080,7 @@ function nav(r){
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
  vendors:()=>{if(typeof gvNavigateVendors==='function')void gvNavigateVendors();},
- settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);},
+ settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);if(typeof window.gmClientLogoLoad==='function')setTimeout(function(){window.gmClientLogoLoad();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditEnterPage==='function')adminAuditEnterPage();},
  'forms-received':()=>{if(typeof gmFormsReceivedRender==='function')void gmFormsReceivedRender();},
@@ -28277,6 +28291,131 @@ window.tenantViewDetails=function(tid){
    var cur=document.getElementById('admin-company-name-current');
    if(cur)cur.textContent='Nome actual: '+name;
   }catch(e){alert('Erro: '+(e&&e.message?e.message:String(e)));}
+ };
+ window.gmClientLogoLoad=async function(){
+  var img=document.getElementById('gm-client-logo-preview');
+  var ph=document.getElementById('gm-client-logo-placeholder');
+  if(!img)return;
+  try{
+   var res=await fetch('/api/client/logo',{credentials:'include',cache:'no-store'});
+   var data=await res.json().catch(function(){return{};});
+   if(res.ok&&data.ok&&data.logoUrl){
+    img.src=data.logoUrl;
+    img.style.display='block';
+    if(ph)ph.style.display='none';
+   }else{
+    img.removeAttribute('src');
+    img.style.display='none';
+    if(ph)ph.style.display='flex';
+   }
+  }catch(e){
+   console.warn('gmClientLogoLoad',e);
+   img.removeAttribute('src');
+   img.style.display='none';
+   if(ph)ph.style.display='flex';
+  }
+ };
+ window.gmClientLogoCompress=function(file,maxDim){
+  maxDim=maxDim||500;
+  var mime=(file&&file.type==='image/png')?'image/png':'image/jpeg';
+  var quality=0.9;
+  return new Promise(function(resolve,reject){
+   var im=new Image();
+   var url=URL.createObjectURL(file);
+   im.onload=function(){
+    try{
+     var w=im.width,h=im.height;
+     if(w>maxDim||h>maxDim){
+      if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}
+      else{w=Math.round(w*maxDim/h);h=maxDim;}
+     }
+     var canvas=document.createElement('canvas');
+     canvas.width=w;canvas.height=h;
+     var ctx=canvas.getContext('2d');
+     if(mime==='image/jpeg'){
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,w,h);
+     }
+     ctx.drawImage(im,0,0,w,h);
+     canvas.toBlob(function(blob){
+      URL.revokeObjectURL(url);
+      if(!blob){reject(new Error('compress failed'));return;}
+      resolve({blob:blob,mime:mime});
+     },mime,mime==='image/jpeg'?quality:undefined);
+    }catch(e){URL.revokeObjectURL(url);reject(e);}
+   };
+   im.onerror=function(){URL.revokeObjectURL(url);reject(new Error('image load failed'));};
+   im.src=url;
+  });
+ };
+ window.gmClientLogoPick=function(){
+  var input=document.getElementById('gm-client-logo-file');
+  if(input)input.click();
+ };
+ window.gmClientLogoOnFile=function(input){
+  var file=input&&input.files&&input.files[0];
+  if(file&&typeof window.gmClientLogoUpload==='function')window.gmClientLogoUpload(file);
+  if(input)input.value='';
+ };
+ window.gmClientLogoUpload=async function(file){
+  if(!file)return;
+  var mime=String(file.type||'').toLowerCase();
+  if(mime!=='image/png'&&mime!=='image/jpeg'){
+   if(typeof showToast==='function')showToast('Use PNG ou JPEG.','error');
+   return;
+  }
+  if(file.size>5*1024*1024){
+   if(typeof showToast==='function')showToast('Arquivo deve ter menos de 5 MB.','error');
+   return;
+  }
+  try{
+   var compressed=await window.gmClientLogoCompress(file,500);
+   var blob=compressed.blob;
+   var contentType=compressed.mime;
+   var ext=contentType==='image/png'?'png':'jpg';
+   var presignRes=await fetch('/api/client/logo/presigned-url',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({contentType:contentType,ext:ext})
+   });
+   var presign=await presignRes.json().catch(function(){return{};});
+   if(!presignRes.ok||!presign.uploadUrl){
+    if(typeof showToast==='function')showToast('Erro ao preparar upload.','error');
+    return;
+   }
+   var putRes=await fetch(presign.uploadUrl,{
+    method:'PUT',
+    headers:{'Content-Type':contentType},
+    body:blob
+   });
+   if(!putRes.ok){
+    if(typeof showToast==='function')showToast('Falha no upload.','error');
+    return;
+   }
+   var saveRes=await fetch('/api/client/logo',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({logoUrl:presign.publicUrl,logoKey:presign.key})
+   });
+   var saveData=await saveRes.json().catch(function(){return{};});
+   if(!saveRes.ok||!saveData.ok){
+    if(typeof showToast==='function')showToast('Erro ao salvar logo.','error');
+    return;
+   }
+   var img=document.getElementById('gm-client-logo-preview');
+   var ph=document.getElementById('gm-client-logo-placeholder');
+   if(img){
+    img.src=presign.publicUrl;
+    img.style.display='block';
+   }
+   if(ph)ph.style.display='none';
+   if(typeof showToast==='function')showToast('Logo atualizado');
+  }catch(e){
+   console.warn('gmClientLogoUpload',e);
+   if(typeof showToast==='function')showToast('Erro ao subir logo.','error');
+  }
  };
  window.gmLoadCompanyNameOnBoot=async function(){
   try{
