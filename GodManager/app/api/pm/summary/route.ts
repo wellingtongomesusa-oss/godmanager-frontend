@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { computeNetForPropertyMonth, getPayoutState } from '@/lib/pmNetCompute';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,9 @@ export async function GET(req: Request) {
   }
 
   try {
+    const scopeUser = toClientScopeUser(user);
     const properties = await prisma.property.findMany({
+      where: getClientScopeWhere(scopeUser),
       orderBy: { code: 'asc' },
       select: { id: true, code: true, address: true, ownerName: true, rent: true },
     });
