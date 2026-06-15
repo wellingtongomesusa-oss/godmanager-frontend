@@ -28511,11 +28511,12 @@ function gmBillingFmtMoney(n){
 }
 function gmBillingFmtDate(iso){
  if(!iso)return '—';
- try{
-  var d=new Date(iso);
-  if(Number.isNaN(d.getTime()))return '—';
-  return d.toLocaleDateString('pt-BR');
- }catch(e){return '—';}
+ var d=new Date(iso);
+ if(Number.isNaN(d.getTime()))return '—';
+ var mm=String(d.getUTCMonth()+1).padStart(2,'0');
+ var dd=String(d.getUTCDate()).padStart(2,'0');
+ var yyyy=d.getUTCFullYear();
+ return mm+'/'+dd+'/'+yyyy;
 }
 function gmBillingStatusPill(status){
  var st=String(status||'').toUpperCase();
@@ -28975,8 +28976,8 @@ async function gmBillingSaveInvoice(status){
  if(payer.email)payload.contactEmail=payer.email;
  if(payer.source==='contact'&&payer.id)payload.billingContactId=payer.id;
  if(payer.source==='vendor'&&payer.id)payload.vendorId=payer.id;
- if(issueEl&&issueEl.value)payload.issueDate=issueEl.value;
- if(dueEl&&dueEl.value)payload.dueDate=dueEl.value;
+ if(issueEl&&issueEl.value)payload.issueDate=issueEl.value+'T00:00:00.000Z';
+ if(dueEl&&dueEl.value)payload.dueDate=dueEl.value+'T00:00:00.000Z';
  if(notesEl&&String(notesEl.value||'').trim())payload.notes=String(notesEl.value).trim();
  try{
   var res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
