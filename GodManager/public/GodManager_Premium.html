@@ -9095,11 +9095,42 @@ function gmAppfolioWireDropzoneOnce(){
   gmAfMergeFiles(dt.files);
  });
 }
+function gmAppfolioSetAccessUi(allowed){
+ var pg=document.getElementById('page-appfolio-upload');
+ if(!pg)return;
+ var deny=document.getElementById('af-access-deny');
+ if(!deny){
+  deny=document.createElement('div');
+  deny.id='af-access-deny';
+  deny.className='gm-ix-panel';
+  deny.style.cssText='padding:28px 24px;margin-top:8px';
+  deny.innerHTML='<p class="ps" style="font-size:13px;color:var(--ink2);line-height:1.55;margin:0">Esta seção é exclusiva da Manager Prop.</p>';
+  pg.insertBefore(deny,pg.firstChild);
+ }
+ deny.style.display=allowed?'none':'block';
+ Array.prototype.forEach.call(pg.children,function(el){
+  if(el.id==='af-access-deny')return;
+  el.style.display=allowed?'':'none';
+ });
+ if(!allowed){
+  gmAfSetErr('');
+  gmAfSetNote('');
+  window.afUploadQueue=[];
+  try{gmAfRenderFileList();}catch(eAf){}
+ }
+}
 function gmAppfolioPageInit(){
- gmAppfolioWireDropzoneOnce();
- gmAfSetErr('');
- gmAfSetNote('');
- gmAppfolioRefreshDashboard(true);
+ gmHomeResolveUserForAppfolio().then(function(userCtx){
+  if(!gmHomeMayApplyAppfolioOverride(userCtx)){
+   gmAppfolioSetAccessUi(false);
+   return;
+  }
+  gmAppfolioSetAccessUi(true);
+  gmAppfolioWireDropzoneOnce();
+  gmAfSetErr('');
+  gmAfSetNote('');
+  gmAppfolioRefreshDashboard(true);
+ });
 }
 function gmTenantPayerRefreshSummary(){
  fetch('/api/tenant-payments/summary',{credentials:'same-origin'})
@@ -9134,8 +9165,10 @@ function gmAppfolioApplySummaryFromImported(im){
  gmTenantPayerRefreshSummary();
 }
 function gmAppfolioRefreshDashboard(silent){
- var url=GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard';
- fetch(url,{method:'GET',mode:'cors',credentials:'omit'})
+ gmHomeResolveUserForAppfolio().then(function(userCtx){
+  if(!gmHomeMayApplyAppfolioOverride(userCtx))return;
+  var url=GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard';
+  fetch(url,{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
  .then(function(o){
   var lu=o.j&&o.j.last_upload;
@@ -9171,6 +9204,7 @@ function gmAppfolioRefreshDashboard(silent){
   }catch(e){if(el)el.textContent='Último upload: indisponível.';}
   if(!silent)gmAfSetErr('Ligação à API AppFolio falhou (godmanager-production.up.railway.app).');
  });
+ });
 }
 async function gmAppfolioDetectIncomeRegisterFiles(queue){
  var incomeRegisterFiles=[];
@@ -9186,6 +9220,11 @@ async function gmAppfolioDetectIncomeRegisterFiles(queue){
  return {incomeRegisterFiles:incomeRegisterFiles,otherFiles:otherFiles};
 }
 async function gmAppfolioDoImport(){
+ var userCtx=await gmHomeResolveUserForAppfolio();
+ if(!gmHomeMayApplyAppfolioOverride(userCtx)){
+  if(typeof showToast==='function')showToast('Sem acesso a esta seção','error');
+  return;
+ }
  var q=window.afUploadQueue||[];
  if(!q.length){gmAfSetErr('Selecione pelo menos um ficheiro CSV.');return;}
  gmAfSetErr('');
