@@ -3838,8 +3838,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div id="gm-billing-inv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9004;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this&&typeof gmBillingCloseNewInvoice==='function')gmBillingCloseNewInvoice()">
  <div style="background:var(--paper);border-radius:12px;width:720px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
-   <div style="font-size:14px;font-weight:700;color:var(--ink)">Novo Invoice</div>
+   <div id="gm-bill-modal-title" style="font-size:14px;font-weight:700;color:var(--ink)">Novo Invoice</div>
    <span onclick="if(typeof gmBillingCloseNewInvoice==='function')gmBillingCloseNewInvoice()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1">&times;</span>
+  </div>
+  <div id="gm-bill-number-wrap" style="display:none;margin-bottom:18px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NÚMERO *</label>
+   <input id="gm-bill-number" type="text" placeholder="Número da invoice" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
   </div>
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Pagador</div>
   <div style="margin-bottom:14px">
@@ -3888,8 +3892,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
    <button type="button" onclick="if(typeof gmBillingCloseNewInvoice==='function')gmBillingCloseNewInvoice()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
-   <button type="button" onclick="if(typeof gmBillingSaveInvoice==='function')gmBillingSaveInvoice('DRAFT')" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">Salvar rascunho</button>
-   <button type="button" onclick="if(typeof gmBillingSaveInvoice==='function')gmBillingSaveInvoice('SENT')" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar e marcar Enviada</button>
+   <button type="button" id="gm-bill-btn-save-draft" onclick="if(typeof gmBillingSaveInvoice==='function')gmBillingSaveInvoice('DRAFT')" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">Salvar rascunho</button>
+   <button type="button" id="gm-bill-btn-save-sent" onclick="if(typeof gmBillingSaveInvoice==='function')gmBillingSaveInvoice('SENT')" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar e marcar Enviada</button>
+   <button type="button" id="gm-bill-btn-save-edit" onclick="if(typeof gmBillingSaveInvoice==='function')gmBillingSaveInvoice()" style="display:none;padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar alterações</button>
   </div>
  </div>
 </div>
@@ -28673,6 +28678,15 @@ function gmBillingFmtDate(iso){
  var yyyy=d.getUTCFullYear();
  return mm+'/'+dd+'/'+yyyy;
 }
+function gmBillingIsoToDateInput(iso){
+ if(!iso)return '';
+ var d=new Date(iso);
+ if(Number.isNaN(d.getTime()))return '';
+ var yyyy=d.getUTCFullYear();
+ var mm=String(d.getUTCMonth()+1).padStart(2,'0');
+ var dd=String(d.getUTCDate()).padStart(2,'0');
+ return yyyy+'-'+mm+'-'+dd;
+}
 function gmBillingStatusPill(status){
  var st=String(status||'').toUpperCase();
  var map={
@@ -28683,6 +28697,113 @@ function gmBillingStatusPill(status){
  };
  var m=map[st]||{cls:'ps2',lbl:st||'—'};
  return '<span class="pill '+m.cls+'">'+gmBillingEsc(m.lbl)+'</span>';
+}
+function gmBillingStatusLabel(status){
+ var st=String(status||'').toUpperCase();
+ var map={DRAFT:'Rascunho',SENT:'Enviada',PAID:'Paga',CANCELLED:'Cancelada'};
+ return map[st]||st||'—';
+}
+function gmBillingInvoicePdfPrintHtml(html){
+ var w=window.open('','_blank');
+ if(!w){
+  if(typeof showToast==='function')showToast('Não foi possível abrir a janela de impressão. Libere pop-ups para este site.','error');
+  else alert('Não foi possível abrir a janela de impressão. Libere pop-ups para este site.');
+  return false;
+ }
+ w.document.write(html);
+ w.document.close();
+ w.onload=function(){w.print();};
+ return true;
+}
+function gmBillingInvoicePdfBuildHtml(doc){
+ if(!doc)return '';
+ var num=gmBillingEsc(doc.number||'');
+ var statusLbl=gmBillingEsc(gmBillingStatusLabel(doc.status));
+ var issue=gmBillingEsc(gmBillingFmtDate(doc.issueDate));
+ var due=gmBillingEsc(gmBillingFmtDate(doc.dueDate));
+ var recvName=gmBillingEsc(doc.receiverName||'');
+ var recvAddr=gmBillingEsc(doc.receiverAddress||'');
+ var recvEmail=String(doc.receiverEmail||'').trim();
+ var recvPhone=String(doc.receiverPhone||'').trim();
+ var payerName=gmBillingEsc(doc.contactName||'');
+ var payerEmail=String(doc.contactEmail||'').trim();
+ var payerPhone=String(doc.contactPhone||'').trim();
+ var total=gmBillingEsc(gmBillingFmtMoney(doc.total));
+ var notes=String(doc.notes||'').trim();
+ var items=Array.isArray(doc.items)?doc.items:[];
+ var rows='';
+ items.forEach(function(it){
+  rows+='<tr>'
+   +'<td>'+gmBillingEsc(it.description||'')+'</td>'
+   +'<td class="num">'+gmBillingEsc(String(it.quantity!=null?it.quantity:''))+'</td>'
+   +'<td class="num">'+gmBillingEsc(gmBillingFmtMoney(it.unitPrice))+'</td>'
+   +'<td class="num">'+gmBillingEsc(gmBillingFmtMoney(it.lineTotal))+'</td>'
+   +'</tr>';
+ });
+ if(!rows){
+  rows='<tr><td colspan="4" style="text-align:center;color:#666">Sem itens</td></tr>';
+ }
+ var recvExtra='';
+ if(recvEmail)recvExtra+='<div>'+gmBillingEsc(recvEmail)+'</div>';
+ if(recvPhone)recvExtra+='<div>'+gmBillingEsc(recvPhone)+'</div>';
+ var payerExtra='';
+ if(payerEmail)payerExtra+='<div>'+gmBillingEsc(payerEmail)+'</div>';
+ if(payerPhone)payerExtra+='<div>'+gmBillingEsc(payerPhone)+'</div>';
+ var notesBlock='';
+ if(notes){
+  notesBlock='<div class="notes"><div class="block-title">Notas</div><div>'+gmBillingEsc(notes)+'</div></div>';
+ }
+ return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice '+num+'</title><style>'
+  +'body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;padding:32px 40px;font-size:13px;line-height:1.45}'
+  +'.head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #333;padding-bottom:16px;margin-bottom:24px}'
+  +'.head h1{font-size:28px;font-weight:700;margin:0 0 4px 0;letter-spacing:1px}'
+  +'.meta{font-size:12px;color:#444}'
+  +'.meta strong{color:#1a1a1a}'
+  +'.cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}'
+  +'.block-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#666;margin-bottom:6px}'
+  +'.block-name{font-size:15px;font-weight:600;margin-bottom:4px}'
+  +'.block-addr{color:#444;margin-bottom:4px}'
+  +'table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}'
+  +'th,td{border:1px solid #ccc;padding:8px 10px}'
+  +'th{background:#f3f3f3;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.5px}'
+  +'.num{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}'
+  +'.total-row{display:flex;justify-content:flex-end;align-items:center;gap:16px;padding:14px 16px;background:#f7f7f7;border:1px solid #ccc;margin-bottom:20px}'
+  +'.total-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444}'
+  +'.total-val{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:20px;font-weight:700}'
+  +'.notes{padding:12px 14px;border:1px solid #ddd;background:#fafafa;margin-bottom:24px;font-size:12px;color:#333}'
+  +'.footer{margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#888;text-align:center}'
+  +'@media print{body{padding:16px}}'
+  +'</style></head><body>'
+  +'<div class="head"><div><h1>INVOICE</h1><div class="meta"><strong>Nº</strong> '+num+' &nbsp;·&nbsp; <strong>Status</strong> '+statusLbl+'</div></div>'
+  +'<div class="meta"><div><strong>Emissão</strong> '+issue+'</div><div><strong>Vencimento</strong> '+due+'</div></div></div>'
+  +'<div class="cols">'
+  +'<div><div class="block-title">De / Recebedor</div><div class="block-name">'+recvName+'</div><div class="block-addr">'+recvAddr+'</div>'+recvExtra+'</div>'
+  +'<div><div class="block-title">Para / Pagador</div><div class="block-name">'+payerName+'</div>'+payerExtra+'</div>'
+  +'</div>'
+  +'<table><thead><tr><th>Descrição</th><th class="num">Qtd</th><th class="num">Valor unit.</th><th class="num">Total</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  +'<div class="total-row"><span class="total-label">Total geral</span><span class="total-val">'+total+'</span></div>'
+  +notesBlock
+  +'<div class="footer">Documento gerado pelo GodManager · '+gmBillingEsc(new Date().toISOString().slice(0,10))+'</div>'
+  +'</body></html>';
+}
+async function gmBillingInvoicePdf(id){
+ if(!id)return;
+ try{
+  var res=await fetch('/api/billing/documents/'+encodeURIComponent(String(id)),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.document){
+   var errMsg=(data&&data.error)||'Erro ao carregar invoice';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   else alert(errMsg);
+   return;
+  }
+  var html=gmBillingInvoicePdfBuildHtml(data.document);
+  if(!html)return;
+  gmBillingInvoicePdfPrintHtml(html);
+ }catch(e){
+  console.warn('[gmBillingInvoicePdf]',e);
+  if(typeof showToast==='function')showToast('Erro ao gerar PDF.','error');
+ }
 }
 function gmBillingSwitchTab(tab){
  var recv=document.getElementById('billing-view-receive');
@@ -28710,11 +28831,14 @@ function gmBillingRenderInvoiceRowActions(doc){
  var st=String(doc.status||'').toUpperCase();
  var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
  var html='<button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenView===\'function\')gmBillingOpenView(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
+ html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingInvoicePdf===\'function\')gmBillingInvoicePdf(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">PDF</button>';
  if(st==='DRAFT'){
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenEditInvoice===\'function\')gmBillingOpenEditInvoice(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'SENT\')" style="'+btnSm+';margin-left:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Enviar</button>';
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
  }
  if(st==='SENT'){
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenEditInvoice===\'function\')gmBillingOpenEditInvoice(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
  }
  return html;
@@ -28844,6 +28968,7 @@ function gmBillingPopulatePayerSelect(){
  var ogC=document.getElementById('gm-bill-payer-contacts');
  if(ogV)ogV.innerHTML='';
  if(ogC)ogC.innerHTML='';
+ gmBillingRemovePayerSnapshotOption();
  var data=window.__gmBillingCadastros||{vendors:[],contacts:[]};
  data.vendors.forEach(function(v){
   if(!v||!v.id)return;
@@ -28867,6 +28992,54 @@ function gmBillingPopulatePayerSelect(){
   opt.textContent=String(c.name||c.id);
   if(ogC)ogC.appendChild(opt);
  });
+}
+function gmBillingRemovePayerSnapshotOption(){
+ var sel=document.getElementById('gm-bill-payer');
+ if(!sel)return;
+ var opts=sel.querySelectorAll('option[data-snapshot="1"]');
+ opts.forEach(function(o){o.remove();});
+}
+function gmBillingSelectPayerFromDoc(doc){
+ var sel=document.getElementById('gm-bill-payer');
+ if(!sel||!doc)return;
+ gmBillingRemovePayerSnapshotOption();
+ var contactId=doc.billingContactId?String(doc.billingContactId).trim():'';
+ var vendorId=doc.vendorId?String(doc.vendorId).trim():'';
+ if(contactId){
+  sel.value='contact:'+contactId;
+  if(sel.value)return;
+ }
+ if(vendorId){
+  sel.value='vendor:'+vendorId;
+  if(sel.value)return;
+ }
+ var name=String(doc.contactName||'').trim();
+ if(!name)return;
+ var email=String(doc.contactEmail||'').trim();
+ var opt=document.createElement('option');
+ opt.value='snapshot:'+encodeURIComponent(name);
+ opt.setAttribute('data-source','snapshot');
+ opt.setAttribute('data-id','');
+ opt.setAttribute('data-name',name);
+ opt.setAttribute('data-email',email);
+ opt.setAttribute('data-snapshot','1');
+ opt.textContent=email?name+' ('+email+')':name;
+ var anchor=sel.options.length>0?sel.options[1]:null;
+ sel.insertBefore(opt,anchor);
+ sel.value=opt.value;
+}
+function gmBillingSetInvoiceModalMode(mode,number){
+ var titleEl=document.getElementById('gm-bill-modal-title');
+ var btnDraft=document.getElementById('gm-bill-btn-save-draft');
+ var btnSent=document.getElementById('gm-bill-btn-save-sent');
+ var btnEdit=document.getElementById('gm-bill-btn-save-edit');
+ var numWrap=document.getElementById('gm-bill-number-wrap');
+ var isEdit=mode==='edit';
+ if(titleEl)titleEl.textContent=isEdit?'Editar Invoice '+String(number||''):'Novo Invoice';
+ if(btnDraft)btnDraft.style.display=isEdit?'none':'';
+ if(btnSent)btnSent.style.display=isEdit?'none':'';
+ if(btnEdit)btnEdit.style.display=isEdit?'':'none';
+ if(numWrap)numWrap.style.display=isEdit?'':'none';
 }
 function gmBillingAddContactOption(contact,select){
  if(!contact||!contact.id)return;
@@ -28936,9 +29109,10 @@ function gmBillingAddCategoryToAllSelects(catId,catName,selectInFocused){
   if(selectInFocused&&sel===document.activeElement)sel.value=String(catId);
  });
 }
-function gmBillingAddItemRow(){
+function gmBillingAddItemRow(item){
  var container=document.getElementById('gm-bill-items');
  if(!container)return;
+ var selectedCat=item&&item.categoryId?String(item.categoryId):'';
  var row=document.createElement('div');
  row.className='gm-bill-item-row';
  row.style.cssText='margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)';
@@ -28946,7 +29120,7 @@ function gmBillingAddItemRow(){
   '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:end">'
   +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">CATEGORIA</label>'
   +'<select class="gm-bill-cat-sel" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:\'Inter\',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">'
-  +gmBillingBuildCategoryOptionsHtml()+'</select></div>'
+  +gmBillingBuildCategoryOptionsHtml(selectedCat)+'</select></div>'
   +'<button type="button" onclick="if(typeof gmBillingPromptNewCategory===\'function\')gmBillingPromptNewCategory()" style="padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">+ nova</button>'
   +'</div>'
   +'<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:8px;align-items:end">'
@@ -28967,6 +29141,14 @@ function gmBillingAddItemRow(){
   +'<button type="button" onclick="if(typeof gmBillingRemoveItemRow===\'function\')gmBillingRemoveItemRow(this)" style="padding:8px 0;border:none;background:transparent;color:var(--red);font-size:16px;cursor:pointer;line-height:1" title="Remover item">&times;</button>'
   +'</div>';
  container.appendChild(row);
+ if(item){
+  var descEl=row.querySelector('.gm-bill-desc-input');
+  var qtyEl=row.querySelector('.gm-bill-qty-input');
+  var unitEl=row.querySelector('.gm-bill-unit-input');
+  if(descEl&&item.description!=null)descEl.value=String(item.description);
+  if(qtyEl&&item.quantity!=null)qtyEl.value=String(item.quantity);
+  if(unitEl&&item.unitPrice!=null)unitEl.value=String(item.unitPrice);
+ }
  gmBillingRecalc();
 }
 function gmBillingInsertDateIntoDesc(btn){
@@ -29020,6 +29202,9 @@ function gmBillingRecalc(){
  if(totalEl)totalEl.textContent=gmBillingFmtMoney(sum);
 }
 function gmBillingCloseNewInvoice(){
+ window.__gmBillingEditDocId=null;
+ gmBillingRemovePayerSnapshotOption();
+ gmBillingSetInvoiceModalMode('create');
  var m=document.getElementById('gm-billing-inv-modal');
  if(m)m.style.display='none';
 }
@@ -29099,6 +29284,8 @@ async function gmBillingSaveDescriptionFromRow(btn){
  }
 }
 async function gmBillingOpenNewInvoice(){
+ window.__gmBillingEditDocId=null;
+ gmBillingSetInvoiceModalMode('create');
  await gmBillingLoadCadastros(true);
  gmBillingPopulatePayerSelect();
  var wrap=document.getElementById('gm-bill-new-contact-wrap');
@@ -29107,6 +29294,8 @@ async function gmBillingOpenNewInvoice(){
  var ncEmail=document.getElementById('gm-bill-new-contact-email');
  if(ncName)ncName.value='';
  if(ncEmail)ncEmail.value='';
+ var numEl=document.getElementById('gm-bill-number');
+ if(numEl)numEl.value='';
  var payer=document.getElementById('gm-bill-payer');
  if(payer)payer.value='';
  var rName=document.getElementById('gm-bill-receiver-name');
@@ -29131,7 +29320,65 @@ async function gmBillingOpenNewInvoice(){
  var m=document.getElementById('gm-billing-inv-modal');
  if(m)m.style.display='flex';
 }
+async function gmBillingOpenEditInvoice(id){
+ if(!id)return;
+ try{
+  var res=await fetch('/api/billing/documents/'+encodeURIComponent(id),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.document){
+   if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao carregar invoice','error');
+   else alert((data&&data.error)||'Erro ao carregar invoice');
+   return;
+  }
+  var doc=data.document;
+  await gmBillingLoadCadastros(true);
+  gmBillingPopulatePayerSelect();
+  gmBillingPopulateDescDatalist();
+  window.__gmBillingEditDocId=String(id);
+  gmBillingSetInvoiceModalMode('edit',doc.number||'');
+  var wrap=document.getElementById('gm-bill-new-contact-wrap');
+  if(wrap)wrap.style.display='none';
+  var ncName=document.getElementById('gm-bill-new-contact-name');
+  var ncEmail=document.getElementById('gm-bill-new-contact-email');
+  if(ncName)ncName.value='';
+  if(ncEmail)ncEmail.value='';
+  gmBillingSelectPayerFromDoc(doc);
+  var numEl=document.getElementById('gm-bill-number');
+  if(numEl)numEl.value=String(doc.number||'');
+  var rName=document.getElementById('gm-bill-receiver-name');
+  var rAddr=document.getElementById('gm-bill-receiver-address');
+  var rEmail=document.getElementById('gm-bill-receiver-email');
+  var rPhone=document.getElementById('gm-bill-receiver-phone');
+  if(rName)rName.value=String(doc.receiverName||'');
+  if(rAddr)rAddr.value=String(doc.receiverAddress||'');
+  if(rEmail)rEmail.value=String(doc.receiverEmail||'');
+  if(rPhone)rPhone.value=String(doc.receiverPhone||'');
+  var notes=document.getElementById('gm-bill-notes');
+  if(notes)notes.value=String(doc.notes||'');
+  var due=document.getElementById('gm-bill-due');
+  if(due)due.value=gmBillingIsoToDateInput(doc.dueDate);
+  var issue=document.getElementById('gm-bill-issue');
+  if(issue)issue.value=gmBillingIsoToDateInput(doc.issueDate)||gmBillingTodayIso();
+  var itemsEl=document.getElementById('gm-bill-items');
+  if(itemsEl){
+   itemsEl.innerHTML='';
+   var docItems=Array.isArray(doc.items)?doc.items:[];
+   if(docItems.length){
+    docItems.forEach(function(it){gmBillingAddItemRow(it);});
+   }else{
+    gmBillingAddItemRow();
+   }
+  }
+  gmBillingRecalc();
+  var m=document.getElementById('gm-billing-inv-modal');
+  if(m)m.style.display='flex';
+ }catch(e){
+  console.warn('[gmBillingOpenEditInvoice]',e);
+  if(typeof showToast==='function')showToast('Erro ao carregar invoice.','error');
+ }
+}
 async function gmBillingSaveInvoice(status){
+ var editId=window.__gmBillingEditDocId;
  var payer=gmBillingGetPayerSelection();
  if(!payer||!payer.name){
   if(typeof showToast==='function')showToast('Selecione um pagador','error');
@@ -29168,13 +29415,20 @@ async function gmBillingSaveInvoice(status){
   else alert('Informe o nome e o endereço do recebedor');
   return;
  }
+ if(editId){
+  var numEl=document.getElementById('gm-bill-number');
+  var invoiceNumber=String((numEl&&numEl.value)||'').trim();
+  if(!invoiceNumber){
+   if(typeof showToast==='function')showToast('Informe o número da invoice','error');
+   else alert('Informe o número da invoice');
+   return;
+  }
+ }
  var issueEl=document.getElementById('gm-bill-issue');
  var dueEl=document.getElementById('gm-bill-due');
  var notesEl=document.getElementById('gm-bill-notes');
  var payload={
-  docType:'INVOICE',
   contactName:payer.name,
-  status:String(status||'DRAFT'),
   items:itemPayload
  };
  if(payer.email)payload.contactEmail=payer.email;
@@ -29190,8 +29444,26 @@ async function gmBillingSaveInvoice(status){
  if(dueEl&&dueEl.value)payload.dueDate=dueEl.value+'T00:00:00.000Z';
  if(notesEl&&String(notesEl.value||'').trim())payload.notes=String(notesEl.value).trim();
  try{
-  var res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  var data=await res.json().catch(function(){return{};});
+  var res,data;
+  if(editId){
+   payload.number=invoiceNumber;
+   res=await fetch('/api/billing/documents/'+encodeURIComponent(editId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   data=await res.json().catch(function(){return{};});
+   if(!res.ok||!data.ok){
+    var errPatch=(data&&data.error)||'Erro ao salvar invoice';
+    if(typeof showToast==='function')showToast(errPatch,'error');
+    else alert(errPatch);
+    return;
+   }
+   gmBillingCloseNewInvoice();
+   if(typeof showToast==='function')showToast('Invoice atualizada.','success');
+   if(typeof gmBillingRenderInvoices==='function')await gmBillingRenderInvoices();
+   return;
+  }
+  payload.docType='INVOICE';
+  payload.status=String(status||'DRAFT');
+  res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  data=await res.json().catch(function(){return{};});
   if(!res.ok||!data.ok){
    var errMsg=(data&&data.error)||'Erro ao salvar invoice';
    if(typeof showToast==='function')showToast(errMsg,'error');
@@ -29207,6 +29479,7 @@ async function gmBillingSaveInvoice(status){
  }
 }
 window.gmBillingOpenNewInvoice=gmBillingOpenNewInvoice;
+window.gmBillingOpenEditInvoice=gmBillingOpenEditInvoice;
 window.gmBillingCloseNewInvoice=gmBillingCloseNewInvoice;
 window.gmBillingAddItemRow=gmBillingAddItemRow;
 window.gmBillingRecalc=gmBillingRecalc;
@@ -29243,6 +29516,10 @@ function gmBillingRenderViewActions(status){
  if(st==='SENT'){
   html+='<button type="button" onclick="if(typeof gmBillingViewPatchStatus===\'function\')gmBillingViewPatchStatus(\'PAID\')" style="padding:9px 18px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Marcar Paga</button>';
   html+='<button type="button" onclick="if(typeof gmBillingViewPatchStatus===\'function\')gmBillingViewPatchStatus(\'CANCELLED\')" style="padding:9px 18px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Cancelar invoice</button>';
+ }
+ var viewId=window.__gmBillingViewDocId?String(window.__gmBillingViewDocId):'';
+ if(viewId){
+  html+='<button type="button" onclick="if(typeof gmBillingInvoicePdf===\'function\')gmBillingInvoicePdf(\''+gmBillingEsc(viewId)+'\')" style="padding:9px 18px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">PDF</button>';
  }
  html+='<button type="button" onclick="if(typeof gmBillingCloseView===\'function\')gmBillingCloseView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
  actions.innerHTML=html;
@@ -29380,6 +29657,7 @@ window.gmBillingCloseView=gmBillingCloseView;
 window.gmBillingSetStatus=gmBillingSetStatus;
 window.gmBillingViewPatchStatus=gmBillingViewPatchStatus;
 window.gmBillingViewDelete=gmBillingViewDelete;
+window.gmBillingInvoicePdf=gmBillingInvoicePdf;
 /* ========== /BILLING ========== */
 
 // Forcar limpeza do cache antigo de Jobs ao carregar a pagina
