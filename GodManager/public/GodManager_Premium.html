@@ -4167,8 +4167,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <option value="">Todas as ocupações</option>
  </select>
  <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
- <button type="button" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
- <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
+ <button type="button" class="gm-forms-share-btn" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
+ <button type="button" class="gm-forms-share-btn" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
  <button type="button" onclick="ltpExportCsv()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  <button type="button" onclick="window.print()" data-i18n="export_pdf" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Exportar PDF</button>
@@ -4253,8 +4253,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <option value="">Todas as ocupações</option>
  </select>
  <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
- <button type="button" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
- <button type="button" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
+ <button type="button" class="gm-forms-share-btn" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
+ <button type="button" class="gm-forms-share-btn" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
 <button onclick="ltExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  </div>
@@ -8024,6 +8024,7 @@ function applyPermissions(level){
   if(nG)nG.style.display='';
   if(n9)n9.style.display='';
  }
+ try{if(typeof gmFormsRefreshShareButtons==='function')gmFormsRefreshShareButtons();}catch(_eFrBtn){}
 }
 async function registerClient(e){
  if(e&&e.preventDefault)e.preventDefault();
@@ -21931,6 +21932,19 @@ window._gmShareState={token:null,url:null,formType:null,mode:null,recipientName:
 window._gmFrCurrentId=null;
 window._gmFrLoadTimer=null;
 function gmFormsApiBase(){return(String(typeof GM_BACKEND_RAILWAY_APP!=='undefined'?GM_BACKEND_RAILWAY_APP:'').replace(/\/$/,''))+'/api/appfolio';}
+function gmFormsDenyToast(){if(typeof showToast==='function')showToast('Sem acesso a esta seção','error');}
+function gmFormsWithGate(cb){
+ gmHomeResolveUserForAppfolio().then(function(u){
+  if(!gmHomeMayApplyAppfolioOverride(u)){gmFormsDenyToast();return;}
+  if(typeof cb==='function')cb();
+ });
+}
+window.gmFormsRefreshShareButtons=function(){
+ gmHomeResolveUserForAppfolio().then(function(u){
+  var show=gmHomeMayApplyAppfolioOverride(u);
+  document.querySelectorAll('.gm-forms-share-btn').forEach(function(el){el.style.display=show?'':'none';});
+ });
+};
 function gmFormPublicPageBase(){return'https://www.godmanager.us';}
 function gmFillTpl(str,o){
  o=o||{};
@@ -22072,6 +22086,7 @@ window.gmShareFormGenerateLink=function(){
  var wa=document.getElementById('gm-share-rec-wa');
  var name=(nm&&nm.value||'').trim();
  if(!name){if(typeof showToast==='function')showToast(gmFrT('error'),'error');return;}
+ gmFormsWithGate(function(){
  var ft=(window._gmShareState&&window._gmShareState.formType)||'owner';
  var body={
   type:ft,
@@ -22103,6 +22118,7 @@ window.gmShareFormGenerateLink=function(){
   gmShareFormApplyStepVisibility();
   gmShareFormPaintQrDeferred();
  }).catch(function(){if(typeof showToast==='function')showToast(gmFrT('forms_err_invite'),'error');});
+ });
 };
 window.gmShareFormClose=function(){
  clearTimeout(window._gmShareCopyT);
@@ -22167,6 +22183,7 @@ window.gmOpenShareFormInvite=function(formType,meta){
  meta=meta||{};
  var rn=String(meta.recipient_name||'').trim();
  if(!rn)rn='Owner';
+ gmFormsWithGate(function(){
  var body={
   type:formType,
   recipient_name:rn,
@@ -22195,6 +22212,7 @@ window.gmOpenShareFormInvite=function(formType,meta){
   else if(rl)rl.style.display='none';
   gmShareFormShowUi();
  }).catch(function(){if(typeof showToast==='function')showToast(gmFrT('forms_err_invite'),'error');});
+ });
 };
 window.gmOpenShareFormFromStatement=function(formType,recordId){
  var rows=typeof ltGetRecords==='function'?ltGetRecords():[];
@@ -22220,6 +22238,7 @@ function gmFrStatusBadge(st){
 }
 window.gmFrLoadDebounced=function(){clearTimeout(window._gmFrLoadTimer);window._gmFrLoadTimer=setTimeout(function(){if(typeof gmFrLoad==='function')gmFrLoad();},300);};
 window.gmFrLoad=function(){
+ gmFormsWithGate(function(){
  var tb=document.getElementById('gm-fr-tbody');
  var em=document.getElementById('gm-fr-empty');
  var qs=new URLSearchParams();
@@ -22254,8 +22273,10 @@ window.gmFrLoad=function(){
    tb.appendChild(tr);
   });
  }).catch(function(){if(tb)tb.innerHTML='';if(typeof showToast==='function')showToast(gmFrT('forms_err_load'),'error');if(em)em.style.display='block';});
+ });
 };
 window.gmFrView=function(id){
+ gmFormsWithGate(function(){
  window._gmFrCurrentId=id;
  fetch(gmFormsApiBase()+'/forms/'+id,{method:'GET',mode:'cors',credentials:'omit'})
  .then(function(r){return r.json();})
@@ -22266,6 +22287,7 @@ window.gmFrView=function(id){
   if(m){m.style.display='flex';m.style.flexDirection='column';document.body.style.overflow='hidden';}
   if(typeof applyTranslations==='function')applyTranslations();
  }).catch(function(){if(typeof showToast==='function')showToast(gmFrT('forms_err_load'),'error');});
+ });
 };
 window.gmFrViewClose=function(){
  var m=document.getElementById('gm-fr-view-modal');
@@ -22275,19 +22297,23 @@ window.gmFrViewClose=function(){
 };
 window.gmFrExportPdf=function(){
  var id=window._gmFrCurrentId;if(!id)return;
- window.open(gmFormsApiBase()+'/forms/'+id+'/pdf','_blank');
+ gmFormsWithGate(function(){window.open(gmFormsApiBase()+'/forms/'+id+'/pdf','_blank');});
 };
 window.gmFrExportCsv=function(){
  var id=window._gmFrCurrentId;if(!id)return;
- window.open(gmFormsApiBase()+'/forms/'+id+'/csv','_blank');
+ gmFormsWithGate(function(){window.open(gmFormsApiBase()+'/forms/'+id+'/csv','_blank');});
 };
 window.gmFrApprove=function(){
  var id=window._gmFrCurrentId;if(!id)return;
+ gmFormsWithGate(function(){
  fetch(gmFormsApiBase()+'/forms/'+id+'/approve',{method:'POST',mode:'cors',credentials:'omit'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){if(typeof showToast==='function')showToast('OK','success');gmFrViewClose();gmFrLoad();}).catch(function(){if(typeof showToast==='function')showToast(gmFrT('error'),'error');});
+ });
 };
 window.gmFrReject=function(){
  var id=window._gmFrCurrentId;if(!id)return;
+ gmFormsWithGate(function(){
  fetch(gmFormsApiBase()+'/forms/'+id+'/reject',{method:'POST',mode:'cors',credentials:'omit'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){if(typeof showToast==='function')showToast('OK','success');gmFrViewClose();gmFrLoad();}).catch(function(){if(typeof showToast==='function')showToast(gmFrT('error'),'error');});
+ });
 };
 })();
 
