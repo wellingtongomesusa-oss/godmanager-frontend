@@ -54,6 +54,10 @@ function documentToJson(doc: DocWithItems) {
     contactName: doc.contactName,
     contactEmail: doc.contactEmail,
     contactPhone: doc.contactPhone,
+    receiverName: doc.receiverName,
+    receiverAddress: doc.receiverAddress,
+    receiverEmail: doc.receiverEmail,
+    receiverPhone: doc.receiverPhone,
     billingContactId: doc.billingContactId,
     vendorId: doc.vendorId,
     propertyId: doc.propertyId,
@@ -204,6 +208,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (body.contactPhone != null) {
       data.contactPhone = String(body.contactPhone).trim() || null;
+    }
+    if (body.receiverName != null) {
+      data.receiverName = String(body.receiverName).trim() || null;
+    }
+    if (body.receiverAddress != null) {
+      data.receiverAddress = String(body.receiverAddress).trim() || null;
+    }
+    if (body.receiverEmail != null) {
+      data.receiverEmail = String(body.receiverEmail).trim() || null;
+    }
+    if (body.receiverPhone != null) {
+      data.receiverPhone = String(body.receiverPhone).trim() || null;
     }
     if (body.billingContactId != null) {
       data.billingContactId = String(body.billingContactId).trim() || null;

@@ -67,6 +67,10 @@ function documentToJson(doc: DocWithItems) {
     contactName: doc.contactName,
     contactEmail: doc.contactEmail,
     contactPhone: doc.contactPhone,
+    receiverName: doc.receiverName,
+    receiverAddress: doc.receiverAddress,
+    receiverEmail: doc.receiverEmail,
+    receiverPhone: doc.receiverPhone,
     billingContactId: doc.billingContactId,
     vendorId: doc.vendorId,
     propertyId: doc.propertyId,
@@ -265,6 +269,14 @@ export async function POST(req: Request) {
             body.contactEmail != null ? String(body.contactEmail).trim() || null : null,
           contactPhone:
             body.contactPhone != null ? String(body.contactPhone).trim() || null : null,
+          receiverName:
+            body.receiverName != null ? String(body.receiverName).trim() || null : null,
+          receiverAddress:
+            body.receiverAddress != null ? String(body.receiverAddress).trim() || null : null,
+          receiverEmail:
+            body.receiverEmail != null ? String(body.receiverEmail).trim() || null : null,
+          receiverPhone:
+            body.receiverPhone != null ? String(body.receiverPhone).trim() || null : null,
           billingContactId:
             body.billingContactId != null
               ? String(body.billingContactId).trim() || null
