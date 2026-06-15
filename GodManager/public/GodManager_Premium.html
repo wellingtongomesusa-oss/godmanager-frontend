@@ -5756,6 +5756,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <script>
 var GM_BACKEND_RAILWAY_APP='https://godmanager-production.up.railway.app';
+var GM_APPFOLIO_OWNER_CLIENTID='cmoqec9bw0000057uu4p5h15a'; // dono dos dados AppFolio (Manager Prop); ver também GM_MASTER_VACATION_HOMES_MP_CLIENT_ID / MP_LEGACY_CLIENT_ID
 
 // Dropdown de idioma na topbar
 function gmLangToggle(){
@@ -6793,6 +6794,33 @@ function gmHomeShouldApplyEmptyDashboard(){
  if(arr.length)return false;
  return !!window.__gmPropertiesBootstrapError;
 }
+function gmHomeMayApplyAppfolioOverride(userCtx){
+ if(!userCtx)return false;
+ var role=String(userCtx.role||'').toLowerCase();
+ var cid=String(userCtx.clientId||'').trim();
+ if(role==='super_admin')return true;
+ if(cid&&cid===GM_APPFOLIO_OWNER_CLIENTID)return true;
+ return false;
+}
+function gmHomeResolveUserForAppfolio(){
+ return new Promise(function(resolve){
+  try{
+   var u=window.__gmCurrentUser;
+   if(u&&typeof u==='object'){
+    resolve({clientId:u.clientId||null,role:u.role||''});
+    return;
+   }
+   fetch('/api/auth/me',{credentials:'include',cache:'no-store'})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+     if(data&&data.ok&&data.user){
+      resolve({clientId:data.user.clientId||null,role:data.user.role||''});
+     }else resolve(null);
+    })
+    .catch(function(){resolve(null);});
+  }catch(e){resolve(null);}
+ });
+}
 async function gmHomeInit(){
  await gmHomeEnsurePropertiesCache();
  if(typeof loadHomeDashboardFromApi==='function')await loadHomeDashboardFromApi();
@@ -6819,51 +6847,54 @@ async function loadHomeDashboardFromApi(){
  try{if(typeof gmHomeRenderLucroMpTable==='function')gmHomeRenderLucroMpTable();}catch(eL){}
  try{if(typeof gmHomeRefreshFinancialCardDeltas==='function')gmHomeRefreshFinancialCardDeltas();}catch(eD){}
  try{if(typeof gmHomeFetchBankAccounts==='function')gmHomeFetchBankAccounts();}catch(eBk){}
- // 2. Depois, tenta API remota. So sobrescreve se vier com dados REAIS (qty_properties > 0)
- fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
- .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
- .then(function(o){
-  // Condicao estrita: so aceita API se retornar dados significativos
-  var hasRealData=o&&o.ok&&o.j&&typeof o.j==='object'&&
-                  (Number(o.j.qty_properties)>0||Number(o.j.total_properties)>0);
-  if(!hasRealData){
-   // API AppFolio sem dados — nao esvaziar cards se ja temos Postgres em cache
-   if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
-   return;
-  }
-  // API tem dados reais, sobrescreve (Tenant Place permanece local — sem campo na API)
-  try{
-   var ymApi=new Date().toISOString().slice(0,7);
-   var tpApi=gmHomeComputeTenantPlacePortfolio(ymApi);
-   o.j.total_tenant_place_sum=tpApi.sum;
-   o.j.qty_tenant_place_movein=tpApi.count;
-  }catch(eTp){}
-  try{
-   var _pkAf=gmPropertiesPortfolioKpiCounts(gmPropertiesFilteredUiRecords());
-   if(_pkAf.total>0){
-    o.j.qty_properties=_pkAf.total;
-    o.j.total_properties=_pkAf.total;
-    o.j.qty_leases_active=_pkAf.alugadas;
-    o.j.occupied_units=_pkAf.alugadas;
-    o.j.qty_vacant=_pkAf.vagas;
-    o.j.vacant_units=_pkAf.vagas;
+ // 2. Depois, tenta API remota AppFolio — só super_admin ou Manager Prop (fail-safe se user não resolvido)
+ gmHomeResolveUserForAppfolio().then(function(userCtx){
+  if(!gmHomeMayApplyAppfolioOverride(userCtx))return;
+  fetch(GM_BACKEND_RAILWAY_APP+'/api/appfolio/dashboard',{method:'GET',mode:'cors',credentials:'omit'})
+  .then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+  .then(function(o){
+   // Condicao estrita: so aceita API se retornar dados significativos
+   var hasRealData=o&&o.ok&&o.j&&typeof o.j==='object'&&
+                    (Number(o.j.qty_properties)>0||Number(o.j.total_properties)>0);
+   if(!hasRealData){
+    // API AppFolio sem dados — nao esvaziar cards se ja temos Postgres em cache
+    if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
+    return;
    }
-  }catch(_pkAf2){}
-  applyHomeDashboardFromApi(o.j);
-  renderCards();
-  try{if(typeof gmHomeRefreshFinancialCardDeltas==='function')gmHomeRefreshFinancialCardDeltas();}catch(eD2){}
-  try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
-  try{
-   var now=new Date().toISOString();
-   var ts=getCardTimestamps();
-   CARDS.forEach(function(c){ts[c.id]=now;});
-   setCardTimestamps(ts);
-  }catch(e){}
- })
- .catch(function(){
-  // Falha de rede — nao zerar KPIs se properties API ja populou cache
-  if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
-  try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
+   // API tem dados reais, sobrescreve (Tenant Place permanece local — sem campo na API)
+   try{
+    var ymApi=new Date().toISOString().slice(0,7);
+    var tpApi=gmHomeComputeTenantPlacePortfolio(ymApi);
+    o.j.total_tenant_place_sum=tpApi.sum;
+    o.j.qty_tenant_place_movein=tpApi.count;
+   }catch(eTp){}
+   try{
+    var _pkAf=gmPropertiesPortfolioKpiCounts(gmPropertiesFilteredUiRecords());
+    if(_pkAf.total>0){
+     o.j.qty_properties=_pkAf.total;
+     o.j.total_properties=_pkAf.total;
+     o.j.qty_leases_active=_pkAf.alugadas;
+     o.j.occupied_units=_pkAf.alugadas;
+     o.j.qty_vacant=_pkAf.vagas;
+     o.j.vacant_units=_pkAf.vagas;
+    }
+   }catch(_pkAf2){}
+   applyHomeDashboardFromApi(o.j);
+   renderCards();
+   try{if(typeof gmHomeRefreshFinancialCardDeltas==='function')gmHomeRefreshFinancialCardDeltas();}catch(eD2){}
+   try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
+   try{
+    var now=new Date().toISOString();
+    var ts=getCardTimestamps();
+    CARDS.forEach(function(c){ts[c.id]=now;});
+    setCardTimestamps(ts);
+   }catch(e){}
+  })
+  .catch(function(){
+   // Falha de rede — nao zerar KPIs se properties API ja populou cache
+   if(!local&&gmHomeShouldApplyEmptyDashboard()){applyHomeDashboardFromApi(null);renderCards();}
+   try{ if(typeof window.gmHomeApplyMaintenanceTicketsFromJobs==='function') window.gmHomeApplyMaintenanceTicketsFromJobs(); }catch(e2){}
+  });
  });
  try{ if(typeof gmHomeFetchPmMarkupMonth==='function') gmHomeFetchPmMarkupMonth(); }catch(e){}
  try{ if(typeof gmHomeFetchExpPmTotal==='function') gmHomeFetchExpPmTotal(); }catch(e){}
