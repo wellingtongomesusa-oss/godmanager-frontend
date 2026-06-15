@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import { prisma } from '@/lib/db';
-import { StatementPDF } from '@/lib/pdf/StatementPDF';
+import { StatementPDF, validHttpLogoUrl } from '@/lib/pdf/StatementPDF';
 
 export const dynamic = 'force-dynamic';
 
@@ -121,9 +121,11 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const statementNumber = `MP-${period}-${data.property.code}`;
+  const logoUrl = validHttpLogoUrl(data.property.clientLogoUrl);
 
   const pdfProps = {
     lang,
+    logoUrl,
     property: {
       code: data.property.code,
       address: data.property.address,

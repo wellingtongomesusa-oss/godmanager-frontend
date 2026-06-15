@@ -4,11 +4,19 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
 } from '@react-pdf/renderer';
 
+export function validHttpLogoUrl(raw: string | null | undefined): string | null {
+  const s = typeof raw === 'string' ? raw.trim() : '';
+  if (!s || !/^https?:\/\//i.test(s)) return null;
+  return s;
+}
+
 export interface StatementPDFProps {
   lang: 'pt' | 'en';
+  logoUrl?: string | null;
   property: {
     code: string;
     address: string;
@@ -288,6 +296,7 @@ const fmtUSDNeg = (raw: string) => {
 
 export function StatementPDF({
   lang,
+  logoUrl,
   property,
   period,
   statementNumber,
@@ -297,15 +306,24 @@ export function StatementPDF({
   const t = I18N[lang];
   const incomes = payout.lineItems.filter((l) => l.lineType === 'income');
   const expenses = payout.lineItems.filter((l) => l.lineType === 'expense');
+  const safeLogoUrl = validHttpLogoUrl(logoUrl);
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.brandBlock}>
-            <Text style={styles.brandLabel}>
-              {(property.clientName ?? 'MANAGER PROP').toUpperCase()}
-            </Text>
+            {safeLogoUrl ? (
+              <Image
+                src={safeLogoUrl}
+                alt=""
+                style={{ height: 40, maxWidth: 170, objectFit: 'contain', marginBottom: 6 }}
+              />
+            ) : (
+              <Text style={styles.brandLabel}>
+                {(property.clientName ?? 'MANAGER PROP').toUpperCase()}
+              </Text>
+            )}
             <Text style={styles.brandTitle}>{t.statementTitle}</Text>
           </View>
           <View style={styles.metaBlock}>

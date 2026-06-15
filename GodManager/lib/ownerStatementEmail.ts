@@ -8,7 +8,7 @@ import {
   type ClientScopeUser,
 } from '@/lib/clientScope';
 import { sendEmail } from '@/lib/email';
-import { StatementPDF } from '@/lib/pdf/StatementPDF';
+import { StatementPDF, validHttpLogoUrl } from '@/lib/pdf/StatementPDF';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 
 const MONTHS_EN = [
@@ -94,6 +94,7 @@ function buildHtmlStatement(params: {
   propertyAddress: string;
   ownerName: string | null;
   periodLabel: string;
+  logoUrl?: string | null;
   lineItems: Array<{
     lineType: string;
     description: string;
@@ -138,8 +139,14 @@ function buildHtmlStatement(params: {
     </tr>`;
   });
 
+  const safeLogoUrl = validHttpLogoUrl(params.logoUrl);
+  const logoHtml = safeLogoUrl
+    ? `<img src="${escHtml(safeLogoUrl)}" alt="" style="max-height:48px;margin-bottom:8px;display:block">`
+    : '';
+
   return `
   <div style="font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#111827;line-height:1.45">
+    ${logoHtml}
     <p style="margin:0 0 12px"><strong>${escHtml(params.propertyCode)}</strong> — ${escHtml(params.propertyAddress)}</p>
     <p style="margin:0 0 6px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Owner statement</p>
     <p style="margin:0 0 18px;font-size:15px">${escHtml(params.periodLabel)}</p>
@@ -189,7 +196,7 @@ export async function sendOwnerStatementForProperty(params: {
       ownerEmail: true,
       clientId: true,
       owner: { select: { email: true } },
-      client: { select: { companyName: true } },
+      client: { select: { companyName: true, logoUrl: true } },
     },
   });
 
@@ -259,9 +266,11 @@ export async function sendOwnerStatementForProperty(params: {
   const statementNumber = `MP-${yearMonthNorm}-${property.code}`;
   const now = new Date();
   const lang = 'en' as const;
+  const logoUrl = validHttpLogoUrl(property.client?.logoUrl);
 
   const pdfProps = {
     lang,
+    logoUrl,
     property: {
       code: property.code,
       address: property.address,
@@ -298,6 +307,7 @@ export async function sendOwnerStatementForProperty(params: {
     propertyAddress: property.address,
     ownerName: property.ownerName,
     periodLabel: periodLabel(yearMonthNorm),
+    logoUrl,
     lineItems,
     totalIncome: fmtUSD(parseFloat(ti)),
     totalExpenses: fmtUSD(parseFloat(te)),
