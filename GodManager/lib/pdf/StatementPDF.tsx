@@ -316,7 +316,6 @@ export function StatementPDF({
             {safeLogoUrl ? (
               <Image
                 src={safeLogoUrl}
-                alt=""
                 style={{ height: 40, maxWidth: 170, objectFit: 'contain', marginBottom: 6 }}
               />
             ) : (
