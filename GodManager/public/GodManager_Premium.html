@@ -4381,6 +4381,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
  <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
+ <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
  </div>
  <div id="osd-closing-summary" style="display:none;border-bottom:1px solid var(--border)"></div>
  <div style="overflow-x:auto">
@@ -10792,6 +10793,58 @@ window.osdSendOwnerStatement=async function(){
   alert('Enviado para '+String(j.sentTo||'')+'.');
   await window.osdLoadStatement();
  }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
+
+window.osdParsePdfFilename=function(header){
+ if(!header)return null;
+ var m=/filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(header);
+ if(!m)return null;
+ return String(m[1]).replace(/^"|"$/g,'').trim();
+};
+
+window.osdCurrentLang=function(){
+ try{
+  var l=localStorage.getItem('gm_lang')||(window.__gmLangBootstrap&&window.__gmLangBootstrap.internal)||'en';
+  var s=String(l).toLowerCase();
+  return s==='en'?'en':'pt';
+ }catch(e){return 'en';}
+};
+
+window.osdDownloadPdf=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){
+  if(typeof showToast==='function')showToast('Carregue um statement primeiro.','error');
+  else alert('Carregue um statement primeiro.');
+  return;
+ }
+ var ym=cd.yearMonth||(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var lang=window.osdCurrentLang();
+ var btn=document.getElementById('osd-download-pdf');
+ var prevLabel=btn?btn.textContent:'Baixar PDF';
+ if(btn){btn.disabled=true;btn.textContent='Baixando…';}
+ try{
+  var url='/api/manager-pro/owner-statement/pdf?propertyId='+encodeURIComponent(cd.propertyId)+'&period='+encodeURIComponent(ym)+'&lang='+encodeURIComponent(lang);
+  var res=await fetch(url,{method:'GET',credentials:'same-origin'});
+  if(!res.ok){
+   var j=await res.json().catch(function(){return{};});
+   throw new Error((j&&j.error)||('HTTP '+res.status));
+  }
+  var blob=await res.blob();
+  var filename=window.osdParsePdfFilename(res.headers.get('Content-Disposition'));
+  if(!filename)filename='statement-'+ym+'-'+lang+'.pdf';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);if(a.parentNode)a.parentNode.removeChild(a);},250);
+ }catch(e){
+  if(typeof showToast==='function')showToast('Erro ao baixar PDF: '+(e&&e.message||''),'error');
+  else alert('Erro: '+(e&&e.message||''));
+ }finally{
+  if(btn){btn.disabled=false;btn.textContent=prevLabel;}
+ }
 };
 
 window.osLoadFromApi=async function(){
