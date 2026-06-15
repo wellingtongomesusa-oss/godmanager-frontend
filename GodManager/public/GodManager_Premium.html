@@ -3859,6 +3859,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <button type="button" onclick="if(typeof gmBillingSaveNewContact==='function')gmBillingSaveNewContact()" style="padding:6px 14px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Salvar contato</button>
    </div>
   </div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Recebedor</div>
+  <div style="margin-bottom:14px">
+   <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOME DO RECEBEDOR *</label><input id="gm-bill-receiver-name" type="text" placeholder="Nome do recebedor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO DO RECEBEDOR *</label><input id="gm-bill-receiver-address" type="text" placeholder="Endereço completo do recebedor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">E-MAIL</label><input id="gm-bill-receiver-email" type="email" placeholder="opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TELEFONE</label><input id="gm-bill-receiver-phone" type="text" placeholder="opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   </div>
+  </div>
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Datas</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">EMISSÃO</label><input id="gm-bill-issue" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
@@ -28721,6 +28730,20 @@ async function gmBillingRenderInvoices(){
    return;
   }
   var docs=Array.isArray(data.documents)?data.documents:[];
+  window.gmBillingLastReceiver=null;
+  for(var li=0;li<docs.length;li++){
+   var ld=docs[li];
+   var lrName=String(ld.receiverName||'').trim();
+   if(lrName){
+    window.gmBillingLastReceiver={
+     name:lrName,
+     address:String(ld.receiverAddress||'').trim(),
+     email:String(ld.receiverEmail||'').trim(),
+     phone:String(ld.receiverPhone||'').trim()
+    };
+    break;
+   }
+  }
   if(counter)counter.textContent=docs.length+' registro(s)';
   if(!docs.length){
    tbody.innerHTML='<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum invoice ainda.</td></tr>';
@@ -29070,6 +29093,15 @@ async function gmBillingOpenNewInvoice(){
  if(ncEmail)ncEmail.value='';
  var payer=document.getElementById('gm-bill-payer');
  if(payer)payer.value='';
+ var rName=document.getElementById('gm-bill-receiver-name');
+ var rAddr=document.getElementById('gm-bill-receiver-address');
+ var rEmail=document.getElementById('gm-bill-receiver-email');
+ var rPhone=document.getElementById('gm-bill-receiver-phone');
+ var lr=window.gmBillingLastReceiver;
+ if(rName)rName.value=lr&&lr.name?lr.name:'';
+ if(rAddr)rAddr.value=lr&&lr.address?lr.address:'';
+ if(rEmail)rEmail.value=lr&&lr.email?lr.email:'';
+ if(rPhone)rPhone.value=lr&&lr.phone?lr.phone:'';
  var notes=document.getElementById('gm-bill-notes');
  if(notes)notes.value='';
  var due=document.getElementById('gm-bill-due');
@@ -29109,6 +29141,17 @@ async function gmBillingSaveInvoice(status){
   else alert('Adicione ao menos um item com descrição');
   return;
  }
+ var rNameEl=document.getElementById('gm-bill-receiver-name');
+ var rAddrEl=document.getElementById('gm-bill-receiver-address');
+ var rEmailEl=document.getElementById('gm-bill-receiver-email');
+ var rPhoneEl=document.getElementById('gm-bill-receiver-phone');
+ var receiverName=String((rNameEl&&rNameEl.value)||'').trim();
+ var receiverAddress=String((rAddrEl&&rAddrEl.value)||'').trim();
+ if(!receiverName||!receiverAddress){
+  if(typeof showToast==='function')showToast('Informe o nome e o endereço do recebedor','error');
+  else alert('Informe o nome e o endereço do recebedor');
+  return;
+ }
  var issueEl=document.getElementById('gm-bill-issue');
  var dueEl=document.getElementById('gm-bill-due');
  var notesEl=document.getElementById('gm-bill-notes');
@@ -29121,6 +29164,12 @@ async function gmBillingSaveInvoice(status){
  if(payer.email)payload.contactEmail=payer.email;
  if(payer.source==='contact'&&payer.id)payload.billingContactId=payer.id;
  if(payer.source==='vendor'&&payer.id)payload.vendorId=payer.id;
+ payload.receiverName=receiverName;
+ payload.receiverAddress=receiverAddress;
+ var receiverEmail=String((rEmailEl&&rEmailEl.value)||'').trim();
+ var receiverPhone=String((rPhoneEl&&rPhoneEl.value)||'').trim();
+ if(receiverEmail)payload.receiverEmail=receiverEmail;
+ if(receiverPhone)payload.receiverPhone=receiverPhone;
  if(issueEl&&issueEl.value)payload.issueDate=issueEl.value+'T00:00:00.000Z';
  if(dueEl&&dueEl.value)payload.dueDate=dueEl.value+'T00:00:00.000Z';
  if(notesEl&&String(notesEl.value||'').trim())payload.notes=String(notesEl.value).trim();
