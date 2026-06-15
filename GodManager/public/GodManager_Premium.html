@@ -4331,7 +4331,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <!-- LONG TERM — OWNER STATEMENT DETAIL -->
 <div class="page" id="page-owner-statement-detail">
- <div class="ph"><div class="pt">Owner Statement — Detalhe</div><div class="ps">Statement individual por propriedade</div></div>
+ <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+ <div style="min-width:200px">
+ <div class="pt">Owner Statement — Detalhe</div><div class="ps">Statement individual por propriedade</div>
+ </div>
+ <div id="osd-accum-cards" class="osd-accum-cards" style="display:none;flex:1;min-width:320px;max-width:100%"></div>
+ </div>
  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
  <button type="button" id="osd-bulk-send" onclick="if(typeof osdBulkSend==='function')osdBulkSend()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar em lote (todos os owners do mês)</button>
  </div>
@@ -4364,7 +4369,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  </div>
  <div id="osd-closing-summary" style="display:none;border-bottom:1px solid var(--border)"></div>
- <div id="osd-accum-cards" class="osd-accum-cards" style="display:none;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--paper)"></div>
  <div style="overflow-x:auto">
  <table style="width:100%;border-collapse:collapse;min-width:920px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
@@ -10460,15 +10464,14 @@ window.osdRenderAccumulatedCards=function(data){
  var dc=Number(data.debitCount)||0;
  var dt=Number(data.debitTotal)||0;
  var mgm=Number(data.mgmTotal)||0;
- var cardStyle='background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative';
- var lblStyle='font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px';
- var valStyle='font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700';
- var subStyle='font-size:10px;color:var(--ink3);margin-top:3px';
- wrap.innerHTML='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:12px">Acumulado da unidade (todos os meses)</div>'
-  +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">'
-  +'<div class="osd-accum-card" style="'+cardStyle+'"><div style="'+lblStyle+'">Crédito acumulado</div><div class="osd-accum-credit-val" style="'+valStyle+';color:var(--green)">'+esc(fmt(ct))+'</div><div class="osd-accum-credit-sub" style="'+subStyle+'">'+esc(String(cc))+' lançamento(s)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)"></div></div>'
-  +'<div class="osd-accum-card" style="'+cardStyle+'"><div style="'+lblStyle+'">Débito acumulado</div><div class="osd-accum-debit-val" style="'+valStyle+';color:var(--red)">'+esc(fmt(dt))+'</div><div class="osd-accum-debit-sub" style="'+subStyle+'">'+esc(String(dc))+' lançamento(s)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>'
-  +'<div class="osd-accum-card" style="'+cardStyle+'"><div style="'+lblStyle+'">MGM Fee acumulado</div><div class="osd-accum-mgm-val" style="'+valStyle+';color:#7c3aed">'+esc(fmt(mgm))+'</div><div class="osd-accum-mgm-sub" style="'+subStyle+'">taxa de gestão (ledger)</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#7c3aed"></div></div>'
+ var cardStyle='background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:8px 10px;position:relative;min-width:0';
+ var lblStyle='font-size:8px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:3px';
+ var valStyle='font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;line-height:1.2';
+ var subStyle='font-size:9px;color:var(--ink3);margin-top:2px';
+ wrap.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">'
+  +'<div class="osd-accum-card" style="'+cardStyle+'"><div style="'+lblStyle+'">Crédito acumulado</div><div class="osd-accum-credit-val" style="'+valStyle+';color:var(--green)">'+esc(fmt(ct))+'</div><div class="osd-accum-credit-sub" style="'+subStyle+'">'+esc(String(cc))+' lançamento(s)</div><div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green)"></div></div>'
+  +'<div class="osd-accum-card" style="'+cardStyle+'"><div style="'+lblStyle+'">Débito acumulado</div><div class="osd-accum-debit-val" style="'+valStyle+';color:var(--red)">'+esc(fmt(dt))+'</div><div class="osd-accum-debit-sub" style="'+subStyle+'">'+esc(String(dc))+' lançamento(s)</div><div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red)"></div></div>'
+  +'<div class="osd-accum-card" style="'+cardStyle+'"><div style="'+lblStyle+'">MGM Fee acumulado</div><div class="osd-accum-mgm-val" style="'+valStyle+';color:#7c3aed">'+esc(fmt(mgm))+'</div><div class="osd-accum-mgm-sub" style="'+subStyle+'">taxa de gestão (ledger)</div><div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#7c3aed"></div></div>'
   +'</div>';
  wrap.style.display='block';
 };

@@ -9,6 +9,9 @@ export const dynamic = 'force-dynamic';
 const MGM_FEE_DESC_RE =
   /MGM|Management Fee|Management Fees|Mgmt Fee|Taxa de gest[aã]o/i;
 
+/** Carry-over de saldo anterior — income com descrição "Remaining" (manual/CSV); não é receita real. */
+const CARRY_OVER_DESC_RE = /^Remaining$/i;
+
 function decToNum(v: Prisma.Decimal | null | undefined): number {
   if (v == null) return 0;
   const n = Number(v.toString());
@@ -24,6 +27,13 @@ function isMgmFeeLine(lineType: string, description: string): boolean {
   const desc = String(description || '').trim();
   if (!desc) return false;
   return MGM_FEE_DESC_RE.test(desc);
+}
+
+function isCarryOverIncomeLine(lineType: string, description: string): boolean {
+  if (String(lineType).toLowerCase() !== 'income') return false;
+  const desc = String(description || '').trim();
+  if (!desc) return false;
+  return CARRY_OVER_DESC_RE.test(desc);
 }
 
 export async function GET(req: Request) {
@@ -67,6 +77,7 @@ export async function GET(req: Request) {
       const amt = decToNum(li.amount);
       const lt = String(li.lineType || '').toLowerCase();
       if (lt === 'income') {
+        if (isCarryOverIncomeLine(li.lineType, li.description)) continue;
         creditCount += 1;
         creditTotal += amt;
       } else if (lt === 'expense') {
