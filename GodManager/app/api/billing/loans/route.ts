@@ -7,6 +7,7 @@ import {
   buildInstallmentAmounts,
   fetchPropertySnapshots,
   loanToJson,
+  nextLoanCode,
   parseOptionalDate,
   roundMoney,
 } from '@/lib/loanBilling';
@@ -114,8 +115,10 @@ export async function POST(req: Request) {
     const amounts = buildInstallmentAmounts(roundMoney(principal), installmentsCount);
 
     const row = await prisma.$transaction(async (tx) => {
+      const code = await nextLoanCode(tx, clientId);
       const loan = await tx.loan.create({
         data: {
+          code,
           ...(clientId ? { clientId } : {}),
           propertyId:
             body.propertyId != null ? String(body.propertyId).trim() || null : null,

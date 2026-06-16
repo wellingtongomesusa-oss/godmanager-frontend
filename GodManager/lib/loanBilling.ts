@@ -99,6 +99,7 @@ export function loanToJson(
     id: loan.id,
     clientId: loan.clientId,
     propertyId: loan.propertyId,
+    code: loan.code,
     debtorName: loan.debtorName,
     guarantorName: loan.guarantorName,
     creditorName: loan.creditorName,
@@ -120,6 +121,30 @@ export function loanToJson(
     installmentSummary: summary,
     property: opts?.property ?? null,
   };
+}
+
+export async function nextLoanCode(
+  tx: Prisma.TransactionClient,
+  clientId: string | null
+): Promise<string> {
+  const prefix = 'LOAN-';
+  const latest = await tx.loan.findFirst({
+    where: {
+      ...(clientId ? { clientId } : { clientId: null }),
+    },
+    orderBy: { code: 'desc' },
+    select: { code: true },
+  });
+
+  let next = 1;
+  if (latest?.code) {
+    const match = latest.code.match(/\d+/);
+    if (match) {
+      next = parseInt(match[0], 10) + 1;
+    }
+  }
+
+  return `${prefix}${String(next).padStart(4, '0')}`;
 }
 
 export async function fetchPropertySnapshots(

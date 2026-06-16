@@ -3235,6 +3235,20 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center;color:var(--ink3);font-size:13px">Em breve (Fase C)</div>
  </div>
  <div id="billing-view-loan" style="display:none">
+  <div id="gm-loan-summary-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Total emprestado</div>
+    <div id="gm-loan-total-principal" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">$0.00</div>
+   </div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Total recebido</div>
+    <div id="gm-loan-total-received" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">$0.00</div>
+   </div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Total a receber</div>
+    <div id="gm-loan-total-outstanding" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0.00</div>
+   </div>
+  </div>
   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
     <div style="font-size:13px;font-weight:700;color:var(--ink)">Loans</div>
@@ -3243,13 +3257,14 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      <button type="button" onclick="if(typeof gmLoanOpenModal==='function')gmLoanOpenModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Novo Loan</button>
     </div>
    </div>
-   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:880px">
+   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:980px">
     <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Código</th>
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Devedor</th>
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereço</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Principal</th>
-     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Pago</th>
-     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Restante</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Saldo pago</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Saldo devedor</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
     </tr></thead>
@@ -30162,24 +30177,39 @@ function gmLoanRenderRowActions(loan){
  html+=' <button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanDelete===\'function\')gmLoanDelete(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Excluir</button>';
  return html;
 }
+function gmLoanParseAmount(v){
+ var n=parseFloat(v);
+ return Number.isFinite(n)?n:0;
+}
+function gmLoanUpdateSummaryCards(sumPrincipal,sumPaid,sumRemaining){
+ var elP=document.getElementById('gm-loan-total-principal');
+ var elR=document.getElementById('gm-loan-total-received');
+ var elO=document.getElementById('gm-loan-total-outstanding');
+ if(elP)elP.textContent=gmLoanFmtMoney(sumPrincipal);
+ if(elR)elR.textContent=gmLoanFmtMoney(sumPaid);
+ if(elO)elO.textContent=gmLoanFmtMoney(sumRemaining);
+}
 async function gmLoanRenderList(){
  var tbody=document.getElementById('gm-loan-tbody');
  var counter=document.getElementById('gm-loan-counter');
  if(!tbody)return;
- tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
+ tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
  try{
   var res=await fetch('/api/billing/loans',{credentials:'include',cache:'no-store'});
   var data=await res.json().catch(function(){return{};});
   if(!res.ok||!data.ok){
    var errMsg=gmLoanEsc((data&&data.error)||'Falha ao listar loans');
-   tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
+   tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
    if(counter)counter.textContent='';
+   gmLoanUpdateSummaryCards(0,0,0);
    return;
   }
   var loans=Array.isArray(data.loans)?data.loans:[];
   if(counter)counter.textContent=loans.length+' registro(s)';
+  var sumPrincipal=0,sumPaid=0,sumRemaining=0;
   if(!loans.length){
-   tbody.innerHTML='<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum loan ainda.</td></tr>';
+   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum loan ainda.</td></tr>';
+   gmLoanUpdateSummaryCards(0,0,0);
    return;
   }
   var html='';
@@ -30187,7 +30217,11 @@ async function gmLoanRenderList(){
    var summary=loan.installmentSummary||{};
    var paid=summary.totalPaid!=null?summary.totalPaid:loan.totalPaid;
    var remaining=summary.remaining!=null?summary.remaining:loan.remaining;
+   sumPrincipal+=gmLoanParseAmount(loan.principal);
+   sumPaid+=gmLoanParseAmount(paid);
+   sumRemaining+=gmLoanParseAmount(remaining);
    html+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+gmLoanEsc(loan.code||'—')+'</td>'
     +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmLoanEsc(loan.debtorName||'')+'</td>'
     +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+gmLoanEsc(gmLoanPropertyLabel(loan))+'</td>'
     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmLoanEsc(gmLoanFmtMoney(loan.principal))+'</td>'
@@ -30198,10 +30232,12 @@ async function gmLoanRenderList(){
     +'</tr>';
   });
   tbody.innerHTML=html;
+  gmLoanUpdateSummaryCards(sumPrincipal,sumPaid,sumRemaining);
  }catch(e){
   console.warn('[gmLoanRenderList]',e);
-  tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar loans.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar loans.</td></tr>';
   if(counter)counter.textContent='';
+  gmLoanUpdateSummaryCards(0,0,0);
  }
 }
 function gmLoanFmtDateUtc(iso){
@@ -30233,7 +30269,9 @@ function gmLoanRenderDetail(loan){
  var body=document.getElementById('gm-loan-view-body');
  if(!header||!body||!loan)return;
  window.__gmLoanViewId=String(loan.id||'');
- header.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:16px;font-weight:700;color:var(--ink)">'+gmLoanEsc(loan.debtorName||'Loan')+'</div>'+gmLoanStatusPill(loan.status)+'</div>';
+ var codeStr=String(loan.code||'').trim();
+ var codeBadge=codeStr?'<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--ink3);padding:2px 8px;border:1px solid var(--border2);border-radius:4px;background:var(--cream)">'+gmLoanEsc(codeStr)+'</span>':'';
+ header.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:16px;font-weight:700;color:var(--ink)">'+gmLoanEsc(loan.debtorName||'Loan')+'</div>'+codeBadge+gmLoanStatusPill(loan.status)+'</div>';
  var summary=loan.installmentSummary||{};
  var paidCount=summary.paidCount!=null?summary.paidCount:0;
  var totalCount=summary.totalCount!=null?summary.totalCount:(Array.isArray(loan.installments)?loan.installments.length:0);

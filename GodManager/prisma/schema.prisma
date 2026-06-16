@@ -1260,6 +1260,7 @@ model Loan {
   id                String            @id @default(cuid())
   clientId          String?
   propertyId        String?
+  code              String?
   debtorName        String
   guarantorName     String?
   creditorName      String?
@@ -1278,6 +1279,7 @@ model Loan {
 
   @@index([clientId])
   @@index([propertyId])
+  @@index([code])
   @@map("loans")
 }
 
