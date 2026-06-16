@@ -3971,10 +3971,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div style="font-size:14px;font-weight:700;color:var(--ink)">Novo Loan</div>
    <span onclick="if(typeof gmLoanCloseModal==='function')gmLoanCloseModal()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1">&times;</span>
   </div>
-  <div style="margin-bottom:14px">
-   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO</label>
-   <select id="gm-loan-property" onchange="if(typeof gmLoanOnPropertyChange==='function')gmLoanOnPropertyChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
-    <option value="">— Sem propriedade —</option>
+  <div id="gm-loan-property-wrap" style="margin-bottom:14px;display:block">
+   <label for="gm-loan-property" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO (UNIDADE)</label>
+   <select id="gm-loan-property" onchange="if(typeof gmLoanOnPropertyChange==='function')gmLoanOnPropertyChange()" style="display:block;width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;min-height:36px;box-sizing:border-box">
+    <option value="">— Selecionar unidade —</option>
    </select>
   </div>
   <div style="margin-bottom:14px">
@@ -29262,7 +29262,10 @@ function gmBillingSwitchTab(tab){
  gmBillingStyleTabBtn(btnR,isRecv);
  gmBillingStyleTabBtn(btnP,isPay);
  gmBillingStyleTabBtn(btnL,isLoan);
- if(isLoan&&typeof gmLoanRenderList==='function')gmLoanRenderList();
+ if(isLoan){
+  if(typeof gmLoanRenderList==='function')gmLoanRenderList();
+  if(typeof gmLoanPopulatePropertySelect==='function')gmLoanPopulatePropertySelect();
+ }
 }
 function gmBillingRenderInvoiceRowActions(doc){
  var docId=gmBillingEsc(String(doc.id||''));
@@ -30125,36 +30128,89 @@ function gmLoanPropertyLabel(loan){
  if(c&&a)return c+' — '+a;
  return c||a||'—';
 }
+function gmLoanNormalizePropertyRowsFromApi(properties){
+ return (properties||[]).map(function(p){
+  var id=String(p.id||'').trim();
+  var code=String(p.code||'').trim();
+  var addr=String(p.address||'').trim();
+  var ownerName=String(p.ownerName||'').trim();
+  if(!id)return null;
+  var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
+  return{id:id,label:label,ownerName:ownerName};
+ }).filter(Boolean);
+}
+function gmLoanNormalizePropertyRowsFromUi(items){
+ return (items||[]).map(function(p){
+  var id=String(p._apiId||'').trim();
+  var code=String(p.id||'').trim();
+  var addr=String(p.address||'').trim();
+  var ownerName=String(p.owner||p.ownerName||'').trim();
+  if(!id)return null;
+  var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
+  return{id:id,label:label,ownerName:ownerName};
+ }).filter(Boolean);
+}
+function gmLoanFilterPropertyRows(rows){
+ return (rows||[]).filter(function(r){
+  if(!r||!r.id||!r.label)return false;
+  var lbl=String(r.label).trim().toLowerCase();
+  var addr=String(r.label).trim();
+  if(lbl==='total'||lbl==='manager prop'||addr==='Total'||addr.indexOf('Admin -')===0)return false;
+  return true;
+ });
+}
+async function gmLoanFetchPropertyRows(){
+ var rows=[];
+ try{
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  if(res.ok){
+   var data=await res.json().catch(function(){return{};});
+   if(data&&data.ok===true&&Array.isArray(data.properties)){
+    rows=gmLoanNormalizePropertyRowsFromApi(data.properties);
+   }else{console.warn('[gmLoanFetchPropertyRows] payload inesperado',data&&data.ok);}
+  }else{console.warn('[gmLoanFetchPropertyRows] HTTP',res.status);}
+ }catch(e){console.warn('[gmLoanFetchPropertyRows] fetch',e);}
+ if(!rows.length&&typeof window.gmPropertiesFetchFromApi==='function'){
+  try{
+   var cached=await window.gmPropertiesFetchFromApi();
+   if(Array.isArray(cached)&&cached.length)rows=gmLoanNormalizePropertyRowsFromUi(cached);
+  }catch(e2){console.warn('[gmLoanFetchPropertyRows] cache fallback',e2);}
+ }
+ return gmLoanFilterPropertyRows(rows);
+}
+function gmLoanRenderPropertySelectOptions(sel,records){
+ var placeholder='<option value="">— Selecionar unidade —</option>';
+ if(!sel)return;
+ sel.innerHTML=placeholder;
+ window.__gmLoanPropertyOwners={};
+ if(!records||!records.length){
+  sel.innerHTML=placeholder+'<option value="" disabled>Nenhuma unidade no seu escopo</option>';
+  return;
+ }
+ records.forEach(function(r){
+  window.__gmLoanPropertyOwners[r.id]=r.ownerName||'';
+  var opt=document.createElement('option');
+  opt.value=r.id;
+  opt.textContent=r.label;
+  if(r.ownerName)opt.setAttribute('data-owner-name',r.ownerName);
+  sel.appendChild(opt);
+ });
+}
 async function gmLoanPopulatePropertySelect(){
  var sel=document.getElementById('gm-loan-property');
  if(!sel)return;
- var placeholder='<option value="">— Sem propriedade —</option>';
- sel.innerHTML=placeholder;
+ var placeholder='<option value="">— Selecionar unidade —</option>';
+ sel.disabled=true;
+ sel.innerHTML=placeholder+'<option value="" disabled>Carregando unidades…</option>';
  try{
-  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
-  if(!res.ok){console.warn('[gmLoanPopulatePropertySelect] HTTP',res.status);return;}
-  var data=await res.json().catch(function(){return{};});
-  if(!data||data.ok!==true||!Array.isArray(data.properties))return;
-  var records=data.properties.map(function(p){
-   var id=String(p.id||'').trim();
-   var code=String(p.code||'').trim();
-   var addr=String(p.address||'').trim();
-   var ownerName=String(p.ownerName||'').trim();
-   if(!id)return null;
-   var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
-   return{id:id,label:label,ownerName:ownerName};
-  }).filter(Boolean);
+  var records=await gmLoanFetchPropertyRows();
   records.sort(function(a,b){return String(a.label).localeCompare(String(b.label));});
-  window.__gmLoanPropertyOwners={};
-  records.forEach(function(r){
-   window.__gmLoanPropertyOwners[r.id]=r.ownerName||'';
-   var opt=document.createElement('option');
-   opt.value=r.id;
-   opt.textContent=r.label;
-   if(r.ownerName)opt.setAttribute('data-owner-name',r.ownerName);
-   sel.appendChild(opt);
-  });
- }catch(e){console.warn('[gmLoanPopulatePropertySelect]',e);}
+  gmLoanRenderPropertySelectOptions(sel,records);
+ }catch(e){
+  console.warn('[gmLoanPopulatePropertySelect]',e);
+  sel.innerHTML=placeholder+'<option value="" disabled>Erro ao carregar unidades</option>';
+ }
+ sel.disabled=false;
 }
 function gmLoanOnPropertyChange(){
  var sel=document.getElementById('gm-loan-property');
@@ -30404,7 +30460,7 @@ async function gmLoanToggleInstallmentPaid(loanId,iid,paid){
 async function gmLoanOpenModal(){
  var m=document.getElementById('gm-loan-modal');
  if(m)m.style.display='flex';
- await gmLoanPopulatePropertySelect();
+ if(typeof gmLoanPopulatePropertySelect==='function')await gmLoanPopulatePropertySelect();
  var debtor=document.getElementById('gm-loan-debtor');
  var creditor=document.getElementById('gm-loan-creditor');
  var guarantor=document.getElementById('gm-loan-guarantor');
@@ -30530,6 +30586,7 @@ window.gmLoanCloseDetail=gmLoanCloseDetail;
 window.gmLoanToggleInstallmentPaid=gmLoanToggleInstallmentPaid;
 window.gmLoanPopulatePropertySelect=gmLoanPopulatePropertySelect;
 window.gmLoanOnPropertyChange=gmLoanOnPropertyChange;
+window.gmLoanFetchPropertyRows=gmLoanFetchPropertyRows;
 /* ========== /BILLING LOAN ========== */
 
 /* ========== /BILLING ========== */
