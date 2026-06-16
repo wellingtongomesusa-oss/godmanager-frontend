@@ -48,6 +48,9 @@ function toJson(e: {
   isVendorFree: boolean;
   wasRescheduled: boolean;
   metadata: Prisma.JsonValue | null;
+  createdAt: Date;
+  updatedAt: Date;
+  finalizedAt?: Date | null;
   property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
   vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
   client?: { jobPrefix: string | null } | null;
@@ -96,6 +99,9 @@ function toJson(e: {
     isVendorFree: !!e.isVendorFree,
     wasRescheduled: !!e.wasRescheduled,
     metadata: e.metadata ?? null,
+    createdAt: e.createdAt.toISOString(),
+    updatedAt: e.updatedAt.toISOString(),
+    finalizedAt: e.finalizedAt ? e.finalizedAt.toISOString() : null,
     vendorRespondedAt,
   };
 }

@@ -131,6 +131,8 @@ function toJson(e: {
   isVendorFree: boolean;
   wasRescheduled: boolean;
   metadata: Prisma.JsonValue | null;
+  createdAt: Date;
+  updatedAt: Date;
   finalizedAt?: Date | null;
   finalizedBy?: string | null;
   finalizedNote?: string | null;
@@ -170,6 +172,8 @@ function toJson(e: {
     isVendorFree: !!e.isVendorFree,
     wasRescheduled: !!e.wasRescheduled,
     metadata: e.metadata ?? null,
+    createdAt: e.createdAt.toISOString(),
+    updatedAt: e.updatedAt.toISOString(),
   };
 }
 

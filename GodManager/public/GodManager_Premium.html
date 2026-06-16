@@ -13971,6 +13971,9 @@ function ltExpMapApiToRow(e){
   isVendorFree:!!e.isVendorFree,
   wasRescheduled:!!e.wasRescheduled,
   metadata:e.metadata&&typeof e.metadata==='object'?e.metadata:null,
+  createdAt:e.createdAt||null,
+  updatedAt:e.updatedAt||null,
+  finalizedAt:e.finalizedAt||null,
   status:ui,
   vendor:String(e.vendorName||'').trim(),
   vendorRespondedAt:e.vendorRespondedAt||null,
@@ -24307,7 +24310,8 @@ function gmJobsRenderCalendar(rows){
     var calKey=(typeof gmJobsCalStyleKey==='function')?gmJobsCalStyleKey(j):'SCHEDULED';
     var chipStyle=(typeof gmJobsCalChipStyle==='function')?gmJobsCalChipStyle(calKey):'';
     var tip=(typeof gmJobsCalEventTooltip==='function')?gmJobsCalEventTooltip(j,calKey):calKey;
-    html+='<div class="jobs-cal-event" title="'+String(tip).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+'</div>';
+    var daysOpen=(typeof gmJobsDaysOpen==='function')?gmJobsDaysOpen(j):0;
+    html+='<div class="jobs-cal-event" title="'+String(tip).replace(/"/g,'&quot;')+'" style="font-size:9px;'+chipStyle+';padding:2px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addrShort+' <span style="opacity:.85">'+daysOpen+'d</span></div>';
    });
    if(dayJobs.length>maxShow){
     html+='<div class="jobs-cal-event jobs-cal-extra" style="font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px">+'+(dayJobs.length-maxShow)+' mais</div>';
@@ -24634,6 +24638,43 @@ function jobsPmStatusKey(r){
  if(lo==='scheduled') return 'SCHEDULED';
  return String(r.statusPm||r.status||'').trim().toUpperCase();
 }
+
+/** Dias em aberto desde createdAt; congela em finalizedAt (ou updatedAt) quando FINALIZED/PAID/CANCELLED. */
+function gmJobsDaysOpenParseMs(v){
+ if(v==null||v==='')return null;
+ var t=new Date(v).getTime();
+ return Number.isFinite(t)?t:null;
+}
+function gmJobsDaysOpenIsClosed(job){
+ if(!job)return false;
+ var pm=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(job):'';
+ return pm==='FINALIZED'||pm==='PAID'||pm==='CANCELLED';
+}
+window.gmJobsDaysOpen=function(job){
+ if(!job)return 0;
+ var raw=job._apiRaw||{};
+ var start=gmJobsDaysOpenParseMs(job.createdAt||raw.createdAt);
+ if(!start)start=gmJobsDaysOpenParseMs(job.serviceDate||raw.serviceDate);
+ if(!start)return 0;
+ var end;
+ if(gmJobsDaysOpenIsClosed(job)){
+  end=gmJobsDaysOpenParseMs(job.finalizedAt||raw.finalizedAt||job.closedAt||raw.closedAt)
+   ||gmJobsDaysOpenParseMs(job.updatedAt||raw.updatedAt)
+   ||Date.now();
+ }else{
+  end=Date.now();
+ }
+ return Math.max(0,Math.floor((end-start)/86400000));
+};
+window.gmJobsDaysOpenHtml=function(job){
+ var d=window.gmJobsDaysOpen(job);
+ var closed=gmJobsDaysOpenIsClosed(job);
+ var tip=closed
+  ?gmJobsT('jobs_days_closed_tooltip',{n:d})
+  :gmJobsT('jobs_days_open_tooltip',{n:d});
+ var tipEsc=String(tip).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+ return '<span class="gm-jobs-days-open" title="'+tipEsc+'" style="font-size:9px;color:var(--ink3);font-weight:500;white-space:nowrap">'+d+'d</span>';
+};
 
 /** H.5 — i18n helpers Jobs (t() + placeholders {{var}}). */
 function gmJobsT(key, vars){
@@ -24974,10 +25015,16 @@ function gmJobsCalStyleKey(j){
 
 function gmJobsCalEventTooltip(j,calKey){
  var u=gmJobIsUrgentByCategory(j);
- if(calKey==='URGENT'&&u.isUrgent)return gmJobsT('jobs_cal_urgent_tooltip',{type:u.type});
- if(calKey==='V_FREE')return gmJobsT('jobs_v_free_tooltip');
- if(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')return gmJobsRescheduleTooltip(j);
- return calKey;
+ var base;
+ if(calKey==='URGENT'&&u.isUrgent)base=gmJobsT('jobs_cal_urgent_tooltip',{type:u.type});
+ else if(calKey==='V_FREE')base=gmJobsT('jobs_v_free_tooltip');
+ else if(calKey==='RESCHEDULED'&&typeof gmJobsRescheduleTooltip==='function')base=gmJobsRescheduleTooltip(j);
+ else base=calKey;
+ var d=(typeof gmJobsDaysOpen==='function')?gmJobsDaysOpen(j):0;
+ var daysTip=gmJobsDaysOpenIsClosed(j)
+  ?gmJobsT('jobs_days_closed_tooltip',{n:d})
+  :gmJobsT('jobs_days_open_tooltip',{n:d});
+ return String(base||'')+' · '+daysTip;
 }
 
 function gmJobsCalChipStyle(key){
@@ -25351,7 +25398,7 @@ async function jobsRender(){
   +'<td data-label="'+gmJobsT('jobs_col_vendor')+'" style="padding:9px 12px;color:var(--ink);text-align:center" title="'+String(jobsVendorSourceStr(r)||'').replace(/"/g,'&quot;')+'"><span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:11px;letter-spacing:0.5px">'+(typeof gmGetVendorAcronymByName==='function'?gmGetVendorAcronymByName(jobsVendorSourceStr(r)):vendorDisplay)+'</span></td>'
   +'<td data-label="'+gmJobsT('jobs_col_category')+'" style="padding:9px 12px;color:var(--ink2)">'+(r.category||'—')+'</td>'
   +'<td data-label="'+gmJobsT('jobs_col_description')+'" style="padding:9px 12px;color:var(--ink2);max-width:240px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(r.desc||r.description||'').replace(/"/g,'&quot;')+'">'+(r.desc||r.description||'—')+'</span>'+((r.desc||r.description)?'<button type="button" onclick="gmJobOpenDescriptionPopup('+JSON.stringify(String(r.desc||r.description||''))+','+JSON.stringify(String(r.id||''))+')" title="'+gmJobsT('jobs_view_full_desc').replace(/"/g,'&quot;')+'" style="flex-shrink:0;background:rgba(30,43,61,0.06);border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:3px 6px;display:flex;align-items:center;justify-content:center" aria-label="'+gmJobsT('jobs_view_full_desc').replace(/"/g,'&quot;')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e2b3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>':'')+'</div></td>'
-  +'<td data-label="'+gmJobsT('jobs_col_date')+'" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+'</td>'
+  +'<td data-label="'+gmJobsT('jobs_col_date')+'" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+' <span style="margin-left:4px">'+(typeof gmJobsDaysOpenHtml==='function'?gmJobsDaysOpenHtml(r):'')+'</span></td>'
   +(typeof jobsFmtValueCellHtml==='function'?jobsFmtValueCellHtml(r):'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right">'+jobsMoney(jobsRowDisplayValue(r))+'</td>')
   +'<td data-label="'+gmJobsT('jobs_col_status')+'" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
   +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+actionsInner+'</div></td>'
