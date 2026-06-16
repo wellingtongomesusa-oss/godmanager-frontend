@@ -85,7 +85,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data.notes = String(body.notes).trim() || null;
     }
     if (body.status != null) {
-      data.status = String(body.status).trim() || existing.status;
+      const st = String(body.status).trim().toLowerCase();
+      if (!['active', 'paid', 'cancelled'].includes(st)) {
+        return NextResponse.json({ ok: false, error: 'Invalid status' }, { status: 400 });
+      }
+      data.status = st;
     }
 
     if (Object.keys(data).length === 0) {

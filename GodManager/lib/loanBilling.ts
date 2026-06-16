@@ -46,7 +46,56 @@ export function parseOptionalDate(value: unknown): Date | null | undefined {
   return d;
 }
 
-export function installmentToJson(item: LoanInstallment) {
+/** UTC calendar day (no time) for date-only comparisons. */
+export function utcDayStart(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+export function utcTodayStart(): Date {
+  const now = new Date();
+  return utcDayStart(now);
+}
+
+export function daysBetweenUtcDates(later: Date, earlier: Date): number {
+  const ms = utcDayStart(later).getTime() - utcDayStart(earlier).getTime();
+  return Math.floor(ms / 86400000);
+}
+
+export function installmentOverdueDays(
+  item: Pick<LoanInstallment, 'dueDate' | 'paid'>,
+  today?: Date
+): number {
+  if (item.paid) return 0;
+  const todayStart = today ? utcDayStart(today) : utcTodayStart();
+  const due = utcDayStart(item.dueDate);
+  if (due.getTime() >= todayStart.getTime()) return 0;
+  return daysBetweenUtcDates(todayStart, due);
+}
+
+export function computeOverdueMetrics(
+  installments: Pick<LoanInstallment, 'dueDate' | 'paid'>[],
+  today?: Date
+) {
+  const todayStart = today ? utcDayStart(today) : utcTodayStart();
+  let overdueCount = 0;
+  let earliestOverdue: Date | null = null;
+  for (const i of installments) {
+    if (i.paid) continue;
+    const due = utcDayStart(i.dueDate);
+    if (due.getTime() < todayStart.getTime()) {
+      overdueCount++;
+      if (!earliestOverdue || due.getTime() < earliestOverdue.getTime()) {
+        earliestOverdue = due;
+      }
+    }
+  }
+  const overdueDays =
+    earliestOverdue != null ? daysBetweenUtcDates(todayStart, earliestOverdue) : 0;
+  return { overdueCount, overdueDays };
+}
+
+export function installmentToJson(item: LoanInstallment, today?: Date) {
+  const overdueDays = installmentOverdueDays(item, today);
   return {
     id: item.id,
     loanId: item.loanId,
@@ -59,12 +108,14 @@ export function installmentToJson(item: LoanInstallment) {
     paidAmount: item.paidAmount != null ? moneyStr(item.paidAmount) : null,
     notes: item.notes,
     createdAt: item.createdAt.toISOString(),
+    overdueDays,
   };
 }
 
 export function summarizeInstallments(
   installments: LoanInstallment[],
-  principal: Prisma.Decimal
+  principal: Prisma.Decimal,
+  today?: Date
 ) {
   const principalNum = decToNum(principal);
   let paidCount = 0;
@@ -76,11 +127,14 @@ export function summarizeInstallments(
     }
   }
   totalPaid = roundMoney(totalPaid);
+  const overdue = computeOverdueMetrics(installments, today);
   return {
     totalCount: installments.length,
     paidCount,
     totalPaid: moneyStr(totalPaid),
     remaining: moneyStr(roundMoney(principalNum - totalPaid)),
+    overdueCount: overdue.overdueCount,
+    overdueDays: overdue.overdueDays,
   };
 }
 
@@ -91,10 +145,12 @@ export function loanToJson(
   opts?: {
     property?: PropertySnapshot | null;
     installmentSummary?: ReturnType<typeof summarizeInstallments>;
+    today?: Date;
   }
 ) {
+  const today = opts?.today;
   const summary =
-    opts?.installmentSummary ?? summarizeInstallments(loan.installments, loan.principal);
+    opts?.installmentSummary ?? summarizeInstallments(loan.installments, loan.principal, today);
   return {
     id: loan.id,
     clientId: loan.clientId,
@@ -117,8 +173,10 @@ export function loanToJson(
     installments: loan.installments
       .slice()
       .sort((a, b) => a.seq - b.seq)
-      .map(installmentToJson),
+      .map((i) => installmentToJson(i, today)),
     installmentSummary: summary,
+    overdueCount: summary.overdueCount,
+    overdueDays: summary.overdueDays,
     property: opts?.property ?? null,
   };
 }
