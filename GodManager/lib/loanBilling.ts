@@ -136,6 +136,13 @@ export async function syncLoanStatusFromInstallments(
   tx: Prisma.TransactionClient,
   loanId: string
 ): Promise<string> {
+  const loan = await tx.loan.findUnique({
+    where: { id: loanId },
+    select: { status: true },
+  });
+  if (!loan) return 'active';
+  if (loan.status === 'cancelled') return 'cancelled';
+
   const installments = await tx.loanInstallment.findMany({
     where: { loanId },
     select: { paid: true },
@@ -143,9 +150,11 @@ export async function syncLoanStatusFromInstallments(
   const allPaid =
     installments.length > 0 && installments.every((i) => i.paid);
   const newStatus = allPaid ? 'paid' : 'active';
-  await tx.loan.update({
-    where: { id: loanId },
-    data: { status: newStatus },
-  });
+  if (loan.status !== newStatus) {
+    await tx.loan.update({
+      where: { id: loanId },
+      data: { status: newStatus },
+    });
+  }
   return newStatus;
 }

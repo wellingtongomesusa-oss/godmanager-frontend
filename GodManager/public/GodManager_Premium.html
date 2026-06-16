@@ -3982,6 +3982,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
 </div>
 
+<!-- BILLING — Modal Ver Loan (detalhe + parcelas) -->
+<div id="gm-loan-view-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9005;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this&&typeof gmLoanCloseDetail==='function')gmLoanCloseDetail()">
+ <div style="background:var(--paper);border-radius:12px;width:820px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px">
+   <div id="gm-loan-view-header" style="flex:1;min-width:0"></div>
+   <span onclick="if(typeof gmLoanCloseDetail==='function')gmLoanCloseDetail()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1;flex-shrink:0">&times;</span>
+  </div>
+  <div id="gm-loan-view-body" style="font-size:12px;color:var(--ink2)">Carregando…</div>
+  <div id="gm-loan-view-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px"></div>
+ </div>
+</div>
+
 <!-- 
  LONG TERM — MODAL: Registrar Limpeza
  -->
@@ -30118,7 +30130,7 @@ async function gmLoanPopulatePropertySelect(){
 function gmLoanRenderRowActions(loan){
  var loanId=gmLoanEsc(String(loan.id||''));
  var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
- var html='<button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanViewPlaceholder===\'function\')gmLoanViewPlaceholder(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
+ var html='<button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanOpenDetail===\'function\')gmLoanOpenDetail(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
  html+=' <button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanDelete===\'function\')gmLoanDelete(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Excluir</button>';
  return html;
 }
@@ -30164,9 +30176,155 @@ async function gmLoanRenderList(){
   if(counter)counter.textContent='';
  }
 }
-function gmLoanViewPlaceholder(id){
- if(typeof showToast==='function')showToast('Detalhe do loan — Fase C2','info');
- else if(id)console.info('[gmLoanViewPlaceholder]',id);
+function gmLoanFmtDateUtc(iso){
+ if(typeof gmBillingFmtDate==='function')return gmBillingFmtDate(iso);
+ if(!iso)return '—';
+ var d=new Date(iso);
+ if(Number.isNaN(d.getTime()))return '—';
+ var mm=String(d.getUTCMonth()+1).padStart(2,'0');
+ var dd=String(d.getUTCDate()).padStart(2,'0');
+ var yyyy=d.getUTCFullYear();
+ return mm+'/'+dd+'/'+yyyy;
+}
+function gmLoanInstallmentStatusPill(paid){
+ if(paid)return '<span class="pill pg">Paga</span>';
+ return '<span class="pill ps2">Em aberto</span>';
+}
+function gmLoanCloseDetail(){
+ var m=document.getElementById('gm-loan-view-modal');
+ if(m)m.style.display='none';
+ window.__gmLoanViewId=null;
+}
+function gmLoanRenderDetailActions(){
+ var actions=document.getElementById('gm-loan-view-actions');
+ if(!actions)return;
+ actions.innerHTML='<button type="button" onclick="if(typeof gmLoanCloseDetail===\'function\')gmLoanCloseDetail()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+}
+function gmLoanRenderDetail(loan){
+ var header=document.getElementById('gm-loan-view-header');
+ var body=document.getElementById('gm-loan-view-body');
+ if(!header||!body||!loan)return;
+ window.__gmLoanViewId=String(loan.id||'');
+ header.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:16px;font-weight:700;color:var(--ink)">'+gmLoanEsc(loan.debtorName||'Loan')+'</div>'+gmLoanStatusPill(loan.status)+'</div>';
+ var summary=loan.installmentSummary||{};
+ var paidCount=summary.paidCount!=null?summary.paidCount:0;
+ var totalCount=summary.totalCount!=null?summary.totalCount:(Array.isArray(loan.installments)?loan.installments.length:0);
+ var paidAmt=summary.totalPaid!=null?summary.totalPaid:0;
+ var remaining=summary.remaining!=null?summary.remaining:0;
+ var guarantor=String(loan.guarantorName||'').trim()||'—';
+ var notesBlock='';
+ if(loan.notes){
+  notesBlock='<div style="margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Notas</div><div style="font-size:12px;color:var(--ink2);line-height:1.5">'+gmLoanEsc(loan.notes)+'</div></div>';
+ }
+ var installments=Array.isArray(loan.installments)?loan.installments.slice():[];
+ installments.sort(function(a,b){return Number(a.seq||0)-Number(b.seq||0);});
+ var instHtml='';
+ if(installments.length){
+  instHtml='<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;min-width:640px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Nº</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>'
+   +'<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Valor</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Pago em</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ação</th>'
+   +'</tr></thead><tbody>';
+  var loanIdEsc=gmLoanEsc(String(loan.id||''));
+  var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
+  installments.forEach(function(inst){
+   var iid=gmLoanEsc(String(inst.id||''));
+   var isPaid=inst.paid===true;
+   var actionBtn='';
+   if(isPaid){
+    actionBtn='<button type="button" data-loan-id="'+loanIdEsc+'" data-iid="'+iid+'" onclick="if(typeof gmLoanToggleInstallmentPaid===\'function\')gmLoanToggleInstallmentPaid(this.getAttribute(\'data-loan-id\'),this.getAttribute(\'data-iid\'),false)" style="'+btnSm+';background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Desmarcar</button>';
+   }else{
+    actionBtn='<button type="button" data-loan-id="'+loanIdEsc+'" data-iid="'+iid+'" onclick="if(typeof gmLoanToggleInstallmentPaid===\'function\')gmLoanToggleInstallmentPaid(this.getAttribute(\'data-loan-id\'),this.getAttribute(\'data-iid\'),true)" style="'+btnSm+';background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)">Marcar paga</button>';
+   }
+   instHtml+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:8px 10px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+gmLoanEsc(String(inst.seq||''))+'</td>'
+    +'<td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--ink2)">'+gmLoanEsc(gmLoanFmtDateUtc(inst.dueDate))+'</td>'
+    +'<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmLoanEsc(gmLoanFmtMoney(inst.amount))+'</td>'
+    +'<td style="padding:8px 10px;text-align:center">'+gmLoanInstallmentStatusPill(isPaid)+'</td>'
+    +'<td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--ink2)">'+gmLoanEsc(isPaid&&inst.paidAt?gmLoanFmtDateUtc(inst.paidAt):'—')+'</td>'
+    +'<td style="padding:8px 10px;text-align:center">'+actionBtn+'</td>'
+    +'</tr>';
+  });
+  instHtml+='</tbody></table></div>';
+ }else{
+  instHtml='<div style="padding:12px;color:var(--ink3);font-size:12px">Sem parcelas.</div>';
+ }
+ body.innerHTML=
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">AVALISTA</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(guarantor)+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">ENDEREÇO</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(gmLoanPropertyLabel(loan))+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">PRINCIPAL</div><div style="font-size:13px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+gmLoanEsc(gmLoanFmtMoney(loan.principal))+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">DATA INICIAL</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(gmLoanFmtDateUtc(loan.startDate))+'</div></div>'
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">'
+  +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Pago</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--green)">'+gmLoanEsc(gmLoanFmtMoney(paidAmt))+'</div></div>'
+  +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Restante</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--amber)">'+gmLoanEsc(gmLoanFmtMoney(remaining))+'</div></div>'
+  +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Parcelas</div><div style="font-size:13px;font-weight:600;color:var(--ink)">'+gmLoanEsc(String(paidCount)+' de '+String(totalCount)+' parcelas pagas')+'</div></div>'
+  +'</div>'
+  +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Parcelas</div>'
+  +instHtml
+  +notesBlock;
+ gmLoanRenderDetailActions();
+}
+async function gmLoanLoadDetail(id){
+ if(!id)return null;
+ try{
+  var res=await fetch('/api/billing/loans/'+encodeURIComponent(String(id)),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.loan)return null;
+  return data.loan;
+ }catch(e){
+  console.warn('[gmLoanLoadDetail]',e);
+  return null;
+ }
+}
+async function gmLoanOpenDetail(id){
+ if(!id)return;
+ window.__gmLoanViewId=String(id);
+ var m=document.getElementById('gm-loan-view-modal');
+ var header=document.getElementById('gm-loan-view-header');
+ var body=document.getElementById('gm-loan-view-body');
+ var actions=document.getElementById('gm-loan-view-actions');
+ if(m)m.style.display='flex';
+ if(header)header.innerHTML='';
+ if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3)">Carregando…</div>';
+ if(actions)actions.innerHTML='';
+ var loan=await gmLoanLoadDetail(id);
+ if(!loan){
+  var errMsg='Falha ao carregar loan';
+  if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--red)">'+gmLoanEsc(errMsg)+'</div>';
+  gmLoanRenderDetailActions();
+  return;
+ }
+ gmLoanRenderDetail(loan);
+}
+async function gmLoanToggleInstallmentPaid(loanId,iid,paid){
+ if(!loanId||!iid)return;
+ var markPaid=paid===true||paid==='true'||paid===1||paid==='1';
+ try{
+  var res=await fetch('/api/billing/loans/'+encodeURIComponent(loanId)+'/installments/'+encodeURIComponent(iid),{
+   method:'PATCH',
+   headers:{'Content-Type':'application/json'},
+   credentials:'include',
+   body:JSON.stringify({paid:markPaid})
+  });
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=(data&&data.error)||'Erro ao atualizar parcela';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   return;
+  }
+  if(typeof showToast==='function')showToast(markPaid?'Parcela marcada como paga.':'Parcela desmarcada.','success');
+  var loan=await gmLoanLoadDetail(loanId);
+  if(loan)gmLoanRenderDetail(loan);
+  if(typeof gmLoanRenderList==='function')await gmLoanRenderList();
+ }catch(e){
+  console.warn('[gmLoanToggleInstallmentPaid]',e);
+  if(typeof showToast==='function')showToast('Erro ao atualizar parcela.','error');
+ }
 }
 async function gmLoanOpenModal(){
  var m=document.getElementById('gm-loan-modal');
@@ -30277,7 +30435,9 @@ window.gmLoanOpenModal=gmLoanOpenModal;
 window.gmLoanCloseModal=gmLoanCloseModal;
 window.gmLoanSave=gmLoanSave;
 window.gmLoanDelete=gmLoanDelete;
-window.gmLoanViewPlaceholder=gmLoanViewPlaceholder;
+window.gmLoanOpenDetail=gmLoanOpenDetail;
+window.gmLoanCloseDetail=gmLoanCloseDetail;
+window.gmLoanToggleInstallmentPaid=gmLoanToggleInstallmentPaid;
 window.gmLoanPopulatePropertySelect=gmLoanPopulatePropertySelect;
 /* ========== /BILLING LOAN ========== */
 
