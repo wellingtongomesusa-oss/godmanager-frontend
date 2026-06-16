@@ -504,6 +504,13 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #users-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.45);z-index:5100;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 #users-modal-bg.on{display:flex}
 #users-modal-inner{background:var(--paper);border-radius:12px;max-width:720px;width:100%;padding:24px;border:1px solid var(--border);max-height:92vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.2)}
+#cu-edit-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.5);z-index:5200;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+#cu-edit-modal-bg.on{display:flex}
+#cu-edit-modal-inner{background:var(--paper);border-radius:12px;max-width:640px;width:100%;padding:24px;border:1px solid var(--border);max-height:92vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.25)}
+.cu-menu-sec{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px;background:var(--sand)}
+.cu-menu-sec-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--ink)}
+.cu-menu-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 12px;padding-left:4px}
+.cu-menu-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);font-family:'DM Sans',sans-serif}
 .cl-act-navy{background:#1a3a5c!important;color:#fff!important;border-color:#1a3a5c!important}
 .cl-act-navy:hover{filter:brightness(1.08)}
 .cl-act-blue{background:#22558c!important;color:#fff!important;border-color:#22558c!important}
@@ -1996,6 +2003,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px">
  <button type="button" class="cl-btn-sec" onclick="gmCopyCuUserPasswordCreated()">Copiar senha</button>
  <button type="button" class="bp" style="margin-top:0" onclick="gmCloseCuUserSuccessModal()">Já anotei, fechar</button>
+ </div>
+ </div>
+</div>
+
+<div id="cu-edit-modal-bg" onclick="if(event.target===this&&typeof gmCuCloseEditModal==='function')gmCuCloseEditModal()">
+ <div id="cu-edit-modal-inner" onclick="event.stopPropagation()">
+ <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px">Editar acesso ao menu</div>
+ <div id="cu-edit-user-line" style="font-size:12px;color:var(--ink3);margin-bottom:14px;font-family:'DM Sans',sans-serif"></div>
+ <div id="cu-edit-matrix" style="max-height:58vh;overflow-y:auto;margin-bottom:16px;padding-right:4px"></div>
+ <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+ <button type="button" class="cl-btn-sec" onclick="if(typeof gmCuCloseEditModal==='function')gmCuCloseEditModal()">Cancelar</button>
+ <button type="button" class="bp" style="margin-top:0" onclick="if(typeof gmCuSaveEditMenuAccess==='function')gmCuSaveEditMenuAccess()">Salvar acesso</button>
  </div>
  </div>
 </div>
@@ -8578,6 +8597,195 @@ async function gmClientUsersCreateSubmit(e){
  }
  return false;
 }
+var GM_MENU_ACCESS_SECTIONS=[
+ {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Dashboard'}]},
+ {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'}]},
+ {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'tenants',label:'Tenants'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
+ {key:'expenses',label:'EXPENSES',items:[{key:'ltexpenses',label:'Expenses'},{key:'ltcleanings',label:'Cleanings'},{key:'vendors',label:'Vendors'},{key:'jobs',label:'Jobs'},{key:'jobs-follow',label:'Acompanhamento'}]},
+ {key:'billing',label:'BILLING',items:[{key:'billing',label:'Invoice / Bill'}]},
+ {key:'ownerportal',label:'OWNER PORTAL',items:[{key:'ownerportal',label:'Owner Portal'},{key:'ltownerpay',label:'Owner Payment'},{key:'owner-statement-detail',label:'Owner Statement (Detalhe)'},{key:'owner-audit',label:'Auditoria Repasses'},{key:'listings',label:'Listings'}]},
+ {key:'tenantsgrp',label:'TENANTS',items:[{key:'tenantportal',label:'Tenant Portal'},{key:'listings-tenants',label:'Listings'}]},
+ {key:'compliance',label:'COMPLIANCE',items:[{key:'licenses',label:'Licenses'},{key:'1099',label:'1099 / IRS'},{key:'gaap',label:'GAAP'}]},
+ {key:'operations',label:'OPERATIONS',items:[{key:'phonelines',label:'Phone Lines'},{key:'vault',label:'Vault'},{key:'cars',label:'Cars & Insurance'},{key:'inspections',label:'Inspections'},{key:'tasks',label:'Tasks'}]},
+ {key:'integrations',label:'INTEGRATIONS',items:[{key:'integrations',label:'Connect'},{key:'ramp',label:'Ramp'},{key:'quickbooks',label:'QuickBooks'},{key:'appfolio-upload',label:'AppFolio Upload'}]},
+ {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
+ {key:'ai-assistant',label:'AI ASSISTANT',items:[{key:'bookkeeping-ai',label:'Bookkeeping AI'},{key:'analytics',label:'Analytics'},{key:'auditoria-2026',label:'Auditoria 2026'}]},
+ {key:'admin',label:'ADMIN',items:[{key:'admin-dashboard',label:'Dashboard Admin'},{key:'clients',label:'Clients'},{key:'admin-users',label:'Users'},{key:'backup',label:'Backup & Restore'},{key:'settings-gm',label:'Settings'},{key:'gross-expenses',label:'Gross & Expenses'},{key:'forms-received',label:'Forms Received'},{key:'admin-audit',label:'Audit Log'},{key:'org-chart',label:'Org Chart'}]},
+ {key:'mycompany',label:'MY COMPANY',items:[{key:'client-users',label:'Equipe'},{key:'audit-log-tenant',label:'Audit Log'},{key:'settings-co',label:'Settings'}]}
+];
+function gmCuAllMenuKeys(){
+ var keys=[];
+ GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+  keys.push(sec.key);
+  (sec.items||[]).forEach(function(it){keys.push(it.key);});
+ });
+ return keys;
+}
+function gmCuRoleDefaultMenuKeys(role){
+ var r=String(role||'').toLowerCase();
+ var all=gmCuAllMenuKeys();
+ if(r==='super_admin')return all.slice();
+ var adminExcludeSec='admin';
+ var adminExcludeItems={};
+ GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+  if(sec.key===adminExcludeSec){
+   (sec.items||[]).forEach(function(it){adminExcludeItems[it.key]=1;});
+  }
+ });
+ function adminLikeKeys(){
+  var out=[];
+  GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+   if(sec.key===adminExcludeSec)return;
+   out.push(sec.key);
+   (sec.items||[]).forEach(function(it){
+    if(sec.key==='ownerportal'&&it.key==='owner-audit')return;
+    if(sec.key==='mycompany'&&it.key==='audit-log-tenant')return;
+    if(sec.key==='ai-assistant'&&(it.key==='bookkeeping-ai'||it.key==='analytics'))return;
+    out.push(it.key);
+   });
+  });
+  return out;
+ }
+ if(r==='admin'||r==='supervisor'||r==='supervisor_2')return adminLikeKeys();
+ if(r==='manager'){
+  var out=[];
+  GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+   if(sec.key==='admin'||sec.key==='integrations'||sec.key==='ai-assistant')return;
+   out.push(sec.key);
+   (sec.items||[]).forEach(function(it){
+    if(sec.key==='compliance'&&(it.key==='gaap'||it.key==='1099'))return;
+    if(sec.key==='ownerportal'&&it.key==='owner-audit')return;
+    if(sec.key==='mycompany'&&it.key==='audit-log-tenant')return;
+    out.push(it.key);
+   });
+  });
+  return out;
+ }
+ if(r==='viewer'){
+  return [
+   'home','home','longterm',
+   'communications','news',
+   'expenses','ltexpenses','ltcleanings','vendors','jobs','jobs-follow',
+   'billing','billing',
+   'ownerportal','ownerportal','ltownerpay','owner-statement-detail','listings',
+   'tenantsgrp','tenantportal','listings-tenants',
+   'results','results','results-upload','gaap-results'
+  ];
+ }
+ if(r==='maintenance'||r==='field'||r==='vendor'){
+  return ['expenses','jobs'];
+ }
+ return adminLikeKeys();
+}
+function gmCuBuildEditMatrixHtml(){
+ var html='';
+ GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+  html+='<div class="cu-menu-sec" data-sec="'+String(sec.key).replace(/"/g,'&quot;')+'">'
+   +'<div class="cu-menu-sec-h"><input type="checkbox" class="cu-menu-sec-cb" data-sec-key="'+String(sec.key).replace(/"/g,'&quot;')+'" onchange="if(typeof gmCuOnSectionToggle===\'function\')gmCuOnSectionToggle(this)">'
+   +'<span>'+String(sec.label||sec.key).replace(/</g,'&lt;')+'</span></div>'
+   +'<div class="cu-menu-items">';
+  (sec.items||[]).forEach(function(it){
+   html+='<label class="cu-menu-item"><input type="checkbox" class="cu-menu-item-cb" data-item-key="'+String(it.key).replace(/"/g,'&quot;')+'" data-sec-key="'+String(sec.key).replace(/"/g,'&quot;')+'" onchange="if(typeof gmCuOnItemToggle===\'function\')gmCuOnItemToggle(this)">'
+   +'<span>'+String(it.label||it.key).replace(/</g,'&lt;')+'</span></label>';
+  });
+  html+='</div></div>';
+ });
+ return html;
+}
+function gmCuApplyMatrixKeys(keys){
+ var set={};
+ (keys||[]).forEach(function(k){set[String(k)]=1;});
+ document.querySelectorAll('#cu-edit-matrix .cu-menu-item-cb').forEach(function(el){
+  var k=el.getAttribute('data-item-key');
+  el.checked=!!set[k];
+ });
+ document.querySelectorAll('#cu-edit-matrix .cu-menu-sec-cb').forEach(function(el){
+  var sk=el.getAttribute('data-sec-key');
+  var sec=GM_MENU_ACCESS_SECTIONS.filter(function(s){return s.key===sk;})[0];
+  if(!sec){el.checked=false;return;}
+  var items=sec.items||[];
+  if(!items.length){el.checked=!!set[sk];return;}
+  el.checked=items.every(function(it){return set[it.key];});
+ });
+}
+function gmCuOnSectionToggle(secCb){
+ var sk=secCb.getAttribute('data-sec-key');
+ var on=secCb.checked;
+ document.querySelectorAll('#cu-edit-matrix .cu-menu-item-cb[data-sec-key="'+sk+'"]').forEach(function(el){el.checked=on;});
+}
+function gmCuOnItemToggle(itemCb){
+ var sk=itemCb.getAttribute('data-sec-key');
+ var secCb=document.querySelector('#cu-edit-matrix .cu-menu-sec-cb[data-sec-key="'+sk+'"]');
+ if(!secCb)return;
+ var items=document.querySelectorAll('#cu-edit-matrix .cu-menu-item-cb[data-sec-key="'+sk+'"]');
+ var allOn=true;
+ items.forEach(function(el){if(!el.checked)allOn=false;});
+ secCb.checked=allOn;
+}
+function gmCuCollectMatrixKeys(){
+ var keys=[];
+ document.querySelectorAll('#cu-edit-matrix .cu-menu-sec-cb').forEach(function(el){
+  if(el.checked)keys.push(el.getAttribute('data-sec-key'));
+ });
+ document.querySelectorAll('#cu-edit-matrix .cu-menu-item-cb').forEach(function(el){
+  if(el.checked)keys.push(el.getAttribute('data-item-key'));
+ });
+ return keys;
+}
+function gmCuOpenEdit(uid){
+ if(!uid)return;
+ var u=(window._cuApiUsers||[]).filter(function(x){return String(x.id)===String(uid);})[0];
+ if(!u){
+  if(typeof showToast==='function')showToast('Utilizador não encontrado.','error');
+  return;
+ }
+ window._cuEditUserId=String(u.id);
+ var matrix=document.getElementById('cu-edit-matrix');
+ if(matrix&&!matrix.children.length)matrix.innerHTML=gmCuBuildEditMatrixHtml();
+ var line=document.getElementById('cu-edit-user-line');
+ if(line){
+  var nm=(String(u.firstName||'')+' '+String(u.lastName||'')).trim();
+  line.textContent=(nm||u.email||'')+' · '+String(u.email||'')+' · '+gmCuRoleLabelPt(u.role);
+ }
+ var ma=Array.isArray(u.menuAccess)?u.menuAccess:[];
+ var keys=ma.length?ma.slice():gmCuRoleDefaultMenuKeys(u.role);
+ gmCuApplyMatrixKeys(keys);
+ var bg=document.getElementById('cu-edit-modal-bg');
+ if(bg)bg.classList.add('on');
+}
+function gmCuCloseEditModal(){
+ var bg=document.getElementById('cu-edit-modal-bg');
+ if(bg)bg.classList.remove('on');
+ window._cuEditUserId=null;
+}
+async function gmCuSaveEditMenuAccess(){
+ var uid=window._cuEditUserId;
+ if(!uid)return;
+ var menuAccess=gmCuCollectMatrixKeys();
+ var body={menuAccess:menuAccess};
+ var scopeId=gmClientUsersResolveScopeId();
+ if(scopeId)body.clientId=scopeId;
+ try{
+  var res=await fetch('/api/client/users/'+encodeURIComponent(uid),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){
+   var errMsg=(j&&j.error)||('Erro '+res.status);
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   else alert(errMsg);
+   return;
+  }
+  if(typeof showToast==='function')showToast('Acesso ao menu atualizado.','success');
+  gmCuCloseEditModal();
+  await renderClientUsersPage();
+ }catch(e){
+  console.warn('[gmCuSaveEditMenuAccess]',e);
+  if(typeof showToast==='function')showToast('Erro de rede ao salvar.','error');
+  else alert('Erro de rede ao salvar.');
+ }
+}
+window.gmCuOpenEdit=gmCuOpenEdit;
+window.gmCuCloseEditModal=gmCuCloseEditModal;
+window.gmCuSaveEditMenuAccess=gmCuSaveEditMenuAccess;
 function renderCuTable(){
  var tb=document.getElementById('cu-tbody');
  if(!tb)return;
@@ -8596,7 +8804,9 @@ function renderCuTable(){
   if(vid)vnm=String(vmap[vid]||vid).replace(/</g,'&lt;');
   if(String(u.role||'').toLowerCase()!=='field')vnm='—';
   var isSelf=meId&&String(u.id)===meId;
-  return '<tr><td>'+nm+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="cl-pill-mgr" style="font-size:10px">'+rl+'</span></td><td style="font-size:12px;color:var(--ink2)">'+vnm+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Ativo':(u.status==='suspended'?'Suspenso':'Pendente'))+'</td><td class="cl-act-wrap"><button type="button" class="cl-btn-sec cl-act-red" '+(isSelf?'disabled style="opacity:.4"':'')+' onclick="gmClientUsersToggleStatus(\''+uid+'\')">'+(st?'Desativar':'Ativar')+'</button></td></tr>';
+  var actBtn='<button type="button" class="cl-btn-sec cl-act-navy" onclick="if(typeof gmCuOpenEdit===\'function\')gmCuOpenEdit(\''+uid+'\')" style="margin-right:4px">Editar</button>'
+   +'<button type="button" class="cl-btn-sec cl-act-red" '+(isSelf?'disabled style="opacity:.4"':'')+' onclick="gmClientUsersToggleStatus(\''+uid+'\')">'+(st?'Desativar':'Ativar')+'</button>';
+  return '<tr><td>'+nm+'</td><td>'+String(u.email||'').replace(/</g,'&lt;')+'</td><td><span class="cl-pill-mgr" style="font-size:10px">'+rl+'</span></td><td style="font-size:12px;color:var(--ink2)">'+vnm+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Ativo':(u.status==='suspended'?'Suspenso':'Pendente'))+'</td><td class="cl-act-wrap">'+actBtn+'</td></tr>';
  }).join('');
 }
 async function gmClientUsersToggleStatus(userId){
@@ -30315,6 +30525,7 @@ function gmLoanRenderRowActions(loan){
  var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
  var html='<button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanOpenDetail===\'function\')gmLoanOpenDetail(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
  html+=' <button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanOpenEdit===\'function\')gmLoanOpenEdit(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
+ html+=' <button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanContractPdf===\'function\')gmLoanContractPdf(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Baixar contrato (PDF)</button>';
  html+=' <button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanDelete===\'function\')gmLoanDelete(this.getAttribute(\'data-loan-id\'))" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Excluir</button>';
  return html;
 }
@@ -30406,8 +30617,9 @@ function gmLoanRenderDetailActions(loan){
  var actions=document.getElementById('gm-loan-view-actions');
  if(!actions)return;
  var loanId=loan&&loan.id?gmLoanEsc(String(loan.id)):'';
+ var pdfBtn=loanId?'<button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanContractPdf===\'function\')gmLoanContractPdf(this.getAttribute(\'data-loan-id\'))" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;margin-right:8px">Baixar contrato (PDF)</button>':'';
  var editBtn=loanId?'<button type="button" data-loan-id="'+loanId+'" onclick="if(typeof gmLoanOpenEdit===\'function\')gmLoanOpenEdit(this.getAttribute(\'data-loan-id\'))" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;margin-right:8px">Editar</button>':'';
- actions.innerHTML=editBtn+'<button type="button" onclick="if(typeof gmLoanCloseDetail===\'function\')gmLoanCloseDetail()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+ actions.innerHTML=pdfBtn+editBtn+'<button type="button" onclick="if(typeof gmLoanCloseDetail===\'function\')gmLoanCloseDetail()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
 }
 function gmLoanRenderDetail(loan){
  var header=document.getElementById('gm-loan-view-header');
@@ -30724,6 +30936,129 @@ async function gmLoanDelete(id){
   if(typeof showToast==='function')showToast('Erro ao excluir loan.','error');
  }
 }
+function gmLoanContractStatusLabel(status){
+ var st=String(status||'').toLowerCase();
+ var map={active:'Ativo',paid:'Quitado',cancelled:'Cancelado'};
+ return map[st]||st||'—';
+}
+function gmLoanContractPdfBuildHtml(loan){
+ if(!loan)return '';
+ var code=gmLoanEsc(String(loan.code||'').trim()||'—');
+ var statusLbl=gmLoanEsc(gmLoanContractStatusLabel(loan.status));
+ var creditor=gmLoanEsc(String(loan.creditorName||'').trim()||'—');
+ var debtor=gmLoanEsc(String(loan.debtorName||'').trim()||'—');
+ var guarantorName=gmLoanEsc(String(loan.guarantorName||'').trim()||'—');
+ var guarantorEmail=String(loan.guarantorEmail||'').trim();
+ var guarantorPhone=String(loan.guarantorPhone||'').trim();
+ var guarantorExtra='';
+ if(guarantorEmail)guarantorExtra+='<div>'+gmLoanEsc(guarantorEmail)+'</div>';
+ if(guarantorPhone)guarantorExtra+='<div>'+gmLoanEsc(guarantorPhone)+'</div>';
+ var address=gmLoanEsc(gmLoanPropertyLabel(loan));
+ var principal=gmLoanEsc(gmLoanFmtMoney(loan.principal));
+ var startDate=gmLoanEsc(gmLoanFmtDateUtc(loan.startDate));
+ var notes=String(loan.notes||'').trim();
+ var summary=loan.installmentSummary||{};
+ var totalPaid=gmLoanEsc(gmLoanFmtMoney(summary.totalPaid!=null?summary.totalPaid:0));
+ var totalRemaining=gmLoanEsc(gmLoanFmtMoney(summary.remaining!=null?summary.remaining:0));
+ var installments=Array.isArray(loan.installments)?loan.installments.slice():[];
+ installments.sort(function(a,b){return Number(a.seq||0)-Number(b.seq||0);});
+ var rows='';
+ installments.forEach(function(inst){
+  var isPaid=inst.paid===true;
+  var statusCell=isPaid?'Paga':'Em aberto';
+  var paidAt=isPaid&&inst.paidAt?gmLoanFmtDateUtc(inst.paidAt):'—';
+  rows+='<tr>'
+   +'<td class="num">'+gmLoanEsc(String(inst.seq||''))+'</td>'
+   +'<td>'+gmLoanEsc(gmLoanFmtDateUtc(inst.dueDate))+'</td>'
+   +'<td class="num">'+gmLoanEsc(gmLoanFmtMoney(inst.amount))+'</td>'
+   +'<td>'+gmLoanEsc(statusCell)+'</td>'
+   +'<td>'+gmLoanEsc(paidAt)+'</td>'
+   +'</tr>';
+ });
+ if(!rows){
+  rows='<tr><td colspan="5" style="text-align:center;color:#666">Sem parcelas</td></tr>';
+ }
+ var notesBlock='';
+ if(notes){
+  notesBlock='<div class="notes"><div class="block-title">Notas</div><div>'+gmLoanEsc(notes)+'</div></div>';
+ }
+ return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Contrato '+code+'</title><style>'
+  +'body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;padding:32px 40px;font-size:13px;line-height:1.45}'
+  +'.head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #333;padding-bottom:16px;margin-bottom:24px}'
+  +'.head h1{font-size:24px;font-weight:700;margin:0 0 4px 0;letter-spacing:.5px}'
+  +'.meta{font-size:12px;color:#444}'
+  +'.meta strong{color:#1a1a1a}'
+  +'.cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px}'
+  +'.block-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#666;margin-bottom:6px}'
+  +'.block-name{font-size:15px;font-weight:600;margin-bottom:4px}'
+  +'.block-addr{color:#444;margin-bottom:4px}'
+  +'.amount-row{display:flex;gap:32px;margin-bottom:24px;flex-wrap:wrap}'
+  +'.amount-item .block-title{margin-bottom:4px}'
+  +'.amount-val{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:18px;font-weight:700}'
+  +'table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}'
+  +'th,td{border:1px solid #ccc;padding:8px 10px}'
+  +'th{background:#f3f3f3;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.5px}'
+  +'.num{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}'
+  +'.totals{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}'
+  +'.total-box{padding:14px 16px;background:#f7f7f7;border:1px solid #ccc}'
+  +'.total-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444;margin-bottom:6px}'
+  +'.total-val{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:18px;font-weight:700}'
+  +'.notes{padding:12px 14px;border:1px solid #ddd;background:#fafafa;margin-bottom:24px;font-size:12px;color:#333}'
+  +'.footer{margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#888;text-align:center}'
+  +'@media print{body{padding:16px}}'
+  +'</style></head><body>'
+  +'<div class="head"><div><h1>CONTRATO DE EMPRÉSTIMO</h1><div class="meta"><strong>Código</strong> '+code+' &nbsp;·&nbsp; <strong>Status</strong> '+statusLbl+'</div></div>'
+  +'<div class="meta"><div><strong>Data inicial</strong> '+startDate+'</div></div></div>'
+  +'<div class="cols">'
+  +'<div><div class="block-title">Credor</div><div class="block-name">'+creditor+'</div></div>'
+  +'<div><div class="block-title">Devedor</div><div class="block-name">'+debtor+'</div></div>'
+  +'</div>'
+  +'<div class="cols">'
+  +'<div><div class="block-title">Avalista</div><div class="block-name">'+guarantorName+'</div>'+guarantorExtra+'</div>'
+  +'<div><div class="block-title">Endereço (imóvel)</div><div class="block-addr">'+address+'</div></div>'
+  +'</div>'
+  +'<div class="amount-row"><div class="amount-item"><div class="block-title">Principal</div><div class="amount-val">'+principal+'</div></div></div>'
+  +notesBlock
+  +'<div class="block-title" style="margin-bottom:8px">Parcelas</div>'
+  +'<table><thead><tr><th class="num">Nº</th><th>Vencimento</th><th class="num">Valor</th><th>Status</th><th>Pago em</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  +'<div class="totals">'
+  +'<div class="total-box"><div class="total-label">Saldo pago</div><div class="total-val">'+totalPaid+'</div></div>'
+  +'<div class="total-box"><div class="total-label">Saldo devedor</div><div class="total-val">'+totalRemaining+'</div></div>'
+  +'</div>'
+  +'<div class="footer">Documento gerado pelo GodManager · '+gmLoanEsc(new Date().toISOString().slice(0,10))+'</div>'
+  +'</body></html>';
+}
+async function gmLoanContractPdf(id){
+ if(!id)return;
+ try{
+  var res=await fetch('/api/billing/loans/'+encodeURIComponent(String(id)),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.loan){
+   var errMsg=(data&&data.error)||'Erro ao carregar loan';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   else alert(errMsg);
+   return;
+  }
+  var html=gmLoanContractPdfBuildHtml(data.loan);
+  if(typeof gmBillingInvoicePdfPrintHtml==='function'){
+   gmBillingInvoicePdfPrintHtml(html);
+  }else{
+   var w=window.open('','_blank');
+   if(!w){
+    if(typeof showToast==='function')showToast('Não foi possível abrir a janela de impressão. Libere pop-ups para este site.','error');
+    else alert('Não foi possível abrir a janela de impressão. Libere pop-ups para este site.');
+    return;
+   }
+   w.document.write(html);
+   w.document.close();
+   w.onload=function(){w.print();};
+  }
+ }catch(e){
+  console.warn('[gmLoanContractPdf]',e);
+  if(typeof showToast==='function')showToast('Erro ao gerar contrato PDF.','error');
+  else alert('Erro ao gerar contrato PDF.');
+ }
+}
 window.gmLoanRenderList=gmLoanRenderList;
 window.gmLoanOpenModal=gmLoanOpenModal;
 window.gmLoanOpenEdit=gmLoanOpenEdit;
@@ -30736,6 +31071,7 @@ window.gmLoanToggleInstallmentPaid=gmLoanToggleInstallmentPaid;
 window.gmLoanPopulatePropertySelect=gmLoanPopulatePropertySelect;
 window.gmLoanOnPropertyChange=gmLoanOnPropertyChange;
 window.gmLoanFetchPropertyRows=gmLoanFetchPropertyRows;
+window.gmLoanContractPdf=gmLoanContractPdf;
 /* ========== /BILLING LOAN ========== */
 
 /* ========== /BILLING ========== */
