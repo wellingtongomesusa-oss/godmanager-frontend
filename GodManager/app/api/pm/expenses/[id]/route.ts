@@ -58,6 +58,45 @@ function mergeRescheduleMetadata(
   return base as Prisma.InputJsonValue;
 }
 
+/** Garante job_bid won para (expenseId, vendorId) se ausente — espelha POST create; não altera bids existentes. */
+async function ensureWonJobBidForVendor(
+  tx: Prisma.TransactionClient,
+  params: {
+    expenseId: string;
+    vendorId: string;
+    clientId: string | null;
+    invitedById: string;
+    amount: number;
+    now: Date;
+  },
+): Promise<void> {
+  const existing = await tx.jobBid.findUnique({
+    where: {
+      expenseId_vendorId: {
+        expenseId: params.expenseId,
+        vendorId: params.vendorId,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (existing) return;
+
+  await tx.jobBid.create({
+    data: {
+      expenseId: params.expenseId,
+      vendorId: params.vendorId,
+      clientId: params.clientId,
+      invitedById: params.invitedById,
+      invitedAt: params.now,
+      submittedAt: params.now,
+      deadline: params.now,
+      amount: params.amount,
+      status: 'won',
+    },
+  });
+}
+
 function toJson(e: {
   id: string;
   propertyId: string;
@@ -363,58 +402,80 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       changedFields.push(`reschedules:append:${rescheduleBy}`);
     }
 
-    const row = await prisma.pmExpense.update({
-      where: { id: params.id },
-      data: {
-        propertyId,
-        ...(shouldSyncExpenseClientId ? { clientId: expenseClientIdForProperty } : {}),
-        vendorId,
-        serviceType:
-          body.serviceType !== undefined
-            ? String(body.serviceType).trim() || null
-            : cur.serviceType,
-        packageApplied: pkg,
-        vendorCost,
-        ownerCharged,
-        ...(jobValueOverride !== undefined ? { jobValueOverride } : {}),
-        serviceDate,
-        monthRef,
-        status: st,
-        description:
-          body.description !== undefined ? String(body.description).trim() || null : cur.description,
-        finalizedAt: isFinalizingNow
-          ? new Date()
-          : isReactivating
-            ? null
-            : undefined,
-        finalizedBy: isFinalizingNow
-          ? body.finalizedBy
-            ? String(body.finalizedBy).trim()
-            : null
-          : isReactivating
-            ? null
-            : undefined,
-        finalizedNote: isFinalizingNow
-          ? body.finalizedNote
-            ? String(body.finalizedNote).trim()
-            : null
-          : isReactivating
-            ? null
-            : undefined,
-        ...(executedAt !== undefined ? { executedAt } : {}),
-        ...(executedLat !== undefined ? { executedLat } : {}),
-        ...(executedLng !== undefined ? { executedLng } : {}),
-        ...(executedAccuracy !== undefined ? { executedAccuracy } : {}),
-        ...(executedByUserId !== undefined ? { executedByUserId } : {}),
-        ...(isVendorFreePatch !== undefined ? { isVendorFree: isVendorFreePatch } : {}),
-        wasRescheduled,
-        ...(metadataForUpdate !== undefined ? { metadata: metadataForUpdate } : {}),
-      },
-      include: {
-        property: { select: pmExpensePropertyTenantSelect },
-        vendor: { select: { id: true, companyName: true, defaultPackage: true } },
-        client: { select: { jobPrefix: true } },
-      },
+    const finalIsVendorFree =
+      isVendorFreePatch !== undefined ? isVendorFreePatch : cur.isVendorFree;
+    const expenseClientIdForBid = shouldSyncExpenseClientId
+      ? expenseClientIdForProperty
+      : cur.clientId;
+
+    const row = await prisma.$transaction(async (tx) => {
+      const updated = await tx.pmExpense.update({
+        where: { id: params.id },
+        data: {
+          propertyId,
+          ...(shouldSyncExpenseClientId ? { clientId: expenseClientIdForProperty } : {}),
+          vendorId,
+          serviceType:
+            body.serviceType !== undefined
+              ? String(body.serviceType).trim() || null
+              : cur.serviceType,
+          packageApplied: pkg,
+          vendorCost,
+          ownerCharged,
+          ...(jobValueOverride !== undefined ? { jobValueOverride } : {}),
+          serviceDate,
+          monthRef,
+          status: st,
+          description:
+            body.description !== undefined ? String(body.description).trim() || null : cur.description,
+          finalizedAt: isFinalizingNow
+            ? new Date()
+            : isReactivating
+              ? null
+              : undefined,
+          finalizedBy: isFinalizingNow
+            ? body.finalizedBy
+              ? String(body.finalizedBy).trim()
+              : null
+            : isReactivating
+              ? null
+              : undefined,
+          finalizedNote: isFinalizingNow
+            ? body.finalizedNote
+              ? String(body.finalizedNote).trim()
+              : null
+            : isReactivating
+              ? null
+              : undefined,
+          ...(executedAt !== undefined ? { executedAt } : {}),
+          ...(executedLat !== undefined ? { executedLat } : {}),
+          ...(executedLng !== undefined ? { executedLng } : {}),
+          ...(executedAccuracy !== undefined ? { executedAccuracy } : {}),
+          ...(executedByUserId !== undefined ? { executedByUserId } : {}),
+          ...(isVendorFreePatch !== undefined ? { isVendorFree: isVendorFreePatch } : {}),
+          wasRescheduled,
+          ...(metadataForUpdate !== undefined ? { metadata: metadataForUpdate } : {}),
+        },
+        include: {
+          property: { select: pmExpensePropertyTenantSelect },
+          vendor: { select: { id: true, companyName: true, defaultPackage: true } },
+          client: { select: { jobPrefix: true } },
+        },
+      });
+
+      if (vendorId && !finalIsVendorFree) {
+        const now = new Date();
+        await ensureWonJobBidForVendor(tx, {
+          expenseId: params.id,
+          vendorId,
+          clientId: expenseClientIdForBid,
+          invitedById: user.id,
+          amount: vendorCost,
+          now,
+        });
+      }
+
+      return updated;
     });
 
     if (isFinalizingNow || isReactivating || changedFields.length > 0) {
