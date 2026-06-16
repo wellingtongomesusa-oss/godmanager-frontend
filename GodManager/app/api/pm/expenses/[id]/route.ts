@@ -43,10 +43,20 @@ function parseRescheduleBy(raw: unknown): 'tenant' | 'vendor' {
   return raw === 'tenant' ? 'tenant' : 'vendor';
 }
 
+type RescheduleHistoryEntry = {
+  at: string;
+  byUserId: string;
+  byEmail: string | null;
+  fromDate: string;
+  toDate: string;
+  reason: string;
+};
+
 function mergeRescheduleMetadata(
   curMeta: Prisma.JsonValue | null,
   newDateIso: string,
   rescheduleBy: 'tenant' | 'vendor',
+  historyEntry?: RescheduleHistoryEntry,
 ): Prisma.InputJsonValue {
   const base =
     curMeta && typeof curMeta === 'object' && !Array.isArray(curMeta)
@@ -55,6 +65,13 @@ function mergeRescheduleMetadata(
   const list = Array.isArray(base.reschedules) ? [...(base.reschedules as unknown[])] : [];
   list.push({ date: newDateIso, atIso: new Date().toISOString(), by: rescheduleBy });
   base.reschedules = list;
+  if (historyEntry) {
+    const hist = Array.isArray(base.rescheduleHistory)
+      ? [...(base.rescheduleHistory as unknown[])]
+      : [];
+    hist.push(historyEntry);
+    base.rescheduleHistory = hist;
+  }
   return base as Prisma.InputJsonValue;
 }
 
@@ -389,15 +406,47 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       nextSvc !== '' &&
       prevSvc !== nextSvc;
 
+    const explicitReschedule =
+      body.rescheduleBy !== undefined && body.rescheduleBy !== null;
+    const rescheduleReasonRaw =
+      body.rescheduleReason !== undefined ? String(body.rescheduleReason).trim() : '';
+
+    if (explicitReschedule && !rescheduleReasonRaw) {
+      return NextResponse.json(
+        { ok: false, error: 'rescheduleReason is required when rescheduling' },
+        { status: 400 },
+      );
+    }
+
     let wasRescheduled = cur.wasRescheduled;
+    let rescheduleReasonForAudit: string | null = null;
     if (isReschedulePatch) {
       const rescheduleBy = parseRescheduleBy(body.rescheduleBy);
       wasRescheduled = true;
+      const historyEntry = rescheduleReasonRaw
+        ? {
+            at: new Date().toISOString(),
+            byUserId: user.id,
+            byEmail: user.email ?? null,
+            fromDate: prevSvc,
+            toDate: nextSvc,
+            reason: rescheduleReasonRaw,
+          }
+        : undefined;
+      if (rescheduleReasonRaw) {
+        rescheduleReasonForAudit = rescheduleReasonRaw;
+        changedFields.push(`rescheduleReason:${rescheduleReasonRaw}`);
+      }
       const rescheduleBase =
         metadataForUpdate !== undefined
           ? (metadataForUpdate as Prisma.JsonValue)
           : cur.metadata;
-      metadataForUpdate = mergeRescheduleMetadata(rescheduleBase, nextSvc, rescheduleBy);
+      metadataForUpdate = mergeRescheduleMetadata(
+        rescheduleBase,
+        nextSvc,
+        rescheduleBy,
+        historyEntry,
+      );
       changedFields.push('wasRescheduled');
       changedFields.push(`reschedules:append:${rescheduleBy}`);
     }
@@ -483,13 +532,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (isFinalizingNow) action = 'pm_expense.finalize';
       else if (isReactivating) action = 'pm_expense.reopen';
 
+      let auditDetails = `changed: ${changedFields.join(', ') || action}`;
+      if (rescheduleReasonForAudit) {
+        auditDetails += ` | reschedule reason: ${rescheduleReasonForAudit}`;
+      }
       await recordAudit({
         request: req,
         actor: { id: user.id, email: user.email },
         action,
         entity: 'pm_expense',
         entityId: params.id,
-        details: `changed: ${changedFields.join(', ') || action}`,
+        details: auditDetails,
         clientId: row.clientId ?? cur.clientId,
       });
     }

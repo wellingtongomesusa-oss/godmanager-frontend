@@ -24716,6 +24716,7 @@ function gmJobsRefreshRescheduleModalI18n(){
  set('gm-job-resched-radio-vendor','jobs_reschedule_vendor_radio');
  set('gm-job-resched-radio-tenant','jobs_reschedule_tenant_radio');
  set('gm-job-resched-date-label','jobs_reschedule_date_label');
+ set('gm-job-resched-text-reason-label','jobs_reschedule_text_reason_label');
  set('gm-job-resched-cancel','cancel');
  set('gm-job-resched-ok','jobs_reschedule_confirm');
  var help=document.getElementById('gm-job-resched-help');
@@ -26873,7 +26874,9 @@ window.jobsReschedule=function(id){
    +'<input type="radio" name="gm-job-resched-by" value="tenant" style="accent-color:var(--amber)"> <span id="gm-job-resched-radio-tenant">'+gmJobsT('jobs_reschedule_tenant_radio')+'</span></label>'
    +'</div>'
    +'<label id="gm-job-resched-date-label" style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px">'+gmJobsT('jobs_reschedule_date_label')+'</label>'
-   +'<input type="date" id="gm-job-resched-date" value="'+currentDate+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;margin-bottom:18px">'
+   +'<input type="date" id="gm-job-resched-date" value="'+currentDate+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;margin-bottom:14px">'
+   +'<label id="gm-job-resched-text-reason-label" style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px">'+gmJobsT('jobs_reschedule_text_reason_label')+'</label>'
+   +'<textarea id="gm-job-resched-text-reason" rows="3" placeholder="'+gmJobsT('jobs_reschedule_text_reason_label').replace(/"/g,'&quot;')+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;margin-bottom:18px;resize:vertical;min-height:72px;box-sizing:border-box;font-family:inherit"></textarea>'
    +'<div style="display:flex;gap:10px;justify-content:flex-end">'
    +'<button type="button" id="gm-job-resched-cancel" style="padding:8px 16px;border:1px solid var(--border2);border-radius:6px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">'+gmJobsT('cancel')+'</button>'
    +'<button type="button" id="gm-job-resched-ok" style="padding:8px 18px;border:1px solid #1e2b3d;border-radius:6px;background:#1e2b3d;color:#fff;font-size:12px;font-weight:600;cursor:pointer">'+gmJobsT('jobs_reschedule_confirm')+'</button>'
@@ -26883,20 +26886,48 @@ window.jobsReschedule=function(id){
   document.getElementById('gm-job-resched-cancel').onclick=function(){overlay.remove();};
   document.getElementById('gm-job-resched-ok').onclick=function(){
    var newDate=document.getElementById('gm-job-resched-date').value;
-   if(!newDate){alert(gmJobsT('jobs_select_date'));return;}
+   if(!newDate){
+    if(typeof showToast==='function')showToast(gmJobsT('jobs_select_date'),'error');
+    else alert(gmJobsT('jobs_select_date'));
+    return;
+   }
+   var reasonEl=document.getElementById('gm-job-resched-text-reason');
+   var rescheduleReason=(reasonEl&&reasonEl.value)?String(reasonEl.value).trim():'';
+   if(!rescheduleReason){
+    if(typeof showToast==='function')showToast(gmJobsT('jobs_reschedule_text_reason_required'),'error');
+    else alert(gmJobsT('jobs_reschedule_text_reason_required'));
+    return;
+   }
    var byEl=document.querySelector('input[name="gm-job-resched-by"]:checked');
    var rescheduleBy=(byEl&&byEl.value==='tenant')?'tenant':'vendor';
    overlay.remove();
-   gmJobApplyReschedule(id,newDate,rescheduleBy);
+   gmJobApplyReschedule(id,newDate,rescheduleBy,rescheduleReason);
   };
  }catch(e){console.warn('jobsReschedule',e);alert('Erro: '+e.message);}
 };
 
-function gmJobApplyReschedule(id,newDate,rescheduleBy){
+function gmJobApplyReschedule(id,newDate,rescheduleBy,rescheduleReason){
  try{
   var by=(rescheduleBy==='tenant')?'tenant':'vendor';
+  var reason=String(rescheduleReason||'').trim();
+  if(!reason){
+   if(typeof showToast==='function')showToast(gmJobsT('jobs_reschedule_text_reason_required'),'error');
+   return;
+  }
   var monthRef=String(newDate).slice(0,7); // YYYY-MM
   var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+  var prevDate='';
+  try{
+   var cachesPeek=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
+   cachesPeek.forEach(function(arr){
+    if(!Array.isArray(arr))return;
+    var row=arr.find(function(x){return x&&String(x.id)===String(id);});
+    if(row){
+     var sd=row.serviceDate||row.date||'';
+     if(sd&&typeof sd==='string')prevDate=sd.slice(0,10);
+    }
+   });
+  }catch(ePeek){}
   // Optimistic UI: atualiza cache
   try{
    var caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache];
@@ -26904,6 +26935,10 @@ function gmJobApplyReschedule(id,newDate,rescheduleBy){
     if(Array.isArray(arr)){
      var ix=arr.findIndex(function(x){return x&&String(x.id)===String(id);});
      if(ix>=0){
+      if(!prevDate){
+       var sd0=arr[ix].serviceDate||arr[ix].date||'';
+       if(sd0&&typeof sd0==='string')prevDate=sd0.slice(0,10);
+      }
       arr[ix].serviceDate=newDate;
       arr[ix].monthRef=monthRef;
       arr[ix].status='SCHEDULED';
@@ -26913,7 +26948,18 @@ function gmJobApplyReschedule(id,newDate,rescheduleBy){
       if(!meta||typeof meta!=='object')meta={reschedules:[]};
       if(!Array.isArray(meta.reschedules))meta.reschedules=[];
       meta.reschedules=meta.reschedules.slice();
-      meta.reschedules.push({date:newDate,atIso:new Date().toISOString(),by:by});
+      var atIso=new Date().toISOString();
+      meta.reschedules.push({date:newDate,atIso:atIso,by:by});
+      if(!Array.isArray(meta.rescheduleHistory))meta.rescheduleHistory=[];
+      meta.rescheduleHistory=meta.rescheduleHistory.slice();
+      meta.rescheduleHistory.push({
+       at:atIso,
+       byUserId:u.id||null,
+       byEmail:u.email||null,
+       fromDate:prevDate||'',
+       toDate:newDate,
+       reason:reason
+      });
       arr[ix].metadata=meta;
      }
     }
@@ -26926,7 +26972,7 @@ function gmJobApplyReschedule(id,newDate,rescheduleBy){
    method:'PATCH',
    credentials:'include',
    headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({status:'SCHEDULED',serviceDate:newDate,monthRef:monthRef,rescheduleBy:by})
+   body:JSON.stringify({status:'SCHEDULED',serviceDate:newDate,monthRef:monthRef,rescheduleBy:by,rescheduleReason:reason})
   }).then(function(r){
    if(!r.ok){console.warn('jobsReschedule backend status',r.status);return;}
    return r.json().then(function(j){
