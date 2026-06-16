@@ -47,6 +47,7 @@ export async function GET() {
       vendorId: user.vendorId ?? null,
       status: user.status,
       permissions: user.permissions,
+      menuAccess: user.menuAccess,
       lastActive: user.lastActive,
       createdAt: user.createdAt,
       productType,

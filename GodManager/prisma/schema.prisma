@@ -233,6 +233,7 @@ model User {
   role            UserRole         @default(viewer)
   status          UserStatus       @default(pending)
   permissions     String[]         @default([])
+  menuAccess      String[]         @default([])
   passwordHash    String
   createdAt       DateTime         @default(now())
   lastActive      DateTime         @default(now())

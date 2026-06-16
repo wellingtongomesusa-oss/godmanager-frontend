@@ -9,6 +9,25 @@ export const dynamic = 'force-dynamic';
 
 const VALID_STATUSES: UserStatus[] = ['active', 'suspended', 'pending'];
 
+const MENU_ACCESS_ADMIN_ROLES = new Set(['admin', 'super_admin']);
+
+/**
+ * menuAccess semantics (F1.B will enforce in UI/API reads):
+ * - Empty array = no restriction (current role-based behavior).
+ * - super_admin always has full access; menuAccess never restricts super_admin.
+ */
+function parseMenuAccessInput(raw: unknown): { ok: true; value: string[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: 'menuAccess deve ser um array.' };
+  }
+  for (const item of raw) {
+    if (typeof item !== 'string') {
+      return { ok: false, error: 'menuAccess deve conter apenas strings.' };
+    }
+  }
+  return { ok: true, value: raw.map((s) => s.trim()) };
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const actor = await getCurrentUserFromSession();
   if (!actor) {
@@ -24,7 +43,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const target = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, clientId: true, role: true, email: true, status: true },
+      select: {
+        id: true,
+        clientId: true,
+        role: true,
+        email: true,
+        status: true,
+        menuAccess: true,
+      },
     });
     if (!target || target.clientId !== scope.clientId) {
       return NextResponse.json({ ok: false, error: 'Utilizador não encontrado.' }, { status: 404 });
@@ -33,8 +59,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ ok: false, error: 'Operação não permitida.' }, { status: 403 });
     }
 
-    const data: { status?: UserStatus } = {};
+    const data: { status?: UserStatus; menuAccess?: string[] } = {};
     const changedFields: string[] = [];
+
     if (typeof body.status === 'string') {
       const st = body.status as UserStatus;
       if (!VALID_STATUSES.includes(st)) {
@@ -42,6 +69,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
       data.status = st;
       if (st !== target.status) changedFields.push(`status:${target.status}->${st}`);
+    }
+
+    if (body.menuAccess !== undefined) {
+      const actorRole = String(actor.role || '').toLowerCase();
+      if (!MENU_ACCESS_ADMIN_ROLES.has(actorRole)) {
+        return NextResponse.json(
+          { ok: false, error: 'Apenas administradores podem editar menuAccess.' },
+          { status: 403 },
+        );
+      }
+      const parsed = parseMenuAccessInput(body.menuAccess);
+      if (!parsed.ok) {
+        return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+      }
+      data.menuAccess = parsed.value;
+      if (JSON.stringify(parsed.value) !== JSON.stringify(target.menuAccess)) {
+        changedFields.push('menuAccess');
+      }
     }
 
     if (Object.keys(data).length === 0) {
@@ -63,6 +108,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         phone: true,
         role: true,
         status: true,
+        menuAccess: true,
         createdAt: true,
         lastActive: true,
       },
