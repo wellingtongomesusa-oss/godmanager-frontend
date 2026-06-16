@@ -122,6 +122,12 @@ export async function POST(req: Request) {
           debtorName,
           guarantorName:
             body.guarantorName != null ? String(body.guarantorName).trim() || null : null,
+          creditorName:
+            body.creditorName != null ? String(body.creditorName).trim() || null : null,
+          guarantorEmail:
+            body.guarantorEmail != null ? String(body.guarantorEmail).trim() || null : null,
+          guarantorPhone:
+            body.guarantorPhone != null ? String(body.guarantorPhone).trim() || null : null,
           principal: roundMoney(principal),
           ...(interestRate != null ? { interestRate } : {}),
           startDate: startDateParsed,

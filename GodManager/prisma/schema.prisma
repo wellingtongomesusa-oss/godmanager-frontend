@@ -1262,6 +1262,9 @@ model Loan {
   propertyId        String?
   debtorName        String
   guarantorName     String?
+  creditorName      String?
+  guarantorEmail    String?
+  guarantorPhone    String?
   principal         Decimal           @db.Decimal(12, 2)
   interestRate      Decimal?          @db.Decimal(5, 2)
   startDate         DateTime

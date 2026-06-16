@@ -3958,18 +3958,28 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <div style="margin-bottom:14px">
    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO</label>
-   <select id="gm-loan-property" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+   <select id="gm-loan-property" onchange="if(typeof gmLoanOnPropertyChange==='function')gmLoanOnPropertyChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
     <option value="">— Sem propriedade —</option>
    </select>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DEVEDOR *</label><input id="gm-loan-debtor" type="text" placeholder="Nome do devedor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
-   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">AVALISTA</label><input id="gm-loan-guarantor" type="text" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+  <div style="margin-bottom:14px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CREDOR</label>
+   <input id="gm-loan-creditor" type="text" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+  </div>
+  <div style="margin-bottom:14px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DEVEDOR *</label>
+   <input id="gm-loan-debtor" type="text" placeholder="Nome do devedor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PRINCIPAL *</label><input id="gm-loan-principal" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">Nº DE PARCELAS *</label><input id="gm-loan-installments" type="number" min="1" step="1" placeholder="12" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA INICIAL *</label><input id="gm-loan-start" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+  </div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Avalista</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOME</label><input id="gm-loan-guarantor" type="text" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">E-MAIL DO AVALISTA</label><input id="gm-loan-guarantor-email" type="email" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TELEFONE DO AVALISTA</label><input id="gm-loan-guarantor-phone" type="text" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
   </div>
   <div style="margin-bottom:18px">
    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOTAS</label>
@@ -30114,18 +30124,36 @@ async function gmLoanPopulatePropertySelect(){
    var id=String(p.id||'').trim();
    var code=String(p.code||'').trim();
    var addr=String(p.address||'').trim();
+   var ownerName=String(p.ownerName||'').trim();
    if(!id)return null;
    var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
-   return{id:id,label:label};
+   return{id:id,label:label,ownerName:ownerName};
   }).filter(Boolean);
   records.sort(function(a,b){return String(a.label).localeCompare(String(b.label));});
+  window.__gmLoanPropertyOwners={};
   records.forEach(function(r){
+   window.__gmLoanPropertyOwners[r.id]=r.ownerName||'';
    var opt=document.createElement('option');
    opt.value=r.id;
    opt.textContent=r.label;
+   if(r.ownerName)opt.setAttribute('data-owner-name',r.ownerName);
    sel.appendChild(opt);
   });
  }catch(e){console.warn('[gmLoanPopulatePropertySelect]',e);}
+}
+function gmLoanOnPropertyChange(){
+ var sel=document.getElementById('gm-loan-property');
+ var debtor=document.getElementById('gm-loan-debtor');
+ if(!sel||!debtor)return;
+ var val=String(sel.value||'').trim();
+ if(!val)return;
+ var opt=sel.options[sel.selectedIndex];
+ var owner='';
+ if(opt)owner=String(opt.getAttribute('data-owner-name')||'').trim();
+ if(!owner&&window.__gmLoanPropertyOwners&&window.__gmLoanPropertyOwners[val]){
+  owner=String(window.__gmLoanPropertyOwners[val]||'').trim();
+ }
+ if(owner)debtor.value=owner;
 }
 function gmLoanRenderRowActions(loan){
  var loanId=gmLoanEsc(String(loan.id||''));
@@ -30211,7 +30239,10 @@ function gmLoanRenderDetail(loan){
  var totalCount=summary.totalCount!=null?summary.totalCount:(Array.isArray(loan.installments)?loan.installments.length:0);
  var paidAmt=summary.totalPaid!=null?summary.totalPaid:0;
  var remaining=summary.remaining!=null?summary.remaining:0;
+ var creditor=String(loan.creditorName||'').trim()||'—';
  var guarantor=String(loan.guarantorName||'').trim()||'—';
+ var guarantorEmail=String(loan.guarantorEmail||'').trim()||'—';
+ var guarantorPhone=String(loan.guarantorPhone||'').trim()||'—';
  var notesBlock='';
  if(loan.notes){
   notesBlock='<div style="margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Notas</div><div style="font-size:12px;color:var(--ink2);line-height:1.5">'+gmLoanEsc(loan.notes)+'</div></div>';
@@ -30254,10 +30285,16 @@ function gmLoanRenderDetail(loan){
  }
  body.innerHTML=
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'
-  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">AVALISTA</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(guarantor)+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">CREDOR</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(creditor)+'</div></div>'
   +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">ENDEREÇO</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(gmLoanPropertyLabel(loan))+'</div></div>'
   +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">PRINCIPAL</div><div style="font-size:13px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+gmLoanEsc(gmLoanFmtMoney(loan.principal))+'</div></div>'
   +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">DATA INICIAL</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(gmLoanFmtDateUtc(loan.startDate))+'</div></div>'
+  +'</div>'
+  +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Avalista</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px">'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">NOME</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(guarantor)+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">E-MAIL</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(guarantorEmail)+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">TELEFONE</div><div style="font-size:12px;color:var(--ink)">'+gmLoanEsc(guarantorPhone)+'</div></div>'
   +'</div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">'
   +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Pago</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--green)">'+gmLoanEsc(gmLoanFmtMoney(paidAmt))+'</div></div>'
@@ -30331,14 +30368,20 @@ async function gmLoanOpenModal(){
  if(m)m.style.display='flex';
  await gmLoanPopulatePropertySelect();
  var debtor=document.getElementById('gm-loan-debtor');
+ var creditor=document.getElementById('gm-loan-creditor');
  var guarantor=document.getElementById('gm-loan-guarantor');
+ var guarantorEmail=document.getElementById('gm-loan-guarantor-email');
+ var guarantorPhone=document.getElementById('gm-loan-guarantor-phone');
  var principal=document.getElementById('gm-loan-principal');
  var installments=document.getElementById('gm-loan-installments');
  var start=document.getElementById('gm-loan-start');
  var notes=document.getElementById('gm-loan-notes');
  var prop=document.getElementById('gm-loan-property');
  if(debtor)debtor.value='';
+ if(creditor)creditor.value='';
  if(guarantor)guarantor.value='';
+ if(guarantorEmail)guarantorEmail.value='';
+ if(guarantorPhone)guarantorPhone.value='';
  if(principal)principal.value='';
  if(installments)installments.value='';
  if(notes)notes.value='';
@@ -30353,7 +30396,10 @@ function gmLoanCloseModal(){
 }
 async function gmLoanSave(){
  var debtorEl=document.getElementById('gm-loan-debtor');
+ var creditorEl=document.getElementById('gm-loan-creditor');
  var guarantorEl=document.getElementById('gm-loan-guarantor');
+ var guarantorEmailEl=document.getElementById('gm-loan-guarantor-email');
+ var guarantorPhoneEl=document.getElementById('gm-loan-guarantor-phone');
  var principalEl=document.getElementById('gm-loan-principal');
  var installmentsEl=document.getElementById('gm-loan-installments');
  var startEl=document.getElementById('gm-loan-start');
@@ -30388,6 +30434,12 @@ async function gmLoanSave(){
  };
  var guarantor=guarantorEl?String(guarantorEl.value||'').trim():'';
  if(guarantor)payload.guarantorName=guarantor;
+ var creditor=creditorEl?String(creditorEl.value||'').trim():'';
+ if(creditor)payload.creditorName=creditor;
+ var guarantorEmail=guarantorEmailEl?String(guarantorEmailEl.value||'').trim():'';
+ if(guarantorEmail)payload.guarantorEmail=guarantorEmail;
+ var guarantorPhone=guarantorPhoneEl?String(guarantorPhoneEl.value||'').trim():'';
+ if(guarantorPhone)payload.guarantorPhone=guarantorPhone;
  var notes=notesEl?String(notesEl.value||'').trim():'';
  if(notes)payload.notes=notes;
  var propId=propEl?String(propEl.value||'').trim():'';
@@ -30439,6 +30491,7 @@ window.gmLoanOpenDetail=gmLoanOpenDetail;
 window.gmLoanCloseDetail=gmLoanCloseDetail;
 window.gmLoanToggleInstallmentPaid=gmLoanToggleInstallmentPaid;
 window.gmLoanPopulatePropertySelect=gmLoanPopulatePropertySelect;
+window.gmLoanOnPropertyChange=gmLoanOnPropertyChange;
 /* ========== /BILLING LOAN ========== */
 
 /* ========== /BILLING ========== */

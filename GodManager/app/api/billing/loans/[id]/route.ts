@@ -69,6 +69,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.guarantorName != null) {
       data.guarantorName = String(body.guarantorName).trim() || null;
     }
+    if (body.creditorName != null) {
+      data.creditorName = String(body.creditorName).trim() || null;
+    }
+    if (body.guarantorEmail != null) {
+      data.guarantorEmail = String(body.guarantorEmail).trim() || null;
+    }
+    if (body.guarantorPhone != null) {
+      data.guarantorPhone = String(body.guarantorPhone).trim() || null;
+    }
     if (body.propertyId != null) {
       data.propertyId = String(body.propertyId).trim() || null;
     }
