@@ -8345,7 +8345,7 @@ function saveClEdit(){
  clients[i].status=document.getElementById('cl-edit-active').checked?'active':'inactive';
  saveClientsRaw(clients);
  var ac=getActiveClient();
- if(ac&&ac.id===id){localStorage.setItem('gm_active_client',JSON.stringify(normalizeClient(clients[i])));updateBranding();applyPermissions();}
+ if(ac&&ac.id===id){localStorage.setItem('gm_active_client',JSON.stringify(normalizeClient(clients[i])));updateBranding();applyPermissions();try{if(window.__gmSidebarGatesReady&&typeof gmApplyMenuAccessGate==='function')gmApplyMenuAccessGate();}catch(_maCl){}}
  closeClModal();loadClients();
 }
 function toggleClientStatus(clientId){
@@ -8359,7 +8359,7 @@ function toggleClientStatus(clientId){
  var c=clients[i];
  saveClientsRaw(clients);
  var ac=getActiveClient();
- if(ac&&ac.id===clientId){if(c.status==='inactive'){localStorage.removeItem('gm_active_client');window._cuMgmtClientId=null;location.reload();return;}else{localStorage.setItem('gm_active_client',JSON.stringify(normalizeClient(c)));updateBranding();applyPermissions();}}
+ if(ac&&ac.id===clientId){if(c.status==='inactive'){localStorage.removeItem('gm_active_client');window._cuMgmtClientId=null;location.reload();return;}else{localStorage.setItem('gm_active_client',JSON.stringify(normalizeClient(c)));updateBranding();applyPermissions();try{if(window.__gmSidebarGatesReady&&typeof gmApplyMenuAccessGate==='function')gmApplyMenuAccessGate();}catch(_maCl2){}}}
  loadClients();
 }
 function loginAsClient(clientId){
@@ -8786,6 +8786,93 @@ async function gmCuSaveEditMenuAccess(){
 window.gmCuOpenEdit=gmCuOpenEdit;
 window.gmCuCloseEditModal=gmCuCloseEditModal;
 window.gmCuSaveEditMenuAccess=gmCuSaveEditMenuAccess;
+
+/** F1.B-2 — hide-only gating por menuAccess (roda por último, após todos os role-gates). */
+function gmMenuAccessBuildAllowSet(menuAccess){
+ var set={};
+ (menuAccess||[]).forEach(function(k){set[String(k)]=1;});
+ return set;
+}
+function gmMenuAccessItemAllowed(itemKey,allowSet){
+ var k=String(itemKey||'');
+ if(allowSet[k])return true;
+ var ok=false;
+ GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+  if(!allowSet[sec.key])return;
+  (sec.items||[]).forEach(function(it){if(it.key===k)ok=true;});
+ });
+ return ok;
+}
+function gmMenuAccessItemKeyToRoute(itemKey){
+ var k=String(itemKey||'');
+ if(k==='settings-gm'||k==='settings-co')return 'settings';
+ if(k==='listings-tenants')return 'listings';
+ return k;
+}
+function gmMenuAccessIsRouteAllowed(route,allowSet){
+ var r=String(route||'').trim();
+ if(!r)return true;
+ if(r==='settings'){
+  return gmMenuAccessItemAllowed('settings-gm',allowSet)||gmMenuAccessItemAllowed('settings-co',allowSet);
+ }
+ if(r==='listings'){
+  return gmMenuAccessItemAllowed('listings',allowSet)||gmMenuAccessItemAllowed('listings-tenants',allowSet);
+ }
+ return gmMenuAccessItemAllowed(r,allowSet);
+}
+function gmMenuAccessHideEl(el){
+ if(!el)return;
+ el.style.display='none';
+ el.classList.add('gm-section-hidden');
+}
+function gmMenuAccessFirstVisibleRoute(){
+ var navRoot=document.querySelector('.sidebar nav');
+ if(!navRoot)return 'home';
+ var nodes=navRoot.querySelectorAll('.si,.ss');
+ for(var i=0;i<nodes.length;i++){
+  var el=nodes[i];
+  if(!el.id||el.id.indexOf('nav-')!==0)continue;
+  if(el.classList.contains('gm-section-hidden'))continue;
+  if(el.style.display==='none')continue;
+  var sec=el.closest('.sb-sec');
+  if(sec){
+   if(sec.classList.contains('gm-section-hidden'))continue;
+   if(sec.style.display==='none')continue;
+  }
+  return gmMenuAccessItemKeyToRoute(el.id.slice(4));
+ }
+ return 'home';
+}
+function gmApplyMenuAccessGate(){
+ try{
+  var u=window.__gmCurrentUser;
+  if(!u)return;
+  var role=String(u.role||'').toLowerCase();
+  if(role==='super_admin')return;
+  var ma=Array.isArray(u.menuAccess)?u.menuAccess:[];
+  if(!ma.length)return;
+  var allowSet=gmMenuAccessBuildAllowSet(ma);
+  GM_MENU_ACCESS_SECTIONS.forEach(function(sec){
+   (sec.items||[]).forEach(function(it){
+    var el=document.getElementById('nav-'+it.key);
+    if(!el)return;
+    if(!gmMenuAccessItemAllowed(it.key,allowSet))gmMenuAccessHideEl(el);
+   });
+   var secEl=document.querySelector('.sb-sec[data-sb-sec="'+sec.key+'"]');
+   if(!secEl)return;
+   var secAllowed=allowSet[sec.key];
+   if(!secAllowed){
+    var anyChild=false;
+    (sec.items||[]).forEach(function(it){
+     if(gmMenuAccessItemAllowed(it.key,allowSet))anyChild=true;
+    });
+    if(!anyChild)gmMenuAccessHideEl(secEl);
+   }
+  });
+ }catch(e){console.warn('[gmApplyMenuAccessGate]',e);}
+}
+window.gmApplyMenuAccessGate=gmApplyMenuAccessGate;
+
 function renderCuTable(){
  var tb=document.getElementById('cu-tbody');
  if(!tb)return;
@@ -10272,6 +10359,15 @@ function nav(r){
  }
  if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(vb.indexOf(r)>=0)r='home';}
  if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
+ try{
+  var uNav=window.__gmCurrentUser;
+  var rNav=String(uNav&&uNav.role||'').toLowerCase();
+  var maNav=Array.isArray(uNav&&uNav.menuAccess)?uNav.menuAccess:[];
+  if(rNav!=='super_admin'&&maNav.length>0){
+   var allowNav=gmMenuAccessBuildAllowSet(maNav);
+   if(!gmMenuAccessIsRouteAllowed(r,allowNav))r=gmMenuAccessFirstVisibleRoute();
+  }
+ }catch(_maNav){console.warn('[nav menuAccess]',_maNav);}
  if(r==='client-users'){
   closeSidebar();
   window.location.hash='client-users';
@@ -27793,6 +27889,7 @@ async function gmAuthHydrateUserBadge(){
   }catch(_eTr){}
   try{if(typeof gmActiveClientBannerRefresh==='function')gmActiveClientBannerRefresh();}catch(_gab){}
   try{if(typeof applyPermissions==='function')applyPermissions();}catch(_ePerm){}
+  try{if(window.__gmSidebarGatesReady&&typeof gmApplyMenuAccessGate==='function')gmApplyMenuAccessGate();}catch(_maHydr){}
   try{if(typeof gmAuthRefreshPropertiesAfterHydrate==='function')await gmAuthRefreshPropertiesAfterHydrate();}catch(_ePropHydr){}
   return u;
  }catch(e){console.warn('[gmAuth] hydrate falhou',e);return null;}
@@ -27876,6 +27973,7 @@ async function jobsApplyRoleGateV2(){
 }
 
 /* Orchestrador: carregar auth + aplicar gates em sequencia */
+window.__gmSidebarGatesReady=false;
 document.addEventListener('DOMContentLoaded',function(){
  setTimeout(async function(){
   await gmAuthHydrateUserBadge();
@@ -27897,6 +27995,8 @@ document.addEventListener('DOMContentLoaded',function(){
     gmApplyExpensesJobsMode();
    }
   }catch(_gEj){}
+  try{if(typeof gmApplyMenuAccessGate==='function')gmApplyMenuAccessGate();}catch(_maGate){}
+  window.__gmSidebarGatesReady=true;
  },100);
 });
 
