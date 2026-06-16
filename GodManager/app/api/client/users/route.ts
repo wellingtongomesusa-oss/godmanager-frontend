@@ -36,6 +36,7 @@ function mapUser(u: {
   role: UserRole;
   status: UserStatus;
   vendorId?: string | null;
+  menuAccess?: string[];
   createdAt: Date;
   lastActive: Date;
 }) {
@@ -48,6 +49,7 @@ function mapUser(u: {
     role: u.role,
     status: u.status,
     vendorId: u.vendorId ?? null,
+    menuAccess: Array.isArray(u.menuAccess) ? u.menuAccess : [],
     createdAt: u.createdAt.toISOString(),
     lastActive: u.lastActive.toISOString(),
   };
@@ -105,6 +107,7 @@ export async function GET(req: Request) {
         role: true,
         status: true,
         vendorId: true,
+        menuAccess: true,
         createdAt: true,
         lastActive: true,
       },
