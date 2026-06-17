@@ -1302,3 +1302,44 @@ model LoanInstallment {
   @@index([clientId])
   @@map("loan_installments")
 }
+
+model HoaCharge {
+  id                String            @id @default(cuid())
+  clientId          String?
+  propertyId        String?
+  code              String
+  hoaName           String?
+  debtorName        String?
+  monthlyAmount     Decimal           @db.Decimal(12, 2)
+  installmentsCount Int
+  startDate         DateTime
+  notes             String?           @db.Text
+  status            String            @default("active")
+  createdById       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  installments      HoaInstallment[]
+
+  @@index([clientId])
+  @@index([propertyId])
+  @@map("hoa_charges")
+}
+
+model HoaInstallment {
+  id           String    @id @default(cuid())
+  hoaChargeId  String
+  clientId     String?
+  seq          Int
+  dueDate      DateTime
+  amount       Decimal   @db.Decimal(12, 2)
+  paid         Boolean   @default(false)
+  paidAt       DateTime?
+  paidAmount   Decimal?  @db.Decimal(12, 2)
+  pmExpenseId  String?
+  notes        String?   @db.Text
+  hoaCharge    HoaCharge @relation(fields: [hoaChargeId], references: [id], onDelete: Cascade)
+
+  @@index([hoaChargeId])
+  @@index([clientId])
+  @@map("hoa_installments")
+}
