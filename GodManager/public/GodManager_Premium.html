@@ -504,13 +504,26 @@ body[data-gm-level="VIEWER"] main.content textarea{pointer-events:none!important
 #users-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.45);z-index:5100;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 #users-modal-bg.on{display:flex}
 #users-modal-inner{background:var(--paper);border-radius:12px;max-width:720px;width:100%;padding:24px;border:1px solid var(--border);max-height:92vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.2)}
-#cu-edit-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.5);z-index:5200;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+#cu-edit-modal-bg{position:fixed;inset:0;background:rgba(26,26,28,.5);z-index:5200;display:none;align-items:center;justify-content:center;padding:16px;overflow:hidden}
 #cu-edit-modal-bg.on{display:flex}
-#cu-edit-modal-inner{background:var(--paper);border-radius:12px;max-width:640px;width:100%;padding:24px;border:1px solid var(--border);max-height:92vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.25)}
-.cu-menu-sec{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px;background:var(--sand)}
-.cu-menu-sec-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--ink)}
-.cu-menu-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 12px;padding-left:4px}
-.cu-menu-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);font-family:'DM Sans',sans-serif}
+#cu-edit-modal-inner{background:var(--paper);border-radius:12px;width:min(960px,94vw);max-width:min(960px,94vw);max-height:85vh;display:flex;flex-direction:column;padding:20px 24px;border:1px solid var(--border);box-shadow:0 12px 48px rgba(0,0,0,.25);overflow:hidden;box-sizing:border-box}
+.cu-edit-modal-head{flex-shrink:0;margin-bottom:12px}
+.cu-edit-modal-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px;line-height:1.2}
+.cu-edit-user-line{font-size:12px;color:var(--ink3);font-family:'DM Sans',sans-serif;line-height:1.4}
+#cu-edit-matrix{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding-right:4px;-webkit-overflow-scrolling:touch}
+.cu-edit-modal-actions{flex-shrink:0;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding-top:16px;margin-top:12px;border-top:1px solid var(--border);background:var(--paper)}
+.cu-menu-sec{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:0;background:var(--sand);min-width:0;box-sizing:border-box}
+.cu-menu-sec-h{display:flex;align-items:center;gap:10px;margin-bottom:0;font-size:13px;font-weight:700;color:var(--ink);line-height:1.3;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cu-menu-sec-h input[type=checkbox]{width:16px;height:16px;flex-shrink:0;cursor:pointer;margin:0}
+.cu-menu-sec-h span{flex:1;min-width:0}
+.cu-menu-items{display:flex;flex-direction:column;gap:6px;padding-left:10px;margin-top:10px;border-left:2px solid var(--border2)}
+.cu-menu-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2);font-family:'DM Sans',sans-serif;line-height:1.35;padding:2px 0;cursor:pointer;margin:0}
+.cu-menu-item input[type=checkbox]{width:15px;height:15px;margin:2px 0 0;flex-shrink:0;cursor:pointer}
+.cu-menu-item span{flex:1;min-width:0}
+@media(max-width:599px){
+#cu-edit-modal-inner{padding:16px 14px;max-height:90vh}
+#cu-edit-matrix{grid-template-columns:1fr}
+}
 .cl-act-navy{background:#1a3a5c!important;color:#fff!important;border-color:#1a3a5c!important}
 .cl-act-navy:hover{filter:brightness(1.08)}
 .cl-act-blue{background:#22558c!important;color:#fff!important;border-color:#22558c!important}
@@ -2009,10 +2022,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <div id="cu-edit-modal-bg" onclick="if(event.target===this&&typeof gmCuCloseEditModal==='function')gmCuCloseEditModal()">
  <div id="cu-edit-modal-inner" onclick="event.stopPropagation()">
- <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px">Editar acesso ao menu</div>
- <div id="cu-edit-user-line" style="font-size:12px;color:var(--ink3);margin-bottom:14px;font-family:'DM Sans',sans-serif"></div>
- <div id="cu-edit-matrix" style="max-height:58vh;overflow-y:auto;margin-bottom:16px;padding-right:4px"></div>
- <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+ <div class="cu-edit-modal-head">
+  <div class="cu-edit-modal-title">Editar acesso ao menu</div>
+  <div id="cu-edit-user-line" class="cu-edit-user-line"></div>
+ </div>
+ <div id="cu-edit-matrix"></div>
+ <div class="cu-edit-modal-actions">
  <button type="button" class="cl-btn-sec" onclick="if(typeof gmCuCloseEditModal==='function')gmCuCloseEditModal()">Cancelar</button>
  <button type="button" class="bp" style="margin-top:0" onclick="if(typeof gmCuSaveEditMenuAccess==='function')gmCuSaveEditMenuAccess()">Salvar acesso</button>
  </div>
@@ -31294,36 +31309,83 @@ function gmHoaPropertyLabel(charge){
  if(c&&a)return c+' — '+a;
  return c||a||'—';
 }
+function gmHoaNormalizePropertyRowFromApi(p){
+ if(!p)return null;
+ var id=String(p.id||'').trim();
+ if(!id)return null;
+ var code=String(p.code||'').trim();
+ var addr=String(p.address||'').trim();
+ var ownerName=String(p.ownerName||'').trim();
+ var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
+ var meta=p.metadata;
+ if(meta==null||typeof meta!=='object')meta={};
+ var tenant=String(meta.tenant||'').trim();
+ var statusOverride=null;
+ var so=p.statusOverride||meta.statusOverride;
+ if(typeof so==='string'&&['ALG','VG','ADM','WTC','INT'].indexOf(so)!==-1)statusOverride=so;
+ var mgmpct=Number(p.mgmtFeePct)||0;
+ return{
+  id:id,
+  label:label,
+  ownerName:ownerName,
+  rent:Number(p.rent)||0,
+  deposit:Number(p.deposit)||0,
+  mgmpct:mgmpct,
+  mgmtFeePct:mgmpct,
+  tenant:tenant,
+  statusOverride:statusOverride
+ };
+}
 function gmHoaNormalizePropertyRowsFromApi(properties){
- if(typeof gmLoanNormalizePropertyRowsFromApi==='function')return gmLoanNormalizePropertyRowsFromApi(properties);
- return (properties||[]).map(function(p){
-  var id=String(p.id||'').trim();
-  if(!id)return null;
-  var code=String(p.code||'').trim();
-  var addr=String(p.address||'').trim();
-  var ownerName=String(p.ownerName||'').trim();
-  var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
-  return{id:id,label:label,ownerName:ownerName};
- }).filter(Boolean);
+ return (properties||[]).map(gmHoaNormalizePropertyRowFromApi).filter(Boolean);
+}
+function gmHoaNormalizePropertyRowFromUi(p){
+ if(!p)return null;
+ var ui=(typeof window.gmPropertiesToUi==='function')?window.gmPropertiesToUi(p):p;
+ var id=String(ui._apiId||p._apiId||'').trim();
+ if(!id)return null;
+ var code=String(ui.id||p.id||'').trim();
+ var addr=String(ui.address||p.address||'').trim();
+ var ownerName=String(ui.owner||ui.ownerName||p.owner||'').trim();
+ var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
+ var meta=ui.metadata||p.metadata;
+ if(meta==null||typeof meta!=='object')meta={};
+ var tenant=String(ui.tenant||meta.tenant||'').trim();
+ var statusOverride=null;
+ var so=ui.statusOverride||meta.statusOverride;
+ if(typeof so==='string'&&['ALG','VG','ADM','WTC','INT'].indexOf(so)!==-1)statusOverride=so;
+ var mgmpct=Number(
+  ui.mgmpct!=null?ui.mgmpct:
+  (ui.mgmtFeePct!=null?ui.mgmtFeePct:
+  (p.mgmtPct!=null?p.mgmtPct:
+  (p.mgmtFeePct!=null?p.mgmtFeePct:0)))
+ )||0;
+ return{
+  id:id,
+  label:label,
+  ownerName:ownerName,
+  rent:Number(ui.rent)||0,
+  deposit:Number(ui.deposit)||0,
+  mgmpct:mgmpct,
+  mgmtFeePct:mgmpct,
+  tenant:tenant,
+  statusOverride:statusOverride
+ };
 }
 function gmHoaNormalizePropertyRowsFromUi(items){
- if(typeof gmLoanNormalizePropertyRowsFromUi==='function')return gmLoanNormalizePropertyRowsFromUi(items);
- return (items||[]).map(function(p){
-  var id=String(p._apiId||'').trim();
-  if(!id)return null;
-  var code=String(p.id||'').trim();
-  var addr=String(p.address||'').trim();
-  var ownerName=String(p.owner||p.ownerName||'').trim();
-  var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
-  return{id:id,label:label,ownerName:ownerName};
- }).filter(Boolean);
+ return (items||[]).map(gmHoaNormalizePropertyRowFromUi).filter(Boolean);
 }
 function gmHoaFilterPropertyRows(rows){
- if(typeof gmLoanFilterPropertyRows==='function')return gmLoanFilterPropertyRows(rows);
- return (rows||[]).filter(function(r){return r&&r.id&&r.label;});
+ return (rows||[]).filter(function(r){
+  if(!r||!r.id||!r.label)return false;
+  var lbl=String(r.label).trim().toLowerCase();
+  var addr=String(r.label).trim();
+  if(lbl==='total'||lbl==='manager prop'||addr==='Total'||addr.indexOf('Admin -')===0)return false;
+  if(typeof gmGetEffectiveStatus!=='function')return false;
+  return gmGetEffectiveStatus(r)==='ADM';
+ });
 }
 async function gmHoaFetchPropertyRows(){
- if(typeof gmLoanFetchPropertyRows==='function')return await gmLoanFetchPropertyRows();
  var rows=[];
  try{
   var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
@@ -31346,7 +31408,7 @@ function gmHoaRenderPropertySelectOptions(sel,records){
  sel.innerHTML=placeholder;
  window.__gmHoaPropertyOwners={};
  if(!records||!records.length){
-  sel.innerHTML=placeholder+'<option value="" disabled>Nenhuma unidade no seu escopo</option>';
+  sel.innerHTML=placeholder+'<option value="" disabled>Nenhuma casa Adm HOA</option>';
   return;
  }
  records.forEach(function(r){
