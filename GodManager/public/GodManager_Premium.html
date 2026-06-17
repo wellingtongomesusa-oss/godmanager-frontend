@@ -3214,6 +3214,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <button type="button" id="billing-tab-receive" onclick="if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('receive')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--amber);background:var(--amber);color:#fff">A Receber</button>
   <button type="button" id="billing-tab-pay" onclick="if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('pay')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">A Pagar</button>
   <button type="button" id="billing-tab-loan" onclick="if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('loan')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Loan</button>
+  <button type="button" id="billing-tab-hoa" onclick="if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('hoa')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">HOA</button>
  </div>
  <div id="billing-view-receive">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
@@ -3288,6 +3289,46 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
     </tr></thead>
     <tbody id="gm-loan-tbody"></tbody>
+   </table></div>
+  </div>
+ </div>
+ <div id="billing-view-hoa" style="display:none">
+  <div id="gm-hoa-summary-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Total HOA</div>
+    <div id="gm-hoa-total-total" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ink)">$0.00</div>
+   </div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Total pago</div>
+    <div id="gm-hoa-total-paid" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">$0.00</div>
+   </div>
+   <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">A receber</div>
+    <div id="gm-hoa-total-outstanding" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)">$0.00</div>
+   </div>
+  </div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">HOA</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+     <div id="gm-hoa-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
+     <button type="button" onclick="if(typeof gmHoaOpenCreate==='function')gmHoaOpenCreate()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Novo HOA</button>
+    </div>
+   </div>
+   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:1100px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Código</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Endereço</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">HOA</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Devedor</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Valor mensal</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Nº parcelas</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Saldo pago</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Saldo devedor</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
+    </tr></thead>
+    <tbody id="gm-hoa-tbody"></tbody>
    </table></div>
   </div>
  </div>
@@ -4043,6 +4084,55 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <div id="gm-loan-view-body" style="font-size:12px;color:var(--ink2)">Carregando…</div>
   <div id="gm-loan-view-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px"></div>
+ </div>
+</div>
+
+<!-- BILLING — Modal Novo HOA -->
+<div id="gm-hoa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9004;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this&&typeof gmHoaCloseModal==='function')gmHoaCloseModal()">
+ <div style="background:var(--paper);border-radius:12px;width:640px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+   <div id="gm-hoa-modal-title" style="font-size:14px;font-weight:700;color:var(--ink)">Novo HOA</div>
+   <span onclick="if(typeof gmHoaCloseModal==='function')gmHoaCloseModal()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1">&times;</span>
+  </div>
+  <div id="gm-hoa-property-wrap" style="margin-bottom:14px;display:block">
+   <label for="gm-hoa-property" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO (UNIDADE)</label>
+   <select id="gm-hoa-property" onchange="if(typeof gmHoaOnPropertyChange==='function')gmHoaOnPropertyChange()" style="display:block;width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;min-height:36px;box-sizing:border-box">
+    <option value="">— Selecionar unidade —</option>
+   </select>
+  </div>
+  <div style="margin-bottom:14px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">HOA</label>
+   <input id="gm-hoa-hoa-name" type="text" placeholder="Nome do HOA / condomínio" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+  </div>
+  <div style="margin-bottom:14px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DEVEDOR</label>
+   <input id="gm-hoa-debtor" type="text" placeholder="Nome do devedor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+  </div>
+  <div id="gm-hoa-locked-fields" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VALOR MENSAL *</label><input id="gm-hoa-monthly-amount" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">Nº DE PARCELAS *</label><input id="gm-hoa-installments" type="number" min="1" step="1" placeholder="12" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA INICIAL *</label><input id="gm-hoa-start" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+  </div>
+  <div style="margin-bottom:18px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOTAS</label>
+   <textarea id="gm-hoa-notes" rows="3" placeholder="Observações opcionais" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;resize:vertical"></textarea>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+   <button type="button" onclick="if(typeof gmHoaCloseModal==='function')gmHoaCloseModal()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
+   <button type="button" id="gm-hoa-save-btn" onclick="if(typeof gmHoaSave==='function')gmHoaSave()" style="padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Criar HOA</button>
+  </div>
+ </div>
+</div>
+
+<!-- BILLING — Modal Ver HOA (detalhe + parcelas) -->
+<div id="gm-hoa-view-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9005;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this&&typeof gmHoaCloseDetail==='function')gmHoaCloseDetail()">
+ <div style="background:var(--paper);border-radius:12px;width:820px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px">
+   <div id="gm-hoa-view-header" style="flex:1;min-width:0"></div>
+   <span onclick="if(typeof gmHoaCloseDetail==='function')gmHoaCloseDetail()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1;flex-shrink:0">&times;</span>
+  </div>
+  <div id="gm-hoa-view-body" style="font-size:12px;color:var(--ink2)">Carregando…</div>
+  <div id="gm-hoa-view-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px"></div>
  </div>
 </div>
 
@@ -29560,16 +29650,20 @@ function gmBillingSwitchTab(tab){
  var recv=document.getElementById('billing-view-receive');
  var pay=document.getElementById('billing-view-pay');
  var loan=document.getElementById('billing-view-loan');
+ var hoa=document.getElementById('billing-view-hoa');
  var btnR=document.getElementById('billing-tab-receive');
  var btnP=document.getElementById('billing-tab-pay');
  var btnL=document.getElementById('billing-tab-loan');
+ var btnH=document.getElementById('billing-tab-hoa');
  var t=String(tab||'receive');
  var isRecv=t==='receive';
  var isPay=t==='pay';
  var isLoan=t==='loan';
+ var isHoa=t==='hoa';
  if(recv)recv.style.display=isRecv?'':'none';
  if(pay)pay.style.display=isPay?'':'none';
  if(loan)loan.style.display=isLoan?'':'none';
+ if(hoa)hoa.style.display=isHoa?'':'none';
  function gmBillingStyleTabBtn(btn,active){
   if(!btn)return;
   btn.style.background=active?'var(--amber)':'var(--sand)';
@@ -29580,9 +29674,14 @@ function gmBillingSwitchTab(tab){
  gmBillingStyleTabBtn(btnR,isRecv);
  gmBillingStyleTabBtn(btnP,isPay);
  gmBillingStyleTabBtn(btnL,isLoan);
+ gmBillingStyleTabBtn(btnH,isHoa);
  if(isLoan){
   if(typeof gmLoanRenderList==='function')gmLoanRenderList();
   if(typeof gmLoanPopulatePropertySelect==='function')gmLoanPopulatePropertySelect();
+ }
+ if(isHoa){
+  if(typeof gmHoaRenderList==='function')gmHoaRenderList();
+  if(typeof gmHoaPopulatePropertySelect==='function')gmHoaPopulatePropertySelect();
  }
 }
 function gmBillingRenderInvoiceRowActions(doc){
@@ -31172,6 +31271,599 @@ window.gmLoanPopulatePropertySelect=gmLoanPopulatePropertySelect;
 window.gmLoanOnPropertyChange=gmLoanOnPropertyChange;
 window.gmLoanFetchPropertyRows=gmLoanFetchPropertyRows;
 window.gmLoanContractPdf=gmLoanContractPdf;
+
+/* ========== BILLING — HOA (Fase C) ========== */
+function gmHoaEsc(s){
+ if(typeof gmBillingEsc==='function')return gmBillingEsc(s);
+ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+function gmHoaFmtMoney(n){
+ if(typeof gmLoanFmtMoney==='function')return gmLoanFmtMoney(n);
+ var v=parseFloat(n)||0;
+ return '$'+v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+}
+function gmHoaStatusPill(status){
+ if(typeof gmLoanStatusPill==='function')return gmLoanStatusPill(status);
+ var st=String(status||'').toLowerCase();
+ return '<span class="pill ps2">'+gmHoaEsc(st||'—')+'</span>';
+}
+function gmHoaPropertyLabel(charge){
+ if(!charge||!charge.property)return '—';
+ var c=String(charge.property.code||'').trim();
+ var a=String(charge.property.address||'').trim();
+ if(c&&a)return c+' — '+a;
+ return c||a||'—';
+}
+function gmHoaNormalizePropertyRowsFromApi(properties){
+ if(typeof gmLoanNormalizePropertyRowsFromApi==='function')return gmLoanNormalizePropertyRowsFromApi(properties);
+ return (properties||[]).map(function(p){
+  var id=String(p.id||'').trim();
+  if(!id)return null;
+  var code=String(p.code||'').trim();
+  var addr=String(p.address||'').trim();
+  var ownerName=String(p.ownerName||'').trim();
+  var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
+  return{id:id,label:label,ownerName:ownerName};
+ }).filter(Boolean);
+}
+function gmHoaNormalizePropertyRowsFromUi(items){
+ if(typeof gmLoanNormalizePropertyRowsFromUi==='function')return gmLoanNormalizePropertyRowsFromUi(items);
+ return (items||[]).map(function(p){
+  var id=String(p._apiId||'').trim();
+  if(!id)return null;
+  var code=String(p.id||'').trim();
+  var addr=String(p.address||'').trim();
+  var ownerName=String(p.owner||p.ownerName||'').trim();
+  var label=(code&&addr)?(code+' — '+addr):(code||addr||id);
+  return{id:id,label:label,ownerName:ownerName};
+ }).filter(Boolean);
+}
+function gmHoaFilterPropertyRows(rows){
+ if(typeof gmLoanFilterPropertyRows==='function')return gmLoanFilterPropertyRows(rows);
+ return (rows||[]).filter(function(r){return r&&r.id&&r.label;});
+}
+async function gmHoaFetchPropertyRows(){
+ if(typeof gmLoanFetchPropertyRows==='function')return await gmLoanFetchPropertyRows();
+ var rows=[];
+ try{
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  if(res.ok){
+   var data=await res.json().catch(function(){return{};});
+   if(data&&data.ok===true&&Array.isArray(data.properties))rows=gmHoaNormalizePropertyRowsFromApi(data.properties);
+  }
+ }catch(e){console.warn('[gmHoaFetchPropertyRows]',e);}
+ if(!rows.length&&typeof window.gmPropertiesFetchFromApi==='function'){
+  try{
+   var cached=await window.gmPropertiesFetchFromApi();
+   if(Array.isArray(cached)&&cached.length)rows=gmHoaNormalizePropertyRowsFromUi(cached);
+  }catch(e2){console.warn('[gmHoaFetchPropertyRows] cache',e2);}
+ }
+ return gmHoaFilterPropertyRows(rows);
+}
+function gmHoaRenderPropertySelectOptions(sel,records){
+ var placeholder='<option value="">— Selecionar unidade —</option>';
+ if(!sel)return;
+ sel.innerHTML=placeholder;
+ window.__gmHoaPropertyOwners={};
+ if(!records||!records.length){
+  sel.innerHTML=placeholder+'<option value="" disabled>Nenhuma unidade no seu escopo</option>';
+  return;
+ }
+ records.forEach(function(r){
+  window.__gmHoaPropertyOwners[r.id]=r.ownerName||'';
+  var opt=document.createElement('option');
+  opt.value=r.id;
+  opt.textContent=r.label;
+  if(r.ownerName)opt.setAttribute('data-owner-name',r.ownerName);
+  sel.appendChild(opt);
+ });
+}
+async function gmHoaPopulatePropertySelect(){
+ var sel=document.getElementById('gm-hoa-property');
+ if(!sel)return;
+ var placeholder='<option value="">— Selecionar unidade —</option>';
+ sel.disabled=true;
+ sel.innerHTML=placeholder+'<option value="" disabled>Carregando unidades…</option>';
+ try{
+  var records=await gmHoaFetchPropertyRows();
+  records.sort(function(a,b){return String(a.label).localeCompare(String(b.label));});
+  gmHoaRenderPropertySelectOptions(sel,records);
+ }catch(e){
+  console.warn('[gmHoaPopulatePropertySelect]',e);
+  sel.innerHTML=placeholder+'<option value="" disabled>Erro ao carregar unidades</option>';
+ }
+ sel.disabled=false;
+}
+function gmHoaOnPropertyChange(){
+ var sel=document.getElementById('gm-hoa-property');
+ var debtor=document.getElementById('gm-hoa-debtor');
+ if(!sel||!debtor)return;
+ var val=String(sel.value||'').trim();
+ if(!val)return;
+ var opt=sel.options[sel.selectedIndex];
+ var owner='';
+ if(opt)owner=String(opt.getAttribute('data-owner-name')||'').trim();
+ if(!owner&&window.__gmHoaPropertyOwners&&window.__gmHoaPropertyOwners[val])owner=String(window.__gmHoaPropertyOwners[val]||'').trim();
+ if(owner)debtor.value=owner;
+}
+function gmHoaUtcDayStart(d){
+ var x=new Date(d);
+ return new Date(Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate()));
+}
+function gmHoaUtcTodayStart(){
+ var n=new Date();
+ return new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()));
+}
+function gmHoaInstallmentOverdueDays(inst){
+ if(!inst||inst.paid===true)return 0;
+ var due=gmHoaUtcDayStart(inst.dueDate);
+ var today=gmHoaUtcTodayStart();
+ if(due.getTime()>=today.getTime())return 0;
+ return Math.floor((today.getTime()-due.getTime())/86400000);
+}
+function gmHoaChargeMaxOverdueDays(charge){
+ var max=0;
+ var list=Array.isArray(charge&&charge.installments)?charge.installments:[];
+ list.forEach(function(inst){
+  var d=gmHoaInstallmentOverdueDays(inst);
+  if(d>max)max=d;
+ });
+ return max;
+}
+function gmHoaOverdueBadge(days){
+ var d=Number(days);
+ if(!Number.isFinite(d)||d<=0)return '';
+ return '<span style="display:inline-block;margin-top:4px;font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Em atraso: '+gmHoaEsc(String(d))+'d</span>';
+}
+function gmHoaInstallmentOverdueLabel(inst){
+ var d=gmHoaInstallmentOverdueDays(inst);
+ if(!d)return '';
+ return '<span style="font-size:9px;font-weight:600;color:var(--red);margin-left:6px">'+gmHoaEsc(String(d))+'d em atraso</span>';
+}
+function gmHoaSetModalMode(mode,code){
+ var titleEl=document.getElementById('gm-hoa-modal-title');
+ var saveBtn=document.getElementById('gm-hoa-save-btn');
+ var propWrap=document.getElementById('gm-hoa-property-wrap');
+ var isEdit=mode==='edit';
+ if(titleEl)titleEl.textContent=isEdit?('Editar HOA '+String(code||'').trim()):'Novo HOA';
+ if(saveBtn)saveBtn.textContent=isEdit?'Salvar alterações':'Criar HOA';
+ if(propWrap)propWrap.style.display=isEdit?'none':'block';
+ gmHoaApplyLockedFields(isEdit);
+}
+function gmHoaApplyLockedFields(locked){
+ var wrap=document.getElementById('gm-hoa-locked-fields');
+ var monthly=document.getElementById('gm-hoa-monthly-amount');
+ var installments=document.getElementById('gm-hoa-installments');
+ var start=document.getElementById('gm-hoa-start');
+ [monthly,installments,start].forEach(function(el){
+  if(!el)return;
+  el.readOnly=locked;
+  el.disabled=locked;
+  if(locked){el.style.background='var(--cream)';el.style.color='var(--ink2)';el.style.cursor='not-allowed';}
+  else{el.style.background='var(--sand)';el.style.color='var(--ink)';el.style.cursor='auto';}
+ });
+ if(wrap)wrap.style.opacity=locked?'0.92':'1';
+}
+function gmHoaPrefillForm(charge){
+ if(!charge)return;
+ var hoaName=document.getElementById('gm-hoa-hoa-name');
+ var debtor=document.getElementById('gm-hoa-debtor');
+ var monthly=document.getElementById('gm-hoa-monthly-amount');
+ var installments=document.getElementById('gm-hoa-installments');
+ var start=document.getElementById('gm-hoa-start');
+ var notes=document.getElementById('gm-hoa-notes');
+ var prop=document.getElementById('gm-hoa-property');
+ if(hoaName)hoaName.value=String(charge.hoaName||'');
+ if(debtor)debtor.value=String(charge.debtorName||'');
+ if(monthly)monthly.value=String(charge.monthlyAmount||'');
+ if(installments)installments.value=String(charge.installmentsCount||'');
+ if(start){
+  start.value=(typeof gmBillingIsoToDateInput==='function'?gmBillingIsoToDateInput(charge.startDate):'')||'';
+ }
+ if(notes)notes.value=String(charge.notes||'');
+ if(prop)prop.value=String(charge.propertyId||'');
+}
+function gmHoaRenderRowActions(charge){
+ var chargeId=gmHoaEsc(String(charge.id||''));
+ var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
+ var html='<button type="button" data-hoa-id="'+chargeId+'" onclick="if(typeof gmHoaOpenDetail===\'function\')gmHoaOpenDetail(this.getAttribute(\'data-hoa-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Detalhe</button>';
+ html+=' <button type="button" data-hoa-id="'+chargeId+'" onclick="if(typeof gmHoaOpenEdit===\'function\')gmHoaOpenEdit(this.getAttribute(\'data-hoa-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
+ html+=' <button type="button" data-hoa-id="'+chargeId+'" onclick="if(typeof gmHoaDelete===\'function\')gmHoaDelete(this.getAttribute(\'data-hoa-id\'))" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Excluir</button>';
+ return html;
+}
+function gmHoaParseAmount(v){
+ var n=parseFloat(v);
+ return Number.isFinite(n)?n:0;
+}
+function gmHoaUpdateSummaryCards(sumTotal,sumPaid,sumOutstanding){
+ var elT=document.getElementById('gm-hoa-total-total');
+ var elP=document.getElementById('gm-hoa-total-paid');
+ var elO=document.getElementById('gm-hoa-total-outstanding');
+ if(elT)elT.textContent=gmHoaFmtMoney(sumTotal);
+ if(elP)elP.textContent=gmHoaFmtMoney(sumPaid);
+ if(elO)elO.textContent=gmHoaFmtMoney(sumOutstanding);
+}
+async function gmHoaRenderList(){
+ var tbody=document.getElementById('gm-hoa-tbody');
+ var counter=document.getElementById('gm-hoa-counter');
+ if(!tbody)return;
+ tbody.innerHTML='<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
+ try{
+  var res=await fetch('/api/billing/hoa',{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=gmHoaEsc((data&&data.error)||'Falha ao listar HOA');
+   tbody.innerHTML='<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
+   if(counter)counter.textContent='';
+   gmHoaUpdateSummaryCards(0,0,0);
+   return;
+  }
+  var charges=Array.isArray(data.charges)?data.charges:[];
+  if(counter)counter.textContent=charges.length+' registro(s)';
+  var sumTotal=0,sumPaid=0,sumOutstanding=0;
+  if(!charges.length){
+   tbody.innerHTML='<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum HOA ainda.</td></tr>';
+   gmHoaUpdateSummaryCards(0,0,0);
+   return;
+  }
+  var html='';
+  charges.forEach(function(charge){
+   var summary=charge.installmentSummary||{};
+   var paid=summary.paidTotal!=null?summary.paidTotal:0;
+   var outstanding=summary.outstanding!=null?summary.outstanding:0;
+   var total=summary.total!=null?summary.total:0;
+   sumTotal+=gmHoaParseAmount(total);
+   sumPaid+=gmHoaParseAmount(paid);
+   sumOutstanding+=gmHoaParseAmount(outstanding);
+   var overdueDays=gmHoaChargeMaxOverdueDays(charge);
+   var overdueBadge=gmHoaOverdueBadge(overdueDays);
+   html+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+gmHoaEsc(charge.code||'—')+'</td>'
+    +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+gmHoaEsc(gmHoaPropertyLabel(charge))+'</td>'
+    +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmHoaEsc(charge.hoaName||'—')+'</td>'
+    +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmHoaEsc(charge.debtorName||'—')+'</td>'
+    +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmHoaEsc(gmHoaFmtMoney(charge.monthlyAmount))+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+gmHoaEsc(String(charge.installmentsCount||'—'))+'</td>'
+    +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--green)">'+gmHoaEsc(gmHoaFmtMoney(paid))+'</td>'
+    +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+gmHoaEsc(gmHoaFmtMoney(outstanding))+'</td>'
+    +'<td style="padding:9px 12px;text-align:center"><div>'+gmHoaStatusPill(charge.status)+overdueBadge+'</div></td>'
+    +'<td style="padding:9px 12px;text-align:center">'+gmHoaRenderRowActions(charge)+'</td>'
+    +'</tr>';
+  });
+  tbody.innerHTML=html;
+  gmHoaUpdateSummaryCards(sumTotal,sumPaid,sumOutstanding);
+ }catch(e){
+  console.warn('[gmHoaRenderList]',e);
+  tbody.innerHTML='<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar HOA.</td></tr>';
+  if(counter)counter.textContent='';
+  gmHoaUpdateSummaryCards(0,0,0);
+ }
+}
+function gmHoaFmtDateUtc(iso){
+ if(typeof gmLoanFmtDateUtc==='function')return gmLoanFmtDateUtc(iso);
+ if(!iso)return '—';
+ var d=new Date(iso);
+ if(Number.isNaN(d.getTime()))return '—';
+ var mm=String(d.getUTCMonth()+1).padStart(2,'0');
+ var dd=String(d.getUTCDate()).padStart(2,'0');
+ var yyyy=d.getUTCFullYear();
+ return mm+'/'+dd+'/'+yyyy;
+}
+function gmHoaInstallmentStatusPill(inst){
+ if(!inst||inst.paid!==true){
+  var od=gmHoaInstallmentOverdueDays(inst);
+  if(od>0)return '<span class="pill" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Em atraso</span>';
+  return '<span class="pill ps2">Em aberto</span>';
+ }
+ return '<span class="pill pg">Paga</span>';
+}
+function gmHoaCloseDetail(){
+ var m=document.getElementById('gm-hoa-view-modal');
+ if(m)m.style.display='none';
+ window.__gmHoaViewId=null;
+}
+function gmHoaRenderDetailActions(charge){
+ var actions=document.getElementById('gm-hoa-view-actions');
+ if(!actions)return;
+ var chargeId=charge&&charge.id?gmHoaEsc(String(charge.id)):'';
+ var editBtn=chargeId?'<button type="button" data-hoa-id="'+chargeId+'" onclick="if(typeof gmHoaOpenEdit===\'function\')gmHoaOpenEdit(this.getAttribute(\'data-hoa-id\'))" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;margin-right:8px">Editar</button>':'';
+ actions.innerHTML=editBtn+'<button type="button" onclick="if(typeof gmHoaCloseDetail===\'function\')gmHoaCloseDetail()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+}
+function gmHoaRenderDetail(charge){
+ var header=document.getElementById('gm-hoa-view-header');
+ var body=document.getElementById('gm-hoa-view-body');
+ if(!header||!body||!charge)return;
+ window.__gmHoaViewId=String(charge.id||'');
+ var summary=charge.installmentSummary||{};
+ var codeStr=String(charge.code||'').trim();
+ var codeBadge=codeStr?'<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--ink3);padding:2px 8px;border:1px solid var(--border2);border-radius:4px;background:var(--cream)">'+gmHoaEsc(codeStr)+'</span>':'';
+ var overdueDays=gmHoaChargeMaxOverdueDays(charge);
+ var overdueHeader=gmHoaOverdueBadge(overdueDays);
+ var title=String(charge.hoaName||charge.debtorName||'HOA').trim();
+ header.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:16px;font-weight:700;color:var(--ink)">'+gmHoaEsc(title)+'</div>'+codeBadge+gmHoaStatusPill(charge.status)+(overdueHeader?'<span>'+overdueHeader+'</span>':'')+'</div>';
+ var paidCount=summary.paidCount!=null?summary.paidCount:0;
+ var totalCount=summary.totalCount!=null?summary.totalCount:(Array.isArray(charge.installments)?charge.installments.length:0);
+ var paidAmt=summary.paidTotal!=null?summary.paidTotal:0;
+ var outstanding=summary.outstanding!=null?summary.outstanding:0;
+ var totalAmt=summary.total!=null?summary.total:0;
+ var notesBlock='';
+ if(charge.notes){
+  notesBlock='<div style="margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Notas</div><div style="font-size:12px;color:var(--ink2);line-height:1.5">'+gmHoaEsc(charge.notes)+'</div></div>';
+ }
+ var installments=Array.isArray(charge.installments)?charge.installments.slice():[];
+ installments.sort(function(a,b){return Number(a.seq||0)-Number(b.seq||0);});
+ var isCancelled=String(charge.status||'').toLowerCase()==='cancelled';
+ var instHtml='';
+ if(installments.length){
+  instHtml='<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;min-width:640px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Nº</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>'
+   +'<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Valor</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Pago em</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ação</th>'
+   +'</tr></thead><tbody>';
+  var chargeIdEsc=gmHoaEsc(String(charge.id||''));
+  var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
+  installments.forEach(function(inst){
+   var iid=gmHoaEsc(String(inst.id||''));
+   var isPaid=inst.paid===true;
+   var actionBtn='';
+   if(isCancelled){
+    actionBtn='<span style="font-size:10px;color:var(--ink3)">—</span>';
+   }else if(isPaid){
+    actionBtn='<button type="button" data-hoa-id="'+chargeIdEsc+'" data-iid="'+iid+'" onclick="if(typeof gmHoaToggleInstallmentPaid===\'function\')gmHoaToggleInstallmentPaid(this.getAttribute(\'data-hoa-id\'),this.getAttribute(\'data-iid\'),false)" style="'+btnSm+';background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Desmarcar</button>';
+   }else{
+    actionBtn='<button type="button" data-hoa-id="'+chargeIdEsc+'" data-iid="'+iid+'" onclick="if(typeof gmHoaToggleInstallmentPaid===\'function\')gmHoaToggleInstallmentPaid(this.getAttribute(\'data-hoa-id\'),this.getAttribute(\'data-iid\'),true)" style="'+btnSm+';background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)">Marcar paga</button>';
+   }
+   instHtml+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:8px 10px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+gmHoaEsc(String(inst.seq||''))+'</td>'
+    +'<td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--ink2)">'+gmHoaEsc(gmHoaFmtDateUtc(inst.dueDate))+gmHoaInstallmentOverdueLabel(inst)+'</td>'
+    +'<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmHoaEsc(gmHoaFmtMoney(inst.amount))+'</td>'
+    +'<td style="padding:8px 10px;text-align:center">'+gmHoaInstallmentStatusPill(inst)+'</td>'
+    +'<td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--ink2)">'+gmHoaEsc(isPaid&&inst.paidAt?gmHoaFmtDateUtc(inst.paidAt):'—')+'</td>'
+    +'<td style="padding:8px 10px;text-align:center">'+actionBtn+'</td>'
+    +'</tr>';
+  });
+  instHtml+='</tbody></table></div>';
+ }else{
+  instHtml='<div style="padding:12px;color:var(--ink3);font-size:12px">Sem parcelas.</div>';
+ }
+ body.innerHTML=
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">HOA</div><div style="font-size:12px;color:var(--ink)">'+gmHoaEsc(charge.hoaName||'—')+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">ENDEREÇO</div><div style="font-size:12px;color:var(--ink)">'+gmHoaEsc(gmHoaPropertyLabel(charge))+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">DEVEDOR</div><div style="font-size:12px;color:var(--ink)">'+gmHoaEsc(charge.debtorName||'—')+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">VALOR MENSAL</div><div style="font-size:13px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+gmHoaEsc(gmHoaFmtMoney(charge.monthlyAmount))+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">DATA INICIAL</div><div style="font-size:12px;color:var(--ink)">'+gmHoaEsc(gmHoaFmtDateUtc(charge.startDate))+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">Nº PARCELAS</div><div style="font-size:12px;color:var(--ink)">'+gmHoaEsc(String(charge.installmentsCount||'—'))+'</div></div>'
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">'
+  +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Total</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--ink)">'+gmHoaEsc(gmHoaFmtMoney(totalAmt))+'</div></div>'
+  +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Pago</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--green)">'+gmHoaEsc(gmHoaFmtMoney(paidAmt))+'</div></div>'
+  +'<div><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">A receber</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:var(--amber)">'+gmHoaEsc(gmHoaFmtMoney(outstanding))+'</div></div>'
+  +'</div>'
+  +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Parcelas ('+gmHoaEsc(String(paidCount)+' de '+String(totalCount)+' pagas')+')</div>'
+  +instHtml
+  +notesBlock;
+ gmHoaRenderDetailActions(charge);
+}
+async function gmHoaLoadDetail(id){
+ if(!id)return null;
+ try{
+  var res=await fetch('/api/billing/hoa/'+encodeURIComponent(String(id)),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.charge)return null;
+  return data.charge;
+ }catch(e){
+  console.warn('[gmHoaLoadDetail]',e);
+  return null;
+ }
+}
+async function gmHoaOpenDetail(id){
+ if(!id)return;
+ window.__gmHoaViewId=String(id);
+ var m=document.getElementById('gm-hoa-view-modal');
+ var header=document.getElementById('gm-hoa-view-header');
+ var body=document.getElementById('gm-hoa-view-body');
+ var actions=document.getElementById('gm-hoa-view-actions');
+ if(m)m.style.display='flex';
+ if(header)header.innerHTML='';
+ if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3)">Carregando…</div>';
+ if(actions)actions.innerHTML='';
+ var charge=await gmHoaLoadDetail(id);
+ if(!charge){
+  if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--red)">Falha ao carregar HOA</div>';
+  gmHoaRenderDetailActions();
+  return;
+ }
+ gmHoaRenderDetail(charge);
+}
+async function gmHoaToggleInstallmentPaid(chargeId,iid,paid){
+ if(!chargeId||!iid)return;
+ var markPaid=paid===true||paid==='true'||paid===1||paid==='1';
+ try{
+  var res=await fetch('/api/billing/hoa/'+encodeURIComponent(chargeId)+'/installments/'+encodeURIComponent(iid),{
+   method:'PATCH',
+   headers:{'Content-Type':'application/json'},
+   credentials:'include',
+   body:JSON.stringify({paid:markPaid})
+  });
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=(data&&data.error)||'Erro ao atualizar parcela';
+   if(res.status===409)errMsg='HOA cancelado — não é possível alterar parcelas.';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   return;
+  }
+  if(typeof showToast==='function')showToast(markPaid?'Parcela marcada como paga.':'Parcela desmarcada.','success');
+  var charge=await gmHoaLoadDetail(chargeId);
+  if(charge)gmHoaRenderDetail(charge);
+  if(typeof gmHoaRenderList==='function')await gmHoaRenderList();
+ }catch(e){
+  console.warn('[gmHoaToggleInstallmentPaid]',e);
+  if(typeof showToast==='function')showToast('Erro ao atualizar parcela.','error');
+ }
+}
+async function gmHoaOpenCreate(){
+ window.__gmHoaEditId=null;
+ gmHoaSetModalMode('create');
+ var m=document.getElementById('gm-hoa-modal');
+ if(m)m.style.display='flex';
+ if(typeof gmHoaPopulatePropertySelect==='function')await gmHoaPopulatePropertySelect();
+ var hoaName=document.getElementById('gm-hoa-hoa-name');
+ var debtor=document.getElementById('gm-hoa-debtor');
+ var monthly=document.getElementById('gm-hoa-monthly-amount');
+ var installments=document.getElementById('gm-hoa-installments');
+ var start=document.getElementById('gm-hoa-start');
+ var notes=document.getElementById('gm-hoa-notes');
+ var prop=document.getElementById('gm-hoa-property');
+ if(hoaName)hoaName.value='';
+ if(debtor)debtor.value='';
+ if(monthly)monthly.value='';
+ if(installments)installments.value='';
+ if(notes)notes.value='';
+ if(prop)prop.value='';
+ if(start){
+  start.value=(typeof gmBillingTodayIso==='function'?gmBillingTodayIso():new Date().toISOString().slice(0,10));
+ }
+}
+async function gmHoaOpenEdit(id){
+ if(!id)return;
+ try{
+  var charge=await gmHoaLoadDetail(id);
+  if(!charge){
+   if(typeof showToast==='function')showToast('Erro ao carregar HOA.','error');
+   return;
+  }
+  if(typeof gmHoaCloseDetail==='function')gmHoaCloseDetail();
+  window.__gmHoaEditId=String(id);
+  gmHoaSetModalMode('edit',charge.code||'');
+  gmHoaPrefillForm(charge);
+  var m=document.getElementById('gm-hoa-modal');
+  if(m)m.style.display='flex';
+ }catch(e){
+  console.warn('[gmHoaOpenEdit]',e);
+  if(typeof showToast==='function')showToast('Erro ao abrir edição.','error');
+ }
+}
+function gmHoaCloseModal(){
+ window.__gmHoaEditId=null;
+ var m=document.getElementById('gm-hoa-modal');
+ if(m)m.style.display='none';
+ gmHoaSetModalMode('create');
+}
+async function gmHoaSave(){
+ var editId=window.__gmHoaEditId;
+ var hoaNameEl=document.getElementById('gm-hoa-hoa-name');
+ var debtorEl=document.getElementById('gm-hoa-debtor');
+ var monthlyEl=document.getElementById('gm-hoa-monthly-amount');
+ var installmentsEl=document.getElementById('gm-hoa-installments');
+ var startEl=document.getElementById('gm-hoa-start');
+ var notesEl=document.getElementById('gm-hoa-notes');
+ var propEl=document.getElementById('gm-hoa-property');
+ if(editId){
+  var payload={
+   hoaName:hoaNameEl?String(hoaNameEl.value||'').trim():'',
+   debtorName:debtorEl?String(debtorEl.value||'').trim():'',
+   notes:notesEl?String(notesEl.value||'').trim():''
+  };
+  try{
+   var patchRes=await fetch('/api/billing/hoa/'+encodeURIComponent(editId),{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+   var patchData=await patchRes.json().catch(function(){return{};});
+   if(!patchRes.ok||!patchData.ok){
+    var patchErr=(patchData&&patchData.error)||'Erro ao salvar HOA';
+    if(typeof showToast==='function')showToast(patchErr,'error');
+    return;
+   }
+   gmHoaCloseModal();
+   if(typeof showToast==='function')showToast('HOA atualizado.','success');
+   if(typeof gmHoaRenderList==='function')await gmHoaRenderList();
+  }catch(e){
+   console.warn('[gmHoaSave] PATCH',e);
+   if(typeof showToast==='function')showToast('Erro ao salvar HOA.','error');
+  }
+  return;
+ }
+ var monthly=monthlyEl?Number(monthlyEl.value):0;
+ if(!Number.isFinite(monthly)||monthly<=0){
+  if(typeof showToast==='function')showToast('Valor mensal deve ser maior que zero.','error');
+  return;
+ }
+ var installmentsRaw=installmentsEl?String(installmentsEl.value||'').trim():'';
+ var installmentsCount=parseInt(installmentsRaw,10);
+ if(!installmentsRaw||!Number.isInteger(installmentsCount)||installmentsCount<1){
+  if(typeof showToast==='function')showToast('Nº de parcelas deve ser um inteiro >= 1.','error');
+  return;
+ }
+ var startVal=startEl?String(startEl.value||'').trim():'';
+ if(!startVal){
+  if(typeof showToast==='function')showToast('Data inicial é obrigatória.','error');
+  return;
+ }
+ var payload={
+  monthlyAmount:(typeof gmBillingRoundMoney==='function'?gmBillingRoundMoney(monthly):Math.round(monthly*100)/100),
+  installmentsCount:installmentsCount,
+  startDate:startVal+'T00:00:00.000Z'
+ };
+ var hoaName=hoaNameEl?String(hoaNameEl.value||'').trim():'';
+ if(hoaName)payload.hoaName=hoaName;
+ var debtor=debtorEl?String(debtorEl.value||'').trim():'';
+ if(debtor)payload.debtorName=debtor;
+ var notes=notesEl?String(notesEl.value||'').trim():'';
+ if(notes)payload.notes=notes;
+ var propId=propEl?String(propEl.value||'').trim():'';
+ if(propId)payload.propertyId=propId;
+ try{
+  var res=await fetch('/api/billing/hoa',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=(data&&data.error)||'Erro ao criar HOA';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   return;
+  }
+  gmHoaCloseModal();
+  if(typeof showToast==='function')showToast('HOA criado com sucesso.','success');
+  if(typeof gmHoaRenderList==='function')await gmHoaRenderList();
+ }catch(e){
+  console.warn('[gmHoaSave]',e);
+  if(typeof showToast==='function')showToast('Erro ao criar HOA.','error');
+ }
+}
+async function gmHoaDelete(id){
+ if(!id)return;
+ if(!window.confirm('Excluir este HOA e todas as parcelas? Esta ação não pode ser desfeita.'))return;
+ try{
+  var res=await fetch('/api/billing/hoa/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});
+  var data=await res.json().catch(function(){return{};});
+  if(res.status===409){
+   if(typeof showToast==='function')showToast('Não é possível excluir: há parcelas pagas.','error');
+   return;
+  }
+  if(!res.ok||!data.ok){
+   var errMsg=(data&&data.error)||'Erro ao excluir HOA';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   return;
+  }
+  if(typeof showToast==='function')showToast('HOA excluído.','success');
+  if(typeof gmHoaRenderList==='function')await gmHoaRenderList();
+ }catch(e){
+  console.warn('[gmHoaDelete]',e);
+  if(typeof showToast==='function')showToast('Erro ao excluir HOA.','error');
+ }
+}
+window.gmHoaRenderList=gmHoaRenderList;
+window.gmHoaOpenCreate=gmHoaOpenCreate;
+window.gmHoaOpenEdit=gmHoaOpenEdit;
+window.gmHoaCloseModal=gmHoaCloseModal;
+window.gmHoaSave=gmHoaSave;
+window.gmHoaDelete=gmHoaDelete;
+window.gmHoaOpenDetail=gmHoaOpenDetail;
+window.gmHoaCloseDetail=gmHoaCloseDetail;
+window.gmHoaToggleInstallmentPaid=gmHoaToggleInstallmentPaid;
+window.gmHoaPopulatePropertySelect=gmHoaPopulatePropertySelect;
+window.gmHoaOnPropertyChange=gmHoaOnPropertyChange;
+window.gmHoaFetchPropertyRows=gmHoaFetchPropertyRows;
 /* ========== /BILLING LOAN ========== */
 
 /* ========== /BILLING ========== */
