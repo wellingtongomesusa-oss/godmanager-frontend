@@ -1,10 +1,22 @@
 import type { LeaseContract, Property, RentInvoice, RentInvoiceItem } from '@prisma/client';
 import { Prisma } from '@prisma/client';
-import { decToNum, moneyStr, roundMoney } from '@/lib/loanBilling';
+import { decToNum, moneyStr, roundMoney, utcDayStart, utcTodayStart } from '@/lib/loanBilling';
 
 export type RentInvoiceItemInput = { label: string; amount: number; sortOrder: number };
 
 export type RentInvoiceWithItems = RentInvoice & { items: RentInvoiceItem[] };
+
+export type TenantPaymentMatchRow = {
+  receiptAmount: Prisma.Decimal | number;
+  paymentDate: Date;
+};
+
+export type RecomputedInvoice = {
+  status: string;
+  paidAmount: number | null;
+  paidAt: Date | null;
+  lateFeeAmount: number;
+};
 
 /** Human label: {propertyCode}{MM}{YYYY} from yearMonth YYYY-MM. */
 export function rentInvoiceCode(propertyCode: string, yearMonth: string): string {
@@ -128,4 +140,143 @@ export function sumItemAmounts(items: RentInvoiceItemInput[]): number {
 
 export function toDecimalAmount(n: number): Prisma.Decimal {
   return new Prisma.Decimal(roundMoney(n).toFixed(2));
+}
+
+/** Civil month bounds UTC for YYYY-MM (inclusive). */
+export function monthBoundsUtc(yearMonth: string): { start: Date; end: Date } | null {
+  const ym = parseYearMonth(yearMonth);
+  if (!ym) return null;
+  const [ys, ms] = ym.split('-');
+  const y = Number(ys);
+  const mo = Number(ms);
+  const start = new Date(Date.UTC(y, mo - 1, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(y, mo, 0, 23, 59, 59, 999));
+  return { start, end };
+}
+
+export function paymentInMonthRef(paymentDate: Date, monthRef: string): boolean {
+  const bounds = monthBoundsUtc(monthRef);
+  if (!bounds) return false;
+  const t = paymentDate.getTime();
+  return t >= bounds.start.getTime() && t <= bounds.end.getTime();
+}
+
+function addDaysUtc(d: Date, days: number): Date {
+  const base = utcDayStart(d);
+  const r = new Date(base.getTime());
+  r.setUTCDate(r.getUTCDate() + days);
+  return utcDayStart(r);
+}
+
+/** Complete civil months from `from` through `to` (UTC calendar). */
+export function civilMonthsComplete(fromDate: Date, asOf: Date): number {
+  const from = utcDayStart(fromDate);
+  const to = utcDayStart(asOf);
+  if (to.getTime() <= from.getTime()) return 0;
+  let months =
+    (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + (to.getUTCMonth() - from.getUTCMonth());
+  if (to.getUTCDate() < from.getUTCDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+/**
+ * Payments already filtered by property + civil month of invoice.
+ * Sums receiptAmount; paid when sum >= invoice.amount.
+ */
+export function matchInvoicePaid(
+  invoice: Pick<RentInvoice, 'amount'>,
+  payments: TenantPaymentMatchRow[],
+): { paid: boolean; paidAmount: number; paidAt: Date | null } {
+  let sum = 0;
+  let latestPaidAt: Date | null = null;
+  for (const p of payments) {
+    const amt =
+      typeof p.receiptAmount === 'number' ? p.receiptAmount : decToNum(p.receiptAmount);
+    sum = roundMoney(sum + amt);
+    if (!latestPaidAt || p.paymentDate.getTime() > latestPaidAt.getTime()) {
+      latestPaidAt = p.paymentDate;
+    }
+  }
+  const amount = decToNum(invoice.amount);
+  if (sum >= amount) {
+    return { paid: true, paidAmount: sum, paidAt: latestPaidAt };
+  }
+  return { paid: false, paidAmount: sum > 0 ? sum : 0, paidAt: null };
+}
+
+export function computeLateFee(
+  invoice: Pick<RentInvoice, 'amount' | 'dueDate'>,
+  contract: Pick<LeaseContract, 'graceDays' | 'lateFeePct' | 'monthlyInterestPct'>,
+  asOf?: Date,
+): { overdue: boolean; lateFeeAmount: number; monthsLate: number } {
+  const today = asOf ? utcDayStart(asOf) : utcTodayStart();
+  const due = utcDayStart(invoice.dueDate);
+  const graceEnd = addDaysUtc(due, contract.graceDays);
+
+  if (today.getTime() <= graceEnd.getTime()) {
+    return { overdue: false, lateFeeAmount: 0, monthsLate: 0 };
+  }
+
+  const monthsLate = civilMonthsComplete(due, today);
+  const amount = decToNum(invoice.amount);
+  const lateFeePct = decToNum(contract.lateFeePct);
+  const monthlyInterestPct = decToNum(contract.monthlyInterestPct);
+  const flatFee = roundMoney((lateFeePct / 100) * amount);
+  const interest = roundMoney((monthlyInterestPct / 100) * amount * monthsLate);
+  const lateFeeAmount = roundMoney(flatFee + interest);
+
+  return { overdue: true, lateFeeAmount, monthsLate };
+}
+
+/** Recompute status/fees; never des-pays invoices already marked paid. */
+export function recomputeInvoice(
+  invoice: RentInvoice,
+  contract: LeaseContract,
+  payments: TenantPaymentMatchRow[],
+  asOf?: Date,
+): RecomputedInvoice {
+  if (invoice.status === 'paid') {
+    return {
+      status: 'paid',
+      paidAmount:
+        invoice.paidAmount != null ? decToNum(invoice.paidAmount) : decToNum(invoice.amount),
+      paidAt: invoice.paidAt,
+      lateFeeAmount: decToNum(invoice.lateFeeAmount),
+    };
+  }
+  if (invoice.status === 'cancelled') {
+    return {
+      status: 'cancelled',
+      paidAmount: invoice.paidAmount != null ? decToNum(invoice.paidAmount) : null,
+      paidAt: invoice.paidAt,
+      lateFeeAmount: decToNum(invoice.lateFeeAmount),
+    };
+  }
+
+  const match = matchInvoicePaid(invoice, payments);
+  if (match.paid) {
+    return {
+      status: 'paid',
+      paidAmount: match.paidAmount,
+      paidAt: match.paidAt,
+      lateFeeAmount: 0,
+    };
+  }
+
+  const late = computeLateFee(invoice, contract, asOf);
+  if (late.overdue) {
+    return {
+      status: 'overdue',
+      paidAmount: null,
+      paidAt: null,
+      lateFeeAmount: late.lateFeeAmount,
+    };
+  }
+
+  return {
+    status: 'open',
+    paidAmount: null,
+    paidAt: null,
+    lateFeeAmount: 0,
+  };
 }
