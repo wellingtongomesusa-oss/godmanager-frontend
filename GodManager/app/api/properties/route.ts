@@ -13,6 +13,41 @@ import { comparePropertiesByHouseNumber } from '@/lib/propertyAddressSort';
 
 export const dynamic = 'force-dynamic';
 
+const PROPERTY_CODE_RE = /^P(\d+)$/i;
+
+function formatPropertyCode(n: number): string {
+  return `P${String(n).padStart(4, '0')}`;
+}
+
+async function maxPropertyCodeNum(): Promise<number> {
+  const rows = await prisma.property.findMany({ select: { code: true } });
+  let max = 0;
+  for (const row of rows) {
+    const m = PROPERTY_CODE_RE.exec(String(row.code || '').trim());
+    if (!m) continue;
+    const n = parseInt(m[1], 10);
+    if (!Number.isNaN(n) && n > max) max = n;
+  }
+  return max;
+}
+
+/** Próximo code P#### livre no DB (global @unique em code). */
+async function allocatePropertyCode(proposed?: string): Promise<string> {
+  const trimmed = String(proposed || '').trim();
+  if (trimmed) {
+    const taken = await prisma.property.findUnique({ where: { code: trimmed } });
+    if (!taken) return trimmed;
+  }
+  let next = await maxPropertyCodeNum() + 1;
+  for (let i = 0; i < 25; i++) {
+    const code = formatPropertyCode(next);
+    const taken = await prisma.property.findUnique({ where: { code } });
+    if (!taken) return code;
+    next += 1;
+  }
+  throw new Error('Failed to allocate property code');
+}
+
 export async function GET() {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -50,16 +85,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
     }
 
-    const code = String(body.code || '').trim();
     const address = String(body.address || '').trim();
-    if (!code || !address) {
-      return NextResponse.json({ ok: false, error: 'code and address required' }, { status: 400 });
+    if (!address) {
+      return NextResponse.json({ ok: false, error: 'address required' }, { status: 400 });
     }
 
-    const existing = await prisma.property.findUnique({ where: { code } });
-    if (existing) {
-      return NextResponse.json({ ok: false, error: 'code already exists' }, { status: 409 });
-    }
+    let code = await allocatePropertyCode(String(body.code || '').trim());
 
     const scopeUser = toClientScopeUser(user);
     const scopedCreate = getClientScopeForCreate(scopeUser);
@@ -70,37 +101,54 @@ export async function POST(req: Request) {
         raw != null && String(raw).trim() !== '' ? String(raw).trim() : null;
     }
 
-    const created = await prisma.property.create({
-      data: {
-        code,
-        address,
-        city: body.city || null,
-        state: body.state || null,
-        zip: body.zip || null,
-        unitType: body.unitType || body.type || null,
-        bedrooms: body.bedrooms != null ? Number(body.bedrooms) : null,
-        bathrooms: body.bathrooms != null ? Number(body.bathrooms) : null,
-        rent: body.rent != null ? String(body.rent) : '0',
-        deposit: body.deposit != null ? String(body.deposit) : '0',
-        guaranteeLimit: body.guaranteeLimit != null && body.guaranteeLimit !== ''
-          ? String(body.guaranteeLimit)
-          : null,
-        moveInDate: body.moveInDate ? new Date(String(body.moveInDate)) : null,
-        ownerName: body.ownerName || body.owner || null,
-        ownerEmail: body.ownerEmail || null,
-        ownerPhone: body.ownerPhone || null,
-        mgmtFeePct: body.mgmtFeePct != null ? String(body.mgmtFeePct) : '0',
-        hoaAdmin: typeof (body as { hoaAdmin?: unknown }).hoaAdmin === 'boolean'
-          ? (body as { hoaAdmin: boolean }).hoaAdmin
-          : false,
-        status: body.status || 'active',
-        notes: body.notes || null,
-        metadata: (normalizePropertyMetadata(body.metadata) ??
-          undefined) as Prisma.InputJsonValue | undefined,
-        createdBy: user.id,
-        clientId,
-      },
-    });
+    const createData = {
+      code,
+      address,
+      city: body.city || null,
+      state: body.state || null,
+      zip: body.zip || null,
+      unitType: body.unitType || body.type || null,
+      bedrooms: body.bedrooms != null ? Number(body.bedrooms) : null,
+      bathrooms: body.bathrooms != null ? Number(body.bathrooms) : null,
+      rent: body.rent != null ? String(body.rent) : '0',
+      deposit: body.deposit != null ? String(body.deposit) : '0',
+      guaranteeLimit: body.guaranteeLimit != null && body.guaranteeLimit !== ''
+        ? String(body.guaranteeLimit)
+        : null,
+      moveInDate: body.moveInDate ? new Date(String(body.moveInDate)) : null,
+      ownerName: body.ownerName || body.owner || null,
+      ownerEmail: body.ownerEmail || null,
+      ownerPhone: body.ownerPhone || null,
+      mgmtFeePct: body.mgmtFeePct != null ? String(body.mgmtFeePct) : '0',
+      hoaAdmin: typeof (body as { hoaAdmin?: unknown }).hoaAdmin === 'boolean'
+        ? (body as { hoaAdmin: boolean }).hoaAdmin
+        : false,
+      status: body.status || 'active',
+      notes: body.notes || null,
+      metadata: (normalizePropertyMetadata(body.metadata) ??
+        undefined) as Prisma.InputJsonValue | undefined,
+      createdBy: user.id,
+      clientId,
+    };
+
+    let created: Awaited<ReturnType<typeof prisma.property.create>> | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        created = await prisma.property.create({ data: createData });
+        break;
+      } catch (createErr) {
+        const err = createErr as { code?: string };
+        if (err?.code === 'P2002' && attempt < 4) {
+          code = await allocatePropertyCode();
+          createData.code = code;
+          continue;
+        }
+        throw createErr;
+      }
+    }
+    if (!created) {
+      return NextResponse.json({ ok: false, error: 'Failed to create property' }, { status: 500 });
+    }
 
     await recordAudit({
       request: req,

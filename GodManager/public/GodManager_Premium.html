@@ -4581,20 +4581,29 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
  <button type="button" id="osd-bulk-send" onclick="if(typeof osdBulkSend==='function')osdBulkSend()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar em lote (todos os owners do mês)</button>
  </div>
- <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+ <div id="osd-controls-wrap" style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
  <button type="button" onclick="if(typeof osdShiftProperty==='function')osdShiftProperty(-1)" title="Propriedade anterior" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">◀</button>
- <select id="osd-property" style="flex:1;min-width:280px;max-width:560px;padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
+ <select id="osd-property" style="flex:1;min-width:280px;max-width:560px;padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;min-height:36px"></select>
  <button type="button" onclick="if(typeof osdShiftProperty==='function')osdShiftProperty(1)" title="Próxima propriedade" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">▶</button>
  <button type="button" onclick="if(typeof osdShiftPeriod==='function')osdShiftPeriod(-1)" title="Mês anterior" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">◀</button>
- <select id="osd-period" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></select>
+ <select id="osd-period" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;min-height:36px"></select>
  <button type="button" onclick="if(typeof osdShiftPeriod==='function')osdShiftPeriod(1)" title="Próximo mês" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">▶</button>
  <input id="osd-search-tenant" type="text" oninput="if(typeof osdRebuildPropertySelect==='function')osdRebuildPropertySelect()" placeholder="Filtrar por tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:220px">
- <button type="button" id="osd-load" onclick="if(typeof osdLoadStatement==='function')osdLoadStatement()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar statement</button>
+ <button type="button" id="osd-load" onclick="if(typeof osdLoadActiveTab==='function')osdLoadActiveTab()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar</button>
  </div>
 
  <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e o mês</div>
 
- <div id="osd-statement-area" style="display:none;margin-top:16px">
+ <div id="osd-content-area" style="display:none;margin-top:16px">
+ <div id="osd-tabs-bar" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+ <button type="button" id="osd-tab-statement" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('statement')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--amber);background:var(--amber);color:#fff">Statement</button>
+ <button type="button" id="osd-tab-workorders" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('workorders')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Work Orders</button>
+ <button type="button" id="osd-tab-recebimentos" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('recebimentos')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Recebimentos</button>
+ <button type="button" id="osd-tab-pagamentos" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('pagamentos')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Pagamentos</button>
+ </div>
+
+ <div id="osd-tab-view-statement">
+ <div id="osd-statement-area">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--cream)">
  <div id="osd-subheader-title" style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--ink)"></div>
@@ -4634,6 +4643,59 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div id="osd-work-orders-wrap" style="margin-top:14px"></div>
  </div>
+ </div>
+ </div>
+
+ <div id="osd-tab-view-workorders" style="display:none">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+ <div id="osd-tab-wo-empty" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px">Nenhuma work order neste mês.</div>
+ <div id="osd-tab-wo-table-wrap" style="display:none;overflow-x:auto">
+ <table style="width:100%;border-collapse:collapse;min-width:720px">
+ <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Descrição</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ </tr></thead>
+ <tbody id="osd-tab-wo-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <div id="osd-tab-view-recebimentos" style="display:none">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+ <div id="osd-tab-rc-empty" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px">Nenhum recebimento neste mês.</div>
+ <div id="osd-tab-rc-table-wrap" style="display:none;overflow-x:auto">
+ <table style="width:100%;border-collapse:collapse;min-width:720px">
+ <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Pagador</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Referência</th>
+ </tr></thead>
+ <tbody id="osd-tab-rc-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <div id="osd-tab-view-pagamentos" style="display:none">
+ <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+ <div id="osd-tab-pg-empty" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px">Nenhum repasse registrado neste mês.</div>
+ <div id="osd-tab-pg-table-wrap" style="display:none;overflow-x:auto">
+ <table style="width:100%;border-collapse:collapse;min-width:520px">
+ <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ </tr></thead>
+ <tbody id="osd-tab-pg-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
  </div>
 
  <!-- Line item modal -->
@@ -10555,9 +10617,11 @@ function nav(r){
  },
  'statement-individual':async function(){
   if(typeof osdInitPage==='function'){await osdInitPage();}
+  if(typeof osdSwitchTab==='function')osdSwitchTab('statement');
  },
  'owner-statement-detail':async function(){
   if(typeof osdInitPage==='function'){await osdInitPage();}
+  if(typeof osdSwitchTab==='function')osdSwitchTab('statement');
   if(window.__osdPendingOpen){
    var po=window.__osdPendingOpen;window.__osdPendingOpen=null;
    try{
@@ -10567,7 +10631,7 @@ function nav(r){
     var psel=document.getElementById('osd-property');if(psel&&uuid)psel.value=uuid;
     var ymsel=document.getElementById('osd-period');
     if(ymsel){if(typeof osdEnsurePeriodOption==='function')osdEnsurePeriodOption(po.ym);ymsel.value=po.ym;}
-    if(uuid&&typeof osdLoadStatement==='function'){await osdLoadStatement();}
+    if(uuid&&typeof osdLoadActiveTab==='function'){await osdLoadActiveTab();}
     else if(!uuid){console.warn('osd deep-link: propriedade nao encontrada',po.code);}
    }catch(e){console.warn('osd deep-link',e);}
   }
@@ -10683,7 +10747,7 @@ window.osdShiftPeriod=function(delta){
  var d=new Date(Date.UTC(y,(m-1)+delta,1));
  var ny=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
  osdEnsurePeriodOption(ny);sel.value=ny;
- if(typeof osdLoadStatement==='function')osdLoadStatement();
+ if(typeof osdLoadActiveTab==='function')osdLoadActiveTab();
 };
 window.osdPeriodOptions=function(){
  var out=[];
@@ -10762,6 +10826,14 @@ window.osdRebuildPropertySelect=function(){
  opt0.value='';
  opt0.textContent='— Selecionar propriedade —';
  sel.appendChild(opt0);
+ if(!arr.length){
+  var optEmpty=document.createElement('option');
+  optEmpty.value='';
+  optEmpty.disabled=true;
+  optEmpty.textContent='Nenhuma propriedade no seu escopo';
+  sel.appendChild(optEmpty);
+  return;
+ }
  arr.forEach(function(p){
   var id=String(p.id||'').trim();
   if(!id)return;
@@ -10777,28 +10849,223 @@ window.osdRebuildPropertySelect=function(){
 };
 
 window.osdHideStatement=function(){
- var area=document.getElementById('osd-statement-area');
+ var content=document.getElementById('osd-content-area');
  var empty=document.getElementById('osd-empty-state');
  var st=document.getElementById('osd-detail-status-row');
  if(st)st.innerHTML='';
- if(area)area.style.display='none';
+ if(content)content.style.display='none';
  if(empty)empty.style.display='block';
 };
 
 window.osdShowStatement=function(){
- var area=document.getElementById('osd-statement-area');
+ var content=document.getElementById('osd-content-area');
  var empty=document.getElementById('osd-empty-state');
- if(area)area.style.display='block';
+ if(content)content.style.display='block';
  if(empty)empty.style.display='none';
 };
 
-window.osdTryAutoLoad=function(){
+window.osdGetYearMonth=function(){
+ var ymSel=document.getElementById('osd-period');
+ var ymRaw=(ymSel&&ymSel.value)?String(ymSel.value).trim():window.osdYearMonthCurrent();
+ return /^\d{4}-\d{2}$/.test(ymRaw)?ymRaw:window.osdYearMonthCurrent();
+};
+
+window.osdPaymentInYearMonth=function(iso,ym){
+ if(!iso||!ym)return false;
+ try{
+  var d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return false;
+  var m=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+  return m===ym;
+ }catch(e){return false;}
+};
+
+window.osdSwitchTab=function(tab){
+ var t=String(tab||'statement');
+ window.__osdActiveTab=t;
+ var views={
+  statement:document.getElementById('osd-tab-view-statement'),
+  workorders:document.getElementById('osd-tab-view-workorders'),
+  recebimentos:document.getElementById('osd-tab-view-recebimentos'),
+  pagamentos:document.getElementById('osd-tab-view-pagamentos')
+ };
+ var btns={
+  statement:document.getElementById('osd-tab-statement'),
+  workorders:document.getElementById('osd-tab-workorders'),
+  recebimentos:document.getElementById('osd-tab-recebimentos'),
+  pagamentos:document.getElementById('osd-tab-pagamentos')
+ };
+ function styleBtn(btn,active){
+  if(!btn)return;
+  btn.style.background=active?'var(--amber)':'var(--sand)';
+  btn.style.color=active?'#fff':'var(--ink2)';
+  btn.style.borderColor=active?'var(--amber)':'var(--border2)';
+  btn.style.fontWeight=active?'600':'500';
+ }
+ Object.keys(views).forEach(function(k){
+  if(views[k])views[k].style.display=(k===t)?'block':'none';
+  styleBtn(btns[k],k===t);
+ });
  var pid=(document.getElementById('osd-property')&&document.getElementById('osd-property').value)||'';
+ if(pid&&typeof osdLoadActiveTab==='function')void osdLoadActiveTab();
+};
+
+window.osdLoadActiveTab=async function(){
+ var pid=(document.getElementById('osd-property')&&document.getElementById('osd-property').value)||'';
+ var ym=window.osdGetYearMonth();
  if(!pid){
   if(typeof osdHideStatement==='function')osdHideStatement();
   return;
  }
- if(typeof osdLoadStatement==='function')osdLoadStatement();
+ window.osdResolveCurrentDetail(pid,ym);
+ window.osdShowStatement();
+ var tab=String(window.__osdActiveTab||'statement');
+ if(tab==='statement'&&typeof osdLoadStatement==='function'){await osdLoadStatement();return;}
+ if(tab==='workorders'&&typeof osdLoadTabWorkOrders==='function'){await osdLoadTabWorkOrders();return;}
+ if(tab==='recebimentos'&&typeof osdLoadTabRecebimentos==='function'){await osdLoadTabRecebimentos();return;}
+ if(tab==='pagamentos'&&typeof osdLoadTabPagamentos==='function'){await osdLoadTabPagamentos();return;}
+};
+
+window.osdTryAutoLoad=function(){
+ if(typeof osdLoadActiveTab==='function')osdLoadActiveTab();
+};
+
+window.osdLoadTabWorkOrders=async function(){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ var emptyEl=document.getElementById('osd-tab-wo-empty');
+ var wrap=document.getElementById('osd-tab-wo-table-wrap');
+ var tbody=document.getElementById('osd-tab-wo-tbody');
+ if(!cd||!cd.propertyId||!tbody){return;}
+ if(emptyEl)emptyEl.textContent='Carregando…';
+ if(wrap)wrap.style.display='none';
+ if(emptyEl)emptyEl.style.display='block';
+ try{
+  var res=await fetch('/api/pm/expenses?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok)throw new Error('expenses fetch failed');
+  var list=(data.expenses||[]).filter(function(e){return e&&String(e.propertyId||'')===String(cd.propertyId);});
+  var esc=window.osdEscHtml;
+  var fmt=window.osdFmtCurrency;
+  tbody.innerHTML='';
+  if(!list.length){
+   if(emptyEl){emptyEl.textContent='Nenhuma work order neste mês.';emptyEl.style.display='block';}
+   if(wrap)wrap.style.display='none';
+   return;
+  }
+  list.forEach(function(e){
+   var desc=String(e.description||e.serviceType||'—');
+   var val=(typeof fmt==='function')?fmt(Number(e.ownerCharged||0)):String(e.ownerCharged||'');
+   var st=String(e.status||'—');
+   var dt=String(e.serviceDate||'').slice(0,10);
+   var tr=document.createElement('tr');
+   tr.style.borderBottom='1px solid var(--border)';
+   tr.innerHTML='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt)+'</td>'
+    +'<td style="padding:10px 12px;color:var(--ink)">'+esc(desc)+'</td>'
+    +'<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+esc(val)+'</td>'
+    +'<td style="padding:10px 12px;text-align:center;color:var(--ink2)">'+esc(st)+'</td>';
+   tbody.appendChild(tr);
+  });
+  if(emptyEl)emptyEl.style.display='none';
+  if(wrap)wrap.style.display='block';
+ }catch(e){
+  console.warn('osdLoadTabWorkOrders',e);
+  if(emptyEl){emptyEl.textContent='Erro ao carregar work orders.';emptyEl.style.display='block';}
+  if(wrap)wrap.style.display='none';
+ }
+};
+
+window.osdLoadTabRecebimentos=async function(){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ var emptyEl=document.getElementById('osd-tab-rc-empty');
+ var wrap=document.getElementById('osd-tab-rc-table-wrap');
+ var tbody=document.getElementById('osd-tab-rc-tbody');
+ if(!cd||!cd.propertyId||!tbody)return;
+ if(emptyEl)emptyEl.textContent='Carregando…';
+ if(wrap)wrap.style.display='none';
+ if(emptyEl)emptyEl.style.display='block';
+ try{
+  var res=await fetch('/api/tenant-payments/by-property/'+encodeURIComponent(cd.propertyId),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok)throw new Error('tenant-payments fetch failed');
+  var ym=cd.yearMonth||window.osdGetYearMonth();
+  var list=(data.payments||[]).filter(function(p){
+   return p&&window.osdPaymentInYearMonth(p.paymentDate,ym);
+  });
+  var esc=window.osdEscHtml;
+  var fmt=window.osdFmtCurrency;
+  tbody.innerHTML='';
+  if(!list.length){
+   if(emptyEl){emptyEl.textContent='Nenhum recebimento neste mês.';emptyEl.style.display='block';}
+   if(wrap)wrap.style.display='none';
+   return;
+  }
+  list.forEach(function(p){
+   var payer=String(p.payerName||((p.tenant&&p.tenant.name)||'')||'—');
+   var val=(typeof fmt==='function')?fmt(Number(p.receiptAmount||0)):String(p.receiptAmount||'');
+   var ref=String(p.reference||p.description||'—');
+   var dt=window.osdFmtDateShort(p.paymentDate);
+   var tr=document.createElement('tr');
+   tr.style.borderBottom='1px solid var(--border)';
+   tr.innerHTML='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt)+'</td>'
+    +'<td style="padding:10px 12px;color:var(--ink)">'+esc(payer)+'</td>'
+    +'<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+esc(val)+'</td>'
+    +'<td style="padding:10px 12px;color:var(--ink2)">'+esc(ref)+'</td>';
+   tbody.appendChild(tr);
+  });
+  if(emptyEl)emptyEl.style.display='none';
+  if(wrap)wrap.style.display='block';
+ }catch(e){
+  console.warn('osdLoadTabRecebimentos',e);
+  if(emptyEl){emptyEl.textContent='Erro ao carregar recebimentos.';emptyEl.style.display='block';}
+  if(wrap)wrap.style.display='none';
+ }
+};
+
+window.osdLoadTabPagamentos=async function(){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ var emptyEl=document.getElementById('osd-tab-pg-empty');
+ var wrap=document.getElementById('osd-tab-pg-table-wrap');
+ var tbody=document.getElementById('osd-tab-pg-tbody');
+ if(!cd||!cd.propertyId||!tbody)return;
+ if(emptyEl)emptyEl.textContent='Carregando…';
+ if(wrap)wrap.style.display='none';
+ if(emptyEl)emptyEl.style.display='block';
+ try{
+  var res=await fetch('/api/pm/owner-payouts?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok)throw new Error('owner-payouts fetch failed');
+  var propRow=null;
+  (data.owners||[]).forEach(function(og){
+   (og.properties||[]).forEach(function(p){
+    if(String(p.propertyId||'')===String(cd.propertyId))propRow=p;
+   });
+  });
+  var esc=window.osdEscHtml;
+  var fmt=window.osdFmtCurrency;
+  tbody.innerHTML='';
+  if(!propRow){
+   if(emptyEl){emptyEl.textContent='Nenhum repasse registrado neste mês.';emptyEl.style.display='block';}
+   if(wrap)wrap.style.display='none';
+   return;
+  }
+  var paidAt=propRow.paidAt||null;
+  var net=Number(propRow.net)||0;
+  var status=paidAt?'Pago':'Pendente';
+  var dt=paidAt?window.osdFmtDateShort(paidAt):'—';
+  var val=(typeof fmt==='function')?fmt(net):String(net);
+  var tr=document.createElement('tr');
+  tr.style.borderBottom='1px solid var(--border)';
+  tr.innerHTML='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt)+'</td>'
+   +'<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+esc(val)+'</td>'
+   +'<td style="padding:10px 12px;text-align:center;color:var(--ink2)">'+esc(status)+'</td>';
+  tbody.appendChild(tr);
+  if(emptyEl)emptyEl.style.display='none';
+  if(wrap)wrap.style.display='block';
+ }catch(e){
+  console.warn('osdLoadTabPagamentos',e);
+  if(emptyEl){emptyEl.textContent='Erro ao carregar pagamentos.';emptyEl.style.display='block';}
+  if(wrap)wrap.style.display='none';
+ }
 };
 
 window.osdWireSelectAutoLoad=function(){
@@ -10815,24 +11082,41 @@ window.osdInitPage=async function(){
  window.osdFillPeriodSelect();
  window.osdHideStatement();
  if(typeof osdWireSelectAutoLoad==='function')osdWireSelectAutoLoad();
+ var sel=document.getElementById('osd-property');
+ var controls=document.getElementById('osd-controls-wrap');
+ if(controls)controls.style.display='flex';
+ if(sel){
+  sel.disabled=true;
+  sel.innerHTML='<option value="">Carregando propriedades…</option>';
+ }
  try{
-  var res=await fetch('/api/properties',{credentials:'same-origin'});
+  var res=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
   var bodyText=await res.text();
   var data={};
   try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
   if(!res.ok||!data.ok){
-   alert((data&&data.error)||('Falha ao carregar propriedades ('+res.status+')'));
+   console.warn('[osdInitPage] properties',res.status,data&&data.error);
    window.OSD_STATE.propertiesCache=[];
+   if(sel){
+    sel.disabled=false;
+    sel.innerHTML='<option value="">— Falha ao carregar —</option>';
+   }
    window.osdRebuildPropertySelect();
    return;
   }
   window.OSD_STATE.propertiesCache=(data.properties||[]).map(function(p){
    return{id:p.id,code:p.code||'',address:p.address||'',ownerName:p.ownerName||'',metadata:p.metadata,rent:Number(p.rent)||0,mgmtFeePct:p.mgmtFeePct};
   });
+  if(sel)sel.disabled=false;
   window.osdRebuildPropertySelect();
  }catch(e){
   console.error(e);
-  alert('Erro de rede ao carregar propriedades.');
+  if(sel){
+   sel.disabled=false;
+   sel.innerHTML='<option value="">— Erro de rede —</option>';
+  }
+  window.OSD_STATE.propertiesCache=[];
+  window.osdRebuildPropertySelect();
  }
 };
 
@@ -10860,7 +11144,7 @@ window.osdShiftProperty=function(delta){
  if(ni<0||ni>=cache.length)return;
  var sel=document.getElementById('osd-property');
  if(sel)sel.value=cache[ni].id;
- if(typeof osdLoadStatement==='function')osdLoadStatement();
+ if(typeof osdLoadActiveTab==='function')osdLoadActiveTab();
 };
 
 window.osdSourceCellHtml=function(src){
@@ -21067,32 +21351,16 @@ async function ltpIsDuplicateAddress(address, excludeIds){
  if(!norm)return false;
  var exList=Array.isArray(excludeIds)?excludeIds.slice():[excludeIds];
  try{
-  var lts=(typeof ltGetRecords==='function')?(ltGetRecords()||[]):[];
-  var hit1=lts.find(function(r){
-   return r && ltpNormalizeAddress(r.address)===norm && !ltpPropertyExcluded(r, exList);
-  });
-  if(hit1)return true;
- }catch(e){}
- try{
-  var gm=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
-  var hit2=gm.find(function(p){
-   if(!p)return false;
-   if(ltpNormalizeAddress(p.address)!==norm)return false;
-   return !ltpPropertyExcluded(p, exList);
-  });
-  if(hit2)return true;
- }catch(e){}
- try{
   var res=await fetch('/api/properties',{credentials:'include'});
   if(res.ok){
    var data=await res.json();
    var arr=(data&&data.properties)||[];
-   var hit3=arr.find(function(p){
+   var hit=arr.find(function(p){
     if(!p)return false;
     if(ltpNormalizeAddress(p.address)!==norm)return false;
     return !ltpPropertyExcluded(p, exList);
    });
-   if(hit3)return true;
+   if(hit)return true;
   }
  }catch(e){console.warn('ltpIsDuplicateAddress API',e);}
  return false;
@@ -21209,6 +21477,7 @@ async function ltpSaveNewProperty(){
   }
  }
  var apiOk=false;
+ var apiBody=null;
  try{
   var url,method;
   if(isEdit){
@@ -21226,8 +21495,11 @@ async function ltpSaveNewProperty(){
   }
   var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
   apiOk=res.ok;
-  if(!res.ok){var eb=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,eb);}
+  if(res.ok){apiBody=await res.json().catch(function(){return null;});}
+  else{var eb=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,eb);}
  }catch(e){console.warn('ltpSaveNewProperty fetch',e);}
+ if(apiOk&&apiBody&&apiBody.property&&apiBody.property.code){newCode=String(apiBody.property.code);}
+ if(apiOk){
  try{
   if(typeof window.gmPropertiesLoad==='function'&&typeof window.gmPropertiesSave==='function'){
    var arr=window.gmPropertiesLoad()||[];
@@ -21238,6 +21510,7 @@ async function ltpSaveNewProperty(){
    window.gmPropertiesSave(arr);
   }
  }catch(e){console.warn('gm sync ltpSave',e);}
+ }
  if(apiOk && typeof window.gmPropertiesRefresh==='function'){
   try{await window.gmPropertiesRefresh();}catch(e){console.warn('refresh apos save',e);}
  }
