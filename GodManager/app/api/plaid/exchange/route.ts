@@ -3,8 +3,12 @@ import { CountryCode } from 'plaid';
 import { prisma } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
 import { getCurrentUserFromSession } from '@/lib/authServer';
-import { toClientScopeUser } from '@/lib/clientScope';
-import { parseBankLinkType, resolveBankLinkEntity } from '@/lib/bankLinkScope';
+import {
+  coerceBankLinkEntityId,
+  parseBankLinkType,
+  resolveBankLinkEntity,
+  toBankLinkActor,
+} from '@/lib/bankLinkScope';
 import { getPlaidClient, pickPlaidAccount } from '@/lib/plaid';
 
 export const dynamic = 'force-dynamic';
@@ -33,22 +37,26 @@ export async function POST(req: Request) {
     const linkType = parseBankLinkType(
       typeof body?.linkType === 'string' ? body.linkType : '',
     );
-    const entityId = typeof body?.entityId === 'string' ? body.entityId.trim() : '';
+    const requestedEntityId =
+      typeof body?.entityId === 'string' ? body.entityId.trim() : '';
     const publicToken =
       typeof body?.publicToken === 'string' ? body.publicToken.trim() : '';
 
     if (!linkType) {
       return NextResponse.json({ ok: false, error: 'linkType invalido (TENANT|OWNER|CLIENT).' }, { status: 400 });
     }
-    if (!entityId) {
-      return NextResponse.json({ ok: false, error: 'entityId obrigatorio.' }, { status: 400 });
-    }
     if (!publicToken) {
       return NextResponse.json({ ok: false, error: 'publicToken obrigatorio.' }, { status: 400 });
     }
 
-    const scopeUser = toClientScopeUser(user);
-    const entity = await resolveBankLinkEntity(scopeUser, linkType, entityId);
+    const actor = toBankLinkActor(user);
+    const coerced = coerceBankLinkEntityId(actor, linkType, requestedEntityId);
+    if (!coerced.ok) {
+      return NextResponse.json({ ok: false, error: coerced.error }, { status: coerced.status });
+    }
+    const entityId = coerced.entityId;
+
+    const entity = await resolveBankLinkEntity(actor, linkType, entityId);
     if (!entity.ok) {
       return NextResponse.json({ ok: false, error: entity.error }, { status: entity.status });
     }

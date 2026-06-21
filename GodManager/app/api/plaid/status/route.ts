@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
-import { toClientScopeUser } from '@/lib/clientScope';
-import { parseBankLinkType, resolveBankLinkEntity } from '@/lib/bankLinkScope';
+import {
+  coerceBankLinkEntityId,
+  parseBankLinkType,
+  resolveBankLinkEntity,
+  toBankLinkActor,
+} from '@/lib/bankLinkScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,17 +19,20 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const linkType = parseBankLinkType(url.searchParams.get('linkType'));
-    const entityId = (url.searchParams.get('entityId') || '').trim();
+    const requestedEntityId = (url.searchParams.get('entityId') || '').trim();
 
     if (!linkType) {
       return NextResponse.json({ ok: false, error: 'linkType invalido (TENANT|OWNER|CLIENT).' }, { status: 400 });
     }
-    if (!entityId) {
-      return NextResponse.json({ ok: false, error: 'entityId obrigatorio.' }, { status: 400 });
-    }
 
-    const scopeUser = toClientScopeUser(user);
-    const entity = await resolveBankLinkEntity(scopeUser, linkType, entityId);
+    const actor = toBankLinkActor(user);
+    const coerced = coerceBankLinkEntityId(actor, linkType, requestedEntityId);
+    if (!coerced.ok) {
+      return NextResponse.json({ ok: false, error: coerced.error }, { status: coerced.status });
+    }
+    const entityId = coerced.entityId;
+
+    const entity = await resolveBankLinkEntity(actor, linkType, entityId);
     if (!entity.ok) {
       return NextResponse.json({ ok: false, error: entity.error }, { status: entity.status });
     }
