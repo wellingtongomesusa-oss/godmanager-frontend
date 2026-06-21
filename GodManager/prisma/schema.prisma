@@ -118,6 +118,7 @@ model Client {
   ownerAuditSnapshots   OwnerAuditSnapshot[]    @relation("OwnerAuditSnapshot_clientId")
   bankAccountBalances   BankAccountBalance[]    @relation("BankAccountBalance_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
+  bankLinks             BankLink[]              @relation("BankLink_clientId")
 
   @@map("clients")
 }
@@ -913,6 +914,36 @@ enum IntegrationStatus {
   DISCONNECTED
   ERROR
   EXPIRED
+}
+
+enum BankLinkType {
+  TENANT
+  OWNER
+  CLIENT
+}
+
+model BankLink {
+  id              String       @id @default(cuid())
+  clientId        String
+  client          Client       @relation("BankLink_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  linkType        BankLinkType
+  entityId        String
+  accessTokenEnc  String       @db.Text
+  plaidItemId     String?
+  institutionName String?
+  accountId       String?
+  accountMask     String?
+  accountName     String?
+  accountSubtype  String?
+  status          String       @default("active")
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([clientId, linkType, entityId])
+  @@index([clientId])
+  @@index([linkType, entityId])
+  @@map("bank_links")
 }
 
 model ClientIntegration {
