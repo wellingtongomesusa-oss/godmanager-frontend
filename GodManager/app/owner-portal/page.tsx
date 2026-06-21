@@ -114,6 +114,7 @@ export default async function OwnerPortalIndex() {
         period={period}
         periodLabel={periodLabel(period)}
         isAdminView={isAdminView}
+        ownerId={isAdminView ? null : user.ownerId}
       />
     </div>
   );

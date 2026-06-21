@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import PlaidLinkCard from './_components/PlaidLinkCard';
 
 interface PortalProperty {
   id: string;
@@ -16,6 +17,7 @@ interface Props {
   period: string;
   periodLabel: string;
   isAdminView: boolean;
+  ownerId?: string | null;
 }
 
 export default function IndexClient({
@@ -23,6 +25,7 @@ export default function IndexClient({
   period,
   periodLabel,
   isAdminView,
+  ownerId,
 }: Props) {
   const [query, setQuery] = useState('');
 
@@ -45,6 +48,8 @@ export default function IndexClient({
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+      {ownerId ? <PlaidLinkCard ownerId={ownerId} /> : null}
+
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-heading text-lg font-semibold text-gm-ink">
