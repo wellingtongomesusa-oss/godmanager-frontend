@@ -21,6 +21,7 @@ enum UserRole {
   field
   viewer
   owner
+  tenant
   supervisor
   supervisor_2
   vendor
@@ -240,9 +241,11 @@ model User {
   lastActive      DateTime         @default(now())
   clientId        String?
   ownerId         String?
+  tenantId        String?
   vendorId        String?
   client          Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
   owner           Owner?           @relation("User_ownerId", fields: [ownerId], references: [id], onDelete: SetNull)
+  tenant          Tenant?          @relation("User_tenantId", fields: [tenantId], references: [id], onDelete: SetNull)
   vendor          PmVendor?        @relation("User_fieldVendor", fields: [vendorId], references: [id], onDelete: SetNull)
   auditEntries    AuditEntry[]     @relation("ActorAudit")
   targetAudits    AuditEntry[]     @relation("TargetAudit")
@@ -252,6 +255,7 @@ model User {
 
   @@index([clientId])
   @@index([ownerId])
+  @@index([tenantId])
   @@index([vendorId])
   @@index([email])
   @@map("users")
@@ -457,6 +461,7 @@ model Tenant {
   maintenanceCalls MaintenanceCall[]
   tenantPayments   TenantPayment[]   @relation("TenantPayment_tenantId")
   leases           Lease[]           @relation("Lease_tenantId")
+  users            User[]            @relation("User_tenantId")
 
   @@index([code])
   @@index([propertyId])

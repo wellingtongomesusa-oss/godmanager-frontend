@@ -8,6 +8,7 @@ export type UserRole =
   | 'field'
   | 'viewer'
   | 'owner'
+  | 'tenant'
   | 'supervisor'
   | 'supervisor_2'
   | 'vendor';
