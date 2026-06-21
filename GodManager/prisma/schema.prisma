@@ -1343,3 +1343,23 @@ model HoaInstallment {
   @@index([clientId])
   @@map("hoa_installments")
 }
+
+model LeaseContract {
+  id          String    @id @default(cuid())
+  clientId    String?
+  propertyId  String
+  tenantId    String?
+  code        String
+  moveIn      DateTime
+  moveOut     DateTime?
+  status      String    @default("active")
+  notes       String?   @db.Text
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@map("lease_contracts")
+}
