@@ -1472,6 +1472,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('ltproperties')" id="nav-ltproperties" data-i18n="properties">Properties</div>
  <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement" data-i18n="nav_owner_statement">Owner Statement</div>
+ <div class="ss" onclick="nav('statement-individual')" id="nav-statement-individual" data-i18n="nav_statement_individual">Statement individual</div>
  <div class="ss" onclick="nav('tenants')" id="nav-tenants" data-i18n="nav_tenants">Tenants</div>
  <div class="ss" onclick="nav('leases-history')" id="nav-leases-history" data-i18n="nav_leases_history">Lease history</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties" data-i18n="ranking_properties">Ranking Properties</div>
@@ -4591,7 +4592,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-load" onclick="if(typeof osdLoadStatement==='function')osdLoadStatement()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar statement</button>
  </div>
 
- <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e período para visualizar o statement.</div>
+ <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e o mês</div>
 
  <div id="osd-statement-area" style="display:none;margin-top:16px">
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
@@ -8705,7 +8706,7 @@ async function gmClientUsersCreateSubmit(e){
 var GM_MENU_ACCESS_SECTIONS=[
  {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Dashboard'}]},
  {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'}]},
- {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'tenants',label:'Tenants'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
+ {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'statement-individual',label:'Statement individual'},{key:'tenants',label:'Tenants'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
  {key:'expenses',label:'EXPENSES',items:[{key:'ltexpenses',label:'Expenses'},{key:'ltcleanings',label:'Cleanings'},{key:'vendors',label:'Vendors'},{key:'jobs',label:'Jobs'},{key:'jobs-follow',label:'Acompanhamento'}]},
  {key:'billing',label:'BILLING',items:[{key:'billing',label:'Invoice / Bill'}]},
  {key:'ownerportal',label:'OWNER PORTAL',items:[{key:'ownerportal',label:'Owner Portal'},{key:'ltownerpay',label:'Owner Payment'},{key:'owner-statement-detail',label:'Owner Statement (Detalhe)'},{key:'owner-audit',label:'Auditoria Repasses'},{key:'listings',label:'Listings'}]},
@@ -10377,6 +10378,7 @@ var GM_TITLE_KEY_ALIASES={
  'admin-dashboard':'title_admin_dashboard',
  'client-users':'title_client_users',
  'owner-statement':'title_owner_statement',
+ 'statement-individual':'title_statement_individual',
  'owner-statement-detail':'title_owner_statement_detail',
  'leases-history':'title_leases_history',
  'ltownerpay':'title_ltownerpay',
@@ -10484,8 +10486,10 @@ function nav(r){
   openUsersModal();
   return;
  }
+ var pageRoute=r;
+ if(r==='statement-individual')pageRoute='owner-statement-detail';
  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
- const pg=document.getElementById('page-'+r)||document.getElementById('page-home');
+ const pg=document.getElementById('page-'+pageRoute)||document.getElementById('page-home');
  if(pg) pg.classList.add('active');
  document.querySelectorAll('.si,.ss').forEach(e=>e.classList.remove('active'));
  var el=document.getElementById('nav-'+r);
@@ -10548,6 +10552,9 @@ function nav(r){
    console.warn('Sync API falhou, usando localStorage cache:',e);
   }
   if(typeof osRender==='function'){await osRender();}
+ },
+ 'statement-individual':async function(){
+  if(typeof osdInitPage==='function'){await osdInitPage();}
  },
  'owner-statement-detail':async function(){
   if(typeof osdInitPage==='function'){await osdInitPage();}
@@ -10785,9 +10792,29 @@ window.osdShowStatement=function(){
  if(empty)empty.style.display='none';
 };
 
+window.osdTryAutoLoad=function(){
+ var pid=(document.getElementById('osd-property')&&document.getElementById('osd-property').value)||'';
+ if(!pid){
+  if(typeof osdHideStatement==='function')osdHideStatement();
+  return;
+ }
+ if(typeof osdLoadStatement==='function')osdLoadStatement();
+};
+
+window.osdWireSelectAutoLoad=function(){
+ if(window.__osdSelectAutoWired)return;
+ window.__osdSelectAutoWired=true;
+ var prop=document.getElementById('osd-property');
+ var per=document.getElementById('osd-period');
+ var fn=function(){if(typeof osdTryAutoLoad==='function')osdTryAutoLoad();};
+ if(prop)prop.addEventListener('change',fn);
+ if(per)per.addEventListener('change',fn);
+};
+
 window.osdInitPage=async function(){
  window.osdFillPeriodSelect();
  window.osdHideStatement();
+ if(typeof osdWireSelectAutoLoad==='function')osdWireSelectAutoLoad();
  try{
   var res=await fetch('/api/properties',{credentials:'same-origin'});
   var bodyText=await res.text();
