@@ -3,6 +3,13 @@ import { prisma } from '@/lib/db';
 import { hashPassword } from '@/lib/password';
 import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 import { recordAudit } from '@/lib/auditServer';
+import {
+  isActiveNonSuperAdminWithoutClient,
+  prismaRoleStatusClient,
+  snapshotFromUpdate,
+  USER_INTEGRITY_SELECT_COMPANY,
+  UserIntegrityError,
+} from '@/lib/userIntegrity';
 import type { UserRole, UserStatus } from '@prisma/client';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -90,6 +97,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data.lastActive = v;
       if (v.getTime() !== existing.lastActive.getTime()) changedFields.push('lastActive');
     }
+    if (typeof body.clientId === 'string') {
+      const v = body.clientId.replace(/\0/g, '').trim();
+      if (!v) {
+        return NextResponse.json({ ok: false, error: USER_INTEGRITY_SELECT_COMPANY }, { status: 400 });
+      }
+      const client = await prisma.client.findUnique({ where: { id: v }, select: { id: true } });
+      if (!client) {
+        return NextResponse.json({ ok: false, error: 'Cliente nao encontrado.' }, { status: 404 });
+      }
+      data.clientId = v;
+      if (v !== existing.clientId) changedFields.push(`clientId:${existing.clientId ?? 'null'}->${v}`);
+    } else if (body.clientId === null) {
+      data.clientId = null;
+      if (existing.clientId !== null) changedFields.push('clientId:cleared');
+    }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ ok: false, error: 'Nenhum campo para atualizar.' }, { status: 400 });
@@ -97,6 +119,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     if (changedFields.length === 0 && !passwordChanged) {
       return NextResponse.json({ ok: false, error: 'Nenhuma alteracao efectiva.' }, { status: 400 });
+    }
+
+    const resulting = snapshotFromUpdate(
+      prismaRoleStatusClient(existing.role, existing.status, existing.clientId),
+      data,
+    );
+    if (isActiveNonSuperAdminWithoutClient(resulting.role, resulting.status, resulting.clientId)) {
+      return NextResponse.json({ ok: false, error: USER_INTEGRITY_SELECT_COMPANY }, { status: 400 });
     }
 
     const user = await prisma.user.update({ where: { id: params.id }, data: data as import('@prisma/client').Prisma.UserUpdateInput });
@@ -140,6 +170,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
     });
   } catch (e: unknown) {
+    if (e instanceof UserIntegrityError) {
+      return NextResponse.json({ ok: false, error: e.message }, { status: 400 });
+    }
     const err = e as { code?: string };
     if (err?.code === 'P2025') return NextResponse.json({ ok: false, error: 'Nao encontrado.' }, { status: 404 });
     console.error('[api/admin/users/[id] PATCH]', e);

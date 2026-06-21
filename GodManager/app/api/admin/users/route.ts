@@ -3,6 +3,11 @@ import { prisma } from '@/lib/db';
 import { hashPassword } from '@/lib/password';
 import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 import { recordAudit } from '@/lib/auditServer';
+import {
+  isActiveNonSuperAdminWithoutClient,
+  USER_INTEGRITY_SELECT_COMPANY,
+  UserIntegrityError,
+} from '@/lib/userIntegrity';
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -54,6 +59,8 @@ export async function POST(req: Request) {
     const role = String(body?.role || 'viewer');
     const status = String(body?.status || 'active');
     const permissions = Array.isArray(body?.permissions) ? body.permissions.map(String) : [];
+    const clientIdRaw =
+      body?.clientId == null ? '' : String(body.clientId).replace(/\0/g, '').trim();
 
     if (!email || !firstName || !lastName) {
       return NextResponse.json({ ok: false, error: 'email, firstName, lastName sao obrigatorios.' }, { status: 400 });
@@ -79,6 +86,25 @@ export async function POST(req: Request) {
     if (!validRoles.includes(role)) return NextResponse.json({ ok: false, error: 'Role invalido.' }, { status: 400 });
     if (!validStatuses.includes(status)) return NextResponse.json({ ok: false, error: 'Status invalido.' }, { status: 400 });
 
+    let clientId: string | null = null;
+    if (role !== 'super_admin') {
+      if (!clientIdRaw) {
+        return NextResponse.json({ ok: false, error: USER_INTEGRITY_SELECT_COMPANY }, { status: 400 });
+      }
+      const client = await prisma.client.findUnique({
+        where: { id: clientIdRaw },
+        select: { id: true },
+      });
+      if (!client) {
+        return NextResponse.json({ ok: false, error: 'Cliente nao encontrado.' }, { status: 404 });
+      }
+      clientId = clientIdRaw;
+    }
+
+    if (isActiveNonSuperAdminWithoutClient(role, status, clientId)) {
+      return NextResponse.json({ ok: false, error: USER_INTEGRITY_SELECT_COMPANY }, { status: 400 });
+    }
+
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
@@ -90,6 +116,7 @@ export async function POST(req: Request) {
         status: status as import('@prisma/client').UserStatus,
         permissions,
         passwordHash,
+        clientId,
       },
     });
 
@@ -119,6 +146,9 @@ export async function POST(req: Request) {
       },
     });
   } catch (e) {
+    if (e instanceof UserIntegrityError) {
+      return NextResponse.json({ ok: false, error: e.message }, { status: 400 });
+    }
     console.error('[api/admin/users POST]', e);
     return NextResponse.json({ ok: false, error: 'Erro interno.' }, { status: 500 });
   }

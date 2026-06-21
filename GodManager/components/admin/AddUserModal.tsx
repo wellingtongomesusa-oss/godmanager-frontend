@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Copy, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import type { User, UserRole } from '@/lib/types';
-import { createUser, listUsers } from '@/lib/users';
+import { createUser, listAdminClients, listUsers } from '@/lib/users';
 
 const PERM_OPTS = [
   { key: 'payments', label: 'Can approve payments' },
@@ -46,6 +46,9 @@ export function AddUserModal({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('viewer');
+  const [clientId, setClientId] = useState('');
+  const [clients, setClients] = useState<{ id: string; companyName: string }[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
   const [perms, setPerms] = useState<Record<string, boolean>>({
     payments: false,
     properties: false,
@@ -57,6 +60,23 @@ export function AddUserModal({
   const [result, setResult] = useState<{ user: User; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const needsCompany = role !== 'super_admin';
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setClientsLoading(true);
+    listAdminClients().then((res) => {
+      if (cancelled) return;
+      if (res.ok) setClients(res.clients);
+      else setClients([]);
+      setClientsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const reset = () => {
     setFirstName('');
     setLastName('');
@@ -65,6 +85,7 @@ export function AddUserModal({
     setPassword('');
     setShowPassword(false);
     setRole('viewer');
+    setClientId('');
     setPerms({ payments: false, properties: false, financials: false, export: false });
     setErrors({});
     setResult(null);
@@ -99,6 +120,7 @@ export function AddUserModal({
     if (!lastName.trim()) e.lastName = 'Required';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Valid email required';
     if (password && password.length < 8) e.password = 'Minimum 8 characters';
+    if (needsCompany && !clientId.trim()) e.clientId = 'Selecione a empresa do usuario';
 
     if (!e.email) {
       const users = await listUsers();
@@ -113,7 +135,7 @@ export function AddUserModal({
     const finalPassword = password.trim() || generateStrongPassword(12);
     const permissions = PERM_OPTS.filter((p) => perms[p.key]).map((p) => p.key);
 
-    const res = await createUser({
+    const payload: Parameters<typeof createUser>[0] = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim().toLowerCase(),
@@ -122,7 +144,12 @@ export function AddUserModal({
       role,
       status: 'active',
       permissions,
-    });
+    };
+    if (needsCompany) {
+      payload.clientId = clientId.trim();
+    }
+
+    const res = await createUser(payload);
     setSaving(false);
 
     if (!res.ok) {
@@ -135,7 +162,10 @@ export function AddUserModal({
   };
 
   const valid = Boolean(
-    firstName.trim() && lastName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+    firstName.trim() &&
+      lastName.trim() &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+      (!needsCompany || clientId.trim()),
   );
 
   if (result) {
@@ -260,6 +290,7 @@ export function AddUserModal({
               onChange={(ev) => setRole(ev.target.value as UserRole)}
               className="w-full rounded-lg border border-gm-border bg-white px-3 py-2 text-sm"
             >
+              <option value="super_admin">Super Admin</option>
               <option value="admin">Admin</option>
               <option value="manager">Property Manager</option>
               <option value="accountant">Accountant</option>
@@ -271,6 +302,27 @@ export function AddUserModal({
               <option value="vendor">Vendor</option>
             </select>
           </div>
+          {needsCompany ? (
+            <div className="mt-3">
+              <label className="mb-1 block text-xs text-gm-ink-secondary">Empresa *</label>
+              <select
+                value={clientId}
+                onChange={(ev) => setClientId(ev.target.value)}
+                disabled={clientsLoading}
+                className="w-full rounded-lg border border-gm-border bg-white px-3 py-2 text-sm"
+              >
+                <option value="">{clientsLoading ? 'A carregar...' : '— Selecione a empresa —'}</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.companyName}
+                  </option>
+                ))}
+              </select>
+              {errors.clientId ? (
+                <p className="mt-1 text-xs text-gm-red">{errors.clientId}</p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mt-3 space-y-2">
             {PERM_OPTS.map((p) => (
               <label key={p.key} className="flex items-center gap-2 text-xs">

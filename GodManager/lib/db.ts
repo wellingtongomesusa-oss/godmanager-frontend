@@ -1,12 +1,84 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import {
+  assertUserIntegrityOnCreate,
+  assertUserIntegrityOnUpdate,
+  prismaRoleStatusClient,
+  updateDataTouchesIntegrity,
+} from '@/lib/userIntegrity';
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createPrismaClient(): PrismaClient {
+  const base = new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   });
+
+  const extended = base.$extends({
+    query: {
+      user: {
+        async create({ args, query }) {
+          assertUserIntegrityOnCreate(args.data as Record<string, unknown>);
+          return query(args);
+        },
+        async createMany({ args, query }) {
+          const rows = Array.isArray(args.data) ? args.data : [args.data];
+          for (const row of rows) {
+            assertUserIntegrityOnCreate(row as Record<string, unknown>);
+          }
+          return query(args);
+        },
+        async update({ args, query }) {
+          const existing = await base.user.findUnique({
+            where: args.where,
+            select: { role: true, status: true, clientId: true },
+          });
+          if (existing) {
+            assertUserIntegrityOnUpdate(
+              prismaRoleStatusClient(existing.role, existing.status, existing.clientId),
+              args.data as Record<string, unknown>,
+            );
+          }
+          return query(args);
+        },
+        async updateMany({ args, query }) {
+          const patch = args.data as Record<string, unknown>;
+          if (updateDataTouchesIntegrity(patch)) {
+            const rows = await base.user.findMany({
+              where: args.where,
+              select: { role: true, status: true, clientId: true },
+            });
+            for (const row of rows) {
+              assertUserIntegrityOnUpdate(
+                prismaRoleStatusClient(row.role, row.status, row.clientId),
+                patch,
+              );
+            }
+          }
+          return query(args);
+        },
+        async upsert({ args, query }) {
+          const existing = await base.user.findUnique({
+            where: args.where,
+            select: { role: true, status: true, clientId: true },
+          });
+          if (existing) {
+            assertUserIntegrityOnUpdate(
+              prismaRoleStatusClient(existing.role, existing.status, existing.clientId),
+              args.update as Record<string, unknown>,
+            );
+          } else {
+            assertUserIntegrityOnCreate(args.create as Record<string, unknown>);
+          }
+          return query(args);
+        },
+      },
+    },
+  });
+
+  return extended as unknown as PrismaClient;
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 

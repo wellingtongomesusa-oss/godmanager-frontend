@@ -56,6 +56,25 @@ export async function getUserById(id: string): Promise<User | null> {
   }
 }
 
+export async function listAdminClients(): Promise<
+  { ok: true; clients: { id: string; companyName: string }[] } | { ok: false; error: string }
+> {
+  try {
+    const res = await fetch('/api/admin/clients', { credentials: 'include', cache: 'no-store' });
+    const data = await j(res);
+    if (!res.ok || !data?.ok) {
+      return { ok: false, error: data?.error || 'Falha ao listar clientes.' };
+    }
+    const clients = ((data.clients || []) as { id: string; companyName: string }[]).map((c) => ({
+      id: c.id,
+      companyName: c.companyName,
+    }));
+    return { ok: true, clients };
+  } catch {
+    return { ok: false, error: 'Erro de rede ao listar clientes.' };
+  }
+}
+
 export async function createUser(input: {
   firstName: string;
   lastName: string;
@@ -65,6 +84,7 @@ export async function createUser(input: {
   role?: string;
   status?: string;
   permissions?: string[];
+  clientId?: string | null;
 }): Promise<{ ok: true; user: User } | { ok: false; error: string }> {
   try {
     const res = await fetch('/api/admin/users', {
