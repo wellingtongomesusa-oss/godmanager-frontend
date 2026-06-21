@@ -4374,6 +4374,58 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
 </div>
 
+<!-- LTP — Lease contracts (Move In / Move Out / Histórico) -->
+<div id="ltp-lease-movein-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9020;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)ltpLeaseCloseMoveIn()">
+<div style="background:var(--paper);border-radius:12px;max-width:400px;width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(26,26,28,.12)" onclick="event.stopPropagation()">
+<div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px">Move In</div>
+<div style="font-size:11px;color:var(--ink3);margin-bottom:18px" id="ltp-lease-movein-sub">Registrar entrada do contrato</div>
+<label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Data do Move In</label>
+<input id="ltp-lease-movein-date" type="date" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:20px;box-sizing:border-box">
+<div id="ltp-lease-movein-err" style="display:none;font-size:11px;color:var(--red);margin-bottom:12px"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end">
+<button type="button" onclick="ltpLeaseCloseMoveIn()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+<button type="button" id="ltp-lease-movein-confirm" onclick="ltpLeaseSubmitMoveIn()" style="padding:9px 16px;border:none;border-radius:8px;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar</button>
+</div>
+</div>
+</div>
+<div id="ltp-lease-tenant-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9021;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)ltpLeaseCloseTenantPick()">
+<div style="background:var(--paper);border-radius:12px;max-width:400px;width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(26,26,28,.12)" onclick="event.stopPropagation()">
+<div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px">Selecionar tenant</div>
+<div style="font-size:11px;color:var(--ink3);margin-bottom:18px">Varios tenants ativos nesta casa. Escolha um para o contrato.</div>
+<label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Tenant</label>
+<select id="ltp-lease-tenant-select" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:20px;box-sizing:border-box"></select>
+<div style="display:flex;gap:10px;justify-content:flex-end">
+<button type="button" onclick="ltpLeaseCloseTenantPick()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+<button type="button" id="ltp-lease-tenant-confirm" onclick="ltpLeaseSubmitTenantPick()" style="padding:9px 16px;border:none;border-radius:8px;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar</button>
+</div>
+</div>
+</div>
+<div id="ltp-lease-moveout-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9020;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)ltpLeaseCloseMoveOut()">
+<div style="background:var(--paper);border-radius:12px;max-width:400px;width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(26,26,28,.12)" onclick="event.stopPropagation()">
+<div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px">Move Out</div>
+<div style="font-size:11px;color:var(--ink3);margin-bottom:18px" id="ltp-lease-moveout-sub">Encerrar contrato ativo</div>
+<label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Data do Move Out</label>
+<input id="ltp-lease-moveout-date" type="date" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:20px;box-sizing:border-box">
+<div id="ltp-lease-moveout-err" style="display:none;font-size:11px;color:var(--red);margin-bottom:12px"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end">
+<button type="button" onclick="ltpLeaseCloseMoveOut()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+<button type="button" id="ltp-lease-moveout-confirm" onclick="ltpLeaseSubmitMoveOut()" style="padding:9px 16px;border:none;border-radius:8px;background:var(--amber);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar</button>
+</div>
+</div>
+</div>
+<div id="ltp-lease-history-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9020;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this)ltpLeaseCloseHistory()">
+<div style="background:var(--paper);border-radius:12px;max-width:min(720px,95vw);width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(26,26,28,.12);margin:auto" onclick="event.stopPropagation()">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px">
+<div>
+<div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Histórico de contratos</div>
+<div style="font-size:11px;color:var(--ink3);margin-top:4px" id="ltp-lease-history-sub"></div>
+</div>
+<button type="button" onclick="ltpLeaseCloseHistory()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;font-size:18px;color:var(--ink3);line-height:1;flex-shrink:0">×</button>
+</div>
+<div id="ltp-lease-history-body" style="min-height:80px"></div>
+</div>
+</div>
+
 <!-- 
  LONG TERM — PROPERTIES PAGE
  -->
@@ -13722,6 +13774,7 @@ async function ltOpenDetail(id){
  <div style="font-size:10px;color:var(--ink3)">Salvo em: ${r.savedAt||'—'}</div>`;
 
  document.getElementById('lt-detail-actions').innerHTML=`
+ <button onclick="if(typeof ltpLeaseOpenHistory==='function')ltpLeaseOpenHistory('${r.id}');" style="padding:8px 14px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif"> Histórico de contratos</button>
  <button onclick="ltOpenEdit('${r.id}');ltCloseDetail();" style="padding:8px 14px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif"> Editar</button>
  ${r.status!=='approved'?`<button onclick="ltSetStatus('${r.id}','approved');ltCloseDetail();" style="padding:8px 14px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600"> Aprovar Statement</button>`:''}
  ${r.status!=='disputed'?`<button onclick="ltSetStatus('${r.id}','disputed');ltCloseDetail();" style="padding:8px 14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif"> Marcar Disputa</button>`:''}
@@ -19085,9 +19138,298 @@ function ltpBindTbodyActionDelegationOnce(){
   var id=t.getAttribute('data-ltp-id');
   if(!id) return;
   if(a==='detail' && typeof ltOpenDetail==='function') ltOpenDetail(id);
+  else if(a==='movein' && typeof ltpLeaseOpenMoveIn==='function') ltpLeaseOpenMoveIn(id);
+  else if(a==='moveout' && typeof ltpLeaseOpenMoveOut==='function') ltpLeaseOpenMoveOut(id);
+  else if(a==='leases' && typeof ltpLeaseOpenHistory==='function') ltpLeaseOpenHistory(id);
   else if(a==='edit'){ if(typeof ltpOpenEditProperty==='function') ltpOpenEditProperty(id); else if(typeof ltOpenEdit==='function') ltOpenEdit(id); }
   else if(a==='del' && typeof ltpDeleteProperty==='function') ltpDeleteProperty(id);
  }, true);
+}
+function ltpLeaseTodayYmd(){
+ var d=new Date();
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function ltpLeaseFmtIsoDate(v){
+ if(!v) return '—';
+ var t=String(v).trim();
+ var m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(m) return m[3]+'/'+m[2]+'/'+m[1];
+ var d=new Date(t);
+ if(!isNaN(d.getTime())){
+  return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear();
+ }
+ return t;
+}
+function ltpLeaseFindPropertyRow(rowId){
+ var id=String(rowId||'').trim();
+ if(!id) return null;
+ var gmArr=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
+ return (gmArr||[]).find(function(p){
+  return p&&(String(p.id)===id||String(p.code)===id||String(p._apiId)===id);
+ })||null;
+}
+async function ltpLeaseResolvePropertyApiId(rowId){
+ var id=String(rowId||'').trim();
+ if(!id) return null;
+ var found=ltpLeaseFindPropertyRow(id);
+ if(found&&found._apiId) return String(found._apiId);
+ if(id.length>=20) return id;
+ try{
+  var lst=await fetch('/api/properties',{credentials:'include'}).then(function(r){return r.json();});
+  var match=(lst&&lst.properties||[]).find(function(p){
+   return p&&(String(p.code)===id||String(p.id)===id);
+  });
+  if(match&&match.id) return String(match.id);
+ }catch(e){console.warn('ltpLeaseResolvePropertyApiId',e);}
+ return null;
+}
+async function ltpLeaseFetchContracts(propertyApiId){
+ var res=await fetch('/api/lease-contracts?propertyId='+encodeURIComponent(propertyApiId),{credentials:'include',cache:'no-store'});
+ var j=await res.json().catch(function(){return {};});
+ if(!res.ok){
+  var errMsg=(j&&j.error)||'Falha ao listar contratos';
+  throw new Error(errMsg);
+ }
+ return (j&&j.contracts)||[];
+}
+function ltpLeaseRefreshAfter(){
+ if(typeof ltpRender==='function') void ltpRender();
+}
+function ltpLeaseShowErr(elId,msg){
+ var el=document.getElementById(elId);
+ if(!el) return;
+ if(msg){el.textContent=msg;el.style.display='block';}
+ else{el.textContent='';el.style.display='none';}
+}
+async function ltpLeasePostMoveIn(propertyApiId, moveIn, tenantId){
+ var body={propertyId:propertyApiId,moveIn:moveIn};
+ if(tenantId) body.tenantId=tenantId;
+ var res=await fetch('/api/lease-contracts',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ var j=await res.json().catch(function(){return {};});
+ return {ok:res.ok,status:res.status,body:j};
+}
+function ltpLeaseHandleMoveInResponse(pack, moveIn){
+ var j=pack.body||{};
+ if(pack.ok&&j.contract){
+  var code=j.contract.code||'—';
+  var dt=ltpLeaseFmtIsoDate(j.contract.moveIn||moveIn);
+  if(typeof showToast==='function') showToast('Contrato '+code+' registrado em '+dt,'success');
+  ltpLeaseRefreshAfter();
+  return true;
+ }
+ if(pack.status===409&&j.error==='multiplos_tenants_ativos'){
+  ltpLeaseOpenTenantPick(j.candidates||[]);
+  return false;
+ }
+ if(pack.status===409&&j.error==='contrato_ativo_existente'){
+  if(typeof showToast==='function') showToast('Ja existe contrato ativo nesta casa. Faca Move Out primeiro.','error');
+  return true;
+ }
+ if(pack.status===400&&j.error==='sem_tenant_ativo'){
+  if(typeof showToast==='function') showToast('Nenhum tenant ativo nesta casa.','error');
+  return true;
+ }
+ var errMsg=(j&&j.error)||'Falha ao registrar Move In';
+ if(typeof showToast==='function') showToast(errMsg,'error');
+ return true;
+}
+async function ltpLeaseOpenMoveIn(rowId){
+ var row=ltpLeaseFindPropertyRow(rowId);
+ var label=(row&&(row.address||row.id||rowId))||rowId;
+ window.__ltpLeaseCtx={rowId:rowId,label:label,propertyApiId:null};
+ var apiId=await ltpLeaseResolvePropertyApiId(rowId);
+ if(!apiId){
+  if(typeof showToast==='function') showToast('Nao foi possivel identificar a propriedade no servidor.','error');
+  return;
+ }
+ window.__ltpLeaseCtx.propertyApiId=apiId;
+ var sub=document.getElementById('ltp-lease-movein-sub');
+ if(sub) sub.textContent=label;
+ var dateIn=document.getElementById('ltp-lease-movein-date');
+ if(dateIn) dateIn.value=ltpLeaseTodayYmd();
+ ltpLeaseShowErr('ltp-lease-movein-err','');
+ var m=document.getElementById('ltp-lease-movein-modal');
+ if(m) m.style.display='flex';
+}
+function ltpLeaseCloseMoveIn(){
+ var m=document.getElementById('ltp-lease-movein-modal');
+ if(m) m.style.display='none';
+}
+async function ltpLeaseSubmitMoveIn(){
+ var ctx=window.__ltpLeaseCtx||{};
+ if(!ctx.propertyApiId) return;
+ var dateIn=document.getElementById('ltp-lease-movein-date');
+ var moveIn=(dateIn&&dateIn.value)||ltpLeaseTodayYmd();
+ var btn=document.getElementById('ltp-lease-movein-confirm');
+ if(btn) btn.disabled=true;
+ ltpLeaseShowErr('ltp-lease-movein-err','');
+ try{
+  var pack=await ltpLeasePostMoveIn(ctx.propertyApiId,moveIn,null);
+  var done=ltpLeaseHandleMoveInResponse(pack,moveIn);
+  if(done) ltpLeaseCloseMoveIn();
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }finally{
+  if(btn) btn.disabled=false;
+ }
+}
+function ltpLeaseOpenTenantPick(candidates){
+ var sel=document.getElementById('ltp-lease-tenant-select');
+ if(!sel) return;
+ var list=Array.isArray(candidates)?candidates:[];
+ sel.innerHTML=list.map(function(c){
+  var id=String(c.id||'').replace(/"/g,'&quot;');
+  var name=String(c.name||c.id||'').replace(/</g,'&lt;');
+  return '<option value="'+id+'">'+name+'</option>';
+ }).join('');
+ var m=document.getElementById('ltp-lease-tenant-modal');
+ if(m) m.style.display='flex';
+}
+function ltpLeaseCloseTenantPick(){
+ var m=document.getElementById('ltp-lease-tenant-modal');
+ if(m) m.style.display='none';
+}
+async function ltpLeaseSubmitTenantPick(){
+ var ctx=window.__ltpLeaseCtx||{};
+ if(!ctx.propertyApiId) return;
+ var sel=document.getElementById('ltp-lease-tenant-select');
+ var tenantId=(sel&&sel.value)||'';
+ if(!tenantId){
+  if(typeof showToast==='function') showToast('Selecione um tenant.','error');
+  return;
+ }
+ var dateIn=document.getElementById('ltp-lease-movein-date');
+ var moveIn=(dateIn&&dateIn.value)||ltpLeaseTodayYmd();
+ var btn=document.getElementById('ltp-lease-tenant-confirm');
+ if(btn) btn.disabled=true;
+ try{
+  var pack=await ltpLeasePostMoveIn(ctx.propertyApiId,moveIn,tenantId);
+  var done=ltpLeaseHandleMoveInResponse(pack,moveIn);
+  if(done){
+   ltpLeaseCloseTenantPick();
+   ltpLeaseCloseMoveIn();
+  }
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }finally{
+  if(btn) btn.disabled=false;
+ }
+}
+async function ltpLeaseOpenMoveOut(rowId){
+ var row=ltpLeaseFindPropertyRow(rowId);
+ var label=(row&&(row.address||row.id||rowId))||rowId;
+ var apiId=await ltpLeaseResolvePropertyApiId(rowId);
+ if(!apiId){
+  if(typeof showToast==='function') showToast('Nao foi possivel identificar a propriedade no servidor.','error');
+  return;
+ }
+ try{
+  var contracts=await ltpLeaseFetchContracts(apiId);
+  var active=contracts.find(function(c){return c&&String(c.status)==='active';});
+  if(!active){
+   if(typeof showToast==='function') showToast('Nenhum contrato ativo.','error');
+   return;
+  }
+  window.__ltpLeaseMoveOutCtx={rowId:rowId,propertyApiId:apiId,contractId:active.id,label:label,code:active.code||''};
+  var sub=document.getElementById('ltp-lease-moveout-sub');
+  if(sub) sub.textContent=label+(active.code?' · '+active.code:'');
+  var dateIn=document.getElementById('ltp-lease-moveout-date');
+  if(dateIn) dateIn.value=ltpLeaseTodayYmd();
+  ltpLeaseShowErr('ltp-lease-moveout-err','');
+  var m=document.getElementById('ltp-lease-moveout-modal');
+  if(m) m.style.display='flex';
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }
+}
+function ltpLeaseCloseMoveOut(){
+ var m=document.getElementById('ltp-lease-moveout-modal');
+ if(m) m.style.display='none';
+}
+async function ltpLeaseSubmitMoveOut(){
+ var ctx=window.__ltpLeaseMoveOutCtx||{};
+ if(!ctx.contractId) return;
+ var dateIn=document.getElementById('ltp-lease-moveout-date');
+ var moveOut=(dateIn&&dateIn.value)||ltpLeaseTodayYmd();
+ var btn=document.getElementById('ltp-lease-moveout-confirm');
+ if(btn) btn.disabled=true;
+ ltpLeaseShowErr('ltp-lease-moveout-err','');
+ try{
+  var res=await fetch('/api/lease-contracts/'+encodeURIComponent(ctx.contractId),{
+   method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({moveOut:moveOut})
+  });
+  var j=await res.json().catch(function(){return {};});
+  if(res.ok&&j.contract){
+   var code=j.contract.code||ctx.code||'—';
+   var dt=ltpLeaseFmtIsoDate(j.contract.moveOut||moveOut);
+   if(typeof showToast==='function') showToast('Contrato '+code+' encerrado em '+dt,'success');
+   ltpLeaseCloseMoveOut();
+   ltpLeaseRefreshAfter();
+  }else{
+   var errMsg=(j&&j.error)||'Falha ao registrar Move Out';
+   if(typeof showToast==='function') showToast(errMsg,'error');
+  }
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }finally{
+  if(btn) btn.disabled=false;
+ }
+}
+function ltpLeaseRenderHistoryTable(contracts){
+ if(!contracts||!contracts.length){
+  return '<div style="padding:32px 16px;text-align:center;color:var(--ink3);font-size:13px">Nenhum contrato registrado para esta casa.</div>';
+ }
+ var statusLab={active:'Ativo',ended:'Encerrado'};
+ var rows=contracts.slice().sort(function(a,b){
+  var da=String(a.moveIn||''); var db=String(b.moveIn||'');
+  return db.localeCompare(da);
+ });
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+ return '<div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'+
+ '<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Code</th>'+
+ '<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tenant</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Move In</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Move Out</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>'+
+ '</tr></thead><tbody>'+
+ rows.map(function(c){
+  var st=String(c.status||'');
+  var stStyle=st==='active'?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc';
+  return '<tr style="border-bottom:1px solid var(--border)">'+
+   '<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink2)">'+esc(c.code)+'</td>'+
+   '<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+esc(c.tenantName||'—')+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(ltpLeaseFmtIsoDate(c.moveIn))+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(ltpLeaseFmtIsoDate(c.moveOut))+'</td>'+
+   '<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+stStyle+'">'+esc(statusLab[st]||st)+'</span></td>'+
+   '</tr>';
+ }).join('')+
+ '</tbody></table></div>';
+}
+async function ltpLeaseOpenHistory(rowId){
+ var row=ltpLeaseFindPropertyRow(rowId);
+ var label=(row&&(row.address||row.id||rowId))||rowId;
+ var sub=document.getElementById('ltp-lease-history-sub');
+ if(sub) sub.textContent=label;
+ var bodyEl=document.getElementById('ltp-lease-history-body');
+ if(bodyEl) bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando...</div>';
+ var m=document.getElementById('ltp-lease-history-modal');
+ if(m) m.style.display='flex';
+ var apiId=await ltpLeaseResolvePropertyApiId(rowId);
+ if(!apiId){
+  if(bodyEl) bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--red);font-size:12px">Propriedade nao encontrada no servidor.</div>';
+  return;
+ }
+ try{
+  var contracts=await ltpLeaseFetchContracts(apiId);
+  if(bodyEl) bodyEl.innerHTML=ltpLeaseRenderHistoryTable(contracts);
+ }catch(e){
+  if(bodyEl) bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+String(e.message||e).replace(/</g,'&lt;')+'</div>';
+ }
+}
+function ltpLeaseCloseHistory(){
+ var m=document.getElementById('ltp-lease-history-modal');
+ if(m) m.style.display='none';
 }
 function ltpRowNetExpDia15(r, expByProp){
  var ev=0;
@@ -19436,6 +19778,9 @@ async function ltpRender(){
  <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
  <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
  <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen==='function')gmPropertyPaymentsOpen('${esc(r.id)}');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>
+ <button type="button" data-ltp-a="movein" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:4px;font-size:10px;cursor:pointer">Move In</button>
+ <button type="button" data-ltp-a="moveout" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;cursor:pointer">Move Out</button>
+ <button type="button" data-ltp-a="leases" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Histórico</button>
  <button type="button" data-ltp-a="edit" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
  <button type="button" data-ltp-a="del" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  </div>
