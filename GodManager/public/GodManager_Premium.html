@@ -4646,6 +4646,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
 <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Aluguel</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Acoes</th>
  </tr></thead>
  <tbody id="os-tbody"></tbody>
@@ -10755,7 +10756,10 @@ function nav(r){
     var psel=document.getElementById('osd-property');if(psel&&uuid)psel.value=uuid;
     var ymsel=document.getElementById('osd-period');
     if(ymsel){if(typeof osdEnsurePeriodOption==='function')osdEnsurePeriodOption(po.ym);ymsel.value=po.ym;}
-    if(uuid&&typeof osdLoadActiveTab==='function'){await osdLoadActiveTab();}
+    if(uuid){
+     if(po.tab&&po.tab!=='statement'&&typeof osdSwitchTab==='function')osdSwitchTab(po.tab);
+     else if(typeof osdLoadActiveTab==='function')await osdLoadActiveTab();
+    }
     else if(!uuid){console.warn('osd deep-link: propriedade nao encontrada',po.code);}
    }catch(e){console.warn('osd deep-link',e);}
   }
@@ -10854,8 +10858,11 @@ window.osdYearMonthCurrent=function(){
  var d=new Date();
  return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
 };
-window.osdOpenForProperty=function(propCode){
- window.__osdPendingOpen={code:String(propCode||'').trim(),ym:(typeof osdYearMonthCurrent==='function'?osdYearMonthCurrent():new Date().toISOString().slice(0,7))};
+window.osdOpenForProperty=function(propCode,opts){
+ opts=opts||{};
+ var ym=opts.ym||(typeof osdYearMonthCurrent==='function'?osdYearMonthCurrent():new Date().toISOString().slice(0,7));
+ var tab=opts.tab||'statement';
+ window.__osdPendingOpen={code:String(propCode||'').trim(),ym:ym,tab:tab};
  nav('owner-statement-detail');
 };
 window.osdEnsurePeriodOption=function(ym){
@@ -12267,6 +12274,32 @@ window.osSendStatement=function(propertyId,propertyCode){
  alert('Envio por email/WhatsApp pendente — integração Resend será implementada.');
 };
 
+function osRentStatusLookup(r,map){
+ var m=map||{};
+ var keys=[String(r._apiId||''),String(r.id||''),String(r.code||'')];
+ for(var i=0;i<keys.length;i++){
+  if(keys[i]&&m[keys[i]]) return m[keys[i]];
+ }
+ return null;
+}
+
+function osRentStatusBadgeHtml(entry){
+ if(!entry) return '<span style="color:var(--ink3);font-size:11px">—</span>';
+ var st=String(entry.status||'').toLowerCase();
+ if(st==='paid'){
+  return '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)">Paga</span>';
+ }
+ if(st==='overdue'){
+  var fee=Number(entry.lateFeeAmount)||0;
+  var feeTxt=fee>0?' <span style="font-size:9px;font-weight:600">+'+ltFmt(fee)+'</span>':'';
+  return '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Em atraso'+feeTxt+'</span>';
+ }
+ if(st==='open'){
+  return '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc">Aberta</span>';
+ }
+ return '<span style="color:var(--ink3);font-size:11px">—</span>';
+}
+
 window.osRender=async function(){
  osBindTbodyActionDelegationOnce();
  await osLoadFromApi();
@@ -12288,6 +12321,14 @@ window.osRender=async function(){
    });
   }
  }catch(e){}
+ var rentStatusMap={};
+ try{
+  var rsRes=await fetch('/api/rent-invoices/status-by-month?month='+encodeURIComponent(curMonth),{credentials:'include'});
+  if(rsRes.ok){
+   var rsJ=await rsRes.json();
+   if(rsJ&&rsJ.ok&&rsJ.byProperty) rentStatusMap=rsJ.byProperty;
+  }
+ }catch(eRs){console.warn('osRender rent status',eRs);}
  var __gmArrOs=(typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[];
  if((!__gmArrOs||!__gmArrOs.length)&&typeof window.gmPropertiesBootstrap==='function'){
   try{await window.gmPropertiesBootstrap({silent:true});}catch(e){console.warn('osRender auto-bootstrap',e);}
@@ -12361,7 +12402,10 @@ window.osRender=async function(){
   var lateTd=(ext.daysLate>0)?('<span style="background:#fee;color:#c00;border:1px solid #fcc;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600">'+ext.daysLate+'d</span>'):('<span style="color:#888;font-size:11px">—</span>');
   var rid=esc(String(r.id));
   var rcodeJs=String(r.code||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  return '\n <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'" onclick="ltOpenDetail(\''+rid+'\')">\n <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><input type="checkbox" class="os-row-check" data-os-id="'+rid+'"></td>\n <td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(i+1)+'</td>\n <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+r.address+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+(r.baths||'—')+'</div></td>\n <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+r.owner+'</td>\n <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+(r.tenant||'—')+'</td>\n <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+(occStyle[r.occupancy]||'')+'">'+(occLabel[r.occupancy]||'—')+'</span></td>\n <td style="padding:9px 12px;text-align:center"><span title="'+esc(_lab+(_isManual?' (manual)':''))+'" style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;color:#fff;background:'+(GM_STATUS_COLOR[_auto]||'#94a3b8')+'">'+_auto+(_isManual?'*':'')+'</span></td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+payAmtTd+'</td>\n <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+payDateTd+'</td>\n <td style="padding:9px 12px;text-align:center">'+lateTd+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+ltFmt(r.rent)+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+(r.deposit?ltFmt(r.deposit):'—')+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+(r.guaranteeLimit||r.guarantee?ltFmt(r.guaranteeLimit||r.guarantee):'—')+'</td>\n <td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+((r.mgmpct||r.mgmtFeePct)?(Number(r.mgmpct||r.mgmtFeePct).toFixed(0)+'%'):'—')+(r.hoaAdmin?'<span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-left:6px;display:inline-block;vertical-align:middle">HOA Admin</span>':'')+'</td>\n '+ltpRowNetExpDia15(r, expByProp)+'\n <td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+ltFmtMonth(r.month)+'</td>\n <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-os-st-toggle data-os-id="'+rid+'" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+(stStyle[r.status]||'')+';cursor:pointer;font-family:\'Inter\',sans-serif;border-width:1px;border-style:solid">'+(stLabel[r.status]||'—')+'</button></td>\n <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">\n <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">\n <button type="button" data-os-a="detail" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>\n <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen===\'function\')gmPropertyPaymentsOpen(\''+rid+'\');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>\n <button type="button" onclick="event.stopPropagation();osSendStatement(\''+rid+'\',\''+rcodeJs+'\')" style="padding:4px 8px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:4px;font-size:10px;cursor:pointer">Enviar</button>\n <button type="button" onclick="event.stopPropagation();osEditStmt(\''+rid+'\',\''+rcodeJs+'\')" style="padding:4px 8px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:4px;font-size:10px;cursor:pointer">Editar Stmt</button>\n <button type="button" onclick="event.stopPropagation();if(typeof osdOpenForProperty===\'function\')osdOpenForProperty(\''+rcodeJs+'\')" style="padding:4px 8px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:4px;font-size:10px;cursor:pointer">Statement</button>\n <button type="button" data-os-a="del" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>\n </div>\n </td>\n </tr>';
+  var rentEntry=osRentStatusLookup(r,rentStatusMap);
+  var rentBadge=osRentStatusBadgeHtml(rentEntry);
+  var rentYmEsc=esc(curMonth);
+  return '\n <tr style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'\'" onclick="ltOpenDetail(\''+rid+'\')">\n <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><input type="checkbox" class="os-row-check" data-os-id="'+rid+'"></td>\n <td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+(i+1)+'</td>\n <td style="padding:9px 12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+r.address+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+(r.baths||'—')+'</div></td>\n <td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+r.owner+'</td>\n <td style="padding:9px 12px;font-size:11px;color:var(--ink3)">'+(r.tenant||'—')+'</td>\n <td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+(occStyle[r.occupancy]||'')+'">'+(occLabel[r.occupancy]||'—')+'</span></td>\n <td style="padding:9px 12px;text-align:center"><span title="'+esc(_lab+(_isManual?' (manual)':''))+'" style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;color:#fff;background:'+(GM_STATUS_COLOR[_auto]||'#94a3b8')+'">'+_auto+(_isManual?'*':'')+'</span></td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+payAmtTd+'</td>\n <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+payDateTd+'</td>\n <td style="padding:9px 12px;text-align:center">'+lateTd+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:var(--green)">'+ltFmt(r.rent)+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber)">'+(r.deposit?ltFmt(r.deposit):'—')+'</td>\n <td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+(r.guaranteeLimit||r.guarantee?ltFmt(r.guaranteeLimit||r.guarantee):'—')+'</td>\n <td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+((r.mgmpct||r.mgmtFeePct)?(Number(r.mgmpct||r.mgmtFeePct).toFixed(0)+'%'):'—')+(r.hoaAdmin?'<span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-left:6px;display:inline-block;vertical-align:middle">HOA Admin</span>':'')+'</td>\n '+ltpRowNetExpDia15(r, expByProp)+'\n <td style="padding:9px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+ltFmtMonth(r.month)+'</td>\n <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-os-st-toggle data-os-id="'+rid+'" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+(stStyle[r.status]||'')+';cursor:pointer;font-family:\'Inter\',sans-serif;border-width:1px;border-style:solid">'+(stLabel[r.status]||'—')+'</button></td>\n <td style="padding:9px 12px;text-align:center;cursor:pointer" title="Ver cobrancas" onclick="event.stopPropagation();if(typeof osdOpenForProperty===\'function\')osdOpenForProperty(\''+rcodeJs+'\',{tab:\'cobrancas\',ym:\''+rentYmEsc+'\'})">'+rentBadge+'</td>\n <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">\n <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">\n <button type="button" data-os-a="detail" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>\n <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen===\'function\')gmPropertyPaymentsOpen(\''+rid+'\');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>\n <button type="button" onclick="event.stopPropagation();osSendStatement(\''+rid+'\',\''+rcodeJs+'\')" style="padding:4px 8px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:4px;font-size:10px;cursor:pointer">Enviar</button>\n <button type="button" onclick="event.stopPropagation();osEditStmt(\''+rid+'\',\''+rcodeJs+'\')" style="padding:4px 8px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:4px;font-size:10px;cursor:pointer">Editar Stmt</button>\n <button type="button" onclick="event.stopPropagation();if(typeof osdOpenForProperty===\'function\')osdOpenForProperty(\''+rcodeJs+'\')" style="padding:4px 8px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:4px;font-size:10px;cursor:pointer">Statement</button>\n <button type="button" data-os-a="del" data-os-id="'+rid+'" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>\n </div>\n </td>\n </tr>';
  }).join('');
  var caAll=document.getElementById('os-check-all');
  var nRows=filtered.length;var nChecked=0;
