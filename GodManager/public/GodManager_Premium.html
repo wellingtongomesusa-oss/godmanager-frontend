@@ -4425,6 +4425,39 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div id="ltp-lease-history-body" style="min-height:80px"></div>
 </div>
 </div>
+<div id="ltp-rent-invoices-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9025;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this)ltpRentInvClose()">
+<div style="background:var(--paper);border-radius:12px;max-width:min(900px,96vw);width:100%;padding:24px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(26,26,28,.12);margin:auto" onclick="event.stopPropagation()">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px">
+<div>
+<div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Cobrancas do contrato</div>
+<div style="font-size:11px;color:var(--ink3);margin-top:4px" id="ltp-rent-invoices-sub"></div>
+</div>
+<button type="button" onclick="ltpRentInvClose()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;font-size:18px;color:var(--ink3);line-height:1;flex-shrink:0">×</button>
+</div>
+<div style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Gerar cobrancas</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+<div>
+<label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:4px">Aluguel mensal (USD)</label>
+<input id="ltp-rent-inv-monthlyRent" type="number" min="0" step="0.01" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);box-sizing:border-box">
+</div>
+<div>
+<label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:4px">Deposito (USD)</label>
+<input id="ltp-rent-inv-deposit" type="number" min="0" step="0.01" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);box-sizing:border-box">
+</div>
+<div>
+<label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:4px">Ate o mes</label>
+<input id="ltp-rent-inv-throughMonth" type="month" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);box-sizing:border-box">
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button type="button" id="ltp-rent-inv-generate-btn" onclick="ltpRentInvGenerate()" style="padding:8px 14px;border:none;border-radius:6px;background:var(--green);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Gerar cobrancas</button>
+<button type="button" id="ltp-rent-inv-reconcile-btn" onclick="ltpRentInvReconcile()" style="padding:8px 14px;border:1px solid var(--blue-bd);border-radius:6px;background:var(--blue-bg);color:var(--blue);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Reconciliar</button>
+</div>
+</div>
+</div>
+<div id="ltp-rent-invoices-body" style="min-height:80px"></div>
+</div>
+</div>
 
 <!-- 
  LONG TERM — PROPERTIES PAGE
@@ -19392,16 +19425,19 @@ function ltpLeaseRenderHistoryTable(contracts){
  '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Move In</th>'+
  '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Move Out</th>'+
  '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Acoes</th>'+
  '</tr></thead><tbody>'+
  rows.map(function(c){
   var st=String(c.status||'');
   var stStyle=st==='active'?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)':'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc';
+  var cid=esc(c.id||'');
   return '<tr style="border-bottom:1px solid var(--border)">'+
    '<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink2)">'+esc(c.code)+'</td>'+
    '<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+esc(c.tenantName||'—')+'</td>'+
    '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(ltpLeaseFmtIsoDate(c.moveIn))+'</td>'+
    '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(ltpLeaseFmtIsoDate(c.moveOut))+'</td>'+
    '<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+stStyle+'">'+esc(statusLab[st]||st)+'</span></td>'+
+   '<td style="padding:9px 12px;text-align:center"><button type="button" onclick="ltpRentInvOpen(\''+cid+'\')" style="padding:4px 10px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;font-family:\'Inter\',sans-serif">Cobrancas</button></td>'+
    '</tr>';
  }).join('')+
  '</tbody></table></div>';
@@ -19409,6 +19445,7 @@ function ltpLeaseRenderHistoryTable(contracts){
 async function ltpLeaseOpenHistory(rowId){
  var row=ltpLeaseFindPropertyRow(rowId);
  var label=(row&&(row.address||row.id||rowId))||rowId;
+ window.__ltpLeaseHistoryCtx={rowId:rowId,label:label};
  var sub=document.getElementById('ltp-lease-history-sub');
  if(sub) sub.textContent=label;
  var bodyEl=document.getElementById('ltp-lease-history-body');
@@ -19422,6 +19459,7 @@ async function ltpLeaseOpenHistory(rowId){
  }
  try{
   var contracts=await ltpLeaseFetchContracts(apiId);
+  window.__ltpLeaseHistoryContracts=contracts;
   if(bodyEl) bodyEl.innerHTML=ltpLeaseRenderHistoryTable(contracts);
  }catch(e){
   if(bodyEl) bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+String(e.message||e).replace(/</g,'&lt;')+'</div>';
@@ -19430,6 +19468,178 @@ async function ltpLeaseOpenHistory(rowId){
 function ltpLeaseCloseHistory(){
  var m=document.getElementById('ltp-lease-history-modal');
  if(m) m.style.display='none';
+}
+function ltpRentInvUtcYm(){
+ var d=new Date();
+ return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+}
+function ltpRentInvFmtMoney(v){
+ if(v==null||v==='') return '—';
+ var n=parseFloat(String(v).replace(/[^0-9.-]/g,''));
+ if(!isFinite(n)) return String(v);
+ return ltFmt(n);
+}
+function ltpRentInvTypeLabel(t){
+ var s=String(t||'').toUpperCase();
+ if(s==='MOVE_IN') return 'Move In';
+ if(s==='RENT') return 'Rent';
+ return s||'—';
+}
+function ltpRentInvStatusBadge(status){
+ var st=String(status||'').toLowerCase();
+ if(st==='paid') return {lab:'Pago',style:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)'};
+ if(st==='overdue') return {lab:'Em atraso',style:'background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)'};
+ if(st==='open') return {lab:'Aberto',style:'background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc'};
+ return {lab:st||'—',style:'background:var(--cream);color:var(--ink3);border:1px solid var(--border2)'};
+}
+function ltpRentInvRenderList(invoices){
+ if(!invoices||!invoices.length){
+  return '<div style="padding:32px 16px;text-align:center;color:var(--ink3);font-size:13px">Nenhuma cobranca gerada ainda.</div>';
+ }
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+ var rowsHtml=invoices.slice().sort(function(a,b){return String(a.monthRef||'').localeCompare(String(b.monthRef||''));}).map(function(inv){
+  var badge=ltpRentInvStatusBadge(inv.status);
+  var iid=esc(inv.id||'');
+  var st=String(inv.status||'').toLowerCase();
+  var act='';
+  if(st!=='cancelled'){
+   if(st==='paid'){
+    act='<button type="button" onclick="ltpRentInvTogglePaid(\''+iid+'\',false)" style="padding:3px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Reabrir</button>';
+   }else{
+    act='<button type="button" onclick="ltpRentInvTogglePaid(\''+iid+'\',true)" style="padding:3px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:4px;font-size:10px;cursor:pointer">Marcar pago</button>';
+   }
+  }
+  var main='<tr style="border-bottom:1px solid var(--border)">'+
+   '<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink2)">'+esc(inv.code)+'</td>'+
+   '<td style="padding:9px 12px;font-size:11px;color:var(--ink)">'+esc(ltpRentInvTypeLabel(inv.type))+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(inv.monthRef||'—')+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(ltpLeaseFmtIsoDate(inv.dueDate))+'</td>'+
+   '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+esc(ltpRentInvFmtMoney(inv.amount))+'</td>'+
+   '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--red)">'+esc(ltpRentInvFmtMoney(inv.lateFeeAmount))+'</td>'+
+   '<td style="padding:9px 12px;text-align:center"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;'+badge.style+'">'+esc(badge.lab)+'</span></td>'+
+   '<td style="padding:9px 12px;text-align:center">'+act+'</td>'+
+   '</tr>';
+  var itemsSub='';
+  if(String(inv.type||'').toUpperCase()==='MOVE_IN'&&inv.items&&inv.items.length){
+   itemsSub='<tr style="border-bottom:1px solid var(--border);background:var(--cream)"><td colspan="8" style="padding:6px 12px 10px 20px;font-size:11px;color:var(--ink3)">'+
+    inv.items.map(function(it){return esc(it.label)+': '+esc(ltpRentInvFmtMoney(it.amount));}).join(' · ')+
+    '</td></tr>';
+  }
+  return main+itemsSub;
+ }).join('');
+ return '<div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;border-collapse:collapse;min-width:720px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'+
+ '<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Code</th>'+
+ '<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tipo</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>'+
+ '<th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>'+
+ '<th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Multa</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>'+
+ '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Acoes</th>'+
+ '</tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
+}
+async function ltpRentInvLoad(contractId){
+ var bodyEl=document.getElementById('ltp-rent-invoices-body');
+ if(bodyEl) bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando...</div>';
+ try{
+  var res=await fetch('/api/rent-invoices?contractId='+encodeURIComponent(contractId),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok) throw new Error((j&&j.error)||'Falha ao listar cobrancas');
+  var list=j.invoices||[];
+  window.__ltpRentInvLastList=list;
+  if(bodyEl) bodyEl.innerHTML=ltpRentInvRenderList(list);
+ }catch(e){
+  if(bodyEl) bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+String(e.message||e).replace(/</g,'&lt;')+'</div>';
+ }
+}
+function ltpRentInvOpen(contractId){
+ var hist=window.__ltpLeaseHistoryCtx||{};
+ var row=ltpLeaseFindPropertyRow(hist.rowId);
+ var contract=(window.__ltpLeaseHistoryContracts||[]).find(function(c){return c&&String(c.id)===String(contractId);});
+ var monthlyRent=Number(row&&row.rent)||0;
+ var deposit=Number(row&&row.deposit)||0;
+ window.__ltpRentInvCtx={
+  contractId:String(contractId),
+  contractCode:contract&&contract.code||'',
+  label:hist.label||''
+ };
+ var sub=document.getElementById('ltp-rent-invoices-sub');
+ if(sub) sub.textContent=(contract&&contract.code?contract.code+' · ':'')+(hist.label||'');
+ var rentIn=document.getElementById('ltp-rent-inv-monthlyRent');
+ var depIn=document.getElementById('ltp-rent-inv-deposit');
+ var ymIn=document.getElementById('ltp-rent-inv-throughMonth');
+ if(rentIn) rentIn.value=String(monthlyRent);
+ if(depIn) depIn.value=String(deposit);
+ if(ymIn) ymIn.value=ltpRentInvUtcYm();
+ var m=document.getElementById('ltp-rent-invoices-modal');
+ if(m) m.style.display='flex';
+ void ltpRentInvLoad(contractId);
+}
+function ltpRentInvClose(){
+ var m=document.getElementById('ltp-rent-invoices-modal');
+ if(m) m.style.display='none';
+}
+async function ltpRentInvGenerate(){
+ var ctx=window.__ltpRentInvCtx||{};
+ if(!ctx.contractId) return;
+ var btn=document.getElementById('ltp-rent-inv-generate-btn');
+ if(btn) btn.disabled=true;
+ try{
+  var monthlyRent=Number((document.getElementById('ltp-rent-inv-monthlyRent')||{}).value)||0;
+  var deposit=Number((document.getElementById('ltp-rent-inv-deposit')||{}).value)||0;
+  var throughMonth=(document.getElementById('ltp-rent-inv-throughMonth')||{}).value||ltpRentInvUtcYm();
+  var res=await fetch('/api/rent-invoices/generate',{
+   method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({contractId:ctx.contractId,monthlyRent,deposit,throughMonth})
+  });
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok) throw new Error((j&&j.error)||'Falha ao gerar cobrancas');
+  var n=(j.invoices&&j.invoices.length)||0;
+  if(typeof showToast==='function') showToast('Cobrancas geradas: '+n+' invoice(s).','success');
+  await ltpRentInvLoad(ctx.contractId);
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }finally{
+  if(btn) btn.disabled=false;
+ }
+}
+async function ltpRentInvReconcile(){
+ var ctx=window.__ltpRentInvCtx||{};
+ if(!ctx.contractId) return;
+ var btn=document.getElementById('ltp-rent-inv-reconcile-btn');
+ if(btn) btn.disabled=true;
+ try{
+  var res=await fetch('/api/rent-invoices/reconcile',{
+   method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({contractId:ctx.contractId})
+  });
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok) throw new Error((j&&j.error)||'Falha ao reconciliar');
+  var s=j.summary||{};
+  var msg='Reconciliado: '+((s.paid||0)+' pagas, '+(s.overdue||0)+' em atraso, '+(s.open||0)+' abertas');
+  if(typeof showToast==='function') showToast(msg,'success');
+  await ltpRentInvLoad(ctx.contractId);
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }finally{
+  if(btn) btn.disabled=false;
+ }
+}
+async function ltpRentInvTogglePaid(invoiceId,paid){
+ var ctx=window.__ltpRentInvCtx||{};
+ if(!invoiceId||!ctx.contractId) return;
+ try{
+  var res=await fetch('/api/rent-invoices/'+encodeURIComponent(invoiceId),{
+   method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({paid:!!paid})
+  });
+  var j=await res.json().catch(function(){return {};});
+  if(!res.ok||!j.ok) throw new Error((j&&j.error)||'Falha ao atualizar cobranca');
+  if(typeof showToast==='function') showToast(paid?'Marcado como pago.':'Cobranca reaberta.','success');
+  await ltpRentInvLoad(ctx.contractId);
+ }catch(e){
+  if(typeof showToast==='function') showToast(String(e.message||e),'error');
+ }
 }
 function ltpRowNetExpDia15(r, expByProp){
  var ev=0;
