@@ -5,9 +5,12 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { decToNum, roundMoney } from '@/lib/loanBilling';
 import {
+  cancelHoaInstallmentPmExpense,
+  ensureHoaInstallmentPmExpense,
   hoaInstallmentToJson,
   parseOptionalDate,
   syncHoaChargeStatusFromInstallments,
+  syncOwnerStatementForHoaInstallment,
 } from '@/lib/hoaBilling';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +56,14 @@ export async function PATCH(
       );
     }
 
+    const propertyId = existing.hoaCharge.propertyId;
+    if (paid && !propertyId) {
+      return NextResponse.json(
+        { ok: false, error: 'HOA charge has no property' },
+        { status: 400 },
+      );
+    }
+
     const data: Prisma.HoaInstallmentUpdateInput = { paid };
 
     if (paid) {
@@ -81,6 +92,18 @@ export async function PATCH(
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      let pmExpenseId = existing.pmExpenseId;
+
+      if (paid) {
+        pmExpenseId = await ensureHoaInstallmentPmExpense(tx, {
+          installment: existing,
+          charge: existing.hoaCharge,
+        });
+        data.pmExpenseId = pmExpenseId;
+      } else {
+        await cancelHoaInstallmentPmExpense(tx, existing.pmExpenseId);
+      }
+
       const installment = await tx.hoaInstallment.update({
         where: { id: existing.id },
         data,
@@ -88,6 +111,16 @@ export async function PATCH(
       const chargeStatus = await syncHoaChargeStatusFromInstallments(tx, existing.hoaChargeId);
       return { installment, chargeStatus };
     });
+
+    if (propertyId) {
+      await syncOwnerStatementForHoaInstallment({
+        propertyId,
+        dueDate: existing.dueDate,
+        clientId: existing.clientId ?? existing.hoaCharge.clientId,
+        scopeClientId: scopeUser.clientId,
+        actorId: user.id,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

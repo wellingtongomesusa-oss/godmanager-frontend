@@ -1,5 +1,7 @@
-import type { HoaCharge, HoaInstallment, Prisma } from '@prisma/client';
-import type { ClientScopeUser } from '@/lib/clientScope';
+import type { HoaCharge, HoaInstallment } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
+import { syncOwnerStatementForProperty } from '@/lib/ownerStatementSync';
 import {
   addMonthsToDate,
   decToNum,
@@ -163,4 +165,121 @@ export async function syncHoaChargeStatusFromInstallments(
     });
   }
   return newStatus;
+}
+
+/** Civil calendar month YYYY-MM from dueDate (UTC). Not the PM 15–15 cycle. */
+export function civilMonthRefFromDueDate(dueDate: Date): string {
+  const y = dueDate.getUTCFullYear();
+  const m = dueDate.getUTCMonth() + 1;
+  return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+export function hoaInstallmentExpenseDescription(chargeCode: string, seq: number): string {
+  return `HOA ${String(chargeCode || '').trim()} parcela ${seq}`;
+}
+
+function hoaPmExpenseMoney(amount: number): Prisma.Decimal {
+  return new Prisma.Decimal(roundMoney(amount).toFixed(2));
+}
+
+/**
+ * Ensure a FINALIZED pm_expense exists for a paid HOA installment (idempotent).
+ * Returns pm_expense id to store on the installment.
+ */
+export async function ensureHoaInstallmentPmExpense(
+  tx: Prisma.TransactionClient,
+  args: {
+    installment: HoaInstallment;
+    charge: HoaCharge;
+  },
+): Promise<string> {
+  const propertyId = args.charge.propertyId;
+  if (!propertyId) {
+    throw new Error('HOA charge has no propertyId');
+  }
+  const amount = roundMoney(decToNum(args.installment.amount));
+  const monthRef =
+    normalizeYearMonthForWrite(civilMonthRefFromDueDate(args.installment.dueDate)) ??
+    civilMonthRefFromDueDate(args.installment.dueDate);
+  const description = hoaInstallmentExpenseDescription(args.charge.code, args.installment.seq);
+  const metadata = {
+    hoaInstallmentId: args.installment.id,
+    hoaChargeId: args.charge.id,
+  };
+  const money = hoaPmExpenseMoney(amount);
+  const clientId = args.installment.clientId ?? args.charge.clientId;
+  const now = new Date();
+
+  const expenseData = {
+    propertyId,
+    clientId,
+    vendorId: null,
+    serviceType: 'HOA',
+    packageApplied: 'PACOTE_4' as const,
+    vendorCost: money,
+    ownerCharged: money,
+    serviceDate: args.installment.dueDate,
+    monthRef,
+    status: 'FINALIZED' as const,
+    description,
+    metadata,
+    isVendorFree: true,
+    finalizedAt: now,
+  };
+
+  const linkedId = args.installment.pmExpenseId;
+  if (linkedId) {
+    const existing = await tx.pmExpense.findUnique({
+      where: { id: linkedId },
+      select: { id: true, status: true },
+    });
+    if (existing && existing.status !== 'CANCELLED') {
+      return existing.id;
+    }
+    if (existing && existing.status === 'CANCELLED') {
+      await tx.pmExpense.update({
+        where: { id: existing.id },
+        data: expenseData,
+      });
+      return existing.id;
+    }
+  }
+
+  const created = await tx.pmExpense.create({ data: expenseData });
+  return created.id;
+}
+
+/** Soft-cancel linked pm_expense (never delete). */
+export async function cancelHoaInstallmentPmExpense(
+  tx: Prisma.TransactionClient,
+  pmExpenseId: string | null | undefined,
+): Promise<void> {
+  if (!pmExpenseId) return;
+  const existing = await tx.pmExpense.findUnique({
+    where: { id: pmExpenseId },
+    select: { id: true, status: true },
+  });
+  if (!existing || existing.status === 'CANCELLED') return;
+  await tx.pmExpense.update({
+    where: { id: existing.id },
+    data: { status: 'CANCELLED' },
+  });
+}
+
+export async function syncOwnerStatementForHoaInstallment(args: {
+  propertyId: string;
+  dueDate: Date;
+  clientId: string | null;
+  scopeClientId: string | null | undefined;
+  actorId: string;
+}): Promise<void> {
+  let syncClientId = args.clientId ?? args.scopeClientId ?? null;
+  if (!syncClientId) return;
+  const yearMonth = civilMonthRefFromDueDate(args.dueDate);
+  await syncOwnerStatementForProperty({
+    propertyId: args.propertyId,
+    yearMonth,
+    clientId: syncClientId,
+    actorId: args.actorId,
+  });
 }
