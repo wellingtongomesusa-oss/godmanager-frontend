@@ -1345,21 +1345,65 @@ model HoaInstallment {
 }
 
 model LeaseContract {
-  id          String    @id @default(cuid())
-  clientId    String?
-  propertyId  String
-  tenantId    String?
-  code        String
-  moveIn      DateTime
-  moveOut     DateTime?
-  status      String    @default("active")
-  notes       String?   @db.Text
-  createdById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  clientId           String?
+  propertyId         String
+  tenantId           String?
+  code               String
+  moveIn             DateTime
+  moveOut            DateTime?
+  status             String    @default("active")
+  notes              String?   @db.Text
+  monthlyRent        Decimal?  @db.Decimal(12, 2)
+  deposit            Decimal?  @db.Decimal(12, 2)
+  graceDays          Int       @default(5)
+  lateFeePct         Decimal   @default(10) @db.Decimal(5, 2)
+  monthlyInterestPct Decimal   @default(1) @db.Decimal(5, 2)
+  prorateFirstMonth  Boolean   @default(false)
+  createdById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([clientId])
   @@index([propertyId])
   @@index([tenantId])
   @@map("lease_contracts")
+}
+
+model RentInvoice {
+  id            String            @id @default(cuid())
+  clientId      String?
+  contractId    String
+  propertyId    String
+  code          String
+  type          String            @default("RENT")
+  monthRef      String
+  dueDate       DateTime
+  amount        Decimal           @db.Decimal(12, 2)
+  status        String            @default("open")
+  paidAt        DateTime?
+  paidAmount    Decimal?          @db.Decimal(12, 2)
+  lateFeeAmount Decimal           @default(0) @db.Decimal(12, 2)
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  items         RentInvoiceItem[]
+
+  @@index([clientId])
+  @@index([contractId])
+  @@index([propertyId])
+  @@index([monthRef])
+  @@map("rent_invoices")
+}
+
+model RentInvoiceItem {
+  id        String      @id @default(cuid())
+  invoiceId String
+  label     String
+  amount    Decimal     @db.Decimal(12, 2)
+  sortOrder Int         @default(0)
+  invoice   RentInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("rent_invoice_items")
 }
