@@ -169,7 +169,22 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!row) {
       return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
     }
-    return NextResponse.json({ ok: true, document: documentToJson(row) });
+
+    let approvedByName: string | null = null;
+    if (row.approvedByUserId) {
+      const u = await prisma.user.findUnique({
+        where: { id: row.approvedByUserId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      approvedByName = u
+        ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || row.approvedByUserId
+        : row.approvedByUserId;
+    }
+
+    return NextResponse.json({
+      ok: true,
+      document: { ...documentToJson(row), approvedByName },
+    });
   } catch (e) {
     console.error('[GET /api/billing/documents/:id]', e);
     return NextResponse.json({ ok: false, error: 'Failed to get document' }, { status: 500 });

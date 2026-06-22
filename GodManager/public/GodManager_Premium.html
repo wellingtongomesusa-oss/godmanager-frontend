@@ -31891,7 +31891,7 @@ function gmBillingCanApproveBill(){
 }
 function gmBillingFormatApprovalLine(doc){
  if(!doc||!doc.approvedAt)return '';
- var who=String(doc.approvedByUserId||'').trim()||'—';
+ var who=String(doc.approvedByName||doc.approvedByUserId||'').trim()||'—';
  var date=gmBillingFmtDate(doc.approvedAt);
  return 'Aprovado por '+gmBillingEsc(who)+' em '+gmBillingEsc(date);
 }
@@ -32019,7 +32019,7 @@ async function gmBillingExportBillsCsv(){
     gmBillingCsvEscape(gmBillingFmtDate(doc.dueDate)),
     gmBillingCsvEscape(total),
     gmBillingCsvEscape(gmBillingStatusLabel(doc.status)),
-    gmBillingCsvEscape(doc.approvedByUserId||''),
+    gmBillingCsvEscape(doc.approvedByName||doc.approvedByUserId||''),
     gmBillingCsvEscape(doc.approvedAt?gmBillingFmtDate(doc.approvedAt):''),
     gmBillingCsvEscape(doc.paidAt?gmBillingFmtDate(doc.paidAt):''),
     gmBillingCsvEscape(doc.notes||'')

@@ -205,7 +205,31 @@ export async function GET(req: Request) {
       orderBy: { issueDate: 'desc' },
     });
 
-    return NextResponse.json({ ok: true, documents: rows.map(documentToJson) });
+    const approverIds = Array.from(
+      new Set(rows.map((r) => r.approvedByUserId).filter(Boolean))
+    ) as string[];
+    const approvers = approverIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: approverIds } },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+      : [];
+    const approverNameMap = new Map(
+      approvers.map((u) => [
+        u.id,
+        `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || u.id,
+      ])
+    );
+
+    return NextResponse.json({
+      ok: true,
+      documents: rows.map((d) => ({
+        ...documentToJson(d),
+        approvedByName: d.approvedByUserId
+          ? (approverNameMap.get(d.approvedByUserId) ?? d.approvedByUserId)
+          : null,
+      })),
+    });
   } catch (e) {
     console.error('[GET /api/billing/documents]', e);
     return NextResponse.json({ ok: false, error: 'Failed to list documents' }, { status: 500 });
