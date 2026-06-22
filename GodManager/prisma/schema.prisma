@@ -77,6 +77,7 @@ model Client {
   phone       String?
   address     String?
   plan        ClientPlan @default(starter)
+  maxUsers    Int?
   accessLevel UserRole   @default(manager)
   productType ClientProductType @default(PROPERTY_MANAGEMENT)
   active      Boolean    @default(true)
