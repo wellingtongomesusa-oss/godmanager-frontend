@@ -31900,6 +31900,7 @@ function gmBillingRenderBillRowActions(doc){
  var st=String(doc.status||'').toUpperCase();
  var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
  var html='<button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenApView===\'function\')gmBillingOpenApView(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
+ html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingBillPdf===\'function\')gmBillingBillPdf(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">PDF</button>';
  if(st==='DRAFT'){
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenEditBill===\'function\')gmBillingOpenEditBill(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
   if(gmBillingCanApproveBill()){
@@ -31915,6 +31916,17 @@ function gmBillingRenderBillRowActions(doc){
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
  }
  return html;
+}
+function gmBillingBillPdf(id){
+ if(!id)return;
+ var url='/api/billing/documents/'+encodeURIComponent(String(id))+'/pdf';
+ try{
+  window.open(url,'_blank');
+ }catch(e){
+  console.warn('[gmBillingBillPdf]',e);
+  if(typeof showToast==='function')showToast('Erro ao abrir PDF.','error');
+  else alert('Erro ao abrir PDF.');
+ }
 }
 async function gmBillingRenderBills(){
  var tbody=document.getElementById('billing-bill-tbody');
@@ -32620,6 +32632,10 @@ function gmBillingRenderApViewActions(doc){
   html+='<button type="button" onclick="if(typeof gmBillingApViewPatchStatus===\'function\')gmBillingApViewPatchStatus(\'PAID\')" style="padding:9px 18px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Marcar pago</button>';
   html+='<button type="button" onclick="if(typeof gmBillingApViewPatchStatus===\'function\')gmBillingApViewPatchStatus(\'CANCELLED\')" style="padding:9px 18px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Cancelar</button>';
  }
+ var viewApId=window.__gmApViewDocId?String(window.__gmApViewDocId):'';
+ if(viewApId){
+  html+='<button type="button" onclick="if(typeof gmBillingBillPdf===\'function\')gmBillingBillPdf(\''+gmBillingEsc(viewApId)+'\')" style="padding:9px 18px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">PDF</button>';
+ }
  html+='<button type="button" onclick="if(typeof gmBillingCloseApView===\'function\')gmBillingCloseApView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
  actions.innerHTML=html;
 }
@@ -32659,6 +32675,7 @@ async function gmBillingOpenApView(id){
 }
 window.gmBillingRenderBills=gmBillingRenderBills;
 window.gmBillingExportBillsCsv=gmBillingExportBillsCsv;
+window.gmBillingBillPdf=gmBillingBillPdf;
 window.gmBillingOpenNewBill=gmBillingOpenNewBill;
 window.gmBillingOpenEditBill=gmBillingOpenEditBill;
 window.gmBillingSaveBill=gmBillingSaveBill;
