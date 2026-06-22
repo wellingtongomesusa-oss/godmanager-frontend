@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
-import { documentToJson } from '../route';
+import { documentToJson } from '@/lib/billingInboxSerialize';
 
 export const dynamic = 'force-dynamic';
 
