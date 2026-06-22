@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 function CheckIcon() {
   return (
@@ -66,7 +67,7 @@ function SuccessContent() {
         </div>
       ) : null}
       <Link
-        href="/GodManager_Premium.html"
+        href={getGodManagerPremiumUrl()}
         style={{
           display: 'inline-block',
           padding: '14px 32px',

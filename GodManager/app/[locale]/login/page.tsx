@@ -6,6 +6,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { GodManagerLogo } from '@/components/layout/GodManagerLogo';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=2000&q=85';
@@ -97,7 +98,7 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
             </Suspense>
             <p className="mt-8 text-center font-inter text-[11px] leading-relaxed text-slate-500">
               <Link
-                href="/gm"
+                href={getGodManagerPremiumUrl()}
                 className="font-medium text-[#1a3a5c] underline decoration-[#1a3a5c]/30 underline-offset-2 transition hover:text-[#c9a96e] hover:decoration-[#c9a96e]/50"
               >
                 {tLogin('console')}

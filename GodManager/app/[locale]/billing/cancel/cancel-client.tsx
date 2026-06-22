@@ -1,6 +1,7 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 export default function CancelClient() {
   return (
@@ -46,7 +47,7 @@ export default function CancelClient() {
           Back to pricing
         </Link>
         <Link
-          href="/GodManager_Premium.html"
+          href={getGodManagerPremiumUrl()}
           style={{
             padding: '12px 24px',
             background: 'transparent',

@@ -24,6 +24,7 @@
     "db:local:migrate": "dotenv -e .env.local -- sh -c 'DATABASE_URL=\"$DATABASE_URL_LOCAL\" exec npx prisma migrate deploy'",
     "db:local:reset": "dotenv -e .env.local -- sh -c 'DATABASE_URL=\"$DATABASE_URL_LOCAL\" exec npx prisma migrate reset --force'",
     "db:local:seed": "dotenv -e .env.local -- sh -c 'DATABASE_URL=\"$DATABASE_URL_LOCAL\" exec npx prisma db seed'",
+    "prebuild": "node scripts/stamp-build.mjs",
     "build": "prisma generate && next build",
     "start": "prisma migrate deploy && next start -p 3101",
     "lint": "next lint",

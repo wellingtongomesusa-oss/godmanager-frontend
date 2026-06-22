@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, isStripeConfigured } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export async function POST(_req: NextRequest) {
     const origin = String(process.env.NEXTAUTH_URL || PUBLIC_ORIGIN).replace(/\/$/, '');
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
-      return_url: `${origin}/GodManager_Premium.html`,
+      return_url: `${origin}${getGodManagerPremiumUrl()}`,
     });
 
     return NextResponse.json({ ok: true, url: session.url });

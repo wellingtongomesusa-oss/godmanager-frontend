@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-04-26 -->
+<!-- Build: 2026-06-22 dev -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-date" content="2026-04-26">
+<meta name="build-date" content="2026-06-22 dev">
 <title>GodManager — Financial Operations</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22545,7 +22545,7 @@ async function ltpSaveNewProperty(){
  }catch(eLeg){ console.warn('ltpSave legado mp_longterm_v1 (nao critico):',eLeg); }
  ltEditingId=null;
  try{ ltpCloseNewPropertyModal(); }catch(eClose){ console.warn('close modal',eClose); }
- try{ ltpRender();ltRender();ltDashRender(); }catch(eRender){ console.warn('render pos-save',eRender); }
+ try{ await ltpRender();ltRender();ltDashRender(); }catch(eRender){ console.warn('render pos-save',eRender); }
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  try{if(typeof window.gmLogAudit==='function')window.gmLogAudit(isEdit?'update':'create','property',newCode,{address:rec.address||'',rent:Number(rec.rent)||0,owner:rec.owner||'',apiOk:apiOk});}catch(eAud){}
  try{
