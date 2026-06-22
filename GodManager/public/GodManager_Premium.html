@@ -22332,7 +22332,6 @@ function ltpBuildRecord(){
  hoa:c('ltp-f-hoa-toggle'),
  hoaAdmin:c('gmPropHoaAdmin'),
  mgmpct:(function(){var e=document.getElementById('ltp-f-mgmpct');var nv=e?parseFloat(e.value):NaN;if(isNaN(nv))return 8;return nv;})(),
- guarantee:n('ltp-f-guarantee'),
  ownerFullName:v('ltp-f-owner-fullname'),
  ownerTaxId:v('ltp-f-owner-taxid'),
  ownerDob:v('ltp-f-owner-dob'),
@@ -22468,7 +22467,6 @@ async function ltpSaveNewProperty(){
   month:rec.month||'',
   hoa:!!rec.hoa,
   mgmpct:Number(rec.mgmpct)||((rec.hoa||rec.hoaAdmin)?10:8),
-  guarantee:Number(rec.guarantee)||0,
    ownerFullName:rec.ownerFullName||'',
    ownerTaxId:rec.ownerTaxId||'',
    ownerDob:rec.ownerDob||'',
@@ -22641,13 +22639,13 @@ function ltpCloseNewPropertyModal(){
 window.ltpOpenEditProperty=function(id){
  var r=null;
  try{
-  var records=ltGetRecords()||[];
-  r=records.find(function(x){return x&&(String(x.id)===String(id)||String(x.code)===String(id));});
+  var gm=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+  r=gm.find(function(x){return x&&(String(x.id)===String(id)||String(x.code)===String(id)||String(x._apiId)===String(id));});
  }catch(e){}
  if(!r){
   try{
-   var gm=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
-   r=gm.find(function(x){return x&&(String(x.id)===String(id)||String(x.code)===String(id)||String(x._apiId)===String(id));});
+   var records=ltGetRecords()||[];
+   r=records.find(function(x){return x&&(String(x.id)===String(id)||String(x.code)===String(id));});
   }catch(e){}
  }
  if(!r){
