@@ -9,6 +9,11 @@ import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
+const SENSITIVE_PATCH_FIELDS = ['rent', 'deposit', 'guaranteeLimit', 'mgmtFeePct'] as const;
+const AUDIT_DETAILS_MAX = 4000;
+
+type BlockedDowngrade = { field: string; current: unknown; attempted: unknown };
+
 function serialize(p: Property) {
   return {
     ...p,
@@ -20,6 +25,111 @@ function serialize(p: Property) {
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
+}
+
+function asMeta(m: unknown): Record<string, unknown> {
+  if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, unknown>;
+  return {};
+}
+
+function decimalNum(v: unknown): number {
+  if (v == null) return 0;
+  const n = parseFloat(String(v));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function isZeroOrEmpty(v: unknown): boolean {
+  if (v === null || v === undefined || v === '') return true;
+  const n = parseFloat(String(v));
+  return !Number.isFinite(n) || n === 0;
+}
+
+function shouldBlockDowngrade(current: number, attempted: unknown, allowDowngrade: boolean): boolean {
+  if (allowDowngrade) return false;
+  return current > 0 && isZeroOrEmpty(attempted);
+}
+
+function mergePropertyMetadata(existing: unknown, patch: unknown): Record<string, unknown> {
+  return { ...asMeta(existing), ...asMeta(patch) };
+}
+
+function metadataForAudit(meta: unknown): unknown {
+  const m = asMeta(meta);
+  const out: Record<string, unknown> = { ...m };
+  if (Array.isArray(m.photos)) {
+    out.photos = { length: m.photos.length };
+  }
+  return out;
+}
+
+function buildPatchAuditDetails(
+  changes: Record<string, { old: unknown; new: unknown }>,
+  blockedDowngrades: BlockedDowngrade[]
+): string {
+  const payload = { changes, blockedDowngrades };
+  let s = JSON.stringify(payload);
+  if (s.length <= AUDIT_DETAILS_MAX) return s;
+  const slim = {
+    changes,
+    blockedDowngrades,
+    _truncated: true,
+    _originalLength: s.length,
+  };
+  s = JSON.stringify(slim);
+  if (s.length <= AUDIT_DETAILS_MAX) return s;
+  return s.slice(0, AUDIT_DETAILS_MAX);
+}
+
+function collectPatchChanges(
+  before: Property,
+  after: Property,
+  dataKeys: string[]
+): Record<string, { old: unknown; new: unknown }> {
+  const changes: Record<string, { old: unknown; new: unknown }> = {};
+
+  for (const field of SENSITIVE_PATCH_FIELDS) {
+    const oldStr = String(before[field]);
+    const newStr = String(after[field]);
+    if (oldStr !== newStr) {
+      changes[field] = { old: oldStr, new: newStr };
+    }
+  }
+
+  const oldGuarantee = asMeta(before.metadata).guarantee;
+  const newGuarantee = asMeta(after.metadata).guarantee;
+  const oldG = oldGuarantee == null || oldGuarantee === '' ? null : String(oldGuarantee);
+  const newG = newGuarantee == null || newGuarantee === '' ? null : String(newGuarantee);
+  if (oldG !== newG) {
+    changes.guarantee = { old: oldG, new: newG };
+  }
+
+  for (const key of dataKeys) {
+    if (
+      key === 'metadata' ||
+      (SENSITIVE_PATCH_FIELDS as readonly string[]).includes(key)
+    ) {
+      continue;
+    }
+    const oldVal = (before as Record<string, unknown>)[key];
+    const newVal = (after as Record<string, unknown>)[key];
+    const oldSerialized =
+      oldVal instanceof Date ? oldVal.toISOString() : oldVal == null ? null : String(oldVal);
+    const newSerialized =
+      newVal instanceof Date ? newVal.toISOString() : newVal == null ? null : String(newVal);
+    if (oldSerialized !== newSerialized) {
+      changes[key] = { old: oldSerialized, new: newSerialized };
+    }
+  }
+
+  if (dataKeys.includes('metadata')) {
+    const oldMeta = metadataForAudit(before.metadata);
+    const newMeta = metadataForAudit(after.metadata);
+    if (JSON.stringify(oldMeta) !== JSON.stringify(newMeta)) {
+      changes.metadata = { old: oldMeta, new: newMeta };
+    }
+  }
+
+  return changes;
 }
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -74,6 +184,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
     }
 
+    const allowDowngrade = body.allowDowngrade === true;
+    const blockedDowngrades: BlockedDowngrade[] = [];
+    const existingMeta = asMeta(existing.metadata);
+
     const data: Prisma.PropertyUpdateInput = {};
     if (body.address !== undefined) data.address = String(body.address);
     if (body.city !== undefined) data.city = (body.city as string) || null;
@@ -88,39 +202,103 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.bathrooms !== undefined) {
       data.bathrooms = body.bathrooms != null ? Number(body.bathrooms) : null;
     }
-    if (body.rent !== undefined) data.rent = String(body.rent);
-    if (body.deposit !== undefined) data.deposit = String(body.deposit);
-    if (body.guaranteeLimit !== undefined) {
-      data.guaranteeLimit = body.guaranteeLimit != null && body.guaranteeLimit !== ''
-        ? String(body.guaranteeLimit)
-        : null;
+
+    if (body.rent !== undefined) {
+      const current = decimalNum(existing.rent);
+      if (shouldBlockDowngrade(current, body.rent, allowDowngrade)) {
+        blockedDowngrades.push({ field: 'rent', current: String(existing.rent), attempted: body.rent });
+      } else {
+        data.rent = String(body.rent);
+      }
     }
+
+    if (body.deposit !== undefined) {
+      const current = decimalNum(existing.deposit);
+      if (shouldBlockDowngrade(current, body.deposit, allowDowngrade)) {
+        blockedDowngrades.push({
+          field: 'deposit',
+          current: String(existing.deposit),
+          attempted: body.deposit,
+        });
+      } else {
+        data.deposit = String(body.deposit);
+      }
+    }
+
+    if (body.guaranteeLimit !== undefined) {
+      const attempted =
+        body.guaranteeLimit != null && body.guaranteeLimit !== '' ? body.guaranteeLimit : null;
+      const current = decimalNum(existing.guaranteeLimit);
+      if (shouldBlockDowngrade(current, attempted, allowDowngrade)) {
+        blockedDowngrades.push({
+          field: 'guaranteeLimit',
+          current: existing.guaranteeLimit != null ? String(existing.guaranteeLimit) : null,
+          attempted: body.guaranteeLimit,
+        });
+      } else {
+        data.guaranteeLimit =
+          body.guaranteeLimit != null && body.guaranteeLimit !== ''
+            ? String(body.guaranteeLimit)
+            : null;
+      }
+    }
+
     if (body.moveInDate !== undefined) {
       data.moveInDate = body.moveInDate ? new Date(String(body.moveInDate)) : null;
     }
     if (body.ownerName !== undefined) data.ownerName = (body.ownerName as string) || null;
     if (body.ownerEmail !== undefined) data.ownerEmail = (body.ownerEmail as string) || null;
     if (body.ownerPhone !== undefined) data.ownerPhone = (body.ownerPhone as string) || null;
-    if (body.mgmtFeePct !== undefined) data.mgmtFeePct = String(body.mgmtFeePct);
+
+    if (body.mgmtFeePct !== undefined) {
+      const current = decimalNum(existing.mgmtFeePct);
+      if (shouldBlockDowngrade(current, body.mgmtFeePct, allowDowngrade)) {
+        blockedDowngrades.push({
+          field: 'mgmtFeePct',
+          current: String(existing.mgmtFeePct),
+          attempted: body.mgmtFeePct,
+        });
+      } else {
+        data.mgmtFeePct = String(body.mgmtFeePct);
+      }
+    }
+
     if (typeof body.hoaAdmin === 'boolean') data.hoaAdmin = body.hoaAdmin;
     if (body.status !== undefined) data.status = String(body.status);
     if (body.notes !== undefined) data.notes = (body.notes as string) || null;
+
     if (body.metadata !== undefined) {
-      const normalized = normalizePropertyMetadata(body.metadata);
+      const mergedMeta = mergePropertyMetadata(existing.metadata, body.metadata);
+      const currentGuarantee = decimalNum(existingMeta.guarantee);
+      const attemptedGuarantee = mergedMeta.guarantee;
+      if (shouldBlockDowngrade(currentGuarantee, attemptedGuarantee, allowDowngrade)) {
+        blockedDowngrades.push({
+          field: 'metadata.guarantee',
+          current: existingMeta.guarantee ?? null,
+          attempted: attemptedGuarantee ?? null,
+        });
+        if (existingMeta.guarantee !== undefined) {
+          mergedMeta.guarantee = existingMeta.guarantee;
+        } else {
+          delete mergedMeta.guarantee;
+        }
+      }
+      const normalized = normalizePropertyMetadata(mergedMeta);
       data.metadata = (normalized ?? Prisma.JsonNull) as Prisma.InputJsonValue;
     }
 
     const updated = await prisma.property.update({ where: { id: params.id }, data });
 
-    const changedFields = Object.keys(data);
-    if (changedFields.length > 0) {
+    const dataKeys = Object.keys(data);
+    if (dataKeys.length > 0 || blockedDowngrades.length > 0) {
+      const changes = collectPatchChanges(existing, updated, dataKeys);
       await recordAudit({
         request: req,
         actor: { id: user.id, email: user.email },
         action: 'property.update',
         entity: 'property',
         entityId: params.id,
-        details: `changed: ${changedFields.join(', ')}`,
+        details: buildPatchAuditDetails(changes, blockedDowngrades),
         clientId: existing.clientId,
       });
     }
