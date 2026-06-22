@@ -1,7 +1,8 @@
 /**
  * Carimba build-date no GodManager_Premium.html antes do build (prebuild).
- * Fonte: RAILWAY_GIT_COMMIT_SHA || SOURCE_VERSION || 'dev' (7 chars).
+ * SHA: RAILWAY_GIT_COMMIT_SHA || SOURCE_VERSION || git rev-parse --short HEAD || 'dev'.
  */
+import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,11 +11,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const htmlPath = join(root, 'public', 'GodManager_Premium.html');
 
-const raw =
-  process.env.RAILWAY_GIT_COMMIT_SHA ||
-  process.env.SOURCE_VERSION ||
-  'dev';
-const shortSha = raw === 'dev' ? 'dev' : String(raw).slice(0, 7);
+function getSha() {
+  const fromEnv = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.SOURCE_VERSION;
+  if (fromEnv) return String(fromEnv).slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return 'dev';
+  }
+}
+
+const shortSha = getSha();
 const date = new Date().toISOString().slice(0, 10);
 const stamp = `${date} ${shortSha}`;
 

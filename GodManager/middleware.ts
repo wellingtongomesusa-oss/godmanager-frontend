@@ -124,7 +124,14 @@ export function middleware(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/GodManager_Premium.html';
-    return NextResponse.rewrite(url);
+    const res = NextResponse.rewrite(url);
+    res.headers.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    return res;
   }
 
   if (pathname === '/' || pathname === '') {
