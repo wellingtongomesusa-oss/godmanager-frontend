@@ -3,7 +3,7 @@ import type { UserRole, UserStatus } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { hashPassword } from '@/lib/password';
-import { getMaxUsersForClientPlan, clientPlanLabelPt } from '@/lib/clientPlanLimits';
+import { getEffectiveMaxUsers, clientPlanLabelPt, PORTAL_ROLES } from '@/lib/clientPlanLimits';
 import { resolveClientUsersScope } from '@/lib/clientUsersScope';
 import { assertVendorBelongsToClient } from '@/lib/fieldVendorScope';
 import { recordAudit } from '@/lib/auditServer';
@@ -11,6 +11,11 @@ import { recordAudit } from '@/lib/auditServer';
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_CREATE_ROLES: UserRole[] = ['admin', 'manager', 'maintenance', 'field', 'supervisor', 'supervisor_2', 'vendor'];
+
+const ACTIVE_TEAM_SEAT_WHERE = {
+  status: 'active' as const,
+  role: { notIn: [...PORTAL_ROLES] as UserRole[] },
+};
 
 function generateRandomPassword(length = 12): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -62,11 +67,12 @@ async function loadClientMeta(clientId: string) {
       id: true,
       companyName: true,
       plan: true,
-      users: { where: { status: 'active' }, select: { id: true } },
+      maxUsers: true,
+      users: { where: ACTIVE_TEAM_SEAT_WHERE, select: { id: true } },
     },
   });
   if (!client) return null;
-  const maxUsers = getMaxUsersForClientPlan(client.plan);
+  const maxUsers = getEffectiveMaxUsers(client.plan, client.maxUsers);
   return {
     clientId: client.id,
     companyName: client.companyName,
@@ -202,14 +208,15 @@ export async function POST(req: Request) {
       select: {
         id: true,
         plan: true,
-        users: { where: { status: 'active' }, select: { id: true } },
+        maxUsers: true,
+        users: { where: ACTIVE_TEAM_SEAT_WHERE, select: { id: true } },
       },
     });
     if (!client) {
       return NextResponse.json({ ok: false, error: 'Cliente não encontrado.' }, { status: 404 });
     }
 
-    const maxUsers = getMaxUsersForClientPlan(client.plan);
+    const maxUsers = getEffectiveMaxUsers(client.plan, client.maxUsers);
     if (client.users.length >= maxUsers) {
       return NextResponse.json(
         {
