@@ -22536,17 +22536,16 @@ async function ltpSaveNewProperty(){
  if(apiOk && typeof window.gmPropertiesRefresh==='function'){
   try{await window.gmPropertiesRefresh();}catch(e){console.warn('refresh apos save',e);}
  }
- const all=ltGetRecords();
- if(isEdit){
-  const idx=all.findIndex(function(x){return x.id===ltEditingId;});
-  if(idx>-1)all[idx]=Object.assign({},all[idx],rec);
- }else{
-  all.push(rec);
- }
- ltSaveRecords(all);
+ try{
+  var all=ltGetRecords();
+  if(!Array.isArray(all)) all=[];
+  if(isEdit){ var idx=all.findIndex(function(x){return x&&x.id===ltEditingId;}); if(idx>-1)all[idx]=Object.assign({},all[idx],rec); else all.push(rec); }
+  else{ all.push(rec); }
+  ltSaveRecords(all);
+ }catch(eLeg){ console.warn('ltpSave legado mp_longterm_v1 (nao critico):',eLeg); }
  ltEditingId=null;
- ltpCloseNewPropertyModal();
- ltpRender();ltRender();ltDashRender();
+ try{ ltpCloseNewPropertyModal(); }catch(eClose){ console.warn('close modal',eClose); }
+ try{ ltpRender();ltRender();ltDashRender(); }catch(eRender){ console.warn('render pos-save',eRender); }
  if(typeof loadHomeDashboardFromApi==='function')loadHomeDashboardFromApi();
  try{if(typeof window.gmLogAudit==='function')window.gmLogAudit(isEdit?'update':'create','property',newCode,{address:rec.address||'',rent:Number(rec.rent)||0,owner:rec.owner||'',apiOk:apiOk});}catch(eAud){}
  try{
