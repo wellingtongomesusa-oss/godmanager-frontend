@@ -3268,7 +3268,38 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
  </div>
  <div id="billing-view-pay" style="display:none">
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:40px;text-align:center;color:var(--ink3);font-size:13px">Em breve (Fase C)</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+   <select id="billing-pay-filter-status" onchange="if(typeof gmBillingRenderBills==='function')gmBillingRenderBills()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+    <option value="">Todos</option>
+    <option value="DRAFT">Rascunho</option>
+    <option value="SENT">Enviada</option>
+    <option value="PAID">Paga</option>
+    <option value="CANCELLED">Cancelada</option>
+   </select>
+   <input type="month" id="billing-pay-filter-month" onchange="if(typeof gmBillingRenderBills==='function')gmBillingRenderBills()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+   <input id="billing-pay-filter-q" oninput="if(typeof gmBillingRenderBills==='function')gmBillingRenderBills()" placeholder="Buscar por número ou fornecedor..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:280px">
+  </div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">Bills (A Pagar)</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+     <div id="billing-bill-counter" style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace"></div>
+     <button type="button" onclick="if(typeof gmBillingOpenNewBill==='function')gmBillingOpenNewBill()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Novo Bill</button>
+    </div>
+   </div>
+   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:820px">
+    <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Número</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Fornecedor</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Emissão</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>
+     <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Total</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+     <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Ações</th>
+    </tr></thead>
+    <tbody id="billing-bill-tbody"></tbody>
+   </table></div>
+  </div>
  </div>
  <div id="billing-view-loan" style="display:none">
   <div id="gm-loan-summary-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
@@ -4037,6 +4068,82 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <div id="gm-billing-view-body" style="font-size:12px;color:var(--ink2)">Carregando…</div>
   <div id="gm-billing-view-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px"></div>
+ </div>
+</div>
+
+<!-- BILLING — Modal Novo/Editar Bill (AP) -->
+<div id="gm-billing-ap-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9004;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this&&typeof gmBillingCloseApBill==='function')gmBillingCloseApBill()">
+ <div style="background:var(--paper);border-radius:12px;width:720px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+   <div id="gm-ap-modal-title" style="font-size:14px;font-weight:700;color:var(--ink)">Novo Bill</div>
+   <span onclick="if(typeof gmBillingCloseApBill==='function')gmBillingCloseApBill()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1">&times;</span>
+  </div>
+  <div id="gm-ap-number-wrap" style="display:none;margin-bottom:18px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NÚMERO *</label>
+   <input id="gm-ap-number" type="text" placeholder="Número do bill" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+  </div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Fornecedor</div>
+  <div style="margin-bottom:14px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">FORNECEDOR *</label>
+   <select id="gm-ap-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+    <option value="">— Selecionar fornecedor —</option>
+    <optgroup label="Vendors" id="gm-ap-vendor-vendors"></optgroup>
+    <optgroup label="Contatos salvos" id="gm-ap-vendor-contacts"></optgroup>
+   </select>
+   <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button type="button" onclick="if(typeof gmApToggleNewContact==='function')gmApToggleNewContact()" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif">+ Novo contato</button>
+   </div>
+   <div id="gm-ap-new-contact-wrap" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--cream)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+     <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOME *</label><input id="gm-ap-new-contact-name" type="text" placeholder="Nome do fornecedor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+     <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">EMAIL</label><input id="gm-ap-new-contact-email" type="email" placeholder="opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+    </div>
+    <button type="button" onclick="if(typeof gmApSaveNewContact==='function')gmApSaveNewContact()" style="padding:6px 14px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Salvar contato</button>
+   </div>
+  </div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Recebedor (opcional)</div>
+  <div style="margin-bottom:14px">
+   <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOME DO RECEBEDOR</label><input id="gm-ap-receiver-name" type="text" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">ENDEREÇO DO RECEBEDOR</label><input id="gm-ap-receiver-address" type="text" placeholder="Opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">E-MAIL</label><input id="gm-ap-receiver-email" type="email" placeholder="opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+    <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">TELEFONE</label><input id="gm-ap-receiver-phone" type="text" placeholder="opcional" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   </div>
+  </div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Datas</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">EMISSÃO</label><input id="gm-ap-issue" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+   <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">VENCIMENTO</label><input id="gm-ap-due" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
+  </div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Itens</div>
+  <datalist id="gm-ap-desc-datalist"></datalist>
+  <div id="gm-ap-items"></div>
+  <button type="button" onclick="if(typeof gmApAddItemRow==='function')gmApAddItemRow()" style="margin:10px 0 16px;padding:6px 14px;border:1px dashed var(--border2);border-radius:6px;background:transparent;color:var(--ink2);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar item</button>
+  <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">
+   <span style="font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px">Total geral</span>
+   <span id="gm-ap-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">$0.00</span>
+  </div>
+  <div style="margin-bottom:18px">
+   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOTAS</label>
+   <textarea id="gm-ap-notes" rows="3" placeholder="Observações opcionais" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;resize:vertical"></textarea>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+   <button type="button" onclick="if(typeof gmBillingCloseApBill==='function')gmBillingCloseApBill()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">Cancelar</button>
+   <button type="button" id="gm-ap-btn-save-draft" onclick="if(typeof gmBillingSaveBill==='function')gmBillingSaveBill()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">Salvar rascunho</button>
+   <button type="button" id="gm-ap-btn-save-edit" onclick="if(typeof gmBillingSaveBill==='function')gmBillingSaveBill()" style="display:none;padding:9px 24px;background:var(--amber);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar alterações</button>
+  </div>
+ </div>
+</div>
+
+<!-- BILLING — Modal Ver Bill (AP read-only) -->
+<div id="gm-billing-ap-view-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9005;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px" onclick="if(event.target===this&&typeof gmBillingCloseApView==='function')gmBillingCloseApView()">
+ <div style="background:var(--paper);border-radius:12px;width:720px;max-width:98vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px">
+   <div id="gm-ap-view-header" style="flex:1;min-width:0"></div>
+   <span onclick="if(typeof gmBillingCloseApView==='function')gmBillingCloseApView()" style="font-size:18px;cursor:pointer;color:var(--ink3);padding:4px 8px;border-radius:4px;line-height:1;flex-shrink:0">&times;</span>
+  </div>
+  <div id="gm-ap-view-body" style="font-size:12px;color:var(--ink2)">Carregando…</div>
+  <div id="gm-ap-view-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px"></div>
  </div>
 </div>
 
@@ -30912,6 +31019,16 @@ function gmBillingSwitchTab(tab){
   if(typeof gmHoaRenderList==='function')gmHoaRenderList();
   if(typeof gmHoaPopulatePropertySelect==='function')gmHoaPopulatePropertySelect();
  }
+ if(isPay){
+  try{
+   if(typeof ltCurrentMonthRef==='function'){
+    var curPay=ltCurrentMonthRef();
+    var melPay=document.getElementById('billing-pay-filter-month');
+    if(melPay&&!String(melPay.value||'').trim())melPay.value=curPay;
+   }
+  }catch(ePayM){console.warn('[billing] pay month filter',ePayM);}
+  if(typeof gmBillingRenderBills==='function')gmBillingRenderBills();
+ }
 }
 function gmBillingRenderInvoiceRowActions(doc){
  var docId=gmBillingEsc(String(doc.id||''));
@@ -31689,10 +31806,14 @@ async function gmBillingOpenView(id){
   if(actions)actions.innerHTML='<button type="button" onclick="if(typeof gmBillingCloseView===\'function\')gmBillingCloseView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
  }
 }
-async function gmBillingSetStatus(id,newStatus){
+async function gmBillingSetStatus(id,newStatus,kind){
  if(!id)return false;
  var st=String(newStatus||'').toUpperCase();
- if(st==='CANCELLED'&&!window.confirm('Cancelar este invoice?'))return false;
+ var isBill=kind==='bill';
+ if(st==='CANCELLED'){
+  var confirmMsg=isBill?'Cancelar este bill?':'Cancelar este invoice?';
+  if(!window.confirm(confirmMsg))return false;
+ }
  try{
   var res=await fetch('/api/billing/documents/'+encodeURIComponent(id),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st})});
   var data=await res.json().catch(function(){return{};});
@@ -31702,9 +31823,15 @@ async function gmBillingSetStatus(id,newStatus){
    else alert(errMsg);
    return false;
   }
-  var msg=st==='SENT'?'Invoice marcada como Enviada.':(st==='PAID'?'Invoice marcada como Paga.':'Invoice cancelada.');
+  var msg;
+  if(isBill){
+   msg=st==='CANCELLED'?'Bill cancelado.':'Status do bill atualizado.';
+  }else{
+   msg=st==='SENT'?'Invoice marcada como Enviada.':(st==='PAID'?'Invoice marcada como Paga.':'Invoice cancelada.');
+  }
   if(typeof showToast==='function')showToast(msg,'success');
   if(typeof gmBillingRenderInvoices==='function')await gmBillingRenderInvoices();
+  if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
   return true;
  }catch(e){
   console.warn('[gmBillingSetStatus]',e);
@@ -31745,6 +31872,686 @@ window.gmBillingSetStatus=gmBillingSetStatus;
 window.gmBillingViewPatchStatus=gmBillingViewPatchStatus;
 window.gmBillingViewDelete=gmBillingViewDelete;
 window.gmBillingInvoicePdf=gmBillingInvoicePdf;
+
+/* ========== BILLING — AP Bills (Fase A) ========== */
+function gmBillingRenderBillRowActions(doc){
+ var docId=gmBillingEsc(String(doc.id||''));
+ var st=String(doc.status||'').toUpperCase();
+ var btnSm='padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif';
+ var html='<button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenApView===\'function\')gmBillingOpenApView(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
+ if(st==='DRAFT'){
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenEditBill===\'function\')gmBillingOpenEditBill(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
+ }
+ if(st==='SENT'){
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
+ }
+ return html;
+}
+async function gmBillingRenderBills(){
+ var tbody=document.getElementById('billing-bill-tbody');
+ var counter=document.getElementById('billing-bill-counter');
+ if(!tbody)return;
+ tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
+ var statusEl=document.getElementById('billing-pay-filter-status');
+ var monthEl=document.getElementById('billing-pay-filter-month');
+ var qEl=document.getElementById('billing-pay-filter-q');
+ var status=statusEl?String(statusEl.value||'').trim():'';
+ var month=monthEl?String(monthEl.value||'').trim():'';
+ var q=qEl?String(qEl.value||'').trim():'';
+ var params=new URLSearchParams();
+ params.set('docType','BILL');
+ if(status)params.set('status',status);
+ if(month)params.set('month',month);
+ if(q)params.set('q',q);
+ try{
+  var res=await fetch('/api/billing/documents?'+params.toString(),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=gmBillingEsc((data&&data.error)||'Falha ao listar bills');
+   tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
+   if(counter)counter.textContent='';
+   return;
+  }
+  var docs=Array.isArray(data.documents)?data.documents:[];
+  if(counter)counter.textContent=docs.length+' registro(s)';
+  if(!docs.length){
+   tbody.innerHTML='<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum bill ainda.</td></tr>';
+   return;
+  }
+  var html='';
+  docs.forEach(function(doc){
+   html+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+gmBillingEsc(doc.number||'')+'</td>'
+    +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmBillingEsc(doc.contactName||'')+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.issueDate))+'</td>'
+    +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.dueDate))+'</td>'
+    +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</td>'
+    +'<td style="padding:9px 12px;text-align:center">'+gmBillingStatusPill(doc.status)+'</td>'
+    +'<td style="padding:9px 12px;text-align:center">'+gmBillingRenderBillRowActions(doc)+'</td>'
+    +'</tr>';
+  });
+  tbody.innerHTML=html;
+ }catch(e){
+  console.warn('[gmBillingRenderBills]',e);
+  tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar bills.</td></tr>';
+  if(counter)counter.textContent='';
+ }
+}
+function gmApGetVendorSelection(){
+ var sel=document.getElementById('gm-ap-vendor');
+ if(!sel||!sel.value)return null;
+ var opt=sel.options[sel.selectedIndex];
+ if(!opt||!opt.value)return null;
+ return{
+  source:String(opt.getAttribute('data-source')||''),
+  id:String(opt.getAttribute('data-id')||''),
+  name:String(opt.getAttribute('data-name')||opt.textContent||'').trim(),
+  email:String(opt.getAttribute('data-email')||'').trim()
+ };
+}
+function gmApPopulateVendorSelect(){
+ var ogV=document.getElementById('gm-ap-vendor-vendors');
+ var ogC=document.getElementById('gm-ap-vendor-contacts');
+ if(ogV)ogV.innerHTML='';
+ if(ogC)ogC.innerHTML='';
+ gmApRemoveVendorSnapshotOption();
+ var data=window.__gmBillingCadastros||{vendors:[],contacts:[]};
+ data.vendors.forEach(function(v){
+  if(!v||!v.id)return;
+  var opt=document.createElement('option');
+  opt.value='vendor:'+v.id;
+  opt.setAttribute('data-source','vendor');
+  opt.setAttribute('data-id',String(v.id));
+  opt.setAttribute('data-name',String(v.company_name||''));
+  opt.setAttribute('data-email',String(v.email||''));
+  opt.textContent=String(v.company_name||v.id);
+  if(ogV)ogV.appendChild(opt);
+ });
+ data.contacts.forEach(function(c){
+  if(!c||!c.id)return;
+  var opt=document.createElement('option');
+  opt.value='contact:'+c.id;
+  opt.setAttribute('data-source','contact');
+  opt.setAttribute('data-id',String(c.id));
+  opt.setAttribute('data-name',String(c.name||''));
+  opt.setAttribute('data-email',String(c.email||''));
+  opt.textContent=String(c.name||c.id);
+  if(ogC)ogC.appendChild(opt);
+ });
+}
+function gmApRemoveVendorSnapshotOption(){
+ var sel=document.getElementById('gm-ap-vendor');
+ if(!sel)return;
+ var opts=sel.querySelectorAll('option[data-snapshot="1"]');
+ opts.forEach(function(o){o.remove();});
+}
+function gmApSelectVendorFromDoc(doc){
+ var sel=document.getElementById('gm-ap-vendor');
+ if(!sel||!doc)return;
+ gmApRemoveVendorSnapshotOption();
+ var contactId=doc.billingContactId?String(doc.billingContactId).trim():'';
+ var vendorId=doc.vendorId?String(doc.vendorId).trim():'';
+ if(contactId){
+  sel.value='contact:'+contactId;
+  if(sel.value)return;
+ }
+ if(vendorId){
+  sel.value='vendor:'+vendorId;
+  if(sel.value)return;
+ }
+ var name=String(doc.contactName||'').trim();
+ if(!name)return;
+ var email=String(doc.contactEmail||'').trim();
+ var opt=document.createElement('option');
+ opt.value='snapshot:'+encodeURIComponent(name);
+ opt.setAttribute('data-source','snapshot');
+ opt.setAttribute('data-id','');
+ opt.setAttribute('data-name',name);
+ opt.setAttribute('data-email',email);
+ opt.setAttribute('data-snapshot','1');
+ opt.textContent=email?name+' ('+email+')':name;
+ var anchor=sel.options.length>0?sel.options[1]:null;
+ sel.insertBefore(opt,anchor);
+ sel.value=opt.value;
+}
+function gmApSetBillModalMode(mode,number){
+ var titleEl=document.getElementById('gm-ap-modal-title');
+ var btnDraft=document.getElementById('gm-ap-btn-save-draft');
+ var btnEdit=document.getElementById('gm-ap-btn-save-edit');
+ var numWrap=document.getElementById('gm-ap-number-wrap');
+ var isEdit=mode==='edit';
+ if(titleEl)titleEl.textContent=isEdit?'Editar Bill '+String(number||''):'Novo Bill';
+ if(btnDraft)btnDraft.style.display=isEdit?'none':'';
+ if(btnEdit)btnEdit.style.display=isEdit?'':'none';
+ if(numWrap)numWrap.style.display=isEdit?'':'none';
+}
+function gmApAddContactOption(contact){
+ if(!contact||!contact.id)return;
+ var ogC=document.getElementById('gm-ap-vendor-contacts');
+ if(!ogC)return;
+ var opt=document.createElement('option');
+ opt.value='contact:'+contact.id;
+ opt.setAttribute('data-source','contact');
+ opt.setAttribute('data-id',String(contact.id));
+ opt.setAttribute('data-name',String(contact.name||''));
+ opt.setAttribute('data-email',String(contact.email||''));
+ opt.textContent=String(contact.name||contact.id);
+ ogC.appendChild(opt);
+ var vendorSel=document.getElementById('gm-ap-vendor');
+ if(vendorSel)vendorSel.value=opt.value;
+ if(window.__gmBillingCadastros&&Array.isArray(window.__gmBillingCadastros.contacts)){
+  window.__gmBillingCadastros.contacts.push(contact);
+ }
+}
+function gmApPopulateDescDatalist(){
+ var dl=document.getElementById('gm-ap-desc-datalist');
+ if(!dl)return;
+ dl.innerHTML='';
+ var list=(window.__gmBillingCadastros&&window.__gmBillingCadastros.descriptions)||[];
+ list.forEach(function(d){
+  if(!d||!d.text)return;
+  var opt=document.createElement('option');
+  opt.value=String(d.text);
+  dl.appendChild(opt);
+ });
+}
+function gmApBuildCategoryOptionsHtml(selectedId){
+ var cats=(window.__gmBillingCadastros&&window.__gmBillingCadastros.categories)||[];
+ var html='<option value="">—</option>';
+ cats.forEach(function(c){
+  if(!c||!c.id)return;
+  var sel=selectedId&&String(selectedId)===String(c.id)?' selected':'';
+  html+='<option value="'+gmBillingEsc(c.id)+'"'+sel+'>'+gmBillingEsc(c.name||'')+'</option>';
+ });
+ return html;
+}
+function gmApAddCategoryToAllSelects(catId,catName,selectInFocused){
+ document.querySelectorAll('.gm-ap-cat-sel').forEach(function(sel){
+  var opt=document.createElement('option');
+  opt.value=String(catId);
+  opt.textContent=String(catName||'');
+  sel.appendChild(opt);
+  if(selectInFocused&&sel===document.activeElement)sel.value=String(catId);
+ });
+}
+function gmApAddItemRow(item){
+ var container=document.getElementById('gm-ap-items');
+ if(!container)return;
+ var selectedCat=item&&item.categoryId?String(item.categoryId):'';
+ var row=document.createElement('div');
+ row.className='gm-ap-item-row';
+ row.style.cssText='margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)';
+ row.innerHTML=
+  '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:end">'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">CATEGORIA</label>'
+  +'<select class="gm-ap-cat-sel" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:\'Inter\',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">'
+  +gmApBuildCategoryOptionsHtml(selectedCat)+'</select></div>'
+  +'<button type="button" onclick="if(typeof gmApPromptNewCategory===\'function\')gmApPromptNewCategory()" style="padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">+ nova</button>'
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:8px;align-items:end">'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">DESCRIÇÃO *</label>'
+  +'<input type="text" class="gm-ap-desc-input" list="gm-ap-desc-datalist" placeholder="Descrição do item" oninput="if(typeof gmApRecalc===\'function\')gmApRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:\'Inter\',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">DATA</label>'
+  +'<input type="date" class="gm-ap-desc-date" style="padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:\'Inter\',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;min-width:130px"></div>'
+  +'<button type="button" onclick="if(typeof gmApInsertDateIntoDesc===\'function\')gmApInsertDateIntoDesc(this)" style="padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">+ data</button>'
+  +'<button type="button" onclick="if(typeof gmApSaveDescriptionFromRow===\'function\')gmApSaveDescriptionFromRow(this)" style="padding:8px 10px;border:1px solid var(--blue-bd);border-radius:6px;background:var(--blue-bg);color:var(--blue);font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">salvar</button>'
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:80px 100px 100px 36px;gap:8px;align-items:end">'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">QTY</label>'
+  +'<input type="number" class="gm-ap-qty-input" value="1" min="0" step="any" oninput="if(typeof gmApRecalc===\'function\')gmApRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:\'JetBrains Mono\',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">VALOR UNIT.</label>'
+  +'<input type="number" class="gm-ap-unit-input" value="0" min="0" step="0.01" oninput="if(typeof gmApRecalc===\'function\')gmApRecalc()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:\'JetBrains Mono\',monospace;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">TOTAL</label>'
+  +'<div class="gm-ap-line-total" style="padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;background:var(--cream);color:var(--ink)">$0.00</div></div>'
+  +'<button type="button" onclick="if(typeof gmApRemoveItemRow===\'function\')gmApRemoveItemRow(this)" style="padding:8px 0;border:none;background:transparent;color:var(--red);font-size:16px;cursor:pointer;line-height:1" title="Remover item">&times;</button>'
+  +'</div>';
+ container.appendChild(row);
+ if(item){
+  var descEl=row.querySelector('.gm-ap-desc-input');
+  var qtyEl=row.querySelector('.gm-ap-qty-input');
+  var unitEl=row.querySelector('.gm-ap-unit-input');
+  if(descEl&&item.description!=null)descEl.value=String(item.description);
+  if(qtyEl&&item.quantity!=null)qtyEl.value=String(item.quantity);
+  if(unitEl&&item.unitPrice!=null)unitEl.value=String(item.unitPrice);
+ }
+ gmApRecalc();
+}
+function gmApRemoveItemRow(btn){
+ var container=document.getElementById('gm-ap-items');
+ if(!container)return;
+ var rows=container.querySelectorAll('.gm-ap-item-row');
+ if(rows.length<=1){
+  if(typeof showToast==='function')showToast('Mínimo de 1 item.','info');
+  return;
+ }
+ var row=btn&&btn.closest('.gm-ap-item-row');
+ if(row)row.remove();
+ gmApRecalc();
+}
+function gmApRecalc(){
+ var container=document.getElementById('gm-ap-items');
+ var totalEl=document.getElementById('gm-ap-total');
+ var sum=0;
+ if(container){
+  container.querySelectorAll('.gm-ap-item-row').forEach(function(row){
+   var qty=parseFloat((row.querySelector('.gm-ap-qty-input')||{}).value)||0;
+   var unit=parseFloat((row.querySelector('.gm-ap-unit-input')||{}).value)||0;
+   var line=gmBillingRoundMoney(qty*unit);
+   sum=gmBillingRoundMoney(sum+line);
+   var lt=row.querySelector('.gm-ap-line-total');
+   if(lt)lt.textContent=gmBillingFmtMoney(line);
+  });
+ }
+ if(totalEl)totalEl.textContent=gmBillingFmtMoney(sum);
+}
+function gmBillingCloseApBill(){
+ window.__gmApEditDocId=null;
+ gmApRemoveVendorSnapshotOption();
+ gmApSetBillModalMode('create');
+ var m=document.getElementById('gm-billing-ap-modal');
+ if(m)m.style.display='none';
+}
+function gmApToggleNewContact(){
+ var wrap=document.getElementById('gm-ap-new-contact-wrap');
+ if(!wrap)return;
+ wrap.style.display=wrap.style.display==='none'?'block':'none';
+}
+async function gmApSaveNewContact(){
+ var nameEl=document.getElementById('gm-ap-new-contact-name');
+ var emailEl=document.getElementById('gm-ap-new-contact-email');
+ var name=String((nameEl&&nameEl.value)||'').trim();
+ if(!name){
+  if(typeof showToast==='function')showToast('Nome do contato é obrigatório.','error');
+  else alert('Nome do contato é obrigatório.');
+  return;
+ }
+ var email=String((emailEl&&emailEl.value)||'').trim();
+ try{
+  var res=await fetch('/api/billing/contacts',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email:email||undefined,kind:'vendor'})});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var err=(data&&data.error)||'Erro ao salvar contato';
+   if(typeof showToast==='function')showToast(err,'error');
+   else alert(err);
+   return;
+  }
+  gmApAddContactOption(data.contact);
+  var wrap=document.getElementById('gm-ap-new-contact-wrap');
+  if(wrap)wrap.style.display='none';
+  if(nameEl)nameEl.value='';
+  if(emailEl)emailEl.value='';
+  if(typeof showToast==='function')showToast('Contato salvo.','success');
+ }catch(e){
+  console.warn('[gmApSaveNewContact]',e);
+  if(typeof showToast==='function')showToast('Erro ao salvar contato.','error');
+ }
+}
+async function gmApPromptNewCategory(){
+ var name=prompt('Nome da categoria:');
+ if(!name||!String(name).trim())return;
+ try{
+  var res=await fetch('/api/billing/categories',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(name).trim()})});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao criar categoria','error');
+   return;
+  }
+  var cat=data.category;
+  if(cat&&window.__gmBillingCadastros)window.__gmBillingCadastros.categories.push(cat);
+  gmApAddCategoryToAllSelects(cat.id,cat.name,true);
+  if(typeof showToast==='function')showToast('Categoria criada.','success');
+ }catch(e){
+  if(typeof showToast==='function')showToast('Erro ao criar categoria.','error');
+ }
+}
+async function gmApSaveDescriptionFromRow(btn){
+ var row=btn&&btn.closest('.gm-ap-item-row');
+ var input=row&&row.querySelector('.gm-ap-desc-input');
+ var text=String((input&&input.value)||'').trim();
+ if(!text){
+  if(typeof showToast==='function')showToast('Digite uma descrição antes de salvar.','error');
+  return;
+ }
+ try{
+  var res=await fetch('/api/billing/descriptions',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao salvar descrição','error');
+   return;
+  }
+  if(typeof gmBillingAddDescriptionToDatalist==='function')gmBillingAddDescriptionToDatalist(text);
+  gmApPopulateDescDatalist();
+  if(typeof showToast==='function')showToast('Descrição salva para reuso.','success');
+ }catch(e){
+  if(typeof showToast==='function')showToast('Erro ao salvar descrição.','error');
+ }
+}
+function gmApInsertDateIntoDesc(btn){
+ var row=btn&&btn.closest('.gm-ap-item-row');
+ if(!row)return;
+ var dateEl=row.querySelector('.gm-ap-desc-date');
+ var descEl=row.querySelector('.gm-ap-desc-input');
+ if(!dateEl||!descEl)return;
+ var raw=String(dateEl.value||'').trim();
+ if(!raw){
+  if(typeof showToast==='function')showToast('Selecione uma data','info');
+  return;
+ }
+ var parts=raw.split('-');
+ var label=parts.length===3?parts[1]+'/'+parts[2]+'/'+parts[0]:raw;
+ var cur=String(descEl.value||'').trim();
+ descEl.value=cur?(cur+' '+label):label;
+ if(typeof gmApRecalc==='function')gmApRecalc();
+}
+async function gmBillingOpenNewBill(){
+ window.__gmApEditDocId=null;
+ gmApSetBillModalMode('create');
+ await gmBillingLoadCadastros(true);
+ gmApPopulateVendorSelect();
+ var wrap=document.getElementById('gm-ap-new-contact-wrap');
+ if(wrap)wrap.style.display='none';
+ var ncName=document.getElementById('gm-ap-new-contact-name');
+ var ncEmail=document.getElementById('gm-ap-new-contact-email');
+ if(ncName)ncName.value='';
+ if(ncEmail)ncEmail.value='';
+ var numEl=document.getElementById('gm-ap-number');
+ if(numEl)numEl.value='';
+ var vendorSel=document.getElementById('gm-ap-vendor');
+ if(vendorSel)vendorSel.value='';
+ var rName=document.getElementById('gm-ap-receiver-name');
+ var rAddr=document.getElementById('gm-ap-receiver-address');
+ var rEmail=document.getElementById('gm-ap-receiver-email');
+ var rPhone=document.getElementById('gm-ap-receiver-phone');
+ if(rName)rName.value='';
+ if(rAddr)rAddr.value='';
+ if(rEmail)rEmail.value='';
+ if(rPhone)rPhone.value='';
+ var notes=document.getElementById('gm-ap-notes');
+ if(notes)notes.value='';
+ var due=document.getElementById('gm-ap-due');
+ if(due)due.value='';
+ var issue=document.getElementById('gm-ap-issue');
+ if(issue)issue.value=gmBillingTodayIso();
+ gmApPopulateDescDatalist();
+ var items=document.getElementById('gm-ap-items');
+ if(items){items.innerHTML='';gmApAddItemRow();}
+ gmApRecalc();
+ var m=document.getElementById('gm-billing-ap-modal');
+ if(m)m.style.display='flex';
+}
+async function gmBillingOpenEditBill(id){
+ if(!id)return;
+ try{
+  var res=await fetch('/api/billing/documents/'+encodeURIComponent(id),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.document){
+   if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao carregar bill','error');
+   else alert((data&&data.error)||'Erro ao carregar bill');
+   return;
+  }
+  var doc=data.document;
+  if(String(doc.docType||'').toUpperCase()!=='BILL'){
+   if(typeof showToast==='function')showToast('Documento não é um bill.','error');
+   return;
+  }
+  if(String(doc.status||'').toUpperCase()!=='DRAFT'){
+   if(typeof showToast==='function')showToast('Só bills em rascunho podem ser editados.','error');
+   return;
+  }
+  await gmBillingLoadCadastros(true);
+  gmApPopulateVendorSelect();
+  gmApPopulateDescDatalist();
+  window.__gmApEditDocId=String(id);
+  gmApSetBillModalMode('edit',doc.number||'');
+  var wrap=document.getElementById('gm-ap-new-contact-wrap');
+  if(wrap)wrap.style.display='none';
+  var ncName=document.getElementById('gm-ap-new-contact-name');
+  var ncEmail=document.getElementById('gm-ap-new-contact-email');
+  if(ncName)ncName.value='';
+  if(ncEmail)ncEmail.value='';
+  gmApSelectVendorFromDoc(doc);
+  var numEl=document.getElementById('gm-ap-number');
+  if(numEl)numEl.value=String(doc.number||'');
+  var rName=document.getElementById('gm-ap-receiver-name');
+  var rAddr=document.getElementById('gm-ap-receiver-address');
+  var rEmail=document.getElementById('gm-ap-receiver-email');
+  var rPhone=document.getElementById('gm-ap-receiver-phone');
+  if(rName)rName.value=String(doc.receiverName||'');
+  if(rAddr)rAddr.value=String(doc.receiverAddress||'');
+  if(rEmail)rEmail.value=String(doc.receiverEmail||'');
+  if(rPhone)rPhone.value=String(doc.receiverPhone||'');
+  var notes=document.getElementById('gm-ap-notes');
+  if(notes)notes.value=String(doc.notes||'');
+  var due=document.getElementById('gm-ap-due');
+  if(due)due.value=gmBillingIsoToDateInput(doc.dueDate);
+  var issue=document.getElementById('gm-ap-issue');
+  if(issue)issue.value=gmBillingIsoToDateInput(doc.issueDate)||gmBillingTodayIso();
+  var itemsEl=document.getElementById('gm-ap-items');
+  if(itemsEl){
+   itemsEl.innerHTML='';
+   var docItems=Array.isArray(doc.items)?doc.items:[];
+   if(docItems.length){
+    docItems.forEach(function(it){gmApAddItemRow(it);});
+   }else{
+    gmApAddItemRow();
+   }
+  }
+  gmApRecalc();
+  var m=document.getElementById('gm-billing-ap-modal');
+  if(m)m.style.display='flex';
+ }catch(e){
+  console.warn('[gmBillingOpenEditBill]',e);
+  if(typeof showToast==='function')showToast('Erro ao carregar bill.','error');
+ }
+}
+async function gmBillingSaveBill(){
+ var editId=window.__gmApEditDocId;
+ var vendor=gmApGetVendorSelection();
+ if(!vendor||!vendor.name){
+  if(typeof showToast==='function')showToast('Selecione um fornecedor','error');
+  else alert('Selecione um fornecedor');
+  return;
+ }
+ var container=document.getElementById('gm-ap-items');
+ var itemPayload=[];
+ if(container){
+  container.querySelectorAll('.gm-ap-item-row').forEach(function(row,idx){
+   var desc=String((row.querySelector('.gm-ap-desc-input')||{}).value||'').trim();
+   if(!desc)return;
+   var catId=String((row.querySelector('.gm-ap-cat-sel')||{}).value||'').trim();
+   var qty=parseFloat((row.querySelector('.gm-ap-qty-input')||{}).value);
+   var unit=parseFloat((row.querySelector('.gm-ap-unit-input')||{}).value);
+   var item={description:desc,quantity:Number.isFinite(qty)?qty:1,unitPrice:Number.isFinite(unit)?unit:0,sortOrder:idx};
+   if(catId)item.categoryId=catId;
+   itemPayload.push(item);
+  });
+ }
+ if(!itemPayload.length){
+  if(typeof showToast==='function')showToast('Adicione ao menos um item com descrição','error');
+  else alert('Adicione ao menos um item com descrição');
+  return;
+ }
+ var rNameEl=document.getElementById('gm-ap-receiver-name');
+ var rAddrEl=document.getElementById('gm-ap-receiver-address');
+ var rEmailEl=document.getElementById('gm-ap-receiver-email');
+ var rPhoneEl=document.getElementById('gm-ap-receiver-phone');
+ var receiverName=String((rNameEl&&rNameEl.value)||'').trim();
+ var receiverAddress=String((rAddrEl&&rAddrEl.value)||'').trim();
+ var receiverEmail=String((rEmailEl&&rEmailEl.value)||'').trim();
+ var receiverPhone=String((rPhoneEl&&rPhoneEl.value)||'').trim();
+ var issueEl=document.getElementById('gm-ap-issue');
+ var dueEl=document.getElementById('gm-ap-due');
+ var notesEl=document.getElementById('gm-ap-notes');
+ var billNumber='';
+ if(editId){
+  var numEl=document.getElementById('gm-ap-number');
+  billNumber=String((numEl&&numEl.value)||'').trim();
+  if(!billNumber){
+   if(typeof showToast==='function')showToast('Informe o número do bill','error');
+   else alert('Informe o número do bill');
+   return;
+  }
+ }
+ var payload={
+  contactName:vendor.name,
+  items:itemPayload
+ };
+ if(vendor.email)payload.contactEmail=vendor.email;
+ if(vendor.source==='contact'&&vendor.id)payload.billingContactId=vendor.id;
+ if(vendor.source==='vendor'&&vendor.id)payload.vendorId=vendor.id;
+ if(receiverName)payload.receiverName=receiverName;
+ if(receiverAddress)payload.receiverAddress=receiverAddress;
+ if(receiverEmail)payload.receiverEmail=receiverEmail;
+ if(receiverPhone)payload.receiverPhone=receiverPhone;
+ if(issueEl&&issueEl.value)payload.issueDate=issueEl.value+'T00:00:00.000Z';
+ if(dueEl&&dueEl.value)payload.dueDate=dueEl.value+'T00:00:00.000Z';
+ if(notesEl&&String(notesEl.value||'').trim())payload.notes=String(notesEl.value).trim();
+ try{
+  var res,data;
+  if(editId){
+   payload.number=billNumber;
+   res=await fetch('/api/billing/documents/'+encodeURIComponent(editId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   data=await res.json().catch(function(){return{};});
+   if(!res.ok||!data.ok){
+    var errPatch=(data&&data.error)||'Erro ao salvar bill';
+    if(typeof showToast==='function')showToast(errPatch,'error');
+    else alert(errPatch);
+    return;
+   }
+   gmBillingCloseApBill();
+   if(typeof showToast==='function')showToast('Bill atualizado.','success');
+   if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
+   return;
+  }
+  payload.docType='BILL';
+  payload.status='DRAFT';
+  res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   var errMsg=(data&&data.error)||'Erro ao salvar bill';
+   if(typeof showToast==='function')showToast(errMsg,'error');
+   else alert(errMsg);
+   return;
+  }
+  gmBillingCloseApBill();
+  if(typeof showToast==='function')showToast('Bill salvo como rascunho.','success');
+  if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
+ }catch(e){
+  console.warn('[gmBillingSaveBill]',e);
+  if(typeof showToast==='function')showToast('Erro ao salvar bill.','error');
+ }
+}
+function gmBillingCloseApView(){
+ var m=document.getElementById('gm-billing-ap-view-modal');
+ if(m)m.style.display='none';
+ window.__gmApViewDocId=null;
+}
+function gmBillingRenderApViewDocument(doc){
+ var header=document.getElementById('gm-ap-view-header');
+ var body=document.getElementById('gm-ap-view-body');
+ var actions=document.getElementById('gm-ap-view-actions');
+ if(!header||!body||!doc)return;
+ header.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:16px;font-weight:700;color:var(--ink)">Bill '+gmBillingEsc(doc.number||'')+'</div>'+gmBillingStatusPill(doc.status)+'</div>';
+ var vendorHtml=gmBillingEsc(doc.contactName||'—');
+ if(doc.contactEmail)vendorHtml+=' <span style="color:var(--ink3)">('+gmBillingEsc(doc.contactEmail)+')</span>';
+ var recvBlock='';
+ if(doc.receiverName||doc.receiverAddress){
+  recvBlock='<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Recebedor</div>'
+   +'<div style="font-size:13px;color:var(--ink);margin-bottom:16px">'+gmBillingEsc(doc.receiverName||'—')
+   +(doc.receiverAddress?'<div style="font-size:12px;color:var(--ink2);margin-top:4px">'+gmBillingEsc(doc.receiverAddress)+'</div>':'')
+   +'</div>';
+ }
+ var items=Array.isArray(doc.items)?doc.items:[];
+ var itemsHtml='';
+ if(items.length){
+  itemsHtml='<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'
+   +'<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Categoria</th>'
+   +'<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Descrição</th>'
+   +'<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Qty</th>'
+   +'<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor unit</th>'
+   +'<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Total</th>'
+   +'</tr></thead><tbody>';
+  items.forEach(function(it){
+   itemsHtml+='<tr style="border-bottom:1px solid var(--border)">'
+    +'<td style="padding:8px 10px;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingCategoryName(it.categoryId))+'</td>'
+    +'<td style="padding:8px 10px;font-size:12px;color:var(--ink)">'+gmBillingEsc(it.description||'')+'</td>'
+    +'<td style="padding:8px 10px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px">'+gmBillingEsc(String(it.quantity!=null?it.quantity:''))+'</td>'
+    +'<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px">'+gmBillingEsc(gmBillingFmtMoney(it.unitPrice))+'</td>'
+    +'<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600">'+gmBillingEsc(gmBillingFmtMoney(it.lineTotal))+'</td>'
+    +'</tr>';
+  });
+  itemsHtml+='</tbody></table></div>';
+ }else{
+  itemsHtml='<div style="padding:12px;color:var(--ink3);font-size:12px">Sem itens.</div>';
+ }
+ var notesBlock='';
+ if(doc.notes){
+  notesBlock='<div style="margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Notas</div><div style="font-size:12px;color:var(--ink2);line-height:1.5">'+gmBillingEsc(doc.notes)+'</div></div>';
+ }
+ body.innerHTML=
+  '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Fornecedor</div>'
+  +'<div style="font-size:13px;color:var(--ink);margin-bottom:16px">'+vendorHtml+'</div>'
+  +recvBlock
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">EMISSÃO</div><div style="font-size:12px;color:var(--ink)">'+gmBillingEsc(gmBillingFmtDate(doc.issueDate))+'</div></div>'
+  +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">VENCIMENTO</div><div style="font-size:12px;color:var(--ink)">'+gmBillingEsc(gmBillingFmtDate(doc.dueDate))+'</div></div>'
+  +'</div>'
+  +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Itens</div>'
+  +itemsHtml
+  +'<div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">'
+  +'<span style="font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px">Total geral</span>'
+  +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</span>'
+  +'</div>'
+  +notesBlock;
+ if(actions){
+  actions.innerHTML='<button type="button" onclick="if(typeof gmBillingCloseApView===\'function\')gmBillingCloseApView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+ }
+}
+async function gmBillingOpenApView(id){
+ if(!id)return;
+ window.__gmApViewDocId=String(id);
+ var m=document.getElementById('gm-billing-ap-view-modal');
+ var header=document.getElementById('gm-ap-view-header');
+ var body=document.getElementById('gm-ap-view-body');
+ var actions=document.getElementById('gm-ap-view-actions');
+ if(m)m.style.display='flex';
+ if(header)header.innerHTML='';
+ if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3)">Carregando…</div>';
+ if(actions)actions.innerHTML='';
+ try{
+  await gmBillingLoadCadastros();
+  var res=await fetch('/api/billing/documents/'+encodeURIComponent(String(id)),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok||!data.document){
+   var errMsg=(data&&data.error)||'Falha ao carregar bill';
+   if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--red)">'+gmBillingEsc(errMsg)+'</div>';
+   if(actions)actions.innerHTML='<button type="button" onclick="if(typeof gmBillingCloseApView===\'function\')gmBillingCloseApView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+   return;
+  }
+  gmBillingRenderApViewDocument(data.document);
+ }catch(e){
+  console.warn('[gmBillingOpenApView]',e);
+  if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--red)">Erro ao carregar bill.</div>';
+  if(actions)actions.innerHTML='<button type="button" onclick="if(typeof gmBillingCloseApView===\'function\')gmBillingCloseApView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+ }
+}
+window.gmBillingRenderBills=gmBillingRenderBills;
+window.gmBillingOpenNewBill=gmBillingOpenNewBill;
+window.gmBillingOpenEditBill=gmBillingOpenEditBill;
+window.gmBillingSaveBill=gmBillingSaveBill;
+window.gmBillingCloseApBill=gmBillingCloseApBill;
+window.gmBillingOpenApView=gmBillingOpenApView;
+window.gmBillingCloseApView=gmBillingCloseApView;
+window.gmApAddItemRow=gmApAddItemRow;
+window.gmApRecalc=gmApRecalc;
+window.gmApToggleNewContact=gmApToggleNewContact;
+window.gmApSaveNewContact=gmApSaveNewContact;
+window.gmApPromptNewCategory=gmApPromptNewCategory;
+window.gmApSaveDescriptionFromRow=gmApSaveDescriptionFromRow;
+window.gmApRemoveItemRow=gmApRemoveItemRow;
+window.gmApInsertDateIntoDesc=gmApInsertDateIntoDesc;
+/* ========== /BILLING AP ========== */
 
 /* ========== BILLING — Loan (Fase C1) ========== */
 function gmLoanEsc(s){
