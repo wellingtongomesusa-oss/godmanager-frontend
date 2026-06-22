@@ -29734,6 +29734,7 @@ window.tenantOpenNew=function(){
    var cd=document.getElementById('ten-f-code');if(cd)cd.value=nextCode;
   }).catch(function(){});
  }catch(e){}
+ var _cp=document.getElementById('ten-cred-panel'); if(_cp)_cp.style.display='none';
  modal.style.display='flex';
 };
 
@@ -29757,6 +29758,8 @@ window.tenantOpenEdit=function(id){
   document.getElementById('ten-f-unit').value=t.unit||'';
   document.getElementById('ten-f-notes').value=t.notes||'';
   document.getElementById('tenant-edit-modal').style.display='flex';
+  var _cp=document.getElementById('ten-cred-panel'); if(_cp)_cp.style.display='block';
+  gmTenantCredReset();
  }).catch(function(e){alert('Erro: '+e.message);});
 };
 
@@ -29765,6 +29768,8 @@ window.tenantEditRow=window.tenantOpenEdit;
 window.tenantCloseEdit=function(){
  var md=document.getElementById('tenant-edit-modal');if(md)md.style.display='none';
  window.tenantEditingId=null;
+ var _cp=document.getElementById('ten-cred-panel'); if(_cp)_cp.style.display='none';
+ if(typeof gmTenantCredReset==='function')gmTenantCredReset();
 };
 
 window.tenantSaveEdit=async function(){
@@ -29802,6 +29807,51 @@ window.tenantSaveEdit=async function(){
   if(typeof tnRender==='function')try{tnRender();}catch(eR){}
  }catch(e){console.warn('tenantSaveEdit',e);alert('Erro ao salvar: '+e.message);}
 };
+
+function gmTenantCredReset(){
+ var f=document.getElementById('ten-cred-form'); if(f)f.style.display='none';
+ var s=document.getElementById('ten-cred-share'); if(s)s.style.display='none';
+ var p1=document.getElementById('ten-cred-pass'); if(p1)p1.value='';
+ var p2=document.getElementById('ten-cred-pass2'); if(p2)p2.value='';
+ var m=document.getElementById('ten-cred-msg'); if(m){m.textContent='';m.style.color='';}
+}
+function gmTenantCredToggle(){
+ if(!window.tenantEditingId){alert('Salve o inquilino antes de gerar o acesso.');return;}
+ var email=(document.getElementById('ten-f-email')||{}).value||'';
+ if(!String(email).trim()){alert('O inquilino precisa ter e-mail salvo antes de gerar o acesso.');return;}
+ var f=document.getElementById('ten-cred-form');
+ if(f)f.style.display=(f.style.display==='none'||!f.style.display)?'block':'none';
+}
+async function gmTenantCredSave(){
+ var m=document.getElementById('ten-cred-msg');
+ function setMsg(t,ok){ if(m){m.textContent=t;m.style.color=ok?'var(--accent,#2d6cdf)':'#c0392b';} }
+ if(!window.tenantEditingId){setMsg('Salve o inquilino primeiro.',false);return;}
+ var p1=(document.getElementById('ten-cred-pass')||{}).value||'';
+ var p2=(document.getElementById('ten-cred-pass2')||{}).value||'';
+ if(p1.length<8){setMsg('A senha precisa ter ao menos 8 caracteres.',false);return;}
+ if(p1!==p2){setMsg('As senhas nao conferem.',false);return;}
+ setMsg('Salvando...',true);
+ try{
+  var res=await fetch('/api/tenants/'+encodeURIComponent(window.tenantEditingId)+'/set-password',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p1})});
+  var json=await res.json().catch(function(){return{};});
+  if(!res.ok||!json.ok){
+   var code=json&&json.error?String(json.error):('http_'+res.status);
+   var map={tenant_email_required:'O inquilino precisa ter e-mail salvo antes de gerar o acesso.',tenant_sem_empresa:'Inquilino sem empresa (clientId) - nao da pra gerar acesso.',email_in_use:'Este e-mail ja esta em uso por outro acesso.',forbidden:'Sem permissao para esta acao.',unauthorized:'Sessao expirada - faca login novamente.',not_found:'Inquilino nao encontrado.'};
+   setMsg(map[code]||('Erro ao salvar senha ('+code+').'),false); return;
+  }
+  var shareEmail=json.email||((document.getElementById('ten-f-email')||{}).value)||'';
+  document.getElementById('ten-cred-share-email').textContent=shareEmail;
+  document.getElementById('ten-cred-share-pass').textContent=p1;
+  window.__tenCredLast={name:(document.getElementById('ten-f-name')||{}).value||'',email:shareEmail,password:p1};
+  document.getElementById('ten-cred-share').style.display='block';
+  setMsg(json.action==='updated'?'Senha redefinida':'Acesso criado',true);
+ }catch(e){ setMsg('Erro de rede ao salvar senha.',false); }
+}
+async function gmTenantCredCopy(){
+ var d=window.__tenCredLast||{};
+ var text='Ola '+(d.name||'')+',\n'+'Seu acesso ao Portal do Inquilino GodManager:\n'+'URL: https://www.godmanager.us/tenant-portal/login\n'+'E-mail: '+(d.email||'')+'\n'+'Senha temporaria: '+(d.password||'')+'\n'+'Recomendamos trocar a senha apos o primeiro acesso.';
+ try{ await navigator.clipboard.writeText(text); alert('Texto copiado!'); }catch(e){ alert('Copie manualmente:\n\n'+text); }
+}
 
 window.tenantViewDetails=function(tid){
  if(typeof showToast==='function')showToast('Detalhes do tenant '+tid+' em breve','info');
@@ -34192,6 +34242,30 @@ window.gmHoaFetchPropertyRows=gmHoaFetchPropertyRows;
   <div style="margin-top:12px">
    <label style="display:block;font-size:9px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">Notes</label>
    <textarea id="ten-f-notes" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);resize:vertical"></textarea>
+  </div>
+  <div id="ten-cred-panel" style="display:none;border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+   <div style="font-weight:600;margin-bottom:8px;color:var(--ink)">Acesso ao Portal do Inquilino</div>
+   <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Gera ou redefine a senha de acesso ao portal. Usa o e-mail salvo do inquilino.</div>
+   <button type="button" id="ten-cred-toggle" onclick="gmTenantCredToggle()" style="padding:8px 14px;border:1px solid var(--border2);background:var(--paper);border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">Definir / redefinir senha</button>
+   <div id="ten-cred-form" style="display:none;margin-top:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+     <input id="ten-cred-pass" type="password" placeholder="Senha (min. 8)" style="padding:9px 11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--sand);font-family:'DM Sans',sans-serif;color:var(--ink)"/>
+     <input id="ten-cred-pass2" type="password" placeholder="Confirmar senha" style="padding:9px 11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--sand);font-family:'DM Sans',sans-serif;color:var(--ink)"/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+     <button type="button" onclick="gmTenantCredSave()" style="padding:8px 14px;border:none;background:var(--amber);color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600">Salvar senha</button>
+     <span id="ten-cred-msg" style="font-size:12px"></span>
+    </div>
+   </div>
+   <div id="ten-cred-share" style="display:none;margin-top:12px;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:12px">
+    <div style="font-weight:600;margin-bottom:6px;color:var(--ink)">Acesso pronto</div>
+    <div style="font-size:13px;line-height:1.7;color:var(--ink2)">
+     <div>Portal: <strong style="color:var(--ink)">https://www.godmanager.us/tenant-portal/login</strong></div>
+     <div>E-mail: <strong id="ten-cred-share-email" style="color:var(--ink)"></strong></div>
+     <div>Senha: <strong id="ten-cred-share-pass" style="color:var(--ink)"></strong></div>
+    </div>
+    <button type="button" onclick="gmTenantCredCopy()" style="margin-top:10px;padding:8px 14px;border:1px solid var(--border2);background:var(--paper);border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">Copiar texto p/ e-mail / WhatsApp</button>
+   </div>
   </div>
   <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:14px;margin-top:16px">
    <button type="button" onclick="tenantCloseEdit()" style="padding:9px 18px;border:1px solid var(--border2);background:transparent;color:var(--ink2);border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px">Cancelar</button>
