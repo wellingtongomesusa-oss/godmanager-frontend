@@ -259,6 +259,23 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     if (body.status != null) {
       const newStatus = String(body.status).trim();
+      if (existing.docType === 'BILL') {
+        if (newStatus === 'APPROVED') {
+          const roleLower = String(user.role || '').toLowerCase();
+          if (roleLower !== 'admin' && roleLower !== 'super_admin') {
+            return NextResponse.json(
+              { ok: false, error: 'sem permissao para aprovar' },
+              { status: 403 }
+            );
+          }
+        }
+        if (newStatus === 'PAID' && existing.status !== 'APPROVED') {
+          return NextResponse.json(
+            { ok: false, error: 'bill precisa estar aprovado antes de pagar' },
+            { status: 409 }
+          );
+        }
+      }
       applyStatusSideEffects(existing, newStatus, user.id, data);
     }
 

@@ -3272,6 +3272,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <select id="billing-pay-filter-status" onchange="if(typeof gmBillingRenderBills==='function')gmBillingRenderBills()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
     <option value="">Todos</option>
     <option value="DRAFT">Rascunho</option>
+    <option value="APPROVED">Aprovado</option>
     <option value="SENT">Enviada</option>
     <option value="PAID">Paga</option>
     <option value="CANCELLED">Cancelada</option>
@@ -30868,6 +30869,7 @@ function gmBillingStatusPill(status){
  var st=String(status||'').toUpperCase();
  var map={
   DRAFT:{cls:'ps2',lbl:'Rascunho'},
+  APPROVED:{cls:'pa',lbl:'Aprovado'},
   SENT:{cls:'pb',lbl:'Enviada'},
   PAID:{cls:'pg',lbl:'Paga'},
   CANCELLED:{cls:'pr',lbl:'Cancelada'}
@@ -30877,7 +30879,7 @@ function gmBillingStatusPill(status){
 }
 function gmBillingStatusLabel(status){
  var st=String(status||'').toUpperCase();
- var map={DRAFT:'Rascunho',SENT:'Enviada',PAID:'Paga',CANCELLED:'Cancelada'};
+ var map={DRAFT:'Rascunho',APPROVED:'Aprovado',SENT:'Enviada',PAID:'Paga',CANCELLED:'Cancelada'};
  return map[st]||st||'—';
 }
 function gmBillingInvoicePdfPrintHtml(html){
@@ -31825,7 +31827,10 @@ async function gmBillingSetStatus(id,newStatus,kind){
   }
   var msg;
   if(isBill){
-   msg=st==='CANCELLED'?'Bill cancelado.':'Status do bill atualizado.';
+   if(st==='CANCELLED')msg='Bill cancelado.';
+   else if(st==='APPROVED')msg='Bill aprovado.';
+   else if(st==='PAID')msg='Bill marcado como pago.';
+   else msg='Status do bill atualizado.';
   }else{
    msg=st==='SENT'?'Invoice marcada como Enviada.':(st==='PAID'?'Invoice marcada como Paga.':'Invoice cancelada.');
   }
@@ -31874,6 +31879,20 @@ window.gmBillingViewDelete=gmBillingViewDelete;
 window.gmBillingInvoicePdf=gmBillingInvoicePdf;
 
 /* ========== BILLING — AP Bills (Fase A) ========== */
+function gmBillingCanApproveBill(){
+ try{
+  var u=window.__gmCurrentUser;
+  if(!u)return false;
+  var r=String(u.role||'').toLowerCase();
+  return r==='admin'||r==='super_admin';
+ }catch(e){return false;}
+}
+function gmBillingFormatApprovalLine(doc){
+ if(!doc||!doc.approvedAt)return '';
+ var who=String(doc.approvedByUserId||'').trim()||'—';
+ var date=gmBillingFmtDate(doc.approvedAt);
+ return 'Aprovado por '+gmBillingEsc(who)+' em '+gmBillingEsc(date);
+}
 function gmBillingRenderBillRowActions(doc){
  var docId=gmBillingEsc(String(doc.id||''));
  var st=String(doc.status||'').toUpperCase();
@@ -31881,6 +31900,13 @@ function gmBillingRenderBillRowActions(doc){
  var html='<button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenApView===\'function\')gmBillingOpenApView(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)">Ver</button>';
  if(st==='DRAFT'){
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingOpenEditBill===\'function\')gmBillingOpenEditBill(this.getAttribute(\'data-doc-id\'))" style="'+btnSm+';margin-left:4px;background:var(--sand);color:var(--ink);border:1px solid var(--border2)">Editar</button>';
+  if(gmBillingCanApproveBill()){
+   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'APPROVED\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)">Aprovar</button>';
+  }
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
+ }
+ if(st==='APPROVED'){
+  html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'PAID\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)">Marcar pago</button>';
   html+=' <button type="button" data-doc-id="'+docId+'" onclick="if(typeof gmBillingSetStatus===\'function\')gmBillingSetStatus(this.getAttribute(\'data-doc-id\'),\'CANCELLED\',\'bill\')" style="'+btnSm+';margin-left:4px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)">Cancelar</button>';
  }
  if(st==='SENT'){
@@ -32489,6 +32515,11 @@ function gmBillingRenderApViewDocument(doc){
  if(doc.notes){
   notesBlock='<div style="margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Notas</div><div style="font-size:12px;color:var(--ink2);line-height:1.5">'+gmBillingEsc(doc.notes)+'</div></div>';
  }
+ var approvalBlock='';
+ var stAp=String(doc.status||'').toUpperCase();
+ if((stAp==='APPROVED'||stAp==='PAID')&&doc.approvedAt){
+  approvalBlock='<div style="margin-top:16px;padding:12px 14px;background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;font-size:12px;color:var(--ink2)">'+gmBillingFormatApprovalLine(doc)+'</div>';
+ }
  body.innerHTML=
   '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Fornecedor</div>'
   +'<div style="font-size:13px;color:var(--ink);margin-bottom:16px">'+vendorHtml+'</div>'
@@ -32497,6 +32528,7 @@ function gmBillingRenderApViewDocument(doc){
   +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">EMISSÃO</div><div style="font-size:12px;color:var(--ink)">'+gmBillingEsc(gmBillingFmtDate(doc.issueDate))+'</div></div>'
   +'<div><div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px">VENCIMENTO</div><div style="font-size:12px;color:var(--ink)">'+gmBillingEsc(gmBillingFmtDate(doc.dueDate))+'</div></div>'
   +'</div>'
+  +approvalBlock
   +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Itens</div>'
   +itemsHtml
   +'<div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">'
@@ -32504,9 +32536,31 @@ function gmBillingRenderApViewDocument(doc){
   +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</span>'
   +'</div>'
   +notesBlock;
- if(actions){
-  actions.innerHTML='<button type="button" onclick="if(typeof gmBillingCloseApView===\'function\')gmBillingCloseApView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+ gmBillingRenderApViewActions(doc);
+}
+function gmBillingRenderApViewActions(doc){
+ var actions=document.getElementById('gm-ap-view-actions');
+ if(!actions||!doc)return;
+ var st=String(doc.status||'').toUpperCase();
+ var html='';
+ if(st==='DRAFT'){
+  if(gmBillingCanApproveBill()){
+   html+='<button type="button" onclick="if(typeof gmBillingApViewPatchStatus===\'function\')gmBillingApViewPatchStatus(\'APPROVED\')" style="padding:9px 18px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Aprovar</button>';
+  }
+  html+='<button type="button" onclick="if(typeof gmBillingApViewPatchStatus===\'function\')gmBillingApViewPatchStatus(\'CANCELLED\')" style="padding:9px 18px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Cancelar</button>';
  }
+ if(st==='APPROVED'){
+  html+='<button type="button" onclick="if(typeof gmBillingApViewPatchStatus===\'function\')gmBillingApViewPatchStatus(\'PAID\')" style="padding:9px 18px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Marcar pago</button>';
+  html+='<button type="button" onclick="if(typeof gmBillingApViewPatchStatus===\'function\')gmBillingApViewPatchStatus(\'CANCELLED\')" style="padding:9px 18px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:600">Cancelar</button>';
+ }
+ html+='<button type="button" onclick="if(typeof gmBillingCloseApView===\'function\')gmBillingCloseApView()" style="padding:9px 20px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-family:\'Inter\',sans-serif;font-size:12px">Fechar</button>';
+ actions.innerHTML=html;
+}
+async function gmBillingApViewPatchStatus(newStatus){
+ var id=window.__gmApViewDocId;
+ if(!id)return;
+ var ok=await gmBillingSetStatus(id,newStatus,'bill');
+ if(ok)gmBillingCloseApView();
 }
 async function gmBillingOpenApView(id){
  if(!id)return;
@@ -32543,6 +32597,7 @@ window.gmBillingSaveBill=gmBillingSaveBill;
 window.gmBillingCloseApBill=gmBillingCloseApBill;
 window.gmBillingOpenApView=gmBillingOpenApView;
 window.gmBillingCloseApView=gmBillingCloseApView;
+window.gmBillingApViewPatchStatus=gmBillingApViewPatchStatus;
 window.gmApAddItemRow=gmApAddItemRow;
 window.gmApRecalc=gmApRecalc;
 window.gmApToggleNewContact=gmApToggleNewContact;
