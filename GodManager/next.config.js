@@ -40,6 +40,14 @@ const nextConfig = {
         headers: noStoreHtml,
       },
       {
+        source: '/gm',
+        headers: noStoreHtml,
+      },
+      {
+        source: '/gm-premium',
+        headers: noStoreHtml,
+      },
+      {
         source: '/gaap.html',
         headers: noStoreHtml,
       },
