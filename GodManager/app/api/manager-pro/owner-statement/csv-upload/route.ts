@@ -4,8 +4,11 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseStatementCsv, statementCsvRowSourceRef } from '@/lib/ownerStatementCsv';
+import { isAppfolioGlFormat, parseAppfolioGl } from '@/lib/appfolioGlStatementCsv';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 import { isPayoutClosed } from '@/lib/statementWriteGuard';
+import { matchPropertyWithMeta } from '@/lib/tenantPaymentMatcher';
+import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +36,99 @@ function yearMonthFromDateUtc(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+const YEAR_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+async function buildAppfolioGlPreview(
+  content: string,
+  scopeUser: ReturnType<typeof toClientScopeUser>,
+  filterYearMonth: string | null,
+) {
+  const parsed = parseAppfolioGl(content);
+  const rows = filterYearMonth
+    ? parsed.rows.filter((r) => r.yearMonth === filterYearMonth)
+    : parsed.rows;
+
+  const properties = await prisma.property.findMany({
+    where: getClientScopeWhere(scopeUser),
+    select: { id: true, code: true, address: true },
+  });
+
+  const byId = new Map(properties.map((p) => [p.id, p]));
+  const unmatchedSet = new Set<string>();
+
+  type GroupAcc = {
+    propertyId: string;
+    yearMonth: string;
+    income: number;
+    expense: number;
+    lineCount: number;
+    matchScore: number;
+  };
+  const groups = new Map<string, GroupAcc>();
+
+  for (const row of rows) {
+    const meta = matchPropertyWithMeta(row.propertyKey, properties);
+    if (!meta) {
+      unmatchedSet.add(row.propertyKey);
+      continue;
+    }
+
+    const gKey = `${meta.propertyId}|${row.yearMonth}`;
+    let g = groups.get(gKey);
+    if (!g) {
+      g = {
+        propertyId: meta.propertyId,
+        yearMonth: row.yearMonth,
+        income: 0,
+        expense: 0,
+        lineCount: 0,
+        matchScore: meta.score,
+      };
+      groups.set(gKey, g);
+    }
+    g.lineCount += 1;
+    if (row.lineType === 'income') g.income += row.amount;
+    else g.expense += row.amount;
+    if (meta.score > g.matchScore) g.matchScore = meta.score;
+  }
+
+  const byProperty = [...groups.values()]
+    .map((g) => {
+      const prop = byId.get(g.propertyId);
+      return {
+        propertyId: g.propertyId,
+        propertyCode: prop?.code ?? null,
+        address: prop?.address ?? null,
+        yearMonth: g.yearMonth,
+        income: g.income,
+        expense: g.expense,
+        lineCount: g.lineCount,
+        matchScore: g.matchScore,
+      };
+    })
+    .sort((a, b) => {
+      const c = a.propertyCode?.localeCompare(b.propertyCode ?? '') ?? 0;
+      if (c !== 0) return c;
+      return a.yearMonth.localeCompare(b.yearMonth);
+    });
+
+  return {
+    ok: true as const,
+    format: 'appfolio' as const,
+    dryRun: true as const,
+    yearMonthFilter: filterYearMonth,
+    yearMonthWarning: filterYearMonth
+      ? null
+      : 'yearMonth não informado — preview inclui todos os meses do arquivo',
+    byProperty,
+    unmatched: [...unmatchedSet].sort(),
+    ignoredCount: parsed.ignoredCount,
+    parseErrors: parsed.errors,
+    totalProperties: byProperty.length,
+    totalClassifiedRows: rows.length,
+  };
+}
+
 export async function POST(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) {
@@ -55,6 +151,21 @@ export async function POST(req: Request) {
 
     const buf = Buffer.from(await file.arrayBuffer());
     const content = buf.toString('utf8');
+
+    const firstLine = content.split(/\r?\n/).find((l) => l.trim()) ?? '';
+    const yearMonthRaw =
+      url.searchParams.get('yearMonth')?.trim() ||
+      (typeof form.get('yearMonth') === 'string' ? String(form.get('yearMonth')).trim() : '');
+    const filterYearMonthNorm = yearMonthRaw ? normalizeYearMonthForWrite(yearMonthRaw) : null;
+    if (filterYearMonthNorm && !YEAR_MONTH.test(filterYearMonthNorm)) {
+      return NextResponse.json({ ok: false, error: 'Invalid yearMonth' }, { status: 400 });
+    }
+
+    if (isAppfolioGlFormat(firstLine)) {
+      // TODO Pedaço 2: gravar line items AppFolio GL — nesta fase sempre preview (dry-run).
+      const preview = await buildAppfolioGlPreview(content, scopeUser, filterYearMonthNorm);
+      return NextResponse.json(preview);
+    }
 
     const parsed = parseStatementCsv(content);
 
