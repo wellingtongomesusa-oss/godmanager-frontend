@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-23 bead089 -->
+<!-- Build: 2026-06-23 35ced04 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-date" content="2026-06-23 bead089">
+<meta name="build-date" content="2026-06-23 35ced04">
 <title>GodManager — Financial Operations</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1465,6 +1465,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="communications">COMMUNICATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('news')" id="nav-news" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;padding-left:16px"><span data-i18n="news">News</span> <span id="nav-news-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:8px;font-weight:700">0</span></div>
+ <div class="ss" onclick="nav('support')" id="nav-support" style="padding-left:16px">Suporte</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="properties" id="wrap-nav-props-rank">
@@ -2223,6 +2224,27 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <input type="file" id="norma-input" accept=".pdf" style="display:none" onchange="handleNorma(this)">
  </div>
  <div id="normas-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:18px 22px"></div>
+ </div>
+</div>
+
+<!-- SUPPORT -->
+<div class="page" id="page-support">
+ <div style="padding:16px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+   <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif">Suporte / Chamados</h2>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select id="gm-support-filter-status" onchange="gmSupportLoad()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+     <option value="">Todos os status</option>
+     <option value="open">Aberto</option>
+     <option value="in_progress">Em andamento</option>
+     <option value="answered">Respondido</option>
+     <option value="resolved">Resolvido</option>
+     <option value="closed">Fechado</option>
+    </select>
+    <button type="button" onclick="gmSupportOpenNewModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Novo chamado</button>
+   </div>
+  </div>
+  <div id="gm-support-list">Carregando...</div>
  </div>
 </div>
 
@@ -9002,7 +9024,7 @@ async function gmClientUsersCreateSubmit(e){
 }
 var GM_MENU_ACCESS_SECTIONS=[
  {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Dashboard'}]},
- {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'}]},
+ {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'},{key:'support',label:'Suporte'}]},
  {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'statement-individual',label:'Statement individual'},{key:'tenants',label:'Tenants'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
  {key:'expenses',label:'EXPENSES',items:[{key:'ltexpenses',label:'Expenses'},{key:'ltcleanings',label:'Cleanings'},{key:'vendors',label:'Vendors'},{key:'jobs',label:'Jobs'},{key:'jobs-follow',label:'Acompanhamento'}]},
  {key:'billing',label:'BILLING',items:[{key:'billing',label:'Invoice / Bill'}]},
@@ -10951,6 +10973,8 @@ function nav(r){
   if(typeof gmBillingSwitchTab==='function')gmBillingSwitchTab('receive');
   if(typeof gmBillingRenderInvoices==='function')await gmBillingRenderInvoices();
  }
+ ,
+ support:function(){if(typeof gmSupportLoad==='function')void gmSupportLoad();}
  };
  if(renders[r]) setTimeout(renders[r],30);
  try{if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();}catch(_gnb){}
@@ -12634,6 +12658,107 @@ function gmNewsLoadApi(){
   })
   .catch(function(){return{ok:false};});
 }
+
+function gmIsStaffUser(){
+ var r=typeof gmUserRole==='function'?gmUserRole():'';
+ if(!r){
+  try{var u=window.__gmCurrentUser;if(u&&u.role)r=String(u.role).toLowerCase();}catch(_gs){}
+ }
+ return r&&r!=='owner'&&r!=='tenant'&&r!=='vendor';
+}
+function gmSupportStatusLabel(st){
+ var m={open:'Aberto',in_progress:'Em andamento',answered:'Respondido',resolved:'Resolvido',closed:'Fechado'};
+ return m[String(st||'')]||String(st||'—');
+}
+function gmSupportStatusBadge(st){
+ var s=String(st||'');
+ var styles={
+  open:'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)',
+  in_progress:'background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)',
+  answered:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',
+  resolved:'background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)',
+  closed:'background:var(--cream);color:var(--ink3);border:1px solid var(--border2)'
+ };
+ var css=styles[s]||'background:var(--cream);color:var(--ink2);border:1px solid var(--border2)';
+ return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;'+css+'">'+gmSupportStatusLabel(s)+'</span>';
+}
+function gmSupportFmtDate(iso){
+ if(!iso)return '—';
+ try{
+  var d=new Date(iso);
+  if(isNaN(d.getTime()))return String(iso);
+  return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+ }catch(e){return String(iso);}
+}
+function gmSupportOpenNewModal(){
+ if(typeof showToast==='function')showToast('Modal de novo chamado em breve.','info');
+ else alert('Modal de novo chamado em breve.');
+}
+function gmSupportOpenTicket(id){
+ if(typeof showToast==='function')showToast('Chat do chamado em breve.','info');
+ else alert('Chat do chamado em breve. ID: '+String(id||''));
+ try{console.log('[gmSupport] open ticket',id);}catch(_e){}
+}
+async function gmSupportLoad(){
+ var el=document.getElementById('gm-support-list');
+ if(!el)return;
+ el.textContent='Carregando...';
+ var filtEl=document.getElementById('gm-support-filter-status');
+ var filt=filtEl?String(filtEl.value||'').trim():'';
+ var url='/api/support-tickets';
+ if(filt)url+='?status='+encodeURIComponent(filt);
+ try{
+  var res=await fetch(url,{credentials:'include',cache:'no-store'});
+  if(!res.ok){
+   el.innerHTML='<div style="padding:16px;color:var(--ink3);font-size:13px">Não foi possível carregar os chamados.</div>';
+   return;
+  }
+  var data=await res.json().catch(function(){return null;});
+  if(!data||data.ok!==true||!Array.isArray(data.tickets)){
+   el.innerHTML='<div style="padding:16px;color:var(--ink3);font-size:13px">Não foi possível carregar os chamados.</div>';
+   return;
+  }
+  var rows=data.tickets;
+  if(!rows.length){
+   el.innerHTML='<div style="padding:16px;color:var(--ink3);font-size:13px">Nenhum chamado ainda.</div>';
+   return;
+  }
+  var staff=gmIsStaffUser();
+  var th='padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)';
+  var html='<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">';
+  html+='<th style="'+th+'">Código</th><th style="'+th+'">Assunto</th><th style="'+th+'">Status</th>';
+  if(staff)html+='<th style="'+th+'">Aberto por</th>';
+  html+='<th style="'+th+'">Última msg</th></tr></thead><tbody>';
+  rows.forEach(function(t){
+   if(!t)return;
+   var id=String(t.id||'');
+   var code=String(t.code||'').replace(/</g,'&lt;');
+   var subj=String(t.subject||'').replace(/</g,'&lt;');
+   var who='';
+   if(staff){
+    var nm=String(t.requesterName||'').replace(/</g,'&lt;');
+    var em=String(t.requesterEmail||'').replace(/</g,'&lt;');
+    who=nm||(em||'—');
+    if(nm&&em)who=nm+' <span style="color:var(--ink3);font-size:11px">'+em+'</span>';
+   }
+   html+='<tr onclick="gmSupportOpenTicket(\''+id.replace(/'/g,'\\\'')+'\')" style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'transparent\'">';
+   html+='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--ink2)">'+code+'</td>';
+   html+='<td style="padding:10px 12px;font-size:12px;color:var(--ink)">'+subj+'</td>';
+   html+='<td style="padding:10px 12px">'+gmSupportStatusBadge(t.status)+'</td>';
+   if(staff)html+='<td style="padding:10px 12px;font-size:12px;color:var(--ink2)">'+who+'</td>';
+   html+='<td style="padding:10px 12px;font-size:11px;color:var(--ink3)">'+gmSupportFmtDate(t.lastMessageAt)+'</td>';
+   html+='</tr>';
+  });
+  html+='</tbody></table></div></div>';
+  el.innerHTML=html;
+ }catch(e){
+  console.warn('[gmSupportLoad]',e);
+  el.innerHTML='<div style="padding:16px;color:var(--ink3);font-size:13px">Não foi possível carregar os chamados.</div>';
+ }
+}
+window.gmSupportLoad=gmSupportLoad;
+window.gmSupportOpenNewModal=gmSupportOpenNewModal;
+window.gmSupportOpenTicket=gmSupportOpenTicket;
 
 function gmNewsPropertyCodeFromJob(jobId){
  try{
