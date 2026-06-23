@@ -5033,15 +5033,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
  <!-- CSV modal -->
  <div id="osd-csv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10070;padding:24px;overflow:auto;box-sizing:border-box" onclick="if(event.target===this)osdCsvClose()">
- <div onclick="event.stopPropagation()" style="max-width:520px;margin:48px auto;background:var(--paper);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.14)">
- <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:var(--ink)">Upload CSV — Owner Statement</div>
+ <div id="osd-csv-modal-panel" onclick="event.stopPropagation()" style="max-width:520px;margin:48px auto;background:var(--paper);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.14)">
+ <div id="osd-csv-modal-title" style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:var(--ink)">Upload CSV — Owner Statement</div>
  <div style="padding:16px 18px;font-size:12px;color:var(--ink2);line-height:1.45">
  <div id="osd-csv-summary"></div>
  <pre id="osd-csv-errors" style="margin-top:12px;padding:12px;background:var(--cream);border-radius:8px;font-size:11px;color:var(--red);white-space:pre-wrap;display:none;max-height:220px;overflow:auto;font-family:'JetBrains Mono',monospace"></pre>
  </div>
- <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;background:var(--sand)">
- <button type="button" onclick="osdCsvClose()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Fechar</button>
+ <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;align-items:center;background:var(--sand)">
+ <span id="osd-csv-appfolio-note" style="display:none;font-size:11px;color:var(--ink3);margin-right:auto">Gravação no próximo passo</span>
+ <button type="button" onclick="osdCsvClose()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
  <button type="button" id="osd-csv-confirm" onclick="osdCsvConfirm()" style="display:none;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Confirmar upload</button>
+ <button type="button" id="osd-csv-confirm-appfolio" onclick="if(typeof osdCsvConfirmAppfolio==='function')osdCsvConfirmAppfolio()" style="display:none;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:not-allowed;font-family:'Inter',sans-serif;opacity:0.55" disabled title="Gravação no próximo passo">Confirmar importação</button>
  </div>
  </div>
  </div>
@@ -11042,6 +11044,95 @@ window.osCurrentEditingId=null;
 /** Owner Statement — Detalhe (osd*) */
 window.OSD_STATE={currentDetail:null,detailLines:[],propertiesCache:[]};
 window.osdCsvLastFile=null;
+window.osdCsvLastFormat=null;
+
+window.osdCsvResetModalChrome=function(){
+ var title=document.getElementById('osd-csv-modal-title');
+ var panel=document.getElementById('osd-csv-modal-panel');
+ var note=document.getElementById('osd-csv-appfolio-note');
+ var btnGm=document.getElementById('osd-csv-confirm');
+ var btnAf=document.getElementById('osd-csv-confirm-appfolio');
+ if(title)title.textContent='Upload CSV — Owner Statement';
+ if(panel)panel.style.maxWidth='520px';
+ if(note)note.style.display='none';
+ if(btnGm)btnGm.style.display='none';
+ if(btnAf){btnAf.style.display='none';btnAf.disabled=true;btnAf.style.opacity='0.55';btnAf.style.cursor='not-allowed';}
+};
+
+window.osdCsvRenderAppfolioPreview=function(data){
+ var sum=document.getElementById('osd-csv-summary');
+ var title=document.getElementById('osd-csv-modal-title');
+ var panel=document.getElementById('osd-csv-modal-panel');
+ var note=document.getElementById('osd-csv-appfolio-note');
+ var btnAf=document.getElementById('osd-csv-confirm-appfolio');
+ if(!sum)return;
+ var ym=data.yearMonthFilter||((document.getElementById('osd-period')&&document.getElementById('osd-period').value)||'');
+ var periodLabel=typeof osdFmtPeriod==='function'?osdFmtPeriod(ym):ym;
+ var esc=window.osdEscHtml;
+ var fmt=window.osdFmtCurrency;
+ if(title)title.textContent='Importação AppFolio — '+periodLabel;
+ if(panel)panel.style.maxWidth='920px';
+ var totalProps=Number(data.totalProperties)||0;
+ var ignored=Number(data.ignoredCount)||0;
+ var rows=(data.byProperty||[]).slice().sort(function(a,b){
+  var c=(a.propertyCode||'').localeCompare(b.propertyCode||'');
+  if(c!==0)return c;
+  return String(a.yearMonth||'').localeCompare(String(b.yearMonth||''));
+ });
+ var html='';
+ html+='<div style="font-weight:600;color:var(--ink);margin-bottom:6px">Importação AppFolio — '+esc(periodLabel)+'</div>';
+ html+='<div style="font-size:11px;color:var(--ink2);margin-bottom:12px">'+esc(String(totalProps))+' propriedades com movimento · '+esc(String(ignored))+' linhas de caixa ignoradas</div>';
+ if(data.yearMonthWarning){
+  html+='<div style="font-size:11px;color:var(--amber);margin-bottom:10px">'+esc(String(data.yearMonthWarning))+'</div>';
+ }
+ html+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;border-collapse:collapse;min-width:640px;font-size:11px">';
+ html+='<thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">';
+ html+='<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Código</th>';
+ html+='<th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Endereço</th>';
+ html+='<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--green)">Receitas</th>';
+ html+='<th style="padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--red)">Despesas</th>';
+ html+='<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Lançamentos</th>';
+ html+='<th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3)">Status</th>';
+ html+='</tr></thead><tbody>';
+ for(var i=0;i<rows.length;i++){
+  var r=rows[i];
+  var score=Number(r.matchScore);
+  var addr=esc(String(r.address||'—'));
+  if(score<1&&Number.isFinite(score)){
+   addr+=' <span style="font-size:10px;color:var(--ink3)">(match aproximado)</span>';
+  }
+  // TODO Pedaço 3: status FECHADA quando backend enviar closed:true no preview
+  var statusHtml='<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(107,114,128,.12);color:var(--ink3)">Pronta</span>';
+  html+='<tr style="border-bottom:1px solid var(--border)">';
+  html+='<td style="padding:8px 10px;font-family:JetBrains Mono,monospace;color:var(--ink)">'+esc(String(r.propertyCode||'—'))+'</td>';
+  html+='<td style="padding:8px 10px;color:var(--ink2);max-width:240px">'+addr+'</td>';
+  html+='<td style="padding:8px 10px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--green)">'+esc(fmt(r.income||0))+'</td>';
+  html+='<td style="padding:8px 10px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--red)">'+esc(fmt(r.expense||0))+'</td>';
+  html+='<td style="padding:8px 10px;text-align:center;color:var(--ink2)">'+esc(String(r.lineCount!=null?r.lineCount:'—'))+'</td>';
+  html+='<td style="padding:8px 10px;text-align:center">'+statusHtml+'</td>';
+  html+='</tr>';
+ }
+ if(!rows.length){
+  html+='<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3)">Nenhuma propriedade com movimento neste período.</td></tr>';
+ }
+ html+='</tbody></table></div>';
+ var unmatched=data.unmatched||[];
+ if(unmatched.length){
+  html+='<div style="margin-top:14px;padding:10px 12px;background:rgba(201,169,110,.12);border:1px solid var(--amber-bd);border-radius:8px;font-size:11px;color:var(--ink2);line-height:1.45">';
+  html+='<strong style="color:var(--ink)">Não casaram com nenhuma propriedade:</strong> ';
+  html+=esc(unmatched.join(' · '));
+  html+='<div style="font-size:10px;color:var(--ink3);margin-top:4px">Estes registros não serão importados.</div>';
+  html+='</div>';
+ }
+ sum.innerHTML=html;
+ if(note)note.style.display='inline';
+ if(btnAf){btnAf.style.display='inline-block';btnAf.disabled=true;btnAf.style.opacity='0.55';btnAf.style.cursor='not-allowed';}
+};
+
+window.osdCsvConfirmAppfolio=function(){
+ if(typeof showToast==='function')showToast('Gravação AppFolio GL — em breve (Pedaço 3)','error');
+ else alert('Gravação AppFolio GL — em breve (Pedaço 3)');
+};
 
 window.osdYearMonthCurrent=function(){
  var d=new Date();
@@ -12153,8 +12244,9 @@ window.osdCsvPick=function(){
 
 window.osdCsvClose=function(){
  var m=document.getElementById('osd-csv-modal');if(m)m.style.display='none';
- var btn=document.getElementById('osd-csv-confirm');if(btn)btn.style.display='none';
+ window.osdCsvResetModalChrome();
  window.osdCsvLastFile=null;
+ window.osdCsvLastFormat=null;
 };
 
 window.osdCsvOnChange=function(ev){
@@ -12163,13 +12255,17 @@ window.osdCsvOnChange=function(ev){
  inp.value='';
  if(!f)return;
  window.osdCsvLastFile=f;
- var fd=new FormData();fd.append('file',f);
- fetch('/api/manager-pro/owner-statement/csv-upload?dryRun=true',{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};});}).then(function(x){
+ var ym=(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var fd=new FormData();
+ fd.append('file',f);
+ fd.append('yearMonth',ym);
+ var uploadUrl='/api/manager-pro/owner-statement/csv-upload?dryRun=true&yearMonth='+encodeURIComponent(ym);
+ fetch(uploadUrl,{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};});}).then(function(x){
   var modal=document.getElementById('osd-csv-modal');
   var sum=document.getElementById('osd-csv-summary');
   var errEl=document.getElementById('osd-csv-errors');
   var btn=document.getElementById('osd-csv-confirm');
-  if(btn)btn.style.display='none';
+  window.osdCsvResetModalChrome();
   if(!modal||!sum)return;
   modal.style.display='block';
   if(!x.ok||!x.j.ok){
@@ -12177,6 +12273,13 @@ window.osdCsvOnChange=function(ev){
    if(errEl){errEl.style.display='none';errEl.textContent='';}
    return;
   }
+  if(x.j.format==='appfolio'){
+   window.osdCsvLastFormat='appfolio';
+   window.osdCsvRenderAppfolioPreview(x.j);
+   if(errEl){errEl.style.display='none';errEl.textContent='';}
+   return;
+  }
+  window.osdCsvLastFormat='godmanager';
   var s=x.j.summary||{};
   sum.innerHTML='Pré-visualização (dry run)<br><span style="color:var(--ink2)">Linhas totais: '+window.osdEscHtml(String(s.totalLines!=null?s.totalLines:'—'))+' · válidas: '+window.osdEscHtml(String(s.validLines!=null?s.validLines:'—'))+' · erros: '+window.osdEscHtml(String(s.errorLines!=null?s.errorLines:'—'))+'</span>';
   var errs=x.j.errors||[];
@@ -12192,6 +12295,10 @@ window.osdCsvOnChange=function(ev){
 };
 
 window.osdCsvConfirm=function(){
+ if(window.osdCsvLastFormat==='appfolio'){
+  window.osdCsvConfirmAppfolio();
+  return;
+ }
  var f=window.osdCsvLastFile;
  if(!f){alert('Nenhum ficheiro.');return;}
  var fd=new FormData();fd.append('file',f);
