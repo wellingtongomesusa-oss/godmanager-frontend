@@ -12797,10 +12797,95 @@ async function gmSupportLoad(){
   el.innerHTML='<div style="padding:16px;color:var(--ink3);font-size:13px">Não foi possível carregar os chamados.</div>';
  }
 }
+function gmSupportPageActive(){
+ try{
+  var p=document.getElementById('page-support');
+  return p&&(p.classList.contains('active')||p.offsetParent!==null);
+ }catch(_pa){return false;}
+}
+function gmSupportFabSyncVisibility(){
+ var wrap=document.getElementById('gm-support-fab-wrap');
+ if(!wrap)return;
+ var u=window.__gmCurrentUser;
+ wrap.style.display=(u&&u.id)?'block':'none';
+}
+function gmSupportFabToggle(){
+ var panel=document.getElementById('gm-support-chat-panel');
+ if(!panel)return;
+ var open=panel.style.display==='flex';
+ panel.style.display=open?'none':'flex';
+ if(!open){
+  var inp=document.getElementById('gm-support-chat-input');
+  if(inp)setTimeout(function(){try{inp.focus();}catch(_f){}},50);
+ }
+}
+function gmSupportChatPrefill(txt){
+ var inp=document.getElementById('gm-support-chat-input');
+ if(!inp)return;
+ inp.value=String(txt||'');
+ try{inp.focus();}catch(_pf){}
+}
+function gmSupportChatAppendMsg(text,who){
+ var box=document.getElementById('gm-support-chat-msgs');
+ if(!box)return;
+ var w=who==='user'?'user':'system';
+ var safe=String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+ var align=w==='user'?'flex-end':'flex-start';
+ var bubble=w==='user'
+  ?'background:var(--amber);color:#fff;border-radius:12px 12px 2px 12px;padding:8px 12px;font-size:12px;line-height:1.45;max-width:88%'
+  :'background:var(--cream);color:var(--ink2);border:1px solid var(--border);border-radius:12px 12px 12px 2px;padding:8px 12px;font-size:12px;line-height:1.45;max-width:88%';
+ var row=document.createElement('div');
+ row.style.cssText='display:flex;justify-content:'+align+';margin-bottom:8px';
+ row.innerHTML='<div style="'+bubble+'">'+safe+'</div>';
+ box.appendChild(row);
+ box.scrollTop=box.scrollHeight;
+}
+async function gmSupportChatSend(){
+ var inp=document.getElementById('gm-support-chat-input');
+ var btn=document.getElementById('gm-support-chat-send');
+ if(!inp)return;
+ var msg=String(inp.value||'').trim();
+ if(!msg){
+  try{
+   inp.style.transition='transform .12s ease';
+   inp.style.transform='translateX(4px)';
+   setTimeout(function(){inp.style.transform='';},150);
+  }catch(_sh){}
+  return;
+ }
+ if(btn){btn.disabled=true;}
+ gmSupportChatAppendMsg(msg,'user');
+ inp.value='';
+ try{
+  var subj=msg.length>60?msg.slice(0,60):msg;
+  var res=await fetch('/api/support-tickets',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:subj,body:msg})});
+  var data=await res.json().catch(function(){return null;});
+  if(res.ok&&data&&data.ok&&data.ticket){
+   var code=String(data.ticket.code||'');
+   gmSupportChatAppendMsg('Recebemos seu chamado '+code+'. Nossa equipe vai responder por aqui em breve. Voce tambem acompanha em Suporte no menu.','system');
+   if(gmSupportPageActive()&&typeof gmSupportLoad==='function')void gmSupportLoad();
+  }else{
+   gmSupportChatAppendMsg('Nao foi possivel abrir o chamado agora. Tente de novo em instantes.','system');
+  }
+ }catch(e){
+  console.warn('[gmSupportChatSend]',e);
+  gmSupportChatAppendMsg('Nao foi possivel abrir o chamado agora. Tente de novo em instantes.','system');
+ }
+ if(btn){btn.disabled=false;}
+}
 window.gmSupportLoad=gmSupportLoad;
 window.gmSupportLoadStats=gmSupportLoadStats;
 window.gmSupportOpenNewModal=gmSupportOpenNewModal;
 window.gmSupportOpenTicket=gmSupportOpenTicket;
+window.gmSupportFabToggle=gmSupportFabToggle;
+window.gmSupportChatPrefill=gmSupportChatPrefill;
+window.gmSupportChatAppendMsg=gmSupportChatAppendMsg;
+window.gmSupportChatSend=gmSupportChatSend;
+window.gmSupportFabSyncVisibility=gmSupportFabSyncVisibility;
+try{
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){gmSupportFabSyncVisibility();});
+ else gmSupportFabSyncVisibility();
+}catch(_sfInit){}
 
 function gmNewsPropertyCodeFromJob(jobId){
  try{
@@ -29486,6 +29571,7 @@ function gmClearTenantDataCaches(reason){
   window._pmExpenseRows=[];
   window.__gmPropsOwnerSyncKey=null;
   window.__gmPropertiesPendingAuthRefresh=false;
+  try{if(typeof gmSupportFabSyncVisibility==='function')gmSupportFabSyncVisibility();}catch(_sfc){}
  }catch(_m){}
  if(reason)console.info('[gmClearTenantDataCaches]',reason,'whitelist removidas:',cleared);
 }
@@ -29523,6 +29609,7 @@ async function gmAuthHydrateUserBadge(){
   if(roleEl)roleEl.textContent=roleLabel||u.email||'';
   // Cache rapido
   window.__gmCurrentUser=u;
+  try{if(typeof gmSupportFabSyncVisibility==='function')gmSupportFabSyncVisibility();}catch(_sfa){}
   try{if(typeof gmJobLsMigrateLegacyOnce==='function')gmJobLsMigrateLegacyOnce();}catch(_mj2){}
   try{if(typeof gmApplyBrandingFromSessionUser==='function')gmApplyBrandingFromSessionUser();}catch(_eBr){}
   // Re-render Jobs se for a página atual (resolve race condition do botão Finalizar/Reativar)
@@ -36793,6 +36880,34 @@ window.gmFormsReceivedRender=async function(){
   <div>© 2026 Godroox LLC. All rights reserved. GodManager™ is a trademark of Godroox LLC.</div>
   <div style="margin-top:6px"><a href="/terms" style="color:var(--ink2);margin-right:14px;text-decoration:none">Terms</a><a href="/privacy" style="color:var(--ink2);text-decoration:none">Privacy</a></div>
 </footer>
+<style>
+#gm-support-fab-wrap{position:fixed;z-index:9005;bottom:20px;right:16px}
+@media(max-width:900px){#gm-support-fab-wrap{bottom:calc(68px + env(safe-area-inset-bottom,0px));right:12px}}
+#gm-support-chat-panel{display:none;position:absolute;bottom:68px;right:0;width:340px;max-width:calc(100vw - 24px);height:440px;max-height:calc(100vh - 120px);background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(26,26,28,.12);flex-direction:column;overflow:hidden;font-family:'Inter',sans-serif}
+#gm-support-chat-msgs{flex:1;overflow-y:auto;padding:12px;background:var(--sand)}
+#gm-support-chat-input{flex:1;min-height:44px;max-height:88px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--paper);color:var(--ink);resize:none;outline:none}
+#gm-support-chat-send:disabled{opacity:.55;cursor:not-allowed}
+</style>
+<div id="gm-support-fab-wrap" style="display:none">
+ <div id="gm-support-chat-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--cream)">
+   <div style="font-size:13px;font-weight:600;color:var(--ink)">Suporte</div>
+   <button type="button" onclick="gmSupportFabToggle()" aria-label="Fechar" style="background:transparent;border:none;color:var(--ink3);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px">×</button>
+  </div>
+  <div id="gm-support-chat-msgs"></div>
+  <div style="padding:8px 10px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px">
+   <button type="button" onclick="gmSupportChatPrefill('Problema ao salvar')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:12px;background:var(--paper);color:var(--ink2);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif">Problema ao salvar</button>
+   <button type="button" onclick="gmSupportChatPrefill('Duvida de cobranca')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:12px;background:var(--paper);color:var(--ink2);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif">Duvida de cobranca</button>
+   <button type="button" onclick="gmSupportChatPrefill('Erro na tela')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:12px;background:var(--paper);color:var(--ink2);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif">Erro na tela</button>
+   <button type="button" onclick="gmSupportChatPrefill('Outro')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:12px;background:var(--paper);color:var(--ink2);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif">Outro</button>
+  </div>
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--paper)">
+   <textarea id="gm-support-chat-input" rows="2" placeholder="Descreva seu problema…" style="flex:1"></textarea>
+   <button type="button" id="gm-support-chat-send" onclick="gmSupportChatSend()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Enviar</button>
+  </div>
+ </div>
+ <button type="button" id="gm-support-fab" onclick="gmSupportFabToggle()" aria-label="Suporte" title="Suporte" style="width:56px;height:56px;border-radius:50%;border:1px solid var(--border);background:var(--paper);color:var(--ink2);font-size:22px;line-height:1;cursor:pointer;box-shadow:0 4px 16px rgba(26,26,28,.1);display:flex;align-items:center;justify-content:center">💬</button>
+</div>
 </body>
 </html>
 <!-- rebuild 1778238743 -->
