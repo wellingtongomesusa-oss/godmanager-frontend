@@ -19454,7 +19454,8 @@ window.gmPropertiesFetchFromApi=async function(){
     maintenanceBy:meta.maintenanceBy||'mp',
     statusOverride:meta.statusOverride||null,
     hoaAdmin:!!p.hoaAdmin,
-    _apiId:p.id
+    _apiId:p.id,
+    updatedAt:p.updatedAt?String(p.updatedAt):''
    };
   });
   return gmPropertiesFilterGhostRows(mapped).sort(ltpComparePropertiesByHouseNumber);
@@ -19483,10 +19484,23 @@ window.gmPropertiesPushToApi=async function(item){
   return res.ok;
  }catch(e){console.warn('gmPropertiesPushToApi',e);return false;}
 };
+window.gmPropertiesFingerprint=function(items){
+ try{
+  if(!Array.isArray(items))return '';
+  var parts=items.map(function(p){return String((p&&(p.id||p.code))||'')+':'+String((p&&p.updatedAt)||'');});
+  parts.sort();
+  return String(items.length)+'|'+parts.join(',');
+ }catch(e){return String(Date.now());}
+};
 window.gmPropertiesRefresh=async function(opts){
  opts=opts||{};
+ var beforeFp=(opts&&opts.compareFingerprint)?window.gmPropertiesFingerprint((typeof window.gmPropertiesLoad==='function')?window.gmPropertiesLoad():[]):null;
  var fromApi=await window.gmPropertiesFetchFromApi();
  if(fromApi===null||!Array.isArray(fromApi))return false;
+ if(opts&&opts.compareFingerprint){
+  var afterFp=window.gmPropertiesFingerprint(fromApi);
+  if(beforeFp===afterFp){return true;}
+ }
  // Substitui localStorage com verdade do servidor (vazio = carteira sem propriedades, nao erro)
  try{window.gmPropertiesSave(fromApi);}catch(e){console.warn('gmPropertiesRefresh save',e);}
  // Re-render se houver funcao global de render da tabela Properties
@@ -19566,6 +19580,7 @@ window.gmPropertiesToUi=function(p){
   approver:p.approver||'',
   notes:p.notes||'',
   statusOverride:(typeof p.statusOverride==='string'&&['ALG','VG','ADM','WTC','INT'].indexOf(p.statusOverride)!==-1)?p.statusOverride:null,
+  updatedAt:p.updatedAt?String(p.updatedAt):(p.updatedAt===0?'':''),
   _src:p
  };
 };
@@ -23875,6 +23890,22 @@ window.addEventListener('DOMContentLoaded',()=>{
  else renderMsgs();
  if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();
  try{window.__gmNewsBadgeInterval=setInterval(function(){if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();},120000);}catch(_gni){}
+ if(!window.__gmPropertiesVisibilityBound){
+  window.__gmPropertiesVisibilityBound=true;
+  document.addEventListener('visibilitychange',function(){
+   if(!document.hidden&&typeof window.gmPropertiesRefresh==='function'){
+    try{void window.gmPropertiesRefresh({compareFingerprint:true});}catch(_e){}
+   }
+  });
+ }
+ if(!window.__gmPropertiesPollInterval){
+  window.__gmPropertiesPollInterval=setInterval(function(){
+   if(document.hidden)return;
+   if(typeof window.gmPropertiesRefresh==='function'){
+    try{void window.gmPropertiesRefresh({compareFingerprint:true});}catch(_e){}
+   }
+  },60000);
+ }
  renderNormas();
  renderLicenses();
  // load data
