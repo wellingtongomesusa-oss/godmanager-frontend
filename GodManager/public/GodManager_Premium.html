@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-23 35ced04 -->
+<!-- Build: 2026-06-22 dev -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-date" content="2026-06-23 35ced04">
+<meta name="build-date" content="2026-06-22 dev">
 <title>GodManager — Financial Operations</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2243,6 +2243,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </select>
     <button type="button" onclick="gmSupportOpenNewModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Novo chamado</button>
    </div>
+  </div>
+  <div id="gm-support-cards" class="gm-ix-kpi-grid" style="margin-bottom:16px">
+   <div class="gm-ix-kpi k4"><div class="k-l">Chamados Abertos</div><div class="k-v" id="gm-sup-card-abertos">—</div><div class="k-s">status aberto</div><div class="k-bar"></div></div>
+   <div class="gm-ix-kpi"><div class="k-l">Pendentes</div><div class="k-v" id="gm-sup-card-pendentes">—</div><div class="k-s">aberto + em andamento</div><div class="k-bar"></div></div>
+   <div class="gm-ix-kpi k3"><div class="k-l">Resolvidos</div><div class="k-v" id="gm-sup-card-resolvidos">—</div><div class="k-s">resolvido + fechado</div><div class="k-bar"></div></div>
+   <div class="gm-ix-kpi k2"><div class="k-l">Tempo Médio de Resposta</div><div class="k-v" id="gm-sup-card-tmedio">—</div><div class="k-s">1ª resposta staff</div><div class="k-bar"></div></div>
   </div>
   <div id="gm-support-list">Carregando...</div>
  </div>
@@ -12699,9 +12705,44 @@ function gmSupportOpenTicket(id){
  else alert('Chat do chamado em breve. ID: '+String(id||''));
  try{console.log('[gmSupport] open ticket',id);}catch(_e){}
 }
+function gmSupportFmtTmedio(horas){
+ if(horas==null||horas==='')return '—';
+ var h=Number(horas);
+ if(!isFinite(h))return '—';
+ if(h<1)return String(Math.round(h*60))+'min';
+ return String(h)+'h';
+}
+function gmSupportResetStatsCards(){
+ var ids=['gm-sup-card-abertos','gm-sup-card-pendentes','gm-sup-card-resolvidos','gm-sup-card-tmedio'];
+ ids.forEach(function(id){
+  var el=document.getElementById(id);
+  if(el)el.textContent='—';
+ });
+}
+async function gmSupportLoadStats(){
+ gmSupportResetStatsCards();
+ try{
+  var res=await fetch('/api/support-tickets/stats',{credentials:'include',cache:'no-store'});
+  if(!res.ok)return;
+  var data=await res.json().catch(function(){return null;});
+  if(!data||data.ok!==true||!data.stats)return;
+  var s=data.stats;
+  var elA=document.getElementById('gm-sup-card-abertos');
+  if(elA)elA.textContent=s.abertos!=null?String(s.abertos):'—';
+  var elP=document.getElementById('gm-sup-card-pendentes');
+  if(elP)elP.textContent=s.pendentes!=null?String(s.pendentes):'—';
+  var elR=document.getElementById('gm-sup-card-resolvidos');
+  if(elR)elR.textContent=s.resolvidos!=null?String(s.resolvidos):'—';
+  var elT=document.getElementById('gm-sup-card-tmedio');
+  if(elT)elT.textContent=gmSupportFmtTmedio(s.tempoMedioRespostaHoras);
+ }catch(e){
+  console.warn('[gmSupportLoadStats]',e);
+ }
+}
 async function gmSupportLoad(){
  var el=document.getElementById('gm-support-list');
  if(!el)return;
+ if(typeof gmSupportLoadStats==='function')void gmSupportLoadStats();
  el.textContent='Carregando...';
  var filtEl=document.getElementById('gm-support-filter-status');
  var filt=filtEl?String(filtEl.value||'').trim():'';
@@ -12757,6 +12798,7 @@ async function gmSupportLoad(){
  }
 }
 window.gmSupportLoad=gmSupportLoad;
+window.gmSupportLoadStats=gmSupportLoadStats;
 window.gmSupportOpenNewModal=gmSupportOpenNewModal;
 window.gmSupportOpenTicket=gmSupportOpenTicket;
 
