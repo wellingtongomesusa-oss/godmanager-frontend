@@ -163,6 +163,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
     }
 
+    if (body.expectedUpdatedAt) {
+      const expected = String(body.expectedUpdatedAt);
+      const current = existing.updatedAt.toISOString();
+      if (expected !== current) {
+        return NextResponse.json(
+          { ok: false, error: 'version_conflict', currentUpdatedAt: current },
+          { status: 409 }
+        );
+      }
+    }
+
     if (body.address !== undefined) {
       const addr = String(body.address).trim();
       if (addr) {

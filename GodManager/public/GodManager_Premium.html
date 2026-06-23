@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-22 dev -->
+<!-- Build: 2026-06-23 bead089 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build-date" content="2026-06-22 dev">
+<meta name="build-date" content="2026-06-23 bead089">
 <title>GodManager — Financial Operations</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13918,6 +13918,7 @@ function ltSaveRecord(){
    merged.photos=rec.photos;
    merged.ownerFullName=rec.ownerFullName;merged.ownerTaxId=rec.ownerTaxId;merged.ownerDob=rec.ownerDob;merged.ownerEmail=rec.ownerEmail;merged.ownerPhone=rec.ownerPhone;merged.ownerMailingAddr=rec.ownerMailingAddr;
    merged.bankName=rec.bankName;merged.bankType=rec.bankType;merged.bankRouting=rec.bankRouting;merged.bankAccount=rec.bankAccount;merged.bankHolder=rec.bankHolder;merged.bankAddress=rec.bankAddress;merged.bankMethod=rec.bankMethod;
+   var __ltExpectedUpdatedAt=merged.updatedAt?String(merged.updatedAt):'';
    merged.updatedAt=new Date().toISOString();
    if(gmIdx>-1){gmArr[gmIdx]=merged;}else{gmArr.push(merged);}
    window.gmPropertiesSave(gmArr);
@@ -13965,11 +13966,29 @@ function ltSaveRecord(){
        ownerPhone:merged.ownerPhone||''
       }
      };
+     if(__ltExpectedUpdatedAt){payload.expectedUpdatedAt=__ltExpectedUpdatedAt;}
      var apiOk=false;
      if(apiId){
       var patchRes=await fetch('/api/properties/'+apiId,{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+      if(patchRes.status===409){
+       var __lt409Msg='Esta casa foi atualizada por outra pessoa enquanto você editava. Recarregando os dados — refaça sua alteração.';
+       if(typeof showToast==='function')showToast(__lt409Msg,'error');
+       else alert(__lt409Msg);
+       if(typeof window.gmPropertiesRefresh==='function'){try{await window.gmPropertiesRefresh();}catch(_lt409){}}
+       return;
+      }
       apiOk=patchRes.ok;
-      if(!patchRes.ok){var eb=await patchRes.json().catch(function(){return{};});console.warn('ltSaveRecord PATCH',patchRes.status,eb);}
+      if(patchRes.ok){
+       var __ltPatchBody=await patchRes.json().catch(function(){return null;});
+       if(__ltPatchBody&&__ltPatchBody.property&&__ltPatchBody.property.updatedAt){
+        merged.updatedAt=String(__ltPatchBody.property.updatedAt);
+        try{
+         var __ltGmArr=window.gmPropertiesLoad()||[];
+         var __ltGi=__ltGmArr.findIndex(function(x){return x&&String(x.id)===String(merged.id);});
+         if(__ltGi>-1){__ltGmArr[__ltGi].updatedAt=merged.updatedAt;window.gmPropertiesSave(__ltGmArr);}
+        }catch(_ltUp){}
+       }
+      }else{var eb=await patchRes.json().catch(function(){return{};});console.warn('ltSaveRecord PATCH',patchRes.status,eb);}
      } else {
       // Sem apiId -> POST novo (casa nova no modal LT)
       var scopeP=(typeof window.gmPropertiesClientPayload==='function')?window.gmPropertiesClientPayload():{};
@@ -22512,6 +22531,8 @@ async function ltpSaveNewProperty(){
    alert(errMsg);
    return;
   }
+  var __editCached=(Array.isArray(gmArrCur)?gmArrCur:[]).find(function(p){return p&&(String(p.id)===String(ltEditingId)||String(p.code)===String(ltEditingId));});
+  if(__editCached&&__editCached.updatedAt){apiPayload.expectedUpdatedAt=__editCached.updatedAt;}
  }
  var apiOk=false;
  var apiBody=null;
@@ -22531,6 +22552,14 @@ async function ltpSaveNewProperty(){
    method='POST';
   }
   var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(apiPayload)});
+  if(res.status===409){
+   var __ltp409Msg='Esta casa foi atualizada por outra pessoa enquanto você editava. Recarregando os dados — refaça sua alteração.';
+   if(typeof showToast==='function')showToast(__ltp409Msg,'error');
+   else alert(__ltp409Msg);
+   if(typeof window.gmPropertiesRefresh==='function'){try{await window.gmPropertiesRefresh();}catch(_ltp409){}}
+   try{await ltpRender();ltRender();}catch(_ltp409r){}
+   return;
+  }
   apiOk=res.ok;
   if(res.ok){apiBody=await res.json().catch(function(){return null;});}
   else{var eb=await res.json().catch(function(){return{};});console.warn('ltpSaveNewProperty API',res.status,eb);}
