@@ -15806,6 +15806,7 @@ function ltNexpPmVendorChange(){
  var dp=o && o.getAttribute('data-pkg');
  if(dp) ltNexpSetBothPacoteSelects(dp);
  ltNexpPmRecalc();
+ if(typeof ltNexpApplyVendorDefaultQueue==='function')ltNexpApplyVendorDefaultQueue(sel.value);
 }
 function ltNexpOptionalPmVendorChange(){
  var sel=document.getElementById('lt-nexp-optional-pm-vendor');
@@ -15814,6 +15815,7 @@ function ltNexpOptionalPmVendorChange(){
  var dp=o && o.getAttribute('data-pkg');
  var d=document.getElementById('lt-pacote-sel-detalhe');
  if(dp && d) d.value=dp;
+ if(typeof ltNexpApplyVendorDefaultQueue==='function')ltNexpApplyVendorDefaultQueue(sel.value);
 }
 function ltNexpPmRecalc(){
  var vc=parseFloat((document.getElementById('lt-nexp-pm-vendor-cost')||{}).value)||0;
@@ -18148,6 +18150,30 @@ function ltNexpSyncCatFromQueue(){
 }
 function ltNexpOnQueueChange(){
  if(window.__ltNewExpJobContext&&typeof ltNexpSyncCatFromQueue==='function')ltNexpSyncCatFromQueue();
+}
+function gmVendorDefaultQueue(vendorId){
+ var id=String(vendorId||'').trim();
+ if(!id)return null;
+ var list=(typeof gvLoad==='function')?gvLoad():[];
+ var v=null;
+ for(var i=0;i<list.length;i++){
+  if(list[i]&&String(list[i].id)===id){v=list[i];break;}
+ }
+ if(!v||!v.metadata||typeof v.metadata!=='object'||Array.isArray(v.metadata))return null;
+ var raw=v.metadata.defaultQueue!=null?v.metadata.defaultQueue:v.metadata.default_queue;
+ if(raw==null||raw==='')return null;
+ var q=String(raw).trim();
+ if(q==='maintenance'||q==='supervisor'||q==='supervisor_2'||q==='vendor')return q;
+ return null;
+}
+window.gmVendorDefaultQueue=gmVendorDefaultQueue;
+function ltNexpApplyVendorDefaultQueue(vendorId){
+ var q=gmVendorDefaultQueue(vendorId);
+ if(!q)return;
+ var qEl=document.getElementById('lt-nexp-queue');
+ if(!qEl)return;
+ qEl.value=q;
+ if(typeof ltNexpOnQueueChange==='function')ltNexpOnQueueChange();
 }
 function jobsOpenNewModal(){
  if(typeof ltOpenNewExpense!=='function')return;
