@@ -1,0 +1,4 @@
+ALTER TABLE "owner_month_payouts"
+  ADD COLUMN IF NOT EXISTS "reopenedAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "reopenedBy" TEXT,
+  ADD COLUMN IF NOT EXISTS "reopenedByName" VARCHAR(120);

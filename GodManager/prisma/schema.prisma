@@ -717,6 +717,9 @@ model OwnerMonthPayout {
   paidAt      DateTime?
   closedAt    DateTime?
   closedBy    String?
+  reopenedAt      DateTime?
+  reopenedBy      String?
+  reopenedByName  String?   @db.VarChar(120)
   lastSentAt  DateTime?
   paidAmount  Decimal?  @db.Decimal(12, 2)
   method      String?   @db.VarChar(40)

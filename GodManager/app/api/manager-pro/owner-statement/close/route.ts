@@ -56,6 +56,9 @@ export async function POST(req: Request) {
       data: {
         closedAt: new Date(),
         closedBy: user.id,
+        reopenedAt: null,
+        reopenedBy: null,
+        reopenedByName: null,
       },
       select: {
         id: true,

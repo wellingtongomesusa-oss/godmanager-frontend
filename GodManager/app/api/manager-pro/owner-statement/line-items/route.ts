@@ -9,6 +9,10 @@ import {
 } from '@/lib/clientScope';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
+import {
+  isPayoutClosed,
+  STATEMENT_CLOSED_ERROR,
+} from '@/lib/statementWriteGuard';
 import type { Decimal } from '@prisma/client/runtime/library';
 
 export const dynamic = 'force-dynamic';
@@ -131,6 +135,9 @@ export async function GET(req: Request) {
             paidAmount: decToStr(payout.paidAmount ?? null),
             closedAt: payout.closedAt?.toISOString() ?? null,
             closedBy: payout.closedBy ?? null,
+            reopenedAt: payout.reopenedAt?.toISOString() ?? null,
+            reopenedBy: payout.reopenedBy ?? null,
+            reopenedByName: payout.reopenedByName ?? null,
             lastSentAt: payout.lastSentAt?.toISOString() ?? null,
             clientId: payout.clientId,
           }
@@ -212,6 +219,20 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { ok: false, error: 'Cannot resolve clientId' },
         { status: 400 }
+      );
+    }
+
+    const existingPayout = await prisma.ownerMonthPayout.findUnique({
+      where: {
+        propertyId_yearMonth: { propertyId, yearMonth: yearMonthNorm },
+      },
+      select: { closedAt: true },
+    });
+
+    if (isPayoutClosed(existingPayout)) {
+      return NextResponse.json(
+        { ok: false, error: STATEMENT_CLOSED_ERROR },
+        { status: 409 }
       );
     }
 

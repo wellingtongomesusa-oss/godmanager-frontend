@@ -8,6 +8,10 @@ import {
   toClientScopeUser,
 } from '@/lib/clientScope';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
+import {
+  isPayoutClosed,
+  STATEMENT_CLOSED_ERROR,
+} from '@/lib/statementWriteGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +99,13 @@ export async function PATCH(
 
     if (li.source !== 'MANUAL' && li.source !== 'CSV_UPLOAD') {
       return AUTO_FORBIDDEN;
+    }
+
+    if (isPayoutClosed(li.ownerMonthPayout)) {
+      return NextResponse.json(
+        { ok: false, error: STATEMENT_CLOSED_ERROR },
+        { status: 409 }
+      );
     }
 
     const patch: Record<string, unknown> = {};
@@ -237,6 +248,13 @@ export async function DELETE(
 
     if (li.source !== 'MANUAL' && li.source !== 'CSV_UPLOAD') {
       return AUTO_FORBIDDEN;
+    }
+
+    if (isPayoutClosed(li.ownerMonthPayout)) {
+      return NextResponse.json(
+        { ok: false, error: STATEMENT_CLOSED_ERROR },
+        { status: 409 }
+      );
     }
 
     const clientIdAudit =

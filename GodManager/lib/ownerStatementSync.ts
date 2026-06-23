@@ -3,12 +3,13 @@ import type { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/db';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
+import { isPayoutClosed } from '@/lib/statementWriteGuard';
 
 export type SyncOwnerStatementResult = {
-  payoutId: string;
+  payoutId: string | null;
   created: number;
   updated: number;
-  skipped: number;
+  skipped: number | 'closed';
   totalIncome: string;
   totalExpenses: string;
   netPayout: string;
@@ -76,6 +77,34 @@ export async function syncOwnerStatementForProperty(args: {
   const bounds = monthBoundsUtc(normalizedYm);
   if (!bounds) {
     throw new Error('INVALID_YEAR_MONTH');
+  }
+
+  const existingPayout = await prisma.ownerMonthPayout.findUnique({
+    where: {
+      propertyId_yearMonth: {
+        propertyId: args.propertyId,
+        yearMonth: normalizedYm,
+      },
+    },
+    select: {
+      id: true,
+      closedAt: true,
+      totalIncome: true,
+      totalExpenses: true,
+      netPayout: true,
+    },
+  });
+
+  if (isPayoutClosed(existingPayout)) {
+    return {
+      payoutId: existingPayout?.id ?? null,
+      created: 0,
+      updated: 0,
+      skipped: 'closed',
+      totalIncome: existingPayout?.totalIncome ? decStr(existingPayout.totalIncome) : '0.00',
+      totalExpenses: existingPayout?.totalExpenses ? decStr(existingPayout.totalExpenses) : '0.00',
+      netPayout: existingPayout?.netPayout ? decStr(existingPayout.netPayout) : '0.00',
+    };
   }
 
   const property = await prisma.property.findUnique({

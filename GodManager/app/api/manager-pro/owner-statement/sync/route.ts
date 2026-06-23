@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { canAccessClientId, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { syncOwnerStatementForProperty } from '@/lib/ownerStatementSync';
+import { isPayoutClosed, STATEMENT_CLOSED_ERROR } from '@/lib/statementWriteGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,6 +82,20 @@ export async function POST(req: Request) {
         );
       }
 
+      const existingPayout = await prisma.ownerMonthPayout.findUnique({
+        where: {
+          propertyId_yearMonth: { propertyId: property.id, yearMonth },
+        },
+        select: { closedAt: true },
+      });
+
+      if (isPayoutClosed(existingPayout)) {
+        return NextResponse.json(
+          { ok: false, error: STATEMENT_CLOSED_ERROR },
+          { status: 409 }
+        );
+      }
+
       try {
         const r = await syncOwnerStatementForProperty({
           propertyId: property.id,
@@ -90,7 +105,7 @@ export async function POST(req: Request) {
         });
         const row: BulkResultOk = {
           propertyId: property.id,
-          payoutId: r.payoutId,
+          payoutId: r.payoutId ?? '',
           created: r.created,
           updated: r.updated,
           totalIncome: r.totalIncome,
@@ -135,6 +150,17 @@ export async function POST(req: Request) {
         continue;
       }
 
+      const bulkPayout = await prisma.ownerMonthPayout.findUnique({
+        where: {
+          propertyId_yearMonth: { propertyId: prop.id, yearMonth },
+        },
+        select: { closedAt: true },
+      });
+      if (isPayoutClosed(bulkPayout)) {
+        results.push({ propertyId: prop.id, error: STATEMENT_CLOSED_ERROR });
+        continue;
+      }
+
       try {
         const r = await syncOwnerStatementForProperty({
           propertyId: prop.id,
@@ -144,7 +170,7 @@ export async function POST(req: Request) {
         });
         results.push({
           propertyId: prop.id,
-          payoutId: r.payoutId,
+          payoutId: r.payoutId ?? '',
           created: r.created,
           updated: r.updated,
           totalIncome: r.totalIncome,

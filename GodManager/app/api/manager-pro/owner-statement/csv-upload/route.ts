@@ -5,6 +5,7 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseStatementCsv, statementCsvRowSourceRef } from '@/lib/ownerStatementCsv';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
+import { isPayoutClosed } from '@/lib/statementWriteGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,7 @@ export async function POST(req: Request) {
     const byCode = new Map(properties.map((p) => [p.code.toUpperCase(), p]));
 
     const prepared: PreparedCsvRow[] = [];
+    let closedSkipped = 0;
 
     for (const r of okRows) {
       const prop = byCode.get(r.row.propertyCode);
@@ -107,6 +109,18 @@ export async function POST(req: Request) {
       }
 
       const yearMonth = yearMonthFromDateUtc(r.row.date);
+
+      const rowPayout = await prisma.ownerMonthPayout.findUnique({
+        where: {
+          propertyId_yearMonth: { propertyId: prop.id, yearMonth },
+        },
+        select: { closedAt: true },
+      });
+      if (isPayoutClosed(rowPayout)) {
+        closedSkipped++;
+        continue;
+      }
+
       const dateISO = r.row.date.toISOString().slice(0, 10);
       const amountFixed = r.row.amount.toFixed(2);
       const sourceRefId = statementCsvRowSourceRef({
@@ -161,6 +175,7 @@ export async function POST(req: Request) {
           totalLines,
           validLines,
           errorLines,
+          closedSkipped,
           payouts: [...payoutsSummary.values()],
         },
         errors,
@@ -179,6 +194,7 @@ export async function POST(req: Request) {
           totalLines,
           validLines,
           errorLines,
+          closedSkipped,
           payouts: [],
           created: 0,
           skipped: 0,
@@ -205,6 +221,19 @@ export async function POST(req: Request) {
 
     await prisma.$transaction(async (tx) => {
       for (const row of prepared) {
+        const closedGuard = await tx.ownerMonthPayout.findUnique({
+          where: {
+            propertyId_yearMonth: {
+              propertyId: row.propertyId,
+              yearMonth: row.yearMonth,
+            },
+          },
+          select: { closedAt: true },
+        });
+        if (isPayoutClosed(closedGuard)) {
+          continue;
+        }
+
         const payout = await tx.ownerMonthPayout.upsert({
           where: {
             propertyId_yearMonth: {
@@ -298,6 +327,7 @@ export async function POST(req: Request) {
         totalLines,
         validLines,
         errorLines,
+        closedSkipped,
         payouts: [...payoutsSummary.values()],
         created,
         skipped,
