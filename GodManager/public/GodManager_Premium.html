@@ -4541,8 +4541,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" onclick="gmSupportUpdateStatus()" style="padding:7px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Atualizar status</button>
 </div>
 <div style="display:flex;gap:10px;align-items:flex-end;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;background:var(--paper)">
- <textarea id="gm-st-modal-reply" rows="3" placeholder="Escreva sua resposta…" style="flex:1;min-height:72px;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);resize:vertical;outline:none"></textarea>
- <button type="button" id="gm-st-modal-reply-btn" onclick="gmSupportSendReply()" style="padding:10px 18px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Responder</button>
+ <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+  <div id="gm-st-modal-attach-preview" style="display:none;font-size:11px;color:var(--ink2);padding:4px 0"></div>
+  <div style="display:flex;gap:8px;align-items:flex-end">
+   <button type="button" id="gm-st-modal-attach-btn" onclick="document.getElementById('gm-st-modal-file-input').click()" title="Anexar print" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">📎</button>
+   <input type="file" id="gm-st-modal-file-input" accept="image/*" style="display:none" onchange="gmSupportModalAttachmentPick(this)">
+   <textarea id="gm-st-modal-reply" rows="3" placeholder="Escreva sua resposta…" style="flex:1;min-height:72px;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);resize:vertical;outline:none"></textarea>
+  </div>
+ </div>
+ <button type="button" id="gm-st-modal-reply-btn" onclick="gmSupportSendReply()" style="padding:10px 18px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end">Responder</button>
 </div>
 </div>
 </div>
@@ -12735,6 +12742,66 @@ function gmSupportOpenNewModal(){
  if(typeof showToast==='function')showToast('Modal de novo chamado em breve.','info');
  else alert('Modal de novo chamado em breve.');
 }
+async function gmSupportUploadAttachment(file,ticketId){
+ if(!file||!ticketId)return null;
+ try{
+  var blob=await ltpCompressImage(file,1600,0.85);
+  var presignRes=await fetch('/api/support-tickets/attachments/presigned-url',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticketId:String(ticketId),contentType:'image/jpeg',sizeBytes:blob.size,originalFilename:file.name||'print.jpg'})});
+  if(!presignRes.ok)throw new Error('presigned HTTP '+presignRes.status);
+  var presign=await presignRes.json().catch(function(){return null;});
+  if(!presign||!presign.ok||!presign.uploadUrl)throw new Error('presigned !ok');
+  var putRes=await fetch(presign.uploadUrl,{method:'PUT',headers:{'Content-Type':'image/jpeg'},body:blob});
+  if(!putRes.ok)throw new Error('R2 PUT HTTP '+putRes.status);
+  return{url:presign.publicUrl,key:presign.key,name:file.name||'print.jpg',contentType:'image/jpeg',size:blob.size};
+ }catch(e){
+  console.warn('[gmSupportUploadAttachment]',e);
+  return null;
+ }
+}
+function gmSupportClearBubbleAttachment(){
+ window.__gmSupportPendingAttachment=null;
+ var inp=document.getElementById('gm-support-chat-file-input');
+ if(inp)inp.value='';
+ gmSupportRenderBubbleAttachPreview();
+}
+function gmSupportRenderBubbleAttachPreview(){
+ var el=document.getElementById('gm-support-chat-attach-preview');
+ var p=window.__gmSupportPendingAttachment;
+ if(!el)return;
+ if(!p||!p.name){el.style.display='none';el.innerHTML='';return;}
+ var nm=String(p.name).replace(/</g,'&lt;');
+ el.style.display='block';
+ el.innerHTML='print anexado: '+nm+' <button type="button" onclick="gmSupportClearBubbleAttachment()" style="margin-left:8px;border:none;background:transparent;color:var(--ink3);cursor:pointer;font-size:12px;line-height:1">×</button>';
+}
+function gmSupportBubbleAttachmentPick(input){
+ if(!input||!input.files||!input.files[0])return;
+ var f=input.files[0];
+ window.__gmSupportPendingAttachment={file:f,name:f.name||'print.jpg'};
+ gmSupportRenderBubbleAttachPreview();
+ input.value='';
+}
+function gmSupportClearModalAttachment(){
+ window.__gmStPendingAttachment=null;
+ var inp=document.getElementById('gm-st-modal-file-input');
+ if(inp)inp.value='';
+ gmSupportRenderModalAttachPreview();
+}
+function gmSupportRenderModalAttachPreview(){
+ var el=document.getElementById('gm-st-modal-attach-preview');
+ var p=window.__gmStPendingAttachment;
+ if(!el)return;
+ if(!p||!p.name){el.style.display='none';el.innerHTML='';return;}
+ var nm=String(p.name).replace(/</g,'&lt;');
+ el.style.display='block';
+ el.innerHTML='print anexado: '+nm+' <button type="button" onclick="gmSupportClearModalAttachment()" style="margin-left:8px;border:none;background:transparent;color:var(--ink3);cursor:pointer;font-size:12px;line-height:1">×</button>';
+}
+function gmSupportModalAttachmentPick(input){
+ if(!input||!input.files||!input.files[0])return;
+ var f=input.files[0];
+ window.__gmStPendingAttachment={file:f,name:f.name||'print.jpg'};
+ gmSupportRenderModalAttachPreview();
+ input.value='';
+}
 function gmSupportFmtAttachmentsHtml(att){
  if(!att)return '';
  var list=[];
@@ -12749,10 +12816,16 @@ function gmSupportFmtAttachmentsHtml(att){
  var html='';
  list.forEach(function(a){
   if(!a)return;
-  var url=String(a.publicUrl||a.url||a.href||'').trim();
+  var url=String(a.url||a.publicUrl||a.href||'').trim();
+  var ct=String(a.contentType||'').toLowerCase();
+  var isImg=ct.indexOf('image/')===0||(/\.(jpg|jpeg|png|webp)(\?|$)/i.test(url));
   if(url&&url.indexOf('javascript:')===-1){
    var safe=url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-   html+='<a href="'+safe+'" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--blue);margin-top:6px;display:block">[anexo]</a>';
+   if(isImg){
+    html+='<img src="'+safe+'" alt="anexo" style="max-width:180px;border-radius:8px;cursor:pointer;margin-top:6px;display:block;border:1px solid var(--border)" onclick="window.open(\''+safe.replace(/'/g,'\\\'')+'\',\'_blank\',\'noopener\')">';
+   }else{
+    html+='<a href="'+safe+'" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--blue);margin-top:6px;display:block">[anexo]</a>';
+   }
   }else{
    html+='<span style="font-size:11px;color:var(--ink3);margin-top:6px;display:block">[anexo]</span>';
   }
@@ -12823,6 +12896,7 @@ async function gmSupportOpenTicket(id){
   if(staffActs)staffActs.style.display=gmIsStaffUser()?'flex':'none';
   var replyEl=document.getElementById('gm-st-modal-reply');
   if(replyEl)replyEl.value='';
+  gmSupportClearModalAttachment();
   gmSupportRenderMsgs(data.messages);
   var modal=document.getElementById('gm-support-ticket-modal');
   if(modal){
@@ -12842,10 +12916,20 @@ async function gmSupportSendReply(){
  var btn=document.getElementById('gm-st-modal-reply-btn');
  if(!inp)return;
  var text=String(inp.value||'').trim();
- if(!text)return;
+ var pending=window.__gmStPendingAttachment;
+ if(!text&&!(pending&&pending.file))return;
+ if(!text)text='(print anexado)';
  if(btn)btn.disabled=true;
  try{
-  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid)+'/messages',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:text})});
+  var attachments=null;
+  if(pending&&pending.file){
+   var att=await gmSupportUploadAttachment(pending.file,tid);
+   if(att)attachments=[att];
+   gmSupportClearModalAttachment();
+  }
+  var bodyObj={body:text};
+  if(attachments)bodyObj.attachments=attachments;
+  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid)+'/messages',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(bodyObj)});
   var data=await res.json().catch(function(){return null;});
   if(res.ok&&data&&data.ok){
    inp.value='';
@@ -13026,6 +13110,7 @@ async function gmSupportChatSend(){
  var btn=document.getElementById('gm-support-chat-send');
  if(!inp)return;
  var msg=String(inp.value||'').trim();
+ var pending=window.__gmSupportPendingAttachment;
  if(!msg){
   try{
    inp.style.transition='transform .12s ease';
@@ -13037,13 +13122,24 @@ async function gmSupportChatSend(){
  if(btn){btn.disabled=true;}
  gmSupportChatAppendMsg(msg,'user');
  inp.value='';
+ var pendingFile=pending&&pending.file?pending:null;
  try{
   var subj=msg.length>60?msg.slice(0,60):msg;
   var res=await fetch('/api/support-tickets',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:subj,body:msg})});
   var data=await res.json().catch(function(){return null;});
   if(res.ok&&data&&data.ok&&data.ticket){
    var code=String(data.ticket.code||'');
+   var ticketId=String(data.ticket.id||'');
    gmSupportChatAppendMsg('Recebemos seu chamado '+code+'. Nossa equipe vai responder por aqui em breve. Voce tambem acompanha em Suporte no menu.','system');
+   if(pendingFile&&ticketId){
+    var att=await gmSupportUploadAttachment(pendingFile,ticketId);
+    gmSupportClearBubbleAttachment();
+    if(att){
+     try{
+      await fetch('/api/support-tickets/'+encodeURIComponent(ticketId)+'/messages',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:'(print anexado)',attachments:[att]})});
+     }catch(_attE){console.warn('[gmSupportChatSend] attachment msg',_attE);}
+    }
+   }
    if(gmSupportPageActive()&&typeof gmSupportLoad==='function')void gmSupportLoad();
   }else{
    gmSupportChatAppendMsg('Nao foi possivel abrir o chamado agora. Tente de novo em instantes.','system');
@@ -13062,6 +13158,11 @@ window.gmSupportCloseTicket=gmSupportCloseTicket;
 window.gmSupportRenderMsgs=gmSupportRenderMsgs;
 window.gmSupportSendReply=gmSupportSendReply;
 window.gmSupportUpdateStatus=gmSupportUpdateStatus;
+window.gmSupportUploadAttachment=gmSupportUploadAttachment;
+window.gmSupportBubbleAttachmentPick=gmSupportBubbleAttachmentPick;
+window.gmSupportClearBubbleAttachment=gmSupportClearBubbleAttachment;
+window.gmSupportModalAttachmentPick=gmSupportModalAttachmentPick;
+window.gmSupportClearModalAttachment=gmSupportClearModalAttachment;
 window.gmSupportFabToggle=gmSupportFabToggle;
 window.gmSupportChatPrefill=gmSupportChatPrefill;
 window.gmSupportChatAppendMsg=gmSupportChatAppendMsg;
@@ -37089,7 +37190,10 @@ window.gmFormsReceivedRender=async function(){
    <button type="button" onclick="gmSupportChatPrefill('Erro na tela')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:12px;background:var(--paper);color:var(--ink2);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif">Erro na tela</button>
    <button type="button" onclick="gmSupportChatPrefill('Outro')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:12px;background:var(--paper);color:var(--ink2);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif">Outro</button>
   </div>
+  <div id="gm-support-chat-attach-preview" style="display:none;padding:6px 12px;font-size:11px;color:var(--ink2);background:var(--cream);border-top:1px solid var(--border)"></div>
   <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--paper)">
+   <button type="button" id="gm-support-chat-attach-btn" onclick="document.getElementById('gm-support-chat-file-input').click()" title="Anexar print" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">📎</button>
+   <input type="file" id="gm-support-chat-file-input" accept="image/*" style="display:none" onchange="gmSupportBubbleAttachmentPick(this)">
    <textarea id="gm-support-chat-input" rows="2" placeholder="Descreva seu problema…" style="flex:1"></textarea>
    <button type="button" id="gm-support-chat-send" onclick="gmSupportChatSend()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Enviar</button>
   </div>
