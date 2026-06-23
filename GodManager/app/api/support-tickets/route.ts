@@ -230,6 +230,7 @@ export async function POST(req: NextRequest) {
                 ? Prisma.JsonNull
                 : (attachments as Prisma.InputJsonValue),
           isStaff: staff,
+          authorClientId: user.clientId ?? null,
           clientId,
         },
       });

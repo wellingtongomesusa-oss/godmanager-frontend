@@ -14,6 +14,7 @@ function serializeMessage(message: {
   authorId: string;
   authorName: string | null;
   authorRole: string | null;
+  authorClientId: string | null;
   body: string;
   attachments: unknown;
   isStaff: boolean;
@@ -26,6 +27,7 @@ function serializeMessage(message: {
     authorId: message.authorId,
     authorName: message.authorName,
     authorRole: message.authorRole,
+    authorClientId: message.authorClientId,
     body: message.body,
     attachments: message.attachments,
     isStaff: message.isStaff,
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 ? Prisma.JsonNull
                 : (attachments as Prisma.InputJsonValue),
           isStaff: staff,
+          authorClientId: user.clientId ?? null,
           clientId: ticket.clientId,
         },
       });

@@ -40,6 +40,7 @@ function serializeMessage(message: {
   authorId: string;
   authorName: string | null;
   authorRole: string | null;
+  authorClientId: string | null;
   body: string;
   attachments: unknown;
   isStaff: boolean;
@@ -50,6 +51,7 @@ function serializeMessage(message: {
     authorId: message.authorId,
     authorName: message.authorName,
     authorRole: message.authorRole,
+    authorClientId: message.authorClientId,
     body: message.body,
     attachments: message.attachments,
     isStaff: message.isStaff,
@@ -96,6 +98,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         authorId: true,
         authorName: true,
         authorRole: true,
+        authorClientId: true,
         body: true,
         attachments: true,
         isStaff: true,

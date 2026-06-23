@@ -12845,7 +12845,8 @@ function gmSupportRenderMsgs(msgs){
   var staff=!!m.isStaff;
   var align=staff?'flex-end':'flex-start';
   var author=String(m.authorName||'—').replace(/</g,'&lt;');
-  var tag=staff?' <span style="font-size:10px;color:var(--ink3)">(equipe)</span>':'';
+  var godManagerAuthor=m.authorClientId==null||m.authorClientId===undefined;
+  var tag=godManagerAuthor?' <span style="font-size:10px;color:var(--ink3)">(equipe)</span>':'';
   var body=String(m.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
   var when=gmSupportFmtDate(m.createdAt);
   var bubble=staff

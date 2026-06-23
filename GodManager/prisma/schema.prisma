@@ -1477,11 +1477,12 @@ model SupportTicketMessage {
   ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   authorId    String
   authorName  String?
-  authorRole  String?
-  body        String        @db.Text
-  attachments Json?
-  isStaff     Boolean       @default(false)
-  clientId    String?
+  authorRole     String?
+  authorClientId String?
+  body           String        @db.Text
+  attachments    Json?
+  isStaff        Boolean       @default(false)
+  clientId       String?
   createdAt   DateTime      @default(now())
 
   @@index([ticketId, authorId, createdAt, clientId])
