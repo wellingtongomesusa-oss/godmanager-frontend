@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-23 1e65d28 -->
+<!-- Build: 2026-06-22 dev -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -5044,7 +5044,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <span id="osd-csv-appfolio-note" style="display:none;font-size:11px;color:var(--ink3);margin-right:auto">Gravação no próximo passo</span>
  <button type="button" onclick="osdCsvClose()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
  <button type="button" id="osd-csv-confirm" onclick="osdCsvConfirm()" style="display:none;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Confirmar upload</button>
- <button type="button" id="osd-csv-confirm-appfolio" onclick="if(typeof osdCsvConfirmAppfolio==='function')osdCsvConfirmAppfolio()" style="display:none;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:not-allowed;font-family:'Inter',sans-serif;opacity:0.55" disabled title="Gravação no próximo passo">Confirmar importação</button>
+ <button type="button" id="osd-csv-confirm-appfolio" onclick="if(typeof osdCsvConfirmAppfolio==='function')osdCsvConfirmAppfolio()" style="display:none;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Confirmar importação</button>
  </div>
  </div>
  </div>
@@ -11057,7 +11057,7 @@ window.osdCsvResetModalChrome=function(){
  if(panel)panel.style.maxWidth='520px';
  if(note)note.style.display='none';
  if(btnGm)btnGm.style.display='none';
- if(btnAf){btnAf.style.display='none';btnAf.disabled=true;btnAf.style.opacity='0.55';btnAf.style.cursor='not-allowed';}
+ if(btnAf){btnAf.style.display='none';btnAf.disabled=false;btnAf.style.opacity='1';btnAf.style.cursor='pointer';}
 };
 
 window.osdCsvRenderAppfolioPreview=function(data){
@@ -11102,8 +11102,13 @@ window.osdCsvRenderAppfolioPreview=function(data){
   if(score<1&&Number.isFinite(score)){
    addr+=' <span style="font-size:10px;color:var(--ink3)">(match aproximado)</span>';
   }
-  // TODO Pedaço 3: status FECHADA quando backend enviar closed:true no preview
-  var statusHtml='<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(107,114,128,.12);color:var(--ink3)">Pronta</span>';
+  // status FECHADA quando backend envia closed:true no preview
+  var statusHtml;
+  if(r.closed){
+   statusHtml='<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(201,169,110,.15);color:var(--amber)">Fechada</span>';
+  }else{
+   statusHtml='<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;background:rgba(107,114,128,.12);color:var(--ink3)">Pronta</span>';
+  }
   html+='<tr style="border-bottom:1px solid var(--border)">';
   html+='<td style="padding:8px 10px;font-family:JetBrains Mono,monospace;color:var(--ink)">'+esc(String(r.propertyCode||'—'))+'</td>';
   html+='<td style="padding:8px 10px;color:var(--ink2);max-width:240px">'+addr+'</td>';
@@ -11126,13 +11131,58 @@ window.osdCsvRenderAppfolioPreview=function(data){
   html+='</div>';
  }
  sum.innerHTML=html;
- if(note)note.style.display='inline';
- if(btnAf){btnAf.style.display='inline-block';btnAf.disabled=true;btnAf.style.opacity='0.55';btnAf.style.cursor='not-allowed';}
+ if(note)note.style.display='none';
+ var openCount=rows.filter(function(r){return !r.closed;}).length;
+ if(btnAf){
+  btnAf.style.display='inline-block';
+  btnAf.disabled=openCount<=0;
+  btnAf.style.opacity=openCount<=0?'0.55':'1';
+  btnAf.style.cursor=openCount<=0?'not-allowed':'pointer';
+ }
 };
 
 window.osdCsvConfirmAppfolio=function(){
- if(typeof showToast==='function')showToast('Gravação AppFolio GL — em breve (Pedaço 3)','error');
- else alert('Gravação AppFolio GL — em breve (Pedaço 3)');
+ var f=window.osdCsvLastFile;
+ if(!f){
+  if(typeof showToast==='function')showToast('Nenhum ficheiro selecionado.','error');
+  else alert('Nenhum ficheiro.');
+  return;
+ }
+ var ym=(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var preview=window.osdCsvLastAppfolioPreview||{};
+ var rows=(preview.byProperty||[]).filter(function(r){return !r.closed;});
+ var n=rows.length||Number(preview.totalProperties)||0;
+ var periodLabel=typeof osdFmtPeriod==='function'?osdFmtPeriod(ym):ym;
+ if(!confirm('Importar movimento de '+n+' propriedades para '+periodLabel+'? Propriedades com statement fechado serão puladas.'))return;
+ var fd=new FormData();
+ fd.append('file',f);
+ fd.append('yearMonth',ym);
+ var btn=document.getElementById('osd-csv-confirm-appfolio');
+ var prevLabel=btn?btn.textContent:'Confirmar importação';
+ if(btn){btn.disabled=true;btn.textContent='Importando…';}
+ fetch('/api/manager-pro/owner-statement/csv-upload?yearMonth='+encodeURIComponent(ym),{method:'POST',credentials:'include',body:fd}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};});}).then(function(x){
+  if(btn){btn.disabled=false;btn.textContent=prevLabel;}
+  if(!x.ok||!x.j.ok){
+   var errMsg=(x.j&&x.j.error)||('HTTP '+(x.status||''));
+   if(typeof showToast==='function')showToast('Importação falhou: '+errMsg,'error');
+   else alert('Importação falhou: '+errMsg);
+   return;
+  }
+  var imp=x.j.imported||{};
+  var lines=Number(imp.lines)||0;
+  var props=Number(imp.properties)||0;
+  var skippedClosed=Number(x.j.skippedClosed)||0;
+  var msg='Importadas '+lines+' linhas em '+props+' propriedades. '+skippedClosed+' puladas (fechadas).';
+  if(typeof showToast==='function')showToast(msg,'success');
+  else alert(msg);
+  if(typeof osdCsvClose==='function')osdCsvClose();
+  if(typeof osdLoadStatement==='function')void osdLoadStatement();
+ }).catch(function(e){
+  if(btn){btn.disabled=false;btn.textContent=prevLabel;}
+  var em='Erro rede: '+(e&&e.message||'');
+  if(typeof showToast==='function')showToast(em,'error');
+  else alert(em);
+ });
 };
 
 window.osdYearMonthCurrent=function(){
@@ -12276,6 +12326,7 @@ window.osdCsvOnChange=function(ev){
   }
   if(x.j.format==='appfolio'){
    window.osdCsvLastFormat='appfolio';
+   window.osdCsvLastAppfolioPreview=x.j;
    window.osdCsvRenderAppfolioPreview(x.j);
    if(errEl){errEl.style.display='none';errEl.textContent='';}
    return;

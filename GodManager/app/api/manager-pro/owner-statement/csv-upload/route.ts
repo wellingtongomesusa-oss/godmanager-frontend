@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseStatementCsv, statementCsvRowSourceRef } from '@/lib/ownerStatementCsv';
-import { isAppfolioGlFormat, parseAppfolioGl } from '@/lib/appfolioGlStatementCsv';
+import { isAppfolioGlFormat, parseAppfolioGl, appfolioGlRowSourceRef, parseAppfolioSlashDate } from '@/lib/appfolioGlStatementCsv';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 import { isPayoutClosed } from '@/lib/statementWriteGuard';
 import { matchPropertyWithMeta } from '@/lib/tenantPaymentMatcher';
@@ -38,23 +38,59 @@ function yearMonthFromDateUtc(d: Date): string {
 
 const YEAR_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-async function buildAppfolioGlPreview(
+function userDisplayName(firstName: string, lastName: string): string {
+  return `${firstName} ${lastName}`.trim();
+}
+
+type AppfolioPreparedRow = {
+  propertyId: string;
+  propertyCode: string;
+  clientId: string;
+  yearMonth: string;
+  lineType: 'income' | 'expense';
+  description: string;
+  amount: number;
+  transactionDate: Date;
+  sourceRefId: string;
+  sortOrder: number;
+};
+
+type AppfolioResolveResult = {
+  prepared: AppfolioPreparedRow[];
+  unmatched: string[];
+  skippedUnmatchedRows: number;
+  ignoredCount: number;
+  parseErrors: string[];
+  byProperty: Array<{
+    propertyId: string;
+    propertyCode: string | null;
+    address: string | null;
+    yearMonth: string;
+    income: number;
+    expense: number;
+    lineCount: number;
+    matchScore: number;
+    closed: boolean;
+  }>;
+};
+
+async function resolveAppfolioGlRows(
   content: string,
   scopeUser: ReturnType<typeof toClientScopeUser>,
-  filterYearMonth: string | null,
-) {
+  filterYearMonth: string,
+): Promise<AppfolioResolveResult> {
   const parsed = parseAppfolioGl(content);
-  const rows = filterYearMonth
-    ? parsed.rows.filter((r) => r.yearMonth === filterYearMonth)
-    : parsed.rows;
+  const rows = parsed.rows.filter((r) => r.yearMonth === filterYearMonth);
 
   const properties = await prisma.property.findMany({
     where: getClientScopeWhere(scopeUser),
-    select: { id: true, code: true, address: true },
+    select: { id: true, code: true, address: true, clientId: true },
   });
 
   const byId = new Map(properties.map((p) => [p.id, p]));
   const unmatchedSet = new Set<string>();
+  let skippedUnmatchedRows = 0;
+  const prepared: AppfolioPreparedRow[] = [];
 
   type GroupAcc = {
     propertyId: string;
@@ -70,8 +106,49 @@ async function buildAppfolioGlPreview(
     const meta = matchPropertyWithMeta(row.propertyKey, properties);
     if (!meta) {
       unmatchedSet.add(row.propertyKey);
+      skippedUnmatchedRows++;
       continue;
     }
+
+    const prop = byId.get(meta.propertyId);
+    let effectiveClientId = prop?.clientId ?? null;
+    if (!effectiveClientId && scopeUser.clientId) {
+      effectiveClientId = scopeUser.clientId;
+    }
+    if (!effectiveClientId) {
+      skippedUnmatchedRows++;
+      continue;
+    }
+
+    const transactionDate = parseAppfolioSlashDate(row.date);
+    if (!transactionDate) {
+      continue;
+    }
+
+    const description =
+      row.description.length > 300 ? row.description.slice(0, 300) : row.description;
+    const sourceRefId = appfolioGlRowSourceRef({
+      propertyId: meta.propertyId,
+      yearMonth: row.yearMonth,
+      account: row.account,
+      date: row.date,
+      amount: row.amount,
+      description,
+    });
+    const sortOrder = transactionDate.getUTCDate() * 10 + 3;
+
+    prepared.push({
+      propertyId: meta.propertyId,
+      propertyCode: prop?.code ?? '',
+      clientId: effectiveClientId,
+      yearMonth: row.yearMonth,
+      lineType: row.lineType,
+      description,
+      amount: row.amount,
+      transactionDate,
+      sourceRefId,
+      sortOrder,
+    });
 
     const gKey = `${meta.propertyId}|${row.yearMonth}`;
     let g = groups.get(gKey);
@@ -92,6 +169,20 @@ async function buildAppfolioGlPreview(
     if (meta.score > g.matchScore) g.matchScore = meta.score;
   }
 
+  const propertyIds = [...new Set([...groups.values()].map((g) => g.propertyId))];
+  const closedPayouts =
+    propertyIds.length > 0
+      ? await prisma.ownerMonthPayout.findMany({
+          where: {
+            yearMonth: filterYearMonth,
+            propertyId: { in: propertyIds },
+            closedAt: { not: null },
+          },
+          select: { propertyId: true },
+        })
+      : [];
+  const closedPropertyIds = new Set(closedPayouts.map((p) => p.propertyId));
+
   const byProperty = [...groups.values()]
     .map((g) => {
       const prop = byId.get(g.propertyId);
@@ -104,6 +195,7 @@ async function buildAppfolioGlPreview(
         expense: g.expense,
         lineCount: g.lineCount,
         matchScore: g.matchScore,
+        closed: closedPropertyIds.has(g.propertyId),
       };
     })
     .sort((a, b) => {
@@ -113,19 +205,273 @@ async function buildAppfolioGlPreview(
     });
 
   return {
+    prepared,
+    unmatched: [...unmatchedSet].sort(),
+    skippedUnmatchedRows,
+    ignoredCount: parsed.ignoredCount,
+    parseErrors: parsed.errors,
+    byProperty,
+  };
+}
+
+async function buildAppfolioGlPreview(
+  content: string,
+  scopeUser: ReturnType<typeof toClientScopeUser>,
+  filterYearMonth: string | null,
+) {
+  if (!filterYearMonth) {
+    const parsed = parseAppfolioGl(content);
+    const rows = parsed.rows;
+    const properties = await prisma.property.findMany({
+      where: getClientScopeWhere(scopeUser),
+      select: { id: true, code: true, address: true, clientId: true },
+    });
+    const byId = new Map(properties.map((p) => [p.id, p]));
+    const unmatchedSet = new Set<string>();
+    type GroupAcc = {
+      propertyId: string;
+      yearMonth: string;
+      income: number;
+      expense: number;
+      lineCount: number;
+      matchScore: number;
+    };
+    const groups = new Map<string, GroupAcc>();
+    for (const row of rows) {
+      const meta = matchPropertyWithMeta(row.propertyKey, properties);
+      if (!meta) {
+        unmatchedSet.add(row.propertyKey);
+        continue;
+      }
+      const gKey = `${meta.propertyId}|${row.yearMonth}`;
+      let g = groups.get(gKey);
+      if (!g) {
+        g = {
+          propertyId: meta.propertyId,
+          yearMonth: row.yearMonth,
+          income: 0,
+          expense: 0,
+          lineCount: 0,
+          matchScore: meta.score,
+        };
+        groups.set(gKey, g);
+      }
+      g.lineCount += 1;
+      if (row.lineType === 'income') g.income += row.amount;
+      else g.expense += row.amount;
+      if (meta.score > g.matchScore) g.matchScore = meta.score;
+    }
+    const byProperty = [...groups.values()]
+      .map((g) => {
+        const prop = byId.get(g.propertyId);
+        return {
+          propertyId: g.propertyId,
+          propertyCode: prop?.code ?? null,
+          address: prop?.address ?? null,
+          yearMonth: g.yearMonth,
+          income: g.income,
+          expense: g.expense,
+          lineCount: g.lineCount,
+          matchScore: g.matchScore,
+          closed: false,
+        };
+      })
+      .sort((a, b) => {
+        const c = a.propertyCode?.localeCompare(b.propertyCode ?? '') ?? 0;
+        if (c !== 0) return c;
+        return a.yearMonth.localeCompare(b.yearMonth);
+      });
+    return {
+      ok: true as const,
+      format: 'appfolio' as const,
+      dryRun: true as const,
+      yearMonthFilter: null,
+      yearMonthWarning: 'yearMonth não informado — preview inclui todos os meses do arquivo',
+      byProperty,
+      unmatched: [...unmatchedSet].sort(),
+      ignoredCount: parsed.ignoredCount,
+      parseErrors: parsed.errors,
+      totalProperties: byProperty.length,
+      totalClassifiedRows: rows.length,
+    };
+  }
+
+  const resolved = await resolveAppfolioGlRows(content, scopeUser, filterYearMonth);
+
+  return {
     ok: true as const,
     format: 'appfolio' as const,
     dryRun: true as const,
     yearMonthFilter: filterYearMonth,
-    yearMonthWarning: filterYearMonth
-      ? null
-      : 'yearMonth não informado — preview inclui todos os meses do arquivo',
-    byProperty,
-    unmatched: [...unmatchedSet].sort(),
-    ignoredCount: parsed.ignoredCount,
-    parseErrors: parsed.errors,
-    totalProperties: byProperty.length,
-    totalClassifiedRows: rows.length,
+    yearMonthWarning: null,
+    byProperty: resolved.byProperty,
+    unmatched: resolved.unmatched,
+    ignoredCount: resolved.ignoredCount,
+    parseErrors: resolved.parseErrors,
+    totalProperties: resolved.byProperty.length,
+    totalClassifiedRows: resolved.prepared.length + resolved.skippedUnmatchedRows,
+  };
+}
+
+async function commitAppfolioGlImport(
+  content: string,
+  scopeUser: ReturnType<typeof toClientScopeUser>,
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUserFromSession>>>,
+  filterYearMonth: string,
+) {
+  const resolved = await resolveAppfolioGlRows(content, scopeUser, filterYearMonth);
+  const closedPropertyIds = new Set(
+    resolved.byProperty.filter((p) => p.closed).map((p) => p.propertyId),
+  );
+
+  const openRows = resolved.prepared.filter((r) => !closedPropertyIds.has(r.propertyId));
+  const skippedClosed = resolved.prepared.length - openRows.length;
+
+  if (openRows.length === 0) {
+    await prisma.auditEntry.create({
+      data: {
+        actorId: user.id,
+        actorEmail: user.email ?? null,
+        action: 'owner_statement.appfolio_import',
+        entity: 'OwnerStatementAppfolio',
+        entityId: null,
+        clientId: scopeUser.clientId,
+        details: JSON.stringify({
+          yearMonth: filterYearMonth,
+          userId: user.id,
+          userName: userDisplayName(user.firstName, user.lastName),
+          importedProperties: 0,
+          importedLines: 0,
+          skippedClosed,
+          skippedUnmatched: resolved.skippedUnmatchedRows,
+          propertyIds: [],
+        }),
+      },
+    });
+    return {
+      ok: true as const,
+      format: 'appfolio' as const,
+      dryRun: false as const,
+      imported: { properties: 0, lines: 0 },
+      skippedClosed,
+      skippedUnmatched: resolved.skippedUnmatchedRows,
+      skippedDuplicate: 0,
+    };
+  }
+
+  let created = 0;
+  let skippedDuplicate = 0;
+  const propertyIdsWithNewLines = new Set<string>();
+  const uniqPayoutSeen = new Set<string>();
+
+  const auditClients = new Set<string>();
+  openRows.forEach((r) => auditClients.add(r.clientId));
+  const auditClientIdSingle = auditClients.size === 1 ? [...auditClients][0]! : null;
+
+  await prisma.$transaction(async (tx) => {
+    for (const row of openRows) {
+      const closedGuard = await tx.ownerMonthPayout.findUnique({
+        where: {
+          propertyId_yearMonth: {
+            propertyId: row.propertyId,
+            yearMonth: row.yearMonth,
+          },
+        },
+        select: { id: true, closedAt: true },
+      });
+      if (isPayoutClosed(closedGuard)) {
+        continue;
+      }
+
+      if (closedGuard) {
+        const existing = await tx.statementLineItem.findUnique({
+          where: {
+            uniq_line_item_source: {
+              ownerMonthPayoutId: closedGuard.id,
+              source: 'CSV_UPLOAD',
+              sourceRefId: row.sourceRefId,
+            },
+          },
+        });
+        if (existing) {
+          skippedDuplicate++;
+          continue;
+        }
+      }
+
+      const payout = await tx.ownerMonthPayout.upsert({
+        where: {
+          propertyId_yearMonth: {
+            propertyId: row.propertyId,
+            yearMonth: row.yearMonth,
+          },
+        },
+        create: {
+          propertyId: row.propertyId,
+          yearMonth: row.yearMonth,
+          clientId: row.clientId,
+          totalIncome: new Prisma.Decimal(0),
+          totalExpenses: new Prisma.Decimal(0),
+          netPayout: new Prisma.Decimal(0),
+        },
+        update: {
+          clientId: row.clientId,
+        },
+      });
+
+      uniqPayoutSeen.add(payout.id);
+
+      await tx.statementLineItem.create({
+        data: {
+          ownerMonthPayoutId: payout.id,
+          lineType: row.lineType,
+          description: row.description,
+          amount: row.amount,
+          sortOrder: row.sortOrder,
+          clientId: row.clientId,
+          source: 'CSV_UPLOAD',
+          sourceRefId: row.sourceRefId,
+          transactionDate: row.transactionDate,
+        },
+      });
+      created++;
+      propertyIdsWithNewLines.add(row.propertyId);
+    }
+
+    for (const pid of uniqPayoutSeen) {
+      await recomputeOwnerMonthPayoutTotals(pid, tx);
+    }
+
+    await tx.auditEntry.create({
+      data: {
+        actorId: user.id,
+        actorEmail: user.email ?? null,
+        action: 'owner_statement.appfolio_import',
+        entity: 'OwnerStatementAppfolio',
+        entityId: null,
+        clientId: auditClientIdSingle ?? scopeUser.clientId,
+        details: JSON.stringify({
+          yearMonth: filterYearMonth,
+          userId: user.id,
+          userName: userDisplayName(user.firstName, user.lastName),
+          importedProperties: propertyIdsWithNewLines.size,
+          importedLines: created,
+          skippedClosed,
+          skippedUnmatched: resolved.skippedUnmatchedRows,
+          propertyIds: [...propertyIdsWithNewLines],
+        }),
+      },
+    });
+  });
+
+  return {
+    ok: true as const,
+    format: 'appfolio' as const,
+    dryRun: false as const,
+    imported: { properties: propertyIdsWithNewLines.size, lines: created },
+    skippedClosed,
+    skippedUnmatched: resolved.skippedUnmatchedRows,
+    skippedDuplicate,
   };
 }
 
@@ -162,9 +508,20 @@ export async function POST(req: Request) {
     }
 
     if (isAppfolioGlFormat(firstLine)) {
-      // TODO Pedaço 2: gravar line items AppFolio GL — nesta fase sempre preview (dry-run).
-      const preview = await buildAppfolioGlPreview(content, scopeUser, filterYearMonthNorm);
-      return NextResponse.json(preview);
+      if (dryRun) {
+        const preview = await buildAppfolioGlPreview(content, scopeUser, filterYearMonthNorm);
+        return NextResponse.json(preview);
+      }
+      if (!filterYearMonthNorm) {
+        return NextResponse.json({ ok: false, error: 'yearMonth required for import' }, { status: 400 });
+      }
+      const committed = await commitAppfolioGlImport(
+        content,
+        scopeUser,
+        user,
+        filterYearMonthNorm,
+      );
+      return NextResponse.json(committed);
     }
 
     const parsed = parseStatementCsv(content);

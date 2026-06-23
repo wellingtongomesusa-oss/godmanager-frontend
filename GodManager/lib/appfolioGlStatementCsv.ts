@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 const COL = {
   PROPERTY: 0,
   DATE: 1,
@@ -172,4 +174,34 @@ export function parseAppfolioGl(content: string): {
   }
 
   return { rows, ignoredCount, errors };
+}
+
+/** MM/DD/YYYY → Date UTC meio-dia (igual ownerStatementCsv). */
+export function parseAppfolioSlashDate(dateStr: string): Date | null {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(dateStr ?? '').trim());
+  if (!m) return null;
+  const mo = parseInt(m[1], 10);
+  const d = parseInt(m[2], 10);
+  const y = parseInt(m[3], 10);
+  if (!Number.isFinite(mo) || !Number.isFinite(d) || !Number.isFinite(y)) return null;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const dt = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== mo || dt.getUTCDate() !== d) return null;
+  return dt;
+}
+
+/** Hash idempotente para CSV_UPLOAD AppFolio GL (propertyId|yearMonth|account|date|amount|description). */
+export function appfolioGlRowSourceRef(args: {
+  propertyId: string;
+  yearMonth: string;
+  account: string;
+  date: string;
+  amount: number;
+  description: string;
+}): string {
+  const amountFixed = args.amount.toFixed(2);
+  const desc =
+    args.description.length > 300 ? args.description.slice(0, 300) : args.description;
+  const base = `${args.propertyId}|${args.yearMonth}|${args.account}|${args.date}|${amountFixed}|${desc}`;
+  return crypto.createHash('sha256').update(base).digest('hex').slice(0, 32);
 }
