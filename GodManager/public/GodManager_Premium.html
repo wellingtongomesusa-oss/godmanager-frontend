@@ -4879,14 +4879,20 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div id="osd-detail-status-row" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"></div>
  </div>
  <div style="padding:12px 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--border)">
+ <div id="osd-toolbar-left" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1;min-width:0">
  <button type="button" id="osd-add-income" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('income')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Income</button>
  <button type="button" id="osd-add-expense" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('expense')" style="padding:8px 14px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Expense</button>
  <button type="button" id="osd-upload-csv" onclick="if(typeof osdCsvPick==='function')osdCsvPick()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>
  <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
- <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
- <button type="button" id="osd-reopen" onclick="if(typeof osdReopenStatement==='function')osdReopenStatement()" style="display:none;padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Reabrir statement</button>
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
+ </div>
+ <div id="osd-toolbar-close" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;flex-shrink:0">
+ <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
+ <button type="button" id="osd-reopen" onclick="if(typeof osdReopenStatement==='function')osdReopenStatement()" style="display:none;padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Reabrir statement</button>
+ <button type="button" id="osd-close-bulk" onclick="if(typeof osdCloseBulk==='function')osdCloseBulk()" style="padding:6px 12px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar todas (mês)</button>
+ <button type="button" id="osd-reopen-bulk" onclick="if(typeof osdReopenBulk==='function')osdReopenBulk()" style="padding:6px 12px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Reabrir todas (mês)</button>
+ </div>
  </div>
  <div id="osd-closing-summary" style="display:none;border-bottom:1px solid var(--border)"></div>
  <div style="overflow-x:auto">
@@ -12250,6 +12256,62 @@ window.osdReopenStatement=async function(){
   else if(err==='already_open'||err==='not_closed')toastMsg='Statement já está aberto.';
   else toastMsg=(j&&j.error)||('HTTP '+res.status);
   if(typeof showToast==='function')showToast(toastMsg,'error');else alert(toastMsg);
+ }catch(e){
+  var em='Erro: '+(e&&e.message||'');
+  if(typeof showToast==='function')showToast(em,'error');else alert(em);
+ }
+};
+
+window.osdCloseBulk=async function(){
+ var ym=(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var periodo=ym||'';
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/close-bulk?dryRun=true',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({yearMonth:ym})});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){
+   var em=(j&&j.error)||('HTTP '+res.status);
+   if(typeof showToast==='function')showToast(em,'error');else alert(em);
+   return;
+  }
+  var wouldClose=Number(j.wouldClose)||0;
+  var alreadyClosed=Number(j.alreadyClosed)||0;
+  if(wouldClose===0){
+   if(typeof showToast==='function')showToast('Nenhum statement aberto com movimento neste mês.','error');else alert('Nenhum statement aberto com movimento neste mês.');
+   return;
+  }
+  var msg='Fechar '+wouldClose+' statements de '+periodo+'? ('+alreadyClosed+' já estão fechados e serão ignorados.) Esta ação trava a edição deles.';
+  if(!confirm(msg))return;
+  var res2=await fetch('/api/manager-pro/owner-statement/close-bulk',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({yearMonth:ym})});
+  var j2=await res2.json().catch(function(){return{};});
+  if(res2.ok&&j2.ok){
+   var closed=Number(j2.closed)||0;
+   if(typeof showToast==='function')showToast(closed+' statements fechados','success');else alert(closed+' statements fechados');
+   if(typeof window.osdLoadStatement==='function')await window.osdLoadStatement();
+   return;
+  }
+  var err2=(j2&&j2.error)||('HTTP '+res2.status);
+  if(typeof showToast==='function')showToast(err2,'error');else alert(err2);
+ }catch(e){
+  var em='Erro: '+(e&&e.message||'');
+  if(typeof showToast==='function')showToast(em,'error');else alert(em);
+ }
+};
+
+window.osdReopenBulk=async function(){
+ var ym=(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var periodo=ym||'';
+ if(!confirm('Reabrir TODOS os statements fechados de '+periodo+'? Eles voltarão a ser editáveis. (Esta ação será registrada.)'))return;
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/reopen-bulk',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({yearMonth:ym})});
+  var j=await res.json().catch(function(){return{};});
+  if(res.ok&&j.ok){
+   var reopened=Number(j.reopened)||0;
+   if(typeof showToast==='function')showToast(reopened+' statements reabertos','success');else alert(reopened+' statements reabertos');
+   if(typeof window.osdLoadStatement==='function')await window.osdLoadStatement();
+   return;
+  }
+  var err=(j&&j.error)||('HTTP '+res.status);
+  if(typeof showToast==='function')showToast(err,'error');else alert(err);
  }catch(e){
   var em='Erro: '+(e&&e.message||'');
   if(typeof showToast==='function')showToast(em,'error');else alert(em);
