@@ -427,6 +427,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 
 /* LTP — Nova Propriedade modal */
 #ltp-property-modal{align-items:center;justify-content:center;padding:20px 12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background:rgba(10,22,40,.55)!important}
+#gm-support-ticket-modal{align-items:center;justify-content:center;padding:20px 12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background:rgba(10,22,40,.55)!important}
+#gm-support-ticket-modal .ltp-modal-panel{width:min(640px,95vw);max-height:min(88vh,820px)}
 #ltp-property-modal .ltp-modal-panel{width:min(720px,95vw);max-height:min(92vh,900px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:ltpModalIn .28s ease forwards}
 @keyframes ltpModalIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 #ltp-property-modal .ltp-modal-body{overflow-y:auto;flex:1;padding:0 24px 20px}
@@ -4508,6 +4510,39 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div style="display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border);flex-shrink:0;background:var(--paper)">
 <button type="button" onclick="ltpCloseNewPropertyModal()" style="padding:10px 20px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--ink2);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">Cancelar</button>
 <button type="button" onclick="ltpSaveNewProperty()" style="padding:10px 22px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Salvar Propriedade</button>
+</div>
+</div>
+</div>
+
+<!-- Support ticket conversation modal -->
+<div id="gm-support-ticket-modal" style="display:none;position:fixed;inset:0;z-index:9011;align-items:center;justify-content:center;overflow-y:auto;padding:20px 12px" onclick="if(event.target===this)gmSupportCloseTicket()">
+<div class="ltp-modal-panel" style="background:var(--paper);width:min(640px,95vw);max-height:min(88vh,820px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="gm-st-modal-title">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 22px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+<div id="gm-st-modal-title" style="flex:1;min-width:0">
+ <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+  <span id="gm-st-modal-code" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--ink2)">—</span>
+  <span id="gm-st-modal-status"></span>
+ </div>
+ <div id="gm-st-modal-subject" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.35">—</div>
+ <div style="font-size:11px;color:var(--ink3);margin-top:8px">Aberto por <span id="gm-st-modal-by">—</span></div>
+</div>
+<button type="button" onclick="gmSupportCloseTicket()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;display:flex;font-size:18px;color:var(--ink3);line-height:1">×</button>
+</div>
+<div id="gm-st-modal-msgs" style="flex:1;overflow-y:auto;padding:16px 20px;background:var(--sand);min-height:200px;max-height:min(48vh,420px)"></div>
+<div id="gm-st-modal-staff-actions" style="display:none;padding:10px 20px;border-top:1px solid var(--border);background:var(--cream);flex-shrink:0;align-items:center;gap:8px;flex-wrap:wrap">
+ <label style="font-size:11px;font-weight:600;color:var(--ink2)">Status</label>
+ <select id="gm-st-modal-status-select" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--paper);color:var(--ink)">
+  <option value="open">Aberto</option>
+  <option value="in_progress">Em andamento</option>
+  <option value="answered">Respondido</option>
+  <option value="resolved">Resolvido</option>
+  <option value="closed">Fechado</option>
+ </select>
+ <button type="button" onclick="gmSupportUpdateStatus()" style="padding:7px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Atualizar status</button>
+</div>
+<div style="display:flex;gap:10px;align-items:flex-end;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;background:var(--paper)">
+ <textarea id="gm-st-modal-reply" rows="3" placeholder="Escreva sua resposta…" style="flex:1;min-height:72px;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);resize:vertical;outline:none"></textarea>
+ <button type="button" id="gm-st-modal-reply-btn" onclick="gmSupportSendReply()" style="padding:10px 18px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Responder</button>
 </div>
 </div>
 </div>
@@ -12700,10 +12735,156 @@ function gmSupportOpenNewModal(){
  if(typeof showToast==='function')showToast('Modal de novo chamado em breve.','info');
  else alert('Modal de novo chamado em breve.');
 }
-function gmSupportOpenTicket(id){
- if(typeof showToast==='function')showToast('Chat do chamado em breve.','info');
- else alert('Chat do chamado em breve. ID: '+String(id||''));
- try{console.log('[gmSupport] open ticket',id);}catch(_e){}
+function gmSupportFmtAttachmentsHtml(att){
+ if(!att)return '';
+ var list=[];
+ try{
+  if(Array.isArray(att))list=att;
+  else if(att&&typeof att==='object'){
+   if(Array.isArray(att.items))list=att.items;
+   else if(att.publicUrl||att.url)list=[att];
+  }
+ }catch(_a){list=[];}
+ if(!list.length)return '';
+ var html='';
+ list.forEach(function(a){
+  if(!a)return;
+  var url=String(a.publicUrl||a.url||a.href||'').trim();
+  if(url&&url.indexOf('javascript:')===-1){
+   var safe=url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+   html+='<a href="'+safe+'" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--blue);margin-top:6px;display:block">[anexo]</a>';
+  }else{
+   html+='<span style="font-size:11px;color:var(--ink3);margin-top:6px;display:block">[anexo]</span>';
+  }
+ });
+ return html;
+}
+function gmSupportRenderMsgs(msgs){
+ var box=document.getElementById('gm-st-modal-msgs');
+ if(!box)return;
+ box.innerHTML='';
+ if(!msgs||!msgs.length){
+  box.innerHTML='<div style="font-size:12px;color:var(--ink3);text-align:center;padding:24px 12px">Nenhuma mensagem ainda.</div>';
+  return;
+ }
+ msgs.forEach(function(m){
+  if(!m)return;
+  var staff=!!m.isStaff;
+  var align=staff?'flex-end':'flex-start';
+  var author=String(m.authorName||'—').replace(/</g,'&lt;');
+  var tag=staff?' <span style="font-size:10px;color:var(--ink3)">(equipe)</span>':'';
+  var body=String(m.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+  var when=gmSupportFmtDate(m.createdAt);
+  var bubble=staff
+   ?'background:var(--blue);color:#fff;border-radius:12px 12px 2px 12px;padding:10px 14px;font-size:12px;line-height:1.45;max-width:88%'
+   :'background:var(--cream);color:var(--ink2);border:1px solid var(--border);border-radius:12px 12px 12px 2px;padding:10px 14px;font-size:12px;line-height:1.45;max-width:88%';
+  var attHtml=gmSupportFmtAttachmentsHtml(m.attachments);
+  var row=document.createElement('div');
+  row.style.cssText='display:flex;justify-content:'+align+';margin-bottom:12px';
+  row.innerHTML='<div style="'+bubble+'"><div style="font-size:10px;font-weight:600;margin-bottom:4px;opacity:.9">'+author+tag+'</div><div>'+body+'</div>'+attHtml+'<div style="font-size:10px;margin-top:6px;opacity:.75">'+when+'</div></div>';
+  box.appendChild(row);
+ });
+ box.scrollTop=box.scrollHeight;
+}
+function gmSupportCloseTicket(){
+ var m=document.getElementById('gm-support-ticket-modal');
+ if(m)m.style.display='none';
+ document.body.style.overflow='';
+ window.__gmStCurrentTicketId=null;
+}
+async function gmSupportOpenTicket(id){
+ var tid=String(id||'').trim();
+ if(!tid)return;
+ window.__gmStCurrentTicketId=tid;
+ try{
+  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid),{credentials:'include',cache:'no-store'});
+  var data=await res.json().catch(function(){return null;});
+  if(!res.ok||!data||data.ok!==true||!data.ticket){
+   if(typeof showToast==='function')showToast('Nao foi possivel abrir o chamado.','error');
+   else alert('Nao foi possivel abrir o chamado.');
+   return;
+  }
+  var t=data.ticket;
+  var codeEl=document.getElementById('gm-st-modal-code');
+  if(codeEl)codeEl.textContent=String(t.code||'—');
+  var subjEl=document.getElementById('gm-st-modal-subject');
+  if(subjEl)subjEl.textContent=String(t.subject||'—');
+  var stEl=document.getElementById('gm-st-modal-status');
+  if(stEl)stEl.innerHTML=gmSupportStatusBadge(t.status);
+  var byEl=document.getElementById('gm-st-modal-by');
+  if(byEl){
+   var nm=String(t.requesterName||'').trim();
+   var em=String(t.requesterEmail||'').trim();
+   byEl.textContent=nm?(em?nm+' ('+em+')':nm):(em||'—');
+  }
+  var sel=document.getElementById('gm-st-modal-status-select');
+  if(sel&&t.status)sel.value=String(t.status);
+  var staffActs=document.getElementById('gm-st-modal-staff-actions');
+  if(staffActs)staffActs.style.display=gmIsStaffUser()?'flex':'none';
+  var replyEl=document.getElementById('gm-st-modal-reply');
+  if(replyEl)replyEl.value='';
+  gmSupportRenderMsgs(data.messages);
+  var modal=document.getElementById('gm-support-ticket-modal');
+  if(modal){
+   modal.style.display='flex';
+   document.body.style.overflow='hidden';
+  }
+ }catch(e){
+  console.warn('[gmSupportOpenTicket]',e);
+  if(typeof showToast==='function')showToast('Nao foi possivel abrir o chamado.','error');
+  else alert('Nao foi possivel abrir o chamado.');
+ }
+}
+async function gmSupportSendReply(){
+ var tid=window.__gmStCurrentTicketId;
+ if(!tid)return;
+ var inp=document.getElementById('gm-st-modal-reply');
+ var btn=document.getElementById('gm-st-modal-reply-btn');
+ if(!inp)return;
+ var text=String(inp.value||'').trim();
+ if(!text)return;
+ if(btn)btn.disabled=true;
+ try{
+  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid)+'/messages',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:text})});
+  var data=await res.json().catch(function(){return null;});
+  if(res.ok&&data&&data.ok){
+   inp.value='';
+   await gmSupportOpenTicket(tid);
+   if(typeof gmSupportLoad==='function')void gmSupportLoad();
+  }else{
+   if(typeof showToast==='function')showToast('Nao foi possivel enviar a resposta.','error');
+   else alert('Nao foi possivel enviar a resposta.');
+  }
+ }catch(e){
+  console.warn('[gmSupportSendReply]',e);
+  if(typeof showToast==='function')showToast('Nao foi possivel enviar a resposta.','error');
+  else alert('Nao foi possivel enviar a resposta.');
+ }
+ if(btn)btn.disabled=false;
+}
+async function gmSupportUpdateStatus(){
+ var tid=window.__gmStCurrentTicketId;
+ if(!tid||!gmIsStaffUser())return;
+ var sel=document.getElementById('gm-st-modal-status-select');
+ if(!sel)return;
+ var status=String(sel.value||'').trim();
+ if(!status)return;
+ try{
+  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid),{method:'PATCH',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})});
+  var data=await res.json().catch(function(){return null;});
+  if(res.ok&&data&&data.ok&&data.ticket){
+   var stEl=document.getElementById('gm-st-modal-status');
+   if(stEl)stEl.innerHTML=gmSupportStatusBadge(data.ticket.status);
+   if(typeof showToast==='function')showToast('Status atualizado','success');
+   if(typeof gmSupportLoad==='function')void gmSupportLoad();
+  }else{
+   if(typeof showToast==='function')showToast('Nao foi possivel atualizar o status.','error');
+   else alert('Nao foi possivel atualizar o status.');
+  }
+ }catch(e){
+  console.warn('[gmSupportUpdateStatus]',e);
+  if(typeof showToast==='function')showToast('Nao foi possivel atualizar o status.','error');
+ }
 }
 function gmSupportFmtTmedio(horas){
  if(horas==null||horas==='')return '—';
@@ -12877,6 +13058,10 @@ window.gmSupportLoad=gmSupportLoad;
 window.gmSupportLoadStats=gmSupportLoadStats;
 window.gmSupportOpenNewModal=gmSupportOpenNewModal;
 window.gmSupportOpenTicket=gmSupportOpenTicket;
+window.gmSupportCloseTicket=gmSupportCloseTicket;
+window.gmSupportRenderMsgs=gmSupportRenderMsgs;
+window.gmSupportSendReply=gmSupportSendReply;
+window.gmSupportUpdateStatus=gmSupportUpdateStatus;
 window.gmSupportFabToggle=gmSupportFabToggle;
 window.gmSupportChatPrefill=gmSupportChatPrefill;
 window.gmSupportChatAppendMsg=gmSupportChatAppendMsg;
