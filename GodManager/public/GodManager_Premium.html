@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-22 dev -->
+<!-- Build: 2026-06-23 1e65d28 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -4885,6 +4885,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-upload-csv" onclick="if(typeof osdCsvPick==='function')osdCsvPick()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>
  <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
+ <button type="button" id="osd-preview-pdf" onclick="if(typeof osdPreviewPdf==='function')osdPreviewPdf()" title="Abrir PDF para visualização" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Visualizar PDF</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
  </div>
  <div id="osd-toolbar-close" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;flex-shrink:0">
@@ -12452,6 +12453,41 @@ window.osdCurrentLang=function(){
   var s=String(l).toLowerCase();
   return s==='en'?'en':'pt';
  }catch(e){return 'en';}
+};
+
+window.osdPreviewPdf=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){
+  if(typeof showToast==='function')showToast('Carregue um statement primeiro.','error');
+  else alert('Carregue um statement primeiro.');
+  return;
+ }
+ var ym=cd.yearMonth||(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var lang=window.osdCurrentLang();
+ var btn=document.getElementById('osd-preview-pdf');
+ var prevLabel=btn?btn.textContent:'Visualizar PDF';
+ if(btn){btn.disabled=true;btn.textContent='Abrindo…';}
+ try{
+  var url='/api/manager-pro/owner-statement/pdf?propertyId='+encodeURIComponent(cd.propertyId)+'&period='+encodeURIComponent(ym)+'&lang='+encodeURIComponent(lang);
+  var res=await fetch(url,{method:'GET',credentials:'include'});
+  if(!res.ok){
+   if(typeof showToast==='function')showToast('Não foi possível gerar o PDF','error');
+   else alert('Não foi possível gerar o PDF');
+   return;
+  }
+  var blob=await res.blob();
+  var blobUrl=URL.createObjectURL(blob);
+  var w=window.open(blobUrl,'_blank');
+  if(!w){
+   if(typeof showToast==='function')showToast('Não foi possível abrir o PDF (popup bloqueado?)','error');
+  }
+  setTimeout(function(){URL.revokeObjectURL(blobUrl);},60000);
+ }catch(e){
+  if(typeof showToast==='function')showToast('Não foi possível gerar o PDF','error');
+  else alert('Não foi possível gerar o PDF');
+ }finally{
+  if(btn){btn.disabled=false;btn.textContent=prevLabel;}
+ }
 };
 
 window.osdDownloadPdf=async function(){
