@@ -6,6 +6,7 @@ cmds = ["cd GodManager && npm install --no-audit --no-fund --include=dev"]
 
 [phases.build]
 cmds = [
+  "echo GMBUILD_SHA_CHECK=[$RAILWAY_GIT_COMMIT_SHA] SOURCE=[$SOURCE_VERSION]",
   "cd GodManager && npx prisma generate",
   "cd GodManager && npm run build"
 ]

@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npx prisma generate && npm run build",
+    "buildCommand": "echo GMBUILD_SHA_CHECK=[$RAILWAY_GIT_COMMIT_SHA] SOURCE=[$SOURCE_VERSION] && npx prisma generate && npm run build",
     "watchPatterns": ["GodManager/**"]
   },
   "deploy": {
