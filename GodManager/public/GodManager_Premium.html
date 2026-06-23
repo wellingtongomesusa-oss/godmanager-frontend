@@ -4884,6 +4884,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-upload-csv" onclick="if(typeof osdCsvPick==='function')osdCsvPick()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>
  <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
  <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
+ <button type="button" id="osd-reopen" onclick="if(typeof osdReopenStatement==='function')osdReopenStatement()" style="display:none;padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Reabrir statement</button>
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
  </div>
@@ -11097,6 +11098,14 @@ window.osdFmtDateShort=function(iso){
   return new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
  }catch(e){return String(iso).slice(0,10);}
 };
+window.osdFmtDateTimeShort=function(iso){
+ if(!iso)return '';
+ try{
+  var d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return String(iso).slice(0,16);
+  return new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d).replace(',','');
+ }catch(e){return String(iso).slice(0,16);}
+};
 window.osdParseNum=function(v){
  var x=typeof v==='number'?v:parseFloat(String(v||''));
  return Number.isFinite(x)?x:0;
@@ -11758,12 +11767,35 @@ window.osdRenderDetailBadges=function(payout){
  if(payout&&payout.lastSentAt){
   chunks.push('<span style="font-size:11px;color:var(--ink3)">Enviado em '+window.osdEscHtml(window.osdFmtDateShort(payout.lastSentAt))+'</span>');
  }
+ if(payout&&payout.reopenedAt){
+  var rName=String(payout.reopenedByName||payout.reopenedBy||'—').trim()||'—';
+  chunks.push('<span style="font-size:11px;color:var(--ink3)">Reaberto por '+window.osdEscHtml(rName)+' em '+window.osdEscHtml(window.osdFmtDateTimeShort(payout.reopenedAt))+'</span>');
+ }
  row.innerHTML=chunks.join('');
+};
+
+window.osdApplyClosedState=function(payout){
+ var isClosed=!!(payout&&payout.closedAt);
+ var ids=['osd-add-income','osd-add-expense','osd-upload-csv','osd-sync'];
+ ids.forEach(function(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.disabled=isClosed;
+  el.style.opacity=isClosed?'0.55':'';
+  el.style.cursor=isClosed?'not-allowed':'pointer';
+ });
+ var closeBtn=document.getElementById('osd-close');
+ var reopenBtn=document.getElementById('osd-reopen');
+ if(closeBtn)closeBtn.style.display=isClosed?'none':'';
+ if(reopenBtn)reopenBtn.style.display=isClosed?'':'none';
 };
 
 window.osdRenderLineItems=function(data){
  var tbody=document.getElementById('osd-detail-tbody');
  if(!tbody)return;
+ var payout=data.payout||null;
+ window.OSD_STATE.currentPayout=payout;
+ var isClosed=!!(payout&&payout.closedAt);
  var items=(data.lineItems||[]).slice().sort(function(a,b){
   var ta=new Date(a.transactionDate||a.createdAt||0).getTime();
   var tb=new Date(b.transactionDate||b.createdAt||0).getTime();
@@ -11781,10 +11813,11 @@ window.osdRenderLineItems=function(data){
   run+=delta;
   var src=String(li.source||'');
   var auto=src==='AUTO_RENTAL'||src==='AUTO_EXPENSE';
+  var noEdit=auto||isClosed;
   var srcHtml=window.osdSourceCellHtml(src);
-  var disTitle='Editado via sync — corrija a TenantPayment/PmExpense original';
-  var btEdit='<button type="button" '+(auto?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(auto?'var(--sand)':'var(--paper)')+';color:'+(auto?'var(--ink3)':'var(--ink)')+';cursor:'+(auto?'not-allowed':'pointer')+'">Editar</button>';
-  var btDel='<button type="button" '+(auto?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="margin-left:6px;padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(auto?'var(--sand)':'transparent')+';color:'+(auto?'var(--ink3)':'var(--red)')+';cursor:'+(auto?'not-allowed':'pointer')+'">Apagar</button>';
+  var disTitle=auto?'Editado via sync — corrija a TenantPayment/PmExpense original':(isClosed?'Statement fechado — reabra para editar':'');
+  var btEdit='<button type="button" '+(noEdit?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(noEdit?'var(--sand)':'var(--paper)')+';color:'+(noEdit?'var(--ink3)':'var(--ink)')+';cursor:'+(noEdit?'not-allowed':'pointer')+'">Editar</button>';
+  var btDel='<button type="button" '+(noEdit?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="margin-left:6px;padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(noEdit?'var(--sand)':'transparent')+';color:'+(noEdit?'var(--ink3)':'var(--red)')+';cursor:'+(noEdit?'not-allowed':'pointer')+'">Apagar</button>';
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid var(--border)';
   tr.innerHTML='<td style="padding:10px 12px;color:var(--ink2);white-space:nowrap">'+window.osdEscHtml(window.osdFmtDateShort(li.transactionDate))+'</td>'+
@@ -11797,8 +11830,8 @@ window.osdRenderLineItems=function(data){
   var cell=tr.lastElementChild;
   cell.innerHTML=btEdit+btDel;
   var bts=cell.querySelectorAll('button');
-  if(!auto&&bts[0])bts[0].onclick=function(){window.osdLiOpenEdit(li.id);};
-  if(!auto&&bts[1])bts[1].onclick=function(){window.osdLiDelete(li.id);};
+  if(!noEdit&&bts[0])bts[0].onclick=function(){window.osdLiOpenEdit(li.id);};
+  if(!noEdit&&bts[1])bts[1].onclick=function(){window.osdLiDelete(li.id);};
   tbody.appendChild(tr);
  });
 
@@ -11826,6 +11859,7 @@ window.osdRenderLineItems=function(data){
   fn.style.color= tn>0?'var(--green)':(tn<0?'var(--red)':'var(--ink)');
  }
  window.osdRenderDetailBadges(payout||null);
+ window.osdApplyClosedState(payout||null);
 };
 
 window.osdRenderClosingSummary=async function(){
@@ -12188,6 +12222,38 @@ window.osdCloseStatement=async function(){
   if(!res.ok||!j.ok){alert((j&&j.error)||('HTTP '+res.status));return;}
   await window.osdLoadStatement();
  }catch(e){alert('Erro: '+(e&&e.message||''));}
+};
+
+window.osdReopenStatement=async function(){
+ var cd=window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){
+  if(typeof showToast==='function')showToast('Carregue um statement primeiro.','error');else alert('Carregue um statement primeiro.');
+  return;
+ }
+ var ym=cd.yearMonth||(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||window.osdYearMonthCurrent();
+ var code=String(cd.code||cd.propertyCode||'').trim();
+ var periodo=ym||'';
+ var msg='Reabrir o statement de '+code+' '+periodo+'? Ele voltará a ser editável.';
+ if(!confirm(msg))return;
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/reopen',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:cd.propertyId,yearMonth:ym})});
+  var j=await res.json().catch(function(){return{};});
+  if(res.ok&&j.ok){
+   if(typeof showToast==='function')showToast('Statement reaberto','success');else alert('Statement reaberto');
+   await window.osdLoadStatement();
+   return;
+  }
+  var err=String((j&&j.error)||'').toLowerCase();
+  var toastMsg;
+  if(res.status===404)toastMsg='Statement não encontrado.';
+  else if(res.status===403)toastMsg='Sem permissão para reabrir este statement.';
+  else if(err==='already_open'||err==='not_closed')toastMsg='Statement já está aberto.';
+  else toastMsg=(j&&j.error)||('HTTP '+res.status);
+  if(typeof showToast==='function')showToast(toastMsg,'error');else alert(toastMsg);
+ }catch(e){
+  var em='Erro: '+(e&&e.message||'');
+  if(typeof showToast==='function')showToast(em,'error');else alert(em);
+ }
 };
 
 window.osdSendOwnerStatement=async function(){
