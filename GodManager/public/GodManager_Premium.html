@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-24 6247901 -->
+<!-- Build: 2026-06-22 dev -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -4549,6 +4549,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <textarea id="gm-st-modal-reply" rows="3" placeholder="Escreva sua resposta…" style="flex:1;min-height:72px;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);resize:vertical;outline:none"></textarea>
   </div>
  </div>
+ <button type="button" id="gm-st-resolve" onclick="gmSupportResolveTicket()" style="display:none;padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end">Resolver chamado</button>
  <button type="button" id="gm-st-modal-reply-btn" onclick="gmSupportSendReply()" style="padding:10px 18px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end">Responder</button>
 </div>
 </div>
@@ -13217,6 +13218,11 @@ async function gmSupportOpenTicket(id){
   if(sel&&t.status)sel.value=String(t.status);
   var staffActs=document.getElementById('gm-st-modal-staff-actions');
   if(staffActs)staffActs.style.display=gmIsStaffUser()?'flex':'none';
+  var resolveBtn=document.getElementById('gm-st-resolve');
+  if(resolveBtn){
+   var st=String(t.status||'').trim();
+   resolveBtn.style.display=(gmIsStaffUser()&&st!=='resolved'&&st!=='closed')?'inline-block':'none';
+  }
   var replyEl=document.getElementById('gm-st-modal-reply');
   if(replyEl)replyEl.value='';
   gmSupportClearModalAttachment();
@@ -13292,6 +13298,34 @@ async function gmSupportUpdateStatus(){
   console.warn('[gmSupportUpdateStatus]',e);
   if(typeof showToast==='function')showToast('Nao foi possivel atualizar o status.','error');
  }
+}
+async function gmSupportResolveTicket(){
+ var tid=window.__gmStCurrentTicketId;
+ if(!tid||!gmIsStaffUser())return;
+ var codeEl=document.getElementById('gm-st-modal-code');
+ var code=codeEl?String(codeEl.textContent||'').trim():tid;
+ if(!confirm('Resolver o chamado '+code+'? Ele será marcado como resolvido.'))return;
+ var btn=document.getElementById('gm-st-resolve');
+ if(btn)btn.disabled=true;
+ try{
+  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid),{method:'PATCH',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'resolved'})});
+  var data=await res.json().catch(function(){return null;});
+  if(res.ok&&data&&data.ok&&data.ticket){
+   if(typeof showToast==='function')showToast('Chamado resolvido','success');
+   await gmSupportOpenTicket(tid);
+   if(typeof gmSupportLoad==='function')void gmSupportLoad();
+   if(typeof gmSupportLoadStats==='function')void gmSupportLoadStats();
+  }else{
+   var msg=(data&&data.error)?String(data.error):'Nao foi possivel resolver o chamado.';
+   if(typeof showToast==='function')showToast(msg,'error');
+   else alert(msg);
+  }
+ }catch(e){
+  console.warn('[gmSupportResolveTicket]',e);
+  if(typeof showToast==='function')showToast('Nao foi possivel resolver o chamado.','error');
+  else alert('Nao foi possivel resolver o chamado.');
+ }
+ if(btn)btn.disabled=false;
 }
 function gmSupportFmtTmedio(horas){
  if(horas==null||horas==='')return '—';
@@ -13481,6 +13515,7 @@ window.gmSupportCloseTicket=gmSupportCloseTicket;
 window.gmSupportRenderMsgs=gmSupportRenderMsgs;
 window.gmSupportSendReply=gmSupportSendReply;
 window.gmSupportUpdateStatus=gmSupportUpdateStatus;
+window.gmSupportResolveTicket=gmSupportResolveTicket;
 window.gmSupportUploadAttachment=gmSupportUploadAttachment;
 window.gmSupportBubbleAttachmentPick=gmSupportBubbleAttachmentPick;
 window.gmSupportClearBubbleAttachment=gmSupportClearBubbleAttachment;
