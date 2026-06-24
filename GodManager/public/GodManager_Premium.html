@@ -4663,6 +4663,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
  </select>
+ <label for="ltp-filter-newonly" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);cursor:pointer;user-select:none"><input type="checkbox" id="ltp-filter-newonly" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender()" style="width:15px;height:15px;accent-color:var(--ink2);cursor:pointer"> Só novas do mês</label>
  <select id="ltp-filter-movein" onchange="if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender()" title="Filtra apenas o card Move in no mes" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Move in: Todos</option>
  <option value="2025-01">Move in: Jan 2025</option>
@@ -14478,6 +14479,15 @@ function ltCreatedMonthLabel(r){
  if(days<0) days=0;
  return monthLbl+' · há '+days+' dias';
 }
+function ltCreatedInMonth(r,ym){
+ if(!r||!ym) return false;
+ var raw=String(r.createdAt||'').trim();
+ if(!raw) return false;
+ var d=new Date(raw);
+ if(Number.isNaN(d.getTime())) return false;
+ var rYm=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+ return rYm===ym;
+}
 function ltFormatMoveIn(s){
  if(!s) return '—';
  var t=String(s).trim();
@@ -21195,10 +21205,18 @@ function ltpFilterTableRecords(records){
  var fSearch=((document.getElementById('ltp-search')||{}).value||'').toLowerCase();
  var fStatusCode=(document.getElementById('ltp-filter-occ')||{}).value||'';
  var fOccFilter=(document.getElementById('ltp-filter-occupancy')||{}).value||'';
+ var newOnlyEl=document.getElementById('ltp-filter-newonly');
+ var newOnly=newOnlyEl&&newOnlyEl.checked;
+ var newOnlyYm='';
+ if(newOnly){
+  var fMonthSel=(document.getElementById('ltp-filter-month')||{}).value||'';
+  newOnlyYm=fMonthSel||new Date().toISOString().slice(0,7);
+ }
  return (records||[]).filter(function(r){
   if(fSearch&&!(r.address+r.owner+(r.tenant||'')+(r.id||'')+(r._apiId||'')+(r.code||'')).toLowerCase().includes(fSearch)) return false;
   if(fStatusCode&&gmGetEffectiveStatus(r)!==fStatusCode) return false;
   if(fOccFilter&&String(r.occupancy||'').trim()!==fOccFilter) return false;
+  if(newOnly&&!ltCreatedInMonth(r,newOnlyYm)) return false;
   return true;
  });
 }
@@ -21353,7 +21371,15 @@ async function ltpRender(){
   var prevReserva=ltPortfolioReservaSum(records);
   gmSetLtpKpiDelta('ltp-kpi-reserva-seguranca-delta',totReserva,prevReserva);
  }catch(eDelta){console.warn('ltpRender kpi delta',eDelta);}
- const counter=document.getElementById('ltp-counter');if(counter)counter.textContent=filtered.length+' registro(s)';
+ const counter=document.getElementById('ltp-counter');
+ if(counter){
+  var newOnlyCb=document.getElementById('ltp-filter-newonly');
+  if(newOnlyCb&&newOnlyCb.checked){
+   counter.textContent='Mostrando '+filtered.length+' casas cadastradas em '+ltFmtMonth(kpiMonth);
+  }else{
+   counter.textContent=filtered.length+' registro(s)';
+  }
+ }
  const tbody=document.getElementById('ltp-tbody');const empty=document.getElementById('ltp-empty');
  if(!tbody){if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();return;}
  if(!filtered.length){
