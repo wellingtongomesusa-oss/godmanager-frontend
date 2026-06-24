@@ -13,6 +13,12 @@ function roundHours1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+function isAwaitingStaffResponse(last: { isStaff: boolean; authorClientId: string | null } | undefined): boolean {
+  if (!last) return true;
+  const godManagerTeam = last.isStaff && last.authorClientId == null;
+  return !godManagerTeam;
+}
+
 /** GET /api/support-tickets/stats — scoped ticket counters + average first staff response time */
 export async function GET() {
   const user = await getCurrentUserFromSession();
@@ -27,7 +33,8 @@ export async function GET() {
       ...(isStaffUser(user) ? {} : { requesterId: user.id }),
     };
 
-    const [abertos, emAndamento, respondidos, resolvidos, pendentes, total, tickets] = await Promise.all([
+    const [abertos, emAndamento, respondidos, resolvidos, pendentes, total, tickets, activeTickets] =
+      await Promise.all([
       prisma.supportTicket.count({ where: { ...baseWhere, status: 'open' } }),
       prisma.supportTicket.count({ where: { ...baseWhere, status: 'in_progress' } }),
       prisma.supportTicket.count({ where: { ...baseWhere, status: 'answered' } }),
@@ -52,7 +59,27 @@ export async function GET() {
           },
         },
       }),
+      prisma.supportTicket.findMany({
+        where: {
+          ...baseWhere,
+          status: { in: ['open', 'in_progress', 'answered'] },
+        },
+        select: {
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { isStaff: true, authorClientId: true },
+          },
+        },
+      }),
     ]);
+
+    let aguardandoResposta = 0;
+    for (const ticket of activeTickets) {
+      if (isAwaitingStaffResponse(ticket.messages[0])) {
+        aguardandoResposta += 1;
+      }
+    }
 
     let tempoMedioRespostaHoras: number | null = null;
     let respondedCount = 0;
@@ -80,6 +107,7 @@ export async function GET() {
         pendentes,
         total,
         tempoMedioRespostaHoras,
+        aguardandoResposta,
       },
     });
   } catch (e) {

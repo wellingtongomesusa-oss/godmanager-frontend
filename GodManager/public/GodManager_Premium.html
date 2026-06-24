@@ -218,7 +218,7 @@ body.dashboard-values-hidden .gm-sensitive-val::before{
  body.sidebar-collapsed .ss,
  body.sidebar-collapsed .sg{justify-content:center;padding-left:0;padding-right:0;margin-left:4px;margin-right:4px;gap:0;border-left-width:3px}
  body.sidebar-collapsed .si > span,
- body.sidebar-collapsed .ss > span:not(#nav-tasks-badge):not(#nav-news-badge),
+ body.sidebar-collapsed .ss > span:not(#nav-tasks-badge):not(#nav-news-badge):not(#gm-nav-support-badge),
  body.sidebar-collapsed .sg > span,
  body.sidebar-collapsed .sg .cv{display:none!important}
  body.sidebar-collapsed .sb-ix-ic span{display:none!important}
@@ -238,7 +238,8 @@ body.dashboard-values-hidden .gm-sensitive-val::before{
  body.sidebar-collapsed .sb-ft{justify-content:center;padding:12px 8px}
  body.sidebar-collapsed .sidebar .sb-copyright{display:none!important}
  body.sidebar-collapsed #nav-tasks-badge,
- body.sidebar-collapsed #nav-news-badge{position:absolute;top:2px;right:2px;margin:0;font-size:7px;min-width:12px;padding:0 4px}
+ body.sidebar-collapsed #nav-news-badge,
+ body.sidebar-collapsed #gm-nav-support-badge{position:absolute;top:2px;right:2px;margin:0;font-size:7px;min-width:12px;padding:0 4px}
  body.sidebar-collapsed .ss[style*="space-between"]{position:relative}
  .sb-collapse-btn{
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -1467,7 +1468,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="communications">COMMUNICATIONS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('news')" id="nav-news" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;padding-left:16px"><span data-i18n="news">News</span> <span id="nav-news-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);font-size:8px;font-weight:700">0</span></div>
- <div class="ss" onclick="nav('support')" id="nav-support" style="padding-left:16px">Suporte</div>
+ <div class="ss" onclick="nav('support')" id="nav-support" style="display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;padding-left:16px"><span>Suporte</span> <span id="gm-nav-support-badge" style="display:none;padding:1px 6px;min-width:16px;border-radius:10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);font-size:8px;font-weight:700">0</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="properties" id="wrap-nav-props-rank">
@@ -11034,10 +11035,11 @@ function nav(r){
   if(typeof gmBillingRenderInvoices==='function')await gmBillingRenderInvoices();
  }
  ,
- support:function(){if(typeof gmSupportLoad==='function')void gmSupportLoad();}
+ support:function(){if(typeof gmSupportLoad==='function')void gmSupportLoad();if(typeof gmSupportRefreshNavBadge==='function')void gmSupportRefreshNavBadge();}
  };
  if(renders[r]) setTimeout(renders[r],30);
  try{if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();}catch(_gnb){}
+ try{if(typeof gmSupportRefreshNavBadge==='function')gmSupportRefreshNavBadge();}catch(_gsnb){}
 }
 
 window.osStatementData={};
@@ -13341,6 +13343,28 @@ function gmSupportResetStatsCards(){
   if(el)el.textContent='—';
  });
 }
+function gmSupportUpdateNavBadge(n){
+ if(!gmIsStaffUser()){
+  var hide=document.getElementById('gm-nav-support-badge');
+  if(hide)hide.style.display='none';
+  return;
+ }
+ var count=Number(n)||0;
+ var b=document.getElementById('gm-nav-support-badge');
+ if(b){b.textContent=count>9?'9+':String(count);b.style.display=count>0?'inline-block':'none';}
+}
+async function gmSupportRefreshNavBadge(){
+ if(!gmIsStaffUser()){gmSupportUpdateNavBadge(0);return;}
+ try{
+  var res=await fetch('/api/support-tickets/stats',{credentials:'include',cache:'no-store'});
+  if(!res.ok)return;
+  var data=await res.json().catch(function(){return null;});
+  if(!data||data.ok!==true||!data.stats)return;
+  gmSupportUpdateNavBadge(data.stats.aguardandoResposta);
+ }catch(e){
+  console.warn('[gmSupportRefreshNavBadge]',e);
+ }
+}
 async function gmSupportLoadStats(){
  gmSupportResetStatsCards();
  try{
@@ -13357,6 +13381,7 @@ async function gmSupportLoadStats(){
   if(elR)elR.textContent=s.resolvidos!=null?String(s.resolvidos):'—';
   var elT=document.getElementById('gm-sup-card-tmedio');
   if(elT)elT.textContent=gmSupportFmtTmedio(s.tempoMedioRespostaHoras);
+  gmSupportUpdateNavBadge(s.aguardandoResposta);
  }catch(e){
   console.warn('[gmSupportLoadStats]',e);
  }
@@ -13509,6 +13534,8 @@ async function gmSupportChatSend(){
 }
 window.gmSupportLoad=gmSupportLoad;
 window.gmSupportLoadStats=gmSupportLoadStats;
+window.gmSupportRefreshNavBadge=gmSupportRefreshNavBadge;
+window.gmSupportUpdateNavBadge=gmSupportUpdateNavBadge;
 window.gmSupportOpenNewModal=gmSupportOpenNewModal;
 window.gmSupportOpenTicket=gmSupportOpenTicket;
 window.gmSupportCloseTicket=gmSupportCloseTicket;
@@ -22885,7 +22912,7 @@ function gmSidebarNavLabel(el){
  if(!el)return '';
  var cached=el.getAttribute('data-sb-label');
  if(cached)return cached;
- var sp=el.querySelector(':scope > span:not(#nav-tasks-badge):not(#nav-news-badge)');
+ var sp=el.querySelector(':scope > span:not(#nav-tasks-badge):not(#nav-news-badge):not(#gm-nav-support-badge)');
  var raw=(sp?sp.textContent:el.textContent)||'';
  var label=String(raw).replace(/\s+/g,' ').trim();
  if(label)el.setAttribute('data-sb-label',label);
@@ -24892,6 +24919,8 @@ window.addEventListener('DOMContentLoaded',()=>{
  else renderMsgs();
  if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();
  try{window.__gmNewsBadgeInterval=setInterval(function(){if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();},120000);}catch(_gni){}
+ if(typeof gmSupportRefreshNavBadge==='function')gmSupportRefreshNavBadge();
+ try{window.__gmSupportNavBadgeInterval=setInterval(function(){if(typeof gmSupportRefreshNavBadge==='function')gmSupportRefreshNavBadge();},180000);}catch(_gsni){}
  if(!window.__gmPropertiesVisibilityBound){
   window.__gmPropertiesVisibilityBound=true;
   document.addEventListener('visibilitychange',function(){
