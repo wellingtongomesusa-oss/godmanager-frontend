@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-22 dev -->
+<!-- Build: 2026-06-24 6247901 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -2248,7 +2248,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <div id="gm-support-cards" class="gm-ix-kpi-grid" style="margin-bottom:16px">
    <div class="gm-ix-kpi k4"><div class="k-l">Chamados Abertos</div><div class="k-v" id="gm-sup-card-abertos">—</div><div class="k-s">status aberto</div><div class="k-bar"></div></div>
-   <div class="gm-ix-kpi"><div class="k-l">Pendentes</div><div class="k-v" id="gm-sup-card-pendentes">—</div><div class="k-s">aberto + em andamento</div><div class="k-bar"></div></div>
+   <div class="gm-ix-kpi"><div class="k-l">Pendentes</div><div class="k-v" id="gm-sup-card-pendentes">—</div><div class="k-s">aberto + em andamento + respondido</div><div class="k-bar"></div></div>
    <div class="gm-ix-kpi k3"><div class="k-l">Resolvidos</div><div class="k-v" id="gm-sup-card-resolvidos">—</div><div class="k-s">resolvido + fechado</div><div class="k-bar"></div></div>
    <div class="gm-ix-kpi k2"><div class="k-l">Tempo Médio de Resposta</div><div class="k-v" id="gm-sup-card-tmedio">—</div><div class="k-s">1ª resposta staff</div><div class="k-bar"></div></div>
   </div>
@@ -13165,14 +13165,13 @@ function gmSupportRenderMsgs(msgs){
  }
  msgs.forEach(function(m){
   if(!m)return;
-  var staff=!!m.isStaff;
-  var align=staff?'flex-end':'flex-start';
-  var author=String(m.authorName||'—').replace(/</g,'&lt;');
   var godManagerAuthor=m.authorClientId==null||m.authorClientId===undefined;
+  var align=godManagerAuthor?'flex-end':'flex-start';
+  var author=String(m.authorName||'—').replace(/</g,'&lt;');
   var tag=godManagerAuthor?' <span style="font-size:10px;color:var(--ink3)">(equipe)</span>':'';
   var body=String(m.body||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
   var when=gmSupportFmtDate(m.createdAt);
-  var bubble=staff
+  var bubble=godManagerAuthor
    ?'background:var(--blue);color:#fff;border-radius:12px 12px 2px 12px;padding:10px 14px;font-size:12px;line-height:1.45;max-width:88%'
    :'background:var(--cream);color:var(--ink2);border:1px solid var(--border);border-radius:12px 12px 12px 2px;padding:10px 14px;font-size:12px;line-height:1.45;max-width:88%';
   var attHtml=gmSupportFmtAttachmentsHtml(m.attachments);
@@ -13319,7 +13318,7 @@ async function gmSupportLoadStats(){
   var elA=document.getElementById('gm-sup-card-abertos');
   if(elA)elA.textContent=s.abertos!=null?String(s.abertos):'—';
   var elP=document.getElementById('gm-sup-card-pendentes');
-  if(elP)elP.textContent=s.pendentes!=null?String(s.pendentes):'—';
+  if(elP)elP.textContent=String(Number(s.pendentes||0)+Number(s.respondidos||0));
   var elR=document.getElementById('gm-sup-card-resolvidos');
   if(elR)elR.textContent=s.resolvidos!=null?String(s.resolvidos):'—';
   var elT=document.getElementById('gm-sup-card-tmedio');
