@@ -20410,7 +20410,7 @@ window.gmPropertiesPushToApi=async function(item){
 window.gmPropertiesFingerprint=function(items){
  try{
   if(!Array.isArray(items))return '';
-  var parts=items.map(function(p){return String((p&&(p.id||p.code))||'')+':'+String((p&&p.updatedAt)||'');});
+  var parts=items.map(function(p){return String((p&&(p.id||p.code))||'')+':'+String((p&&p.updatedAt)||'')+':'+String((p&&p.createdAt)||'');});
   parts.sort();
   return String(items.length)+'|'+parts.join(',');
  }catch(e){return String(Date.now());}
