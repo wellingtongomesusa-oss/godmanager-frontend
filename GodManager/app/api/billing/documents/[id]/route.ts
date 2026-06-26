@@ -3,6 +3,7 @@ import type { BillingDocument, BillingLineItem, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
+import { parseBillingPartyField } from '@/lib/billingParties';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +90,8 @@ function documentToJson(doc: DocWithItems) {
     billingContactId: doc.billingContactId,
     vendorId: doc.vendorId,
     propertyId: doc.propertyId,
+    creditParty: doc.creditParty,
+    debitParty: doc.debitParty,
     issueDate: doc.issueDate.toISOString(),
     dueDate: doc.dueDate ? doc.dueDate.toISOString() : null,
     total: decToNum(doc.total),
@@ -280,6 +283,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (body.propertyId != null) {
       data.propertyId = String(body.propertyId).trim() || null;
+    }
+    if (body.creditParty != null) {
+      const parsed = parseBillingPartyField(body.creditParty);
+      if (parsed && 'error' in parsed) {
+        return NextResponse.json({ ok: false, error: 'invalid creditParty' }, { status: 400 });
+      }
+      if (parsed) data.creditParty = parsed.value;
+    }
+    if (body.debitParty != null) {
+      const parsed = parseBillingPartyField(body.debitParty);
+      if (parsed && 'error' in parsed) {
+        return NextResponse.json({ ok: false, error: 'invalid debitParty' }, { status: 400 });
+      }
+      if (parsed) data.debitParty = parsed.value;
     }
     if (body.notes != null) {
       data.notes = String(body.notes).trim() || null;

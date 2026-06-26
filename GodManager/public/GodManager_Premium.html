@@ -3326,6 +3326,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Número</th>
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Fornecedor</th>
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Crédito</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Débito</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Emissão</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Total</th>
@@ -4141,6 +4143,26 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <select id="billing-bill-property" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
     <option value="">— Nenhuma —</option>
    </select>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+   <div>
+    <label for="billing-bill-credit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CRÉDITO</label>
+    <select id="billing-bill-credit" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+     <option value="">— Nenhum —</option>
+     <option value="TENANT">Tenant</option>
+     <option value="OWNER">Owner</option>
+     <option value="MANAGER_PROP">Manager Prop</option>
+    </select>
+   </div>
+   <div>
+    <label for="billing-bill-debit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DÉBITO</label>
+    <select id="billing-bill-debit" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+     <option value="">— Nenhum —</option>
+     <option value="TENANT">Tenant</option>
+     <option value="OWNER">Owner</option>
+     <option value="MANAGER_PROP">Manager Prop</option>
+    </select>
+   </div>
   </div>
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Recebedor (opcional)</div>
   <div style="margin-bottom:14px">
@@ -32060,6 +32082,19 @@ function gmBillingFilterDocsForRender(docs,statusFilter){
  if(String(statusFilter||'').trim())return list;
  return list.filter(function(doc){return String(doc.status||'').toUpperCase()!=='CANCELLED';});
 }
+function gmBillingPartyLabel(code){
+ var c=String(code||'').trim().toUpperCase();
+ var map={TENANT:'Tenant',OWNER:'Owner',MANAGER_PROP:'Manager Prop'};
+ return map[c]||'—';
+}
+function gmBillingSetBillPartySelects(creditParty,debitParty){
+ var creditEl=document.getElementById('billing-bill-credit');
+ var debitEl=document.getElementById('billing-bill-debit');
+ var creditVal=String(creditParty||'').trim().toUpperCase();
+ var debitVal=String(debitParty||'').trim().toUpperCase();
+ if(creditEl)creditEl.value=creditVal||'';
+ if(debitEl)debitEl.value=debitVal||'';
+}
 function gmBillingParseAttachments(att){
  var list=[];
  try{
@@ -33285,7 +33320,7 @@ async function gmBillingRenderBills(){
  var tbody=document.getElementById('billing-bill-tbody');
  var counter=document.getElementById('billing-bill-counter');
  if(!tbody)return;
- tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
+ tbody.innerHTML='<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
  var statusEl=document.getElementById('billing-pay-filter-status');
  var monthEl=document.getElementById('billing-pay-filter-month');
  var qEl=document.getElementById('billing-pay-filter-q');
@@ -33302,7 +33337,7 @@ async function gmBillingRenderBills(){
   var data=await res.json().catch(function(){return{};});
   if(!res.ok||!data.ok){
    var errMsg=gmBillingEsc((data&&data.error)||'Falha ao listar bills');
-   tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
+   tbody.innerHTML='<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
    if(counter)counter.textContent='';
    return;
   }
@@ -33310,7 +33345,7 @@ async function gmBillingRenderBills(){
   docs=gmBillingFilterDocsForRender(docs,status);
   if(counter)counter.textContent=docs.length+' registro(s)';
   if(!docs.length){
-   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum bill ainda.</td></tr>';
+   tbody.innerHTML='<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum bill ainda.</td></tr>';
    return;
   }
   var propCodeMap=gmBillingPropertyCodeMap();
@@ -33325,6 +33360,8 @@ async function gmBillingRenderBills(){
     +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+gmBillingEsc(doc.number||'')+'</td>'
     +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmBillingEsc(doc.contactName||'')+'</td>'
     +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+gmBillingEsc(propCode)+'</td>'
+    +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingPartyLabel(doc.creditParty))+'</td>'
+    +'<td style="padding:9px 12px;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingPartyLabel(doc.debitParty))+'</td>'
     +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.issueDate))+'</td>'
     +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.dueDate))+'</td>'
     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</td>'
@@ -33335,7 +33372,7 @@ async function gmBillingRenderBills(){
   tbody.innerHTML=html;
  }catch(e){
   console.warn('[gmBillingRenderBills]',e);
-  tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar bills.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar bills.</td></tr>';
   if(counter)counter.textContent='';
  }
 }
@@ -33620,6 +33657,7 @@ function gmBillingCloseApBill(){
  gmApSetBillModalMode('create');
  var propSel=document.getElementById('billing-bill-property');
  if(propSel)propSel.innerHTML='<option value="">— Nenhuma —</option>';
+ gmBillingSetBillPartySelects('','');
  var attInput=document.getElementById('gm-ap-file-input');
  if(attInput)attInput.value='';
  gmBillingRenderApAttachmentsList([]);
@@ -33752,6 +33790,7 @@ async function gmBillingOpenNewBill(){
  if(items){items.innerHTML='';gmApAddItemRow();}
  gmApRecalc();
  await gmBillingPopulateBillPropertySelect('');
+ gmBillingSetBillPartySelects('','');
  window.__gmApTempUploadId='temp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
  window.__gmApAttachments=[];
  window.__gmApPendingRegister=[];
@@ -33791,6 +33830,7 @@ async function gmBillingOpenEditBill(id){
   if(ncEmail)ncEmail.value='';
   gmApSelectVendorFromDoc(doc);
   await gmBillingPopulateBillPropertySelect(doc.propertyId);
+  gmBillingSetBillPartySelects(doc.creditParty,doc.debitParty);
  window.__gmApTempUploadId=null;
  window.__gmApAttachments=gmBillingParseAttachments(doc.attachments);
  window.__gmApPendingRegister=[];
@@ -33894,6 +33934,12 @@ async function gmBillingSaveBill(){
  var propEl=document.getElementById('billing-bill-property');
  var propVal=propEl?String(propEl.value||'').trim():'';
  payload.propertyId=propVal||null;
+ var creditEl=document.getElementById('billing-bill-credit');
+ var debitEl=document.getElementById('billing-bill-debit');
+ var creditVal=creditEl?String(creditEl.value||'').trim():'';
+ var debitVal=debitEl?String(debitEl.value||'').trim():'';
+ payload.creditParty=creditVal||null;
+ payload.debitParty=debitVal||null;
  try{
   var res,data;
   if(editId){

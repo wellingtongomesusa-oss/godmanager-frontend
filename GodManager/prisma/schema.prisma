@@ -1265,6 +1265,8 @@ model BillingDocument {
   billingContactId String?
   vendorId         String?
   propertyId       String?
+  creditParty      String?
+  debitParty       String?
   issueDate        DateTime          @default(now())
   dueDate          DateTime?
   total            Decimal           @default(0) @db.Decimal(12, 2)

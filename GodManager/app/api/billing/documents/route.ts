@@ -3,6 +3,7 @@ import type { BillingDocument, BillingLineItem, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
+import { parseBillingPartyField } from '@/lib/billingParties';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,6 +103,8 @@ function documentToJson(doc: DocWithItems) {
     billingContactId: doc.billingContactId,
     vendorId: doc.vendorId,
     propertyId: doc.propertyId,
+    creditParty: doc.creditParty,
+    debitParty: doc.debitParty,
     issueDate: doc.issueDate.toISOString(),
     dueDate: doc.dueDate ? doc.dueDate.toISOString() : null,
     total: decToNum(doc.total),
@@ -308,6 +311,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: itemsWithClient.error }, { status: 400 });
     }
 
+    let creditParty: string | null = null;
+    if (body.creditParty != null) {
+      const parsed = parseBillingPartyField(body.creditParty);
+      if (parsed && 'error' in parsed) {
+        return NextResponse.json({ ok: false, error: 'invalid creditParty' }, { status: 400 });
+      }
+      if (parsed) creditParty = parsed.value;
+    }
+
+    let debitParty: string | null = null;
+    if (body.debitParty != null) {
+      const parsed = parseBillingPartyField(body.debitParty);
+      if (parsed && 'error' in parsed) {
+        return NextResponse.json({ ok: false, error: 'invalid debitParty' }, { status: 400 });
+      }
+      if (parsed) debitParty = parsed.value;
+    }
+
     const row = await prisma.$transaction(async (tx) => {
       const number = await nextDocumentNumber(tx, clientId, docType);
 
@@ -337,6 +358,8 @@ export async function POST(req: Request) {
           vendorId: body.vendorId != null ? String(body.vendorId).trim() || null : null,
           propertyId:
             body.propertyId != null ? String(body.propertyId).trim() || null : null,
+          creditParty,
+          debitParty,
           issueDate: issueDateParsed ?? new Date(),
           dueDate: dueDateParsed ?? null,
           total: itemsWithClient.total,
