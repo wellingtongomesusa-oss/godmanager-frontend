@@ -41,6 +41,7 @@ function serializeLineItem(li: {
   sourceRefId: string | null;
   transactionDate: Date | null;
   sortOrder: number;
+  provisional: boolean;
   createdAt: Date;
 }) {
   return {
@@ -52,6 +53,7 @@ function serializeLineItem(li: {
     sourceRefId: li.sourceRefId,
     transactionDate: li.transactionDate?.toISOString() ?? null,
     sortOrder: li.sortOrder,
+    provisional: li.provisional,
     createdAt: li.createdAt.toISOString(),
   };
 }
@@ -182,6 +184,7 @@ export async function PATCH(
           sourceRefId: true,
           transactionDate: true,
           sortOrder: true,
+          provisional: true,
           createdAt: true,
         },
       });
