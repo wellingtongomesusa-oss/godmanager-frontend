@@ -13,6 +13,7 @@ import type { Prisma, PmExpenseStatus, PmPackage } from '@prisma/client';
 import { resolvePropertyId } from '@/lib/pmResolveProperty';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { serviceDateToMonthRef } from '@/lib/pmCycleRef';
+import { parseBillingPartyField } from '@/lib/billingParties';
 import {
   pickTenantNameForProperty,
   pmExpensePropertyTenantSelect,
@@ -44,6 +45,8 @@ function toJson(e: {
   serviceDate: Date | null;
   monthRef: string;
   status: PmExpenseStatus;
+  creditParty: string | null;
+  debitParty: string | null;
   description: string | null;
   isVendorFree: boolean;
   wasRescheduled: boolean;
@@ -95,6 +98,8 @@ function toJson(e: {
     serviceDate: e.serviceDate ? e.serviceDate.toISOString().slice(0, 10) : '',
     monthRef: e.monthRef,
     status: e.status,
+    creditParty: e.creditParty,
+    debitParty: e.debitParty,
     description: e.description ?? '',
     isVendorFree: !!e.isVendorFree,
     wasRescheduled: !!e.wasRescheduled,
@@ -212,6 +217,24 @@ export async function POST(req: Request) {
     let st: PmExpenseStatus = 'PENDING';
     if (body.status && STATUS_SET.has(body.status as PmExpenseStatus)) st = body.status as PmExpenseStatus;
 
+    let creditParty: string | null = null;
+    if (body.creditParty != null) {
+      const parsed = parseBillingPartyField(body.creditParty);
+      if (parsed && 'error' in parsed) {
+        return NextResponse.json({ ok: false, error: 'invalid creditParty' }, { status: 400 });
+      }
+      if (parsed) creditParty = parsed.value;
+    }
+
+    let debitParty: string | null = null;
+    if (body.debitParty != null) {
+      const parsed = parseBillingPartyField(body.debitParty);
+      if (parsed && 'error' in parsed) {
+        return NextResponse.json({ ok: false, error: 'invalid debitParty' }, { status: 400 });
+      }
+      if (parsed) debitParty = parsed.value;
+    }
+
     const serviceDate = body.serviceDate
       ? new Date(String(body.serviceDate))
       : null;
@@ -244,6 +267,8 @@ export async function POST(req: Request) {
           serviceDate: serviceDate && !Number.isNaN(serviceDate.getTime()) ? serviceDate : null,
           monthRef,
           status: st,
+          creditParty,
+          debitParty,
           description: String(body.description || '').trim() || null,
           isVendorFree,
           ...(metadata !== undefined ? { metadata } : {}),

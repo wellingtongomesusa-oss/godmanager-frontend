@@ -650,6 +650,8 @@ model PmExpense {
   serviceDate    DateTime?
   monthRef       String
   status         PmExpenseStatus @default(PENDING)
+  creditParty    String?
+  debitParty     String?
   description    String?         @db.Text
   finalizedAt        DateTime?
   finalizedBy        String?

@@ -3993,6 +3993,26 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <p style="font-size:10px;color:var(--ink3);margin:12px 0 0;line-height:1.45">Rent do inquilino menos a soma destes valores (com markup) alimenta o NET do owner. Mesma lógica que Owner Payment e Properties.</p>
  </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+  <div>
+   <label for="lt-nexp-credit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CRÉDITO</label>
+   <select id="lt-nexp-credit" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+    <option value="">— Nenhum —</option>
+    <option value="TENANT">Tenant</option>
+    <option value="OWNER">Owner</option>
+    <option value="MANAGER_PROP">Manager Prop</option>
+   </select>
+  </div>
+  <div>
+   <label for="lt-nexp-debit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DÉBITO</label>
+   <select id="lt-nexp-debit" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+    <option value="">— Nenhum —</option>
+    <option value="TENANT">Tenant</option>
+    <option value="OWNER">Owner</option>
+    <option value="MANAGER_PROP">Manager Prop</option>
+   </select>
+  </div>
+ </div>
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Detalhes</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
  <div id="lt-nexp-detalhe-vendor-wrap" style="display:none;grid-column:1/-1">
@@ -16401,6 +16421,8 @@ function ltExpMapApiToRow(e){
   serviceType:e.serviceType || '',
   serviceDate:e.serviceDate,
   statusPm:e.status,
+  creditParty:e.creditParty||null,
+  debitParty:e.debitParty||null,
   value:oc,
   jobValueOverride:e.jobValueOverride!=null&&e.jobValueOverride!==''?Number(e.jobValueOverride):null,
   isVendorFree:!!e.isVendorFree,
@@ -18714,6 +18736,21 @@ function ltNexpMirrorAgendaToPmSvc(){
  var pdt=document.getElementById('lt-nexp-pm-svc-date');
  if(ag&&pdt)pdt.value=String(ag.value||'').trim();
 }
+function ltNexpSetPartySelects(credit,debit){
+ var cEl=document.getElementById('lt-nexp-credit');
+ var dEl=document.getElementById('lt-nexp-debit');
+ var cv=credit?String(credit).trim().toUpperCase():'';
+ var dv=debit?String(debit).trim().toUpperCase():'';
+ if(cEl)cEl.value=cv;
+ if(dEl)dEl.value=dv;
+}
+function ltNexpGetPartyPayload(){
+ var cEl=document.getElementById('lt-nexp-credit');
+ var dEl=document.getElementById('lt-nexp-debit');
+ var c=cEl?String(cEl.value||'').trim():'';
+ var d=dEl?String(dEl.value||'').trim():'';
+ return {creditParty:c||null,debitParty:d||null};
+}
 
 async function ltOpenNewExpense(prefill){
  var pf=(prefill&&typeof prefill==='object')?prefill:{};
@@ -18742,6 +18779,7 @@ async function ltOpenNewExpense(prefill){
  if(typeof ltNexpSetPmBlockPacoteMode==='function')ltNexpSetPmBlockPacoteMode(false);
  var ovn=document.getElementById('lt-nexp-optional-pm-vendor');if(ovn)ovn.value='';
  if(typeof ltNexpOnCatChange==='function')ltNexpOnCatChange();
+ ltNexpSetPartySelects('','');
 
  if(pf.vendorFreeClone||pf.vendorFreeStandalone){
   try{if(pf._vendorFreeFrom!=null&&pf._vendorFreeFrom!=='')window.__lastVendorFreeFrom=String(pf._vendorFreeFrom);}catch(eVF){}
@@ -18863,6 +18901,7 @@ async function ltOpenEditExpense(id){
   var sdt=document.getElementById('lt-nexp-pm-svc-date'); if(sdt && e.serviceDate) sdt.value=String(e.serviceDate).slice(0,10);
   var st=document.getElementById('lt-nexp-pm-status'); if(st) st.value = e.status || 'PENDING';
   ltNexpSetQueueSelectFromMeta(e.metadata);
+  ltNexpSetPartySelects(e.creditParty,e.debitParty);
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
@@ -18898,6 +18937,7 @@ async function ltOpenEditExpense(id){
   },0);
   if(e.packageApplied && typeof ltNexpSetBothPacoteSelects==='function')ltNexpSetBothPacoteSelects(e.packageApplied);
   ltNexpSetQueueSelectFromMeta(e.metadata);
+  ltNexpSetPartySelects(e.creditParty,e.debitParty);
   document.getElementById('lt-newexp-modal').style.display='flex';
   return;
  }
@@ -18925,6 +18965,7 @@ async function ltOpenEditExpense(id){
  document.getElementById('lt-nexp-status').value=r.status||'unpaid';
  document.getElementById('lt-nexp-link').checked=!!r.linkToStatement;
  ltNexpSetQueueSelectFromMeta(null);
+ ltNexpSetPartySelects(r.creditParty,r.debitParty);
  document.getElementById('lt-newexp-modal').style.display='flex';
 }
 
@@ -18966,6 +19007,7 @@ function ltSaveExpense(){
     metaBase.fromJobId=String(vfFrom);
    }
    var meta=ltNexpApplyQueueMeta(metaBase,isEd);
+   var partyFields=ltNexpGetPartyPayload();
    const body={
     propertyCode:propId,
     packageApplied:pkg,
@@ -18978,6 +19020,8 @@ function ltSaveExpense(){
     description:descVal,
     isVendorFree:!!isVFree,
     vendorId:isVFree?null:vid,
+    creditParty:partyFields.creditParty,
+    debitParty:partyFields.debitParty,
     metadata:meta||undefined
    };
    try{
@@ -19063,6 +19107,7 @@ function ltSaveExpense(){
   var pmPkg=pkgStr?pkgStr:'PACOTE_4';
   var isEd = !!ltExpEditingId;
   var metaLegacy=ltNexpApplyQueueMeta(isEd?ltNexpGetEditExpenseMeta():null,isEd);
+  var partyFields=ltNexpGetPartyPayload();
   var body = {
    propertyCode: propId,
    vendorId: optVid?optVid:null,
@@ -19073,7 +19118,9 @@ function ltSaveExpense(){
    monthRef: month,
    serviceDate: isJobCtx ? agVal : sDate,
    status: stPm,
-   description: descVal
+   description: descVal,
+   creditParty: partyFields.creditParty,
+   debitParty: partyFields.debitParty
   };
   if(metaLegacy)body.metadata=metaLegacy;
   var url = isEd ? ('/api/pm/expenses/' + encodeURIComponent(ltExpEditingId)) : '/api/pm/expenses';
