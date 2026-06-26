@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-22 dev -->
+<!-- Build: 2026-06-26 99fcbd6 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -3325,6 +3325,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Número</th>
      <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Fornecedor</th>
+     <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Propriedade</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Emissão</th>
      <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Vencimento</th>
      <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)">Total</th>
@@ -4134,6 +4135,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </div>
     <button type="button" onclick="if(typeof gmApSaveNewContact==='function')gmApSaveNewContact()" style="padding:6px 14px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Salvar contato</button>
    </div>
+  </div>
+  <div style="margin-bottom:14px">
+   <label for="billing-bill-property" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PROPRIEDADE (opcional)</label>
+   <select id="billing-bill-property" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
+    <option value="">— Nenhuma —</option>
+   </select>
   </div>
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Recebedor (opcional)</div>
   <div style="margin-bottom:14px">
@@ -31995,6 +32002,55 @@ function gmBillingStatusLabel(status){
  var map={DRAFT:'Rascunho',APPROVED:'Aprovado',SENT:'Enviada',PAID:'Paga',CANCELLED:'Cancelada'};
  return map[st]||st||'—';
 }
+function gmBillingGetPropertyRows(){
+ var arr=(typeof window.gmPropertiesLoad==='function')?(window.gmPropertiesLoad()||[]):[];
+ if(typeof window.gmPropertiesToUi==='function')arr=arr.map(window.gmPropertiesToUi);
+ return arr.filter(function(p){return p&&(p._apiId||p.id);});
+}
+function gmBillingPropertyCodeMap(){
+ var map={};
+ gmBillingGetPropertyRows().forEach(function(p){
+  var pid=String(p._apiId||p.id||'').trim();
+  var code=String(p.code||p.id||'').trim();
+  if(pid)map[pid]=code;
+  if(p.id&&String(p.id)!==pid)map[String(p.id)]=code;
+ });
+ return map;
+}
+function gmBillingPropertyCodeForId(propertyId){
+ var pid=String(propertyId||'').trim();
+ if(!pid)return '—';
+ var code=gmBillingPropertyCodeMap()[pid];
+ return code||'—';
+}
+function gmBillingPopulateBillPropertySelect(selectedId){
+ var sel=document.getElementById('billing-bill-property');
+ if(!sel)return;
+ var selId=String(selectedId||'').trim();
+ sel.innerHTML='<option value="">— Nenhuma —</option>';
+ var rows=gmBillingGetPropertyRows();
+ rows.sort(function(a,b){
+  return String(a.code||a.id||'').localeCompare(String(b.code||b.id||''));
+ });
+ rows.forEach(function(p){
+  var pid=String(p._apiId||p.id||'').trim();
+  if(!pid)return;
+  var code=String(p.code||p.id||'').trim();
+  var addr=String(p.address||'').trim();
+  var label=addr?(code+' — '+addr):code;
+  var opt=document.createElement('option');
+  opt.value=pid;
+  opt.setAttribute('data-code',code);
+  opt.textContent=label;
+  sel.appendChild(opt);
+ });
+ if(selId)sel.value=selId;
+}
+function gmBillingFilterDocsForRender(docs,statusFilter){
+ var list=Array.isArray(docs)?docs:[];
+ if(String(statusFilter||'').trim())return list;
+ return list.filter(function(doc){return String(doc.status||'').toUpperCase()!=='CANCELLED';});
+}
 function gmBillingInvoicePdfPrintHtml(html){
  var w=window.open('','_blank');
  if(!w){
@@ -32188,6 +32244,7 @@ async function gmBillingRenderInvoices(){
    return;
   }
   var docs=Array.isArray(data.documents)?data.documents:[];
+  docs=gmBillingFilterDocsForRender(docs,status);
   window.gmBillingLastReceiver=null;
   for(var li=0;li<docs.length;li++){
    var ld=docs[li];
@@ -33043,7 +33100,7 @@ async function gmBillingRenderBills(){
  var tbody=document.getElementById('billing-bill-tbody');
  var counter=document.getElementById('billing-bill-counter');
  if(!tbody)return;
- tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
+ tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr>';
  var statusEl=document.getElementById('billing-pay-filter-status');
  var monthEl=document.getElementById('billing-pay-filter-month');
  var qEl=document.getElementById('billing-pay-filter-q');
@@ -33060,21 +33117,29 @@ async function gmBillingRenderBills(){
   var data=await res.json().catch(function(){return{};});
   if(!res.ok||!data.ok){
    var errMsg=gmBillingEsc((data&&data.error)||'Falha ao listar bills');
-   tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
+   tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+errMsg+'</td></tr>';
    if(counter)counter.textContent='';
    return;
   }
   var docs=Array.isArray(data.documents)?data.documents:[];
+  docs=gmBillingFilterDocsForRender(docs,status);
   if(counter)counter.textContent=docs.length+' registro(s)';
   if(!docs.length){
-   tbody.innerHTML='<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum bill ainda.</td></tr>';
+   tbody.innerHTML='<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum bill ainda.</td></tr>';
    return;
   }
+  var propCodeMap=gmBillingPropertyCodeMap();
   var html='';
   docs.forEach(function(doc){
+   var propCode='—';
+   if(doc.propertyId){
+    var pid=String(doc.propertyId||'').trim();
+    propCode=propCodeMap[pid]||'—';
+   }
    html+='<tr style="border-bottom:1px solid var(--border)">'
     +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+gmBillingEsc(doc.number||'')+'</td>'
     +'<td style="padding:9px 12px;font-size:12px;color:var(--ink)">'+gmBillingEsc(doc.contactName||'')+'</td>'
+    +'<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+gmBillingEsc(propCode)+'</td>'
     +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.issueDate))+'</td>'
     +'<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+gmBillingEsc(gmBillingFmtDate(doc.dueDate))+'</td>'
     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</td>'
@@ -33085,7 +33150,7 @@ async function gmBillingRenderBills(){
   tbody.innerHTML=html;
  }catch(e){
   console.warn('[gmBillingRenderBills]',e);
-  tbody.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar bills.</td></tr>';
+  tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar bills.</td></tr>';
   if(counter)counter.textContent='';
  }
 }
@@ -33365,6 +33430,8 @@ function gmBillingCloseApBill(){
  window.__gmApEditDocId=null;
  gmApRemoveVendorSnapshotOption();
  gmApSetBillModalMode('create');
+ var propSel=document.getElementById('billing-bill-property');
+ if(propSel)propSel.innerHTML='<option value="">— Nenhuma —</option>';
  var m=document.getElementById('gm-billing-ap-modal');
  if(m)m.style.display='none';
 }
@@ -33493,6 +33560,7 @@ async function gmBillingOpenNewBill(){
  var items=document.getElementById('gm-ap-items');
  if(items){items.innerHTML='';gmApAddItemRow();}
  gmApRecalc();
+ await gmBillingPopulateBillPropertySelect('');
  var m=document.getElementById('gm-billing-ap-modal');
  if(m)m.style.display='flex';
 }
@@ -33527,6 +33595,7 @@ async function gmBillingOpenEditBill(id){
   if(ncName)ncName.value='';
   if(ncEmail)ncEmail.value='';
   gmApSelectVendorFromDoc(doc);
+  await gmBillingPopulateBillPropertySelect(doc.propertyId);
   var numEl=document.getElementById('gm-ap-number');
   if(numEl)numEl.value=String(doc.number||'');
   var rName=document.getElementById('gm-ap-receiver-name');
@@ -33623,6 +33692,9 @@ async function gmBillingSaveBill(){
  if(issueEl&&issueEl.value)payload.issueDate=issueEl.value+'T00:00:00.000Z';
  if(dueEl&&dueEl.value)payload.dueDate=dueEl.value+'T00:00:00.000Z';
  if(notesEl&&String(notesEl.value||'').trim())payload.notes=String(notesEl.value).trim();
+ var propEl=document.getElementById('billing-bill-property');
+ var propVal=propEl?String(propEl.value||'').trim():'';
+ payload.propertyId=propVal||null;
  try{
   var res,data;
   if(editId){
