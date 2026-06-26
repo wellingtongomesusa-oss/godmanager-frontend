@@ -1,7 +1,12 @@
-import Link from 'next/link';
+'use client';
+
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const t = useTranslations('footer');
+
   return (
     <footer
       className="font-body antialiased"
@@ -35,13 +40,16 @@ export default function Footer() {
         </div>
         <nav style={{ display: 'flex', gap: 20, fontSize: 13 }} aria-label="Legal">
           <Link href="/terms" style={{ color: 'var(--ink2)', textDecoration: 'none' }}>
-            Terms of Service
+            {t('terms')}
           </Link>
           <Link href="/privacy" style={{ color: 'var(--ink2)', textDecoration: 'none' }}>
-            Privacy Policy
+            {t('privacy')}
+          </Link>
+          <Link href="/security" style={{ color: 'var(--ink2)', textDecoration: 'none' }}>
+            {t('security')}
           </Link>
           <a href="mailto:contact@godmanager.us" style={{ color: 'var(--ink2)', textDecoration: 'none' }}>
-            Contact
+            {t('contactEmail')}
           </a>
         </nav>
       </div>

@@ -75,8 +75,6 @@ function isNonIntlPath(pathname: string): boolean {
     '/portal',
     '/gm',
     '/gm-premium',
-    '/terms',
-    '/privacy',
     '/form-owner',
     '/form-tenant',
     '/resultado',
@@ -116,6 +114,16 @@ export function middleware(request: NextRequest) {
   if (pathname === '/resultado' || pathname === '/resultado/' || pathname.startsWith('/resultado/')) {
     return NextResponse.next();
   }
+
+  if (
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/security'
+  ) {
+    const loc = preferredLoginLocale(request);
+    return NextResponse.redirect(new URL(`/${loc}${pathname}`, request.url));
+  }
+
   if (
     pathname === '/gm' ||
     pathname === '/gm/' ||

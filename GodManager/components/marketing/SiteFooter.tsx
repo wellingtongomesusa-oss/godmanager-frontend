@@ -75,6 +75,29 @@ export function SiteFooter() {
             {t('contact')}
           </Link>
         </nav>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#9ca3af',
+              marginBottom: 4,
+            }}
+          >
+            {t('legalLinks')}
+          </span>
+          <Link href="/privacy" style={{ color: '#e5e7eb', textDecoration: 'none', fontSize: 14 }}>
+            {t('privacy')}
+          </Link>
+          <Link href="/terms" style={{ color: '#e5e7eb', textDecoration: 'none', fontSize: 14 }}>
+            {t('terms')}
+          </Link>
+          <Link href="/security" style={{ color: '#e5e7eb', textDecoration: 'none', fontSize: 14 }}>
+            {t('security')}
+          </Link>
+        </nav>
       </div>
       <div
         style={{
