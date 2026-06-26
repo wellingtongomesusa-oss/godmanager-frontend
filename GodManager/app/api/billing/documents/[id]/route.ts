@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseBillingPartyField } from '@/lib/billingParties';
+import { billingStatementSync } from '@/lib/billingStatementSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -419,7 +420,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       });
     });
 
-    return NextResponse.json({ ok: true, document: documentToJson(row) });
+    let billingStatementSyncResult = null;
+    if (row.docType === 'BILL') {
+      try {
+        billingStatementSyncResult = await billingStatementSync({
+          document: row,
+          actorId: user.id,
+        });
+      } catch (syncErr) {
+        console.error('[PATCH /api/billing/documents/:id] billingStatementSync', syncErr);
+        billingStatementSyncResult = { ok: false, skipped: 'guards' as const };
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      document: documentToJson(row),
+      billingStatementSync: billingStatementSyncResult,
+    });
   } catch (e) {
     console.error('[PATCH /api/billing/documents/:id]', e);
     return NextResponse.json({ ok: false, error: 'Failed to update document' }, { status: 500 });

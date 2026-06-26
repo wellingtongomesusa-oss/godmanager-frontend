@@ -749,6 +749,7 @@ enum LineItemSource {
   AUTO_EXPENSE // criado pelo sync a partir de PmExpense
   MANUAL // criado pela UI (Fase B)
   CSV_UPLOAD // criado por upload em massa (Fase B)
+  BILLING // criado pelo sync a partir de BillingDocument (Bill)
 }
 
 model StatementLineItem {
@@ -765,6 +766,7 @@ model StatementLineItem {
   client             Client?          @relation("StatementLineItem_clientId", fields: [clientId], references: [id], onDelete: SetNull)
   source             LineItemSource   @default(MANUAL)
   sourceRefId        String?
+  provisional        Boolean          @default(false)
   transactionDate    DateTime?
 
   @@index([ownerMonthPayoutId])

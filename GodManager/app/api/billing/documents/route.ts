@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseBillingPartyField } from '@/lib/billingParties';
+import { billingStatementSync } from '@/lib/billingStatementSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -381,7 +382,24 @@ export async function POST(req: Request) {
       });
     });
 
-    return NextResponse.json({ ok: true, document: documentToJson(row) }, { status: 201 });
+    let billingStatementSyncResult = null;
+    if (row.docType === 'BILL') {
+      try {
+        billingStatementSyncResult = await billingStatementSync({
+          document: row,
+          actorId: user.id,
+        });
+      } catch (syncErr) {
+        console.error('[POST /api/billing/documents] billingStatementSync', syncErr);
+        billingStatementSyncResult = { ok: false, skipped: 'guards' as const };
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      document: documentToJson(row),
+      billingStatementSync: billingStatementSyncResult,
+    }, { status: 201 });
   } catch (e) {
     console.error('[POST /api/billing/documents]', e);
     return NextResponse.json({ ok: false, error: 'Failed to create document' }, { status: 500 });
