@@ -4,6 +4,10 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseBillingPartyField } from '@/lib/billingParties';
+import {
+  checkBillingDuplicates,
+  formatBillingDuplicateMoney,
+} from '@/lib/billingDuplicateCheck';
 import { billingStatementSync } from '@/lib/billingStatementSync';
 
 export const dynamic = 'force-dynamic';
@@ -330,6 +334,46 @@ export async function POST(req: Request) {
       if (parsed) debitParty = parsed.value;
     }
 
+    const propertyId =
+      body.propertyId != null ? String(body.propertyId).trim() || null : null;
+    const issueDate = issueDateParsed ?? new Date();
+    const confirmDuplicate = body.confirmDuplicate === true;
+
+    const dupCheck = await checkBillingDuplicates({
+      clientScopeWhere: getClientScopeWhere(scopeUser),
+      docType,
+      propertyId,
+      creditParty,
+      debitParty,
+      total: itemsWithClient.total,
+      issueDate,
+      confirmDuplicate,
+    });
+    if (!dupCheck.ok) {
+      if ('duplicateBlock' in dupCheck) {
+        const d = dupCheck.duplicateBlock;
+        return NextResponse.json(
+          {
+            ok: false,
+            duplicateBlock: true,
+            duplicate: d,
+            error: `Ja existe um Bill identico (${d.number}: ${d.propertyLabel}, ${formatBillingDuplicateMoney(d.total)}, mes ${d.month}).`,
+          },
+          { status: 409 }
+        );
+      }
+      const d = dupCheck.duplicateWarning;
+      return NextResponse.json(
+        {
+          ok: false,
+          duplicateWarning: true,
+          duplicate: d,
+          error: `Ja existe um lancamento parecido (Bill ${d.number}: propriedade ${d.propertyLabel}, valor ${formatBillingDuplicateMoney(d.total)}, mes ${d.month}). Deseja continuar mesmo assim?`,
+        },
+        { status: 409 }
+      );
+    }
+
     const row = await prisma.$transaction(async (tx) => {
       const number = await nextDocumentNumber(tx, clientId, docType);
 
@@ -357,11 +401,10 @@ export async function POST(req: Request) {
               ? String(body.billingContactId).trim() || null
               : null,
           vendorId: body.vendorId != null ? String(body.vendorId).trim() || null : null,
-          propertyId:
-            body.propertyId != null ? String(body.propertyId).trim() || null : null,
+          propertyId,
           creditParty,
           debitParty,
-          issueDate: issueDateParsed ?? new Date(),
+          issueDate,
           dueDate: dueDateParsed ?? null,
           total: itemsWithClient.total,
           notes: body.notes != null ? String(body.notes).trim() || null : null,

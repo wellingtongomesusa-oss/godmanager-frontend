@@ -4,6 +4,10 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { parseBillingPartyField } from '@/lib/billingParties';
+import {
+  checkBillingDuplicates,
+  formatBillingDuplicateMoney,
+} from '@/lib/billingDuplicateCheck';
 import { billingStatementSync } from '@/lib/billingStatementSync';
 
 export const dynamic = 'force-dynamic';
@@ -392,6 +396,62 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     if (Object.keys(data).length === 0 && itemsPayload === null) {
       return NextResponse.json({ ok: false, error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const mergedPropertyId =
+      body.propertyId != null
+        ? String(body.propertyId).trim() || null
+        : existing.propertyId;
+    const mergedCreditParty =
+      body.creditParty != null
+        ? (data.creditParty as string | null | undefined) ?? existing.creditParty
+        : existing.creditParty;
+    const mergedDebitParty =
+      body.debitParty != null
+        ? (data.debitParty as string | null | undefined) ?? existing.debitParty
+        : existing.debitParty;
+    const mergedTotal =
+      itemsTotal != null ? itemsTotal : decToNum(existing.total);
+    const mergedIssueDate =
+      issueDateParsed !== undefined && issueDateParsed != null
+        ? issueDateParsed
+        : existing.issueDate;
+    const confirmDuplicate = body.confirmDuplicate === true;
+
+    const dupCheck = await checkBillingDuplicates({
+      clientScopeWhere: getClientScopeWhere(scopeUser),
+      docType: existing.docType,
+      propertyId: mergedPropertyId,
+      creditParty: mergedCreditParty,
+      debitParty: mergedDebitParty,
+      total: mergedTotal,
+      issueDate: mergedIssueDate,
+      excludeId: existing.id,
+      confirmDuplicate,
+    });
+    if (!dupCheck.ok) {
+      if ('duplicateBlock' in dupCheck) {
+        const d = dupCheck.duplicateBlock;
+        return NextResponse.json(
+          {
+            ok: false,
+            duplicateBlock: true,
+            duplicate: d,
+            error: `Ja existe um Bill identico (${d.number}: ${d.propertyLabel}, ${formatBillingDuplicateMoney(d.total)}, mes ${d.month}).`,
+          },
+          { status: 409 }
+        );
+      }
+      const d = dupCheck.duplicateWarning;
+      return NextResponse.json(
+        {
+          ok: false,
+          duplicateWarning: true,
+          duplicate: d,
+          error: `Ja existe um lancamento parecido (Bill ${d.number}: propriedade ${d.propertyLabel}, valor ${formatBillingDuplicateMoney(d.total)}, mes ${d.month}). Deseja continuar mesmo assim?`,
+        },
+        { status: 409 }
+      );
     }
 
     const row = await prisma.$transaction(async (tx) => {

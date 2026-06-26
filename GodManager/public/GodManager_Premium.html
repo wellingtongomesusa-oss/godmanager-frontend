@@ -11698,6 +11698,41 @@ window.osdLeaseOpenMoveOut=function(contractId, contractCode){
  if(m) m.style.display='flex';
 };
 
+function osdCobrRenderBillingLines(lineItems){
+ var items=(lineItems||[]).filter(function(li){return String(li.source||'').toUpperCase()==='BILLING';});
+ if(!items.length) return '';
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+ var fmt=function(n){return typeof window.osdFmtCurrency==='function'?window.osdFmtCurrency(n):('$'+Number(n||0).toFixed(2));};
+ var rows=items.slice().sort(function(a,b){
+  var ta=new Date(a.transactionDate||a.createdAt||0).getTime();
+  var tb=new Date(b.transactionDate||b.createdAt||0).getTime();
+  return ta-tb;
+ }).map(function(li){
+  var isProv=!!li.provisional;
+  var rowBg=isProv?'background:var(--amber-bg);':'';
+  var amt=Number(li.amount||0);
+  var val=fmt(amt);
+  var tipo=String(li.lineType||'').toLowerCase()==='income'?'Receita':'Despesa';
+  var badge=isProv?window.osdLineItemProvisionalBadge(true):'';
+  return '<tr style="border-bottom:1px solid var(--border);'+rowBg+'">'+
+   '<td style="padding:9px 12px;font-size:11px;color:var(--ink2);white-space:nowrap">'+esc(typeof window.osdFmtDateShort==='function'?window.osdFmtDateShort(li.transactionDate):String(li.transactionDate||'—'))+'</td>'+
+   '<td style="padding:9px 12px;font-size:11px;color:var(--ink);max-width:260px">'+esc(li.description||'—')+badge+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+esc(tipo)+'</td>'+
+   '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink)">'+esc(val)+'</td>'+
+   '<td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">'+(isProv?'<span class="cb">Provisorio</span>':'<span style="color:var(--ink2)">Efetivo</span>')+'</td>'+
+   '</tr>';
+ }).join('');
+ return '<div style="margin-top:16px;padding:14px 18px;border-top:1px solid var(--border)">'+
+  '<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Lancamentos no statement (Bills)</div>'+
+  '<div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;border-collapse:collapse;min-width:640px"><thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">'+
+  '<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>'+
+  '<th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Descricao</th>'+
+  '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tipo</th>'+
+  '<th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>'+
+  '<th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
 function osdCobrRenderList(invoices, contractMap){
  if(!invoices||!invoices.length){
   return '<div style="padding:32px 16px;text-align:center;color:var(--ink3);font-size:13px">Nenhuma cobranca gerada ainda.</div>';
@@ -11774,7 +11809,19 @@ window.osdCobrLoad=async function(propertyId){
   var res=await fetch('/api/rent-invoices?propertyId='+encodeURIComponent(pid),{credentials:'include',cache:'no-store'});
   var j=await res.json().catch(function(){return {};});
   if(!res.ok||!j.ok) throw new Error((j&&j.error)||'Falha ao listar cobrancas');
-  bodyEl.innerHTML=osdCobrRenderList(j.invoices||[], contractMap);
+  var billingHtml='';
+  try{
+   var ymSel=document.getElementById('osd-period');
+   var ymRaw=(ymSel&&ymSel.value)?String(ymSel.value).trim():'';
+   if(/^\d{4}-\d{2}$/.test(ymRaw)){
+    var liRes=await fetch('/api/manager-pro/owner-statement/line-items?propertyId='+encodeURIComponent(pid)+'&yearMonth='+encodeURIComponent(ymRaw),{credentials:'include',cache:'no-store'});
+    var liJ=await liRes.json().catch(function(){return{};});
+    if(liRes.ok&&liJ.ok&&Array.isArray(liJ.lineItems)){
+     billingHtml=osdCobrRenderBillingLines(liJ.lineItems);
+    }
+   }
+  }catch(billErr){console.warn('osdCobrLoad billing lines',billErr);}
+  bodyEl.innerHTML=osdCobrRenderList(j.invoices||[], contractMap)+billingHtml;
  }catch(e){
   bodyEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--red);font-size:12px">'+String(e.message||e).replace(/</g,'&lt;')+'</div>';
  }
@@ -11980,6 +12027,11 @@ window.osdApplyClosedState=function(payout){
  if(reopenBtn)reopenBtn.style.display=isClosed?'':'none';
 };
 
+window.osdLineItemProvisionalBadge=function(isProv){
+ if(!isProv)return '';
+ return '<span class="cb" style="margin-left:6px;vertical-align:middle">Provisorio</span>';
+};
+
 window.osdRenderLineItems=function(data){
  var tbody=document.getElementById('osd-detail-tbody');
  if(!tbody)return;
@@ -12010,8 +12062,10 @@ window.osdRenderLineItems=function(data){
   var btDel='<button type="button" '+(noEdit?'disabled title="'+window.osdEscHtml(disTitle)+'"':'')+' style="margin-left:6px;padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:'+(noEdit?'var(--sand)':'transparent')+';color:'+(noEdit?'var(--ink3)':'var(--red)')+';cursor:'+(noEdit?'not-allowed':'pointer')+'">Apagar</button>';
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid var(--border)';
+  var isProv=!!li.provisional;
+  if(isProv)tr.style.background='var(--amber-bg)';
   tr.innerHTML='<td style="padding:10px 12px;color:var(--ink2);white-space:nowrap">'+window.osdEscHtml(window.osdFmtDateShort(li.transactionDate))+'</td>'+
-   '<td style="padding:10px 12px;color:var(--ink);max-width:280px">'+window.osdEscHtml(li.description||'')+'</td>'+
+   '<td style="padding:10px 12px;color:var(--ink);max-width:280px">'+window.osdEscHtml(li.description||'')+window.osdLineItemProvisionalBadge(isProv)+'</td>'+
    '<td style="padding:10px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+srcHtml+'</td>'+
    '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--green)">'+window.osdEscHtml(cred||'—')+'</td>'+
    '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--red)">'+window.osdEscHtml(deb||'—')+'</td>'+
@@ -33869,6 +33923,53 @@ async function gmBillingOpenEditBill(id){
   if(typeof showToast==='function')showToast('Erro ao carregar bill.','error');
  }
 }
+async function gmBillingSubmitBillPayload(payload,editId,confirmDuplicate){
+ if(confirmDuplicate)payload.confirmDuplicate=true;
+ var res,data;
+ if(editId){
+  payload.number=payload.number||'';
+  res=await fetch('/api/billing/documents/'+encodeURIComponent(editId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok){
+   if(data&&data.duplicateBlock){
+    var blkMsg=(data.error)||'Ja existe um Bill identico.';
+    if(typeof showToast==='function')showToast(blkMsg,'error');
+    else alert(blkMsg);
+    return {ok:false,blocked:true};
+   }
+   if(data&&data.duplicateWarning&&!confirmDuplicate){
+    var wMsg=(data.error)||'Ja existe um lancamento parecido. Deseja continuar?';
+    if(!confirm(wMsg))return {ok:false,cancelled:true};
+    return gmBillingSubmitBillPayload(payload,editId,true);
+   }
+   var errPatch=(data&&data.error)||'Erro ao salvar bill';
+   if(typeof showToast==='function')showToast(errPatch,'error');
+   else alert(errPatch);
+   return {ok:false};
+  }
+  return {ok:true,data:data,editId:editId};
+ }
+ res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ data=await res.json().catch(function(){return{};});
+ if(!res.ok||!data.ok){
+  if(data&&data.duplicateBlock){
+   var blkMsg2=(data.error)||'Ja existe um Bill identico.';
+   if(typeof showToast==='function')showToast(blkMsg2,'error');
+   else alert(blkMsg2);
+   return {ok:false,blocked:true};
+  }
+  if(data&&data.duplicateWarning&&!confirmDuplicate){
+   var wMsg2=(data.error)||'Ja existe um lancamento parecido. Deseja continuar?';
+   if(!confirm(wMsg2))return {ok:false,cancelled:true};
+   return gmBillingSubmitBillPayload(payload,editId,true);
+  }
+  var errMsg=(data&&data.error)||'Erro ao salvar bill';
+  if(typeof showToast==='function')showToast(errMsg,'error');
+  else alert(errMsg);
+  return {ok:false};
+ }
+ return {ok:true,data:data,editId:null};
+}
 async function gmBillingSaveBill(){
  var editId=window.__gmApEditDocId;
  var vendor=gmApGetVendorSelection();
@@ -33940,38 +34041,20 @@ async function gmBillingSaveBill(){
  var debitVal=debitEl?String(debitEl.value||'').trim():'';
  payload.creditParty=creditVal||null;
  payload.debitParty=debitVal||null;
+ if(editId)payload.number=billNumber;
+ else{
+  payload.docType='BILL';
+  payload.status='DRAFT';
+ }
  try{
-  var res,data;
-  if(editId){
-   payload.number=billNumber;
-   res=await fetch('/api/billing/documents/'+encodeURIComponent(editId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-   data=await res.json().catch(function(){return{};});
-   if(!res.ok||!data.ok){
-    var errPatch=(data&&data.error)||'Erro ao salvar bill';
-    if(typeof showToast==='function')showToast(errPatch,'error');
-    else alert(errPatch);
-    return;
-   }
+  var result=await gmBillingSubmitBillPayload(payload,editId,false);
+  if(!result.ok)return;
+  var data=result.data||{};
+  if(!editId&&data.document&&data.document.id&&Array.isArray(window.__gmApPendingRegister)&&window.__gmApPendingRegister.length){
+   await gmBillingApRegisterPendingAttachments(data.document.id);
+  }
   gmBillingCloseApBill();
-  if(typeof showToast==='function')showToast('Bill atualizado.','success');
-  if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
-  return;
- }
- payload.docType='BILL';
- payload.status='DRAFT';
- res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
- data=await res.json().catch(function(){return{};});
- if(!res.ok||!data.ok){
-  var errMsg=(data&&data.error)||'Erro ao salvar bill';
-  if(typeof showToast==='function')showToast(errMsg,'error');
-  else alert(errMsg);
-  return;
- }
- if(data.document&&data.document.id&&Array.isArray(window.__gmApPendingRegister)&&window.__gmApPendingRegister.length){
-  await gmBillingApRegisterPendingAttachments(data.document.id);
- }
- gmBillingCloseApBill();
-  if(typeof showToast==='function')showToast('Bill salvo como rascunho.','success');
+  if(typeof showToast==='function')showToast(editId?'Bill atualizado.':'Bill salvo como rascunho.','success');
   if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
  }catch(e){
   console.warn('[gmBillingSaveBill]',e);
