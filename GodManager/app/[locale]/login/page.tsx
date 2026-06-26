@@ -1,11 +1,12 @@
 import { Suspense } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { GodManagerLogo } from '@/components/layout/GodManagerLogo';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from '@/i18n/navigation';
 import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
 
 const HERO_IMAGE =
@@ -38,6 +39,7 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
   setRequestLocale(locale);
   const tHero = await getTranslations('hero');
   const tLogin = await getTranslations('login');
+  const tFooter = await getTranslations('footer');
   return (
     <>
       <SiteHeader active="home" />
@@ -96,13 +98,29 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
             <Suspense fallback={<LoginFormFallback />}>
               <LoginForm />
             </Suspense>
+            <nav
+              className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center font-inter text-[10px] text-slate-400"
+              aria-label="Legal"
+            >
+              <Link href="/privacy" className="transition hover:text-slate-600">
+                {tFooter('privacy')}
+              </Link>
+              <span aria-hidden>·</span>
+              <Link href="/terms" className="transition hover:text-slate-600">
+                {tFooter('terms')}
+              </Link>
+              <span aria-hidden>·</span>
+              <Link href="/security" className="transition hover:text-slate-600">
+                {tFooter('security')}
+              </Link>
+            </nav>
             <p className="mt-8 text-center font-inter text-[11px] leading-relaxed text-slate-500">
-              <Link
+              <NextLink
                 href={getGodManagerPremiumUrl()}
                 className="font-medium text-[#1a3a5c] underline decoration-[#1a3a5c]/30 underline-offset-2 transition hover:text-[#c9a96e] hover:decoration-[#c9a96e]/50"
               >
                 {tLogin('console')}
-              </Link>
+              </NextLink>
               <span className="block text-[10px] text-slate-400">{tLogin('consoleSub')}</span>
             </p>
           </div>
