@@ -59,6 +59,18 @@ function tsEq(a: Date | null, b: Date | null): boolean {
   return a.getTime() === b.getTime();
 }
 
+/** Igual billingStatementSync.billingOwnerLineType + default expense quando sem Owner nas pontas. */
+function autoExpenseOwnerLineType(
+  creditParty: string | null | undefined,
+  debitParty: string | null | undefined
+): 'expense' | 'income' {
+  const credit = String(creditParty || '').trim().toUpperCase();
+  const debit = String(debitParty || '').trim().toUpperCase();
+  if (debit === 'OWNER') return 'expense';
+  if (credit === 'OWNER') return 'income';
+  return 'expense';
+}
+
 /**
  * Materializa line-items AUTO_RENTAL / AUTO_EXPENSE a partir de TenantPayment e PmExpense (só leitura nas fontes).
  * Linhas MANUAL / CSV_UPLOAD não são alteradas. Idempotente via unique (ownerMonthPayoutId, source, sourceRefId).
@@ -220,6 +232,8 @@ export async function syncOwnerStatementForProperty(args: {
         description: true,
         serviceType: true,
         ownerCharged: true,
+        creditParty: true,
+        debitParty: true,
         serviceDate: true,
         createdAt: true,
       },
@@ -239,9 +253,10 @@ export async function syncOwnerStatementForProperty(args: {
           },
         },
       });
+      const lineType = autoExpenseOwnerLineType(ex.creditParty, ex.debitParty);
       const data = {
         ownerMonthPayoutId: payout.id,
-        lineType: 'expense',
+        lineType,
         description,
         amount: ex.ownerCharged,
         sortOrder,
