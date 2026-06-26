@@ -1269,6 +1269,7 @@ model BillingDocument {
   dueDate          DateTime?
   total            Decimal           @default(0) @db.Decimal(12, 2)
   notes            String?
+  attachments      Json?
   createdByUserId  String?
   approvedByUserId String?
   approvedAt       DateTime?

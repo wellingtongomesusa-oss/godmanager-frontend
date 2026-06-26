@@ -44,6 +44,34 @@ function lineItemToJson(item: BillingLineItem) {
   };
 }
 
+type BillingAttachmentRecord = {
+  url: string;
+  key: string;
+  name: string;
+  type: string;
+  uploadedAt: string;
+};
+
+function parseAttachmentsJson(raw: unknown): BillingAttachmentRecord[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BillingAttachmentRecord[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const url = String(o.url || '').trim();
+    const key = String(o.key || '').trim();
+    if (!url || !key) continue;
+    out.push({
+      url,
+      key,
+      name: String(o.name || '').trim() || 'anexo',
+      type: String(o.type || '').trim(),
+      uploadedAt: String(o.uploadedAt || '').trim() || new Date().toISOString(),
+    });
+  }
+  return out;
+}
+
 function documentToJson(doc: DocWithItems) {
   return {
     id: doc.id,
@@ -65,6 +93,7 @@ function documentToJson(doc: DocWithItems) {
     dueDate: doc.dueDate ? doc.dueDate.toISOString() : null,
     total: decToNum(doc.total),
     notes: doc.notes,
+    attachments: parseAttachmentsJson(doc.attachments),
     createdByUserId: doc.createdByUserId,
     approvedByUserId: doc.approvedByUserId,
     approvedAt: doc.approvedAt ? doc.approvedAt.toISOString() : null,
@@ -254,6 +283,42 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (body.notes != null) {
       data.notes = String(body.notes).trim() || null;
+    }
+
+    if (body.addAttachment != null) {
+      const rawAtt = body.addAttachment;
+      if (!rawAtt || typeof rawAtt !== 'object') {
+        return NextResponse.json({ ok: false, error: 'invalid addAttachment' }, { status: 400 });
+      }
+      const url = String((rawAtt as { url?: unknown }).url || '').trim();
+      const key = String((rawAtt as { key?: unknown }).key || '').trim();
+      if (!url || !key) {
+        return NextResponse.json(
+          { ok: false, error: 'addAttachment requires url and key' },
+          { status: 400 }
+        );
+      }
+      const current = parseAttachmentsJson(existing.attachments);
+      current.push({
+        url,
+        key,
+        name: String((rawAtt as { name?: unknown }).name || '').trim() || 'anexo',
+        type: String((rawAtt as { type?: unknown }).type || '').trim(),
+        uploadedAt: new Date().toISOString(),
+      });
+      data.attachments = current;
+    }
+
+    if (body.removeAttachmentKey != null) {
+      const rk = String(body.removeAttachmentKey).trim();
+      if (!rk) {
+        return NextResponse.json({ ok: false, error: 'invalid removeAttachmentKey' }, { status: 400 });
+      }
+      const base =
+        data.attachments != null
+          ? parseAttachmentsJson(data.attachments)
+          : parseAttachmentsJson(existing.attachments);
+      data.attachments = base.filter((a) => a.key !== rk);
     }
 
     const issueDateParsed = parseOptionalDate(body.issueDate);

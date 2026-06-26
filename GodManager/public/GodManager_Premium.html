@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Build: 2026-06-26 99fcbd6 -->
+<!-- Build: 2026-06-22 dev -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -4163,6 +4163,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--cream);border:1px solid var(--border);border-radius:8px">
    <span style="font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px">Total geral</span>
    <span id="gm-ap-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink)">$0.00</span>
+  </div>
+  <div style="margin-bottom:18px">
+   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Anexos</div>
+   <div id="gm-ap-attachments-list" style="margin-bottom:8px"></div>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button type="button" id="gm-ap-attach-btn" onclick="document.getElementById('gm-ap-file-input').click()" title="Anexar PDF/foto" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">📎</button>
+    <span style="font-size:11px;color:var(--ink2)">Anexar PDF/foto</span>
+    <input type="file" id="gm-ap-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" style="display:none" onchange="if(typeof gmBillingApAttachmentPick==='function')gmBillingApAttachmentPick(this)">
+   </div>
   </div>
   <div style="margin-bottom:18px">
    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">NOTAS</label>
@@ -32051,6 +32060,182 @@ function gmBillingFilterDocsForRender(docs,statusFilter){
  if(String(statusFilter||'').trim())return list;
  return list.filter(function(doc){return String(doc.status||'').toUpperCase()!=='CANCELLED';});
 }
+function gmBillingParseAttachments(att){
+ var list=[];
+ try{
+  if(Array.isArray(att))list=att;
+  else if(att&&typeof att==='object'&&Array.isArray(att.items))list=att.items;
+ }catch(_pa){list=[];}
+ return list.filter(function(a){
+  return a&&String(a.url||a.publicUrl||'').trim()&&String(a.key||'').trim();
+ }).map(function(a){
+  return{
+   url:String(a.url||a.publicUrl||'').trim(),
+   key:String(a.key||'').trim(),
+   name:String(a.name||'').trim()||'anexo',
+   type:String(a.type||a.contentType||'').trim(),
+   uploadedAt:String(a.uploadedAt||'').trim()
+  };
+ });
+}
+function gmBillingApEnsureTempUploadId(){
+ if(!window.__gmApTempUploadId)window.__gmApTempUploadId='temp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+ return window.__gmApTempUploadId;
+}
+function gmBillingRenderApAttachmentsList(attachments){
+ var el=document.getElementById('gm-ap-attachments-list');
+ if(!el)return;
+ var list=Array.isArray(attachments)?attachments:[];
+ if(!list.length){el.innerHTML='<div style="font-size:11px;color:var(--ink3)">Nenhum anexo.</div>';return;}
+ var html='';
+ list.forEach(function(a){
+  if(!a)return;
+  var url=String(a.url||'').trim();
+  var key=String(a.key||'').trim();
+  var name=String(a.name||'anexo').replace(/</g,'&lt;');
+  var keyJs=key.replace(/\\/g,'\\\\').replace(/'/g,'\\\'');
+  var safeUrl=url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--cream);border:1px solid var(--border);border-radius:6px;margin-bottom:6px">'
+   +'<span style="flex:1;min-width:0;font-size:11px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+'</span>';
+  if(url){
+   html+='<a href="'+safeUrl+'" target="_blank" rel="noopener" style="font-size:11px;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap">Ver</a>';
+  }
+  html+='<button type="button" onclick="if(typeof gmBillingRemoveApAttachment===\'function\')gmBillingRemoveApAttachment(\''+keyJs+'\')" style="border:none;background:transparent;color:var(--ink3);cursor:pointer;font-size:14px;line-height:1;padding:0 4px" title="Remover">×</button>'
+   +'</div>';
+ });
+ el.innerHTML=html;
+}
+async function gmBillingRegisterApAttachment(docId,meta){
+ if(!docId||!meta||!meta.url||!meta.key)return null;
+ try{
+  var res=await fetch('/api/billing/documents/'+encodeURIComponent(String(docId)),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({addAttachment:{url:meta.url,key:meta.key,name:meta.name||'anexo',type:meta.type||''}})});
+  var data=await res.json().catch(function(){return{};});
+  if(!res.ok||!data.ok)return null;
+  return data.document&&Array.isArray(data.document.attachments)?data.document.attachments:null;
+ }catch(e){
+  console.warn('[gmBillingRegisterApAttachment]',e);
+  return null;
+ }
+}
+async function gmBillingUploadApAttachment(file){
+ if(!file)return null;
+ var rawCt=String(file.type||'').toLowerCase();
+ var name=String(file.name||'').trim();
+ var isPdf=rawCt==='application/pdf'||/\.pdf$/i.test(name);
+ var isJpg=rawCt==='image/jpeg'||rawCt==='image/jpg'||/\.jpe?g$/i.test(name);
+ var isPng=rawCt==='image/png'||/\.png$/i.test(name);
+ if(!isPdf&&!isJpg&&!isPng){
+  if(typeof showToast==='function')showToast('Use PDF, JPG ou PNG.','error');
+  else alert('Use PDF, JPG ou PNG.');
+  return null;
+ }
+ var uploadCt=isPdf?'application/pdf':(isPng?'image/png':'image/jpeg');
+ var blob=file;
+ if(!isPdf&&typeof ltpCompressImage==='function'){
+  try{
+   blob=await ltpCompressImage(file,1600,0.85);
+   uploadCt='image/jpeg';
+  }catch(_lc){}
+ }
+ var editId=window.__gmApEditDocId;
+ var presignBody={contentType:uploadCt,sizeBytes:blob.size};
+ if(editId)presignBody.documentId=String(editId);
+ else presignBody.tempUploadId=gmBillingApEnsureTempUploadId();
+ try{
+  var presignRes=await fetch('/api/billing/attachments/presigned-url',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(presignBody)});
+  if(!presignRes.ok)throw new Error('presigned HTTP '+presignRes.status);
+  var presign=await presignRes.json().catch(function(){return null;});
+  if(!presign||!presign.ok||!presign.uploadUrl)throw new Error('presigned !ok');
+  var putRes=await fetch(presign.uploadUrl,{method:'PUT',headers:{'Content-Type':uploadCt},body:blob});
+  if(!putRes.ok)throw new Error('R2 PUT HTTP '+putRes.status);
+  var meta={url:presign.publicUrl,key:presign.key,name:name||'anexo',type:uploadCt};
+  if(editId){
+   var registered=await gmBillingRegisterApAttachment(editId,meta);
+   if(registered){
+    window.__gmApAttachments=gmBillingParseAttachments(registered);
+    gmBillingRenderApAttachmentsList(window.__gmApAttachments);
+    if(typeof showToast==='function')showToast('Anexo salvo.','success');
+    return meta;
+   }
+   throw new Error('register failed');
+  }
+  window.__gmApAttachments=window.__gmApAttachments||[];
+  window.__gmApAttachments.push(meta);
+  window.__gmApPendingRegister=window.__gmApPendingRegister||[];
+  window.__gmApPendingRegister.push(meta);
+  gmBillingRenderApAttachmentsList(window.__gmApAttachments);
+  if(typeof showToast==='function')showToast('Anexo adicionado (salve o bill para registrar).','success');
+  return meta;
+ }catch(e){
+  console.warn('[gmBillingUploadApAttachment]',e);
+  if(typeof showToast==='function')showToast('Erro ao anexar arquivo.','error');
+  else alert('Erro ao anexar arquivo.');
+  return null;
+ }
+}
+function gmBillingApAttachmentPick(input){
+ if(!input||!input.files||!input.files[0])return;
+ var f=input.files[0];
+ input.value='';
+ if(typeof gmBillingUploadApAttachment==='function')gmBillingUploadApAttachment(f);
+}
+async function gmBillingRemoveApAttachment(key){
+ key=String(key||'').trim();
+ if(!key)return;
+ var editId=window.__gmApEditDocId;
+ if(editId){
+  try{
+   var res=await fetch('/api/billing/documents/'+encodeURIComponent(String(editId)),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({removeAttachmentKey:key})});
+   var data=await res.json().catch(function(){return{};});
+   if(!res.ok||!data.ok){
+    if(typeof showToast==='function')showToast((data&&data.error)||'Erro ao remover anexo','error');
+    return;
+   }
+   window.__gmApAttachments=gmBillingParseAttachments(data.document&&data.document.attachments);
+   gmBillingRenderApAttachmentsList(window.__gmApAttachments);
+   if(typeof showToast==='function')showToast('Anexo removido.','success');
+  }catch(e){
+   console.warn('[gmBillingRemoveApAttachment]',e);
+   if(typeof showToast==='function')showToast('Erro ao remover anexo.','error');
+  }
+  return;
+ }
+ window.__gmApAttachments=(window.__gmApAttachments||[]).filter(function(a){return String(a.key||'')!==key;});
+ window.__gmApPendingRegister=(window.__gmApPendingRegister||[]).filter(function(a){return String(a.key||'')!==key;});
+ gmBillingRenderApAttachmentsList(window.__gmApAttachments);
+}
+async function gmBillingApRegisterPendingAttachments(docId){
+ var pending=Array.isArray(window.__gmApPendingRegister)?window.__gmApPendingRegister:[];
+ if(!docId||!pending.length)return;
+ for(var i=0;i<pending.length;i++){
+  var att=pending[i];
+  if(!att||!att.url||!att.key)continue;
+  var registered=await gmBillingRegisterApAttachment(docId,att);
+  if(registered)window.__gmApAttachments=gmBillingParseAttachments(registered);
+ }
+ window.__gmApPendingRegister=[];
+}
+function gmBillingFmtApAttachmentsHtml(attachments){
+ var list=gmBillingParseAttachments(attachments);
+ if(!list.length)return '';
+ var html='<div style="margin-top:16px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Anexos</div>';
+ list.forEach(function(a){
+  var url=String(a.url||'').trim();
+  var name=gmBillingEsc(a.name||'anexo');
+  var ct=String(a.type||'').toLowerCase();
+  var isImg=ct.indexOf('image/')===0;
+  if(url&&url.indexOf('javascript:')===-1){
+   var safe=url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+   if(isImg){
+    html+='<img src="'+safe+'" alt="anexo" style="max-width:200px;border-radius:8px;cursor:pointer;margin-top:6px;display:block;border:1px solid var(--border)" onclick="window.open(\''+safe.replace(/'/g,'\\\'')+'\',\'_blank\',\'noopener\')">';
+   }else{
+    html+='<div style="margin-top:6px"><a href="'+safe+'" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--blue)">'+name+' — Ver/Baixar</a></div>';
+   }
+  }
+ });
+ html+='</div>';
+ return html;
+}
 function gmBillingInvoicePdfPrintHtml(html){
  var w=window.open('','_blank');
  if(!w){
@@ -33428,10 +33613,16 @@ function gmApRecalc(){
 }
 function gmBillingCloseApBill(){
  window.__gmApEditDocId=null;
+ window.__gmApTempUploadId=null;
+ window.__gmApAttachments=null;
+ window.__gmApPendingRegister=null;
  gmApRemoveVendorSnapshotOption();
  gmApSetBillModalMode('create');
  var propSel=document.getElementById('billing-bill-property');
  if(propSel)propSel.innerHTML='<option value="">— Nenhuma —</option>';
+ var attInput=document.getElementById('gm-ap-file-input');
+ if(attInput)attInput.value='';
+ gmBillingRenderApAttachmentsList([]);
  var m=document.getElementById('gm-billing-ap-modal');
  if(m)m.style.display='none';
 }
@@ -33561,6 +33752,10 @@ async function gmBillingOpenNewBill(){
  if(items){items.innerHTML='';gmApAddItemRow();}
  gmApRecalc();
  await gmBillingPopulateBillPropertySelect('');
+ window.__gmApTempUploadId='temp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+ window.__gmApAttachments=[];
+ window.__gmApPendingRegister=[];
+ gmBillingRenderApAttachmentsList([]);
  var m=document.getElementById('gm-billing-ap-modal');
  if(m)m.style.display='flex';
 }
@@ -33596,6 +33791,10 @@ async function gmBillingOpenEditBill(id){
   if(ncEmail)ncEmail.value='';
   gmApSelectVendorFromDoc(doc);
   await gmBillingPopulateBillPropertySelect(doc.propertyId);
+ window.__gmApTempUploadId=null;
+ window.__gmApAttachments=gmBillingParseAttachments(doc.attachments);
+ window.__gmApPendingRegister=[];
+ gmBillingRenderApAttachmentsList(window.__gmApAttachments);
   var numEl=document.getElementById('gm-ap-number');
   if(numEl)numEl.value=String(doc.number||'');
   var rName=document.getElementById('gm-ap-receiver-name');
@@ -33707,22 +33906,25 @@ async function gmBillingSaveBill(){
     else alert(errPatch);
     return;
    }
-   gmBillingCloseApBill();
-   if(typeof showToast==='function')showToast('Bill atualizado.','success');
-   if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
-   return;
-  }
-  payload.docType='BILL';
-  payload.status='DRAFT';
-  res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  data=await res.json().catch(function(){return{};});
-  if(!res.ok||!data.ok){
-   var errMsg=(data&&data.error)||'Erro ao salvar bill';
-   if(typeof showToast==='function')showToast(errMsg,'error');
-   else alert(errMsg);
-   return;
-  }
   gmBillingCloseApBill();
+  if(typeof showToast==='function')showToast('Bill atualizado.','success');
+  if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
+  return;
+ }
+ payload.docType='BILL';
+ payload.status='DRAFT';
+ res=await fetch('/api/billing/documents',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ data=await res.json().catch(function(){return{};});
+ if(!res.ok||!data.ok){
+  var errMsg=(data&&data.error)||'Erro ao salvar bill';
+  if(typeof showToast==='function')showToast(errMsg,'error');
+  else alert(errMsg);
+  return;
+ }
+ if(data.document&&data.document.id&&Array.isArray(window.__gmApPendingRegister)&&window.__gmApPendingRegister.length){
+  await gmBillingApRegisterPendingAttachments(data.document.id);
+ }
+ gmBillingCloseApBill();
   if(typeof showToast==='function')showToast('Bill salvo como rascunho.','success');
   if(typeof gmBillingRenderBills==='function')await gmBillingRenderBills();
  }catch(e){
@@ -33797,7 +33999,8 @@ function gmBillingRenderApViewDocument(doc){
   +'<span style="font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px">Total geral</span>'
   +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:var(--ink)">'+gmBillingEsc(gmBillingFmtMoney(doc.total))+'</span>'
   +'</div>'
-  +notesBlock;
+  +notesBlock
+  +gmBillingFmtApAttachmentsHtml(doc.attachments);
  gmBillingRenderApViewActions(doc);
 }
 function gmBillingRenderApViewActions(doc){
@@ -33863,6 +34066,8 @@ window.gmBillingOpenNewBill=gmBillingOpenNewBill;
 window.gmBillingOpenEditBill=gmBillingOpenEditBill;
 window.gmBillingSaveBill=gmBillingSaveBill;
 window.gmBillingCloseApBill=gmBillingCloseApBill;
+window.gmBillingApAttachmentPick=gmBillingApAttachmentPick;
+window.gmBillingRemoveApAttachment=gmBillingRemoveApAttachment;
 window.gmBillingOpenApView=gmBillingOpenApView;
 window.gmBillingCloseApView=gmBillingCloseApView;
 window.gmBillingApViewPatchStatus=gmBillingApViewPatchStatus;
