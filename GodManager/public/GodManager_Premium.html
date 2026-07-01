@@ -360,6 +360,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #page-forms-received .fr-news-card{margin-top:14px}
 #page-forms-received #fr-news-list{min-height:48px}
 #page-forms-received:fullscreen{background:#0d0a05;overflow:auto;padding:24px}
+#page-forms-received:fullscreen .fr-cards{grid-template-columns:repeat(auto-fit,minmax(170px,220px));justify-content:center}
+#page-forms-received:fullscreen .fr-charts{grid-template-columns:repeat(auto-fit,minmax(320px,480px));justify-content:center}
+#page-forms-received:fullscreen .fr-charts-wide .fr-chart-card-wide{max-width:960px;margin-left:auto;margin-right:auto}
 /* ===== fim FORMS RECEIVED ===== */
 .ltd-chart-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
 .ltd-chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:10px;font-family:'DM Sans',sans-serif}
@@ -1655,8 +1658,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div class="fr-card"><div class="fr-card-label">Total Houses</div><div class="fr-card-num" id="fr-num-houses">—</div><div class="fr-donut"><canvas id="fr-card-houses" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-houses">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Total Rented</div><div class="fr-card-num" id="fr-num-rented">—</div><div class="fr-donut"><canvas id="fr-card-rented" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-rented">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Total Owners</div><div class="fr-card-num" id="fr-num-owners">—</div><div class="fr-donut"><canvas id="fr-card-owners" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-owners">—</div></div></div>
-  <div class="fr-card"><div class="fr-card-label">Vacant Houses</div><div class="fr-card-num" id="fr-num-vacant">—</div><div class="fr-donut"><canvas id="fr-card-vacant" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-vacant">—</div></div></div>
-  <div class="fr-card"><div class="fr-card-label">Move-out</div><div class="fr-card-num" id="fr-num-moveout">—</div><div class="fr-donut"><canvas id="fr-card-moveout" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-moveout">—</div></div></div>
   <div class="fr-card"><div class="fr-card-label">Taxa de ocupação</div><div class="fr-card-num" id="fr-num-occupancy">—</div><div class="fr-donut"><canvas id="fr-card-occupancy" width="84" height="84"></canvas><div class="fr-donut-ctr" id="fr-ctr-occupancy">—</div></div></div>
  </div>
  <div class="fr-sec-label">Evolução</div>
@@ -38016,17 +38017,12 @@ window.gmFormsReceivedRender=async function(){
  var ownersSet={};
  records.forEach(function(r){var o=String((r&&(r.owner||r.ownerName))||'').trim().toLowerCase();if(o)ownersSet[o]=1;});
  var owners=Object.keys(ownersSet).length;
- var tenants=await frFetchTenants();
- var totalTenants=tenants.length;
- var moveOut=tenants.filter(function(t){return String((t&&t.status)||'').toLowerCase()==='notice';}).length;
- [['fr-num-houses',kpi.total],['fr-num-rented',kpi.alugadas],['fr-num-owners',owners],['fr-num-vacant',kpi.vagas],['fr-num-moveout',moveOut]].forEach(function(p){
+ [['fr-num-houses',kpi.total],['fr-num-rented',kpi.alugadas],['fr-num-owners',owners]].forEach(function(p){
   var el=document.getElementById(p[0]);if(el)el.textContent=String(p[1]);
  });
  frDonut('cardHouses','fr-card-houses','fr-ctr-houses',kpi.total,[kpi.alugadas,kpi.vagas],[FR_GOLD,FR_DARK]);
  frDonut('cardRented','fr-card-rented','fr-ctr-rented',kpi.alugadas,[kpi.alugadas,kpi.vagas],[FR_GOLD,FR_DARK]);
  frDonut('cardOwners','fr-card-owners','fr-ctr-owners',owners,[owners,Math.max(0,kpi.total-owners)],[FR_GOLD,FR_DARK]);
- frDonut('cardVacant','fr-card-vacant','fr-ctr-vacant',kpi.vagas,[kpi.vagas,kpi.alugadas],[FR_GOLD,FR_DARK]);
- frDonut('cardMoveout','fr-card-moveout','fr-ctr-moveout',moveOut,[moveOut,Math.max(0,totalTenants-moveOut)],[FR_GOLD,FR_DARK]);
  var occPct=kpi.total>0?Math.round((kpi.alugadas/kpi.total)*100):0;
  var occLabel=occPct+'%';
  var elOcc=document.getElementById('fr-num-occupancy');if(elOcc)elOcc.textContent=occLabel;
