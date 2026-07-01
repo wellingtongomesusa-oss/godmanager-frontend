@@ -364,8 +364,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #page-forms-received:fullscreen .fr-head{flex:0 0 auto;margin-bottom:0}
 #page-forms-received:fullscreen .fr-sec-label{margin:0.6vh 0 0.4vh}
 #page-forms-received:fullscreen .fr-cards{grid-template-columns:repeat(4,1fr);gap:1vw;flex:0 0 auto}
-#page-forms-received:fullscreen .fr-card-num{font-size:clamp(24px,2.4vw,40px)}
-#page-forms-received:fullscreen .fr-donut{height:11vh}
+#page-forms-received:fullscreen .fr-card{display:flex;flex-direction:column}
+#page-forms-received:fullscreen .fr-card-num{font-size:clamp(24px,2.4vw,40px);flex:0 0 auto}
+#page-forms-received:fullscreen .fr-donut{height:clamp(80px,7vh,120px);flex:0 0 auto;margin-top:6px}
+#page-forms-received:fullscreen .fr-donut canvas{max-width:120px;max-height:120px;width:auto;height:auto}
 #page-forms-received:fullscreen .fr-charts{grid-template-columns:repeat(4,1fr);gap:1vw;flex:1 1 auto;min-height:0}
 #page-forms-received:fullscreen .fr-charts .fr-chart-card{display:flex;flex-direction:column;min-height:0}
 #page-forms-received:fullscreen .fr-charts .fr-chart-body{height:auto;flex:1 1 auto;min-height:0}
@@ -3195,6 +3197,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <option value="2026-05">Mai 2026</option>
  <option value="2026-06">Jun 2026</option>
  </select>
+ <input type="date" id="lt-exp-filter-day" onchange="if(typeof ltExpRender==='function')ltExpRender()" title="Filtrar por dia" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <select id="lt-exp-filter-cat" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todas as categorias</option>
  <option value="HOA">HOA</option>
@@ -3224,11 +3227,11 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
  <div class="gm-kpis-row gm-kpis-row--strip" style="--gm-kpi-cols-desktop:6;--gm-kpi-cols-tablet:3">
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">TOTAL DESPESAS</div><div id="lt-exp-kpi-total" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">todas as categorias</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">HOA</div><div id="lt-exp-kpi-hoa" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">taxas de condomínio</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">ÁGUA</div><div id="lt-exp-kpi-water" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#2980b9">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">consumo hídrico</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#6baed6"></div></div>
- <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">LUZ</div><div id="lt-exp-kpi-luz" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">energia elétrica</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MANUTENÇÃO</div><div id="lt-exp-kpi-hoa" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--blue)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">chamados de manutenção no mês</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue)"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">QTY TOTAL</div><div id="lt-exp-kpi-water" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#2980b9">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">total de chamados no mês</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#6baed6"></div></div>
+ <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">QTY ABERTOS</div><div id="lt-exp-kpi-luz" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber)">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">chamados abertos</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amber)"></div></div>
  <div style="padding:14px 14px 10px;border-right:1px solid var(--border);position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">MANUT + VENDOR</div><div id="lt-exp-kpi-mv" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ink2)">$0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">serviços e fornecedores</div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--ink2)"></div></div>
- <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">APPROVED</div><div id="lt-exp-kpi-approved" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#b83030">0 of 0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">fully approved</div><div style="margin-top:7px;height:4px;background:rgba(180,48,48,.12);border-radius:999px;overflow:hidden"><div id="lt-exp-kpi-approved-bar" style="width:0%;height:100%;background:#2d7252"></div></div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#2d7252"></div></div>
+ <div style="padding:14px 14px 10px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px">FINALIZADOS / PAGOS</div><div id="lt-exp-kpi-approved" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#2d7252">0</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">chamados finalizados ou pagos</div><div style="margin-top:7px;height:4px;background:rgba(180,48,48,.12);border-radius:999px;overflow:hidden;display:none"><div id="lt-exp-kpi-approved-bar" style="width:0%;height:100%;background:#2d7252"></div></div><div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#2d7252"></div></div>
  </div></div>
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -19227,11 +19230,13 @@ function ltExpRender(){
  var rrPmLt=String(uPmLt.role||'').toLowerCase();
  var ltExpCanSeePmPhotos=(rrPmLt==='admin'||rrPmLt==='super_admin'||rrPmLt==='manager');
  const fMonth=(document.getElementById('lt-exp-filter-month')?.value)||'';
+ const fDay=(document.getElementById('lt-exp-filter-day')?.value)||'';
  const fCat=(document.getElementById('lt-exp-filter-cat')?.value)||'';
  const fStatus=(document.getElementById('lt-exp-filter-status')?.value)||'';
  const fSearch=((document.getElementById('lt-exp-search')?.value)||'').toLowerCase();
  const filtered=records.filter(function(r){
-  if(fMonth&&r.month!==fMonth)return false;
+  if(fMonth&&ltExpNormalizeYm(r.month)!==ltExpNormalizeYm(fMonth))return false;
+  if(fDay){var _rd=String(r.serviceDate||r.due||r.paid||'').slice(0,10);if(_rd!==fDay)return false;}
   if(fCat==='__PM__'){if(!r._isPm||!r._isVendorPm)return false;}
   else if(fCat){
    if(fCat==='Vendor'){if(r.category!=='Vendor'&&r.category!=='Vendor (API)'&&!(r._isPm&&r._isVendorPm))return false;}
@@ -19242,20 +19247,15 @@ function ltExpRender(){
   return true;
  });
  const tot=filtered.reduce((s,r)=>s+ltExpValueWithExtras(r),0);
- const hoa=filtered.filter(r=>r.category==='HOA').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
- const water=filtered.filter(r=>r.category==='Água').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
- const luz=filtered.filter(r=>r.category==='Luz / Electric').reduce((s,r)=>s+ltExpValueWithExtras(r),0);
+ const kpiManut=filtered.filter(function(r){return r._isPm&&(r.category==='Manutenção'||r.serviceType==='Manutenção'||r._isVendorPm);}).length;
+ const kpiQtyTotal=filtered.filter(function(r){return r._isPm;}).length;
+ const kpiQtyAbertos=filtered.filter(function(r){return r._isPm&&['FINALIZED','PAID','CANCELLED'].indexOf(ltExpRowNormPmStatus(r))<0;}).length;
+ const kpiFinPag=filtered.filter(function(r){return r._isPm&&['FINALIZED','PAID'].indexOf(ltExpRowNormPmStatus(r))>=0;}).length;
  const mv=filtered.filter(r=>r.category==='Manutenção'||r.category==='Vendor'||r.category==='Vendor (API)'||(r._isPm&&r._isVendorPm)).reduce((s,r)=>s+ltExpValueWithExtras(r),0);
- const approved=filtered.filter(r=>!r._isPm&&r.approvalInvoice&&r.approvalAppfolio&&r.approvalApproved).length;
- const apprDenom=filtered.filter(r=>!r._isPm).length;
- [['lt-exp-kpi-total',ltFmt(tot)],['lt-exp-kpi-hoa',ltFmt(hoa)],['lt-exp-kpi-water',ltFmt(water)],['lt-exp-kpi-luz',ltFmt(luz)],['lt-exp-kpi-mv',ltFmt(mv)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
- const kpiApproved=document.getElementById('lt-exp-kpi-approved');
- if(kpiApproved){
-  kpiApproved.textContent=approved+' of '+(apprDenom||0);
-  kpiApproved.style.color=approved===0?'#b83030':(apprDenom&&approved===apprDenom?'#2d7252':'#c47b28');
- }
+ [['lt-exp-kpi-total',ltFmt(tot)],['lt-exp-kpi-mv',ltFmt(mv)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+ [['lt-exp-kpi-hoa',String(kpiManut)],['lt-exp-kpi-water',String(kpiQtyTotal)],['lt-exp-kpi-luz',String(kpiQtyAbertos)],['lt-exp-kpi-approved',String(kpiFinPag)]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
  const kpiApprovedBar=document.getElementById('lt-exp-kpi-approved-bar');
- if(kpiApprovedBar)kpiApprovedBar.style.width=(apprDenom?Math.round((approved/apprDenom)*100):0)+'%';
+ if(kpiApprovedBar)kpiApprovedBar.style.width='0%';
  const counter=document.getElementById('lt-exp-counter'); if(counter)counter.textContent=filtered.length+' registro(s)';
  const tbody=document.getElementById('lt-exp-tbody'); const empty=document.getElementById('lt-exp-empty');
  if(!tbody)return;
