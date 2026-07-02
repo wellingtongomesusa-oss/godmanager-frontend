@@ -114,6 +114,17 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
                 {tFooter('security')}
               </Link>
             </nav>
+            <p className="mt-4 text-center font-inter text-[11px] leading-relaxed text-slate-500">
+              <a
+                href="https://www.godrealtor.us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[#1a3a5c] underline decoration-[#1a3a5c]/30 underline-offset-2 transition hover:text-[#c9a96e] hover:decoration-[#c9a96e]/50"
+              >
+                {tLogin('partnerGodrealtor')}
+              </a>
+              <span className="block text-[10px] text-slate-400">{tLogin('partnerGodrealtorSub')}</span>
+            </p>
             <p className="mt-8 text-center font-inter text-[11px] leading-relaxed text-slate-500">
               <NextLink
                 href={getGodManagerPremiumUrl()}
