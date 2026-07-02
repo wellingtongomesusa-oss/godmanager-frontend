@@ -374,6 +374,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--sand);color:var(-
 #page-forms-received:fullscreen .fr-charts-wide{flex:0 0 auto;margin:0}
 #page-forms-received:fullscreen .fr-charts-wide .fr-chart-card-wide{max-width:none;margin:0}
 #page-forms-received:fullscreen .fr-chart-card-wide .fr-chart-body{height:16vh}
+@media (orientation: portrait){
+ #page-forms-received:fullscreen .fr-cards{grid-template-columns:repeat(2,1fr);gap:1.5vh 2vw}
+ #page-forms-received:fullscreen .fr-charts{grid-template-columns:repeat(2,1fr);gap:1.5vh 2vw}
+ #page-forms-received:fullscreen .fr-charts .fr-chart-body{min-height:20vh}
+ #page-forms-received:fullscreen .fr-chart-card-wide .fr-chart-body{height:20vh}
+ #page-forms-received:fullscreen .fr-donut{height:clamp(110px,12vw,170px)}
+ #page-forms-received:fullscreen .fr-donut canvas{max-width:min(150px,24vw);max-height:min(150px,24vw)}
+}
 /* ===== fim FORMS RECEIVED ===== */
 .ltd-chart-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,22,12,.06)}
 .ltd-chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:10px;font-family:'DM Sans',sans-serif}
