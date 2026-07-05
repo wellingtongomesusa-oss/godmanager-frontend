@@ -121,6 +121,7 @@ model Client {
   bankAccountBalances   BankAccountBalance[]    @relation("BankAccountBalance_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
   bankLinks             BankLink[]              @relation("BankLink_clientId")
+  bankTransfers         BankTransfer[]          @relation("BankTransfer_clientId")
   supportTickets        SupportTicket[]         @relation("SupportTicket_clientId")
 
   @@map("clients")
@@ -959,6 +960,42 @@ model BankLink {
   @@index([clientId])
   @@index([linkType, entityId])
   @@map("bank_links")
+}
+
+/// Livro-razão de transferências ACH (Plaid Transfer). Débito = puxar da conta do
+/// cliente; Crédito = enviar para a conta do cliente. Nunca move dinheiro sozinho:
+/// só grava o que a API do Plaid confirma. Status segue o ciclo do Plaid.
+model BankTransfer {
+  id                   String            @id @default(cuid())
+  clientId             String
+  client               Client            @relation("BankTransfer_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  linkType             BankLinkType
+  entityId             String
+  bankLinkId           String?
+  direction            TransferDirection
+  amount               Decimal           @db.Decimal(12, 2)
+  currency             String            @default("USD")
+  description          String?
+  status               String            @default("pending")
+  plaidAuthorizationId String?
+  plaidTransferId      String?
+  achClass             String?
+  failureReason        String?
+  metadata             Json?
+  createdByUserId      String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([clientId])
+  @@index([linkType, entityId])
+  @@index([status])
+  @@index([plaidTransferId])
+  @@map("bank_transfers")
+}
+
+enum TransferDirection {
+  DEBIT
+  CREDIT
 }
 
 model ClientIntegration {
