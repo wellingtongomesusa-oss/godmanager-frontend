@@ -5,8 +5,12 @@ import {
   TransferType,
 } from 'plaid';
 import { getPlaidClient } from '@/lib/plaid';
+import { prisma } from '@/lib/db';
 
 export type TransferDir = 'DEBIT' | 'CREDIT';
+
+/** Estados finais: não precisam mais ser reconciliados. */
+export const TERMINAL_TRANSFER_STATUSES = ['settled', 'failed', 'returned', 'cancelled'];
 
 /** Movimentação de dinheiro só acontece com a flag explicitamente ligada. */
 export function isPlaidTransferEnabled(): boolean {
@@ -126,4 +130,42 @@ export async function createBankTransfer(
       error: `Falha ao criar transferência: ${plaidErr(e)}`,
     };
   }
+}
+
+/**
+ * Reconcilia o status das transferências ainda em andamento consultando o Plaid
+ * (transferGet = fonte da verdade). Idempotente. Retorna quantas checou/atualizou.
+ * Usada pelo webhook (como gatilho) e pelo botão manual no admin.
+ */
+export async function reconcilePendingTransfers(): Promise<{ checked: number; updated: number }> {
+  if (!isPlaidTransferEnabled()) return { checked: 0, updated: 0 };
+  const plaid = getPlaidClient();
+  const pending = await prisma.bankTransfer.findMany({
+    where: {
+      plaidTransferId: { not: null },
+      status: { notIn: TERMINAL_TRANSFER_STATUSES },
+    },
+    take: 200,
+  });
+  let updated = 0;
+  for (const row of pending) {
+    if (!row.plaidTransferId) continue;
+    try {
+      const res = await plaid.transferGet({ transfer_id: row.plaidTransferId });
+      const t = res.data.transfer;
+      const status = String(t.status);
+      const failureReason =
+        t.failure_reason?.description || t.failure_reason?.ach_return_code || null;
+      if (status !== row.status || (failureReason && failureReason !== row.failureReason)) {
+        await prisma.bankTransfer.update({
+          where: { id: row.id },
+          data: { status, failureReason: failureReason ?? row.failureReason },
+        });
+        updated++;
+      }
+    } catch (e) {
+      console.error('[reconcilePendingTransfers] transferGet', row.id, plaidErr(e));
+    }
+  }
+  return { checked: pending.length, updated };
 }
