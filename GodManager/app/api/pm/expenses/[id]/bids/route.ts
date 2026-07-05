@@ -163,6 +163,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ ok: false, error: 'Nenhum vendor válido no escopo do cliente' }, { status: 400 });
     }
 
+    // Cap cumulativo: no máximo 3 propostas por job (conta convites já existentes,
+    // não só os desta chamada). Upsert não duplica, então contamos vendors únicos.
+    const existingBids = await prisma.jobBid.findMany({
+      where: { expenseId },
+      select: { vendorId: true },
+    });
+    const existingVendorSet = new Set(existingBids.map((b) => b.vendorId));
+    const addedVendorIds = validVendorIds.filter((id) => !existingVendorSet.has(id));
+    if (existingVendorSet.size + addedVendorIds.length > 3) {
+      return NextResponse.json(
+        { ok: false, error: 'Limite de 3 propostas por job atingido.' },
+        { status: 400 },
+      );
+    }
+
     const now = new Date();
     const deadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000);
     const invitedAtIso = now.toISOString();

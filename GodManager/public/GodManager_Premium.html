@@ -37757,13 +37757,14 @@ window.gmAnalyticsLoad=async function(){
   };
 
   window.gmJobsRenderStatusChips=function(rows){
-    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0,vfree:0};
+    var counts={all:rows.length,PENDING:0,SCHEDULED:0,FINALIZED:0,PAID:0,CANCELLED:0,rescheduled:0,urgent:0,vfree:0,bidding:0};
     rows.forEach(function(r){
       var s=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(r):String(r.status||r.statusPm||'').toUpperCase();
       if(counts[s]!==undefined)counts[s]++;
       if(typeof gmJobsRowWasRescheduled==='function'&&gmJobsRowWasRescheduled(r))counts.rescheduled++;
       if(typeof gmJobsRowIsUrgent==='function'&&gmJobsRowIsUrgent(r))counts.urgent++;
       if(typeof gmJobsRowIsVendorFree==='function'&&gmJobsRowIsVendorFree(r))counts.vfree++;
+      if(typeof gmJobFollowUpDisplayStage==='function'&&gmJobFollowUpDisplayStage(r)==='bidding')counts.bidding++;
     });
     var chips=[
       {key:'all',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_all'):'Todos')},
@@ -37772,6 +37773,7 @@ window.gmAnalyticsLoad=async function(){
       {key:'rescheduled',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_rescheduled'):'Reagendados')},
       {key:'vfree',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_vfree'):'V Free')},
       {key:'urgent',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_urgent'):'Urgentes')},
+      {key:'bidding',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_bidding'):'Em cotação')},
       {key:'FINALIZED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_finalized'):'Finalizado')},
       {key:'PAID',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_paid'):'Pago')},
       {key:'CANCELLED',label:(typeof gmJobsT==='function'?gmJobsT('jobs_chip_cancelled'):'Cancelado')},
@@ -37843,6 +37845,11 @@ window.gmAnalyticsLoad=async function(){
     if(f==='vfree'){
      return rows.filter(function(r){
       return typeof gmJobsRowIsVendorFree==='function'&&gmJobsRowIsVendorFree(r);
+     });
+    }
+    if(f==='bidding'){
+     return rows.filter(function(r){
+      return typeof gmJobFollowUpDisplayStage==='function'&&gmJobFollowUpDisplayStage(r)==='bidding';
      });
     }
     return rows.filter(function(r){
