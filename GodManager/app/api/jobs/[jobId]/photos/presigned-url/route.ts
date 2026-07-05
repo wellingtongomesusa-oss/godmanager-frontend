@@ -6,20 +6,18 @@ import { getClientScopeWhere, toClientScopeUser } from "@/lib/clientScope";
 import { generateUploadUrl, publicUrlForKey } from "@/lib/r2";
 import {
   MAX_PHOTOS_PER_JOB,
+  MAX_VIDEOS_PER_JOB,
+  MAX_PHOTO_SIZE_BYTES,
+  MAX_VIDEO_SIZE_BYTES,
+  ALLOWED_PHOTO_CONTENT_TYPES,
+  ALLOWED_VIDEO_CONTENT_TYPES,
+  isVideoContentType,
+  isPhotoContentType,
   parseContainerNumber,
   jobPhotoR2KeyPrefix,
 } from "@/lib/jobPhotos";
 
 export const dynamic = "force-dynamic";
-
-const ALLOWED_CONTENT_TYPES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-] as const;
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 function randomString(length: number): string {
   return randomBytes(Math.ceil(length / 2))
@@ -57,13 +55,6 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     }
   }
 
-  const photoCount = await prisma.jobPhoto.count({
-    where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
-  });
-  if (photoCount >= MAX_PHOTOS_PER_JOB) {
-    return NextResponse.json({ error: "Limite de 20 fotos atingido" }, { status: 400 });
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -74,17 +65,40 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
   const contentType = raw.contentType;
   const sizeBytes = raw.sizeBytes;
 
-  if (typeof contentType !== "string" || !ALLOWED_CONTENT_TYPES.includes(contentType as (typeof ALLOWED_CONTENT_TYPES)[number])) {
+  if (typeof contentType !== "string" || (!isPhotoContentType(contentType) && !isVideoContentType(contentType))) {
     return NextResponse.json(
-      { error: `contentType must be one of: ${ALLOWED_CONTENT_TYPES.join(", ")}` },
+      { error: `contentType must be one of: ${[...ALLOWED_PHOTO_CONTENT_TYPES, ...ALLOWED_VIDEO_CONTENT_TYPES].join(", ")}` },
       { status: 400 }
     );
   }
-  if (typeof sizeBytes !== "number" || sizeBytes <= 0 || sizeBytes > MAX_SIZE_BYTES) {
+  const isVideo = isVideoContentType(contentType);
+  const maxSize = isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_PHOTO_SIZE_BYTES;
+  if (typeof sizeBytes !== "number" || sizeBytes <= 0 || sizeBytes > maxSize) {
     return NextResponse.json(
-      { error: `sizeBytes must be between 1 and ${MAX_SIZE_BYTES} bytes` },
+      { error: `sizeBytes must be between 1 and ${maxSize} bytes` },
       { status: 400 }
     );
+  }
+
+  // Limites separados por midia: fotos (20) e video (1)
+  const videoWhere = {
+    jobId: expense.id,
+    contentType: { in: [...ALLOWED_VIDEO_CONTENT_TYPES] },
+    ...getClientScopeWhere(scopeUser),
+  };
+  if (isVideo) {
+    const videoCount = await prisma.jobPhoto.count({ where: videoWhere });
+    if (videoCount >= MAX_VIDEOS_PER_JOB) {
+      return NextResponse.json({ error: "Limite de 1 video por job atingido" }, { status: 400 });
+    }
+  } else {
+    const totalCount = await prisma.jobPhoto.count({
+      where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
+    });
+    const videoCount = await prisma.jobPhoto.count({ where: videoWhere });
+    if (totalCount - videoCount >= MAX_PHOTOS_PER_JOB) {
+      return NextResponse.json({ error: "Limite de 20 fotos atingido" }, { status: 400 });
+    }
   }
 
   const containerNumber = parseContainerNumber(raw.containerNumber);

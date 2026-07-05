@@ -17563,9 +17563,18 @@ function gmJobsPhotoAppendThumb(grid,photo){
  var url=photo&&photo.publicUrl?String(photo.publicUrl):'';
  var ct=photo&&photo.contentType?String(photo.contentType):'';
  var isPdf=ct==='application/pdf'||(!ct&&/\.pdf(\?|$)/i.test(url));
+ var isVideo=/^video\//i.test(ct)||(!ct&&/\.(mp4|mov)(\?|$)/i.test(url));
  var wrap=document.createElement('div');
  wrap.style.cssText='position:relative;aspect-ratio:1;background:#f0f0f0;border-radius:6px;overflow:hidden';
- if(isPdf){
+ if(isVideo){
+  var vid=document.createElement('video');
+  vid.src=url;
+  vid.controls=true;
+  vid.preload='metadata';
+  vid.setAttribute('playsinline','');
+  vid.style.cssText='width:100%;height:100%;object-fit:cover;background:#000';
+  wrap.appendChild(vid);
+ }else if(isPdf){
   var pdfLink=document.createElement('a');
   pdfLink.href=url;
   pdfLink.target='_blank';
@@ -17630,6 +17639,25 @@ function gmJobsPhotoWireContainerUploadInputs(blockEl,containerNum){
   row.appendChild(inEl);
   row.appendChild(bt);
  });
+ if(containerNum===1){
+  var vIn=document.createElement('input');
+  vIn.type='file';
+  vIn.accept='video/mp4,video/quicktime';
+  vIn.style.display='none';
+  vIn.onchange=function(ev){
+   var f=ev&&ev.target&&ev.target.files&&ev.target.files[0];
+   if(f&&typeof gmJobsVideoUpload==='function')gmJobsVideoUpload(f);
+   if(ev&&ev.target)ev.target.value='';
+  };
+  var vBt=document.createElement('button');
+  vBt.type='button';
+  vBt.textContent='🎥 Vídeo (até 3 min)';
+  vBt.setAttribute('data-jp-upload-btn','1');
+  vBt.style.cssText=btnRowStyle;
+  vBt.onclick=function(){vIn.click();};
+  row.appendChild(vIn);
+  row.appendChild(vBt);
+ }
  blockEl.appendChild(row);
 }
 
@@ -17740,6 +17768,72 @@ async function gmJobsPhotoUploadOne(jobId,file,containerNumber){
  var ph=reg.photo;
  return {id:ph.id,containerNumber:ph.containerNumber!=null?ph.containerNumber:cn,publicUrl:ph.publicUrl,filename:ph.filename||'',contentType:ph.contentType||ct,uploadedAt:ph.uploadedAt||'',sizeBytes:ph.sizeBytes};
 }
+
+function gmJobsVideoProbeDuration(file){
+ return new Promise(function(resolve){
+  try{
+   var url=URL.createObjectURL(file);
+   var v=document.createElement('video');
+   v.preload='metadata';
+   v.onloadedmetadata=function(){URL.revokeObjectURL(url);resolve(isFinite(v.duration)?v.duration:0);};
+   v.onerror=function(){URL.revokeObjectURL(url);resolve(0);};
+   v.src=url;
+  }catch(e){resolve(0);}
+ });
+}
+async function gmJobsVideoUpload(file){
+ var st=window.gmJobsPhotoState;
+ if(!st||!st.jobId||st.uploading)return;
+ var okTypes=['video/mp4','video/quicktime'];
+ if(!file||okTypes.indexOf(file.type)<0){
+  if(typeof showToast==='function')showToast('Formato de vídeo inválido (use MP4 ou MOV).','error');else alert('Formato de vídeo inválido (use MP4 ou MOV).');
+  return;
+ }
+ if(file.size>150*1024*1024){
+  if(typeof showToast==='function')showToast('Vídeo muito grande (máx 150 MB).','error');else alert('Vídeo muito grande (máx 150 MB).');
+  return;
+ }
+ var dur=await gmJobsVideoProbeDuration(file);
+ if(dur>185){
+  if(typeof showToast==='function')showToast('Vídeo muito longo (máx 3 minutos).','error');else alert('Vídeo muito longo (máx 3 minutos).');
+  return;
+ }
+ st.uploading=true;
+ if(typeof gmJobsPhotoSetProgress==='function')gmJobsPhotoSetProgress(true);
+ document.querySelectorAll('[data-jp-upload-btn]').forEach(function(b){b.disabled=true;});
+ try{
+  var ct=file.type;
+  var presRes=await fetch('/api/jobs/'+encodeURIComponent(st.jobId)+'/photos/presigned-url',{
+   method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+   body:JSON.stringify({contentType:ct,sizeBytes:file.size,originalFilename:file.name||'video.mp4',containerNumber:1})
+  });
+  var pres=await presRes.json().catch(function(){return null;});
+  if(!presRes.ok||!pres||!pres.uploadUrl||!pres.key)throw new Error((pres&&pres.error)?String(pres.error):('presigned HTTP '+presRes.status));
+  var putRes=await fetch(pres.uploadUrl,{method:'PUT',headers:{'Content-Type':ct},body:file});
+  if(!putRes.ok)throw new Error('Upload R2 falhou ('+putRes.status+')');
+  var regRes=await fetch('/api/jobs/'+encodeURIComponent(st.jobId)+'/photos/register',{
+   method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+   body:JSON.stringify({r2Key:pres.key,publicUrl:pres.publicUrl,filename:file.name||null,sizeBytes:file.size,contentType:ct,containerNumber:1})
+  });
+  var reg=await regRes.json().catch(function(){return null;});
+  if(!regRes.ok||!reg||!reg.photo)throw new Error((reg&&reg.error)?String(reg.error):('register HTTP '+regRes.status));
+  var ph=reg.photo;
+  st.photos.unshift({id:ph.id,containerNumber:ph.containerNumber!=null?ph.containerNumber:1,publicUrl:ph.publicUrl,filename:ph.filename||'',contentType:ph.contentType||ct,uploadedAt:ph.uploadedAt||'',sizeBytes:ph.sizeBytes});
+  if(!st.countsByJob)st.countsByJob={};
+  st.countsByJob[st.jobId]=st.photos.length;
+  if(typeof gmJobsPhotoRenderGallery==='function')gmJobsPhotoRenderGallery();
+  if(typeof showToast==='function')showToast('Vídeo enviado.','success');
+ }catch(e){
+  console.error('video upload',e);
+  if(typeof showToast==='function')showToast('Falha ao enviar vídeo: '+(e&&e.message||''),'error');else alert('Falha ao enviar vídeo: '+(e&&e.message||''));
+ }finally{
+  st.uploading=false;
+  if(typeof gmJobsPhotoSetProgress==='function')gmJobsPhotoSetProgress(false);
+  document.querySelectorAll('[data-jp-upload-btn]').forEach(function(b){b.disabled=false;});
+  if(typeof gmJobsPhotoUpdateUploadButtonsDisabled==='function')gmJobsPhotoUpdateUploadButtonsDisabled();
+ }
+}
+window.gmJobsVideoUpload=gmJobsVideoUpload;
 
 async function gmJobsPhotoUploadBatch(files,containerNumber){
  var st=window.gmJobsPhotoState;

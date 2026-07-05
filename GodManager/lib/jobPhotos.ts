@@ -1,5 +1,27 @@
 export const MAX_PHOTOS_PER_JOB = 20;
+export const MAX_VIDEOS_PER_JOB = 1;
 export const MAX_CONTAINERS_PER_JOB = 5;
+
+// Limites por midia. Video ~3 min (duracao validada no browser; tamanho e a rede de seguranca no servidor).
+export const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MAX_VIDEO_SIZE_BYTES = 150 * 1024 * 1024; // 150 MB (~3 min)
+export const MAX_VIDEO_DURATION_SECONDS = 180; // 3 min
+
+export const ALLOWED_PHOTO_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+] as const;
+export const ALLOWED_VIDEO_CONTENT_TYPES = ['video/mp4', 'video/quicktime'] as const;
+
+export function isVideoContentType(ct: string): boolean {
+  return (ALLOWED_VIDEO_CONTENT_TYPES as readonly string[]).includes(ct);
+}
+export function isPhotoContentType(ct: string): boolean {
+  return (ALLOWED_PHOTO_CONTENT_TYPES as readonly string[]).includes(ct);
+}
 
 export function parseContainerNumber(raw: unknown): number | null {
   if (raw === undefined || raw === null || raw === '') return 1;

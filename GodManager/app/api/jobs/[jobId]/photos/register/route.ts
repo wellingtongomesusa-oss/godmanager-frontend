@@ -4,6 +4,9 @@ import { getCurrentUserFromSession } from "@/lib/authServer";
 import { getClientScopeWhere, toClientScopeUser } from "@/lib/clientScope";
 import {
   MAX_PHOTOS_PER_JOB,
+  MAX_VIDEOS_PER_JOB,
+  ALLOWED_VIDEO_CONTENT_TYPES,
+  isVideoContentType,
   parseContainerNumber,
   validateJobPhotoR2Key,
 } from "@/lib/jobPhotos";
@@ -72,11 +75,25 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     return NextResponse.json({ error: "Invalid r2Key" }, { status: 400 });
   }
 
-  const count = await prisma.jobPhoto.count({
-    where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
-  });
-  if (count >= MAX_PHOTOS_PER_JOB) {
-    return NextResponse.json({ error: "Limite de 20 fotos atingido" }, { status: 400 });
+  const isVideo = typeof contentType === "string" && isVideoContentType(contentType);
+  const videoWhere = {
+    jobId: expense.id,
+    contentType: { in: [...ALLOWED_VIDEO_CONTENT_TYPES] },
+    ...getClientScopeWhere(scopeUser),
+  };
+  if (isVideo) {
+    const videoCount = await prisma.jobPhoto.count({ where: videoWhere });
+    if (videoCount >= MAX_VIDEOS_PER_JOB) {
+      return NextResponse.json({ error: "Limite de 1 video por job atingido" }, { status: 400 });
+    }
+  } else {
+    const totalCount = await prisma.jobPhoto.count({
+      where: { jobId: expense.id, ...getClientScopeWhere(scopeUser) },
+    });
+    const videoCount = await prisma.jobPhoto.count({ where: videoWhere });
+    if (totalCount - videoCount >= MAX_PHOTOS_PER_JOB) {
+      return NextResponse.json({ error: "Limite de 20 fotos atingido" }, { status: 400 });
+    }
   }
 
   try {
