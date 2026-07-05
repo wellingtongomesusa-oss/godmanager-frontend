@@ -6923,6 +6923,51 @@ function gmBankAccountCloseModal(){
  if(bg)bg.style.display='none';
  window.__gmBankModalAccountType=null;
 }
+window.gmBankGraphOpen=async function(accountType,label){
+ var at=String(accountType||'').trim();
+ if(!at)return;
+ var existing=document.getElementById('gm-bank-graph-popup');
+ if(existing)existing.remove();
+ var overlay=document.createElement('div');
+ overlay.id='gm-bank-graph-popup';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+ overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+ var card=document.createElement('div');
+ card.style.cssText='background:#fff;border-radius:12px;padding:22px;max-width:560px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
+ card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:14px;font-weight:700;color:var(--ink)">Histórico — '+String(label||at).replace(/</g,'&lt;')+'</div><button type="button" onclick="var p=document.getElementById(\'gm-bank-graph-popup\');if(p)p.remove();" style="background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1">&times;</button></div>'
+  +'<div id="gm-bank-graph-delta" style="font-size:12px;color:var(--ink2);margin-bottom:10px">Carregando…</div>'
+  +'<div style="position:relative;height:240px"><canvas id="gm-bank-graph-canvas"></canvas></div>';
+ overlay.appendChild(card);
+ document.body.appendChild(overlay);
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var sep=q?'&':'?';
+  var res=await fetch('/api/bank-accounts/balances/history'+q+sep+'accountType='+encodeURIComponent(at),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  var series=(j&&j.ok&&j.history&&j.history[at])?j.history[at]:[];
+  var deltaEl=document.getElementById('gm-bank-graph-delta');
+  if(!series.length){
+   if(deltaEl)deltaEl.textContent='Sem histórico registrado para esta conta.';
+   return;
+  }
+  var labels=series.map(function(p){return String(p.date).slice(5);});
+  var data=series.map(function(p){return Number(p.balance)||0;});
+  var first=data[0],last=data[data.length-1];
+  var pct=(first!==0)?(((last-first)/Math.abs(first))*100):0;
+  var up=last>=first;
+  var money=(typeof gmHomeMoney==='function')?gmHomeMoney:function(v){return '$'+Number(v||0).toFixed(2);};
+  if(deltaEl){
+   deltaEl.innerHTML='Evolução no período: <span style="font-weight:700;color:'+(up?'#2d7252':'#b83030')+'">'+(up?'▲':'▼')+' '+Math.abs(pct).toFixed(1)+'%</span> ('+money(first)+' → '+money(last)+')';
+  }
+  var ctx=document.getElementById('gm-bank-graph-canvas');
+  if(ctx&&typeof Chart!=='undefined'){
+   new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:data,backgroundColor:(up?'#2d7252':'#b83030'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false}}}});
+  }
+ }catch(e){
+  var d=document.getElementById('gm-bank-graph-delta');
+  if(d)d.textContent='Erro ao carregar histórico.';
+ }
+};
 function gmBankAccountOpenModal(accountType){
  if(!gmCanEditBankAccounts()){
   alert('Apenas admin, manager ou super_admin podem registar saldos bancarios.');
@@ -7828,6 +7873,7 @@ function renderCards(){
  const updLine=formatCardUpdatedLine(c.id);
  var ckLabel=c.bankAccount?(typeof gmCanEditBankAccounts==='function'&&gmCanEditBankAccounts()?'Atualizar saldo':'Consulta'):'Ver detalhes →';
  const ckCls=(c.noNav&&!c.bankAccount)?'ck ck-disabled':'ck';
+ var graphBtn=c.bankAccount?'<button type="button" class="ck gm-card-graph" onclick="event.stopPropagation();if(typeof gmBankGraphOpen===\'function\')gmBankGraphOpen(\''+c.accountType+'\',this.getAttribute(\'data-lbl\'))" data-lbl="'+String(c.label).replace(/"/g,'&quot;')+'" title="Ver histórico do saldo" style="border:none;background:transparent;cursor:pointer;padding:0 6px;color:var(--blue);font-size:13px">📊</button>':'';
  el.innerHTML=`
  <div class="ct"><div class="cl">${c.label}</div><div class="cb">${c.badge}</div></div>
  <div class="cv2">${c.value}</div>
@@ -7838,7 +7884,7 @@ function renderCards(){
  </div>
  ${pillsHtml}
  ${updLine}
- <div class="cf"><a class="${ckCls}" ${c.noNav&&!c.bankAccount?'href="#" aria-disabled="true"':''}>${ckLabel}</a></div>
+ <div class="cf">${graphBtn}<a class="${ckCls}" ${c.noNav&&!c.bankAccount?'href="#" aria-disabled="true"':''}>${ckLabel}</a></div>
  <div class="cbar ${c.barClass}"></div>`;
  g.appendChild(el);
  });
