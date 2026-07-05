@@ -19247,7 +19247,16 @@ function ltExpRender(){
   if(fDay){var _rd=String(r.serviceDate||r.due||r.paid||'').slice(0,10);if(_rd!==fDay)return false;}
   if(fCat==='__PM__'){if(!r._isPm||!r._isVendorPm)return false;}
   else if(fCat){
-   if(fCat==='Vendor'){if(r.category!=='Vendor'&&r.category!=='Vendor (API)'&&!(r._isPm&&r._isVendorPm))return false;}
+   if(fCat==='Vendor'){
+    // Vendor = job PM COM vendor externo, ou despesa avulsa categoria Vendor
+    if(r._isPm){if(!r._isVendorPm)return false;}
+    else if(r.category!=='Vendor'&&r.category!=='Vendor (API)')return false;
+   }
+   else if(fCat==='Manutenção'){
+    // Manutenção = job PM SEM vendor externo (inclui +Vendor free), ou despesa avulsa categoria Manutenção
+    if(r._isPm){if(r._isVendorPm)return false;}
+    else if(r.category!=='Manutenção')return false;
+   }
    else{if(r.category!==fCat)return false;}
   }
   if(fStatus&&typeof ltExpRowNormPmStatus==='function'&&ltExpRowNormPmStatus(r)!==fStatus)return false;
@@ -26547,8 +26556,9 @@ window.jobsFetchFromApi=function(){
    if(typeof ltExpMapApiToRow==='function')mapped.push(ltExpMapApiToRow(e));
    else mapped.push(e);
   }
-  window.__jobsApiRowsCache=mapped;
   window.__jobsExpensesCache=mapped;
+  // Ocultar da tela Jobs as taxas +Vendor (metadata.maintenanceFeeFor): sao despesas, aparecem so em Expenses
+  window.__jobsApiRowsCache=mapped.filter(function(r){return !(r&&r.metadata&&r.metadata.maintenanceFeeFor);});
   window.__jobsExpensesCacheAt=Date.now();
   return mapped;
  })
@@ -29828,6 +29838,17 @@ window.jobsVendorFree=async function(id){
   }
   id=String(id||'').trim();
   if(!id)return;
+  // Trava anti-duplo-clique: nao criar 2a taxa +Vendor para o mesmo job
+  try{
+   var _feeCaches=[window.__jobsExpensesCache,window.__jobsApiRowsCache];
+   for(var _fc=0;_fc<_feeCaches.length;_fc++){
+    if(!Array.isArray(_feeCaches[_fc]))continue;
+    if(_feeCaches[_fc].some(function(x){return x&&x.metadata&&String(x.metadata.maintenanceFeeFor||'')===id;})){
+     if(typeof showToast==='function')showToast('Ja existe uma taxa +Vendor para este job.','error');else alert('Ja existe uma taxa +Vendor para este job.');
+     return;
+    }
+   }
+  }catch(_eFee){}
   if(!confirm('Registrar taxa de manutenção de $120 e enviar a work order ao Supervisor?'))return;
   var row=(typeof jobsFindRowById==='function')?jobsFindRowById(id):null;
   if(!row){

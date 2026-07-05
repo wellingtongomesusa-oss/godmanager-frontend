@@ -186,6 +186,28 @@ export async function POST(req: Request) {
     }
     const metadata = parseMetadataInput(body.metadata);
 
+    // Trava anti-duplicidade: a taxa +Vendor (metadata.maintenanceFeeFor) so pode existir 1x por job de origem.
+    // So dispara quando maintenanceFeeFor esta presente; nenhum outro fluxo de create e afetado.
+    const feeParentId =
+      body.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata)
+        ? String((body.metadata as Record<string, unknown>).maintenanceFeeFor || '').trim()
+        : '';
+    if (feeParentId) {
+      const existingFee = await prisma.pmExpense.findFirst({
+        where: {
+          ...getClientScopeWhere(scopeUser),
+          metadata: { path: ['maintenanceFeeFor'], equals: feeParentId },
+        },
+        select: { id: true },
+      });
+      if (existingFee) {
+        return NextResponse.json(
+          { ok: false, error: 'Ja existe uma taxa +Vendor para este job.' },
+          { status: 409 },
+        );
+      }
+    }
+
     const pkg =
       parsePmPackage(String(body.packageApplied ?? body.pmPackage ?? '')) ?? 'PACOTE_1';
     const vendorCost = Number(body.vendorCost);
