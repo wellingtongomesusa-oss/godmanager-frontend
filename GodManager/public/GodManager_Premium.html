@@ -3263,6 +3263,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mês</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Categoria / tipo</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" title="Total de chamados desta unidade (abertos em destaque)">Chamados</th>
+ <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" title="Dias em aberto sem finalizar">Aberto há</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
  <th style="padding:10px 6px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);width:76px" title="Fotos do Job">Fotos</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green)">APPROVAL</th>
@@ -3499,7 +3501,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </span>
   <span id="jobs-queue-filter-wrap" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
-  <label data-i18n="jobs_queue_filter_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Fila:</label>
+  <label data-i18n="jobs_queue_filter_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Tipo de Fila:</label>
   <select id="jobs-queue-filter" onchange="if(typeof gmJobsSetQueueFilter==='function')gmJobsSetQueueFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:160px">
    <option value="all" data-i18n="jobs_queue_filter_all">Todas</option>
    <option value="maintenance" data-i18n="jobs_queue_filter_maintenance">Manutenção</option>
@@ -3624,7 +3626,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <option value="" data-i18n="jobs_all_vendors">Todos os vendors</option>
   </select>
   <span style="width:1px;height:20px;background:var(--border2);margin:0 8px"></span>
-  <label data-i18n="jobs_queue_filter_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Fila:</label>
+  <label data-i18n="jobs_queue_filter_label" style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:4px">Tipo de Fila:</label>
   <select id="jobs-follow-queue-filter" onchange="if(typeof gmJobsFollowSetQueueFilter==='function')gmJobsFollowSetQueueFilter(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:140px">
    <option value="all" data-i18n="jobs_queue_filter_all">Todas</option>
    <option value="maintenance" data-i18n="jobs_queue_filter_maintenance">Manutenção</option>
@@ -19291,6 +19293,18 @@ function ltExpValueWithExtras(r){
 function ltExpMergeAll(){
  return (window._pmExpenseRows || []).map(ltExpMapApiToRow);
 }
+/** Dias em aberto de um chamado PM nao finalizado (null se finalizado/pago/cancelado). */
+function ltExpDaysOpen(rr){
+ if(!rr||!rr._isPm)return null;
+ var sn=(typeof ltExpRowNormPmStatus==='function')?ltExpRowNormPmStatus(rr):'';
+ if(['FINALIZED','PAID','CANCELLED'].indexOf(sn)>=0)return null;
+ var base=rr.createdAt||rr.serviceDate||'';
+ if(!base)return null;
+ var d=new Date(base);
+ if(isNaN(d.getTime()))return null;
+ var diff=Math.floor((Date.now()-d.getTime())/86400000);
+ return diff<0?0:diff;
+}
 /** PM expenses: hydrate photo counts via GET /api/jobs/[id]/photos — cached em gmJobsPhotoState.countsByJob (reutilização F2). */
 function ltExpSchedulePmPhotoCounts(){
  var sx=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
@@ -19372,6 +19386,17 @@ function ltExpRender(){
  if(!tbody)return;
  if(!filtered.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
  if(empty)empty.style.display='none';
+ // Chamados por unidade (conta jobs PM no dataset carregado, com destaque para abertos)
+ var unitCounts={};
+ records.forEach(function(rr){
+  if(!rr||!rr._isPm)return;
+  var k=String(rr.propertyCode||rr.propAddress||'').trim();
+  if(!k)return;
+  if(!unitCounts[k])unitCounts[k]={total:0,abertos:0};
+  unitCounts[k].total++;
+  var sn=(typeof ltExpRowNormPmStatus==='function')?ltExpRowNormPmStatus(rr):'';
+  if(['FINALIZED','PAID','CANCELLED'].indexOf(sn)<0)unitCounts[k].abertos++;
+ });
  const esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
  tbody.innerHTML=filtered.map((r,i)=>{
   const isPm=!!r._isPm;
@@ -19411,6 +19436,13 @@ function ltExpRender(){
   const cbTd=isPm
    ? `<td style="padding:9px 8px;text-align:center"><input type="checkbox" class="lt-exp-row-cb" data-id="${gmHtmlEscAttr(String(r.id))}" onchange="if(typeof ltExpUpdateBulkBar===&#39;function&#39;)ltExpUpdateBulkBar()"`+(typeof ltExpBulkRoleOk==='function'&&!ltExpBulkRoleOk()?' disabled':'')+` style="cursor:pointer"></td>`
    : '<td style="padding:9px 8px"></td>';
+  var _uKey=String(r.propertyCode||r.propAddress||'').trim();
+  var _uc=unitCounts[_uKey]||{total:0,abertos:0};
+  var chamadosCell=isPm
+   ? '<td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+_uc.total+(_uc.abertos>0?' <span style="color:var(--amber);font-weight:700">('+_uc.abertos+' aberto'+(_uc.abertos>1?'s':'')+')</span>':'')+'</td>'
+   : '<td style="padding:9px 12px;text-align:center;color:var(--ink3)">—</td>';
+  var _dOpen=ltExpDaysOpen(r);
+  var abertoCell='<td style="padding:9px 12px;text-align:center;font-size:11px">'+(_dOpen==null?'<span style="color:var(--ink3)">—</span>':'<span style="color:'+(_dOpen>=15?'var(--red)':(_dOpen>=7?'var(--amber)':'var(--ink3)'))+';font-weight:600">'+_dOpen+'d</span>')+'</td>';
   return `<tr class="lt-exp-row status-${String(stNorm).toLowerCase()}" data-status="${stNorm}" data-lt-photo-job="${photoJobAttr}" style="border-bottom:1px solid var(--border)">
  `+cbTd+`
  <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">${i+1}</td>
@@ -19425,6 +19457,8 @@ function ltExpRender(){
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
  <td style="padding:9px 12px;font-size:10px;color:var(--ink3)">${catShow}</td>
  <td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">${esc(dStr)}</td>
+ `+chamadosCell+`
+ `+abertoCell+`
  `+statusTd+`
  `+photosTd+`
  ${isPm?'<td style="padding:9px 8px;text-align:center;font-size:10px;color:var(--ink3)">—</td>':ltExpApprovalCell(r)}
@@ -28498,7 +28532,7 @@ async function jobsRender(){
  var actionsInner;
  var dismissCellHtml;
  if(isMaintenanceOnly){
-  actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnFinalize;
+  actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnReschedule+btnFinalize;
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else if(isVendorRole){
   var rowVendorId=(r._apiRaw&&r._apiRaw.vendorId)?String(r._apiRaw.vendorId).trim():'';
