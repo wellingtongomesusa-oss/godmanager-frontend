@@ -74,6 +74,14 @@ export async function POST(req: Request) {
     if (!action || !jobId) {
       return NextResponse.json({ ok: false, error: 'action and jobId required' }, { status: 400 });
     }
+    // Permissao de precificacao: manager_markup (botao MGR) exige super_admin ou a flag 'expense_pricing'.
+    if (action === 'manager_markup' && String(u.role || '').toLowerCase() !== 'super_admin') {
+      const priceUser = await prisma.user.findUnique({ where: { id: u.id }, select: { permissions: true } });
+      const perms = priceUser?.permissions ?? [];
+      if (!perms.includes('expense_pricing')) {
+        return NextResponse.json({ ok: false, error: 'Sem permissao para definir precos' }, { status: 403 });
+      }
+    }
     const jobType =
       typeof body?.jobType === 'string' && body.jobType ? String(body.jobType) : 'expense';
 

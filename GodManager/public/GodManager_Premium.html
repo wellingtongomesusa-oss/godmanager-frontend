@@ -14756,6 +14756,14 @@ function ltSaveRecords(arr){
  localStorage.setItem(LT_KEY, JSON.stringify(arr));
 }
 function gmSessionUserSync(){ return window.__gmCurrentUser||null; }
+/** Permissao para decidir precos no Expenses (botao MGR + valor). super_admin ou permissao 'expense_pricing'. */
+function gmCanSetPrices(){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ if(String(u.role||'').toLowerCase()==='super_admin')return true;
+ var perms=Array.isArray(u.permissions)?u.permissions:[];
+ return perms.indexOf('expense_pricing')>=0;
+}
+window.gmCanSetPrices=gmCanSetPrices;
 function gmUserRole(){
  var u=gmSessionUserSync();
  if(!u){
@@ -28644,7 +28652,7 @@ async function jobsRender(){
  }
 
  var btnManager='';
- if(isAdmin&&!isCancelled){
+ if((typeof gmCanSetPrices==='function'?gmCanSetPrices():isAdmin)&&!isCancelled){
   var st0m=String(r.status||'').toLowerCase();
   var stPm=String(r.statusPm||'').toLowerCase();
   var isPendingOrScheduled=(st0m==='pending'||st0m==='scheduled'||stPm==='pending'||stPm==='scheduled'||(!st0m&&!stPm));
