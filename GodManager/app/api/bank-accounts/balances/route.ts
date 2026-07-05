@@ -54,6 +54,12 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const scope = await resolveBankAccountClientScope(user, url.searchParams.get('clientId'));
   if (!scope.ok) {
+    // Sem cliente resolvível (ex.: super_admin sem tenant ativo) na LEITURA: devolve vazio
+    // em vez de 400, evitando o loop de erros 400 no console quando o Home busca saldos.
+    // (O POST mantém o 400 — não se deve gravar saldo sem cliente definido.)
+    if (scope.status === 400) {
+      return NextResponse.json({ ok: true, balances: {} });
+    }
     return NextResponse.json({ ok: false, error: scope.error }, { status: scope.status });
   }
 
