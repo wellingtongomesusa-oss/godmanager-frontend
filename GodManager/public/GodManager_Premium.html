@@ -2220,7 +2220,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="font-size:13px;font-weight:600;color:var(--ink)">Avisos & Comunicados</div>
  <div style="font-size:10.5px;color:var(--ink3);margin-top:2px">Máx. 60 caracteres por aviso</div>
  </div>
+ <div style="display:flex;gap:8px;align-items:center">
+ <button id="news-broadcast-btn" onclick="gmNewsPublishUpdate()" style="display:none;padding:6px 13px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif" title="Publicar novidade da plataforma para todos os clientes">✨ Novidade</button>
  <button onclick="toggleCompose()" style="padding:6px 13px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova mensagem</button>
+ </div>
  </div>
  <div id="news-compose" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
  <textarea id="news-text" maxlength="60" placeholder="Digite o aviso (máx. 60 caracteres)..." oninput="updateCount()" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;resize:none;height:58px;background:var(--sand);color:var(--ink);outline:none"></textarea>
@@ -13124,6 +13127,7 @@ function gmNewsSubtypePill(subtype){
  if(subtype==='job_finalized')return{lbl:lbl('news_subtype_job_finalized','Finalized'),bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)'};
  if(subtype==='finalized_no_value')return{lbl:lbl('news_subtype_finalized_no_value','Finalized w/o value'),bg:'var(--red-bg)',fg:'var(--red)',bd:'var(--red-bd)'};
  if(subtype==='container_added')return{lbl:'Container',bg:'#ede9fe',fg:'#5b21b6',bd:'#c4b5fd'};
+ if(subtype==='platform_update')return{lbl:lbl('news_subtype_platform_update','✨ Novidade'),bg:'var(--green-bg)',fg:'var(--green)',bd:'var(--green-bd)'};
  return{lbl:lbl('news_subtype_job','Job'),bg:'var(--slate-bg)',fg:'var(--slate)',bd:'var(--border2)'};
 }
 
@@ -13836,6 +13840,29 @@ function gmNewsPostJobAction(opts){
   .catch(function(){});
 }
 
+async function gmNewsPublishUpdate(){
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ if(String(u.role||'').toLowerCase()!=='super_admin'){alert('Apenas super admin pode publicar novidades.');return;}
+ var title=prompt('Título da novidade (máx 120):','');
+ if(title==null)return;
+ title=String(title).trim();
+ if(!title){alert('Título obrigatório.');return;}
+ var bodyTxt=prompt('Detalhe da melhoria (opcional):','');
+ if(bodyTxt==null)bodyTxt='';
+ if(!confirm('Publicar esta novidade no News de TODOS os clientes?'))return;
+ try{
+  var res=await fetch('/api/news/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({title:title,body:String(bodyTxt).trim()})});
+  var j=await res.json().catch(function(){return null;});
+  if(!res.ok||!j||!j.ok)throw new Error((j&&j.error)||('HTTP '+res.status));
+  if(typeof showToast==='function')showToast('Novidade publicada para '+j.created+' cliente(s).','success');else alert('Novidade publicada para '+j.created+' cliente(s).');
+  if(typeof gmNewsLoadApi==='function')gmNewsLoadApi().then(function(){if(typeof renderMsgs==='function')renderMsgs();});
+  if(typeof gmNewsRefreshBadge==='function')gmNewsRefreshBadge();
+ }catch(e){
+  if(typeof showToast==='function')showToast('Falha ao publicar: '+(e&&e.message||''),'error');else alert('Falha ao publicar: '+(e&&e.message||''));
+ }
+}
+window.gmNewsPublishUpdate=gmNewsPublishUpdate;
+
 function gmNewsJobDescription(jobId){
  var desc='';
  try{
@@ -13925,6 +13952,8 @@ function markRead(id){
 function renderMsgs(){
  const list=document.getElementById('news-list');
  if(!list)return;
+ var _bcBtn=document.getElementById('news-broadcast-btn');
+ if(_bcBtn){var _bu=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};_bcBtn.style.display=(String(_bu.role||'').toLowerCase()==='super_admin')?'':'none';}
  var apiItems=(window.__gmNewsApiItems||[]).map(function(it){
   return{
    _src:'api',
