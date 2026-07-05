@@ -31,6 +31,8 @@ function normalizeUser(u: Partial<User> & { id: string }): User {
           ? new Date(u.lastActive as Date).toISOString()
           : new Date().toISOString(),
     passwordHash: u.passwordHash ?? '',
+    clientId: u.clientId ?? null,
+    companyName: u.companyName ?? null,
   };
 }
 

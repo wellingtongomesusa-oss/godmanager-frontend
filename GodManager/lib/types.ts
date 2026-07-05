@@ -27,6 +27,8 @@ export interface User {
   createdAt: string;
   lastActive: string;
   passwordHash: string;
+  clientId?: string | null;
+  companyName?: string | null;
 }
 
 export interface AuditEntry {

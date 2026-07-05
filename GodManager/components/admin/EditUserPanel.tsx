@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import type { User, UserRole, UserStatus } from '@/lib/types';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/toast';
-import { emailExists, updateUser } from '@/lib/users';
+import { emailExists, updateUser, listAdminClients } from '@/lib/users';
 
 const PERM_OPTS = [
   { key: 'payments', label: 'Can approve payments' },
@@ -37,6 +37,18 @@ export function EditUserPanel({
   const [role, setRole] = useState<UserRole>('viewer');
   const [status, setStatus] = useState<UserStatus>('active');
   const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const [clientId, setClientId] = useState<string>('');
+  const [clients, setClients] = useState<{ id: string; companyName: string }[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    listAdminClients().then((res) => {
+      if (alive && res.ok) setClients(res.clients);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -46,6 +58,7 @@ export function EditUserPanel({
     setPhone(user.phone ?? '');
     setRole(user.role);
     setStatus(user.status);
+    setClientId(user.clientId ?? '');
     const p: Record<string, boolean> = {};
     PERM_OPTS.forEach((o) => {
       p[o.key] = user.permissions.includes(o.key);
@@ -65,6 +78,12 @@ export function EditUserPanel({
       toast('You cannot suspend your own account.', 'error');
       return;
     }
+    // super_admin não pertence a uma empresa (vê tudo); os demais precisam de uma.
+    const isSuper = role === 'super_admin';
+    if (!isSuper && !clientId) {
+      toast('Selecione a empresa deste utilizador.', 'error');
+      return;
+    }
     const permissions = PERM_OPTS.filter((p) => perms[p.key]).map((p) => p.key);
     const res = await updateUser(user.id, {
       firstName: firstName.trim(),
@@ -74,6 +93,7 @@ export function EditUserPanel({
       role,
       status,
       permissions,
+      clientId: isSuper ? null : clientId,
     });
     if (!res.ok) {
       toast(res.error, 'error');
@@ -131,6 +151,28 @@ export function EditUserPanel({
             <option value="supervisor_2">Supervisor 2</option>
             <option value="vendor">Vendor</option>
           </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-gm-ink-secondary">
+            Empresa {role === 'super_admin' ? '(super admin vê todas)' : '(obrigatório)'}
+          </label>
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            disabled={role === 'super_admin'}
+            className="w-full rounded-[10px] border border-gm-border bg-gm-cream px-4 py-3 text-sm text-gm-ink disabled:opacity-60"
+          >
+            <option value="">— Selecione a empresa —</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.companyName}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[10px] text-gm-ink-secondary">
+            Define o que este utilizador enxerga: só os dados da empresa vinculada.
+          </p>
         </div>
 
         <section>

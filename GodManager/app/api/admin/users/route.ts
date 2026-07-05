@@ -27,7 +27,10 @@ function generateRandomPassword(length = 12): string {
 export async function GET() {
   const gate = await requireSuperAdmin();
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
-  const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { client: { select: { companyName: true } } },
+  });
   return NextResponse.json({
     ok: true,
     users: users.map((u) => ({
@@ -41,6 +44,8 @@ export async function GET() {
       permissions: u.permissions,
       lastActive: u.lastActive,
       createdAt: u.createdAt,
+      clientId: u.clientId,
+      companyName: u.client?.companyName ?? null,
     })),
   });
 }

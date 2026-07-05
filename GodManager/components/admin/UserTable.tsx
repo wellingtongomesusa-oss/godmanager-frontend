@@ -88,6 +88,9 @@ export function UserTable({
                 Role
               </th>
               <th className="px-[14px] py-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-gm-ink-tertiary">
+                Empresa
+              </th>
+              <th className="px-[14px] py-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-gm-ink-tertiary">
                 Status
               </th>
               <th className="px-[14px] py-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-gm-ink-tertiary">
@@ -119,6 +122,17 @@ export function UserTable({
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={roleBadgeVariant(u.role)}>{roleLabel(u.role)}</Badge>
+                </td>
+                <td className="px-4 py-3">
+                  {u.role === 'super_admin' ? (
+                    <span className="text-xs text-gm-ink-secondary">Todas</span>
+                  ) : u.companyName ? (
+                    <span className="text-xs font-medium text-gm-ink">{u.companyName}</span>
+                  ) : (
+                    <span className="rounded bg-gm-red/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gm-red">
+                      sem empresa
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap items-center gap-1">
