@@ -47,3 +47,23 @@ export function selfTest(): boolean {
   const dec = decrypt(enc);
   return dec === sample;
 }
+
+/** Criptografa um valor de campo sensível para gravação. Retorna null se vazio. */
+export function encryptField(v: string | null | undefined): string | null {
+  const s = v == null ? '' : String(v).trim();
+  if (!s) return null;
+  return encrypt(s);
+}
+
+/**
+ * Descriptografa um valor de campo para leitura. Tolerante: se o valor for legado
+ * em texto puro (ainda não migrado), devolve como está em vez de lançar erro.
+ */
+export function decryptField(v: string | null | undefined): string | null {
+  if (v == null || v === '') return null;
+  try {
+    return decrypt(String(v));
+  } catch {
+    return String(v);
+  }
+}

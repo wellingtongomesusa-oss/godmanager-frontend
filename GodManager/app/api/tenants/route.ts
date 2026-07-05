@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { encryptField, decryptField } from '@/lib/encryption';
 import {
   canAccessClientId,
   getClientScopeForCreate,
@@ -26,6 +27,8 @@ export async function GET() {
       ok: true,
       tenants: tenants.map((t) => ({
         ...t,
+        ssn: decryptField(t.ssn),
+        itin: decryptField(t.itin),
         rent: t.rent.toString(),
         deposit: t.deposit.toString(),
         moveIn: t.moveIn ? t.moveIn.toISOString() : null,
@@ -100,8 +103,8 @@ export async function POST(req: Request) {
         deposit: body.deposit != null ? String(body.deposit) : '0',
         tenantType: body.tenantType || null,
         status: body.status || 'active',
-        ssn: body.ssn || null,
-        itin: body.itin || null,
+        ssn: encryptField(body.ssn || null),
+        itin: encryptField(body.itin || null),
         tags: Array.isArray(body.tags) ? body.tags : [],
         notes: body.notes || null,
         metadata: body.metadata ?? undefined,
@@ -125,6 +128,8 @@ export async function POST(req: Request) {
       ok: true,
       tenant: {
         ...created,
+        ssn: decryptField(created.ssn),
+        itin: decryptField(created.itin),
         rent: created.rent.toString(),
         deposit: created.deposit.toString(),
         moveIn: created.moveIn ? created.moveIn.toISOString() : null,

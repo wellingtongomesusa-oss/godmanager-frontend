@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { encryptField, decryptField } from '@/lib/encryption';
 import { getClientScopeForCreate, getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import type { PmPackage } from '@prisma/client';
 import { PM_PACKAGE_MARKUP_PCT } from '@/lib/pmPackages';
@@ -50,8 +51,8 @@ function toJson(v: {
     default_package: v.defaultPackage,
     markup_pct: PM_PACKAGE_MARKUP_PCT[v.defaultPackage],
     bank_name: v.bankName ?? '',
-    routing_number: v.routingNumber ?? '',
-    account_number: v.accountNumber ?? '',
+    routing_number: decryptField(v.routingNumber) ?? '',
+    account_number: decryptField(v.accountNumber) ?? '',
     account_type: v.accountType ?? '',
     payment_type: v.paymentType ?? '',
     commission_mp: v.commissionMp,
@@ -132,8 +133,8 @@ export async function POST(req: Request) {
         serviceType: String(body.service_type || body.serviceType || '').trim() || null,
         defaultPackage,
         bankName: String(body.bank_name || body.bankName || '').trim() || null,
-        routingNumber: String(body.routing_number || body.routingNumber || '').trim() || null,
-        accountNumber: String(body.account_number || body.accountNumber || '').trim() || null,
+        routingNumber: encryptField(String(body.routing_number || body.routingNumber || '').trim() || null),
+        accountNumber: encryptField(String(body.account_number || body.accountNumber || '').trim() || null),
         accountType: String(body.account_type || body.accountType || '').trim() || null,
         paymentType: String(body.payment_type || body.paymentType || '').trim() || null,
         commissionMp: !!body.commission_mp || !!body.commissionMp,

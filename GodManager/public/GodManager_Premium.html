@@ -13441,8 +13441,10 @@ function gmSupportRenderRating(t){
  var rating=(t&&t.rating!=null)?Number(t.rating):0;
  var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
  var isRequester=String(u.id||'')===String((t&&t.requesterId)||'');
- if(!rating&&(!isDone||!isRequester)){box.innerHTML='';return;}
- var canRate=isDone&&isRequester&&!rating;
+ var isStaff=(typeof gmIsStaffUser==='function')?gmIsStaffUser():false;
+ // Mostra o bloco se ja avaliado (todos veem a nota) ou se o chamado esta resolvido/fechado.
+ if(!rating&&!isDone){box.innerHTML='';return;}
+ var canRate=isDone&&!rating&&(isRequester||isStaff);
  var starHtml='';
  for(var i=1;i<=5;i++){
   var filled=i<=rating;
@@ -13452,7 +13454,7 @@ function gmSupportRenderRating(t){
    starHtml+='<span style="font-size:18px;color:'+(filled?'#f5b301':'#d0d5dd')+';padding:0 1px">★</span>';
   }
  }
- var lbl=canRate?'Avalie o atendimento:':'Avaliação do cliente:';
+ var lbl=rating?'Avaliação do cliente:':(canRate?'Avalie o atendimento:':'Aguardando avaliação do cliente:');
  box.innerHTML='<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:3px">'+lbl+'</div><div>'+starHtml+'</div>';
 }
 window.gmSupportRenderRating=gmSupportRenderRating;
@@ -37902,11 +37904,13 @@ window.gmAnalyticsLoad=async function(){
     var qf=String(window.__jobsQueueFilter||'all').trim();
     if(!qf||qf==='all')return rows;
     return rows.filter(function(r){
-      // Manutencao = equipe interna ou sem vendor; Vendor = vendor externo
-      if(qf==='maintenance')return !window.gmJobsRowHasExternalVendor(r);
-      if(qf==='vendor')return window.gmJobsRowHasExternalVendor(r);
+      var q=(typeof jobFollowUpQueue==='function')?jobFollowUpQueue(r):'maintenance';
+      // Manutencao = sem vendor externo E ainda na fila de manutencao. Jobs escalados
+      // para supervisor/vendor saem da Manutencao e aparecem na fila deles (Supervisor/Vendor).
+      if(qf==='maintenance')return !window.gmJobsRowHasExternalVendor(r)&&q==='maintenance';
+      if(qf==='vendor')return window.gmJobsRowHasExternalVendor(r)||q==='vendor';
       // supervisor / supervisor_2: fila de workflow (followUp.queue)
-      return typeof jobFollowUpQueue==='function'&&jobFollowUpQueue(r)===qf;
+      return q===qf;
     });
   };
 

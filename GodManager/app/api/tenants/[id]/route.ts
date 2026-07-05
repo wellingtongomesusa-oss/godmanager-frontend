@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { encryptField, decryptField } from '@/lib/encryption';
 import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
 import { recordAudit } from '@/lib/auditServer';
 
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
 function serialize(t: any) {
   return {
     ...t,
+    ssn: decryptField(t.ssn),
+    itin: decryptField(t.itin),
     rent: t.rent.toString(),
     deposit: t.deposit.toString(),
     moveIn: t.moveIn ? t.moveIn.toISOString() : null,
@@ -73,8 +76,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.deposit !== undefined) data.deposit = String(body.deposit);
     if (body.tenantType !== undefined) data.tenantType = body.tenantType || null;
     if (body.status !== undefined) data.status = body.status;
-    if (body.ssn !== undefined) data.ssn = body.ssn || null;
-    if (body.itin !== undefined) data.itin = body.itin || null;
+    if (body.ssn !== undefined) data.ssn = encryptField(body.ssn || null);
+    if (body.itin !== undefined) data.itin = encryptField(body.itin || null);
     if (body.tags !== undefined) data.tags = Array.isArray(body.tags) ? body.tags : [];
     if (body.notes !== undefined) data.notes = body.notes || null;
     if (body.metadata !== undefined) data.metadata = body.metadata;
