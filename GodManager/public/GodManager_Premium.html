@@ -13754,7 +13754,9 @@ async function gmSupportChatSend(){
   if(res.ok&&data&&data.ok&&data.ticket){
    var code=String(data.ticket.code||'');
    var ticketId=String(data.ticket.id||'');
-   gmSupportChatAppendMsg('Recebemos seu chamado '+code+'. Nossa equipe vai responder por aqui em breve. Voce tambem acompanha em Suporte no menu.','system');
+   var jobN=(data&&data.linkedJobNumber!=null)?data.linkedJobNumber:null;
+   var jobMsg=(jobN!=null)?(' Ja abrimos a ordem de servico #'+jobN+' na fila de manutencao.'):'';
+   gmSupportChatAppendMsg('Recebemos seu chamado '+code+'.'+jobMsg+' Nossa equipe vai responder por aqui em breve. Voce tambem acompanha em Suporte no menu.','system');
    if(pendingFile&&ticketId){
     var att=await gmSupportUploadAttachment(pendingFile,ticketId);
     gmSupportClearBubbleAttachment();
