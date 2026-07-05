@@ -22,7 +22,12 @@ import { useAuth } from '@/components/auth/AuthProvider';
 type Kpis = {
   ok: boolean;
   clients: { total: number; active: number; suspended: number; newLast30Days: number };
-  users: { total: number; active: number; suspended: number };
+  users: {
+    total: number;
+    active: number;
+    suspended: number;
+    byType: { staff: number; tenant: number; owner: number; vendor: number };
+  };
   portfolio: { totalProperties: number; totalTenants: number; totalVendors: number; totalJobs: number };
   financials: {
     yearMonth: string;
@@ -83,6 +88,15 @@ export function AdminDashboard() {
       ]
     : [];
 
+  const loginTypeCards = kpis
+    ? [
+        { label: 'Equipe / Staff', value: num(kpis.users.byType.staff), sub: 'admin, supervisor, manutenção', icon: Shield, color: 'text-slate-700 bg-slate-100' },
+        { label: 'Inquilinos', value: num(kpis.users.byType.tenant), sub: 'login tenant', icon: UserCheck, color: 'text-amber-600 bg-amber-50' },
+        { label: 'Proprietários', value: num(kpis.users.byType.owner), sub: 'login owner', icon: Home, color: 'text-emerald-600 bg-emerald-50' },
+        { label: 'Fornecedores', value: num(kpis.users.byType.vendor), sub: 'login vendor', icon: Wrench, color: 'text-blue-600 bg-blue-50' },
+      ]
+    : [];
+
   const financeCards = kpis
     ? [
         { label: 'Rent (mês)', value: money(kpis.financials.rentCurrentMonth), color: 'text-emerald-600' },
@@ -109,6 +123,25 @@ export function AdminDashboard() {
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {kpiCards.map((c) => {
+              const Icon = c.icon;
+              return (
+                <div key={c.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${c.color}`}>
+                    <Icon size={18} />
+                  </div>
+                  <div className="mt-3 text-2xl font-bold text-slate-900">{c.value}</div>
+                  <div className="text-xs font-medium text-slate-500">{c.label}</div>
+                  <div className="text-[11px] text-slate-400">{c.sub}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Logins por tipo ({num(kpis.users.total)} no total)
+          </h2>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {loginTypeCards.map((c) => {
               const Icon = c.icon;
               return (
                 <div key={c.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

@@ -37,6 +37,7 @@ export async function GET() {
         usersTotal,
         usersActive,
         usersSuspended,
+        usersByRole,
         totalProperties,
         totalTenants,
         totalVendors,
@@ -56,6 +57,7 @@ export async function GET() {
         tx.user.count(),
         tx.user.count({ where: { status: 'active' } }),
         tx.user.count({ where: { status: 'suspended' } }),
+        tx.user.groupBy({ by: ['role'], _count: { _all: true } }),
         tx.property.count(),
         tx.tenant.count(),
         tx.pmVendor.count(),
@@ -87,6 +89,20 @@ export async function GET() {
         if (k in byProduct) byProduct[k] = row._count._all;
       }
 
+      // Logins por tipo: tenant / owner / vendor / staff (equipe interna = demais roles).
+      const byType = { staff: 0, tenant: 0, owner: 0, vendor: 0 } as Record<
+        'staff' | 'tenant' | 'owner' | 'vendor',
+        number
+      >;
+      for (const row of usersByRole) {
+        const r = String(row.role || '').toLowerCase();
+        const n = row._count._all;
+        if (r === 'tenant') byType.tenant += n;
+        else if (r === 'owner') byType.owner += n;
+        else if (r === 'vendor') byType.vendor += n;
+        else byType.staff += n;
+      }
+
       const mrrEstimated = Math.round(clientsTotal * 50 * 100) / 100;
 
       return {
@@ -101,6 +117,7 @@ export async function GET() {
           total: usersTotal,
           active: usersActive,
           suspended: usersSuspended,
+          byType,
         },
         portfolio: {
           totalProperties,
