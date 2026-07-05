@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import TenantPortalHeader from './_components/TenantPortalHeader';
+import OpenTicketCard from './_components/OpenTicketCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,10 @@ export default async function TenantPortalIndex() {
               </dd>
             </div>
           </dl>
+        </div>
+
+        <div className="mt-6">
+          <OpenTicketCard />
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
