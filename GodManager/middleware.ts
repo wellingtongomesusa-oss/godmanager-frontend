@@ -10,7 +10,11 @@ function parseAuthCookie(value: string | undefined): { exp: number; role: string
   if (!value) return null;
   try {
     const decoded = decodeURIComponent(value);
-    const json = JSON.parse(atob(decoded)) as { exp: number; userId: string; role: string };
+    // Cookie assinado = base64(json).hmac; aqui só lemos o corpo p/ roteamento
+    // (a verificação do HMAC é feita no authServer, camada real de segurança).
+    const dot = decoded.lastIndexOf('.');
+    const body = dot > 0 ? decoded.slice(0, dot) : decoded;
+    const json = JSON.parse(atob(body)) as { exp: number; userId: string; role: string };
     if (!json.exp || typeof json.role !== 'string') return null;
     return { exp: json.exp, role: json.role };
   } catch {

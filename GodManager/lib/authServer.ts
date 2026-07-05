@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/db';
@@ -10,15 +11,35 @@ export interface AuthSession {
   exp: number;
 }
 
+/** Segredo p/ assinar a sessão. Reusa ENCRYPTION_KEY (já existe em prod) se SESSION_SECRET não for definido. */
+function sessionSecret(): string {
+  return process.env.SESSION_SECRET || process.env.ENCRYPTION_KEY || '';
+}
+
+function signBody(body: string): string {
+  return crypto.createHmac('sha256', sessionSecret()).update(body).digest('hex');
+}
+
+/** Formato do cookie: base64(json).hmacHex — impede forjar userId/role. */
 function encode(payload: AuthSession): string {
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64');
+  return `${body}.${signBody(body)}`;
 }
 
 function decode(raw: string | undefined): AuthSession | null {
   if (!raw) return null;
   try {
     const decoded = decodeURIComponent(raw);
-    const json = JSON.parse(Buffer.from(decoded, 'base64').toString('utf-8')) as AuthSession;
+    const dot = decoded.lastIndexOf('.');
+    // Sem assinatura (cookie legado) ou malformado → rejeita (força novo login).
+    if (dot <= 0) return null;
+    const body = decoded.slice(0, dot);
+    const sig = decoded.slice(dot + 1);
+    const expected = signBody(body);
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expected);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+    const json = JSON.parse(Buffer.from(body, 'base64').toString('utf-8')) as AuthSession;
     if (!json.exp || !json.userId || !json.role) return null;
     if (Date.now() > json.exp) return null;
     return json;
