@@ -600,6 +600,7 @@ model PmVendor {
   commissionMp   Boolean         @default(false)
   send1099       Boolean         @default(true)
   status         String          @default("Active")
+  isInternal     Boolean         @default(false)
   notes          String?         @db.Text
   source         String?
   reviewedAt     DateTime?

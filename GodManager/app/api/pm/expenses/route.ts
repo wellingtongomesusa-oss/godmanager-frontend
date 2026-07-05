@@ -55,7 +55,7 @@ function toJson(e: {
   updatedAt: Date;
   finalizedAt?: Date | null;
   property: PropertyTenantPickInput & { code: string; address: string; ownerName: string | null };
-  vendor: { id: string; companyName: string; defaultPackage: PmPackage } | null;
+  vendor: { id: string; companyName: string; defaultPackage: PmPackage; isInternal: boolean } | null;
   client?: { jobPrefix: string | null } | null;
   bids?: Array<{
     vendorId: string;
@@ -89,6 +89,7 @@ function toJson(e: {
     ownerName: e.property.ownerName ?? '',
     vendorId: e.vendorId,
     vendorName: e.vendor?.companyName ?? '',
+    vendorIsInternal: e.vendor?.isInternal ?? false,
     serviceType: e.serviceType ?? '',
     packageApplied: e.packageApplied,
     pmPackage: e.packageApplied,
@@ -125,7 +126,7 @@ export async function GET(req: Request) {
       },
       include: {
         property: { select: pmExpensePropertyTenantSelect },
-        vendor: { select: { id: true, companyName: true, defaultPackage: true } },
+        vendor: { select: { id: true, companyName: true, defaultPackage: true, isInternal: true } },
         client: { select: { jobPrefix: true } },
         bids: { select: { vendorId: true, status: true, submittedAt: true, invitedAt: true } },
       },
@@ -298,7 +299,7 @@ export async function POST(req: Request) {
         },
         include: {
           property: { select: pmExpensePropertyTenantSelect },
-          vendor: { select: { id: true, companyName: true, defaultPackage: true } },
+          vendor: { select: { id: true, companyName: true, defaultPackage: true, isInternal: true } },
           client: { select: { jobPrefix: true } },
         },
       });

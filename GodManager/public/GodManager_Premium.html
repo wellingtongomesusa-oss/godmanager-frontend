@@ -16452,6 +16452,7 @@ function ltExpMapApiToRow(e){
  return {
   _isPm:true,
   _isVendorPm:hasVendor,
+  vendorIsInternal:!!e.vendorIsInternal,
   id:e.id,
   pmId:e.id,
   jobNumber:e.jobNumber ?? null,
@@ -37759,10 +37760,21 @@ window.gmAnalyticsLoad=async function(){
       }).join('')+'</div>';
   };
 
+  window.gmJobsRowHasExternalVendor=function(r){
+    if(!r)return false;
+    var hasVendor=(r._isVendorPm===true)||!!(r._apiRaw&&r._apiRaw.vendorId&&String(r._apiRaw.vendorId).trim());
+    if(!hasVendor)return false;
+    var internal=(r.vendorIsInternal===true)||!!(r._apiRaw&&r._apiRaw.vendorIsInternal===true);
+    return !internal;
+  };
   window.gmJobsApplyQueueFilter=function(rows){
     var qf=String(window.__jobsQueueFilter||'all').trim();
     if(!qf||qf==='all')return rows;
     return rows.filter(function(r){
+      // Manutencao = equipe interna ou sem vendor; Vendor = vendor externo
+      if(qf==='maintenance')return !window.gmJobsRowHasExternalVendor(r);
+      if(qf==='vendor')return window.gmJobsRowHasExternalVendor(r);
+      // supervisor / supervisor_2: fila de workflow (followUp.queue)
       return typeof jobFollowUpQueue==='function'&&jobFollowUpQueue(r)===qf;
     });
   };
