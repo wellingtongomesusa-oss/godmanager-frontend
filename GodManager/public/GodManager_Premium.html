@@ -17142,10 +17142,38 @@ function gmJobOpenDescriptionPopup(text, jobId){
    }
   }catch(eTl){console.warn('Timeline render failed:',eTl);}
  }
+ // Solicitacao inicial (descricao do job)
+ var initLabel=document.createElement('div');
+ initLabel.textContent='Solicitação inicial';
+ initLabel.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-top:4px;margin-bottom:4px';
+ body.appendChild(initLabel);
  var descEl=document.createElement('div');
- descEl.style.cssText='white-space:pre-wrap;word-wrap:break-word;margin-top:4px';
+ descEl.style.cssText='white-space:pre-wrap;word-wrap:break-word;margin-bottom:8px';
  descEl.textContent=String(text||'').trim()||'(Sem descrição)';
  body.appendChild(descEl);
+ // Relato da execucao (comentario do executor / conclusao do vendor)
+ var execText='';
+ try{
+  if(jobId){
+   if(typeof getJobExtras==='function'){var _ex=getJobExtras(jobId);if(_ex&&_ex.executor_comment)execText=String(_ex.executor_comment).trim();}
+   if(!execText){
+    var _rec=null;
+    var _caches=[window.__jobsApiRowsCache,window.__jobsExpensesCache,window._pmExpenseRows];
+    for(var _ci=0;_ci<_caches.length&&!_rec;_ci++){if(Array.isArray(_caches[_ci]))_rec=_caches[_ci].find(function(x){return x&&String(x.id)===jobId;});}
+    var _meta=_rec&&(_rec.metadata||(_rec._apiRaw&&_rec._apiRaw.metadata));
+    if(_meta&&_meta.completion&&_meta.completion.description)execText=String(_meta.completion.description).trim();
+    if(!execText&&_rec&&_rec.finalizedNote)execText=String(_rec.finalizedNote).trim();
+   }
+  }
+ }catch(eExec){}
+ var execLabel=document.createElement('div');
+ execLabel.textContent='Relato da execução';
+ execLabel.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-top:12px;margin-bottom:4px;padding-top:12px;border-top:1px dashed var(--border2)';
+ body.appendChild(execLabel);
+ var execEl=document.createElement('div');
+ execEl.style.cssText='white-space:pre-wrap;word-wrap:break-word;color:var(--ink2)';
+ execEl.textContent=execText||'(Ainda não relatado pelo executor)';
+ body.appendChild(execEl);
  var footer=document.createElement('div');
  footer.style.cssText='margin-top:20px;display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap';
  var commentsBtn=null;
