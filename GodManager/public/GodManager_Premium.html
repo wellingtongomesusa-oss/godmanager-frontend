@@ -4610,6 +4610,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div id="gm-st-modal-subject" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif;line-height:1.35">—</div>
  <div style="font-size:11px;color:var(--ink3);margin-top:8px">Aberto por <span id="gm-st-modal-by">—</span></div>
+ <div id="gm-st-modal-rating" style="margin-top:10px"></div>
 </div>
 <button type="button" onclick="gmSupportCloseTicket()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;display:flex;font-size:18px;color:var(--ink3);line-height:1">×</button>
 </div>
@@ -13225,6 +13226,12 @@ function gmIsStaffUser(){
  }
  return r&&r!=='owner'&&r!=='tenant'&&r!=='vendor';
 }
+function gmSupportStars(n){
+ var r=Math.max(0,Math.min(5,Math.floor(Number(n)||0)));
+ var s='';
+ for(var i=1;i<=5;i++)s+=(i<=r?'★':'☆');
+ return s;
+}
 function gmSupportStatusLabel(st){
  var m={open:'Aberto',in_progress:'Em andamento',answered:'Respondido',resolved:'Resolvido',closed:'Fechado'};
  return m[String(st||'')]||String(st||'—');
@@ -13410,6 +13417,7 @@ async function gmSupportOpenTicket(id){
    var st=String(t.status||'').trim();
    resolveBtn.style.display=(gmIsStaffUser()&&st!=='resolved'&&st!=='closed')?'inline-block':'none';
   }
+  if(typeof gmSupportRenderRating==='function')gmSupportRenderRating(t);
   var replyEl=document.getElementById('gm-st-modal-reply');
   if(replyEl)replyEl.value='';
   gmSupportClearModalAttachment();
@@ -13425,6 +13433,52 @@ async function gmSupportOpenTicket(id){
   else alert('Nao foi possivel abrir o chamado.');
  }
 }
+function gmSupportRenderRating(t){
+ var box=document.getElementById('gm-st-modal-rating');
+ if(!box)return;
+ var st=String((t&&t.status)||'').trim();
+ var isDone=(st==='resolved'||st==='closed');
+ var rating=(t&&t.rating!=null)?Number(t.rating):0;
+ var u=(typeof gmSessionUserSync==='function'?gmSessionUserSync():null)||window.__gmCurrentUser||{};
+ var isRequester=String(u.id||'')===String((t&&t.requesterId)||'');
+ if(!rating&&(!isDone||!isRequester)){box.innerHTML='';return;}
+ var canRate=isDone&&isRequester&&!rating;
+ var starHtml='';
+ for(var i=1;i<=5;i++){
+  var filled=i<=rating;
+  if(canRate){
+   starHtml+='<span onclick="gmSupportSetRating('+i+')" title="'+i+' estrela'+(i>1?'s':'')+'" style="cursor:pointer;font-size:22px;color:'+(filled?'#f5b301':'#d0d5dd')+';padding:0 1px">★</span>';
+  }else{
+   starHtml+='<span style="font-size:18px;color:'+(filled?'#f5b301':'#d0d5dd')+';padding:0 1px">★</span>';
+  }
+ }
+ var lbl=canRate?'Avalie o atendimento:':'Avaliação do cliente:';
+ box.innerHTML='<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:3px">'+lbl+'</div><div>'+starHtml+'</div>';
+}
+window.gmSupportRenderRating=gmSupportRenderRating;
+
+async function gmSupportSetRating(n){
+ var tid=window.__gmStCurrentTicketId;
+ if(!tid)return;
+ var rating=Math.max(1,Math.min(5,Math.floor(Number(n)||0)));
+ if(!rating)return;
+ try{
+  var res=await fetch('/api/support-tickets/'+encodeURIComponent(tid)+'/rating',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({rating:rating})});
+  var data=await res.json().catch(function(){return null;});
+  if(!res.ok||!data||!data.ok){
+   var msg=(data&&data.error)||('Erro '+res.status);
+   if(typeof showToast==='function')showToast(msg,'error');else alert(msg);
+   return;
+  }
+  if(typeof showToast==='function')showToast('Obrigado pela avaliação!','success');
+  await gmSupportOpenTicket(tid);
+  if(typeof gmSupportLoad==='function')void gmSupportLoad();
+ }catch(e){
+  if(typeof showToast==='function')showToast('Falha ao enviar avaliação.','error');else alert('Falha ao enviar avaliação.');
+ }
+}
+window.gmSupportSetRating=gmSupportSetRating;
+
 async function gmSupportSendReply(){
  var tid=window.__gmStCurrentTicketId;
  if(!tid)return;
@@ -13617,7 +13671,8 @@ async function gmSupportLoad(){
    html+='<tr onclick="gmSupportOpenTicket(\''+id.replace(/'/g,'\\\'')+'\')" style="border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'transparent\'">';
    html+='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--ink2)">'+code+'</td>';
    html+='<td style="padding:10px 12px;font-size:12px;color:var(--ink)">'+subj+'</td>';
-   html+='<td style="padding:10px 12px">'+gmSupportStatusBadge(t.status)+'</td>';
+   var ratStars=(t.rating!=null&&Number(t.rating)>0)?(' <span title="Avaliação: '+Number(t.rating)+'/5" style="color:#f5b301;font-size:12px;white-space:nowrap;margin-left:6px">'+gmSupportStars(Number(t.rating))+'</span>'):'';
+   html+='<td style="padding:10px 12px">'+gmSupportStatusBadge(t.status)+ratStars+'</td>';
    if(staff)html+='<td style="padding:10px 12px;font-size:12px;color:var(--ink2)">'+who+'</td>';
    html+='<td style="padding:10px 12px;font-size:11px;color:var(--ink3)">'+gmSupportFmtDate(t.lastMessageAt)+'</td>';
    html+='</tr>';

@@ -29,6 +29,7 @@ function serializeTicketListItem(
     assignedToId: string | null;
     lastMessageAt: Date;
     createdAt: Date;
+    rating: number | null;
     _count: { messages: number };
   }
 ) {
@@ -43,6 +44,7 @@ function serializeTicketListItem(
     assignedToId: ticket.assignedToId,
     lastMessageAt: ticket.lastMessageAt.toISOString(),
     createdAt: ticket.createdAt.toISOString(),
+    rating: ticket.rating ?? null,
     messageCount: ticket._count.messages,
   };
 }
@@ -110,6 +112,7 @@ export async function GET(req: NextRequest) {
         assignedToId: true,
         lastMessageAt: true,
         createdAt: true,
+        rating: true,
         _count: { select: { messages: true } },
       },
     });

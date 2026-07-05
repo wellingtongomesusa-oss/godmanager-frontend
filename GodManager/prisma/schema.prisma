@@ -1476,6 +1476,8 @@ model SupportTicket {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   closedAt       DateTime?
+  rating         Int?
+  ratedAt        DateTime?
   messages       SupportTicketMessage[]
 
   @@index([clientId, status, requesterId, assignedToId, createdAt])

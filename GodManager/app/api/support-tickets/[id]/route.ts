@@ -25,6 +25,8 @@ function serializeTicket(ticket: {
   createdAt: Date;
   updatedAt: Date;
   closedAt: Date | null;
+  rating?: number | null;
+  ratedAt?: Date | null;
 }) {
   return {
     ...ticket,
@@ -32,6 +34,8 @@ function serializeTicket(ticket: {
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
     closedAt: ticket.closedAt ? ticket.closedAt.toISOString() : null,
+    rating: ticket.rating ?? null,
+    ratedAt: ticket.ratedAt ? ticket.ratedAt.toISOString() : null,
   };
 }
 
