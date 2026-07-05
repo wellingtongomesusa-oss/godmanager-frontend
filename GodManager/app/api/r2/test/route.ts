@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { r2HealthCheck } from "@/lib/r2";
+import { requireSuperAdmin } from "@/lib/requireSuperAdmin";
 
 /**
  * GET /api/r2/test
@@ -12,6 +13,8 @@ import { r2HealthCheck } from "@/lib/r2";
  * remove or restrict it.
  */
 export async function GET() {
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   const result = await r2HealthCheck();
   const status = result.ok ? 200 : 500;
   return NextResponse.json(result, { status });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { canAccessClientId, toClientScopeUser } from '@/lib/clientScope';
 import type { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,10 @@ export async function GET(req: Request) {
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : 200;
     const where: Prisma.PropertyStatusHistoryWhereInput = {};
     if (propertyId) where.propertyId = propertyId;
+    // Escopo por tenant via o imovel (property.clientId e sempre populado, mesmo se history.clientId for nulo)
+    if (u.role !== 'super_admin') {
+      where.property = { clientId: u.clientId ?? '__no_access__' };
+    }
     const history = await prisma.propertyStatusHistory.findMany({
       where,
       orderBy: [{ createdAt: 'desc' }],
@@ -64,6 +69,17 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    // Validar que o imovel pertence ao tenant do usuario (bloqueia escrita cross-tenant)
+    const prop = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { clientId: true },
+    });
+    if (!prop) {
+      return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
+    }
+    if (!canAccessClientId(toClientScopeUser(u), prop.clientId)) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    }
     const created = await prisma.propertyStatusHistory.create({
       data: {
         propertyId,
@@ -74,6 +90,7 @@ export async function POST(req: Request) {
         reason: body?.reason ? String(body.reason) : null,
         metadata:
           body?.metadata && typeof body.metadata === 'object' ? (body.metadata as object) : undefined,
+        clientId: prop.clientId ?? null,
       },
     });
     return NextResponse.json({ ok: true, entry: serialize(created) });

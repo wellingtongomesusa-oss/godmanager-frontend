@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getRampApiBase, getRampToken } from '@/lib/ramp-auth';
+import { requireSuperAdmin } from '@/lib/requireSuperAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +55,8 @@ function mapCard(c: unknown): RampCardPublic {
 }
 
 export async function GET() {
+  const gate = await requireSuperAdmin();
+  if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   let token: string;
   try {
     token = await getRampToken();

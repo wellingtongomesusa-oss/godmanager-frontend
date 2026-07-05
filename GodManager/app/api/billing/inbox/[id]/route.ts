@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { toClientScopeUser } from '@/lib/clientScope';
 import { documentToJson } from '@/lib/billingInboxSerialize';
+import type { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +19,18 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   }
 
   try {
+    const scope = toClientScopeUser(user);
+    const where: Prisma.BillingDocumentWhereInput = {
+      id: params.id,
+      docType: 'INVOICE',
+      contactEmail: { equals: email, mode: 'insensitive' },
+    };
+    // Isolamento por tenant (esconde de outro cliente; mantem legado sem clientId visivel)
+    if (scope.role !== 'super_admin') {
+      where.OR = [{ clientId: scope.clientId ?? '__no_access__' }, { clientId: null }];
+    }
     const row = await prisma.billingDocument.findFirst({
-      where: {
-        id: params.id,
-        docType: 'INVOICE',
-        contactEmail: { equals: email, mode: 'insensitive' },
-      },
+      where,
       include: { items: { orderBy: { sortOrder: 'asc' } } },
     });
     if (!row) {

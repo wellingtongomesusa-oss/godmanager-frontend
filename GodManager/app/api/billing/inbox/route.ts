@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
+import { toClientScopeUser } from '@/lib/clientScope';
 import { documentToJson } from '@/lib/billingInboxSerialize';
+import type { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +19,18 @@ export async function GET() {
   }
 
   try {
+    const scope = toClientScopeUser(user);
+    const where: Prisma.BillingDocumentWhereInput = {
+      docType: 'INVOICE',
+      contactEmail: { equals: email, mode: 'insensitive' },
+    };
+    // Isolamento por tenant: esconde faturas de outro cliente. Registros legados sem
+    // clientId permanecem visiveis para nao ocultar faturas ja existentes do cliente.
+    if (scope.role !== 'super_admin') {
+      where.OR = [{ clientId: scope.clientId ?? '__no_access__' }, { clientId: null }];
+    }
     const rows = await prisma.billingDocument.findMany({
-      where: {
-        docType: 'INVOICE',
-        contactEmail: { equals: email, mode: 'insensitive' },
-      },
+      where,
       include: { items: { orderBy: { sortOrder: 'asc' } } },
       orderBy: { issueDate: 'desc' },
     });
