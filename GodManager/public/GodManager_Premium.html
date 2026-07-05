@@ -14764,6 +14764,25 @@ function gmCanSetPrices(){
  return perms.indexOf('expense_pricing')>=0;
 }
 window.gmCanSetPrices=gmCanSetPrices;
+/** Abre/fecha o menu de acoes secundarias ("..."). Usa position:fixed p/ nao ser cortado pela tabela. */
+function gmJobsToggleMore(btn){
+ var wrap=btn&&btn.parentNode;
+ var pop=wrap&&wrap.querySelector('.jobs-more-pop');
+ if(!pop)return;
+ var isOpen=(pop.style.display&&pop.style.display!=='none');
+ document.querySelectorAll('.jobs-more-pop').forEach(function(p){p.style.display='none';});
+ if(isOpen)return;
+ var rc=btn.getBoundingClientRect();
+ pop.style.display='flex';
+ var popW=pop.offsetWidth||140,popH=pop.offsetHeight||0;
+ pop.style.left=Math.max(8,rc.right-popW)+'px';
+ pop.style.top=((rc.bottom+4+popH>window.innerHeight)?Math.max(8,rc.top-popH-4):(rc.bottom+4))+'px';
+ setTimeout(function(){
+  var closer=function(e){if(!pop.contains(e.target)&&e.target!==btn){pop.style.display='none';document.removeEventListener('click',closer);}};
+  document.addEventListener('click',closer);
+ },0);
+}
+window.gmJobsToggleMore=gmJobsToggleMore;
 function gmUserRole(){
  var u=gmSessionUserSync();
  if(!u){
@@ -28701,7 +28720,7 @@ async function jobsRender(){
  var actionsInner;
  var dismissCellHtml;
  if(isMaintenanceOnly){
-  actionsInner=btnJobPhoto+btnJobComment+btnMaintVendor+btnReschedule+btnFinalize;
+  actionsInner=btnJobPhoto+btnJobComment+btnVendor+btnJob+btnMaintVendor+btnReschedule+btnFinalize;
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else if(isVendorRole){
   var rowVendorId=(r._apiRaw&&r._apiRaw.vendorId)?String(r._apiRaw.vendorId).trim():'';
@@ -28735,7 +28754,9 @@ async function jobsRender(){
   }
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else{
-  actionsInner=btnJobPhoto+btnJobComment+btnJobInv+btnVendor+btnJob+btnManager+btnReturn+btnFinalize+btnReopen+btnReschedule+btnReactivate+btnPropostas+btnVendorFree;
+  var moreItems=btnJobInv+btnReturn+btnReopen+btnReactivate+btnPropostas;
+  var moreMenu=(String(moreItems).trim())?('<span class="jobs-more-wrap" style="position:relative;display:inline-block"><button type="button" class="jobs-more-btn" onclick="gmJobsToggleMore(this)" title="Mais ações" style="'+btnStyleBase+';background:var(--cream);border-color:var(--border2);color:var(--ink2);font-weight:700">⋯</button><span class="jobs-more-pop" style="display:none;position:fixed;z-index:9999;background:#fff;border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:8px;flex-direction:column;gap:6px;min-width:130px">'+moreItems+'</span></span>'):'';
+  actionsInner=btnJobPhoto+btnJobComment+btnVendor+btnJob+btnManager+btnFinalize+btnReschedule+btnVendorFree+moreMenu;
   dismissCellHtml=btnDismissTd;
  }
 
