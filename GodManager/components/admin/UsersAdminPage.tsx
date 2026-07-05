@@ -17,6 +17,15 @@ import type { User, UserRole, UserStatus } from '@/lib/types';
 import { listUsers, updateUser } from '@/lib/users';
 
 type SortKey = 'newest' | 'az' | 'active';
+type UserType = 'staff' | 'tenant' | 'owner' | 'vendor';
+
+function userType(role: string): UserType {
+  const r = String(role).toLowerCase();
+  if (r === 'tenant') return 'tenant';
+  if (r === 'owner') return 'owner';
+  if (r === 'vendor') return 'vendor';
+  return 'staff';
+}
 
 export function UsersAdminPage() {
   const { user: current } = useAuth();
@@ -25,6 +34,8 @@ export function UsersAdminPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | UserStatus>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | UserType>('all');
   const [sort, setSort] = useState<SortKey>('newest');
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -40,6 +51,14 @@ export function UsersAdminPage() {
     listUsers().then(setAllUsers);
   }, [tick]);
 
+  const companies = useMemo(() => {
+    const set = new Set<string>();
+    allUsers.forEach((u) => {
+      if (u.companyName) set.add(u.companyName);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allUsers]);
+
   const filtered = useMemo(() => {
     let list = [...allUsers];
     const q = search.trim().toLowerCase();
@@ -48,18 +67,22 @@ export function UsersAdminPage() {
         (u) =>
           u.email.toLowerCase().includes(q) ||
           `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
-          u.role.toLowerCase().includes(q),
+          u.role.toLowerCase().includes(q) ||
+          (u.companyName || '').toLowerCase().includes(q) ||
+          (u.address || '').toLowerCase().includes(q),
       );
     }
     if (roleFilter !== 'all') list = list.filter((u) => u.role === roleFilter);
     if (statusFilter !== 'all') list = list.filter((u) => u.status === statusFilter);
+    if (companyFilter !== 'all') list = list.filter((u) => (u.companyName || '') === companyFilter);
+    if (typeFilter !== 'all') list = list.filter((u) => userType(u.role) === typeFilter);
 
     if (sort === 'az') list.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
     else if (sort === 'active') list.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
     else list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return list;
-  }, [allUsers, search, roleFilter, statusFilter, sort]);
+  }, [allUsers, search, roleFilter, statusFilter, companyFilter, typeFilter, sort]);
 
   const refresh = () => setTick((t) => t + 1);
   const start = (page - 1) * pageSize;
@@ -142,7 +165,7 @@ export function UsersAdminPage() {
         <div className="relative min-w-[220px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gm-ink-secondary" />
           <Input
-            placeholder="Search by name, email or role…"
+            placeholder="Buscar por nome, e-mail ou endereço…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -171,6 +194,37 @@ export function UsersAdminPage() {
           <option value="supervisor">Supervisor</option>
           <option value="supervisor_2">Supervisor 2</option>
           <option value="vendor">Vendor</option>
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value as typeof typeFilter);
+            setPage(1);
+          }}
+          className="rounded-[10px] border border-gm-border bg-gm-cream px-4 py-3 text-sm text-gm-ink"
+          aria-label="Filtrar por tipo"
+        >
+          <option value="all">Todos os tipos</option>
+          <option value="staff">Equipe / Staff</option>
+          <option value="tenant">Inquilinos</option>
+          <option value="owner">Proprietários</option>
+          <option value="vendor">Fornecedores</option>
+        </select>
+        <select
+          value={companyFilter}
+          onChange={(e) => {
+            setCompanyFilter(e.target.value);
+            setPage(1);
+          }}
+          className="rounded-[10px] border border-gm-border bg-gm-cream px-4 py-3 text-sm text-gm-ink"
+          aria-label="Filtrar por empresa"
+        >
+          <option value="all">Todas as empresas</option>
+          {companies.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
         <select
           value={statusFilter}

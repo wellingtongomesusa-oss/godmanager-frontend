@@ -29,8 +29,20 @@ export async function GET() {
   if (gate.error) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.status });
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { client: { select: { companyName: true } } },
+    include: {
+      client: { select: { companyName: true } },
+      tenant: { select: { property: { select: { address: true, city: true } } } },
+      owner: { select: { properties: { select: { address: true }, take: 5 } } },
+    },
   });
+  // Endereço "de casa": para inquilino, o imóvel que aluga; para owner, os imóveis dele.
+  const addressOf = (u: (typeof users)[number]): string | null => {
+    const p = u.tenant?.property;
+    if (p?.address) return [p.address, p.city].filter(Boolean).join(', ');
+    const owned = u.owner?.properties ?? [];
+    if (owned.length) return owned.map((x) => x.address).filter(Boolean).join(' | ');
+    return null;
+  };
   return NextResponse.json({
     ok: true,
     users: users.map((u) => ({
@@ -46,6 +58,7 @@ export async function GET() {
       createdAt: u.createdAt,
       clientId: u.clientId,
       companyName: u.client?.companyName ?? null,
+      address: addressOf(u),
     })),
   });
 }

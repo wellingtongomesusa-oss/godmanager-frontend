@@ -29,6 +29,7 @@ export interface User {
   passwordHash: string;
   clientId?: string | null;
   companyName?: string | null;
+  address?: string | null;
 }
 
 export interface AuditEntry {

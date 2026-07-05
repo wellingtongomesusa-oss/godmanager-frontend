@@ -33,6 +33,7 @@ function normalizeUser(u: Partial<User> & { id: string }): User {
     passwordHash: u.passwordHash ?? '',
     clientId: u.clientId ?? null,
     companyName: u.companyName ?? null,
+    address: u.address ?? null,
   };
 }
 
