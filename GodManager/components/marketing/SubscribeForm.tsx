@@ -37,6 +37,7 @@ export default function SubscribeForm({ initial }: { initial?: SubscribeInitial 
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [couponCode, setCouponCode] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -85,6 +86,7 @@ export default function SubscribeForm({ initial }: { initial?: SubscribeInitial 
           lastName: lastName.trim(),
           email: email.trim().toLowerCase(),
           password,
+          couponCode: couponCode.trim() || undefined,
           segment,
           packageTier: isLong ? packageTier : null,
           avgRent: isLong ? avgRent : null,
@@ -103,7 +105,9 @@ export default function SubscribeForm({ initial }: { initial?: SubscribeInitial 
           ? 'Esse e-mail já tem conta. Faça login.'
           : data?.error === 'stripe_not_configured'
             ? 'Pagamentos ainda não configurados. Tente mais tarde.'
-            : data?.error || 'Não foi possível iniciar o checkout.',
+            : data?.error === 'invalid_coupon'
+              ? 'Cupom inválido ou expirado.'
+              : data?.error || 'Não foi possível iniciar o checkout.',
       );
     } catch {
       setError('Erro de conexão. Tente novamente.');
@@ -211,6 +215,9 @@ export default function SubscribeForm({ initial }: { initial?: SubscribeInitial 
 
           <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500">Senha (mín. 8)</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputCls} mt-1`} />
+
+          <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500">Cupom de desconto (opcional)</label>
+          <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Ex.: LANCAMENTO20" className={`${inputCls} mt-1`} />
 
           {error ? <div className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
 

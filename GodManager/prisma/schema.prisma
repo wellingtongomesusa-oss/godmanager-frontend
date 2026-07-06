@@ -998,6 +998,56 @@ enum TransferDirection {
   CREDIT
 }
 
+/// Cupom de desconto para a venda de assinaturas (nível plataforma, criado por super_admin).
+/// Espelhado no Stripe (stripeCouponId/stripePromotionCodeId) para aplicar no Checkout.
+model Coupon {
+  id                    String             @id @default(cuid())
+  code                  String             @unique
+  name                  String?
+  discountType          CouponDiscountType
+  percentOff            Float?
+  amountOffCents        Int?
+  currency              String             @default("USD")
+  duration              String             @default("once")
+  durationInMonths      Int?
+  maxRedemptions        Int?
+  timesRedeemed         Int                @default(0)
+  active                Boolean            @default(true)
+  stripeCouponId        String?
+  stripePromotionCodeId String?
+  createdByUserId       String?
+  expiresAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  redemptions CouponRedemption[]
+
+  @@index([active])
+  @@map("coupons")
+}
+
+/// Cada resgate de um cupom (base das métricas: quem usou, quanto de desconto).
+model CouponRedemption {
+  id             String   @id @default(cuid())
+  couponId       String
+  coupon         Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  code           String
+  clientId       String?
+  subscriptionId String?
+  email          String?
+  discountCents  Int?
+  createdAt      DateTime @default(now())
+
+  @@index([couponId])
+  @@index([createdAt])
+  @@map("coupon_redemptions")
+}
+
+enum CouponDiscountType {
+  PERCENT
+  FIXED
+}
+
 model ClientIntegration {
   id        String              @id @default(cuid())
   clientId  String

@@ -120,6 +120,34 @@ export async function POST(req: NextRequest) {
             });
           }
         }
+
+        // Cupom: registra o resgate (métrica) se o checkout usou um.
+        const couponId = (session.metadata?.couponId as string) || '';
+        if (couponId) {
+          try {
+            const discountCents =
+              typeof session.total_details?.amount_discount === 'number'
+                ? session.total_details.amount_discount
+                : null;
+            await prisma.$transaction([
+              prisma.couponRedemption.create({
+                data: {
+                  couponId,
+                  code: (session.metadata?.couponCode as string) || '',
+                  subscriptionId: subscriptionId,
+                  email: session.customer_details?.email ?? null,
+                  discountCents,
+                },
+              }),
+              prisma.coupon.update({
+                where: { id: couponId },
+                data: { timesRedeemed: { increment: 1 } },
+              }),
+            ]);
+          } catch (couponErr) {
+            console.error('[stripe-webhook] falha ao registrar resgate de cupom', couponErr);
+          }
+        }
         break;
       }
 

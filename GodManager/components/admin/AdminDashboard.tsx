@@ -16,6 +16,7 @@ import {
   FileText,
   Mail,
   Banknote,
+  Ticket,
   ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -48,6 +49,7 @@ const SECTIONS = [
   { href: '/admin/users', label: 'Usuários', desc: 'Criar, editar e remover usuários', icon: Users },
   { href: '/admin/roles', label: 'Papéis & Permissões', desc: 'Controle de acesso por perfil', icon: Shield },
   { href: '/admin/transfers', label: 'Transferências ACH', desc: 'Débito e crédito via Plaid Transfer', icon: Banknote },
+  { href: '/admin/coupons', label: 'Cupons', desc: 'Criar cupons de desconto e ver métricas', icon: Ticket },
   { href: '/admin/settings', label: 'Configurações', desc: 'Ajustes globais do sistema', icon: Settings },
   { href: '/admin/audit', label: 'Auditoria', desc: 'Log de ações administrativas', icon: FileText },
   { href: '/admin/demo-leads', label: 'Demo Leads', desc: 'Solicitações de demonstração', icon: Mail },

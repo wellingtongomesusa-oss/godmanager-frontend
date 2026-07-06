@@ -196,10 +196,29 @@ export async function POST(req: NextRequest) {
     const origin = billingOrigin();
     const loc = localePrefix(req);
     const productName = `GodManager — ${segment}${packageTier ? ` P${packageTier}` : ''}`;
+
+    // Cupom: valida o código e mapeia para o cupom do Stripe (aplicado via `discounts`).
+    const couponCode = String(body?.couponCode || '').trim().toUpperCase();
+    let couponRow: { id: string; code: string; stripeCouponId: string | null } | null = null;
+    if (couponCode) {
+      const c = await prisma.coupon.findUnique({ where: { code: couponCode } });
+      const usable =
+        c &&
+        c.active &&
+        c.stripeCouponId &&
+        !(c.maxRedemptions && c.timesRedeemed >= c.maxRedemptions) &&
+        !(c.expiresAt && c.expiresAt < new Date());
+      if (usable) couponRow = { id: c!.id, code: c!.code, stripeCouponId: c!.stripeCouponId };
+      else return NextResponse.json({ ok: false, error: 'invalid_coupon' }, { status: 400 });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customer.id,
       payment_method_types: ['card'],
+      ...(couponRow?.stripeCouponId
+        ? { discounts: [{ coupon: couponRow.stripeCouponId }] }
+        : {}),
       line_items: [
         {
           price_data: {
@@ -220,6 +239,8 @@ export async function POST(req: NextRequest) {
         packageTier: String(packageTier ?? ''),
         interval,
         selfSignup: '1',
+        couponId: couponRow?.id ?? '',
+        couponCode: couponRow?.code ?? '',
       },
     });
 
