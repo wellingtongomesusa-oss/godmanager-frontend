@@ -3211,9 +3211,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <input type="date" id="lt-exp-filter-day" onchange="if(typeof ltExpRender==='function')ltExpRender()" title="Filtrar por dia" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <select id="lt-exp-filter-cat" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todas as categorias</option>
- <option value="HOA">HOA</option>
- <option value="Água">Água</option>
- <option value="Luz / Electric">Luz / Electric</option>
  <option value="Manutenção">Manutenção</option>
  <option value="Vendor">Vendor</option>
  <option value="__PM__">Vendor (markup / API)</option>
@@ -3962,7 +3959,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Informações da Despesa</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
  <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">PROPRIEDADE *</label><select id="lt-nexp-prop" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="">— Selecionar propriedade —</option></select></div>
- <div id="lt-nexp-cat-wrap"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="HOA">HOA</option><option value="Água">Água</option><option value="Luz / Electric">Luz / Electric</option><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
+ <div id="lt-nexp-cat-wrap"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CATEGORIA / TIPO *</label><select id="lt-nexp-cat" onchange="ltNexpOnCatChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"><option value="Manutenção">Manutenção</option><option value="Vendor">Vendor</option></select></div>
  <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS DE REFERÊNCIA *</label><input id="lt-nexp-month" type="month" value="" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none"></div>
  <div id="lt-nexp-agenda-row" style="display:none">
   <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DATA DE AGENDA (EXECUÇÃO) *</label>
@@ -5492,8 +5489,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
  <div class="ph"><div class="pt">Owner Portal</div><div class="ps">Visao por proprietario · Selecione um owner para ver suas propriedades</div></div>
  <div id="op-select-view">
- <input id="op-search" oninput="opRender()" placeholder="Buscar owner..." style="padding:8px 14px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:300px;margin-bottom:20px">
- <div id="op-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"></div>
+ <input id="op-search" oninput="opRender()" placeholder="Buscar owner..." style="padding:8px 14px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:100%;max-width:300px;margin-bottom:20px">
+ <div id="op-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px"></div>
  <div id="op-empty" style="display:none;padding:40px;text-align:center;color:var(--ink3);font-size:12px">Nenhum owner encontrado.</div>
  </div>
  <div id="op-detail" style="display:none">
