@@ -439,12 +439,20 @@ export function SavingsWizard() {
                     {emailRevealed && pricing && pricing.ok && (
                       <div className="text-center">
                         <Link
-                          href={`/contacto?lead=true&email=${encodeURIComponent(revealEmail)}&segment=${segment || ''}`}
+                          href={`/subscribe?segment=${segment || ''}&unitCount=${properties}${segment === 'LONG_TERM' ? `&packageTier=${packageTier}&avgRent=${avgRent}` : ''}${segment === 'REALTOR' || segment === 'INSURANCE' ? `&avgVgv=${avgVgv}` : ''}&interval=${billingInterval}`}
                           className="inline-block px-8 py-4 rounded-lg bg-[#c9a961] text-white font-semibold hover:bg-[#b08f4a] transition-all"
                         >
-                          Request access
+                          Subscribe now
                         </Link>
-                        <p className="text-xs text-slate-500 mt-2">We will reach out within 1 business day</p>
+                        <p className="text-xs text-slate-500 mt-2">Pay securely — your account activates instantly</p>
+                        <div className="mt-3">
+                          <Link
+                            href={`/contacto?lead=true&email=${encodeURIComponent(revealEmail)}&segment=${segment || ''}`}
+                            className="text-sm text-slate-500 underline hover:text-slate-700"
+                          >
+                            Request access instead
+                          </Link>
+                        </div>
                       </div>
                     )}
                   </div>
