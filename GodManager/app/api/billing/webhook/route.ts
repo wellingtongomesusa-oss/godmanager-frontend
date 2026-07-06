@@ -102,14 +102,23 @@ export async function POST(req: NextRequest) {
           const custRef = session.customer;
           const custId = typeof custRef === 'string' ? custRef : custRef?.id;
 
-          await prisma.subscription.update({
+          const updatedSub = await prisma.subscription.update({
             where: { id: subscriptionId },
             data: {
               stripeSubscriptionId: stripeSubId,
               status: 'ACTIVE',
               ...(custId ? { stripeCustomerId: custId } : {}),
             },
+            select: { userId: true },
           });
+
+          // Self-signup: ativa o usuário que estava pendente até o pagamento confirmar.
+          if (updatedSub.userId) {
+            await prisma.user.updateMany({
+              where: { id: updatedSub.userId, status: 'pending' },
+              data: { status: 'active' },
+            });
+          }
         }
         break;
       }
