@@ -46,13 +46,19 @@ export function LoginForm() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   useEffect(() => {
+    // E-mail vindo do checkout (?email=) tem prioridade; senão usa o "lembrar".
+    const qEmail = searchParams.get('email');
+    if (qEmail) {
+      setEmail(qEmail);
+      return;
+    }
     try {
       const r = localStorage.getItem('gm_remember_email');
       if (r) setEmail(r);
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [searchParams]);
 
   /** Sessão já válida: enviar para o destino correto sem bloquear o form (loading inicia false). */
   useEffect(() => {
@@ -85,6 +91,7 @@ export function LoginForm() {
 
   const from = searchParams.get('from') || '/dashboard';
   const idleBanner = searchParams.get('reason') === 'idle';
+  const welcomeBanner = searchParams.get('welcome') === '1';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +107,14 @@ export function LoginForm() {
 
     if (!res.ok) {
       setLoading(false);
-      toast(res.error, 'error');
+      // Corrida pós-pagamento: o webhook pode não ter ativado a conta ainda.
+      const activating = welcomeBanner && /pendente/i.test(res.error || '');
+      toast(
+        activating
+          ? 'Sua conta está sendo ativada (pagamento recém-confirmado). Aguarde alguns segundos e entre de novo.'
+          : res.error,
+        activating ? 'info' : 'error',
+      );
       return;
     }
 
@@ -167,6 +181,14 @@ export function LoginForm() {
           className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2.5 text-center text-[13px] leading-snug text-amber-950"
         >
           {t('idleBanner')}
+        </div>
+      ) : null}
+      {welcomeBanner ? (
+        <div
+          role="status"
+          className="rounded-lg border border-emerald-200/80 bg-emerald-50 px-3 py-2.5 text-center text-[13px] leading-snug text-emerald-900"
+        >
+          Pagamento confirmado! Entre com a senha que você criou para acessar sua conta.
         </div>
       ) : null}
       <div className="text-center">
