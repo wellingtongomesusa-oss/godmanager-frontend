@@ -11100,7 +11100,9 @@ function nav(r){
       op.textContent=(typeof ltFmtMonth==='function'?ltFmtMonth(cur):cur);
       sel.appendChild(op);
      }
-     sel.value=cur;
+     // Padrão: "Todos os meses" (visão plena / fluxo contínuo de Work Orders p/ o Lucas).
+     // O mês continua disponível como filtro opcional.
+     sel.value='';
     }
    }
   }catch(eLtExpM){console.warn('[ltexpenses] month filter',eLtExpM);}
@@ -16658,10 +16660,11 @@ function ltExpMapApiToRow(e){
  };
 }
 async function ltExpFetchPm(){
+ // Carrega SEMPRE todos os jobs (todos os meses). O dropdown de mês vira filtro
+ // client-side no ltExpRender — assim "Todos os meses" + "All" mostra tudo, e jobs
+ // reagendados para outro mês nunca somem da visão do Lucas (fluxo contínuo de Work Order).
  try{
-  var fm=(document.getElementById('lt-exp-filter-month') || {}).value;
-  var q=fm ? ('?month=' + encodeURIComponent(fm)) : '';
-  var r=await fetch('/api/pm/expenses' + q, { credentials:'include' });
+  var r=await fetch('/api/pm/expenses', { credentials:'include' });
   if(!r.ok){ window._pmExpenseRows=[]; return; }
   var j=await r.json();
   window._pmExpenseRows=(j && j.expenses) || [];
