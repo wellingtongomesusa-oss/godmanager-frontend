@@ -13776,6 +13776,30 @@ async function gmSupportChatSend(){
  }
  if(btn){btn.disabled=false;}
 }
+window.gmSupportAskAi=async function(){
+ var inp=document.getElementById('gm-support-chat-input');
+ if(!inp)return;
+ var q=String(inp.value||'').trim();
+ if(!q)return;
+ var btn=document.getElementById('gm-support-chat-ai');
+ if(btn)btn.disabled=true;
+ if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(q,'user');
+ inp.value='';
+ if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg('💡 Consultando a ajuda…','system');
+ try{
+  var res=await fetch('/api/ai/help',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
+  var data=await res.json().catch(function(){return null;});
+  if(res.ok&&data&&data.ok&&data.answer){
+   if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(data.answer,'system');
+  }else{
+   var m=(data&&data.error==='ai_not_configured')?'A Ajuda IA ainda nao esta configurada. Voce pode abrir um chamado no botao Enviar.':'Nao consegui responder agora. Voce pode abrir um chamado no botao Enviar.';
+   if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(m,'system');
+  }
+ }catch(e){
+  if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg('Erro de conexao. Tente de novo.','system');
+ }
+ if(btn)btn.disabled=false;
+};
 window.gmSupportLoad=gmSupportLoad;
 window.gmSupportLoadStats=gmSupportLoadStats;
 window.gmSupportRefreshNavBadge=gmSupportRefreshNavBadge;
@@ -26625,39 +26649,43 @@ async function gmJobsFollowPopulateFilters(){
  }
 }
 
-var GM_JF_SUMMARY_STAGES=[
- {key:'opened',label:'Abertos',color:'var(--amber)'},
- {key:'maintenance_scheduled',label:'Agendados',color:'var(--blue)'},
- {key:'vendor_requested',label:'Com Vendor',color:'#7c3aed'},
- {key:'bidding',label:'Em cotação',color:'#7c3aed'},
- {key:'vendor_done',label:'Vendor concluído',color:'var(--green)'},
- {key:'closed_internal',label:'Fechado interno',color:'var(--slate)'},
- {key:'escalated',label:'Escalados',color:'var(--red)'}
-];
 function gmJobsFollowSetStage(k){
  var d=document.getElementById('jobs-follow-status-filter');
  if(d)d.value=k||'';
  window.__jobsFollowStageFilter=k||'';
  if(typeof gmJobsFollowRender==='function')gmJobsFollowRender();
 }
+// Resumo de negócio: responde direto "abertos hoje / agendados / abertos / fechados / manutenção / vendor".
 function gmJobsFollowRenderSummary(baseRows){
  var el=document.getElementById('jobs-follow-summary');
  if(!el)return;
- var counts={};
+ var today=(new Date()).toISOString().slice(0,10);
+ var c={hoje:0,agendados:0,abertos:0,fechados:0,manut:0,vendor:0};
  (baseRows||[]).forEach(function(r){
-  var s=(typeof gmJobFollowUpDisplayStage==='function')?gmJobFollowUpDisplayStage(r):'opened';
-  counts[s]=(counts[s]||0)+1;
+  var stage=(typeof gmJobFollowUpDisplayStage==='function')?gmJobFollowUpDisplayStage(r):'opened';
+  var pk=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(r):'';
+  var closed=(pk==='FINALIZED'||pk==='PAID'||pk==='CANCELLED'||stage==='vendor_done'||stage==='closed_internal'||stage==='followup_closed');
+  var cd=String(r.createdAt||r.serviceDate||'').slice(0,10);
+  if(cd===today)c.hoje++;
+  if(closed){c.fechados++;return;}
+  if(stage==='maintenance_scheduled'||pk==='SCHEDULED')c.agendados++; else c.abertos++;
+  var hasExtVendor=(typeof gmJobsRowHasExternalVendor==='function')&&gmJobsRowHasExternalVendor(r);
+  var q=(typeof jobFollowUpQueue==='function')?jobFollowUpQueue(r):'maintenance';
+  if(hasExtVendor||q==='vendor')c.vendor++; else c.manut++;
  });
- var active=window.__jobsFollowStageFilter||'';
- var html=GM_JF_SUMMARY_STAGES.map(function(s){
-  var n=counts[s.key]||0;
-  var isA=(active===s.key);
-  return '<button type="button" onclick="gmJobsFollowSetStage(\''+s.key+'\')" title="Filtrar por '+s.label+'" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border:1px solid '+(isA?s.color:'var(--border2)')+';border-radius:8px;background:'+(isA?'var(--cream)':'var(--paper)')+';cursor:pointer;min-width:92px;font-family:inherit">'
-   +'<span style="font-size:18px;font-weight:700;color:'+s.color+';font-family:\'JetBrains Mono\',monospace">'+n+'</span>'
-   +'<span style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+s.label+'</span></button>';
- }).join('');
- html+='<button type="button" onclick="gmJobsFollowSetStage(\'\')" title="Mostrar todos" style="align-self:center;padding:8px 12px;border:1px solid '+(active?'var(--border2)':'var(--navy)')+';border-radius:8px;background:'+(active?'var(--paper)':'var(--navy)')+';color:'+(active?'var(--ink3)':'#fff')+';cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">Todos</button>';
- el.innerHTML=html;
+ function card(n,label,color,onclick){
+  return '<button type="button" '+(onclick?('onclick="'+onclick+'"'):'')+' style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);cursor:'+(onclick?'pointer':'default')+';min-width:106px;font-family:inherit">'
+   +'<span style="font-size:19px;font-weight:700;color:'+color+';font-family:\'JetBrains Mono\',monospace">'+n+'</span>'
+   +'<span style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+label+'</span></button>';
+ }
+ el.innerHTML=
+  card(c.hoje,'Abertos hoje','var(--amber)',"gmJobsFollowSetDateFilter('today')")
+  +card(c.agendados,'Agendados','var(--blue)',"gmJobsFollowSetStage('maintenance_scheduled')")
+  +card(c.abertos,'Abertos','var(--amber)',"gmJobsFollowSetStage('opened')")
+  +card(c.fechados,'Fechados','var(--green)','')
+  +card(c.manut,'Fila Manutenção','var(--ink)',"if(typeof gmJobsFollowSetQueueFilter===&#39;function&#39;)gmJobsFollowSetQueueFilter(&#39;maintenance&#39;)")
+  +card(c.vendor,'Fila Vendor','#7c3aed',"if(typeof gmJobsFollowSetQueueFilter===&#39;function&#39;)gmJobsFollowSetQueueFilter(&#39;vendor&#39;)")
+  +'<button type="button" onclick="gmJobsFollowSetStage(&#39;&#39;);gmJobsFollowSetDateFilter(&#39;all&#39;);if(typeof gmJobsFollowSetQueueFilter===&#39;function&#39;)gmJobsFollowSetQueueFilter(&#39;all&#39;)" style="align-self:center;padding:8px 12px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#fff;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">Limpar</button>';
 }
 function gmJobsFollowRender(){
  var host=document.getElementById('jobs-follow-cards');
@@ -38562,7 +38590,8 @@ window.gmFormsReceivedRender=async function(){
   <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--paper)">
    <button type="button" id="gm-support-chat-attach-btn" onclick="document.getElementById('gm-support-chat-file-input').click()" title="Anexar print" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">📎</button>
    <input type="file" id="gm-support-chat-file-input" accept="image/*" style="display:none" onchange="gmSupportBubbleAttachmentPick(this)">
-   <textarea id="gm-support-chat-input" rows="2" placeholder="Descreva seu problema…" style="flex:1"></textarea>
+   <textarea id="gm-support-chat-input" rows="2" placeholder="Descreva seu problema ou tire uma dúvida de uso…" style="flex:1"></textarea>
+   <button type="button" id="gm-support-chat-ai" onclick="gmSupportAskAi()" title="Perguntar à IA (ajuda de uso do sistema)" style="padding:8px 12px;background:#1e2b3d;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">💡 Ajuda IA</button>
    <button type="button" id="gm-support-chat-send" onclick="gmSupportChatSend()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Enviar</button>
   </div>
  </div>
