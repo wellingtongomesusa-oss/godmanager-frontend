@@ -26660,15 +26660,17 @@ function gmJobsFollowRenderSummary(baseRows){
  var el=document.getElementById('jobs-follow-summary');
  if(!el)return;
  var today=(new Date()).toISOString().slice(0,10);
- var c={hoje:0,agendados:0,abertos:0,fechados:0,manut:0,vendor:0};
+ var c={hoje:0,abertos:0,agendados:0,cotacao:0,concluidos:0,cancelados:0,manut:0,vendor:0};
  (baseRows||[]).forEach(function(r){
   var stage=(typeof gmJobFollowUpDisplayStage==='function')?gmJobFollowUpDisplayStage(r):'opened';
   var pk=(typeof jobsPmStatusKey==='function')?jobsPmStatusKey(r):'';
-  var closed=(pk==='FINALIZED'||pk==='PAID'||pk==='CANCELLED'||stage==='vendor_done'||stage==='closed_internal'||stage==='followup_closed');
   var cd=String(r.createdAt||r.serviceDate||'').slice(0,10);
   if(cd===today)c.hoje++;
-  if(closed){c.fechados++;return;}
-  if(stage==='maintenance_scheduled'||pk==='SCHEDULED')c.agendados++; else c.abertos++;
+  if(pk==='CANCELLED'){c.cancelados++;return;}
+  if(pk==='FINALIZED'||pk==='PAID'||stage==='vendor_done'||stage==='closed_internal'||stage==='followup_closed'){c.concluidos++;return;}
+  if(stage==='bidding')c.cotacao++;
+  else if(stage==='maintenance_scheduled'||pk==='SCHEDULED')c.agendados++;
+  else c.abertos++;
   var hasExtVendor=(typeof gmJobsRowHasExternalVendor==='function')&&gmJobsRowHasExternalVendor(r);
   var q=(typeof jobFollowUpQueue==='function')?jobFollowUpQueue(r):'maintenance';
   if(hasExtVendor||q==='vendor')c.vendor++; else c.manut++;
@@ -26678,11 +26680,15 @@ function gmJobsFollowRenderSummary(baseRows){
    +'<span style="font-size:19px;font-weight:700;color:'+color+';font-family:\'JetBrains Mono\',monospace">'+n+'</span>'
    +'<span style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+label+'</span></button>';
  }
+ var sep='<div style="width:1px;align-self:stretch;min-height:44px;background:var(--border2);margin:0 6px"></div>';
  el.innerHTML=
   card(c.hoje,'Abertos hoje','var(--amber)',"gmJobsFollowSetDateFilter('today')")
-  +card(c.agendados,'Agendados','var(--blue)',"gmJobsFollowSetStage('maintenance_scheduled')")
   +card(c.abertos,'Abertos','var(--amber)',"gmJobsFollowSetStage('opened')")
-  +card(c.fechados,'Fechados','var(--green)','')
+  +card(c.agendados,'Agendados','var(--blue)',"gmJobsFollowSetStage('maintenance_scheduled')")
+  +card(c.cotacao,'Em cotação','#7c3aed',"gmJobsFollowSetStage('bidding')")
+  +card(c.concluidos,'Concluídos','var(--green)','')
+  +card(c.cancelados,'Cancelados','var(--ink3)','')
+  +sep
   +card(c.manut,'Fila Manutenção','var(--ink)',"if(typeof gmJobsFollowSetQueueFilter===&#39;function&#39;)gmJobsFollowSetQueueFilter(&#39;maintenance&#39;)")
   +card(c.vendor,'Fila Vendor','#7c3aed',"if(typeof gmJobsFollowSetQueueFilter===&#39;function&#39;)gmJobsFollowSetQueueFilter(&#39;vendor&#39;)")
   +'<button type="button" onclick="gmJobsFollowSetStage(&#39;&#39;);gmJobsFollowSetDateFilter(&#39;all&#39;);if(typeof gmJobsFollowSetQueueFilter===&#39;function&#39;)gmJobsFollowSetQueueFilter(&#39;all&#39;)" style="align-self:center;padding:8px 12px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#fff;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">Limpar</button>';
