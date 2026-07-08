@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MapPin } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import type { User, UserRole, UserStatus } from '@/lib/types';
@@ -117,6 +117,12 @@ export function UserTable({
                         {u.firstName} {u.lastName}
                       </p>
                       <p className="text-xs text-gm-ink-secondary">{u.email}</p>
+                      {u.address ? (
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-gm-ink-tertiary" title={u.address}>
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[220px]">{u.address}</span>
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </td>
