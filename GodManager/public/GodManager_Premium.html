@@ -7177,6 +7177,52 @@ async function gmTrustLoadStatements(){
  }catch(e){console.warn('gmTrustLoadStatements',e);wrap.style.display='none';}
 }
 window.gmTrustLoadStatements=gmTrustLoadStatements;
+function gmStatementUploadOpen(){
+ if(typeof gmCanEditBankAccounts==='function'&&!gmCanEditBankAccounts()){alert('Apenas admin, manager ou super_admin.');return;}
+ var existing=document.getElementById('gm-stmt-upload-modal');if(existing)existing.remove();
+ var ov=document.createElement('div');
+ ov.id='gm-stmt-upload-modal';
+ ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+ ov.innerHTML='<div style="background:var(--paper,#fff);width:100%;max-width:420px;border-radius:12px;padding:22px 24px;box-shadow:0 20px 50px rgba(0,0,0,.35)" onclick="event.stopPropagation()">'
+  +'<div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:14px">Subir extrato (PDF)</div>'
+  +'<label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">M\xeas</label>'
+  +'<input type="month" id="gm-stmt-up-month" value="2026-07" style="width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);font-size:13px;margin-bottom:14px;box-sizing:border-box">'
+  +'<label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Arquivo (PDF)</label>'
+  +'<input type="file" id="gm-stmt-up-file" accept="application/pdf,.pdf" style="width:100%;font-size:12px;margin-bottom:14px">'
+  +'<div id="gm-stmt-up-err" style="display:none;font-size:11px;color:var(--red);margin-bottom:10px"></div>'
+  +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+   +'<button type="button" onclick="gmStatementUploadClose()" style="padding:8px 14px;border:1px solid var(--border2);border-radius:7px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>'
+   +'<button type="button" id="gm-stmt-up-send" onclick="gmStatementUploadSubmit()" style="padding:8px 16px;border:none;border-radius:7px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer">Enviar</button>'
+  +'</div></div>';
+ ov.addEventListener('click',function(e){if(e.target===ov)gmStatementUploadClose();});
+ document.body.appendChild(ov);
+}
+function gmStatementUploadClose(){var m=document.getElementById('gm-stmt-upload-modal');if(m)m.remove();}
+async function gmStatementUploadSubmit(){
+ var month=(document.getElementById('gm-stmt-up-month')||{}).value||'';
+ var fileEl=document.getElementById('gm-stmt-up-file');
+ var err=document.getElementById('gm-stmt-up-err');
+ var btn=document.getElementById('gm-stmt-up-send');
+ var showErr=function(t){if(err){err.textContent=t;err.style.display='block';}};
+ if(!/^\d{4}-\d{2}$/.test(month)){showErr('Escolha o m\xeas.');return;}
+ if(!fileEl||!fileEl.files||!fileEl.files[0]){showErr('Escolha o arquivo PDF.');return;}
+ if(btn)btn.disabled=true;
+ try{
+  var fd=new FormData();
+  fd.append('file',fileEl.files[0]);
+  fd.append('periodMonth',month);
+  if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)fd.append('clientId',p.clientId);}
+  var res=await fetch('/api/bank-accounts/statements',{method:'POST',credentials:'include',body:fd});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){var m2=String(j.error||('Erro '+res.status));if(/clientid|cliente ativo|tenant/i.test(m2))m2='Selecione a empresa primeiro (Clientes → Login As).';showErr(m2);if(btn)btn.disabled=false;return;}
+  gmStatementUploadClose();
+  if(typeof gmTrustLoadStatements==='function')await gmTrustLoadStatements();
+  if(typeof showToast==='function')showToast('Extrato enviado.','success');
+ }catch(e){showErr('Erro de rede.');if(btn)btn.disabled=false;}
+}
+window.gmStatementUploadOpen=gmStatementUploadOpen;
+window.gmStatementUploadClose=gmStatementUploadClose;
+window.gmStatementUploadSubmit=gmStatementUploadSubmit;
 
 function gmRentFmtMoney(v){var n=Number(v);if(!isFinite(n))return '—';return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function gmRentMonthName(p){var nm=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];var parts=String(p).split('-');var mi=parseInt(parts[1],10)-1;return (nm[mi]||p)+'/'+(parts[0]||'');}
