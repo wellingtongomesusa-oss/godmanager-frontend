@@ -1483,7 +1483,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_home">HOME</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="si active" onclick="nav('home')" id="nav-home" data-i18n="home">Home</div>
- <div class="ss" onclick="nav('longterm')" id="nav-longterm" data-i18n="dashboard">Dashboard</div>
+ <div class="ss" onclick="nav('longterm')" id="nav-longterm">Statement</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="communications">
@@ -3677,6 +3677,26 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    </div>
   </div>
   <div id="trust-statement-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
+  <div id="trust-remap-box" style="margin-top:18px;padding:12px 14px;border:1px dashed var(--border2);border-radius:10px;background:var(--cream);display:none;align-items:center;gap:10px;flex-wrap:wrap">
+   <span style="font-size:12px;color:var(--ink2);font-weight:700">Ajustar contas:</span>
+   <select id="trust-remap-a" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">
+    <option value="OPERATING_TRUST">Operating</option>
+    <option value="TRUST_CHASE">Trust (Chase)</option>
+    <option value="DEPOSIT_SECURITY">Security Deposit</option>
+   </select>
+   <span style="color:var(--ink3);font-weight:700">&#8646;</span>
+   <select id="trust-remap-b" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">
+    <option value="TRUST_CHASE">Trust (Chase)</option>
+    <option value="OPERATING_TRUST">Operating</option>
+    <option value="DEPOSIT_SECURITY">Security Deposit</option>
+   </select>
+   <button type="button" onclick="gmTrustSwapAccounts()" style="padding:7px 14px;border:none;border-radius:6px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Trocar</button>
+   <span style="font-size:11px;color:var(--ink3)">Use se uma conta estiver classificada no tipo errado (troca os saldos das duas).</span>
+  </div>
+  <div id="trust-statement-docs-wrap" style="margin-top:22px;display:none">
+   <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px">Extratos (PDF)</div>
+   <div id="trust-statement-docs"></div>
+  </div>
   <div style="font-size:11px;color:var(--ink3);margin-top:16px;line-height:1.6">
    <b>Trust</b>: dinheiro de terceiros (aluguéis e repasses). &nbsp;<b>Operating</b>: conta operacional da empresa. &nbsp;<b>Security Deposit</b>: depósitos-caução retidos.
   </div>
@@ -7103,8 +7123,55 @@ async function gmTrustStatementRender(){
   window.__gmTrustAccounts.forEach(function(a){var b=balances[a.type];if(b&&isFinite(Number(b.balance))){sum+=Number(b.balance);has=true;}});
   totalEl.textContent=has?gmTrustFmtMoney(sum):'—';
  }
+ var remapBox=document.getElementById('trust-remap-box');
+ if(remapBox)remapBox.style.display=canEdit?'flex':'none';
+ if(typeof gmTrustLoadStatements==='function')void gmTrustLoadStatements();
 }
 window.gmTrustStatementRender=gmTrustStatementRender;
+async function gmTrustLoadStatements(){
+ var wrap=document.getElementById('trust-statement-docs-wrap');
+ var host=document.getElementById('trust-statement-docs');
+ if(!host||!wrap)return;
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var res=await fetch('/api/bank-accounts/statements'+q,{credentials:'include',cache:'no-store'});
+  if(!res.ok){wrap.style.display='none';return;}
+  var j=await res.json().catch(function(){return null;});
+  if(!j||!j.ok||!Array.isArray(j.statements)||!j.statements.length){wrap.style.display='none';return;}
+  var nm=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var monthName=function(p){var parts=String(p).split('-');var mi=parseInt(parts[1],10)-1;return (nm[mi]||p)+'/'+parts[0];};
+  host.innerHTML='<div style="display:flex;flex-direction:column;gap:8px">'+j.statements.map(function(s){
+   var kb=s.fileSize?Math.round(s.fileSize/1024)+' KB':'';
+   var dl=s.downloadUrl?('<a href="'+String(s.downloadUrl).replace(/"/g,'&quot;')+'" target="_blank" rel="noopener" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--cream);color:var(--blue,#22558c);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap">Baixar PDF</a>'):'<span style="font-size:11px;color:var(--ink3)">indispon\xedvel</span>';
+   return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:10px;background:var(--paper);padding:12px 16px">'
+    +'<div><div style="font-size:13px;font-weight:600;color:var(--ink)">'+monthName(s.periodMonth)+(s.bankName?(' \xb7 '+s.bankName):'')+'</div>'
+    +'<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+(s.statementDate||'')+(kb?(' \xb7 '+kb):'')+'</div></div>'
+    +dl+'</div>';
+  }).join('')+'</div>';
+  wrap.style.display='block';
+ }catch(e){console.warn('gmTrustLoadStatements',e);wrap.style.display='none';}
+}
+window.gmTrustLoadStatements=gmTrustLoadStatements;
+async function gmTrustSwapAccounts(){
+ var selA=document.getElementById('trust-remap-a');
+ var selB=document.getElementById('trust-remap-b');
+ if(!selA||!selB)return;
+ var a=selA.value,b=selB.value;
+ if(a===b){alert('Escolha duas contas diferentes.');return;}
+ var lbl=function(t){var m=(window.__gmTrustAccounts||[]).filter(function(x){return x.type===t;})[0];return m?m.label:t;};
+ if(!confirm('Trocar os saldos de "'+lbl(a)+'" com "'+lbl(b)+'"?\nIsso re-etiqueta o histórico dessas duas contas.'))return;
+ try{
+  var body={a:a,b:b};
+  if(typeof gmBankAccountsClientPayload==='function')body=Object.assign(body,gmBankAccountsClientPayload());
+  var res=await fetch('/api/bank-accounts/remap',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));return;}
+  if(typeof gmTrustStatementRender==='function')await gmTrustStatementRender();
+  if(typeof gmHomeFetchBankAccounts==='function')gmHomeFetchBankAccounts();
+  if(typeof showToast==='function')showToast('Contas trocadas.','success');
+ }catch(e){console.warn('gmTrustSwapAccounts',e);alert('Erro de rede ao trocar.');}
+}
+window.gmTrustSwapAccounts=gmTrustSwapAccounts;
 function gmHomeFetchPmMarkupMonth(){
  var d=new Date();
  var ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -9292,7 +9359,7 @@ async function gmClientUsersCreateSubmit(e){
  return false;
 }
 var GM_MENU_ACCESS_SECTIONS=[
- {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Dashboard'}]},
+ {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Statement'}]},
  {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'},{key:'support',label:'Suporte'}]},
  {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'statement-individual',label:'Statement individual'},{key:'tenants',label:'Tenants'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
  {key:'expenses',label:'EXPENSES',items:[{key:'ltexpenses',label:'Expenses'},{key:'ltcleanings',label:'Cleanings'},{key:'vendors',label:'Vendors'},{key:'jobs',label:'Jobs'},{key:'jobs-follow',label:'Acompanhamento'}]},
