@@ -19677,14 +19677,17 @@ function ltExpRender(){
   if(fDay){var _rd=String(r.serviceDate||r.due||r.paid||'').slice(0,10);if(_rd!==fDay)return false;}
   if(fCat==='__PM__'){if(!r._isPm||!r._isVendorPm)return false;}
   else if(fCat){
+   // Vendor EXTERNO = tem vendor E o vendor NAO e interno.
+   // "Master Vacation Homes LLC" e interno (isInternal=true) => e MANUTENCAO, nao Vendor.
+   var _extVendor=r._isPm&&r._isVendorPm&&!r.vendorIsInternal;
    if(fCat==='Vendor'){
-    // Vendor = job PM COM vendor externo, ou despesa avulsa categoria Vendor
-    if(r._isPm){if(!r._isVendorPm)return false;}
+    // Vendor = job PM com vendor EXTERNO, ou despesa avulsa categoria Vendor
+    if(r._isPm){if(!_extVendor)return false;}
     else if(r.category!=='Vendor'&&r.category!=='Vendor (API)')return false;
    }
    else if(fCat==='Manutenção'){
-    // Manutenção = job PM SEM vendor externo (inclui +Vendor free), ou despesa avulsa categoria Manutenção
-    if(r._isPm){if(r._isVendorPm)return false;}
+    // Manutenção = job PM SEM vendor externo (inclui vendor interno MVH LLC e +Vendor free), ou despesa avulsa Manutenção
+    if(r._isPm){if(_extVendor)return false;}
     else if(r.category!=='Manutenção')return false;
    }
    else{if(r.category!==fCat)return false;}
@@ -19736,13 +19739,17 @@ function ltExpRender(){
   const stNorm=ltExpRowNormPmStatus(r);
   const _isFee=!!(r&&r._apiRaw&&r._apiRaw.metadata&&r._apiRaw.metadata.maintenanceFeeFor);
   const selDis=stNorm==='FINALIZED'?'disabled':'';
+  // Data da agenda: quando AGENDADO, mostra a data marcada (Lucas quer ver a data do job agendado, ex.: com vendor)
+  var _schedRaw=String(r.serviceDate||'').slice(0,10);
+  var _schedBR=(/^\d{4}-\d{2}-\d{2}$/.test(_schedRaw))?(_schedRaw.slice(8,10)+'/'+_schedRaw.slice(5,7)+'/'+_schedRaw.slice(0,4)):'';
+  var schedBadge=(stNorm==='SCHEDULED'&&_schedBR)?('<div style="margin-top:4px;font-size:10px;font-weight:700;color:var(--blue);white-space:nowrap" title="Data agendada">📅 '+_schedBR+'</div>'):'';
   const statusTd='<td style="padding:9px 12px;text-align:center"><select '+selDis+' onchange="if(typeof ltExpStatusChange===\'function\')ltExpStatusChange(\''+idAttr+'\',this.value)" class="lt-exp-status-select status-'+String(stNorm).toLowerCase()+'" style="padding:4px 8px;border-radius:4px;font-size:12px;border:1px solid var(--border);cursor:pointer;max-width:140px">'+
    '<option value="SCHEDULED"'+(stNorm==='SCHEDULED'?' selected':'')+'>Agendado</option>'+
    '<option value="PENDING"'+(stNorm==='PENDING'?' selected':'')+'>Pendente</option>'+
    '<option value="PAID"'+(stNorm==='PAID'?' selected':'')+'>Pago</option>'+
    '<option value="CANCELLED"'+(stNorm==='CANCELLED'?' selected':'')+'>Cancelado</option>'+
    '<option value="FINALIZED"'+(stNorm==='FINALIZED'?' selected':'')+' disabled>Finalizado</option>'+
-   '</select></td>';
+   '</select>'+schedBadge+'</td>';
   var photoJobAttr=(ltExpCanSeePmPhotos&&isPm)?gmHtmlEscAttr(String(r.id)):'';
   var jidStr=String(r.id);
   var cntSrc=(window.gmJobsPhotoState&&window.gmJobsPhotoState.countsByJob)?window.gmJobsPhotoState.countsByJob[jidStr]:undefined;
