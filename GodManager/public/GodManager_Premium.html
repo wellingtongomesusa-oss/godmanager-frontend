@@ -3662,6 +3662,27 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
 <!-- /JOBS FOLLOW -->
 
+<!-- TRUST STATEMENT (Dashboard das 3 contas Trust) -->
+<div class="page" id="page-truststatement">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px">
+   <div>
+    <div style="font-size:20px;font-weight:700;color:var(--ink)">Contas Trust</div>
+    <div style="font-size:12px;color:var(--ink3);margin-top:2px">Bank Balance = AppFolio Balance = Owner Ledger &middot; saldo por conta</div>
+   </div>
+   <div style="text-align:right">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)">Total consolidado</div>
+    <div id="trust-statement-total" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:700;color:var(--ink)">&mdash;</div>
+   </div>
+  </div>
+  <div id="trust-statement-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
+  <div style="font-size:11px;color:var(--ink3);margin-top:16px;line-height:1.6">
+   <b>Trust</b>: dinheiro de terceiros (aluguéis e repasses). &nbsp;<b>Operating</b>: conta operacional da empresa. &nbsp;<b>Security Deposit</b>: depósitos-caução retidos.
+  </div>
+ </div>
+</div>
+<!-- /TRUST STATEMENT -->
+
 <!-- JOBS MANAGER MARKUP MODAL -->
 <div id="jobs-manager-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9400;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)jobsManagerClose()">
   <div style="background:#fff;border-radius:10px;padding:24px;max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
@@ -7019,6 +7040,7 @@ async function gmBankAccountSaveModal(){
   }
   gmBankAccountCloseModal();
   await gmHomeFetchBankAccounts();
+  try{if(typeof gmTrustStatementRender==='function'){var _tp=document.getElementById('page-truststatement');if(_tp&&_tp.classList.contains('active'))await gmTrustStatementRender();}}catch(_tsr){}
  }catch(e){
   console.warn('gmBankAccountSaveModal',e);
   if(err){err.textContent='Erro de rede ao guardar.';err.style.display='block';}
@@ -7026,6 +7048,62 @@ async function gmBankAccountSaveModal(){
   if(saveBtn)saveBtn.disabled=false;
  }
 }
+window.__gmTrustAccounts=[
+ {type:'TRUST_CHASE',label:'Trust (Chase)',desc:'Dinheiro de terceiros — alugu\xe9is e repasses',color:'#22558c'},
+ {type:'OPERATING_TRUST',label:'Operating',desc:'Conta operacional da empresa',color:'#c9a96e'},
+ {type:'DEPOSIT_SECURITY',label:'Security Deposit',desc:'Dep\xf3sitos-cau\xe7\xe3o retidos',color:'#2a6e4e'}
+];
+function gmTrustFmtMoney(v){
+ var n=Number(v);
+ if(!isFinite(n))return '—';
+ return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+async function gmTrustStatementRender(){
+ var host=document.getElementById('trust-statement-cards');
+ if(!host)return;
+ host.innerHTML='<div style="grid-column:1/-1;color:var(--ink3);font-size:13px;padding:24px;text-align:center">Carregando saldos…</div>';
+ var balances={};
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var res=await fetch('/api/bank-accounts/balances'+q,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  if(j&&j.ok&&j.balances)balances=j.balances;
+ }catch(e){console.warn('gmTrustStatementRender fetch',e);}
+ var canEdit=(typeof gmCanEditBankAccounts==='function')?gmCanEditBankAccounts():false;
+ host.innerHTML=window.__gmTrustAccounts.map(function(a){
+  var b=balances[a.type]||null;
+  var val=b?gmTrustFmtMoney(b.balance):'—';
+  var when=b&&b.balanceDate?('Saldo em '+String(b.balanceDate).slice(0,10)):'Sem saldo registrado';
+  var editBtn=canEdit?('<button type="button" class="gm-trust-edit" data-acct="'+a.type+'" style="flex:1;padding:9px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Registrar saldo</button>'):'';
+  return '<div style="border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:22px 24px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">'
+   +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+a.color+'"></div>'
+   +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:'+a.color+'">'+a.label+'</div>'
+   +'<div style="font-size:11px;color:var(--ink3);margin-top:3px;min-height:28px">'+a.desc+'</div>'
+   +'<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px;letter-spacing:-.01em">'+val+'</div>'
+   +'<div style="font-size:11px;color:var(--ink3);margin-top:4px">'+when+'</div>'
+   +'<div style="display:flex;gap:8px;margin-top:16px">'
+   +'<button type="button" class="gm-trust-hist" data-acct="'+a.type+'" data-label="'+String(a.label).replace(/"/g,'&quot;')+'" style="flex:1;padding:9px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Hist\xf3rico</button>'
+   +editBtn
+   +'</div></div>';
+ }).join('');
+ host.querySelectorAll('.gm-trust-hist').forEach(function(btn){
+  btn.addEventListener('click',function(){
+   if(typeof gmBankGraphOpen==='function')gmBankGraphOpen(btn.getAttribute('data-acct'),btn.getAttribute('data-label'));
+  });
+ });
+ host.querySelectorAll('.gm-trust-edit').forEach(function(btn){
+  btn.addEventListener('click',function(){
+   if(typeof gmBankAccountOpenModal==='function')gmBankAccountOpenModal(btn.getAttribute('data-acct'));
+  });
+ });
+ var totalEl=document.getElementById('trust-statement-total');
+ if(totalEl){
+  var sum=0,has=false;
+  window.__gmTrustAccounts.forEach(function(a){var b=balances[a.type];if(b&&isFinite(Number(b.balance))){sum+=Number(b.balance);has=true;}});
+  totalEl.textContent=has?gmTrustFmtMoney(sum):'—';
+ }
+}
+window.gmTrustStatementRender=gmTrustStatementRender;
 function gmHomeFetchPmMarkupMonth(){
  var d=new Date();
  var ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -10997,6 +11075,7 @@ function nav(r){
  }
  var pageRoute=r;
  if(r==='statement-individual')pageRoute='owner-statement-detail';
+ if(r==='longterm')pageRoute='truststatement';
  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
  const pg=document.getElementById('page-'+pageRoute)||document.getElementById('page-home');
  if(pg) pg.classList.add('active');
@@ -11026,18 +11105,8 @@ function nav(r){
   if(typeof loadHomeDashboardFromApi==='function'){await loadHomeDashboardFromApi();}
  },
  longterm:async function gmNavLongtermDashboard(){
-  try{
-   if(typeof gmPropertiesFetchFromApi==='function'){
-    var fresh=await gmPropertiesFetchFromApi();
-    if(fresh!==null&&Array.isArray(fresh)&&typeof gmPropertiesSave==='function'){gmPropertiesSave(fresh);}
-   }
-  }catch(eSync){console.warn('longterm properties sync',eSync);}
-  try{
-   if(typeof window.gmDashPreloadTenants==='function'){await window.gmDashPreloadTenants();}
-  }catch(eTn){console.warn('longterm tenants preload',eTn);}
-  if(typeof ltExpFetchPm==='function'){void ltExpFetchPm();}
-  if(typeof ltDashRender==='function'){await ltDashRender();}
-  if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();
+  // Dashboard da secao INICIO = statement das 3 contas Trust (Manager Prop).
+  if(typeof gmTrustStatementRender==='function'){await gmTrustStatementRender();}
  },
  ltproperties:async function gmLtPropertiesNavRender(){
   try{
