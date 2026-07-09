@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import { prisma } from '@/lib/db';
+import { CommentEntityType, Prisma } from '@prisma/client';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -63,4 +65,109 @@ export async function sendEmail(opts: {
     const msg = e instanceof Error ? e.message : 'unknown';
     return { ok: false, error: msg };
   }
+}
+
+export type EmailRecipientType = 'TENANT' | 'OWNER' | 'OTHER';
+
+/**
+ * Registra no histórico (Comment) que um e-mail foi enviado.
+ * REGRA (Wellington): todo e-mail — dono ou inquilino — fica no histórico da CASA
+ * (entityType=PROPERTY) automaticamente; se for para um inquilino, também no histórico
+ * do INQUILINO (entityType=TENANT). Best-effort: nunca lança.
+ */
+export async function logEmailToHistory(opts: {
+  clientId: string;
+  author: { id: string; name: string; role: string };
+  to: string | string[];
+  subject: string;
+  propertyId?: string | null;
+  tenantId?: string | null;
+  recipientType?: EmailRecipientType;
+  kind?: string;
+  resendId?: string | null;
+}): Promise<boolean> {
+  try {
+    const toList = Array.isArray(opts.to) ? opts.to : [opts.to];
+    const recLabel =
+      opts.recipientType === 'TENANT'
+        ? 'inquilino'
+        : opts.recipientType === 'OWNER'
+          ? 'proprietário'
+          : 'destinatário';
+    const content = `📧 E-mail enviado ao ${recLabel} (${toList.join(', ')}) — Assunto: "${opts.subject}"`;
+    const metadata: Prisma.InputJsonValue = {
+      type: 'email',
+      kind: opts.kind || 'general',
+      to: toList,
+      subject: opts.subject,
+      recipientType: opts.recipientType || 'OTHER',
+      resendId: opts.resendId ?? null,
+    };
+
+    const targets: Array<{ entityType: CommentEntityType; entityId: string }> = [];
+    if (opts.propertyId) targets.push({ entityType: 'PROPERTY', entityId: opts.propertyId });
+    if (opts.tenantId) targets.push({ entityType: 'TENANT', entityId: opts.tenantId });
+    if (!targets.length) return false;
+
+    await prisma.comment.createMany({
+      data: targets.map((t) => ({
+        clientId: opts.clientId,
+        entityType: t.entityType,
+        entityId: t.entityId,
+        authorId: opts.author.id,
+        authorName: opts.author.name,
+        authorRole: opts.author.role,
+        content,
+        metadata,
+        isInternal: true,
+      })),
+    });
+    return true;
+  } catch (e) {
+    console.error('[logEmailToHistory] falha ao registrar histórico:', e);
+    return false;
+  }
+}
+
+/**
+ * Envia um e-mail E registra no histórico (casa + inquilino) num passo só.
+ * Use este em vez de sendEmail() sempre que houver contexto de propriedade/inquilino.
+ */
+export async function sendEmailAndLog(opts: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string;
+  bcc?: string | string[];
+  clientId: string;
+  author: { id: string; name: string; role: string };
+  propertyId?: string | null;
+  tenantId?: string | null;
+  recipientType?: EmailRecipientType;
+  kind?: string;
+}): Promise<{ ok: boolean; error?: string; id?: string; logged?: boolean }> {
+  const sent = await sendEmail({
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+    text: opts.text,
+    replyTo: opts.replyTo,
+    bcc: opts.bcc,
+  });
+  if (!sent.ok) return sent;
+
+  const logged = await logEmailToHistory({
+    clientId: opts.clientId,
+    author: opts.author,
+    to: opts.to,
+    subject: opts.subject,
+    propertyId: opts.propertyId,
+    tenantId: opts.tenantId,
+    recipientType: opts.recipientType,
+    kind: opts.kind,
+    resendId: sent.id ?? null,
+  });
+
+  return { ...sent, logged };
 }
