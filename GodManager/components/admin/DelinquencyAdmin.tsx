@@ -51,6 +51,12 @@ export function DelinquencyAdmin() {
 
   const roleOk = !user || ['super_admin', 'admin', 'manager'].includes(String(user.role).toLowerCase());
 
+  // super_admin: o clientId do cliente ativo chega pela URL (?clientId=) do iframe
+  const clientId = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('clientId') || '';
+  }, []);
+
   const analyze = useCallback(async () => {
     setMsg(null);
     setLoading(true);
@@ -61,11 +67,15 @@ export function DelinquencyAdmin() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv }),
+        body: JSON.stringify({ csv, clientId: clientId || undefined }),
       });
       const d = await r.json();
       if (!r.ok || !d.ok) {
-        setMsg({ ok: false, text: d.error || `Erro ${r.status}` });
+        const raw = String(d.error || `Erro ${r.status}`);
+        const friendly = /clientid/i.test(raw)
+          ? 'Selecione a empresa ativa (no topo da tela) antes de analisar o relatório.'
+          : raw;
+        setMsg({ ok: false, text: friendly });
         return;
       }
       setItems(d.items || []);
@@ -80,7 +90,7 @@ export function DelinquencyAdmin() {
     } finally {
       setLoading(false);
     }
-  }, [csv]);
+  }, [csv, clientId]);
 
   const onFile = useCallback((f: File | null) => {
     if (!f) return;
@@ -111,6 +121,7 @@ export function DelinquencyAdmin() {
         body: JSON.stringify({
           subject,
           intro,
+          clientId: clientId || undefined,
           items: toSend.map((i) => ({
             tenantId: i.tenantId,
             amountReceivable: i.amountReceivable,
@@ -133,7 +144,7 @@ export function DelinquencyAdmin() {
     } finally {
       setSending(false);
     }
-  }, [items, selected, subject, intro]);
+  }, [items, selected, subject, intro, clientId]);
 
   if (!roleOk) {
     return (
@@ -144,7 +155,7 @@ export function DelinquencyAdmin() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="mx-auto w-full max-w-[1320px] px-8 py-8">
       <div className="mb-6 flex items-center gap-3">
         <Mail className="h-6 w-6 text-[#22558c]" />
         <div>

@@ -3665,7 +3665,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <!-- TRUST STATEMENT (Dashboard das 3 contas Trust) -->
 <div class="page" id="page-truststatement">
- <div style="max-width:1080px;margin:0 auto">
+ <div style="max-width:1360px;margin:0 auto;width:100%">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px">
    <div>
     <div style="font-size:20px;font-weight:700;color:var(--ink)">Contas Trust</div>
@@ -30941,6 +30941,10 @@ function gmDelinquencyModalOpen(){
  }
  var existing=document.getElementById('gm-delinquency-modal');
  if(existing){existing.style.display='flex';return;}
+ // super_admin precisa mandar o clientId do cliente ativo p/ a página (senão a API dá 400)
+ var _dqCid='';
+ try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null;_dqCid=(_ac&&_ac.id)?String(_ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(_e){}
+ var _dqSrc='/admin/delinquency'+(_dqCid?('?clientId='+encodeURIComponent(_dqCid)):'');
  var overlay=document.createElement('div');
  overlay.id='gm-delinquency-modal';
  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
@@ -30954,7 +30958,7 @@ function gmDelinquencyModalOpen(){
    +'<button onclick="gmDelinquencyModalClose()" aria-label="Fechar" style="background:transparent;border:none;width:34px;height:34px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a5568;font-size:20px" onmouseover="this.style.background=\'#f0ece4\'" onmouseout="this.style.background=\'transparent\'">&times;</button>'
   +'</div>'
   +'<div style="flex:1;overflow:hidden;background:#fff">'
-   +'<iframe id="gm-delinquency-iframe" src="/admin/delinquency" style="width:100%;height:100%;border:none;display:block" title="Cobrança"></iframe>'
+   +'<iframe id="gm-delinquency-iframe" src="'+_dqSrc+'" style="width:100%;height:100%;border:none;display:block" title="Cobrança"></iframe>'
   +'</div>'
   +'</div>';
  document.body.appendChild(overlay);
