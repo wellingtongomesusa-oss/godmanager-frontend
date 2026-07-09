@@ -3677,6 +3677,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    </div>
   </div>
   <div id="trust-statement-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
+  <div id="rent-receipts-card" style="display:none;margin-top:16px;border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:20px 24px;position:relative;overflow:hidden">
+   <div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:#2a6e4e"></div>
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+    <div>
+     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#2a6e4e">Aluguéis Recebidos &middot; líq. mgmt fee</div>
+     <div id="rent-receipts-sub" style="font-size:11px;color:var(--ink3);margin-top:3px">&mdash;</div>
+     <div id="rent-receipts-net" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px;letter-spacing:-.01em">&mdash;</div>
+     <div id="rent-receipts-gross" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+    </div>
+    <button type="button" onclick="gmRentReceiptsOpen()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📊 Gráfico e detalhe por casa</button>
+   </div>
+  </div>
   <div id="trust-remap-box" style="margin-top:18px;padding:12px 14px;border:1px dashed var(--border2);border-radius:10px;background:var(--cream);display:none;align-items:center;gap:10px;flex-wrap:wrap">
    <span style="font-size:12px;color:var(--ink2);font-weight:700">Ajustar contas:</span>
    <select id="trust-remap-a" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">
@@ -7126,6 +7138,7 @@ async function gmTrustStatementRender(){
  var remapBox=document.getElementById('trust-remap-box');
  if(remapBox)remapBox.style.display=canEdit?'flex':'none';
  if(typeof gmTrustLoadStatements==='function')void gmTrustLoadStatements();
+ if(typeof gmRentReceiptsLoad==='function')void gmRentReceiptsLoad();
 }
 window.gmTrustStatementRender=gmTrustStatementRender;
 async function gmTrustLoadStatements(){
@@ -7152,6 +7165,92 @@ async function gmTrustLoadStatements(){
  }catch(e){console.warn('gmTrustLoadStatements',e);wrap.style.display='none';}
 }
 window.gmTrustLoadStatements=gmTrustLoadStatements;
+
+function gmRentFmtMoney(v){var n=Number(v);if(!isFinite(n))return '—';return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function gmRentMonthName(p){var nm=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];var parts=String(p).split('-');var mi=parseInt(parts[1],10)-1;return (nm[mi]||p)+'/'+(parts[0]||'');}
+async function gmRentReceiptsLoad(){
+ var card=document.getElementById('rent-receipts-card');
+ if(!card)return;
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var res=await fetch('/api/owner-statement/rent-receipts'+q,{credentials:'include',cache:'no-store'});
+  if(!res.ok){card.style.display='none';return;}
+  var j=await res.json().catch(function(){return null;});
+  if(!j||!j.ok||!Array.isArray(j.months)||!j.months.length){card.style.display='none';return;}
+  window.__gmRentReceipts=j;
+  var last=j.months[j.months.length-1];
+  var setTxt=function(id,t){var el=document.getElementById(id);if(el)el.textContent=t;};
+  setTxt('rent-receipts-sub',gmRentMonthName(last.month)+' · '+last.properties+' casas · '+last.count+' pagamentos');
+  setTxt('rent-receipts-net',gmRentFmtMoney(last.net));
+  setTxt('rent-receipts-gross','Bruto '+gmRentFmtMoney(last.gross)+' · mgmt fee '+gmRentFmtMoney(last.fee));
+  card.style.display='block';
+ }catch(e){console.warn('gmRentReceiptsLoad',e);card.style.display='none';}
+}
+window.gmRentReceiptsLoad=gmRentReceiptsLoad;
+function gmRentReceiptsClose(){var m=document.getElementById('gm-rent-receipts-popup');if(m){if(m._esc)document.removeEventListener('keydown',m._esc);m.remove();}}
+window.gmRentReceiptsClose=gmRentReceiptsClose;
+function gmRentReceiptsRenderMonth(month){
+ var j=window.__gmRentReceipts;if(!j)return;
+ var rows=(j.byProperty||[]).filter(function(r){return r.periodMonth===month;}).sort(function(a,b){return b.gross-a.gross;});
+ var body=document.getElementById('gm-rent-rows');
+ if(!body)return;
+ if(!rows.length){body.innerHTML='<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--ink3)">Sem dados neste mês.</td></tr>';return;}
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+ body.innerHTML=rows.map(function(r){
+  return '<tr style="border-bottom:1px solid var(--border)">'
+   +'<td style="padding:7px 10px;font-size:12px;color:var(--ink)">'+esc(r.propertyLabel)+(r.matched?'':' <span style="color:#b45309;font-size:10px">(sem cadastro)</span>')+'</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;color:var(--ink)">'+gmRentFmtMoney(r.gross)+'</td>'
+   +'<td style="padding:7px 10px;text-align:center;font-size:11px;color:var(--ink3)">'+r.pct+'%</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;color:#b83030">-'+gmRentFmtMoney(r.fee)+'</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:#2a6e4e">'+gmRentFmtMoney(r.net)+'</td>'
+   +'</tr>';
+ }).join('');
+}
+window.gmRentReceiptsRenderMonth=gmRentReceiptsRenderMonth;
+function gmRentReceiptsOpen(){
+ var j=window.__gmRentReceipts;
+ if(!j||!Array.isArray(j.months)||!j.months.length){alert('Sem dados de aluguéis recebidos.');return;}
+ gmRentReceiptsClose();
+ var maxNet=Math.max.apply(null,j.months.map(function(m){return m.net;}).concat([1]));
+ var bars=j.months.map(function(m){
+  var h=Math.max(2,Math.round((m.net/maxNet)*140));
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:34px">'
+   +'<div style="font-size:9px;color:var(--ink3);font-family:monospace">'+Math.round(m.net/1000)+'k</div>'
+   +'<div title="'+gmRentMonthName(m.month)+': '+gmRentFmtMoney(m.net)+'" style="width:60%;height:'+h+'px;background:#2a6e4e;border-radius:4px 4px 0 0"></div>'
+   +'<div style="font-size:9px;color:var(--ink3)">'+gmRentMonthName(m.month).replace('/20','/')+'</div>'
+   +'</div>';
+ }).join('');
+ var opts=j.months.map(function(m){return '<option value="'+m.month+'">'+gmRentMonthName(m.month)+'</option>';}).join('');
+ var overlay=document.createElement('div');
+ overlay.id='gm-rent-receipts-popup';
+ overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+ overlay.innerHTML=''
+  +'<div style="background:var(--paper,#fff);width:100%;max-width:840px;max-height:calc(100vh - 32px);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.4)">'
+  +'<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--cream)">'
+   +'<span style="font-size:14px;font-weight:700;color:var(--ink)">Aluguéis Recebidos · líq. mgmt fee</span>'
+   +'<button onclick="gmRentReceiptsClose()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--ink2);line-height:1">&times;</button>'
+  +'</div>'
+  +'<div style="padding:18px 20px;overflow-y:auto">'
+   +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px">Evolução mensal (líquido)</div>'
+   +'<div style="display:flex;align-items:flex-end;gap:6px;height:180px;padding:8px 0 0;border-bottom:1px solid var(--border);margin-bottom:16px">'+bars+'</div>'
+   +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap">'
+    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Detalhe por casa</div>'
+    +'<select id="gm-rent-month-sel" onchange="gmRentReceiptsRenderMonth(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">'+opts+'</select>'
+   +'</div>'
+   +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px">'
+    +'<thead><tr style="border-bottom:2px solid var(--border);text-align:left"><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Casa</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Recebido</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:center">Fee</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Mgmt Fee</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Líquido</th></tr></thead>'
+    +'<tbody id="gm-rent-rows"></tbody></table></div>'
+  +'</div></div>';
+ document.body.appendChild(overlay);
+ var esc=function(e){if(e.key==='Escape')gmRentReceiptsClose();};
+ overlay._esc=esc;document.addEventListener('keydown',esc);
+ overlay.addEventListener('click',function(e){if(e.target===overlay)gmRentReceiptsClose();});
+ var sel=document.getElementById('gm-rent-month-sel');
+ var lastMonth=j.months[j.months.length-1].month;
+ if(sel)sel.value=lastMonth;
+ gmRentReceiptsRenderMonth(lastMonth);
+}
+window.gmRentReceiptsOpen=gmRentReceiptsOpen;
 async function gmTrustSwapAccounts(){
  var selA=document.getElementById('trust-remap-a');
  var selB=document.getElementById('trust-remap-b');

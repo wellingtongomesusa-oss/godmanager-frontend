@@ -120,6 +120,7 @@ model Client {
   ownerAuditSnapshots   OwnerAuditSnapshot[]    @relation("OwnerAuditSnapshot_clientId")
   bankAccountBalances   BankAccountBalance[]    @relation("BankAccountBalance_clientId")
   bankStatements        BankStatement[]         @relation("BankStatement_clientId")
+  rentReceipts          PropertyRentReceipt[]   @relation("PropertyRentReceipt_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
   bankLinks             BankLink[]              @relation("BankLink_clientId")
   bankTransfers         BankTransfer[]          @relation("BankTransfer_clientId")
@@ -187,6 +188,30 @@ model BankStatement {
 
   @@index([clientId, periodMonth])
   @@map("bank_statements")
+}
+
+/// Aluguel recebido por propriedade por mês (importado do general ledger AppFolio),
+/// com o mgmt fee já calculado pela regra da propriedade (mgmtFeePct, default 8%).
+model PropertyRentReceipt {
+  id            String   @id @default(cuid())
+  clientId      String
+  propertyId    String?
+  propertyKey   String // endereço normalizado (chave de dedup)
+  propertyLabel String
+  periodMonth   String // 'YYYY-MM'
+  grossReceived Decimal  @db.Decimal(12, 2)
+  mgmtFeePct    Decimal  @db.Decimal(5, 2)
+  mgmtFeeAmount Decimal  @db.Decimal(12, 2)
+  netOwner      Decimal  @db.Decimal(12, 2)
+  paymentCount  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client Client @relation("PropertyRentReceipt_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, propertyKey, periodMonth])
+  @@index([clientId, periodMonth])
+  @@map("property_rent_receipts")
 }
 
 model GlAuditSnapshot {
