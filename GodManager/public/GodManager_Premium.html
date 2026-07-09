@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
 <!-- Build: 2026-06-22 dev -->
+<script>/* Força o dominio canonico www: godmanager.us (apex) tem sessao/localStorage separados e desatualizados. */
+(function(){try{if(location.hostname==='godmanager.us'){location.replace('https://www.godmanager.us'+location.pathname+location.search+location.hash);}}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
@@ -3665,7 +3667,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <!-- TRUST STATEMENT (Dashboard das 3 contas Trust) -->
 <div class="page" id="page-truststatement">
- <div style="max-width:1360px;margin:0 auto;width:100%">
+ <div style="max-width:100%;width:100%;padding:0 4px">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px">
    <div>
     <div style="font-size:20px;font-weight:700;color:var(--ink)">Contas Trust</div>
@@ -7068,7 +7070,9 @@ async function gmBankAccountSaveModal(){
   var res=await fetch('/api/bank-accounts/balances',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   var j=await res.json().catch(function(){return {};});
   if(!res.ok||!j.ok){
-   if(err){err.textContent=j.error||('Erro '+res.status);err.style.display='block';}
+   var _emsg=String(j.error||('Erro '+res.status));
+   if(/clientid|cliente ativo|cliente n\xe3o|tenant/i.test(_emsg))_emsg='Selecione a empresa primeiro: clique em "Clientes" (no topo) e depois em "Login As" na Manager Prop.';
+   if(err){err.textContent=_emsg;err.style.display='block';}
    return;
   }
   gmBankAccountCloseModal();
