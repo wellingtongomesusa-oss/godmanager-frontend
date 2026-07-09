@@ -119,6 +119,7 @@ model Client {
   feeAuditSnapshots     FeeAuditSnapshot[]      @relation("FeeAuditSnapshot_clientId")
   ownerAuditSnapshots   OwnerAuditSnapshot[]    @relation("OwnerAuditSnapshot_clientId")
   bankAccountBalances   BankAccountBalance[]    @relation("BankAccountBalance_clientId")
+  bankStatements        BankStatement[]         @relation("BankStatement_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
   bankLinks             BankLink[]              @relation("BankLink_clientId")
   bankTransfers         BankTransfer[]          @relation("BankTransfer_clientId")
@@ -166,6 +167,26 @@ model BankAccountBalance {
 
   @@index([clientId, accountType, balanceDate])
   @@map("bank_account_balances")
+}
+
+/// Extrato bancário (PDF) por mês. No caso Chase/Manager Prop o PDF é consolidado
+/// (cobre as 3 contas), então guardamos 1 por mês. Arquivo fica no R2 (fileKey).
+model BankStatement {
+  id            String   @id @default(cuid())
+  clientId      String
+  periodMonth   String // 'YYYY-MM'
+  statementDate DateTime @db.Date
+  bankName      String?
+  fileKey       String
+  fileName      String
+  fileSize      Int?
+  uploadedBy    String?
+  createdAt     DateTime @default(now())
+
+  client Client @relation("BankStatement_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, periodMonth])
+  @@map("bank_statements")
 }
 
 model GlAuditSnapshot {

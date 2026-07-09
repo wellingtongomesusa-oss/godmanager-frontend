@@ -1,6 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { PutObjectCommand, DeleteObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand, HeadBucketCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 /**
  * Cloudflare R2 client (S3-compatible).
@@ -76,6 +76,27 @@ export async function deleteObject(key: string): Promise<void> {
     Key: key,
   });
   await getR2Client().send(command);
+}
+
+/**
+ * Presigned GET URL for downloading a private object (e.g. bank statement PDFs).
+ * @param key Object key
+ * @param downloadName Optional filename to force as download
+ * @param expiresInSeconds Default 300s
+ */
+export async function generateDownloadUrl(
+  key: string,
+  downloadName?: string,
+  expiresInSeconds: number = 300
+): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: getR2Bucket(),
+    Key: key,
+    ...(downloadName
+      ? { ResponseContentDisposition: `attachment; filename="${downloadName.replace(/"/g, "")}"` }
+      : {}),
+  });
+  return getSignedUrl(getR2Client(), command, { expiresIn: expiresInSeconds });
 }
 
 /**
