@@ -3708,7 +3708,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <span style="font-size:11px;color:var(--ink3)">Use se uma conta estiver classificada no tipo errado (troca os saldos das duas).</span>
   </div>
   <div id="trust-statement-docs-wrap" style="margin-top:22px;display:none">
-   <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px">Extratos (PDF)</div>
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">Extratos (PDF)</div>
+    <button type="button" id="trust-statement-upload-btn" onclick="gmStatementUploadOpen()" style="display:none;padding:7px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬆ Subir extrato</button>
+   </div>
    <div id="trust-statement-docs"></div>
   </div>
   <div style="font-size:11px;color:var(--ink3);margin-top:16px;line-height:1.6">
@@ -7044,7 +7047,9 @@ function gmBankAccountOpenModal(accountType){
   if(snap&&snap.balanceDate)dateIn.value=String(snap.balanceDate).slice(0,10);
   else dateIn.value=new Date().toISOString().slice(0,10);
  }
- if(bg)bg.style.display='flex';
+ // O modal fica dentro de #page-home; se estivermos noutra aba (Statement) esse page fica
+ // display:none e o modal nao aparece. Move para o body para exibir em qualquer aba.
+ if(bg){try{if(bg.parentNode!==document.body)document.body.appendChild(bg);}catch(_e){}bg.style.display='flex';}
 }
 async function gmBankAccountSaveModal(){
  var at=window.__gmBankModalAccountType;
@@ -7149,12 +7154,15 @@ async function gmTrustLoadStatements(){
  var wrap=document.getElementById('trust-statement-docs-wrap');
  var host=document.getElementById('trust-statement-docs');
  if(!host||!wrap)return;
+ var canEdit=(typeof gmCanEditBankAccounts==='function')?gmCanEditBankAccounts():false;
+ var upBtn=document.getElementById('trust-statement-upload-btn');
+ if(upBtn)upBtn.style.display=canEdit?'inline-block':'none';
  try{
   var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
   var res=await fetch('/api/bank-accounts/statements'+q,{credentials:'include',cache:'no-store'});
-  if(!res.ok){wrap.style.display='none';return;}
+  if(!res.ok){wrap.style.display=canEdit?'block':'none';host.innerHTML='';return;}
   var j=await res.json().catch(function(){return null;});
-  if(!j||!j.ok||!Array.isArray(j.statements)||!j.statements.length){wrap.style.display='none';return;}
+  if(!j||!j.ok||!Array.isArray(j.statements)||!j.statements.length){wrap.style.display=canEdit?'block':'none';host.innerHTML=canEdit?'<div style="font-size:12px;color:var(--ink3);padding:8px 0">Nenhum extrato ainda. Use “Subir extrato”.</div>':'';return;}
   var nm=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   var monthName=function(p){var parts=String(p).split('-');var mi=parseInt(parts[1],10)-1;return (nm[mi]||p)+'/'+parts[0];};
   host.innerHTML='<div style="display:flex;flex-direction:column;gap:8px">'+j.statements.map(function(s){
