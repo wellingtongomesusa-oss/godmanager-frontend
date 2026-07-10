@@ -14063,14 +14063,14 @@ window.gmSupportAskAi=async function(){
  if(btn)btn.disabled=true;
  if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(q,'user');
  inp.value='';
- if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg('💡 Consultando a ajuda…','system');
+ if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg('💡 SophIA está consultando…','system');
  try{
   var res=await fetch('/api/ai/help',{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
   var data=await res.json().catch(function(){return null;});
   if(res.ok&&data&&data.ok&&data.answer){
    if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(data.answer,'system');
   }else{
-   var m=(data&&data.error==='ai_not_configured')?'A Ajuda IA ainda nao esta configurada. Voce pode abrir um chamado no botao Enviar.':'Nao consegui responder agora. Voce pode abrir um chamado no botao Enviar.';
+   var m=(data&&data.error==='ai_not_configured')?'A SophIA ainda nao esta configurada. Voce pode abrir um chamado no botao Enviar.':'Nao consegui responder agora. Voce pode abrir um chamado no botao Enviar.';
    if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(m,'system');
   }
  }catch(e){
@@ -38911,7 +38911,10 @@ window.gmFormsReceivedRender=async function(){
 <div id="gm-support-fab-wrap" style="display:none">
  <div id="gm-support-chat-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--cream)">
-   <div style="font-size:13px;font-weight:600;color:var(--ink)">Suporte</div>
+   <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.01em">SophIA</span>
+    <button type="button" id="gm-support-chat-ai" onclick="gmSupportAskAi()" title="Perguntar à SophIA (ajuda de uso do sistema)" style="padding:5px 11px;background:#1e2b3d;color:#fff;border:none;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">💡 Perguntar à SophIA</button>
+   </div>
    <button type="button" onclick="gmSupportFabToggle()" aria-label="Fechar" style="background:transparent;border:none;color:var(--ink3);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px">×</button>
   </div>
   <div id="gm-support-chat-msgs"></div>
@@ -38925,8 +38928,7 @@ window.gmFormsReceivedRender=async function(){
   <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--paper)">
    <button type="button" id="gm-support-chat-attach-btn" onclick="document.getElementById('gm-support-chat-file-input').click()" title="Anexar print" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">📎</button>
    <input type="file" id="gm-support-chat-file-input" accept="image/*" style="display:none" onchange="gmSupportBubbleAttachmentPick(this)">
-   <textarea id="gm-support-chat-input" rows="2" placeholder="Descreva seu problema ou tire uma dúvida de uso…" style="flex:1"></textarea>
-   <button type="button" id="gm-support-chat-ai" onclick="gmSupportAskAi()" title="Perguntar à IA (ajuda de uso do sistema)" style="padding:8px 12px;background:#1e2b3d;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">💡 Ajuda IA</button>
+   <textarea id="gm-support-chat-input" rows="2" placeholder="Pergunte à SophIA ou descreva seu problema…" style="flex:1"></textarea>
    <button type="button" id="gm-support-chat-send" onclick="gmSupportChatSend()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Enviar</button>
   </div>
  </div>

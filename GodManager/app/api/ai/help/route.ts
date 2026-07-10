@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { HELP_SYSTEM_PROMPT } from '@/lib/helpManual';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Dados ao vivo para a SophIA responder perguntas do dashboard (quantas casas, etc.)
+ * SEM valores fixos no código — sempre lidos do banco, escopados ao cliente do usuário.
+ */
+async function buildLiveData(clientId: string | null): Promise<string> {
+  try {
+    const where = clientId ? { clientId } : {};
+    const [propertyCount, activeTenants] = await Promise.all([
+      prisma.property.count({ where }),
+      prisma.tenant.count({ where: { ...where, status: 'active' } }),
+    ]);
+    return [
+      'DADOS AO VIVO (reais, agora — use estes números; nunca invente):',
+      `- Total de propriedades cadastradas: ${propertyCount}`,
+      `- Inquilinos ativos: ${activeTenants}`,
+    ].join('\n');
+  } catch (e) {
+    console.warn('[ai/help] buildLiveData', e);
+    return '';
+  }
+}
 
 /**
  * POST /api/ai/help  { question }
@@ -29,6 +52,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'ai_not_configured' }, { status: 503 });
     }
 
+    const liveData = await buildLiveData(user.clientId ?? null);
+    const systemPrompt = liveData ? `${liveData}\n\n${HELP_SYSTEM_PROMPT}` : HELP_SYSTEM_PROMPT;
+
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -39,7 +65,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 700,
-        system: HELP_SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{ role: 'user', content: question }],
       }),
     });
