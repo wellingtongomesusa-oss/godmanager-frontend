@@ -3711,9 +3711,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
     <div style="font-size:13px;font-weight:700;color:var(--ink)">Extratos (PDF)</div>
     <div id="trust-statement-upload-wrap" style="display:none;align-items:center;gap:8px">
-     <input type="month" id="trust-statement-upload-month" value="2026-07" title="Mês do extrato" style="padding:6px 9px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-size:12px">
-     <input type="file" id="trust-statement-upload-file" accept="application/pdf,.pdf" style="display:none" onchange="gmStatementUploadDo()">
-     <button type="button" onclick="var f=document.getElementById('trust-statement-upload-file');if(f)f.click()" style="padding:7px 14px;border:none;border-radius:8px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬆ Subir extrato</button>
+     <input type="month" id="trust-statement-upload-month" value="2026-07" title="Mês (usado só se o nome do arquivo não indicar)" style="padding:6px 9px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-size:12px">
+     <input type="file" id="trust-statement-upload-file" accept="application/pdf,.pdf" multiple style="display:none" onchange="gmStatementUploadDo()">
+     <button type="button" onclick="var f=document.getElementById('trust-statement-upload-file');if(f)f.click()" title="Selecione um ou vários PDFs" style="padding:7px 14px;border:none;border-radius:8px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬆ Subir extrato(s)</button>
     </div>
    </div>
    <div id="trust-statement-docs"></div>
@@ -7183,22 +7183,28 @@ async function gmTrustLoadStatements(){
 window.gmTrustLoadStatements=gmTrustLoadStatements;
 async function gmStatementUploadDo(){
  var fileEl=document.getElementById('trust-statement-upload-file');
- var month=(document.getElementById('trust-statement-upload-month')||{}).value||'';
- if(!fileEl||!fileEl.files||!fileEl.files[0])return;
- if(!/^\d{4}-\d{2}$/.test(month)){alert('Escolha o m\xeas do extrato.');return;}
- var file=fileEl.files[0];
- try{
-  var fd=new FormData();
-  fd.append('file',file);
-  fd.append('periodMonth',month);
-  if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)fd.append('clientId',p.clientId);}
-  var res=await fetch('/api/bank-accounts/statements',{method:'POST',credentials:'include',body:fd});
-  var j=await res.json().catch(function(){return{};});
-  try{fileEl.value='';}catch(_e){}
-  if(!res.ok||!j.ok){var m2=String(j.error||('Erro '+res.status));if(/clientid|cliente ativo|tenant/i.test(m2))m2='Selecione a empresa primeiro (Clientes → Login As).';alert(m2);return;}
-  if(typeof gmTrustLoadStatements==='function')await gmTrustLoadStatements();
-  if(typeof showToast==='function')showToast('Extrato de '+month+' enviado.','success');else alert('Extrato de '+month+' enviado.');
- }catch(e){console.warn('gmStatementUploadDo',e);alert('Erro de rede ao enviar.');}
+ var fallbackMonth=(document.getElementById('trust-statement-upload-month')||{}).value||'';
+ if(!fileEl||!fileEl.files||!fileEl.files.length)return;
+ var files=Array.prototype.slice.call(fileEl.files);
+ var monthFromName=function(n){var m=String(n||'').match(/(20\d{2})(\d{2})\d{2}/);return m?(m[1]+'-'+m[2]):'';};
+ var cid='';if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)cid=p.clientId;}
+ var okN=0,failN=0,firstErr='';
+ for(var i=0;i<files.length;i++){
+  var file=files[i];
+  var month=monthFromName(file.name)||fallbackMonth;
+  if(!/^\d{4}-\d{2}$/.test(month)){failN++;if(!firstErr)firstErr='N\xe3o identifiquei o m\xeas de "'+file.name+'". Ajuste o campo m\xeas.';continue;}
+  try{
+   var fd=new FormData();fd.append('file',file);fd.append('periodMonth',month);if(cid)fd.append('clientId',cid);
+   var res=await fetch('/api/bank-accounts/statements',{method:'POST',credentials:'include',body:fd});
+   var j=await res.json().catch(function(){return{};});
+   if(!res.ok||!j.ok){failN++;if(!firstErr){var m2=String(j.error||('Erro '+res.status));if(/clientid|cliente ativo|tenant/i.test(m2))m2='Selecione a empresa primeiro (Clientes → Login As).';firstErr=m2;}}
+   else okN++;
+  }catch(e){console.warn('gmStatementUploadDo',e);failN++;if(!firstErr)firstErr='Erro de rede.';}
+ }
+ try{fileEl.value='';}catch(_e){}
+ if(typeof gmTrustLoadStatements==='function')await gmTrustLoadStatements();
+ var msg=okN+' extrato(s) enviado(s)'+(failN?(' \xb7 '+failN+' falhou: '+firstErr):'');
+ if(typeof showToast==='function')showToast(msg,failN?'error':'success');else alert(msg);
 }
 window.gmStatementUploadDo=gmStatementUploadDo;
 

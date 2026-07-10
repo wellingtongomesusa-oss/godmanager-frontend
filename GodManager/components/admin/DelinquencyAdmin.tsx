@@ -19,6 +19,8 @@ type PreviewItem = {
   propertyAddress: string | null;
   email: string | null;
   sendable: boolean;
+  emailSent?: boolean;
+  lastSentAt?: string | null;
 };
 
 type Summary = {
@@ -139,12 +141,13 @@ export function DelinquencyAdmin() {
         ok: true,
         text: `${d.sent}/${d.total} e-mail(s) enviado(s) e registrado(s) no histórico da casa.`,
       });
+      void analyze(); // re-analisa p/ atualizar a coluna "Cobrança" (Enviada)
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message : 'Falha' });
     } finally {
       setSending(false);
     }
-  }, [items, selected, subject, intro, clientId]);
+  }, [items, selected, subject, intro, clientId, analyze]);
 
   if (!roleOk) {
     return (
@@ -251,15 +254,16 @@ export function DelinquencyAdmin() {
 
           {/* Tabela */}
           <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[880px] table-fixed border-collapse text-sm">
+            <table className="w-full min-w-[1040px] table-fixed border-collapse text-sm">
               <colgroup>
                 <col style={{ width: '44px' }} />
-                <col style={{ width: '24%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '18%' }} />
                 <col style={{ width: '20%' }} />
-                <col style={{ width: '24%' }} />
-                <col style={{ width: '120px' }} />
                 <col style={{ width: '110px' }} />
-                <col style={{ width: '130px' }} />
+                <col style={{ width: '95px' }} />
+                <col style={{ width: '120px' }} />
+                <col style={{ width: '150px' }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -283,6 +287,7 @@ export function DelinquencyAdmin() {
                   <th className="px-3 py-2.5 text-right">Total</th>
                   <th className="px-3 py-2.5 text-right">30+</th>
                   <th className="px-3 py-2.5 text-center">Status</th>
+                  <th className="px-3 py-2.5 text-center">Cobrança</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,6 +346,23 @@ export function DelinquencyAdmin() {
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
                             <AlertTriangle className="h-3.5 w-3.5" /> Sem e-mail
                           </span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-center">
+                        {it.emailSent ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs font-medium text-green-700"
+                            title={it.lastSentAt ? new Date(it.lastSentAt).toLocaleString('pt-BR') : ''}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Enviada
+                            {it.lastSentAt ? (
+                              <span className="text-slate-400">
+                                {new Date(it.lastSentAt).toLocaleDateString('pt-BR')}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">Não enviada</span>
                         )}
                       </td>
                     </tr>

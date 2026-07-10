@@ -96,9 +96,33 @@ export async function POST(req: NextRequest) {
       status: t.status,
     }));
 
-    const items = rows.map((r) => {
-      const m = matchTenantForRow(r, tenantLites);
+    const matched = rows.map((r) => ({ r, m: matchTenantForRow(r, tenantLites) }));
+
+    // Já foi enviada cobrança por e-mail? (logamos no histórico do inquilino com kind=delinquency)
+    const matchedTenantIds = [
+      ...new Set(matched.map((x) => x.m?.id).filter((id): id is string => !!id)),
+    ];
+    const sentMap = new Map<string, string>();
+    if (matchedTenantIds.length) {
+      const sent = await prisma.comment.findMany({
+        where: {
+          clientId,
+          entityType: 'TENANT',
+          entityId: { in: matchedTenantIds },
+          deletedAt: null,
+          metadata: { path: ['kind'], equals: 'delinquency' },
+        },
+        select: { entityId: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      for (const c of sent) {
+        if (!sentMap.has(c.entityId)) sentMap.set(c.entityId, c.createdAt.toISOString());
+      }
+    }
+
+    const items = matched.map(({ r, m }) => {
       const email = m?.email && m.email.includes('@') ? m.email : null;
+      const lastSentAt = m?.id ? sentMap.get(m.id) ?? null : null;
       return {
         unit: r.unit,
         csvName: r.name,
@@ -114,6 +138,8 @@ export async function POST(req: NextRequest) {
         propertyAddress: m?.propertyAddress ?? null,
         email,
         sendable: !!(m && email),
+        emailSent: !!lastSentAt,
+        lastSentAt,
       };
     });
 
