@@ -39,8 +39,8 @@ async function resolvePropertyAccess(propertyId: string) {
 }
 
 /** GET — lista as contas de consumo (NUNCA retorna a senha; só hasPassword). */
-export async function GET(_req: NextRequest, { params }: { params: { propertyId: string } }) {
-  const acc = await resolvePropertyAccess(params.propertyId);
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const acc = await resolvePropertyAccess(params.id);
   if (!acc.ok) return NextResponse.json({ ok: false, error: acc.error }, { status: acc.status });
 
   const rows = await prisma.utilityAccount.findMany({
@@ -62,8 +62,8 @@ export async function GET(_req: NextRequest, { params }: { params: { propertyId:
 }
 
 /** POST — cria uma conta de consumo (senha é criptografada). */
-export async function POST(req: NextRequest, { params }: { params: { propertyId: string } }) {
-  const acc = await resolvePropertyAccess(params.propertyId);
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const acc = await resolvePropertyAccess(params.id);
   if (!acc.ok) return NextResponse.json({ ok: false, error: acc.error }, { status: acc.status });
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;

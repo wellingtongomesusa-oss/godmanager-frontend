@@ -27,9 +27,9 @@ async function resolveAccountAccess(propertyId: string, id: string) {
 /** GET ?reveal=1 — revela a senha em texto (só admin/manager/super_admin). */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { propertyId: string; id: string } },
+  { params }: { params: { id: string; accId: string } },
 ) {
-  const acc = await resolveAccountAccess(params.propertyId, params.id);
+  const acc = await resolveAccountAccess(params.id, params.accId);
   if (!acc.ok) return NextResponse.json({ ok: false, error: acc.error }, { status: acc.status });
 
   const reveal = new URL(req.url).searchParams.get('reveal');
@@ -60,9 +60,9 @@ export async function GET(
 /** PATCH — edita a conta (se vier password, re-criptografa; se vier ''=limpa). */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { propertyId: string; id: string } },
+  { params }: { params: { id: string; accId: string } },
 ) {
-  const acc = await resolveAccountAccess(params.propertyId, params.id);
+  const acc = await resolveAccountAccess(params.id, params.accId);
   if (!acc.ok) return NextResponse.json({ ok: false, error: acc.error }, { status: acc.status });
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -90,7 +90,7 @@ export async function PATCH(
     entity: 'utility_account',
     entityId: acc.row.id,
     clientId: acc.row.clientId,
-    details: `property ${params.propertyId}`,
+    details: `property ${params.id}`,
   });
   return NextResponse.json({ ok: true });
 }
@@ -98,9 +98,9 @@ export async function PATCH(
 /** DELETE — exclui a conta. */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { propertyId: string; id: string } },
+  { params }: { params: { id: string; accId: string } },
 ) {
-  const acc = await resolveAccountAccess(params.propertyId, params.id);
+  const acc = await resolveAccountAccess(params.id, params.accId);
   if (!acc.ok) return NextResponse.json({ ok: false, error: acc.error }, { status: acc.status });
 
   await prisma.utilityAccount.delete({ where: { id: acc.row.id } });
