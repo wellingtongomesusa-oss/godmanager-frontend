@@ -15852,6 +15852,57 @@ async function gmUtilDelete(propertyId,id){
  }catch(e){alert('Erro ao excluir.');}
 }
 window.gmUtilDelete=gmUtilDelete;
+/* ===== Rental Contract (contrato de aluguel por propriedade) ===== */
+async function gmContractLoad(propertyId){
+ var box=document.getElementById('lt-detail-contract');
+ if(!box)return;
+ try{
+  var res=await fetch('/api/properties/'+encodeURIComponent(propertyId)+'/contract',{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  if(!j||!j.ok){box.innerHTML='<div style="color:var(--ink3);font-size:11px">Não foi possível carregar.</div>';return;}
+  if(!j.contract){box.innerHTML='<div style="color:var(--ink3);font-size:11px">Nenhum contrato enviado. Use “Upload” (PDF, DOC ou DOCX).</div>';return;}
+  var c=j.contract;
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  var kb=c.fileSize?Math.round(c.fileSize/1024)+' KB':'';
+  var when=c.uploadedAt?new Date(c.uploadedAt).toLocaleString('pt-BR'):'';
+  box.innerHTML='<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--paper)">'
+   +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#2a6e4e;margin-bottom:4px">Current Rental Contract</div>'
+   +'<div style="font-size:12px;font-weight:600;color:var(--ink)">📄 '+esc(c.fileName)+'</div>'
+   +'<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+(kb?kb+' · ':'')+esc(when)+(c.uploadedByName?(' · '+esc(c.uploadedByName)):'')+'</div>'
+   +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+   +(c.viewUrl?('<a href="'+esc(c.viewUrl)+'" target="_blank" rel="noopener" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--cream);color:var(--blue,#22558c);font-size:11px;font-weight:600;text-decoration:none">Visualizar</a>'):'')
+   +(c.downloadUrl?('<a href="'+esc(c.downloadUrl)+'" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--cream);color:var(--ink2);font-size:11px;font-weight:600;text-decoration:none">Download</a>'):'')
+   +'<button type="button" onclick="gmContractDelete(&#39;'+propertyId+'&#39;)" style="padding:5px 10px;border:1px solid var(--red-bd);border-radius:6px;background:var(--red-bg);color:var(--red);font-size:11px;font-weight:600;cursor:pointer">Excluir</button>'
+   +'</div></div>';
+ }catch(e){box.innerHTML='<div style="color:var(--red);font-size:11px">Erro ao carregar.</div>';}
+}
+window.gmContractLoad=gmContractLoad;
+async function gmContractUpload(propertyId){
+ var fileEl=document.getElementById('lt-detail-contract-file');
+ if(!fileEl||!fileEl.files||!fileEl.files[0])return;
+ var file=fileEl.files[0];
+ var box=document.getElementById('lt-detail-contract');
+ if(box)box.innerHTML='<div style="color:var(--ink3);font-size:11px">Enviando…</div>';
+ try{
+  var fd=new FormData();fd.append('file',file);
+  var res=await fetch('/api/properties/'+encodeURIComponent(propertyId)+'/contract',{method:'POST',credentials:'include',body:fd});
+  var j=await res.json().catch(function(){return{};});
+  try{fileEl.value='';}catch(_e){}
+  if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));}
+  gmContractLoad(propertyId);
+ }catch(e){alert('Erro de rede ao enviar.');gmContractLoad(propertyId);}
+}
+window.gmContractUpload=gmContractUpload;
+async function gmContractDelete(propertyId){
+ if(!confirm('Excluir o contrato desta casa?'))return;
+ try{
+  var res=await fetch('/api/properties/'+encodeURIComponent(propertyId)+'/contract',{method:'DELETE',credentials:'include'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||'Erro ao excluir.');return;}
+  gmContractLoad(propertyId);
+ }catch(e){alert('Erro ao excluir.');}
+}
+window.gmContractDelete=gmContractDelete;
 async function ltOpenDetail(id){
  var r=(ltGetRecords()||[]).find(function(x){return x&&String(x.id)===String(id);});
  if(!r) r=await ltFetchPropertyDetailFromApi(id);
@@ -15955,6 +16006,16 @@ async function ltOpenDetail(id){
  ${filesHtml}
  <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3)">Rental Contract</div>
+  <div>
+   <input type="file" id="lt-detail-contract-file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="gmContractUpload('${r._apiId||r.id}')">
+   <button type="button" onclick="var f=document.getElementById('lt-detail-contract-file');if(f)f.click()" title="PDF, DOC ou DOCX" style="padding:4px 10px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⬆ Upload / Substituir</button>
+  </div>
+ </div>
+ <div id="lt-detail-contract" style="font-size:12px;color:var(--ink3)">Carregando…</div>
+ </div>
+ <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
   <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3)">Utilities Accounts</div>
   <button type="button" onclick="gmUtilAdd('${r._apiId||r.id}')" style="padding:4px 10px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+ Adicionar</button>
  </div>
@@ -15979,6 +16040,7 @@ async function ltOpenDetail(id){
  document.getElementById('lt-detail-modal').style.display='flex';
  if(typeof ltDetailLoadComments==='function')ltDetailLoadComments(r._apiId||r.id);
  if(typeof gmUtilLoad==='function')gmUtilLoad(r._apiId||r.id);
+ if(typeof gmContractLoad==='function')gmContractLoad(r._apiId||r.id);
 }
 function ltCloseDetail(){
  document.getElementById('lt-detail-modal').style.display='none';
