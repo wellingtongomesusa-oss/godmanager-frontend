@@ -15760,6 +15760,98 @@ async function ltDetailAddComment(id){
   else{alert((data&&data.error)||'Nao foi possivel salvar o comentario.');}
  }catch(e){alert('Erro de conexao.');}
 }
+/* ===== Utilities Accounts (contas de consumo por propriedade) ===== */
+window.__gmUtilTypes=['Electricity','Water','Gas','Internet','Cable TV','HOA','Security','Solar','Outros'];
+async function gmUtilLoad(propertyId){
+ var box=document.getElementById('lt-detail-utilities');
+ if(!box)return;
+ try{
+  var res=await fetch('/api/properties/'+encodeURIComponent(propertyId)+'/utilities',{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return null;});
+  if(!j||!j.ok){box.innerHTML='<div style="color:var(--ink3);font-size:11px">Não foi possível carregar as contas.</div>';return;}
+  if(Array.isArray(j.serviceTypes))window.__gmUtilTypes=j.serviceTypes;
+  window.__gmUtilCache=j.accounts||[];
+  var accs=window.__gmUtilCache;
+  if(!accs.length){box.innerHTML='<div style="color:var(--ink3);font-size:11px">Nenhuma conta cadastrada. Clique em “+ Adicionar”.</div>';return;}
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">'
+   +'<thead><tr style="text-align:left;border-bottom:1px solid var(--border);color:var(--ink3)"><th style="padding:5px 6px">Serviço</th><th style="padding:5px 6px">Empresa</th><th style="padding:5px 6px">Conta</th><th style="padding:5px 6px">Login</th><th style="padding:5px 6px">Senha</th><th style="padding:5px 6px">Obs</th><th></th></tr></thead><tbody>'
+   +accs.map(function(a){
+     return '<tr style="border-bottom:1px solid var(--border)">'
+      +'<td style="padding:5px 6px">'+esc(a.serviceType)+'</td>'
+      +'<td style="padding:5px 6px">'+esc(a.company)+'</td>'
+      +'<td style="padding:5px 6px">'+esc(a.accountNumber||'—')+'</td>'
+      +'<td style="padding:5px 6px">'+esc(a.login||'—')+'</td>'
+      +'<td style="padding:5px 6px">'+(a.hasPassword?('<span id="gmutil-pw-'+a.id+'">••••••</span> <button type="button" onclick="gmUtilReveal(&#39;'+propertyId+'&#39;,&#39;'+a.id+'&#39;)" title="Mostrar senha" style="border:none;background:none;cursor:pointer;color:var(--blue)">👁</button>'):'—')+'</td>'
+      +'<td style="padding:5px 6px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(a.notes||'')+'">'+esc(a.notes||'—')+'</td>'
+      +'<td style="padding:5px 6px;white-space:nowrap"><button type="button" onclick="gmUtilEdit(&#39;'+propertyId+'&#39;,&#39;'+a.id+'&#39;)" title="Editar" style="border:none;background:none;cursor:pointer">✏️</button> <button type="button" onclick="gmUtilDelete(&#39;'+propertyId+'&#39;,&#39;'+a.id+'&#39;)" title="Excluir" style="border:none;background:none;cursor:pointer">🗑️</button></td>'
+      +'</tr>';
+   }).join('')+'</tbody></table></div>';
+ }catch(e){box.innerHTML='<div style="color:var(--red);font-size:11px">Erro ao carregar.</div>';}
+}
+window.gmUtilLoad=gmUtilLoad;
+async function gmUtilReveal(propertyId,id){
+ try{
+  var res=await fetch('/api/properties/'+encodeURIComponent(propertyId)+'/utilities/'+encodeURIComponent(id)+'?reveal=1',{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert(j.error||'Sem permissão para ver a senha.');return;}
+  var span=document.getElementById('gmutil-pw-'+id);
+  if(span)span.textContent=j.password||'(vazia)';
+ }catch(e){alert('Erro ao revelar.');}
+}
+window.gmUtilReveal=gmUtilReveal;
+function gmUtilForm(propertyId,acc){
+ var ex=document.getElementById('gm-util-modal');if(ex)ex.remove();
+ var v=acc||{};var types=window.__gmUtilTypes||['Outros'];
+ var opts=types.map(function(t){return '<option value="'+t+'"'+(v.serviceType===t?' selected':'')+'>'+t+'</option>';}).join('');
+ var A=function(s){return String(s==null?'':s).replace(/"/g,'&quot;');};
+ var ov=document.createElement('div');ov.id='gm-util-modal';
+ ov.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+ ov.innerHTML='<div style="background:var(--paper,#fff);width:100%;max-width:440px;border-radius:12px;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.35);max-height:90vh;overflow:auto" onclick="event.stopPropagation()">'
+  +'<div style="font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">'+(acc?'Editar conta':'Nova conta de consumo')+'</div>'
+  +'<label style="font-size:10px;text-transform:uppercase;color:var(--ink3)">Tipo de serviço</label><select id="gm-util-type" style="width:100%;padding:8px;margin:4px 0 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);box-sizing:border-box">'+opts+'</select>'
+  +'<label style="font-size:10px;text-transform:uppercase;color:var(--ink3)">Empresa *</label><input id="gm-util-company" value="'+A(v.company)+'" style="width:100%;padding:8px;margin:4px 0 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);box-sizing:border-box">'
+  +'<label style="font-size:10px;text-transform:uppercase;color:var(--ink3)">Número da conta</label><input id="gm-util-acct" value="'+A(v.accountNumber)+'" style="width:100%;padding:8px;margin:4px 0 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);box-sizing:border-box">'
+  +'<label style="font-size:10px;text-transform:uppercase;color:var(--ink3)">Usuário / Login</label><input id="gm-util-login" value="'+A(v.login)+'" style="width:100%;padding:8px;margin:4px 0 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);box-sizing:border-box">'
+  +'<label style="font-size:10px;text-transform:uppercase;color:var(--ink3)">Senha '+(acc?'(vazio = manter)':'')+'</label><input id="gm-util-pass" type="text" autocomplete="off" value="" style="width:100%;padding:8px;margin:4px 0 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);box-sizing:border-box">'
+  +'<label style="font-size:10px;text-transform:uppercase;color:var(--ink3)">Observações</label><textarea id="gm-util-notes" rows="2" style="width:100%;padding:8px;margin:4px 0 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);box-sizing:border-box;resize:vertical">'+String(v.notes||'').replace(/</g,'&lt;')+'</textarea>'
+  +'<div id="gm-util-err" style="display:none;color:var(--red);font-size:11px;margin-bottom:8px"></div>'
+  +'<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" onclick="document.getElementById(&#39;gm-util-modal&#39;).remove()" style="padding:8px 14px;border:1px solid var(--border2);border-radius:7px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">Cancelar</button><button type="button" onclick="gmUtilSave(&#39;'+propertyId+'&#39;,'+(acc?('&#39;'+acc.id+'&#39;'):'null')+')" style="padding:8px 16px;border:none;border-radius:7px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer">Salvar</button></div>'
+  +'</div>';
+ ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+ document.body.appendChild(ov);
+}
+function gmUtilAdd(propertyId){gmUtilForm(propertyId,null);}
+function gmUtilEdit(propertyId,id){var a=(window.__gmUtilCache||[]).filter(function(x){return x.id===id;})[0];gmUtilForm(propertyId,a||{id:id});}
+window.gmUtilAdd=gmUtilAdd;window.gmUtilEdit=gmUtilEdit;
+async function gmUtilSave(propertyId,id){
+ var g=function(i){var e=document.getElementById(i);return e?String(e.value||''):'';};
+ var err=document.getElementById('gm-util-err');
+ var company=g('gm-util-company').trim();
+ if(!company){if(err){err.textContent='Empresa obrigatória.';err.style.display='block';}return;}
+ var body={serviceType:g('gm-util-type'),company:company,accountNumber:g('gm-util-acct'),login:g('gm-util-login'),notes:g('gm-util-notes')};
+ var pass=g('gm-util-pass');
+ if(id){if(pass!=='')body.password=pass;}else{body.password=pass;}
+ try{
+  var url='/api/properties/'+encodeURIComponent(propertyId)+'/utilities'+(id?('/'+encodeURIComponent(id)):'');
+  var res=await fetch(url,{method:id?'PATCH':'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){if(err){err.textContent=(j&&j.error)||('Erro '+res.status);err.style.display='block';}return;}
+  var m=document.getElementById('gm-util-modal');if(m)m.remove();
+  gmUtilLoad(propertyId);
+ }catch(e){if(err){err.textContent='Erro de rede.';err.style.display='block';}}
+}
+window.gmUtilSave=gmUtilSave;
+async function gmUtilDelete(propertyId,id){
+ if(!confirm('Excluir esta conta de consumo?'))return;
+ try{
+  var res=await fetch('/api/properties/'+encodeURIComponent(propertyId)+'/utilities/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||'Erro ao excluir.');return;}
+  gmUtilLoad(propertyId);
+ }catch(e){alert('Erro ao excluir.');}
+}
+window.gmUtilDelete=gmUtilDelete;
 async function ltOpenDetail(id){
  var r=(ltGetRecords()||[]).find(function(x){return x&&String(x.id)===String(id);});
  if(!r) r=await ltFetchPropertyDetailFromApi(id);
@@ -15862,6 +15954,13 @@ async function ltOpenDetail(id){
  ${r.notes?`<div style="font-size:11px;color:var(--ink3);margin-bottom:12px;padding:8px 12px;background:var(--slate-bg);border-radius:6px"> ${r.notes}</div>`:''}
  ${filesHtml}
  <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3)">Utilities Accounts</div>
+  <button type="button" onclick="gmUtilAdd('${r._apiId||r.id}')" style="padding:4px 10px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+ Adicionar</button>
+ </div>
+ <div id="lt-detail-utilities" style="font-size:12px;color:var(--ink3)">Carregando…</div>
+ </div>
+ <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Comentários / Histórico da casa</div>
  <div style="display:flex;gap:6px;margin-bottom:10px">
  <textarea id="lt-detail-comment-input" rows="2" placeholder="Anote a conversa ou observação desta casa…" style="flex:1;padding:8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;background:var(--sand);color:var(--ink)"></textarea>
@@ -15879,6 +15978,7 @@ async function ltOpenDetail(id){
  <button onclick="ltDelete('${r.id}');ltCloseDetail();" style="padding:8px 14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif"> Excluir</button>`;
  document.getElementById('lt-detail-modal').style.display='flex';
  if(typeof ltDetailLoadComments==='function')ltDetailLoadComments(r._apiId||r.id);
+ if(typeof gmUtilLoad==='function')gmUtilLoad(r._apiId||r.id);
 }
 function ltCloseDetail(){
  document.getElementById('lt-detail-modal').style.display='none';

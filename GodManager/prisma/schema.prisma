@@ -121,6 +121,8 @@ model Client {
   bankAccountBalances   BankAccountBalance[]    @relation("BankAccountBalance_clientId")
   bankStatements        BankStatement[]         @relation("BankStatement_clientId")
   rentReceipts          PropertyRentReceipt[]   @relation("PropertyRentReceipt_clientId")
+  utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
+  propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
   bankLinks             BankLink[]              @relation("BankLink_clientId")
   bankTransfers         BankTransfer[]          @relation("BankTransfer_clientId")
@@ -212,6 +214,50 @@ model PropertyRentReceipt {
   @@unique([clientId, propertyKey, periodMonth])
   @@index([clientId, periodMonth])
   @@map("property_rent_receipts")
+}
+
+/// Conta de consumo (utility) de uma propriedade. A senha fica CRIPTOGRAFADA
+/// (passwordEnc, via lib/encryption) e nunca é retornada em texto puro nas APIs.
+model UtilityAccount {
+  id            String   @id @default(cuid())
+  clientId      String
+  propertyId    String
+  company       String
+  serviceType   String // Electricity, Water, Gas, Internet, Cable TV, HOA, Security, Solar, Outros
+  accountNumber String?
+  login         String?
+  passwordEnc   String? // criptografado — nunca retornar em texto
+  notes         String?  @db.Text
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client   Client   @relation("UtilityAccount_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  property Property @relation("UtilityAccount_propertyId", fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, propertyId])
+  @@map("utility_accounts")
+}
+
+/// Contrato de aluguel (PDF/DOC/DOCX) de uma propriedade. Arquivo no R2 (fileKey).
+/// Mantém 1 contrato "atual" por propriedade (substituir = atualiza a linha).
+model PropertyContract {
+  id         String   @id @default(cuid())
+  clientId   String
+  propertyId String
+  fileKey    String
+  fileName   String
+  fileSize   Int?
+  mimeType   String?
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  client   Client   @relation("PropertyContract_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  property Property @relation("PropertyContract_propertyId", fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, propertyId])
+  @@map("property_contracts")
 }
 
 model GlAuditSnapshot {
@@ -473,6 +519,8 @@ model Property {
   tenantPayments    TenantPayment[]         @relation("TenantPayment_propertyId")
   glEntries         GLEntry[]               @relation("GLEntry_propertyId")
   leases            Lease[]                 @relation("Lease_propertyId")
+  utilityAccounts   UtilityAccount[]        @relation("UtilityAccount_propertyId")
+  contracts         PropertyContract[]      @relation("PropertyContract_propertyId")
 
   @@index([code])
   @@index([status])
