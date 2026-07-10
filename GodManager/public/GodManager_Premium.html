@@ -15865,7 +15865,7 @@ async function ltOpenDetail(id){
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Comentários / Histórico da casa</div>
  <div style="display:flex;gap:6px;margin-bottom:10px">
  <textarea id="lt-detail-comment-input" rows="2" placeholder="Anote a conversa ou observação desta casa…" style="flex:1;padding:8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;background:var(--sand);color:var(--ink)"></textarea>
- <button type="button" onclick="ltDetailAddComment('${r.id}')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap">Adicionar</button>
+ <button type="button" onclick="ltDetailAddComment('${r._apiId||r.id}')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap">Adicionar</button>
  </div>
  <div id="lt-detail-comments-list" style="font-size:12px;color:var(--ink3)">Carregando…</div>
  </div>
@@ -15878,7 +15878,7 @@ async function ltOpenDetail(id){
  ${r.status!=='disputed'?`<button onclick="ltSetStatus('${r.id}','disputed');ltCloseDetail();" style="padding:8px 14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif"> Marcar Disputa</button>`:''}
  <button onclick="ltDelete('${r.id}');ltCloseDetail();" style="padding:8px 14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif"> Excluir</button>`;
  document.getElementById('lt-detail-modal').style.display='flex';
- if(typeof ltDetailLoadComments==='function')ltDetailLoadComments(r.id);
+ if(typeof ltDetailLoadComments==='function')ltDetailLoadComments(r._apiId||r.id);
 }
 function ltCloseDetail(){
  document.getElementById('lt-detail-modal').style.display='none';
@@ -22327,7 +22327,7 @@ async function ltpRender(){
  <button type="button" data-ltp-a="movein" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:4px;font-size:10px;cursor:pointer">Move In</button>
  <button type="button" data-ltp-a="moveout" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;cursor:pointer">Move Out</button>
  <button type="button" data-ltp-a="leases" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Histórico</button>
- <button type="button" title="Histórico de comentários da casa" onclick="event.stopPropagation();if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY','${esc(r.id)}',{title:'Histórico da casa'})" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">💬</button>
+ <button type="button" title="Histórico de comentários da casa" onclick="event.stopPropagation();if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY','${esc(r._apiId||r.id)}',{title:'Histórico da casa'})" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">💬</button>
  <button type="button" data-ltp-a="edit" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
  <button type="button" data-ltp-a="del" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  </div>
