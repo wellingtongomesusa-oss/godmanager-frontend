@@ -1,26 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { HELP_SYSTEM_PROMPT } from '@/lib/helpManual';
-import { prisma } from '@/lib/db';
+import { computeKpis, kpisToPromptBlock } from '@/lib/sophiaKpis';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Dados ao vivo para a SophIA responder perguntas do dashboard (quantas casas, etc.)
- * SEM valores fixos no código — sempre lidos do banco, escopados ao cliente do usuário.
+ * Dados ao vivo para a SophIA responder perguntas do dashboard (quantas casas,
+ * ocupação, aluguéis, etc.) SEM valores fixos — sempre lidos do banco.
  */
 async function buildLiveData(clientId: string | null): Promise<string> {
   try {
-    const where = clientId ? { clientId } : {};
-    const [propertyCount, activeTenants] = await Promise.all([
-      prisma.property.count({ where }),
-      prisma.tenant.count({ where: { ...where, status: 'active' } }),
-    ]);
-    return [
-      'DADOS AO VIVO (reais, agora — use estes números; nunca invente):',
-      `- Total de propriedades cadastradas: ${propertyCount}`,
-      `- Inquilinos ativos: ${activeTenants}`,
-    ].join('\n');
+    return kpisToPromptBlock(await computeKpis(clientId));
   } catch (e) {
     console.warn('[ai/help] buildLiveData', e);
     return '';

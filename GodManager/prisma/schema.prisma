@@ -123,6 +123,7 @@ model Client {
   rentReceipts          PropertyRentReceipt[]   @relation("PropertyRentReceipt_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
   propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
+  sophiaSnapshots       SophiaSnapshot[]        @relation("SophiaSnapshot_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
   bankLinks             BankLink[]              @relation("BankLink_clientId")
   bankTransfers         BankTransfer[]          @relation("BankTransfer_clientId")
@@ -258,6 +259,21 @@ model PropertyContract {
 
   @@index([clientId, propertyId])
   @@map("property_contracts")
+}
+
+/// Snapshot diário dos KPIs do dashboard (a "leitura diária" da SophIA).
+/// 1 por cliente (upsert). A SophIA usa dados ao vivo, mas isto registra a
+/// última indexação e serve de cache/fallback.
+model SophiaSnapshot {
+  id        String   @id @default(cuid())
+  clientId  String   @unique
+  kpis      Json
+  indexedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client Client @relation("SophiaSnapshot_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("sophia_snapshots")
 }
 
 model GlAuditSnapshot {
