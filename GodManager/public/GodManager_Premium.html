@@ -1576,6 +1576,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_results">RESULTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
+ <div class="ss" onclick="gmInvestModalOpen()" id="nav-invest" style="padding-left:16px"><span>Invest Home</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
  <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span data-i18n="nav_bookkeeping">Bookkeeping</span></div>
  <div class="ss" onclick="window.open('/gaap.html','_blank','noopener')" id="nav-gaap-results" style="padding-left:16px"><span data-i18n="gaap">GAAP</span></div>
@@ -9510,7 +9511,7 @@ var GM_MENU_ACCESS_SECTIONS=[
  {key:'compliance',label:'COMPLIANCE',items:[{key:'licenses',label:'Licenses'},{key:'1099',label:'1099 / IRS'},{key:'gaap',label:'GAAP'}]},
  {key:'operations',label:'OPERATIONS',items:[{key:'phonelines',label:'Phone Lines'},{key:'vault',label:'Vault'},{key:'cars',label:'Cars & Insurance'},{key:'inspections',label:'Inspections'},{key:'tasks',label:'Tasks'}]},
  {key:'integrations',label:'INTEGRATIONS',items:[{key:'integrations',label:'Connect'},{key:'ramp',label:'Ramp'},{key:'quickbooks',label:'QuickBooks'},{key:'appfolio-upload',label:'AppFolio Upload'}]},
- {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
+ {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'invest',label:'Invest Home'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
  {key:'ai-assistant',label:'AI ASSISTANT',items:[{key:'bookkeeping-ai',label:'Bookkeeping AI'},{key:'analytics',label:'Analytics'},{key:'auditoria-2026',label:'Auditoria 2026'}]},
  {key:'admin',label:'ADMIN',items:[{key:'admin-dashboard',label:'Dashboard Admin'},{key:'clients',label:'Clients'},{key:'admin-users',label:'Users'},{key:'backup',label:'Backup & Restore'},{key:'settings-gm',label:'Settings'},{key:'gross-expenses',label:'Gross & Expenses'},{key:'forms-received',label:'Forms Received'},{key:'admin-audit',label:'Audit Log'},{key:'org-chart',label:'Org Chart'}]},
  {key:'mycompany',label:'MY COMPANY',items:[{key:'client-users',label:'Equipe'},{key:'audit-log-tenant',label:'Audit Log'},{key:'settings-co',label:'Settings'}]}
@@ -31178,6 +31179,33 @@ function gmDelinquencyModalClose(){
  m.remove();
 }
 window.gmDelinquencyModalOpen=gmDelinquencyModalOpen;
+/* Modal fullscreen com iframe para /admin/invest (Invest Home) */
+function gmInvestModalOpen(){
+ var rIv=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(rIv!=='super_admin'&&rIv!=='admin'&&rIv!=='manager'){if(typeof showToast==='function')showToast('Acesso negado.','error');return;}
+ var existing=document.getElementById('gm-invest-modal');
+ if(existing){existing.style.display='flex';return;}
+ var _cid='';try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null;_cid=(_ac&&_ac.id)?String(_ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(_e){}
+ var _src='/admin/invest'+(_cid?('?clientId='+encodeURIComponent(_cid)):'');
+ var overlay=document.createElement('div');
+ overlay.id='gm-invest-modal';
+ overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+ overlay.innerHTML=''
+  +'<div style="position:relative;background:#fff;width:100%;max-width:1500px;height:calc(100vh - 32px);border-radius:12px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.4);display:flex;flex-direction:column">'
+  +'<div style="padding:14px 20px;border-bottom:1px solid #e8e3d8;display:flex;align-items:center;justify-content:space-between;background:#faf8f1;flex-shrink:0">'
+   +'<span style="font-family:\'Sora\',sans-serif;font-size:14px;font-weight:600;color:#1a2332">Invest Home — rentabilidade por casa</span>'
+   +'<button onclick="gmInvestModalClose()" aria-label="Fechar" style="background:transparent;border:none;width:34px;height:34px;border-radius:6px;cursor:pointer;color:#4a5568;font-size:20px">&times;</button>'
+  +'</div>'
+  +'<div style="flex:1;overflow:hidden;background:#fff"><iframe id="gm-invest-iframe" src="'+_src+'" style="width:100%;height:100%;border:none;display:block" title="Invest Home"></iframe></div>'
+  +'</div>';
+ document.body.appendChild(overlay);
+ var esc=function(e){if(e.key==='Escape')gmInvestModalClose();};
+ overlay._escHandler=esc;document.addEventListener('keydown',esc);
+ overlay.addEventListener('click',function(e){if(e.target===overlay)gmInvestModalClose();});
+}
+function gmInvestModalClose(){var m=document.getElementById('gm-invest-modal');if(!m)return;if(m._escHandler)document.removeEventListener('keydown',m._escHandler);m.remove();}
+window.gmInvestModalOpen=gmInvestModalOpen;
+window.gmInvestModalClose=gmInvestModalClose;
 window.gmDelinquencyModalClose=gmDelinquencyModalClose;
 
 window.__bkAiMessages=window.__bkAiMessages||[];

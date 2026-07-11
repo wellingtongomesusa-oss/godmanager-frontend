@@ -124,6 +124,8 @@ model Client {
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
   propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
   sophiaSnapshots       SophiaSnapshot[]        @relation("SophiaSnapshot_clientId")
+  propertyInvestments   PropertyInvestment[]    @relation("PropertyInvestment_clientId")
+  investSettings        InvestSettings?         @relation("InvestSettings_clientId")
   teamNewsItems         TeamNewsItem[]          @relation("TeamNewsItem_clientId")
   bankLinks             BankLink[]              @relation("BankLink_clientId")
   bankTransfers         BankTransfer[]          @relation("BankTransfer_clientId")
@@ -274,6 +276,43 @@ model SophiaSnapshot {
   client Client @relation("SophiaSnapshot_clientId", fields: [clientId], references: [id], onDelete: Cascade)
 
   @@map("sophia_snapshots")
+}
+
+/// Valor de mercado do imóvel por propriedade (Invest Home). Valor MANUAL sempre
+/// vence sobre o puxado do Rentcast; guarda a fonte + data.
+model PropertyInvestment {
+  id             String   @id @default(cuid())
+  clientId       String
+  propertyId     String
+  value          Decimal  @default(0) @db.Decimal(14, 2)
+  valueSource    String   @default("manual") // manual | rentcast
+  valueUpdatedAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  client   Client   @relation("PropertyInvestment_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, propertyId])
+  @@index([clientId])
+  @@map("property_investments")
+}
+
+/// Premissas globais de investimento + cache do câmbio USD->BRL (1 por cliente).
+model InvestSettings {
+  id           String   @id @default(cuid())
+  clientId     String   @unique
+  downPct      Decimal  @default(0.25) @db.Decimal(6, 4)
+  rate         Decimal  @default(0.07) @db.Decimal(6, 4)
+  termYears    Int      @default(30)
+  opexPct      Decimal  @default(0) @db.Decimal(6, 4)
+  revenueBasis String   @default("gross") // gross | owner | payouts
+  fxBrl        Decimal? @db.Decimal(10, 4)
+  fxUpdatedAt  DateTime?
+  updatedAt    DateTime @updatedAt
+
+  client Client @relation("InvestSettings_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("invest_settings")
 }
 
 model GlAuditSnapshot {
