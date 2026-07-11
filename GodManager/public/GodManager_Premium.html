@@ -7248,6 +7248,25 @@ async function gmPickCompany(title,onPick){
  if(ok)ok.onclick=function(){var cid=sel.value;if(!cid){alert('Escolha uma empresa.');return;}ov.remove();if(typeof onPick==='function')onPick(cid);};
 }
 window.gmPickCompany=gmPickCompany;
+/* Ditado por voz → transcreve no campo (Web Speech API, PT-BR). Toggle: clica p/ iniciar, clica p/ parar. */
+window.gmMicRec=null;
+function gmMicTranscribe(inputId){
+ var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ var inp=document.getElementById(inputId);
+ if(!inp)return;
+ var resetBtns=function(){var bs=document.querySelectorAll('[data-gm-mic]');for(var i=0;i<bs.length;i++){bs[i].style.background='';bs[i].textContent='🎤';}};
+ if(window.gmMicRec){try{window.gmMicRec.stop();}catch(e){}window.gmMicRec=null;resetBtns();return;}
+ if(!SR){alert('Transcrição por voz não é suportada neste navegador. Use o Google Chrome.');return;}
+ var rec=new SR();rec.lang='pt-BR';rec.interimResults=true;rec.continuous=true;
+ var base=inp.value?(inp.value.replace(/\s+$/,'')+' '):'';var finalTxt='';
+ rec.onresult=function(ev){var interim='';for(var i=ev.resultIndex;i<ev.results.length;i++){var t=ev.results[i][0].transcript;if(ev.results[i].isFinal)finalTxt+=t+' ';else interim+=t;}inp.value=base+finalTxt+interim;try{inp.dispatchEvent(new Event('input'));}catch(_e){}};
+ rec.onerror=function(e){console.warn('gmMic',e&&e.error);window.gmMicRec=null;resetBtns();if(e&&(e.error==='not-allowed'||e.error==='service-not-allowed'))alert('Permita o microfone no navegador para ditar.');};
+ rec.onend=function(){window.gmMicRec=null;resetBtns();};
+ window.gmMicRec=rec;
+ try{rec.start();}catch(e){window.gmMicRec=null;return;}
+ var bs=document.querySelectorAll('[data-gm-mic="'+inputId+'"]');for(var i=0;i<bs.length;i++){bs[i].style.background='#fee2e2';bs[i].textContent='⏹';}
+}
+window.gmMicTranscribe=gmMicTranscribe;
 
 function gmRentFmtMoney(v){var n=Number(v);if(!isFinite(n))return '—';return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function gmRentMonthName(p){var nm=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];var parts=String(p).split('-');var mi=parseInt(parts[1],10)-1;return (nm[mi]||p)+'/'+(parts[0]||'');}
@@ -16073,6 +16092,7 @@ async function ltOpenDetail(id){
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Comentários / Histórico da casa</div>
  <div style="display:flex;gap:6px;margin-bottom:10px">
  <textarea id="lt-detail-comment-input" rows="2" placeholder="Anote a conversa ou observação desta casa…" style="flex:1;padding:8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;background:var(--sand);color:var(--ink)"></textarea>
+ <button type="button" data-gm-mic="lt-detail-comment-input" onclick="gmMicTranscribe('lt-detail-comment-input')" title="Ditar por voz" style="padding:8px 10px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:14px;cursor:pointer">🎤</button>
  <button type="button" onclick="ltDetailAddComment('${r._apiId||r.id}')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap">Adicionar</button>
  </div>
  <div id="lt-detail-comments-list" style="font-size:12px;color:var(--ink3)">Carregando…</div>
@@ -38176,6 +38196,7 @@ window.gmAnalyticsLoad=async function(){
           '<textarea class="gmc-textarea" id="gmc-input" placeholder="Escreva um comentário..."></textarea>'+
           '<div class="gmc-submit-row">'+
             '<span class="gmc-hint">Visível para todos com acesso</span>'+
+            '<button type="button" data-gm-mic="gmc-input" onclick="gmMicTranscribe(\'gmc-input\')" title="Ditar por voz (transcreve no comentário)" style="padding:6px 11px;border:1px solid #d1d5db;border-radius:6px;background:#f8fafc;cursor:pointer;font-size:15px;margin-left:auto;margin-right:6px">🎤</button>'+
             '<button type="button" class="gmc-submit" id="gmc-submit" disabled>Enviar</button>'+
           '</div>'+
         '</div>'+
