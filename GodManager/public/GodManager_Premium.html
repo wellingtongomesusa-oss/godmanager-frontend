@@ -3691,7 +3691,11 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
      <div id="rent-receipts-net" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px;letter-spacing:-.01em">&mdash;</div>
      <div id="rent-receipts-gross" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
     </div>
-    <button type="button" onclick="gmRentReceiptsOpen()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📊 Gráfico e detalhe por casa</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+     <input type="file" id="rent-receipts-gl-file" accept=".csv,text/csv" style="display:none" onchange="gmRentReceiptsImport(this)">
+     <button type="button" onclick="var f=document.getElementById('rent-receipts-gl-file');if(f)f.click()" title="Suba o General Ledger (CSV) do AppFolio" style="padding:9px 16px;border:none;border-radius:8px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬆ Importar General Ledger</button>
+     <button type="button" onclick="gmRentReceiptsOpen()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📊 Gráfico e detalhe por casa</button>
+    </div>
    </div>
   </div>
   <div id="trust-remap-box" style="margin-top:18px;padding:12px 14px;border:1px dashed var(--border2);border-radius:10px;background:var(--cream);display:none;align-items:center;gap:10px;flex-wrap:wrap">
@@ -7355,6 +7359,25 @@ function gmRentReceiptsOpen(){
  gmRentReceiptsRenderMonth(lastMonth);
 }
 window.gmRentReceiptsOpen=gmRentReceiptsOpen;
+async function gmRentReceiptsImport(inputEl){
+ if(!inputEl||!inputEl.files||!inputEl.files[0])return;
+ var file=inputEl.files[0];
+ var subEl=document.getElementById('rent-receipts-sub');
+ var prev=subEl?subEl.textContent:'';
+ if(subEl)subEl.textContent='Importando '+file.name+'…';
+ try{
+  var fd=new FormData();fd.append('file',file);
+  if(typeof gmBankAccountsClientPayload==='function'){var pl=gmBankAccountsClientPayload();if(pl&&pl.clientId)fd.append('clientId',pl.clientId);}
+  var res=await fetch('/api/owner-statement/rent-receipts',{method:'POST',credentials:'include',body:fd});
+  var j=await res.json().catch(function(){return{};});
+  try{inputEl.value='';}catch(_e){}
+  if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));if(subEl)subEl.textContent=prev;return;}
+  var msg='General Ledger importado: '+j.saved+' lançamento(s), '+((j.months&&j.months.length)||0)+' mês(es)'+(j.unmatched?(' · '+j.unmatched+' sem casar'):'');
+  if(typeof showToast==='function')showToast(msg,'success');else alert(msg);
+  if(typeof gmRentReceiptsLoad==='function')await gmRentReceiptsLoad();
+ }catch(e){console.warn('gmRentReceiptsImport',e);alert('Erro de rede ao importar.');if(subEl)subEl.textContent=prev;}
+}
+window.gmRentReceiptsImport=gmRentReceiptsImport;
 async function gmTrustSwapAccounts(){
  var selA=document.getElementById('trust-remap-a');
  var selB=document.getElementById('trust-remap-b');
