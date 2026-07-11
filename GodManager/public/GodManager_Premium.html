@@ -1502,6 +1502,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement" data-i18n="nav_owner_statement">Owner Statement</div>
  <div class="ss" onclick="nav('statement-individual')" id="nav-statement-individual" data-i18n="nav_statement_individual">Statement individual</div>
  <div class="ss" onclick="nav('tenants')" id="nav-tenants" data-i18n="nav_tenants">Tenants</div>
+ <div class="ss" onclick="gmContractsHubOpen()" id="nav-contracts">Contratos</div>
  <div class="ss" onclick="nav('leases-history')" id="nav-leases-history" data-i18n="nav_leases_history">Lease history</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties" data-i18n="ranking_properties">Ranking Properties</div>
  <div class="ss" onclick="nav('renovations')" id="nav-renovations" data-i18n="renovations">Renovations</div>
@@ -9562,7 +9563,7 @@ async function gmClientUsersCreateSubmit(e){
 var GM_MENU_ACCESS_SECTIONS=[
  {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Statement'}]},
  {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'},{key:'support',label:'Suporte'}]},
- {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'statement-individual',label:'Statement individual'},{key:'tenants',label:'Tenants'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
+ {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'statement-individual',label:'Statement individual'},{key:'tenants',label:'Tenants'},{key:'contracts',label:'Contratos'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
  {key:'expenses',label:'EXPENSES',items:[{key:'ltexpenses',label:'Expenses'},{key:'ltcleanings',label:'Cleanings'},{key:'vendors',label:'Vendors'},{key:'jobs',label:'Jobs'},{key:'jobs-follow',label:'Acompanhamento'}]},
  {key:'billing',label:'BILLING',items:[{key:'billing',label:'Invoice / Bill'},{key:'delinquency',label:'Cobrança (Atrasos)'}]},
  {key:'ownerportal',label:'OWNER PORTAL',items:[{key:'ownerportal',label:'Owner Portal'},{key:'ltownerpay',label:'Owner Payment'},{key:'owner-statement-detail',label:'Owner Statement (Detalhe)'},{key:'owner-audit',label:'Auditoria Repasses'},{key:'listings',label:'Listings'}]},
@@ -31272,6 +31273,37 @@ function gmInvestModalOpen(){
 }
 function gmInvestModalClose(){var m=document.getElementById('gm-invest-modal');if(!m)return;if(m._escHandler)document.removeEventListener('keydown',m._escHandler);m.remove();}
 window.gmInvestModalOpen=gmInvestModalOpen;
+
+/* Modal fullscreen com iframe para /admin/contracts (Contratos por casa) */
+function gmContractsHubOpen(){
+ var rCt=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ if(rCt!=='super_admin'&&rCt!=='admin'&&rCt!=='manager'){if(typeof showToast==='function')showToast('Acesso negado.','error');return;}
+ var existing=document.getElementById('gm-contracts-modal');
+ if(existing){existing.style.display='flex';return;}
+ var _cid='';try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null;_cid=(_ac&&_ac.id)?String(_ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(_e){}
+ var _src='/admin/contracts'+(_cid?('?clientId='+encodeURIComponent(_cid)):'');
+ var overlay=document.createElement('div');
+ overlay.id='gm-contracts-modal';
+ overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+ overlay.innerHTML=''
+  +'<div style="position:relative;background:#fff;width:100%;max-width:1400px;height:calc(100vh - 32px);border-radius:12px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.4);display:flex;flex-direction:column">'
+  +'<div style="padding:14px 20px;border-bottom:1px solid #e8e3d8;display:flex;align-items:center;justify-content:space-between;background:#faf8f1;flex-shrink:0">'
+   +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+    +'<span style="font-family:\'Sora\',sans-serif;font-size:14px;font-weight:600;color:#1a2332">Contratos — por casa</span>'
+   +'</div>'
+   +'<button onclick="gmContractsHubClose()" aria-label="Fechar" style="background:transparent;border:none;width:34px;height:34px;border-radius:6px;cursor:pointer;color:#4a5568;font-size:20px">&times;</button>'
+  +'</div>'
+  +'<div style="flex:1;overflow:hidden;background:#fff"><iframe id="gm-contracts-iframe" src="'+_src+'" style="width:100%;height:100%;border:none;display:block" title="Contratos"></iframe></div>'
+  +'</div>';
+ document.body.appendChild(overlay);
+ var escH=function(e){if(e.key==='Escape')gmContractsHubClose();};
+ overlay._escHandler=escH;document.addEventListener('keydown',escH);
+ overlay.addEventListener('click',function(e){if(e.target===overlay)gmContractsHubClose();});
+}
+function gmContractsHubClose(){var m=document.getElementById('gm-contracts-modal');if(!m)return;if(m._escHandler)document.removeEventListener('keydown',m._escHandler);m.remove();}
+window.gmContractsHubOpen=gmContractsHubOpen;
+window.gmContractsHubClose=gmContractsHubClose;
 window.gmInvestModalClose=gmInvestModalClose;
 window.gmDelinquencyModalClose=gmDelinquencyModalClose;
 
