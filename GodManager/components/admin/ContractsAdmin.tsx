@@ -160,7 +160,7 @@ export function ContractsAdmin() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-8 py-8">
+    <div className="w-full px-6 py-6 sm:px-8">
       <input
         ref={fileInput}
         type="file"

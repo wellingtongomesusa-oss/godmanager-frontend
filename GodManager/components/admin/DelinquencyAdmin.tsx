@@ -158,7 +158,7 @@ export function DelinquencyAdmin() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1320px] px-8 py-8">
+    <div className="w-full px-6 py-6 sm:px-8">
       <div className="mb-6 flex items-center gap-3">
         <Mail className="h-6 w-6 text-[#22558c]" />
         <div>

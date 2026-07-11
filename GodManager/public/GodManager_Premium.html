@@ -1644,6 +1644,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="tr">
  <button type="button" id="btn-exit-client" onclick="exitClientView()" data-i18n="exit_client">Exit Client View</button>
  <span class="tsn" id="tb-session-label">Sessão: admin</span>
+ <select id="gm-topbar-company" onchange="gmTopbarCompanyChange(this.value)" title="Trocar de empresa" style="display:none;padding:5px 9px;border:1px solid var(--border2);border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;background:var(--sand);color:var(--ink);max-width:190px;margin-right:8px;cursor:pointer"></select>
  <button type="button" id="btn-topbar-clients" class="tb-clients" onclick="nav('clients')" style="display:none" data-i18n="clients">Clients</button>
  <div class="tb-lang-wrap" style="position:relative;display:inline-block">
    <button type="button" class="tb" id="lang-current" onclick="gmLangToggle()" aria-haspopup="true" aria-expanded="false" title="Change language">EN</button>
@@ -9101,6 +9102,7 @@ function applyPermissions(level){
  if(tbc)tbc.style.display=(isPlatform&&lvl==='ADMIN')?'inline-flex':'none';
  var rPermSa=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
  var isSuperAdmin=rPermSa==='super_admin';
+ if(isSuperAdmin&&typeof gmTopbarCompanyInit==='function'){void gmTopbarCompanyInit();}
  if(gmAd)gmAd.style.display=(isPlatform&&lvl==='ADMIN'&&isSuperAdmin)?'block':'none';
  var navAuditPlat=document.getElementById('nav-admin-audit');
  var navAuditTenant=document.getElementById('nav-audit-log-tenant');
@@ -31304,6 +31306,36 @@ function gmContractsHubOpen(){
 function gmContractsHubClose(){var m=document.getElementById('gm-contracts-modal');if(!m)return;if(m._escHandler)document.removeEventListener('keydown',m._escHandler);m.remove();}
 window.gmContractsHubOpen=gmContractsHubOpen;
 window.gmContractsHubClose=gmContractsHubClose;
+
+/* Dropdown de empresa no topo (super_admin) — troca de empresa sem precisar de "Login As" */
+async function gmTopbarCompanyInit(){
+ var sel=document.getElementById('gm-topbar-company');
+ if(!sel)return;
+ var u=window.__gmCurrentUser;
+ if(!u||String(u.role||'').toLowerCase()!=='super_admin'){sel.style.display='none';return;}
+ try{
+  if(!Array.isArray(window.__gmTopbarClients)){
+   var res=await fetch('/api/admin/clients',{credentials:'include',cache:'no-store'});
+   var j=await res.json().catch(function(){return null;});
+   if(!j||!j.ok||!Array.isArray(j.clients)){return;}
+   window.__gmTopbarClients=j.clients.map(function(c){return {id:String(c.id),name:String(c.companyName||c.company||c.name||c.id)};});
+  }
+  var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+  var curId=ac&&ac.id?String(ac.id):'';
+  var opts='<option value="">— escolher empresa —</option>';
+  window.__gmTopbarClients.forEach(function(c){
+   opts+='<option value="'+String(c.id).replace(/"/g,'&quot;')+'"'+(String(c.id)===curId?' selected':'')+'>'+String(c.name).replace(/</g,'&lt;')+'</option>';
+  });
+  sel.innerHTML=opts;
+  sel.style.display='inline-block';
+ }catch(e){console.warn('gmTopbarCompanyInit',e);}
+}
+function gmTopbarCompanyChange(id){
+ if(!id){if(typeof exitClientView==='function')exitClientView();return;}
+ if(typeof loginAsClient==='function')loginAsClient(id);
+}
+window.gmTopbarCompanyInit=gmTopbarCompanyInit;
+window.gmTopbarCompanyChange=gmTopbarCompanyChange;
 window.gmInvestModalClose=gmInvestModalClose;
 window.gmDelinquencyModalClose=gmDelinquencyModalClose;
 
