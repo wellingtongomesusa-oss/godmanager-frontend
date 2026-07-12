@@ -2805,6 +2805,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
   <div style="border:1px solid var(--border);border-radius:9px;padding:14px">
    <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Despesa da Manager Prop</div>
+   <div id="gm-ramp-qb-wrap" style="display:none;margin-bottom:12px;border:1px dashed var(--border2);border-radius:8px;padding:10px 12px;background:var(--cream)">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+     <input type="checkbox" id="gm-ramp-qb-post" onchange="gmRampQbToggle()" style="width:15px;height:15px;accent-color:#2ca01c;cursor:pointer">
+     <span style="font-size:11px;font-weight:700;color:#2ca01c">Também lançar no QuickBooks (Purchase)</span>
+    </label>
+    <div id="gm-ramp-qb-fields" style="display:none">
+     <label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">CONTA DE DESPESA (débito)</label>
+     <select id="gm-ramp-qb-expense" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-bottom:8px"></select>
+     <label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">PAGO DE (crédito — cartão/banco)</label>
+     <select id="gm-ramp-qb-payment" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+    </div>
+   </div>
    <button type="button" data-ramp-act="manager" onclick="gmRampPostSubmit('MANAGER_PROP')" style="width:100%;padding:9px;background:var(--sand);color:var(--ink);border:1px solid var(--border2);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Marcar como despesa Manager Prop</button>
    <p style="font-size:10px;color:var(--ink3);margin:8px 0 0;line-height:1.4">Custo da empresa (não vai para o statement de nenhuma casa).</p>
   </div>
@@ -2873,6 +2885,42 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div style="padding:0 18px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
    <button type="button" onclick="gmQbPostExpense()" style="padding:9px 18px;border:none;border-radius:7px;background:#2ca01c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Lançar no QuickBooks</button>
    <span id="qb-post-result" style="font-size:12px;color:var(--ink3)"></span>
+  </div>
+ </div>
+ <!-- #13 — Criar invoice no QuickBooks (com link de pagamento) -->
+ <div id="qb-invoice-panel" style="display:none;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden">
+  <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+   <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#2ca01c">Criar invoice (com link de pagamento)</div>
+   <span id="qb-inv-status" style="font-size:11px;color:var(--ink3)">—</span>
+  </div>
+  <div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+   <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">CLIENTE (customer)</label>
+    <select id="qb-inv-customer" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+   </div>
+   <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">PRODUTO/SERVIÇO (item)</label>
+    <select id="qb-inv-item" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+   </div>
+   <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">VALOR ($)</label>
+    <input id="qb-inv-amount" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)">
+   </div>
+   <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">VENCIMENTO</label>
+    <input id="qb-inv-due" type="date" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+   </div>
+   <div style="grid-column:1/-1">
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">DESCRIÇÃO</label>
+    <input id="qb-inv-desc" type="text" placeholder="Ex.: Aluguel Jul/2026 — 308 Loch Court" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+   </div>
+   <label style="grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);cursor:pointer">
+    <input type="checkbox" id="qb-inv-online" checked style="width:15px;height:15px;accent-color:#2ca01c;cursor:pointer"> Habilitar link de pagamento online (requer QuickBooks Payments)
+   </label>
+  </div>
+  <div style="padding:0 18px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+   <button type="button" onclick="gmQbCreateInvoice()" style="padding:9px 18px;border:none;border-radius:7px;background:#2ca01c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Criar invoice</button>
+   <span id="qb-inv-result" style="font-size:12px;color:var(--ink3)"></span>
   </div>
  </div>
  <div class="gm-ix-kpi-grid" id="qb-kpi-wrap">
@@ -7726,6 +7774,7 @@ async function gmQbInit(){
    acts.innerHTML='<button type="button" onclick="gmQbConnect()" style="padding:8px 14px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">Reconectar</button>'
     +'<button type="button" onclick="gmQbDisconnect()" style="padding:8px 14px;border:1px solid var(--red-bd,#e0b4b4);border-radius:7px;background:var(--red-bg,#fdecec);color:var(--red,#b83030);font-size:12px;font-weight:600;cursor:pointer">Desconectar</button>';
    var pp=document.getElementById('qb-post-panel');if(pp)pp.style.display='block';
+   var ip=document.getElementById('qb-invoice-panel');if(ip)ip.style.display='block';
    if(typeof gmQbPostAcctsLoad==='function')void gmQbPostAcctsLoad();
   }else{
    if(dot)dot.style.background='var(--ink3)';
@@ -7734,6 +7783,7 @@ async function gmQbInit(){
    if(sub)sub.textContent='Não conectado';
    acts.innerHTML='<button type="button" onclick="gmQbConnect()" style="padding:9px 18px;border:none;border-radius:7px;background:#2ca01c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Conectar QuickBooks</button>';
    var pp2=document.getElementById('qb-post-panel');if(pp2)pp2.style.display='none';
+   var ip2=document.getElementById('qb-invoice-panel');if(ip2)ip2.style.display='none';
   }
  }catch(e){title.textContent='Erro de rede ao verificar QuickBooks';}
 }
@@ -7756,6 +7806,13 @@ async function gmQbPostAcctsLoad(){
   if(eAcct)eAcct.innerHTML=gmQbOptList((j.accounts&&j.accounts.expense)||[],function(a){return a.name+(a.accountSubType?(' · '+a.accountSubType):'');});
   if(pAcct)pAcct.innerHTML=gmQbOptList((j.accounts&&j.accounts.payment)||[],function(a){return a.name+' ('+a.accountType+')';});
   if(vSel)vSel.innerHTML='<option value="">— Sem vendor —</option>'+gmQbOptList(j.vendors||[]);
+  // Invoice (#13): customers + items
+  var cSel=document.getElementById('qb-inv-customer');
+  var iSel=document.getElementById('qb-inv-item');
+  if(cSel)cSel.innerHTML='<option value="">— Selecionar cliente —</option>'+gmQbOptList(j.customers||[]);
+  if(iSel)iSel.innerHTML='<option value="">— Selecionar item —</option>'+gmQbOptList(j.items||[]);
+  var invSt=document.getElementById('qb-inv-status');
+  if(invSt)invSt.textContent=((j.customers||[]).length)+' clientes · '+((j.items||[]).length)+' itens';
   if(st){st.textContent='✓ '+(((j.accounts&&j.accounts.expense)||[]).length)+' contas de despesa · '+((j.vendors||[]).length)+' vendors';st.style.color='#2a6e4e';}
   gmQbPostModeChange();
  }catch(e){if(st){st.textContent='Erro de rede.';st.style.color='var(--red)';}}
@@ -7807,6 +7864,36 @@ async function gmQbPostExpense(){
  }catch(e){if(out){out.textContent='Erro de rede.';out.style.color='var(--red)';}}
 }
 window.gmQbPostExpense=gmQbPostExpense;
+async function gmQbCreateInvoice(){
+ var customerId=(document.getElementById('qb-inv-customer')||{}).value||'';
+ var itemId=(document.getElementById('qb-inv-item')||{}).value||'';
+ var amount=parseFloat((document.getElementById('qb-inv-amount')||{}).value||'0');
+ var due=(document.getElementById('qb-inv-due')||{}).value||'';
+ var desc=(document.getElementById('qb-inv-desc')||{}).value||'';
+ var online=!!(document.getElementById('qb-inv-online')||{}).checked;
+ var out=document.getElementById('qb-inv-result');
+ if(!customerId){if(out){out.textContent='Selecione o cliente.';out.style.color='var(--red)';}return;}
+ if(!itemId){if(out){out.textContent='Selecione o item.';out.style.color='var(--red)';}return;}
+ if(!(amount>0)){if(out){out.textContent='Informe um valor.';out.style.color='var(--red)';}return;}
+ var payload=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};
+ payload.customerId=customerId;payload.itemId=itemId;payload.amount=amount;payload.allowOnlinePayment=online;
+ if(due)payload.dueDate=due;
+ if(desc){payload.description=desc;payload.memo=desc;}
+ if(out){out.textContent='Criando invoice…';out.style.color='var(--ink3)';}
+ try{
+  var r=await fetch('/api/quickbooks/invoice',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){if(out){out.textContent=(j&&j.error)||'Falha ao criar invoice.';out.style.color='var(--red)';}return;}
+  if(out){
+   var txt='✓ Invoice criada'+(j.docNumber?(' #'+j.docNumber):'')+'.';
+   out.innerHTML=gmHtmlEscAttr(txt)+(j.invoiceLink?(' <a href="'+gmHtmlEscAttr(j.invoiceLink)+'" target="_blank" rel="noopener" style="color:#2ca01c;font-weight:700">Link de pagamento ↗</a>'):' (sem link — verifique QuickBooks Payments)');
+   out.style.color='#2a6e4e';
+  }
+  var amtEl=document.getElementById('qb-inv-amount');if(amtEl)amtEl.value='';
+  var dscEl=document.getElementById('qb-inv-desc');if(dscEl)dscEl.value='';
+ }catch(e){if(out){out.textContent='Erro de rede.';out.style.color='var(--red)';}}
+}
+window.gmQbCreateInvoice=gmQbCreateInvoice;
 function gmQbConnect(){
  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
  window.location.href='/api/quickbooks/connect'+q;
@@ -10651,7 +10738,8 @@ function gmRampPostCellHtml(txId){
  var posted=(window.__gmRampPostings&&window.__gmRampPostings[txId])||null;
  if(posted){
   var tgt=(posted.target==='MANAGER_PROP')?'Manager Prop':'Statement';
-  return '<span title="Já lançado" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--green)">✓ '+tgt+'</span>';
+  var qbTag=posted.qb?'<span title="Enviado ao QuickBooks" style="margin-left:5px;font-size:9px;font-weight:700;color:#2ca01c">· QB</span>':'';
+  return '<span title="Já lançado" style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;color:var(--green)">✓ '+tgt+qbTag+'</span>';
  }
  return '<button type="button" data-ramp-post-id="'+gmHtmlEscAttr(txId)+'" onclick="gmRampPostOpen(this.getAttribute(&#39;data-ramp-post-id&#39;))" style="padding:4px 10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:5px;font-size:10px;font-weight:600;cursor:pointer">Lançar ▾</button>';
 }
@@ -10692,8 +10780,35 @@ function gmRampPostOpen(txId){
  var ymEl=document.getElementById('gm-ramp-post-ym');
  if(ymEl)ymEl.value=ym;
  gmRampLoadProps(); // carrega casas via /api/properties (value = id do banco)
+ gmRampQbAcctsLoad(cid); // carrega contas do QuickBooks se conectado
  var modal=document.getElementById('gm-ramp-post-modal');
  if(modal)modal.style.display='flex';
+}
+function gmRampQbToggle(){
+ var cb=document.getElementById('gm-ramp-qb-post');
+ var f=document.getElementById('gm-ramp-qb-fields');
+ if(f)f.style.display=(cb&&cb.checked)?'block':'none';
+}
+async function gmRampQbAcctsLoad(cid){
+ var wrap=document.getElementById('gm-ramp-qb-wrap');
+ if(!wrap)return;
+ wrap.style.display='none';
+ var cb=document.getElementById('gm-ramp-qb-post');if(cb)cb.checked=false;
+ var f=document.getElementById('gm-ramp-qb-fields');if(f)f.style.display='none';
+ try{
+  var q=cid?('?clientId='+encodeURIComponent(cid)):'';
+  var rs=await fetch('/api/quickbooks/status'+q,{credentials:'include',cache:'no-store'});
+  var js=await rs.json();
+  if(!js||!js.ok||!js.connected)return; // só mostra se QB conectado
+  var ra=await fetch('/api/quickbooks/accounts'+q,{credentials:'include',cache:'no-store'});
+  var ja=await ra.json();
+  if(!ra.ok||!ja.ok)return;
+  var eSel=document.getElementById('gm-ramp-qb-expense');
+  var pSel=document.getElementById('gm-ramp-qb-payment');
+  if(eSel)eSel.innerHTML=(typeof gmQbOptList==='function')?gmQbOptList((ja.accounts&&ja.accounts.expense)||[],function(a){return a.name;}):'';
+  if(pSel)pSel.innerHTML=(typeof gmQbOptList==='function')?gmQbOptList((ja.accounts&&ja.accounts.payment)||[],function(a){return a.name+' ('+a.accountType+')';}):'';
+  wrap.style.display='block';
+ }catch(e){}
 }
 async function gmRampLoadProps(){
  var sel=document.getElementById('gm-ramp-post-prop');
@@ -10729,17 +10844,29 @@ async function gmRampPostSubmit(target){
   if(!/^\d{4}-\d{2}$/.test(ym)){alert('Informe o mês (YYYY-MM).');return;}
   payload.propertyId=pid;payload.yearMonth=ym;
  }
+ var qbWanted=false;
+ if(target==='MANAGER_PROP'){
+  var qbCb=document.getElementById('gm-ramp-qb-post');
+  if(qbCb&&qbCb.checked){
+   var qe=(document.getElementById('gm-ramp-qb-expense')||{}).value||'';
+   var qp=(document.getElementById('gm-ramp-qb-payment')||{}).value||'';
+   if(!qe||!qp){alert('Selecione as contas do QuickBooks (despesa e pagamento).');return;}
+   payload.qbPost=true;payload.qbExpenseAccountId=qe;payload.qbPaymentAccountId=qp;qbWanted=true;
+  }
+ }
  var btns=document.querySelectorAll('#gm-ramp-post-modal button[data-ramp-act]');
  btns.forEach(function(b){b.disabled=true;});
  try{
   var r=await fetch('/api/ramp/post',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   var j=await r.json();
   if(!r.ok||!j.ok){alert((j&&j.error)||'Falha ao lançar.'+(j&&j.already?(' (já em '+j.already+')'):''));return;}
+  var qbOk=!!(j.qb&&j.qb.ok);
   window.__gmRampPostings=window.__gmRampPostings||{};
-  window.__gmRampPostings[ctx.txId]={target:target,propertyId:payload.propertyId||null,yearMonth:payload.yearMonth||null,amount:Number(ctx.amount).toFixed(2)};
+  window.__gmRampPostings[ctx.txId]={target:target,propertyId:payload.propertyId||null,yearMonth:payload.yearMonth||null,amount:Number(ctx.amount).toFixed(2),qb:qbOk};
   var cell=document.querySelector('[data-ramp-post-cell="'+(window.CSS&&CSS.escape?CSS.escape(ctx.txId):ctx.txId)+'"]');
   if(cell)cell.innerHTML=gmRampPostCellHtml(ctx.txId);
   gmRampPostClose();
+  if(qbWanted&&!qbOk){alert('Lançado como Manager Prop, mas o QuickBooks falhou: '+((j.qb&&j.qb.error)||'erro desconhecido'));}
  }catch(e){alert('Erro de rede ao lançar.');}
  finally{btns.forEach(function(b){b.disabled=false;});}
 }
