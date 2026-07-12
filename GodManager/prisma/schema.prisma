@@ -263,6 +263,7 @@ model RampExpensePosting {
   description         String?   @db.VarChar(300)
   transactionDate     DateTime?
   statementLineItemId String?
+  matchedExpenseId    String? // PmExpense casado (job pago via Ramp) — evita casar 2x
   qbEntityType        String?   @db.VarChar(20) // Purchase | Bill (quando empurrado ao QuickBooks)
   qbEntityId          String?
   postedById          String?

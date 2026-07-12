@@ -2824,6 +2824,11 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
   <div style="border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:12px">
    <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Débito no statement da casa</div>
+   <div id="gm-ramp-post-cands-wrap" style="display:none;margin-bottom:10px">
+    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">JOB CORRESPONDENTE (match)</label>
+    <select id="gm-ramp-post-cands" onchange="gmRampPostCandChange()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+    <p style="font-size:9px;color:var(--ink3);margin:4px 0 0">Vários jobs desse vendor batem. Escolha o certo — ele é marcado como pago via Ramp e não casa de novo.</p>
+   </div>
    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CASA</label>
    <select id="gm-ramp-post-prop" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);margin-bottom:10px"><option value="">— Selecionar casa —</option></select>
    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">MÊS (YYYY-MM)</label>
@@ -11183,13 +11188,27 @@ function gmRampPostOpen(txId){
  var ymEl=document.getElementById('gm-ramp-post-ym');
  // se houver match (vendor->casa), pré-preenche mês do job; senão o mês da transação
  var mt=(window.__gmRampMatches&&window.__gmRampMatches[txId])||null;
+ var cands=(mt&&Array.isArray(mt.candidates))?mt.candidates:[];
+ window.__gmRampPostCtx.matchedExpenseId=(mt&&mt.expenseId)||null;
  var preYm=(mt&&mt.monthRef&&/^\d{4}-\d{2}$/.test(mt.monthRef))?mt.monthRef:ym;
  if(ymEl)ymEl.value=preYm;
  gmRampLoadProps(mt&&mt.propertyId?mt.propertyId:null); // carrega casas e pré-seleciona a casa do match
+ // dropdown de candidatos (quando há mais de um job possível)
+ var cw=document.getElementById('gm-ramp-post-cands-wrap');
+ var cs=document.getElementById('gm-ramp-post-cands');
+ if(cw&&cs){
+  if(cands.length>1){
+   cs.innerHTML=cands.map(function(c,i){
+    var d=c.serviceDate?(' · '+c.serviceDate):'';
+    return '<option value="'+i+'">'+gmHtmlEscAttr(String(c.propertyLabel||'').slice(0,32))+' · $'+c.amount+d+' ('+c.confidence+')</option>';
+   }).join('');
+   window.__gmRampCands=cands;cs.value='0';cw.style.display='block';
+  }else{cw.style.display='none';window.__gmRampCands=null;}
+ }
  gmRampQbAcctsLoad(cid); // carrega contas do QuickBooks se conectado
  var hint=document.getElementById('gm-ramp-post-match-hint');
  if(hint){
-  if(mt){hint.style.display='block';hint.innerHTML='🏠 Match: <b>'+gmHtmlEscAttr(String(mt.propertyLabel||''))+'</b>'+(mt.vendorName?(' · '+gmHtmlEscAttr(mt.vendorName)):'')+' <span style="color:var(--ink3)">('+mt.confidence+')</span>';}
+  if(mt){hint.style.display='block';hint.innerHTML='🏠 Match: <b>'+gmHtmlEscAttr(String(mt.propertyLabel||''))+'</b>'+(mt.vendorName?(' · '+gmHtmlEscAttr(mt.vendorName)):'')+' <span style="color:var(--ink3)">('+mt.confidence+(cands.length>1?(' · '+cands.length+' candidatos'):'')+')</span>';}
   else{hint.style.display='none';}
  }
  var modal=document.getElementById('gm-ramp-post-modal');
@@ -11243,6 +11262,15 @@ async function gmRampLoadProps(preselectId){
  }catch(e){sel.innerHTML='<option value="">— erro ao carregar —</option>';}
 }
 function gmRampPostClose(){var m=document.getElementById('gm-ramp-post-modal');if(m)m.style.display='none';}
+function gmRampPostCandChange(){
+ var cs=document.getElementById('gm-ramp-post-cands');var cands=window.__gmRampCands;
+ if(!cs||!Array.isArray(cands))return;
+ var c=cands[parseInt(cs.value,10)||0];if(!c)return;
+ var propSel=document.getElementById('gm-ramp-post-prop');if(propSel&&c.propertyId){try{propSel.value=String(c.propertyId);}catch(e){}}
+ var ymEl=document.getElementById('gm-ramp-post-ym');if(ymEl&&c.monthRef&&/^\d{4}-\d{2}$/.test(c.monthRef))ymEl.value=c.monthRef;
+ if(window.__gmRampPostCtx)window.__gmRampPostCtx.matchedExpenseId=c.expenseId||null;
+}
+window.gmRampPostCandChange=gmRampPostCandChange;
 async function gmRampPostSubmit(target){
  var ctx=window.__gmRampPostCtx;
  if(!ctx){gmRampPostClose();return;}
@@ -11255,6 +11283,7 @@ async function gmRampPostSubmit(target){
   if(!pid){alert('Selecione a casa.');return;}
   if(!/^\d{4}-\d{2}$/.test(ym)){alert('Informe o mês (YYYY-MM).');return;}
   payload.propertyId=pid;payload.yearMonth=ym;
+  if(ctx.matchedExpenseId)payload.matchedExpenseId=ctx.matchedExpenseId;
  }
  var qbWanted=false;
  if(target==='MANAGER_PROP'){
@@ -11279,6 +11308,8 @@ async function gmRampPostSubmit(target){
   if(cell)cell.innerHTML=gmRampPostCellHtml(ctx.txId);
   gmRampPostClose();
   if(qbWanted&&!qbOk){alert('Lançado como Manager Prop, mas o QuickBooks falhou: '+((j.qb&&j.qb.error)||'erro desconhecido'));}
+  // se casou com um job, recarrega os matches p/ o expense sumir dos candidatos
+  if(payload.matchedExpenseId&&typeof gmRampMatchRefresh==='function')try{gmRampMatchRefresh();}catch(eM){}
  }catch(e){alert('Erro de rede ao lançar.');}
  finally{btns.forEach(function(b){b.disabled=false;});}
 }

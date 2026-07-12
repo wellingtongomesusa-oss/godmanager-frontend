@@ -154,6 +154,7 @@ export async function POST(req: Request) {
             description: baseDesc,
             transactionDate,
             statementLineItemId: li.id,
+            matchedExpenseId: body?.matchedExpenseId ? String(body.matchedExpenseId).slice(0, 40) : null,
             postedById: user.id,
             postedByEmail: user.email ?? null,
           },
