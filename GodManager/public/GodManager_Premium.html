@@ -3706,6 +3706,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </div>
    </div>
   </div>
+  <div id="pnl-card" style="display:none;margin-top:16px;border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:20px 24px;position:relative;overflow:hidden">
+   <div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:#22558c"></div>
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+    <div>
+     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#22558c">Lucro por casa &middot; P&amp;L (General Ledger)</div>
+     <div id="pnl-sub" style="font-size:11px;color:var(--ink3);margin-top:3px">&mdash;</div>
+     <div id="pnl-net" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px">&mdash;</div>
+     <div id="pnl-detail" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+    </div>
+    <button type="button" onclick="gmPnlOpen()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📊 P&amp;L por casa</button>
+   </div>
+  </div>
   <div id="trust-remap-box" style="margin-top:18px;padding:12px 14px;border:1px dashed var(--border2);border-radius:10px;background:var(--cream);display:none;align-items:center;gap:10px;flex-wrap:wrap">
    <span style="font-size:12px;color:var(--ink2);font-weight:700">Ajustar contas:</span>
    <select id="trust-remap-a" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">
@@ -7174,6 +7186,7 @@ async function gmTrustStatementRender(){
  if(remapBox)remapBox.style.display=canEdit?'flex':'none';
  if(typeof gmTrustLoadStatements==='function')void gmTrustLoadStatements();
  if(typeof gmRentReceiptsLoad==='function')void gmRentReceiptsLoad();
+ if(typeof gmPnlLoad==='function')void gmPnlLoad();
 }
 window.gmTrustStatementRender=gmTrustStatementRender;
 async function gmTrustLoadStatements(){
@@ -7452,6 +7465,76 @@ async function gmGlPnlUpload(inputEl){
  }catch(e){console.warn('gmGlPnlUpload',e);if(st){st.textContent='Erro de rede.';st.style.color='var(--red)';}}
 }
 window.gmGlPnlUpload=gmGlPnlUpload;
+async function gmPnlLoad(){
+ var card=document.getElementById('pnl-card');
+ if(!card)return;
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var res=await fetch('/api/analytics/gl-pnl'+q,{credentials:'include',cache:'no-store'});
+  if(!res.ok){card.style.display='none';return;}
+  var j=await res.json().catch(function(){return null;});
+  if(!j||!j.ok||!Array.isArray(j.months)||!j.months.length){card.style.display='none';return;}
+  window.__gmPnl=j;
+  var last=j.months[j.months.length-1];
+  var set=function(id,t){var el=document.getElementById(id);if(el)el.textContent=t;};
+  set('pnl-sub',gmRentMonthName(last.month)+' · '+last.properties+' casas');
+  set('pnl-net',gmRentFmtMoney(last.net)+' líq.');
+  set('pnl-detail','Receita '+gmRentFmtMoney(last.income)+' · despesa '+gmRentFmtMoney(last.expenses)+' · mgmt fee '+gmRentFmtMoney(last.mgmtFee));
+  card.style.display='block';
+ }catch(e){card.style.display='none';}
+}
+window.gmPnlLoad=gmPnlLoad;
+function gmPnlClose(){var m=document.getElementById('gm-pnl-popup');if(m){if(m._esc)document.removeEventListener('keydown',m._esc);m.remove();}}
+window.gmPnlClose=gmPnlClose;
+function gmPnlRenderMonth(month){
+ var j=window.__gmPnl;if(!j)return;
+ var rows=(j.byProperty||[]).filter(function(r){return r.periodMonth===month;}).sort(function(a,b){return b.net-a.net;});
+ var body=document.getElementById('gm-pnl-rows');if(!body)return;
+ if(!rows.length){body.innerHTML='<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--ink3)">Sem dados.</td></tr>';return;}
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+ body.innerHTML=rows.map(function(r){
+  return '<tr style="border-bottom:1px solid var(--border)">'
+   +'<td style="padding:7px 10px;font-size:12px;color:var(--ink)">'+esc(r.propertyLabel)+'</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;color:#2a6e4e">'+gmRentFmtMoney(r.income)+'</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;color:#b83030">-'+gmRentFmtMoney(r.expenses)+'</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;color:var(--ink3)">'+gmRentFmtMoney(r.mgmtFee)+'</td>'
+   +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:'+((r.net>=0)?'#2a6e4e':'#b83030')+'">'+gmRentFmtMoney(r.net)+'</td></tr>';
+ }).join('');
+}
+window.gmPnlRenderMonth=gmPnlRenderMonth;
+function gmPnlOpen(){
+ var j=window.__gmPnl;
+ if(!j||!Array.isArray(j.months)||!j.months.length){alert('Sem P&L. Suba o General Ledger em appfolio-upload.');return;}
+ gmPnlClose();
+ var maxNet=Math.max.apply(null,j.months.map(function(m){return Math.abs(Number(m.net)||0);}).concat([1]));
+ var bars=j.months.map(function(m){
+  var h=Math.max(2,Math.round((Math.abs(Number(m.net)||0)/maxNet)*140));
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:34px">'
+   +'<div style="font-size:9px;color:var(--ink3);font-family:monospace">'+Math.round((Number(m.net)||0)/1000)+'k</div>'
+   +'<div title="'+gmRentMonthName(m.month)+': líq '+gmRentFmtMoney(m.net)+' · receita '+gmRentFmtMoney(m.income)+' · desp '+gmRentFmtMoney(m.expenses)+'" style="width:60%;height:'+h+'px;background:'+(((Number(m.net)||0)>=0)?'#2a6e4e':'#b83030')+';border-radius:4px 4px 0 0"></div>'
+   +'<div style="font-size:9px;color:var(--ink3)">'+gmRentMonthName(m.month).replace('/20','/')+'</div></div>';
+ }).join('');
+ var opts=j.months.map(function(m){return '<option value="'+m.month+'">'+gmRentMonthName(m.month)+'</option>';}).join('');
+ var overlay=document.createElement('div');
+ overlay.id='gm-pnl-popup';
+ overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+ overlay.innerHTML='<div style="background:var(--paper,#fff);width:100%;max-width:860px;max-height:calc(100vh - 32px);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.4)">'
+  +'<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--cream)"><span style="font-size:14px;font-weight:700;color:var(--ink)">Lucro por casa · P&L</span><button onclick="gmPnlClose()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--ink2)">&times;</button></div>'
+  +'<div style="padding:18px 20px;overflow-y:auto">'
+   +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px">Lucro líquido mensal</div>'
+   +'<div style="display:flex;align-items:flex-end;gap:6px;height:180px;padding:8px 0 0;border-bottom:1px solid var(--border);margin-bottom:16px">'+bars+'</div>'
+   +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Por casa</div><select id="gm-pnl-month-sel" onchange="gmPnlRenderMonth(this.value)" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">'+opts+'</select></div>'
+   +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr style="border-bottom:2px solid var(--border);text-align:left"><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Casa</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Receita</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Despesa</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Mgmt Fee</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Líquido</th></tr></thead><tbody id="gm-pnl-rows"></tbody></table></div>'
+  +'</div></div>';
+ document.body.appendChild(overlay);
+ var esc=function(e){if(e.key==='Escape')gmPnlClose();};
+ overlay._esc=esc;document.addEventListener('keydown',esc);
+ overlay.addEventListener('click',function(e){if(e.target===overlay)gmPnlClose();});
+ var lastMonth=j.months[j.months.length-1].month;
+ var sel=document.getElementById('gm-pnl-month-sel');if(sel)sel.value=lastMonth;
+ gmPnlRenderMonth(lastMonth);
+}
+window.gmPnlOpen=gmPnlOpen;
 async function gmTrustSwapAccounts(){
  var selA=document.getElementById('trust-remap-a');
  var selB=document.getElementById('trust-remap-b');
