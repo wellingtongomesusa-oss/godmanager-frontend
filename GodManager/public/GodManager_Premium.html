@@ -5106,32 +5106,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-load" onclick="if(typeof osdLoadActiveTab==='function')osdLoadActiveTab()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar</button>
  </div>
 
- <!-- P&L mês a mês desta casa (General Ledger) — histórico por propriedade -->
- <div id="osd-pnl-panel" style="display:none;margin-bottom:16px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream);flex-wrap:wrap">
-   <div>
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#22558c">Lucro por mês desta casa · P&amp;L (General Ledger)</div>
-    <div id="osd-pnl-sub" style="font-size:11px;color:var(--ink3);margin-top:2px">&mdash;</div>
-   </div>
-   <button type="button" id="osd-pnl-toggle" onclick="gmOsdPnlToggle()" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Ocultar ▴</button>
-  </div>
-  <div id="osd-pnl-body" style="padding:16px 18px">
-   <div id="osd-pnl-bars" style="display:flex;align-items:flex-end;gap:6px;height:130px;padding:6px 0 0;border-bottom:1px solid var(--border);margin-bottom:14px"></div>
-   <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:520px">
-     <thead><tr style="border-bottom:2px solid var(--border);text-align:left">
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Mês</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Receita</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Despesa</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Mgmt Fee</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Líquido</th>
-     </tr></thead>
-     <tbody id="osd-pnl-rows"></tbody>
-    </table>
-   </div>
-  </div>
- </div>
-
  <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e o mês</div>
 
  <div id="osd-content-area" style="display:none;margin-top:16px">
@@ -5142,6 +5116,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-tab-pagamentos" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('pagamentos')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Pagamentos</button>
  <button type="button" id="osd-tab-historico" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('historico')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Historico</button>
  <button type="button" id="osd-tab-cobrancas" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('cobrancas')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Cobrancas</button>
+ <button type="button" id="osd-tab-pnl" onclick="if(typeof osdSwitchTab==='function')osdSwitchTab('pnl')" style="padding:8px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">P&amp;L por mês</button>
  </div>
 
  <div id="osd-tab-view-statement">
@@ -5282,6 +5257,41 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div id="osd-tab-cobr-body" style="min-height:80px;padding:0"></div>
  </div>
+ </div>
+
+ <!-- Aba P&L por mês desta casa (General Ledger) -->
+ <div id="osd-tab-view-pnl" style="display:none">
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream)">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#22558c">Lucro por mês desta casa &middot; P&amp;L (General Ledger)</div>
+    <div id="osd-pnl-sub" style="font-size:11px;color:var(--ink3);margin-top:2px">&mdash;</div>
+   </div>
+   <div id="osd-pnl-body" style="padding:16px 18px">
+    <div id="osd-pnl-empty" style="display:none;padding:30px;text-align:center;color:var(--ink3);font-size:13px">Sem P&amp;L para esta casa. Suba o General Ledger em <b>AppFolio Upload</b>.</div>
+    <div id="osd-pnl-charts" style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:18px">
+     <div style="flex:2;min-width:320px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px">Líquido mensal</div>
+      <div id="osd-pnl-bars"></div>
+     </div>
+     <div style="flex:1;min-width:220px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px">Composição da receita (acumulado)</div>
+      <div id="osd-pnl-donut" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"></div>
+     </div>
+    </div>
+    <div style="overflow-x:auto">
+     <table style="width:100%;border-collapse:collapse;min-width:520px">
+      <thead><tr style="border-bottom:2px solid var(--border);text-align:left">
+       <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Mês</th>
+       <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Receita</th>
+       <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Despesa</th>
+       <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Mgmt Fee</th>
+       <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Líquido</th>
+      </tr></thead>
+      <tbody id="osd-pnl-rows"></tbody>
+     </table>
+    </div>
+   </div>
+  </div>
  </div>
 
  </div>
@@ -7576,48 +7586,90 @@ async function gmPnlLoad(){
  }catch(e){card.style.display='none';}
 }
 window.gmPnlLoad=gmPnlLoad;
-// ===== P&L mês a mês por casa, no Statement individual (histórico da propriedade) =====
+// ===== Aba P&L por mês desta casa (barras SVG alinhadas + donut) =====
 window.__gmOsdPnlCache=null;
-function gmOsdPnlToggle(){
- var body=document.getElementById('osd-pnl-body');var btn=document.getElementById('osd-pnl-toggle');
- if(!body)return;var hidden=(body.style.display==='none');
- body.style.display=hidden?'block':'none';
- if(btn)btn.textContent=hidden?'Ocultar ▴':'Mostrar ▾';
+// Barras alinhadas num baseline zero: positivo p/ cima (verde), negativo p/ baixo (vermelho).
+function gmOsdPnlBarsSvg(rows){
+ var n=rows.length;if(!n)return '';
+ var vals=rows.map(function(r){return Number(r.net)||0;});
+ var maxV=Math.max.apply(null,vals.concat([0]));
+ var minV=Math.min.apply(null,vals.concat([0]));
+ var range=(maxV-minV)||1;
+ var band=54,padT=16,padB=22,plotH=140;
+ var W=Math.max(320,n*band),H=padT+plotH+padB;
+ var baseY=padT+(maxV/range)*plotH; // y do zero
+ var yOf=function(v){return padT+((maxV-v)/range)*plotH;};
+ var bw=Math.min(30,band*0.5);
+ var parts=[];
+ // linha do zero
+ parts.push('<line x1="0" y1="'+baseY.toFixed(1)+'" x2="'+W+'" y2="'+baseY.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>');
+ rows.forEach(function(r,i){
+  var v=Number(r.net)||0;
+  var cx=i*band+band/2;
+  var x=cx-bw/2;
+  var yv=yOf(v);
+  var top=Math.min(yv,baseY),h=Math.max(1.5,Math.abs(yv-baseY));
+  var col=(v>=0)?'#2a6e4e':'#b83030';
+  var lbl=gmRentMonthName(r.periodMonth).replace('/20','/');
+  var vlbl=Math.round(v/1000)+'k';
+  var tip=gmRentMonthName(r.periodMonth)+': líq '+gmRentFmtMoney(v)+' · receita '+gmRentFmtMoney(r.income)+' · desp '+gmRentFmtMoney(r.expenses)+' · mgmt '+gmRentFmtMoney(r.mgmtFee);
+  parts.push('<rect x="'+x.toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3" fill="'+col+'"><title>'+gmHtmlEscAttr(tip)+'</title></rect>');
+  var vy=(v>=0)?(top-4):(top+h+11);
+  parts.push('<text x="'+cx.toFixed(1)+'" y="'+vy.toFixed(1)+'" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--ink3)">'+vlbl+'</text>');
+  parts.push('<text x="'+cx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="var(--ink3)">'+gmHtmlEscAttr(lbl)+'</text>');
+ });
+ return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;height:auto;display:block" preserveAspectRatio="xMinYMid meet">'+parts.join('')+'</svg>';
 }
-window.gmOsdPnlToggle=gmOsdPnlToggle;
+// Donut: composição da receita acumulada = Despesa + Mgmt Fee + Líquido.
+function gmOsdPnlDonut(totInc,totExp,totMgmt,totNet){
+ var slices=[{l:'Despesa',v:Math.max(0,totExp),c:'#b83030'},{l:'Mgmt Fee',v:Math.max(0,totMgmt),c:'#7a5cc9'},{l:'Líquido owner',v:Math.max(0,totNet),c:'#2a6e4e'}];
+ var S=slices.reduce(function(s,x){return s+x.v;},0);
+ if(S<=0)return '<div style="font-size:11px;color:var(--ink3)">Sem composição positiva.</div>';
+ var r=44,cx=60,cy=60,C=2*Math.PI*r,off=0;
+ var rings=slices.map(function(sl){
+  var f=sl.v/S,len=f*C;
+  var seg='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+sl.c+'" stroke-width="18" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+  off+=len;return seg;
+ }).join('');
+ var svg='<svg width="120" height="120" viewBox="0 0 120 120">'+rings
+  +'<text x="60" y="56" text-anchor="middle" font-size="10" fill="var(--ink3)">Receita</text>'
+  +'<text x="60" y="72" text-anchor="middle" font-size="12" font-weight="700" font-family="monospace" fill="var(--ink)">'+gmRentFmtMoney(totInc)+'</text></svg>';
+ var legend=slices.map(function(sl){
+  var pct=Math.round((sl.v/S)*100);
+  return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink2);margin-bottom:5px"><span style="width:10px;height:10px;border-radius:2px;background:'+sl.c+';flex-shrink:0"></span><span style="flex:1">'+sl.l+'</span><span style="font-family:monospace;color:var(--ink)">'+gmRentFmtMoney(sl.v)+'</span><span style="color:var(--ink3);width:34px;text-align:right">'+pct+'%</span></div>';
+ }).join('');
+ return svg+'<div style="min-width:180px;flex:1">'+legend+'</div>';
+}
 async function gmOsdPnlLoad(pid){
- var panel=document.getElementById('osd-pnl-panel');
- if(!panel)return;
+ var bars=document.getElementById('osd-pnl-bars');
+ var donut=document.getElementById('osd-pnl-donut');
+ var tbody=document.getElementById('osd-pnl-rows');
+ var empty=document.getElementById('osd-pnl-empty');
+ var charts=document.getElementById('osd-pnl-charts');
+ var sub=document.getElementById('osd-pnl-sub');
+ var showEmpty=function(msg){if(empty){empty.textContent=msg||'Sem P&L para esta casa. Suba o General Ledger em AppFolio Upload.';empty.style.display='block';}if(charts)charts.style.display='none';if(tbody)tbody.innerHTML='';if(sub)sub.textContent='—';};
  pid=String(pid||'').trim();
- if(!pid){panel.style.display='none';return;}
+ if(!pid){showEmpty('Selecione uma casa.');return;}
  try{
   var j=window.__gmOsdPnlCache;
   if(!j){
    var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
    var res=await fetch('/api/analytics/gl-pnl'+q,{credentials:'include',cache:'no-store'});
-   if(!res.ok){panel.style.display='none';return;}
+   if(!res.ok){showEmpty();return;}
    j=await res.json().catch(function(){return null;});
-   if(!j||!j.ok){panel.style.display='none';return;}
+   if(!j||!j.ok){showEmpty();return;}
    window.__gmOsdPnlCache=j;
   }
   var rows=(j.byProperty||[]).filter(function(r){return String(r.propertyId||'')===pid;})
    .sort(function(a,b){return String(a.periodMonth).localeCompare(String(b.periodMonth));});
-  if(!rows.length){panel.style.display='none';return;}
-  var sub=document.getElementById('osd-pnl-sub');
-  var totNet=rows.reduce(function(s,r){return s+(Number(r.net)||0);},0);
+  if(!rows.length){showEmpty();return;}
+  if(empty)empty.style.display='none';
+  if(charts)charts.style.display='flex';
+  var totInc=0,totExp=0,totMgmt=0,totNet=0;
+  rows.forEach(function(r){totInc+=Number(r.income)||0;totExp+=Number(r.expenses)||0;totMgmt+=Number(r.mgmtFee)||0;totNet+=Number(r.net)||0;});
   if(sub)sub.textContent=rows.length+' mês(es) · líquido acumulado '+gmRentFmtMoney(totNet);
-  // barras (líquido por mês)
-  var maxNet=Math.max.apply(null,rows.map(function(r){return Math.abs(Number(r.net)||0);}).concat([1]));
-  var bars=rows.map(function(r){
-   var h=Math.max(2,Math.round((Math.abs(Number(r.net)||0)/maxNet)*100));
-   return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:30px">'
-    +'<div style="font-size:9px;color:var(--ink3);font-family:monospace">'+Math.round((Number(r.net)||0)/1000)+'k</div>'
-    +'<div title="'+gmRentMonthName(r.periodMonth)+': líq '+gmRentFmtMoney(r.net)+' · receita '+gmRentFmtMoney(r.income)+' · desp '+gmRentFmtMoney(r.expenses)+' · mgmt '+gmRentFmtMoney(r.mgmtFee)+'" style="width:62%;height:'+h+'px;background:'+(((Number(r.net)||0)>=0)?'#2a6e4e':'#b83030')+';border-radius:4px 4px 0 0"></div>'
-    +'<div style="font-size:9px;color:var(--ink3)">'+gmRentMonthName(r.periodMonth).replace('/20','/')+'</div></div>';
-  }).join('');
-  var barsEl=document.getElementById('osd-pnl-bars');if(barsEl)barsEl.innerHTML=bars;
-  // tabela mês a mês (mais recente primeiro)
-  var tbody=document.getElementById('osd-pnl-rows');
+  if(bars)bars.innerHTML=gmOsdPnlBarsSvg(rows);
+  if(donut)donut.innerHTML=gmOsdPnlDonut(totInc,totExp,totMgmt,totNet);
   if(tbody){
    tbody.innerHTML=rows.slice().reverse().map(function(r){
     return '<tr style="border-bottom:1px solid var(--border)">'
@@ -7628,8 +7680,7 @@ async function gmOsdPnlLoad(pid){
      +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:'+((Number(r.net)||0)>=0?'#2a6e4e':'#b83030')+'">'+gmRentFmtMoney(r.net)+'</td></tr>';
    }).join('');
   }
-  panel.style.display='block';
- }catch(e){panel.style.display='none';}
+ }catch(e){showEmpty('Erro ao carregar P&L.');}
 }
 window.gmOsdPnlLoad=gmOsdPnlLoad;
 // ===== #6 — QuickBooks Online: conexão OAuth2 (status / connect / disconnect) =====
@@ -12433,7 +12484,8 @@ window.osdSwitchTab=function(tab){
   recebimentos:document.getElementById('osd-tab-view-recebimentos'),
   pagamentos:document.getElementById('osd-tab-view-pagamentos'),
   historico:document.getElementById('osd-tab-view-historico'),
-  cobrancas:document.getElementById('osd-tab-view-cobrancas')
+  cobrancas:document.getElementById('osd-tab-view-cobrancas'),
+  pnl:document.getElementById('osd-tab-view-pnl')
  };
  var btns={
   statement:document.getElementById('osd-tab-statement'),
@@ -12441,7 +12493,8 @@ window.osdSwitchTab=function(tab){
   recebimentos:document.getElementById('osd-tab-recebimentos'),
   pagamentos:document.getElementById('osd-tab-pagamentos'),
   historico:document.getElementById('osd-tab-historico'),
-  cobrancas:document.getElementById('osd-tab-cobrancas')
+  cobrancas:document.getElementById('osd-tab-cobrancas'),
+  pnl:document.getElementById('osd-tab-pnl')
  };
  function styleBtn(btn,active){
   if(!btn)return;
@@ -12463,12 +12516,10 @@ window.osdLoadActiveTab=async function(){
  var ym=window.osdGetYearMonth();
  if(!pid){
   if(typeof osdHideStatement==='function')osdHideStatement();
-  var _pnlP=document.getElementById('osd-pnl-panel');if(_pnlP)_pnlP.style.display='none';
   return;
  }
  window.osdResolveCurrentDetail(pid,ym);
  window.osdShowStatement();
- if(typeof gmOsdPnlLoad==='function')void gmOsdPnlLoad(pid); // P&L mês a mês da casa
  var tab=String(window.__osdActiveTab||'statement');
  if(tab==='statement'&&typeof osdLoadStatement==='function'){await osdLoadStatement();return;}
  if(tab==='workorders'&&typeof osdLoadTabWorkOrders==='function'){await osdLoadTabWorkOrders();return;}
@@ -12476,6 +12527,7 @@ window.osdLoadActiveTab=async function(){
  if(tab==='pagamentos'&&typeof osdLoadTabPagamentos==='function'){await osdLoadTabPagamentos();return;}
  if(tab==='historico'&&typeof osdHistLoad==='function'){await osdHistLoad(pid);return;}
  if(tab==='cobrancas'&&typeof osdCobrLoad==='function'){await osdCobrLoad(pid);return;}
+ if(tab==='pnl'&&typeof gmOsdPnlLoad==='function'){await gmOsdPnlLoad(pid);return;}
 };
 
 window.osdTryAutoLoad=function(){
