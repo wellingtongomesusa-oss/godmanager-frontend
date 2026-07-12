@@ -7379,6 +7379,55 @@ async function gmRentReceiptsImport(inputEl){
  }catch(e){console.warn('gmRentReceiptsImport',e);alert('Erro de rede ao importar.');if(subEl)subEl.textContent=prev;}
 }
 window.gmRentReceiptsImport=gmRentReceiptsImport;
+async function gmPropertyRentChartOpen(propId,label){
+ if(!propId)return;
+ var data=window.__gmRentReceipts;
+ try{
+  if(!data||!data.ok){
+   var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+   var res=await fetch('/api/owner-statement/rent-receipts'+q,{credentials:'include',cache:'no-store'});
+   data=await res.json().catch(function(){return null;});
+   if(data&&data.ok)window.__gmRentReceipts=data;
+  }
+ }catch(e){}
+ if(!data||!data.ok||!Array.isArray(data.byProperty)){alert('Sem dados de aluguel. Importe o General Ledger no Statement.');return;}
+ var rows=data.byProperty.filter(function(r){return String(r.propertyId)===String(propId);}).sort(function(a,b){return String(a.periodMonth).localeCompare(String(b.periodMonth));});
+ if(!rows.length){alert('Esta casa ainda não tem aluguéis registrados (importe o General Ledger).');return;}
+ var ex=document.getElementById('gm-prop-rent-popup');if(ex){if(ex._esc)document.removeEventListener('keydown',ex._esc);ex.remove();}
+ var maxNet=Math.max.apply(null,rows.map(function(r){return Number(r.net)||0;}).concat([1]));
+ var bars=rows.map(function(r){
+  var h=Math.max(2,Math.round(((Number(r.net)||0)/maxNet)*150));
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:36px">'
+   +'<div style="font-size:9px;color:var(--ink3);font-family:monospace">'+Math.round((Number(r.net)||0)/1000)+'k</div>'
+   +'<div title="'+gmRentMonthName(r.periodMonth)+': '+gmRentFmtMoney(r.net)+' líq · bruto '+gmRentFmtMoney(r.gross)+'" style="width:62%;height:'+h+'px;background:#2a6e4e;border-radius:4px 4px 0 0"></div>'
+   +'<div style="font-size:9px;color:var(--ink3)">'+gmRentMonthName(r.periodMonth).replace('/20','/')+'</div></div>';
+ }).join('');
+ var tRows=rows.slice().reverse().map(function(r){
+  return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;font-size:12px">'+gmRentMonthName(r.periodMonth)+'</td>'
+   +'<td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px">'+gmRentFmtMoney(r.gross)+'</td>'
+   +'<td style="padding:6px 10px;text-align:center;font-size:11px;color:var(--ink3)">'+r.pct+'%</td>'
+   +'<td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px;color:#b83030">-'+gmRentFmtMoney(r.fee)+'</td>'
+   +'<td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:#2a6e4e">'+gmRentFmtMoney(r.net)+'</td></tr>';
+ }).join('');
+ var overlay=document.createElement('div');
+ overlay.id='gm-prop-rent-popup';
+ overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+ var closeJs="var m=document.getElementById('gm-prop-rent-popup');if(m){if(m._esc)document.removeEventListener('keydown',m._esc);m.remove();}";
+ overlay.innerHTML='<div style="background:var(--paper,#fff);width:100%;max-width:720px;max-height:calc(100vh - 32px);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.4)">'
+  +'<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--cream)">'
+   +'<span style="font-size:14px;font-weight:700;color:var(--ink)">'+String(label||'Casa').replace(/</g,'&lt;')+' · aluguel recebido</span>'
+   +'<button onclick="'+closeJs+'" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--ink2)">&times;</button></div>'
+  +'<div style="padding:18px 20px;overflow-y:auto">'
+   +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px">Evolução mensal (líquido)</div>'
+   +'<div style="display:flex;align-items:flex-end;gap:6px;height:190px;padding:8px 0 0;border-bottom:1px solid var(--border);margin-bottom:16px">'+bars+'</div>'
+   +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:2px solid var(--border);text-align:left"><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Mês</th><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Recebido</th><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:center">Fee</th><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Mgmt Fee</th><th style="padding:6px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Líquido</th></tr></thead><tbody>'+tRows+'</tbody></table>'
+  +'</div></div>';
+ document.body.appendChild(overlay);
+ var escH=function(e){if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',escH);}};
+ overlay._esc=escH;document.addEventListener('keydown',escH);
+ overlay.addEventListener('click',function(e){if(e.target===overlay){overlay.remove();document.removeEventListener('keydown',escH);}});
+}
+window.gmPropertyRentChartOpen=gmPropertyRentChartOpen;
 async function gmTrustSwapAccounts(){
  var selA=document.getElementById('trust-remap-a');
  var selB=document.getElementById('trust-remap-b');
@@ -22584,6 +22633,7 @@ async function ltpRender(){
  <button type="button" class="ltp-act-toggle" onclick="gmLtpToggleActions(this)" title="Mostrar ações" style="padding:4px 12px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer">Ver ▾</button>
  <div class="ltp-act-more" style="display:none;gap:4px;justify-content:center;flex-wrap:wrap;align-items:center">
  <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Detalhe</button>
+ <button type="button" data-prop-id="${esc(r._apiId||r.id)}" data-prop-label="${esc(r.address)}" onclick="event.stopPropagation();if(typeof gmPropertyRentChartOpen==='function')gmPropertyRentChartOpen(this.getAttribute('data-prop-id'),this.getAttribute('data-prop-label'))" title="Gráfico de aluguel por mês desta casa" style="padding:4px 8px;background:var(--cream);color:#2a6e4e;border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">📊 Gráfico</button>
  <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen==='function')gmPropertyPaymentsOpen('${esc(r.id)}');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>
  <button type="button" data-ltp-a="movein" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:4px;font-size:10px;cursor:pointer">Move In</button>
  <button type="button" data-ltp-a="moveout" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;cursor:pointer">Move Out</button>
