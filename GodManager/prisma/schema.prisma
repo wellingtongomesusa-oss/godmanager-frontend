@@ -124,6 +124,7 @@ model Client {
   propertyMonthPnls     PropertyMonthPnl[]      @relation("PropertyMonthPnl_clientId")
   rampExpensePostings   RampExpensePosting[]    @relation("RampExpensePosting_clientId")
   bankReconciliations   BankReconciliation[]    @relation("BankReconciliation_clientId")
+  rampSpendSnapshot     RampSpendSnapshot?      @relation("RampSpendSnapshot_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
   propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
   sophiaSnapshots       SophiaSnapshot[]        @relation("SophiaSnapshot_clientId")
@@ -318,6 +319,27 @@ model BankReconciliationItem {
 
   @@index([reconciliationId])
   @@map("bank_reconciliation_items")
+}
+
+/// Snapshot dos gastos do Ramp por cliente (agregações de todo o período), salvo
+/// para consulta rápida sem depender da API do Ramp em tempo real. Um por cliente.
+model RampSpendSnapshot {
+  id           String   @id @default(cuid())
+  clientId     String   @unique
+  txCount      Int      @default(0)
+  totalSpend   Decimal  @default(0) @db.Decimal(14, 2)
+  periodFrom   String?
+  periodTo     String?
+  byMonth      Json? // [{key,total,count}]
+  byCategory   Json?
+  byMerchant   Json?
+  byCardholder Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  client Client @relation("RampSpendSnapshot_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("ramp_spend_snapshots")
 }
 
 /// Conta de consumo (utility) de uma propriedade. A senha fica CRIPTOGRAFADA

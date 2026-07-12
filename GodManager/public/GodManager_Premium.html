@@ -2750,6 +2750,25 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="gm-ix-kpi k3"><div class="k-l">Maior Gasto</div><div class="k-v" id="ramp-kpi-top" style="font-size:15px;line-height:1.25"><span class="gm-sk" style="display:inline-block;width:100%;max-width:220px;height:40px"></span></div><div class="k-s">Merchant com maior valor no período</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi k4"><div class="k-l">Cashback Disponível</div><div class="k-v" id="ramp-kpi-cb"><span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span></div><div class="k-s">Estimativa acumulada</div><div class="k-bar"></div></div>
  </div>
+
+ <!-- #4 — Abas de análise do Ramp -->
+ <div id="ramp-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px">
+  <button type="button" data-ramp-tab="tx" onclick="gmRampTabSwitch('tx')" class="ramp-tab-btn" style="padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--amber);background:var(--amber);color:#fff">Transações</button>
+  <button type="button" data-ramp-tab="period" onclick="gmRampTabSwitch('period')" class="ramp-tab-btn" style="padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Por Período</button>
+  <button type="button" data-ramp-tab="category" onclick="gmRampTabSwitch('category')" class="ramp-tab-btn" style="padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Por Categoria</button>
+  <button type="button" data-ramp-tab="merchant" onclick="gmRampTabSwitch('merchant')" class="ramp-tab-btn" style="padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Por Empresa</button>
+  <button type="button" data-ramp-tab="holder" onclick="gmRampTabSwitch('holder')" class="ramp-tab-btn" style="padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--sand);color:var(--ink2)">Por Titular</button>
+  <div style="flex:1"></div>
+  <span id="ramp-snap-note" style="font-size:10px;color:var(--ink3);align-self:center"></span>
+ </div>
+
+ <!-- Views de análise (bar chart + tabela, todo o período) -->
+ <div id="ramp-view-period" class="ramp-analytics-view" style="display:none"></div>
+ <div id="ramp-view-category" class="ramp-analytics-view" style="display:none"></div>
+ <div id="ramp-view-merchant" class="ramp-analytics-view" style="display:none"></div>
+ <div id="ramp-view-holder" class="ramp-analytics-view" style="display:none"></div>
+
+ <div id="ramp-view-tx">
  <div id="ramp-agg-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0">
  <div class="ramp-agg" id="ramp-agg-month">
  <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)">Por mes (ultimos 6)</strong>
@@ -2790,6 +2809,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </table>
  </div>
  </div>
+ </div><!-- /ramp-view-tx -->
 </div>
 
 <!-- #12 — Modal: lançar transação do Ramp -->
@@ -10938,6 +10958,7 @@ function rampRenderFromData(txs,cards,useMock,opts){
  window.__gmRampAllTx.forEach(function(tx){var id=String((tx&&tx.id)||'').trim();if(id)window.__gmRampTxById[id]=tx;});
  gmRampTxRerender();
  rampAggregateAndRender(txs,cards);
+ if(typeof gmRampRefreshAnalytics==='function')try{gmRampRefreshAnalytics();}catch(eA){}
 }
 var GM_RAMP_TX_CAP=300;
 function gmRampTxFilteredList(){
@@ -10987,6 +11008,109 @@ function gmRampTxExportCsv(){
  document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
 }
 window.gmRampTxExportCsv=gmRampTxExportCsv;
+// ===== #4 — Abas de análise do Ramp (Período / Categoria / Empresa / Titular) + snapshot =====
+function gmRampAggEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function gmRampBuildAgg(){
+ var all=window.__gmRampAllTx||[];
+ var mMonth={},mCat={},mMer={},mHold={};var total=0,from='',to='';
+ all.forEach(function(tx){
+  var amt=rampTxAmount(tx)||0;total+=amt;
+  var raw=(tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||(tx&&tx.posted_at)||'';var ym='',d='';
+  try{var dt=new Date(raw);if(!isNaN(dt.getTime())){ym=dt.toISOString().slice(0,7);d=dt.toISOString().slice(0,10);}}catch(e){}
+  if(d){if(!from||d<from)from=d;if(!to||d>to)to=d;}
+  function add(m,k){if(!k)k='—';if(!m[k])m[k]={key:k,total:0,count:0};m[k].total+=amt;m[k].count++;}
+  if(ym)add(mMonth,ym);add(mCat,rampTxCategory(tx));add(mMer,rampTxMerchant(tx));add(mHold,rampTxHolder(tx));
+ });
+ var toArr=function(m,byKey){var a=Object.keys(m).map(function(k){return {key:k,total:Math.round(m[k].total*100)/100,count:m[k].count};});a.sort(byKey?function(x,y){return x.key<y.key?-1:1;}:function(x,y){return y.total-x.total;});return a;};
+ return {byMonth:toArr(mMonth,true),byCategory:toArr(mCat),byMerchant:toArr(mMer),byCardholder:toArr(mHold),total:Math.round(total*100)/100,count:all.length,from:from,to:to};
+}
+function gmRampBarsV(rows){
+ rows=rows||[];if(!rows.length)return '<div style="color:var(--ink3);font-size:12px;padding:12px 0">Sem dados.</div>';
+ var max=Math.max.apply(null,rows.map(function(r){return r.total;}).concat([1]));
+ var bars=rows.map(function(r){var h=Math.max(2,Math.round(r.total/max*140));
+  var lbl=String(r.key).slice(2).replace('-','/');
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:34px">'
+   +'<div style="font-size:9px;color:var(--ink3);font-family:monospace">'+Math.round(r.total/1000)+'k</div>'
+   +'<div title="'+gmRampAggEsc(r.key)+': '+rampFmtMoney(r.total)+' ('+r.count+' tx)" style="width:60%;height:'+h+'px;background:#22558c;border-radius:4px 4px 0 0"></div>'
+   +'<div style="font-size:9px;color:var(--ink3)">'+gmRampAggEsc(lbl)+'</div></div>';
+ }).join('');
+ return '<div style="display:flex;align-items:flex-end;gap:6px;height:180px;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:14px">'+bars+'</div>';
+}
+function gmRampBarsH(rows,limit){
+ rows=(rows||[]).slice(0,limit||15);
+ if(!rows.length)return '<div style="color:var(--ink3);font-size:12px;padding:12px 0">Sem dados.</div>';
+ var max=Math.max.apply(null,rows.map(function(r){return r.total;}).concat([1]));
+ return rows.map(function(r){var pct=Math.max(1,Math.round(r.total/max*100));
+  return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">'
+   +'<div style="width:200px;font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+gmRampAggEsc(r.key)+'">'+gmRampAggEsc(r.key)+'</div>'
+   +'<div style="flex:1;background:var(--sand);border-radius:4px;height:16px;min-width:60px"><div style="width:'+pct+'%;height:100%;background:#22558c;border-radius:4px"></div></div>'
+   +'<div style="width:100px;text-align:right;font-family:monospace;font-size:11px;color:var(--ink);font-weight:600">'+rampFmtMoney(r.total)+'</div>'
+   +'<div style="width:46px;text-align:right;font-size:10px;color:var(--ink3)">'+r.count+' tx</div></div>';
+ }).join('');
+}
+function gmRampAnalyticsTable(col,rows){
+ rows=rows||[];
+ var body=rows.map(function(r){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;font-size:12px;color:var(--ink)">'+gmRampAggEsc(r.key)+'</td><td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px;color:var(--ink);font-weight:600">'+rampFmtMoney(r.total)+'</td><td style="padding:6px 10px;text-align:right;font-size:11px;color:var(--ink3)">'+r.count+'</td></tr>';}).join('');
+ return '<div style="overflow-x:auto;margin-top:14px"><table style="width:100%;border-collapse:collapse;min-width:360px"><thead><tr style="border-bottom:2px solid var(--border);text-align:left"><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">'+col+'</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Total</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Tx</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+}
+function gmRampAnalyticsHead(title,agg){
+ var per=(agg.from&&agg.to)?(agg.from+' → '+agg.to):'todo o período';
+ return '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px"><h3 style="margin:0">'+title+'</h3><span style="font-size:11px;color:var(--ink3)">'+per+' · '+rampFmtMoney(agg.total)+' em '+agg.count+' transações</span></div>';
+}
+function gmRampRenderAnalytics(){
+ var agg=window.__gmRampAgg;if(!agg)return;
+ var vp=document.getElementById('ramp-view-period');
+ if(vp)vp.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por período (mês)',agg)+gmRampBarsV(agg.byMonth)+gmRampAnalyticsTable('Mês',agg.byMonth)+'</div>';
+ var vc=document.getElementById('ramp-view-category');
+ if(vc)vc.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por categoria',agg)+gmRampBarsH(agg.byCategory)+gmRampAnalyticsTable('Categoria',agg.byCategory)+'</div>';
+ var vm=document.getElementById('ramp-view-merchant');
+ if(vm)vm.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por empresa (merchant)',agg)+gmRampBarsH(agg.byMerchant)+gmRampAnalyticsTable('Empresa',agg.byMerchant)+'</div>';
+ var vh=document.getElementById('ramp-view-holder');
+ if(vh)vh.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por titular do cartão',agg)+gmRampBarsH(agg.byCardholder)+gmRampAnalyticsTable('Titular',agg.byCardholder)+'</div>';
+}
+function gmRampTabSwitch(tab){
+ window.__gmRampTab=tab;
+ var map={tx:'ramp-view-tx',period:'ramp-view-period',category:'ramp-view-category',merchant:'ramp-view-merchant',holder:'ramp-view-holder'};
+ Object.keys(map).forEach(function(k){var el=document.getElementById(map[k]);if(el)el.style.display=(k===tab)?'block':'none';});
+ document.querySelectorAll('#ramp-tabs .ramp-tab-btn').forEach(function(b){
+  var on=b.getAttribute('data-ramp-tab')===tab;
+  b.style.background=on?'var(--amber)':'var(--sand)';b.style.color=on?'#fff':'var(--ink2)';
+  b.style.borderColor=on?'var(--amber)':'var(--border2)';b.style.fontWeight=on?'600':'500';
+ });
+ if(tab!=='tx'){if(!window.__gmRampAgg)window.__gmRampAgg=gmRampBuildAgg();gmRampRenderAnalytics();}
+}
+window.gmRampTabSwitch=gmRampTabSwitch;
+// Recalcula agregações a partir das tx vivas, renderiza e salva snapshot
+function gmRampRefreshAnalytics(){
+ window.__gmRampAgg=gmRampBuildAgg();
+ gmRampRenderAnalytics();
+ gmRampSaveSnapshot();
+}
+window.gmRampRefreshAnalytics=gmRampRefreshAnalytics;
+async function gmRampSaveSnapshot(){
+ var cid=gmRampActiveClientId();if(!cid)return;
+ var agg=window.__gmRampAgg;if(!agg)return;
+ try{
+  var payload={clientId:cid,txCount:agg.count,totalSpend:agg.total,periodFrom:agg.from||null,periodTo:agg.to||null,byMonth:agg.byMonth,byCategory:agg.byCategory,byMerchant:agg.byMerchant,byCardholder:agg.byCardholder};
+  await fetch('/api/ramp/snapshot',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var note=document.getElementById('ramp-snap-note');if(note)note.textContent='Histórico salvo agora';
+ }catch(e){}
+}
+async function gmRampLoadSnapshot(){
+ var cid=gmRampActiveClientId();if(!cid)return;
+ var q='?clientId='+encodeURIComponent(cid);
+ try{
+  var r=await fetch('/api/ramp/snapshot'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok||!j.snapshot)return;
+  var s=j.snapshot;
+  window.__gmRampAgg={byMonth:s.byMonth||[],byCategory:s.byCategory||[],byMerchant:s.byMerchant||[],byCardholder:s.byCardholder||[],total:Number(s.totalSpend)||0,count:s.txCount||0,from:s.periodFrom||'',to:s.periodTo||''};
+  gmRampRenderAnalytics();
+  var note=document.getElementById('ramp-snap-note');
+  if(note)note.textContent='Histórico de '+String(s.updatedAt||'').slice(0,10);
+ }catch(e){}
+}
+window.gmRampLoadSnapshot=gmRampLoadSnapshot;
 // ===== #12 — Lançar transação do Ramp: statement da casa OU despesa Manager Prop =====
 function gmRampPostCellHtml(txId){
  if(!txId)return '<span style="color:var(--ink3)">—</span>';
@@ -12498,7 +12622,7 @@ function nav(r){
  'admin-audit':()=>{if(typeof adminAuditEnterPage==='function')adminAuditEnterPage();},
  'forms-received':()=>{if(typeof gmFormsReceivedRender==='function')void gmFormsReceivedRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
- ramp:()=>{if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
+ ramp:()=>{if(typeof gmRampLoadSnapshot==='function')void gmRampLoadSnapshot();if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof gmQbInit==='function')void gmQbInit();if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
  'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
