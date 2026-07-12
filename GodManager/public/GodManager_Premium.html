@@ -3740,12 +3740,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
       <th data-i18n="jobs_col_date" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data</th>
       <th data-i18n="jobs_col_amount" data-jobs-col="amount" style="padding:10px 12px;text-align:right;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Valor</th>
       <th data-i18n="jobs_col_status" style="padding:10px 12px;text-align:left;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
+      <th style="padding:10px 8px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:54px">Coment.</th>
+      <th style="padding:10px 8px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:54px">Fotos/Vídeos</th>
+      <th style="padding:10px 8px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;width:60px">Invoice</th>
       <th data-i18n="jobs_col_actions" style="padding:10px 12px;text-align:center;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Acoes</th>
       <th style="padding:6px 4px;width:32px;min-width:32px;max-width:36px"></th>
      </tr>
     </thead>
     <tbody id="jobs-tbody">
-     <tr><td colspan="12" data-i18n="loading" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
+     <tr><td colspan="15" data-i18n="loading" style="padding:40px;text-align:center;color:var(--ink3)">A carregar...</td></tr>
     </tbody>
    </table>
   </div>
@@ -30063,7 +30066,7 @@ async function jobsRender(){
   calendarHost.style.display='none';
  }
  if(!rows.length){
-  tbody.innerHTML='<tr><td colspan="12" style="padding:40px;text-align:center;color:var(--ink3)">'+gmJobsT('jobs_no_jobs')+'</td></tr>';
+  tbody.innerHTML='<tr><td colspan="15" style="padding:40px;text-align:center;color:var(--ink3)">'+gmJobsT('jobs_no_jobs')+'</td></tr>';
   return;
  }
  var userRole=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -30177,7 +30180,7 @@ async function jobsRender(){
  var actionsInner;
  var dismissCellHtml;
  if(isMaintenanceOnly){
-  actionsInner=btnJobPhoto+btnJobComment+btnVendor+btnJob+btnMaintVendor+btnReschedule+btnFinalize;
+  actionsInner=btnVendor+btnJob+btnMaintVendor+btnReschedule+btnFinalize;
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else if(isVendorRole){
   var rowVendorId=(r._apiRaw&&r._apiRaw.vendorId)?String(r._apiRaw.vendorId).trim():'';
@@ -30200,9 +30203,9 @@ async function jobsRender(){
      else{var sd=(r.serviceDate?String(r.serviceDate).slice(0,10):'');if(sd)schedLbl='Agendado: '+sd;}
      vendorExtras=(schedLbl?'<span style="'+btnStyleBase+';background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);cursor:default">'+String(schedLbl).replace(/</g,'&lt;')+'</span>':'')+okBtn;
     }
-    actionsInner=btnJobPhoto+btnJobComment+vendorExtras;
+    actionsInner=vendorExtras;
    }else if(!isFinalized){
-    actionsInner=btnJobPhoto+btnJobComment+'<button type="button" onclick="vendorOpenBidModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">Enviar proposta</button>';
+    actionsInner='<button type="button" onclick="vendorOpenBidModal(\''+idAttr+'\')" style="'+btnStyleBase+';background:var(--amber);border-color:var(--amber-bd);color:#fff">Enviar proposta</button>';
    }else{
     actionsInner='';
    }
@@ -30211,9 +30214,9 @@ async function jobsRender(){
   }
   dismissCellHtml='<td class="jobs-td-dismiss" style="padding:4px 6px;text-align:center;vertical-align:middle"></td>';
  }else{
-  var moreItems=btnJobInv+btnReturn+btnReopen+btnReactivate+btnPropostas;
+  var moreItems=btnReturn+btnReopen+btnReactivate+btnPropostas;
   var moreMenu=(String(moreItems).trim())?('<span class="jobs-more-wrap" style="position:relative;display:inline-block"><button type="button" class="jobs-more-btn" onclick="gmJobsToggleMore(this)" title="Mais ações" style="'+btnStyleBase+';background:var(--cream);border-color:var(--border2);color:var(--ink2);font-weight:700">⋯</button><span class="jobs-more-pop" style="display:none;position:fixed;z-index:9999;background:#fff;border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:8px;flex-direction:column;gap:6px;min-width:130px">'+moreItems+'</span></span>'):'';
-  actionsInner=btnJobPhoto+btnJobComment+btnVendor+btnJob+btnManager+btnFinalize+btnReschedule+btnVendorFree+moreMenu;
+  actionsInner=btnVendor+btnJob+btnManager+btnFinalize+btnReschedule+btnVendorFree+moreMenu;
   dismissCellHtml=btnDismissTd;
  }
 
@@ -30227,6 +30230,17 @@ async function jobsRender(){
  var pmStatusEsc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr(pmStatusUp):String(pmStatusUp||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
  var lblMoEsc=String(statusLblMo).replace(/&/g,'&amp;').replace(/</g,'&lt;');
  var rowOverdueCls=(typeof gmJobsRowIsOverdue==='function'&&gmJobsRowIsOverdue(r))?' jobs-row-overdue':'';
+ // Ações colapsáveis (mesmo modelo de Properties/Expenses): Ver ▾ → expande → ▴ Recolher
+ var actionsCellHtml;
+ if(!String(actionsInner||'').trim()){
+  actionsCellHtml='<td class="col-actions" style="padding:9px 10px;text-align:center;color:var(--ink3)">—</td>';
+ }else{
+  actionsCellHtml='<td class="col-actions" style="padding:9px 10px;text-align:center">'
+   +'<button type="button" class="ltp-act-toggle" onclick="gmLtpToggleActions(this)" title="Mostrar ações" style="padding:4px 12px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer">Ver ▾</button>'
+   +'<div class="ltp-act-more" style="display:none;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+actionsInner
+   +'<button type="button" onclick="gmLtpToggleActions(this)" title="Recolher" style="padding:4px 10px;background:var(--sand);color:var(--ink3);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">▴ Recolher</button></div>'
+   +'</td>';
+ }
 
  return '<tr data-job-id="'+idData+'" class="'+rowOverdueCls.trim()+'" style="border-bottom:1px solid var(--border)'+(isCancelled?';opacity:.55':'')+'">'
   +'<td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2);white-space:nowrap">'+(r.jobLabel||'\u2014')+'</td>'
@@ -30239,7 +30253,10 @@ async function jobsRender(){
   +'<td data-label="'+gmJobsT('jobs_col_date')+'" data-col="date" style="padding:9px 12px;color:var(--ink2)">'+dateDisp+' <span style="margin-left:4px">'+(typeof gmJobsDaysOpenHtml==='function'?gmJobsDaysOpenHtml(r):'')+'</span></td>'
   +(typeof jobsFmtValueCellHtml==='function'?jobsFmtValueCellHtml(r):'<td data-jobs-col="amount" style="padding:9px 12px;text-align:right">'+jobsMoney(jobsRowDisplayValue(r))+'</td>')
   +'<td data-label="'+gmJobsT('jobs_col_status')+'" data-jobs-col="status" data-status="'+pmStatusEsc+'" style="padding:9px 12px"><span class="jobs-status-dt">'+statusBadge+'</span><span class="jobs-status-mo" style="display:none">'+lblMoEsc+'</span></td>'
-  +'<td class="col-actions" style="padding:9px 12px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center">'+actionsInner+'</div></td>'
+  +'<td class="col-comment" data-label="Comentário" style="padding:9px 6px;text-align:center;vertical-align:middle">'+btnJobComment+'</td>'
+  +'<td class="col-photos" data-label="Fotos/Vídeos" style="padding:9px 6px;text-align:center;vertical-align:middle">'+btnJobPhoto+'</td>'
+  +'<td class="col-invoice" data-label="Invoice" style="padding:9px 6px;text-align:center;vertical-align:middle">'+btnJobInv+'</td>'
+  +actionsCellHtml
   +dismissCellHtml
   +'</tr>';
  }).join('');
