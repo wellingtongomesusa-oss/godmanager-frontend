@@ -1644,6 +1644,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="tr">
  <button type="button" id="btn-exit-client" onclick="exitClientView()" data-i18n="exit_client">Exit Client View</button>
  <span class="tsn" id="tb-session-label">Sessão: admin</span>
+ <button type="button" id="gm-sec-all-toggle" onclick="gmSidebarSecAllToggle()" title="Recolher / expandir os menus" style="padding:5px 10px;border:1px solid var(--border2);border-radius:5px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sand);color:var(--ink2);cursor:pointer;margin-right:8px">▾ Recolher</button>
  <select id="gm-topbar-company" onchange="gmTopbarCompanyChange(this.value)" title="Trocar de empresa" style="display:none;padding:5px 9px;border:1px solid var(--border2);border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;background:var(--sand);color:var(--ink);max-width:190px;margin-right:8px;cursor:pointer"></select>
  <button type="button" id="btn-topbar-clients" class="tb-clients" onclick="nav('clients')" style="display:none" data-i18n="clients">Clients</button>
  <div class="tb-lang-wrap" style="position:relative;display:inline-block">
@@ -9136,6 +9137,24 @@ function sbToggleSec(sec){
  var cv=sec.querySelector('.sb-sec-chev');
  if(cv)cv.textContent=collapsed?'▸':'▾';
 }
+function gmSidebarSecAll(collapse){
+ var st=sbLoadSecState();
+ document.querySelectorAll('.sb-sec-collapsible').forEach(function(sec){
+  var id=sec.getAttribute('data-sb-sec');
+  if(id)st[id]=!!collapse;
+ });
+ sbSaveSecState(st);
+ sbApplySecState();
+}
+function gmSidebarSecAllToggle(){
+ var anyExpanded=false;
+ document.querySelectorAll('.sb-sec-collapsible').forEach(function(sec){if(!sec.classList.contains('collapsed'))anyExpanded=true;});
+ gmSidebarSecAll(anyExpanded);
+ var btn=document.getElementById('gm-sec-all-toggle');
+ if(btn)btn.textContent=anyExpanded?'▸ Expandir':'▾ Recolher';
+}
+window.gmSidebarSecAll=gmSidebarSecAll;
+window.gmSidebarSecAllToggle=gmSidebarSecAllToggle;
 function sbInitSectionCollapse(){
  if(window._sbSecCollapseWired)return;
  window._sbSecCollapseWired=1;
@@ -20307,11 +20326,15 @@ function ltExpRender(){
  `+statusTd+`
  `+photosTd+`
  ${isPm?'<td style="padding:9px 8px;text-align:center;font-size:10px;color:var(--ink3)">—</td>':ltExpApprovalCell(r)}
- <td style="padding:9px 10px;text-align:center"><div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap">
+ <td style="padding:9px 10px;text-align:center">
+ <button type="button" class="ltp-act-toggle" onclick="gmLtpToggleActions(this)" title="Mostrar ações" style="padding:4px 12px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer">Ver ▾</button>
+ <div class="ltp-act-more" style="display:none;gap:5px;justify-content:center;flex-wrap:wrap;align-items:center">
  <button type="button" class="gmc-trigger" data-gmc-eid="${gmHtmlEscAttr(String(r.id))}" onclick="if(typeof gmCommentsOpen==='function')gmCommentsOpen('JOB',this.getAttribute('data-gmc-eid'),{title:'Comentários'})" title="Comentários">&#128172;</button>
  <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltOpenEditExpense==='function')ltOpenEditExpense(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
  <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltExpDelete==='function')ltExpDelete(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
- </div></td>
+ <button type="button" onclick="gmLtpToggleActions(this)" title="Recolher" style="padding:4px 10px;background:var(--sand);color:var(--ink3);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">▴ Recolher</button>
+ </div>
+ </td>
  </tr>`;
  }).join('');
  if(typeof ltExpUpdateMigrateButtonVisibility==='function')ltExpUpdateMigrateButtonVisibility();

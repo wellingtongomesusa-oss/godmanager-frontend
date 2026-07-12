@@ -157,7 +157,9 @@ export async function syncOwnerStatementForProperty(args: {
       where: {
         propertyId: args.propertyId,
         clientId: args.clientId,
-        cashAccount: { startsWith: '1150' },
+        // Aluguel recebido = conta de receita '4100 - Rent Income' (fonte do general ledger AppFolio).
+        // '1150 - Operating Cash' NÃO é receita de aluguel (é movimento de caixa) e teria duplicatas.
+        cashAccount: { startsWith: '4100' },
         paymentDate: { gte: bounds.start, lte: bounds.end },
       },
       select: {

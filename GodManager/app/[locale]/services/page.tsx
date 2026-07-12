@@ -5,6 +5,7 @@ import { SavingsCalculator } from '@/components/marketing/SavingsCalculator';
 import { SectionDivider } from '@/components/marketing/SectionDivider';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
+import { GodrealtorPlans } from '@/components/marketing/GodrealtorPlans';
 
 const GROUPS: { categoryKey: 'bookkeeping' | 'consulting' | '1099'; itemKeys: string[] }[] = [
   {
@@ -146,73 +147,9 @@ export default async function ServicesPage({ params: { locale } }: PageProps) {
               letterSpacing: '0.5px',
             }}
           >
-            Same Group
+            GODREALTOR — Exam Prep
           </h2>
-          <a
-            href="https://www.godrealtor.us"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 24,
-              textDecoration: 'none',
-              background: 'linear-gradient(135deg, #1f2937 0%, #26405c 100%)',
-              border: '1px solid #26405c',
-              borderRadius: 12,
-              padding: 28,
-              boxShadow: '0 4px 16px rgba(31,41,55,0.15)',
-            }}
-          >
-            <div style={{ maxWidth: 640 }}>
-              <div
-                style={{
-                  display: 'inline-block',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '1.5px',
-                  textTransform: 'uppercase',
-                  color: '#c9a96e',
-                  marginBottom: 8,
-                }}
-              >
-                GODREALTOR
-              </div>
-              <h3
-                style={{
-                  fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif',
-                  fontSize: 24,
-                  fontWeight: 600,
-                  color: '#fff',
-                  margin: '0 0 8px',
-                }}
-              >
-                Real estate brokerage &amp; advisory
-              </h3>
-              <p style={{ fontSize: 14, color: '#e5e7eb', lineHeight: 1.6, margin: 0 }}>
-                Buying, selling or investing in property? Hire GODREALTOR, our sister company in the
-                same group, for full real estate brokerage, listings and advisory — integrated with
-                your GodManager portfolio.
-              </p>
-            </div>
-            <span
-              style={{
-                background: '#c9a96e',
-                color: '#fff',
-                padding: '12px 24px',
-                borderRadius: 8,
-                fontWeight: 600,
-                fontSize: 13,
-                letterSpacing: '0.5px',
-                whiteSpace: 'nowrap',
-                boxShadow: '0 2px 8px rgba(201,169,110,0.3)',
-              }}
-            >
-              Explore GODREALTOR →
-            </span>
-          </a>
+          <GodrealtorPlans locale={locale} />
         </section>
 
         <SectionDivider />
