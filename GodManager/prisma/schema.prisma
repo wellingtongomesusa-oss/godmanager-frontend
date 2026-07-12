@@ -123,6 +123,7 @@ model Client {
   rentReceipts          PropertyRentReceipt[]   @relation("PropertyRentReceipt_clientId")
   propertyMonthPnls     PropertyMonthPnl[]      @relation("PropertyMonthPnl_clientId")
   rampExpensePostings   RampExpensePosting[]    @relation("RampExpensePosting_clientId")
+  bankReconciliations   BankReconciliation[]    @relation("BankReconciliation_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
   propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
   sophiaSnapshots       SophiaSnapshot[]        @relation("SophiaSnapshot_clientId")
@@ -273,6 +274,50 @@ model RampExpensePosting {
   @@index([clientId, target])
   @@index([propertyId])
   @@map("ramp_expense_postings")
+}
+
+/// Conciliação bancária de uma conta num mês: saldo do extrato vs itens "cleared".
+/// status RECONCILED quando a diferença (extrato - saldo inicial - itens cleared) = 0.
+model BankReconciliation {
+  id               String   @id @default(cuid())
+  clientId         String
+  bankAccountKey   String   @db.VarChar(40) // ex.: TRUST_CHASE, OPERATING_TRUST, DEPOSIT_SECURITY
+  periodMonth      String // 'YYYY-MM'
+  openingBalance   Decimal  @default(0) @db.Decimal(14, 2)
+  statementBalance Decimal  @default(0) @db.Decimal(14, 2)
+  status           String   @default("OPEN") @db.VarChar(20) // OPEN | RECONCILED
+  notes            String?  @db.Text
+  reconciledAt     DateTime?
+  reconciledBy     String?
+  createdById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  client Client                   @relation("BankReconciliation_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  items  BankReconciliationItem[]
+
+  @@unique([clientId, bankAccountKey, periodMonth])
+  @@index([clientId, status])
+  @@map("bank_reconciliations")
+}
+
+/// Item da conciliação: uma transação a marcar como "cleared" (compensada).
+/// amount positivo = crédito (entrada), negativo = débito (saída).
+model BankReconciliationItem {
+  id               String   @id @default(cuid())
+  reconciliationId String
+  description      String   @db.VarChar(300)
+  amount           Decimal  @db.Decimal(14, 2)
+  txnDate          DateTime?
+  sourceType       String   @default("MANUAL") @db.VarChar(20) // MANUAL | RAMP | TENANT_PAYMENT | EXPENSE | GL
+  sourceRefId      String?
+  cleared          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  reconciliation BankReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  @@index([reconciliationId])
+  @@map("bank_reconciliation_items")
 }
 
 /// Conta de consumo (utility) de uma propriedade. A senha fica CRIPTOGRAFADA

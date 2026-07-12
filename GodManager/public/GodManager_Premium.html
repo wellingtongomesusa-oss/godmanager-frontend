@@ -6131,6 +6131,73 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <ul class="bk-list" id="bk-list-properties"><li class="bk-empty">—</li></ul>
   </div>
  </div>
+
+ <!-- #7 — Conciliação bancária -->
+ <div style="margin-top:24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden">
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+   <div>
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">Conciliação bancária</div>
+    <div style="font-size:11px;color:var(--ink3);margin-top:2px">Saldo do extrato = saldo inicial + itens compensados (cleared).</div>
+   </div>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select id="rec-account" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+     <option value="TRUST_CHASE">Trust (Chase)</option>
+     <option value="OPERATING_TRUST">Operating</option>
+     <option value="DEPOSIT_SECURITY">Security Deposit</option>
+    </select>
+    <input id="rec-month" type="month" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+    <button type="button" onclick="gmRecLoad()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Carregar</button>
+   </div>
+  </div>
+  <div id="rec-body" style="padding:16px 18px;display:none">
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
+    <div>
+     <label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">SALDO INICIAL ($)</label>
+     <input id="rec-opening" type="number" step="0.01" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)">
+    </div>
+    <div>
+     <label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">SALDO DO EXTRATO ($)</label>
+     <input id="rec-statement" type="number" step="0.01" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)">
+    </div>
+    <div style="display:flex;align-items:flex-end">
+     <button type="button" onclick="gmRecSaveBalances()" style="width:100%;padding:9px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Salvar saldos</button>
+    </div>
+   </div>
+
+   <!-- Resumo -->
+   <div id="rec-summary" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:12px 14px;border:1px solid var(--border);border-radius:9px;background:var(--cream);margin-bottom:16px">
+    <div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">Compensado</div><div id="rec-cleared" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--ink)">—</div></div>
+    <div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">Saldo contábil</div><div id="rec-book" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--ink)">—</div></div>
+    <div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">Diferença</div><div id="rec-diff" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700">—</div></div>
+    <div style="flex:1"></div>
+    <div id="rec-status-badge" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;background:var(--sand);color:var(--ink3)">—</div>
+    <button type="button" id="rec-close-btn" onclick="gmRecReconcile(true)" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Conciliar</button>
+    <button type="button" id="rec-reopen-btn" onclick="gmRecReconcile(false)" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Reabrir</button>
+   </div>
+
+   <!-- Adicionar item -->
+   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+    <div style="flex:2;min-width:180px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DESCRIÇÃO</label><input id="rec-it-desc" type="text" placeholder="Ex.: Depósito aluguel / Pagamento vendor" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
+    <div style="width:130px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">VALOR (+/−)</label><input id="rec-it-amount" type="number" step="0.01" placeholder="0.00" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)"></div>
+    <div style="width:150px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DATA</label><input id="rec-it-date" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
+    <button type="button" onclick="gmRecAddItem()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">+ Item</button>
+   </div>
+
+   <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:560px">
+     <thead><tr style="border-bottom:2px solid var(--border);text-align:left">
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:60px;text-align:center">Cleared</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Valor</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:40px"></th>
+     </tr></thead>
+     <tbody id="rec-items-tbody"></tbody>
+    </table>
+   </div>
+  </div>
+  <div id="rec-empty" style="padding:26px;text-align:center;color:var(--ink3);font-size:13px">Escolha a conta e o mês e clique em <b>Carregar</b>.</div>
+ </div>
 </div>
 
 <!-- ============================================================ -->
@@ -7897,6 +7964,142 @@ async function gmQbCreateInvoice(){
  }catch(e){if(out){out.textContent='Erro de rede.';out.style.color='var(--red)';}}
 }
 window.gmQbCreateInvoice=gmQbCreateInvoice;
+// ===== #7 — Conciliação bancária =====
+window.__gmRec=null;
+function gmRecFmt(v){var x=Number(v);if(!isFinite(x))x=0;return (x<0?'-$':'$')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function gmRecQuery(){return (typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';}
+function gmRecPayload(){return (typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};}
+async function gmRecLoad(){
+ var acct=(document.getElementById('rec-account')||{}).value||'TRUST_CHASE';
+ var month=(document.getElementById('rec-month')||{}).value||'';
+ if(!/^\d{4}-\d{2}$/.test(month)){alert('Escolha o mês.');return;}
+ var q=gmRecQuery();var sep=q?'&':'?';
+ try{
+  var r=await fetch('/api/reconciliation'+q+sep+'bankAccountKey='+encodeURIComponent(acct)+'&periodMonth='+encodeURIComponent(month),{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao carregar.');return;}
+  if(!j.reconciliation){
+   // cria vazio ao salvar; guarda contexto p/ criar no primeiro save
+   window.__gmRec={_new:true,bankAccountKey:acct,periodMonth:month,items:[],openingBalance:'0.00',statementBalance:'0.00',status:'OPEN',clearedTotal:'0.00',bookBalance:'0.00',difference:'0.00',balanced:false};
+  }else{
+   window.__gmRec=j.reconciliation;
+  }
+  gmRecRender();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmRecLoad=gmRecLoad;
+function gmRecRender(){
+ var rec=window.__gmRec;
+ var body=document.getElementById('rec-body');var empty=document.getElementById('rec-empty');
+ if(!rec){if(body)body.style.display='none';if(empty)empty.style.display='block';return;}
+ if(body)body.style.display='block';if(empty)empty.style.display='none';
+ var setV=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
+ var setT=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+ setV('rec-opening',rec.openingBalance||'0.00');
+ setV('rec-statement',rec.statementBalance||'0.00');
+ setT('rec-cleared',gmRecFmt(rec.clearedTotal));
+ setT('rec-book',gmRecFmt(rec.bookBalance));
+ var diffEl=document.getElementById('rec-diff');
+ if(diffEl){diffEl.textContent=gmRecFmt(rec.difference);diffEl.style.color=rec.balanced?'#2a6e4e':'#b83030';}
+ var badge=document.getElementById('rec-status-badge');
+ var reconciled=(rec.status==='RECONCILED');
+ if(badge){badge.textContent=reconciled?'✓ Conciliado':(rec.balanced?'Pronto para conciliar':'Em aberto');badge.style.background=reconciled?'var(--green-bg,#e6f4ec)':(rec.balanced?'var(--green-bg,#e6f4ec)':'var(--sand)');badge.style.color=reconciled?'#2a6e4e':(rec.balanced?'#2a6e4e':'var(--ink3)');}
+ var closeBtn=document.getElementById('rec-close-btn');var reopenBtn=document.getElementById('rec-reopen-btn');
+ if(closeBtn)closeBtn.style.display=reconciled?'none':'inline-block';
+ if(reopenBtn)reopenBtn.style.display=reconciled?'inline-block':'none';
+ if(closeBtn)closeBtn.disabled=!rec.balanced;
+ if(closeBtn)closeBtn.style.opacity=rec.balanced?'1':'.5';
+ var tbody=document.getElementById('rec-items-tbody');
+ if(tbody){
+  var items=rec.items||[];
+  if(!items.length){tbody.innerHTML='<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--ink3);font-size:12px">Sem itens. Adicione as transações do extrato acima.</td></tr>';}
+  else{
+   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+   tbody.innerHTML=items.map(function(it){
+    var amt=Number(it.amount)||0;
+    return '<tr style="border-bottom:1px solid var(--border)">'
+     +'<td style="padding:6px 10px;text-align:center"><input type="checkbox" '+(it.cleared?'checked':'')+' onchange="gmRecToggleItem(\''+it.id+'\',this.checked)" style="width:16px;height:16px;accent-color:#2a6e4e;cursor:pointer"></td>'
+     +'<td style="padding:6px 10px;font-size:12px;color:var(--ink)">'+esc(it.description)+(it.sourceType&&it.sourceType!=='MANUAL'?' <span style="font-size:9px;color:var(--ink3)">('+esc(it.sourceType)+')</span>':'')+'</td>'
+     +'<td style="padding:6px 10px;font-size:11px;color:var(--ink3)">'+(it.txnDate||'—')+'</td>'
+     +'<td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:600;color:'+(amt>=0?'#2a6e4e':'#b83030')+'">'+gmRecFmt(amt)+'</td>'
+     +'<td style="padding:6px 10px;text-align:center"><button type="button" onclick="gmRecDeleteItem(\''+it.id+'\')" title="Excluir" style="background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:14px">×</button></td></tr>';
+   }).join('');
+  }
+ }
+}
+async function gmRecEnsureCreated(){
+ var rec=window.__gmRec;if(!rec)return null;
+ if(!rec._new&&rec.id)return rec.id;
+ // cria via POST (salvar saldos zerados) e recarrega
+ var payload=gmRecPayload();payload.bankAccountKey=rec.bankAccountKey;payload.periodMonth=rec.periodMonth;
+ payload.openingBalance=(document.getElementById('rec-opening')||{}).value||'0';
+ payload.statementBalance=(document.getElementById('rec-statement')||{}).value||'0';
+ var r=await fetch('/api/reconciliation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ var j=await r.json();
+ if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao criar conciliação.');return null;}
+ window.__gmRec=j.reconciliation;gmRecRender();return j.reconciliation.id;
+}
+async function gmRecSaveBalances(){
+ var rec=window.__gmRec;if(!rec)return;
+ var payload=gmRecPayload();payload.bankAccountKey=rec.bankAccountKey;payload.periodMonth=rec.periodMonth;
+ payload.openingBalance=(document.getElementById('rec-opening')||{}).value||'0';
+ payload.statementBalance=(document.getElementById('rec-statement')||{}).value||'0';
+ try{
+  var r=await fetch('/api/reconciliation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao salvar.');return;}
+  window.__gmRec=j.reconciliation;gmRecRender();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmRecSaveBalances=gmRecSaveBalances;
+async function gmRecAddItem(){
+ var rid=await gmRecEnsureCreated();if(!rid)return;
+ var desc=(document.getElementById('rec-it-desc')||{}).value||'';
+ var amount=parseFloat((document.getElementById('rec-it-amount')||{}).value||'0');
+ var date=(document.getElementById('rec-it-date')||{}).value||'';
+ if(!desc.trim()){alert('Descrição obrigatória.');return;}
+ if(!(amount!==0)){alert('Valor (use + para entrada, − para saída).');return;}
+ var payload=gmRecPayload();payload.reconciliationId=rid;payload.description=desc;payload.amount=amount;if(date)payload.txnDate=date;
+ try{
+  var r=await fetch('/api/reconciliation/item',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao adicionar.');return;}
+  document.getElementById('rec-it-desc').value='';document.getElementById('rec-it-amount').value='';
+  gmRecLoad();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmRecAddItem=gmRecAddItem;
+async function gmRecToggleItem(itemId,cleared){
+ var payload=gmRecPayload();payload.itemId=itemId;payload.cleared=cleared;
+ try{
+  var r=await fetch('/api/reconciliation/item',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Erro.');return;}
+  gmRecLoad();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmRecToggleItem=gmRecToggleItem;
+async function gmRecDeleteItem(itemId){
+ var q=gmRecQuery();var sep=q?'&':'?';
+ try{
+  var r=await fetch('/api/reconciliation/item'+q+sep+'itemId='+encodeURIComponent(itemId),{method:'DELETE',credentials:'include'});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Erro.');return;}
+  gmRecLoad();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmRecDeleteItem=gmRecDeleteItem;
+async function gmRecReconcile(close){
+ var rec=window.__gmRec;if(!rec)return;
+ var payload=gmRecPayload();payload.bankAccountKey=rec.bankAccountKey;payload.periodMonth=rec.periodMonth;payload.reconcile=!!close;
+ try{
+  var r=await fetch('/api/reconciliation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao conciliar.');return;}
+  window.__gmRec=j.reconciliation;gmRecRender();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmRecReconcile=gmRecReconcile;
 function gmQbConnect(){
  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
  window.location.href='/api/quickbooks/connect'+q;
@@ -12252,7 +12455,7 @@ function nav(r){
  'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();},
  results:()=>{if(typeof gmResRender==='function')gmResRender();},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
- bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();},
+ bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();var _rm=document.getElementById('rec-month');if(_rm&&!_rm.value){var _d=new Date();_rm.value=_d.getUTCFullYear()+'-'+String(_d.getUTCMonth()+1).padStart(2,'0');}},
  'bookkeeping-ai':()=>{setTimeout(function(){try{var i=document.getElementById('bk-ai-input');if(i)i.focus();}catch(eBkAi){}},40);},
  analytics:()=>{if(typeof gmAnalyticsLoad==='function')gmAnalyticsLoad();},
  'auditoria-2026':()=>{setTimeout(function(){try{if(typeof gmAudit2026NavInit==='function')gmAudit2026NavInit();}catch(eA){}},20);},
