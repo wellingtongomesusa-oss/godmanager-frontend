@@ -3726,34 +3726,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    </div>
   </div>
   <div id="trust-statement-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
-  <div id="rent-receipts-card" style="display:none;margin-top:16px;border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:20px 24px;position:relative;overflow:hidden">
-   <div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:#2a6e4e"></div>
-   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
-    <div>
-     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#2a6e4e">Aluguéis Recebidos &middot; líq. mgmt fee</div>
-     <div id="rent-receipts-sub" style="font-size:11px;color:var(--ink3);margin-top:3px">&mdash;</div>
-     <div id="rent-receipts-net" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px;letter-spacing:-.01em">&mdash;</div>
-     <div id="rent-receipts-gross" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-     <input type="file" id="rent-receipts-gl-file" accept=".csv,text/csv" style="display:none" onchange="gmRentReceiptsImport(this)">
-     <button type="button" onclick="var f=document.getElementById('rent-receipts-gl-file');if(f)f.click()" title="Suba o General Ledger (CSV) do AppFolio" style="padding:9px 16px;border:none;border-radius:8px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬆ Importar General Ledger</button>
-     <button type="button" onclick="gmRentReceiptsOpen()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📊 Gráfico e detalhe por casa</button>
-    </div>
-   </div>
-  </div>
-  <div id="pnl-card" style="display:none;margin-top:16px;border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:20px 24px;position:relative;overflow:hidden">
-   <div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:#22558c"></div>
-   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
-    <div>
-     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#22558c">Lucro por casa &middot; P&amp;L (General Ledger)</div>
-     <div id="pnl-sub" style="font-size:11px;color:var(--ink3);margin-top:3px">&mdash;</div>
-     <div id="pnl-net" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px">&mdash;</div>
-     <div id="pnl-detail" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
-    </div>
-    <button type="button" onclick="gmPnlOpen()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📊 P&amp;L por casa</button>
-   </div>
-  </div>
+  <!-- Cards "Aluguéis Recebidos" e "Lucro por casa · P&L" removidos daqui.
+       O P&L mês a mês agora vive no histórico de cada casa (Statement individual). -->
   <div id="trust-remap-box" style="margin-top:18px;padding:12px 14px;border:1px dashed var(--border2);border-radius:10px;background:var(--cream);display:none;align-items:center;gap:10px;flex-wrap:wrap">
    <span style="font-size:12px;color:var(--ink2);font-weight:700">Ajustar contas:</span>
    <select id="trust-remap-a" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--paper);color:var(--ink)">
@@ -5075,6 +5049,32 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" onclick="if(typeof osdShiftPeriod==='function')osdShiftPeriod(1)" title="Próximo mês" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">▶</button>
  <input id="osd-search-tenant" type="text" oninput="if(typeof osdRebuildPropertySelect==='function')osdRebuildPropertySelect()" placeholder="Filtrar por tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:220px">
  <button type="button" id="osd-load" onclick="if(typeof osdLoadActiveTab==='function')osdLoadActiveTab()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar</button>
+ </div>
+
+ <!-- P&L mês a mês desta casa (General Ledger) — histórico por propriedade -->
+ <div id="osd-pnl-panel" style="display:none;margin-bottom:16px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream);flex-wrap:wrap">
+   <div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#22558c">Lucro por mês desta casa · P&amp;L (General Ledger)</div>
+    <div id="osd-pnl-sub" style="font-size:11px;color:var(--ink3);margin-top:2px">&mdash;</div>
+   </div>
+   <button type="button" id="osd-pnl-toggle" onclick="gmOsdPnlToggle()" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Ocultar ▴</button>
+  </div>
+  <div id="osd-pnl-body" style="padding:16px 18px">
+   <div id="osd-pnl-bars" style="display:flex;align-items:flex-end;gap:6px;height:130px;padding:6px 0 0;border-bottom:1px solid var(--border);margin-bottom:14px"></div>
+   <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:520px">
+     <thead><tr style="border-bottom:2px solid var(--border);text-align:left">
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Mês</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Receita</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Despesa</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Mgmt Fee</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Líquido</th>
+     </tr></thead>
+     <tbody id="osd-pnl-rows"></tbody>
+    </table>
+   </div>
+  </div>
  </div>
 
  <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e o mês</div>
@@ -7521,6 +7521,62 @@ async function gmPnlLoad(){
  }catch(e){card.style.display='none';}
 }
 window.gmPnlLoad=gmPnlLoad;
+// ===== P&L mês a mês por casa, no Statement individual (histórico da propriedade) =====
+window.__gmOsdPnlCache=null;
+function gmOsdPnlToggle(){
+ var body=document.getElementById('osd-pnl-body');var btn=document.getElementById('osd-pnl-toggle');
+ if(!body)return;var hidden=(body.style.display==='none');
+ body.style.display=hidden?'block':'none';
+ if(btn)btn.textContent=hidden?'Ocultar ▴':'Mostrar ▾';
+}
+window.gmOsdPnlToggle=gmOsdPnlToggle;
+async function gmOsdPnlLoad(pid){
+ var panel=document.getElementById('osd-pnl-panel');
+ if(!panel)return;
+ pid=String(pid||'').trim();
+ if(!pid){panel.style.display='none';return;}
+ try{
+  var j=window.__gmOsdPnlCache;
+  if(!j){
+   var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+   var res=await fetch('/api/analytics/gl-pnl'+q,{credentials:'include',cache:'no-store'});
+   if(!res.ok){panel.style.display='none';return;}
+   j=await res.json().catch(function(){return null;});
+   if(!j||!j.ok){panel.style.display='none';return;}
+   window.__gmOsdPnlCache=j;
+  }
+  var rows=(j.byProperty||[]).filter(function(r){return String(r.propertyId||'')===pid;})
+   .sort(function(a,b){return String(a.periodMonth).localeCompare(String(b.periodMonth));});
+  if(!rows.length){panel.style.display='none';return;}
+  var sub=document.getElementById('osd-pnl-sub');
+  var totNet=rows.reduce(function(s,r){return s+(Number(r.net)||0);},0);
+  if(sub)sub.textContent=rows.length+' mês(es) · líquido acumulado '+gmRentFmtMoney(totNet);
+  // barras (líquido por mês)
+  var maxNet=Math.max.apply(null,rows.map(function(r){return Math.abs(Number(r.net)||0);}).concat([1]));
+  var bars=rows.map(function(r){
+   var h=Math.max(2,Math.round((Math.abs(Number(r.net)||0)/maxNet)*100));
+   return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:30px">'
+    +'<div style="font-size:9px;color:var(--ink3);font-family:monospace">'+Math.round((Number(r.net)||0)/1000)+'k</div>'
+    +'<div title="'+gmRentMonthName(r.periodMonth)+': líq '+gmRentFmtMoney(r.net)+' · receita '+gmRentFmtMoney(r.income)+' · desp '+gmRentFmtMoney(r.expenses)+' · mgmt '+gmRentFmtMoney(r.mgmtFee)+'" style="width:62%;height:'+h+'px;background:'+(((Number(r.net)||0)>=0)?'#2a6e4e':'#b83030')+';border-radius:4px 4px 0 0"></div>'
+    +'<div style="font-size:9px;color:var(--ink3)">'+gmRentMonthName(r.periodMonth).replace('/20','/')+'</div></div>';
+  }).join('');
+  var barsEl=document.getElementById('osd-pnl-bars');if(barsEl)barsEl.innerHTML=bars;
+  // tabela mês a mês (mais recente primeiro)
+  var tbody=document.getElementById('osd-pnl-rows');
+  if(tbody){
+   tbody.innerHTML=rows.slice().reverse().map(function(r){
+    return '<tr style="border-bottom:1px solid var(--border)">'
+     +'<td style="padding:7px 10px;font-size:12px;color:var(--ink)">'+gmRentMonthName(r.periodMonth)+'</td>'
+     +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;color:#2a6e4e">'+gmRentFmtMoney(r.income)+'</td>'
+     +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;color:#b83030">-'+gmRentFmtMoney(r.expenses)+'</td>'
+     +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;color:var(--ink3)">'+gmRentFmtMoney(r.mgmtFee)+'</td>'
+     +'<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:'+((Number(r.net)||0)>=0?'#2a6e4e':'#b83030')+'">'+gmRentFmtMoney(r.net)+'</td></tr>';
+   }).join('');
+  }
+  panel.style.display='block';
+ }catch(e){panel.style.display='none';}
+}
+window.gmOsdPnlLoad=gmOsdPnlLoad;
 function gmPnlClose(){var m=document.getElementById('gm-pnl-popup');if(m){if(m._esc)document.removeEventListener('keydown',m._esc);m.remove();}}
 window.gmPnlClose=gmPnlClose;
 function gmPnlRenderMonth(month){
@@ -12212,10 +12268,12 @@ window.osdLoadActiveTab=async function(){
  var ym=window.osdGetYearMonth();
  if(!pid){
   if(typeof osdHideStatement==='function')osdHideStatement();
+  var _pnlP=document.getElementById('osd-pnl-panel');if(_pnlP)_pnlP.style.display='none';
   return;
  }
  window.osdResolveCurrentDetail(pid,ym);
  window.osdShowStatement();
+ if(typeof gmOsdPnlLoad==='function')void gmOsdPnlLoad(pid); // P&L mês a mês da casa
  var tab=String(window.__osdActiveTab||'statement');
  if(tab==='statement'&&typeof osdLoadStatement==='function'){await osdLoadStatement();return;}
  if(tab==='workorders'&&typeof osdLoadTabWorkOrders==='function'){await osdLoadTabWorkOrders();return;}
