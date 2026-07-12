@@ -8,6 +8,11 @@ export function GodrealtorPromo({ locale, title, sub }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const loc = locale === 'pt-br' ? 'pt-br' : locale === 'es' ? 'es' : 'en';
+  const L = {
+    en: { sub: 'Subscribe to GodManager', god: 'Get GODREALTOR', opening: 'Opening checkout…', errCfg: 'Checkout unavailable right now.', err: 'Could not start checkout.', net: 'Network error.' },
+    'pt-br': { sub: 'Assinar GodManager', god: 'Contratar GODREALTOR', opening: 'Abrindo checkout…', errCfg: 'Checkout indisponível no momento.', err: 'Não foi possível iniciar o checkout.', net: 'Falha de rede.' },
+    es: { sub: 'Suscribirse a GodManager', god: 'Contratar GODREALTOR', opening: 'Abriendo checkout…', errCfg: 'Checkout no disponible ahora.', err: 'No se pudo iniciar el checkout.', net: 'Error de red.' },
+  }[loc];
 
   const checkoutGodrealtor = async () => {
     setBusy(true);
@@ -19,9 +24,9 @@ export function GodrealtorPromo({ locale, title, sub }: Props) {
         window.location.href = d.url;
         return;
       }
-      setErr(d?.error === 'stripe_not_configured' ? 'Checkout indisponível no momento.' : 'Não foi possível iniciar o checkout.');
+      setErr(d?.error === 'stripe_not_configured' ? L.errCfg : L.err);
     } catch {
-      setErr('Falha de rede.');
+      setErr(L.net);
     } finally {
       setBusy(false);
     }
@@ -36,7 +41,7 @@ export function GodrealtorPromo({ locale, title, sub }: Props) {
           href={`/${loc}/subscribe`}
           className="inline-flex items-center justify-center rounded-md bg-[#1a3a5c] px-4 py-2 font-inter text-[12px] font-semibold text-white transition hover:bg-[#22558c]"
         >
-          Assinar GodManager
+          {L.sub}
         </a>
         <button
           type="button"
@@ -44,7 +49,7 @@ export function GodrealtorPromo({ locale, title, sub }: Props) {
           disabled={busy}
           className="inline-flex items-center justify-center rounded-md bg-[#c9a96e] px-4 py-2 font-inter text-[12px] font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
-          {busy ? 'Abrindo checkout…' : 'Contratar GODREALTOR'}
+          {busy ? L.opening : L.god}
         </button>
       </div>
       {err && <div className="mt-2 font-inter text-[10px] text-red-500">{err}</div>}
