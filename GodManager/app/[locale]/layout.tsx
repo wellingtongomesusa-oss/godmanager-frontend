@@ -3,7 +3,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { hasLocale } from 'next-intl';
 import { routing } from '@/i18n/routing';
-import CrispChat from '@/components/marketing/CrispChat';
+import SophiaChat from '@/components/marketing/SophiaChat';
 import Footer from '@/components/site/Footer';
 
 type Props = {
@@ -28,7 +28,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
         {children}
         <Footer />
       </div>
-      <CrispChat />
+      <SophiaChat />
     </NextIntlClientProvider>
   );
 }
