@@ -24,16 +24,19 @@ function syncJson<T = unknown>(method: string, url: string, body?: unknown): { o
 export async function loginAsync(
   email: string,
   password: string,
-): Promise<{ ok: true; user: User } | { ok: false; error: string }> {
+  mfaCode?: string,
+): Promise<{ ok: true; user: User } | { ok: false; error: string; mfaRequired?: boolean }> {
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, mfaCode: mfaCode || undefined }),
       credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.ok) return { ok: false, error: data?.error || 'Login falhou.' };
+    if (!res.ok || !data?.ok) {
+      return { ok: false, error: data?.error || 'Login falhou.', mfaRequired: !!data?.mfaRequired };
+    }
     return { ok: true, user: data.user as User };
   } catch (e) {
     console.error('[auth.loginAsync]', e);

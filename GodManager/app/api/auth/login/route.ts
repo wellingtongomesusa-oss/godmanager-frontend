@@ -8,6 +8,8 @@ import {
   clearLoginAttempts,
 } from '@/lib/rateLimit';
 import { createSessionCookie } from '@/lib/authServer';
+import { decryptField } from '@/lib/encryption';
+import { verifyTotp, hashBackupCode } from '@/lib/totp';
 import type { UserRole } from '@/lib/types';
 
 function isDatabaseUnreachable(e: unknown): boolean {
@@ -63,6 +65,35 @@ export async function POST(req: Request) {
     if (!valid) {
       recordFailedLogin(key);
       return NextResponse.json({ ok: false, error: 'Email ou password invalidos.' }, { status: 401 });
+    }
+
+    // MFA (TOTP) — só para quem ativou. Não afeta contas sem MFA.
+    if (user.mfaEnabled && user.mfaSecret) {
+      const mfaCode = String(body?.mfaCode || '').trim();
+      if (!mfaCode) {
+        // senha ok, mas falta o 2º fator → UI pede o código
+        return NextResponse.json({ ok: false, mfaRequired: true, error: 'Código de verificação necessário.' }, { status: 200 });
+      }
+      const secret = decryptField(user.mfaSecret) || '';
+      let mfaOk = secret ? verifyTotp(secret, mfaCode) : false;
+      // fallback: código de backup (consumido)
+      if (!mfaOk && user.mfaBackupCodes) {
+        try {
+          const codes: string[] = JSON.parse(decryptField(user.mfaBackupCodes) || '[]');
+          const h = hashBackupCode(mfaCode);
+          const idx = codes.indexOf(h);
+          if (idx >= 0) {
+            mfaOk = true;
+            codes.splice(idx, 1);
+            const { encryptField } = await import('@/lib/encryption');
+            await prisma.user.update({ where: { id: user.id }, data: { mfaBackupCodes: encryptField(JSON.stringify(codes)) } });
+          }
+        } catch { /* ignore */ }
+      }
+      if (!mfaOk) {
+        recordFailedLogin(key);
+        return NextResponse.json({ ok: false, mfaRequired: true, error: 'Código de verificação inválido.' }, { status: 401 });
+      }
     }
 
     clearLoginAttempts(key);

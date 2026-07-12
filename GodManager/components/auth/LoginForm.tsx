@@ -44,6 +44,8 @@ export function LoginForm() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
 
   useEffect(() => {
     // E-mail vindo do checkout (?email=) tem prioridade; senão usa o "lembrar".
@@ -101,12 +103,22 @@ export function LoginForm() {
     setErrors(next);
     if (Object.keys(next).length) return;
 
+    if (mfaRequired && mfaCode.trim().length < 6) {
+      toast('Digite o código de 6 dígitos do app autenticador.', 'error');
+      return;
+    }
+
     setLoading(true);
     await new Promise((r) => setTimeout(r, 400));
-    const res = await loginAsync(email.trim(), password);
+    const res = await loginAsync(email.trim(), password, mfaRequired ? mfaCode.trim() : undefined);
 
     if (!res.ok) {
       setLoading(false);
+      if (res.mfaRequired) {
+        setMfaRequired(true);
+        toast(mfaRequired ? 'Código inválido. Tente novamente.' : 'Verificação em duas etapas: digite o código do app autenticador.', mfaRequired ? 'error' : 'info');
+        return;
+      }
       // Corrida pós-pagamento: o webhook pode não ter ativado a conta ainda.
       const activating = welcomeBanner && /pendente/i.test(res.error || '');
       toast(
@@ -254,6 +266,26 @@ export function LoginForm() {
           </button>
         </div>
       </div>
+
+      {mfaRequired ? (
+        <div className="space-y-1.5">
+          <label htmlFor="login-mfa" className="text-[10px] font-semibold uppercase tracking-[0.2em] text-login-gold">
+            Código de verificação (2FA)
+          </label>
+          <Input
+            id="login-mfa"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="000000"
+            value={mfaCode}
+            onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            className={`${inputLoginClass} !pl-4 tracking-[0.4em]`}
+            autoFocus
+          />
+          <p className="text-[12px] text-login-muted">Abra seu app autenticador e digite o código de 6 dígitos (ou um código de backup).</p>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-4 text-[13px]">
         <label className="flex cursor-pointer items-center gap-2 text-login-muted">
