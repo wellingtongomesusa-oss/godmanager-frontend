@@ -2820,6 +2820,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div class="gm-ix-actions" id="qb-head-actions"></div>
  </div>
+ <!-- #6 — Conexão OAuth2 com QuickBooks Online -->
+ <div id="qb-conn-card" style="margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--paper);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:12px;min-width:0">
+   <div id="qb-conn-dot" style="width:10px;height:10px;border-radius:50%;background:var(--ink3);flex-shrink:0"></div>
+   <div>
+    <div id="qb-conn-title" style="font-size:13px;font-weight:700;color:var(--ink)">Verificando ligação…</div>
+    <div id="qb-conn-desc" style="font-size:11px;color:var(--ink3);margin-top:2px">—</div>
+   </div>
+  </div>
+  <div id="qb-conn-actions" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+ </div>
  <div class="gm-ix-kpi-grid" id="qb-kpi-wrap">
  <div class="gm-ix-kpi k2"><div class="k-l">Total Receitas</div><div class="k-v" id="qb-kpi-rev"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">YTD</div><div class="k-bar"></div></div>
  <div class="gm-ix-kpi"><div class="k-l">Total Despesas</div><div class="k-v" id="qb-kpi-exp"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">YTD</div><div class="k-bar"></div></div>
@@ -7577,6 +7588,74 @@ async function gmOsdPnlLoad(pid){
  }catch(e){panel.style.display='none';}
 }
 window.gmOsdPnlLoad=gmOsdPnlLoad;
+// ===== #6 — QuickBooks Online: conexão OAuth2 (status / connect / disconnect) =====
+async function gmQbInit(){
+ var title=document.getElementById('qb-conn-title');
+ var desc=document.getElementById('qb-conn-desc');
+ var dot=document.getElementById('qb-conn-dot');
+ var acts=document.getElementById('qb-conn-actions');
+ var sub=document.getElementById('qb-sub-status');
+ if(!title||!acts)return;
+ // Banner de retorno do OAuth (?qb=connected|error) e limpeza da query
+ try{
+  var sp=new URLSearchParams(window.location.search);
+  var qb=sp.get('qb');
+  if(qb){
+   var msg=sp.get('qbMsg')||'';
+   if(qb==='connected')alert('QuickBooks conectado.'+(msg?(' '+msg):''));
+   else if(qb==='error')alert('QuickBooks: '+(msg||'falha ao conectar.'));
+   sp.delete('qb');sp.delete('qbMsg');
+   var url=window.location.pathname+(sp.toString()?('?'+sp.toString()):'')+window.location.hash;
+   window.history.replaceState(null,'',url);
+  }
+ }catch(e){}
+ title.textContent='Verificando ligação…';acts.innerHTML='';
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var r=await fetch('/api/quickbooks/status'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok){title.textContent='Erro ao verificar QuickBooks';return;}
+  var env=j.environment?(' · '+j.environment):'';
+  if(!j.configured){
+   if(dot)dot.style.background='var(--amber)';
+   title.textContent='QuickBooks não configurado';
+   if(desc)desc.textContent='Defina QB_CLIENT_ID / QB_CLIENT_SECRET / QB_REDIRECT_URI no servidor.';
+   if(sub)sub.textContent='Não configurado';
+   return;
+  }
+  if(j.connected){
+   if(dot)dot.style.background='#2a6e4e';
+   title.textContent='QuickBooks conectado'+env;
+   if(desc)desc.textContent=(j.realmId?('Empresa '+j.realmId+' · '):'')+(j.connectedAt?('desde '+String(j.connectedAt).slice(0,10)):'');
+   if(sub)sub.textContent='Conectado';
+   acts.innerHTML='<button type="button" onclick="gmQbConnect()" style="padding:8px 14px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">Reconectar</button>'
+    +'<button type="button" onclick="gmQbDisconnect()" style="padding:8px 14px;border:1px solid var(--red-bd,#e0b4b4);border-radius:7px;background:var(--red-bg,#fdecec);color:var(--red,#b83030);font-size:12px;font-weight:600;cursor:pointer">Desconectar</button>';
+  }else{
+   if(dot)dot.style.background='var(--ink3)';
+   title.textContent='QuickBooks não conectado'+env;
+   if(desc)desc.textContent='Conecte a conta para lançar transações e sincronizar (US GAAP).';
+   if(sub)sub.textContent='Não conectado';
+   acts.innerHTML='<button type="button" onclick="gmQbConnect()" style="padding:9px 18px;border:none;border-radius:7px;background:#2ca01c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Conectar QuickBooks</button>';
+  }
+ }catch(e){title.textContent='Erro de rede ao verificar QuickBooks';}
+}
+window.gmQbInit=gmQbInit;
+function gmQbConnect(){
+ var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+ window.location.href='/api/quickbooks/connect'+q;
+}
+window.gmQbConnect=gmQbConnect;
+async function gmQbDisconnect(){
+ if(!confirm('Desconectar o QuickBooks deste cliente? Os tokens serão revogados.'))return;
+ try{
+  var payload=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};
+  var r=await fetch('/api/quickbooks/disconnect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload||{})});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Falha ao desconectar.');return;}
+  gmQbInit();
+ }catch(e){alert('Erro de rede.');}
+}
+window.gmQbDisconnect=gmQbDisconnect;
 function gmPnlClose(){var m=document.getElementById('gm-pnl-popup');if(m){if(m._esc)document.removeEventListener('keydown',m._esc);m.remove();}}
 window.gmPnlClose=gmPnlClose;
 function gmPnlRenderMonth(month){
@@ -11867,7 +11946,7 @@ function nav(r){
  'forms-received':()=>{if(typeof gmFormsReceivedRender==='function')void gmFormsReceivedRender();},
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
- quickbooks:()=>{if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
+ quickbooks:()=>{if(typeof gmQbInit==='function')void gmQbInit();if(typeof refreshQuickBooksPage==='function')refreshQuickBooksPage();},
  'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
  clients:()=>{if(typeof loadClients==='function')loadClients();},
