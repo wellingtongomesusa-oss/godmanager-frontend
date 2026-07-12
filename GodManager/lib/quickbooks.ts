@@ -97,30 +97,53 @@ type TokenResponse = {
   token_type?: string;
 };
 
+/** Header de rastreio da Intuit (intuit_tid) — sempre logado em erros p/ suporte. */
+export function tidOf(res: Response): string | null {
+  return res.headers.get('intuit_tid') || res.headers.get('intuit-tid') || null;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
   const cfg = qbConfig();
   const basic = Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString('base64');
-  const res = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${basic}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json',
-    },
-    body: body.toString(),
-  });
-  const text = await res.text();
-  let json: unknown;
-  try {
-    json = text ? JSON.parse(text) : {};
-  } catch {
-    throw new Error(`QuickBooks token: resposta inválida (${res.status})`);
+
+  // Retry com backoff em falhas transitórias (rede / 5xx / 429). NÃO refaz em invalid_grant (4xx).
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(TOKEN_URL, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+        body: body.toString(),
+      });
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      await sleep(300 * (attempt + 1));
+      continue; // erro de rede → retry
+    }
+    const tid = tidOf(res);
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = text ? JSON.parse(text) : {};
+    } catch {
+      lastErr = new Error(`QuickBooks token: resposta inválida (${res.status}) tid=${tid ?? '-'}`);
+      if (res.status >= 500 && attempt < 2) { await sleep(300 * (attempt + 1)); continue; }
+      throw lastErr;
+    }
+    if (!res.ok) {
+      const j = json as { error?: string; error_description?: string };
+      const msg = `QuickBooks token: ${j?.error || res.status}${j?.error_description ? ' — ' + j.error_description : ''} tid=${tid ?? '-'}`;
+      // 5xx/429 = transitório → retry; 4xx (ex.: invalid_grant) = definitivo → lança
+      if ((res.status >= 500 || res.status === 429) && attempt < 2) { lastErr = new Error(msg); await sleep(300 * (attempt + 1)); continue; }
+      console.error('[quickbooks token]', res.status, 'intuit_tid=', tid, j?.error);
+      throw new Error(msg);
+    }
+    return json as TokenResponse;
   }
-  if (!res.ok) {
-    const j = json as { error?: string; error_description?: string };
-    throw new Error(`QuickBooks token: ${j?.error || res.status}${j?.error_description ? ' — ' + j.error_description : ''}`);
-  }
-  return json as TokenResponse;
+  throw lastErr || new Error('QuickBooks token: falha após retries.');
 }
 
 export function exchangeCodeForTokens(code: string): Promise<TokenResponse> {

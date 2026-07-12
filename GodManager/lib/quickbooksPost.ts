@@ -1,4 +1,4 @@
-import { qbApiFetch } from '@/lib/quickbooks';
+import { qbApiFetch, tidOf } from '@/lib/quickbooks';
 
 /**
  * Lançamentos no QuickBooks Online (API v3) seguindo double-entry / US GAAP.
@@ -21,14 +21,19 @@ function faultMessage(json: unknown, fallback: string): string {
 
 async function qbRead(clientId: string, path: string): Promise<unknown> {
   const res = await qbApiFetch(clientId, path.includes('?') ? `${path}&minorversion=${MINOR}` : `${path}?minorversion=${MINOR}`);
+  const tid = tidOf(res);
   const text = await res.text();
   let json: unknown = {};
   try {
     json = text ? JSON.parse(text) : {};
   } catch {
-    throw new Error(`QuickBooks: resposta inválida (${res.status})`);
+    console.error('[quickbooks read] invalid json', res.status, 'intuit_tid=', tid, 'path=', path);
+    throw new Error(`QuickBooks: resposta inválida (${res.status}) tid=${tid ?? '-'}`);
   }
-  if (!res.ok) throw new Error(faultMessage(json, `QuickBooks ${res.status}`));
+  if (!res.ok) {
+    console.error('[quickbooks read] error', res.status, 'intuit_tid=', tid, 'path=', path, faultMessage(json, ''));
+    throw new Error(`${faultMessage(json, `QuickBooks ${res.status}`)} tid=${tid ?? '-'}`);
+  }
   return json;
 }
 
@@ -37,14 +42,19 @@ async function qbCreate(clientId: string, entity: string, body: unknown): Promis
     method: 'POST',
     body: JSON.stringify(body),
   });
+  const tid = tidOf(res);
   const text = await res.text();
   let json: unknown = {};
   try {
     json = text ? JSON.parse(text) : {};
   } catch {
-    throw new Error(`QuickBooks: resposta inválida (${res.status})`);
+    console.error('[quickbooks create] invalid json', res.status, 'intuit_tid=', tid, 'entity=', entity);
+    throw new Error(`QuickBooks: resposta inválida (${res.status}) tid=${tid ?? '-'}`);
   }
-  if (!res.ok) throw new Error(faultMessage(json, `QuickBooks ${res.status}`));
+  if (!res.ok) {
+    console.error('[quickbooks create] error', res.status, 'intuit_tid=', tid, 'entity=', entity, faultMessage(json, ''));
+    throw new Error(`${faultMessage(json, `QuickBooks ${res.status}`)} tid=${tid ?? '-'}`);
+  }
   return json as Record<string, unknown>;
 }
 

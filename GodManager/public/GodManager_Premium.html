@@ -10796,8 +10796,13 @@ function rampTxDate(tx){
 }
 function rampTxHolder(tx){
  var u=tx&&tx.user;
- if(u&&typeof u==='object')return [u.first_name,u.last_name].filter(Boolean).join(' ').trim()||(u.email||'—');
- return (tx&&tx.card_holder_name)||(tx&&tx.cardholder&&tx.cardholder.display_name)||'—';
+ if(u&&typeof u==='object'){var nm=[u.first_name,u.last_name].filter(Boolean).join(' ').trim();if(nm)return nm;if(u.email)return u.email;}
+ var direct=(tx&&tx.card_holder_name)||(tx&&tx.cardholder&&(tx.cardholder.display_name||[tx.cardholder.first_name,tx.cardholder.last_name].filter(Boolean).join(' ').trim()))||'';
+ if(direct)return String(direct).trim();
+ // fallback: nome do titular pelo card_id (mapa dos cartões)
+ var cid=(tx&&(tx.card_id!=null?tx.card_id:(tx.card&&tx.card.id)));
+ if(cid!=null&&window.__gmRampCardHolders&&window.__gmRampCardHolders[String(cid)])return window.__gmRampCardHolders[String(cid)];
+ return '—';
 }
 function rampTxEmail(tx){
  var u=tx&&tx.user;
@@ -10895,6 +10900,15 @@ function rampSpendForHolderEmail(txs,email){
 }
 function rampRenderFromData(txs,cards,useMock,opts){
  opts=opts||{};
+ // mapa card_id -> nome do titular (ex.: Henrique, Paloma) p/ preencher a coluna Titular
+ window.__gmRampCardHolders=window.__gmRampCardHolders||{};
+ if(Array.isArray(cards)){
+  cards.forEach(function(c){
+   if(!c||c.id==null)return;
+   var nm=(typeof rampCardName==='function')?rampCardName(c):(c.display_name||c.cardholder_name||'');
+   if(nm&&nm!=='—')window.__gmRampCardHolders[String(c.id)]=String(nm).trim();
+  });
+ }
  var note=document.getElementById('ramp-mock-note');
  var errEl=document.getElementById('ramp-conn-err');
  if(errEl&&!opts.keepError){errEl.classList.remove('on');errEl.textContent='';}
