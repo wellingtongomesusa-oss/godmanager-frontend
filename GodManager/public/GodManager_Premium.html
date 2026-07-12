@@ -6210,6 +6210,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    </div>
   </div>
   <div id="rec-body" style="padding:16px 18px;display:none">
+   <!-- Conexão bancária (Plaid) -->
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--border);border-radius:9px;background:var(--cream);margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+     <span id="rec-bank-dot" style="width:10px;height:10px;border-radius:50%;background:var(--ink3);flex-shrink:0"></span>
+     <div>
+      <div style="font-size:12px;font-weight:700;color:var(--ink)">Banco (Plaid)</div>
+      <div id="rec-bank-desc" style="font-size:11px;color:var(--ink3)">Verificando…</div>
+     </div>
+    </div>
+    <div id="rec-bank-actions" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+   </div>
    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
     <div>
      <label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">SALDO INICIAL ($)</label>
@@ -8054,6 +8065,7 @@ function gmRecRender(){
  var body=document.getElementById('rec-body');var empty=document.getElementById('rec-empty');
  if(!rec){if(body)body.style.display='none';if(empty)empty.style.display='block';return;}
  if(body)body.style.display='block';if(empty)empty.style.display='none';
+ if(typeof gmPlaidBankStatus==='function')void gmPlaidBankStatus();
  var setV=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
  var setT=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
  setV('rec-opening',rec.openingBalance||'0.00');
@@ -8156,6 +8168,64 @@ async function gmRecImportPlaid(){
  }catch(e){alert('Erro de rede ao importar do banco.');}
 }
 window.gmRecImportPlaid=gmRecImportPlaid;
+// ===== Conectar Banco (Plaid Link) =====
+function gmPlaidEntityId(){var p=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};return (p&&p.clientId)?String(p.clientId):'';}
+function gmPlaidLoadSdk(){
+ return new Promise(function(resolve,reject){
+  if(window.Plaid){resolve();return;}
+  var s=document.createElement('script');
+  s.src='https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+  s.onload=function(){resolve();};
+  s.onerror=function(){reject(new Error('Falha ao carregar o Plaid.'));};
+  document.head.appendChild(s);
+ });
+}
+async function gmPlaidBankStatus(){
+ var dot=document.getElementById('rec-bank-dot');var desc=document.getElementById('rec-bank-desc');var acts=document.getElementById('rec-bank-actions');
+ if(!desc||!acts)return;
+ var eid=gmPlaidEntityId();
+ desc.textContent='Verificando…';acts.innerHTML='';
+ try{
+  var q='?linkType=CLIENT'+(eid?('&entityId='+encodeURIComponent(eid)):'');
+  var r=await fetch('/api/plaid/status'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok){desc.textContent='indisponível';return;}
+  if(j.linked){
+   if(dot)dot.style.background='#2a6e4e';
+   desc.textContent=(j.institutionName||'Banco')+(j.accountMask?(' ••'+j.accountMask):'')+' · conectado';
+   acts.innerHTML='<button type="button" onclick="gmPlaidConnectBank()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Reconectar</button>';
+  }else{
+   if(dot)dot.style.background='var(--ink3)';
+   desc.textContent='Nenhum banco conectado';
+   acts.innerHTML='<button type="button" onclick="gmPlaidConnectBank()" style="padding:8px 14px;border:none;border-radius:6px;background:#22558c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Conectar banco</button>';
+  }
+ }catch(e){desc.textContent='erro de rede';}
+}
+window.gmPlaidBankStatus=gmPlaidBankStatus;
+async function gmPlaidConnectBank(){
+ var eid=gmPlaidEntityId();
+ try{
+  await gmPlaidLoadSdk();
+  var rt=await fetch('/api/plaid/link-token',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({linkType:'CLIENT',entityId:eid})});
+  var jt=await rt.json();
+  if(!rt.ok||!jt.ok||!jt.linkToken){alert((jt&&jt.error)||'Falha ao iniciar o Plaid.');return;}
+  var handler=window.Plaid.create({
+   token:jt.linkToken,
+   onSuccess:async function(public_token){
+    try{
+     var re=await fetch('/api/plaid/exchange',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({publicToken:public_token,linkType:'CLIENT',entityId:eid})});
+     var je=await re.json();
+     if(!re.ok||!je.ok){alert((je&&je.error)||'Falha ao vincular o banco.');return;}
+     if(typeof showToast==='function')showToast('Banco conectado com sucesso.','success');else alert('Banco conectado com sucesso.');
+     gmPlaidBankStatus();
+    }catch(e){alert('Erro ao finalizar a conexão.');}
+   },
+   onExit:function(err){if(err){console.warn('[plaid link exit]',err);}}
+  });
+  handler.open();
+ }catch(e){alert(e&&e.message?e.message:'Erro ao abrir o Plaid.');}
+}
+window.gmPlaidConnectBank=gmPlaidConnectBank;
 async function gmRecToggleItem(itemId,cleared){
  var payload=gmRecPayload();payload.itemId=itemId;payload.cleared=cleared;
  try{

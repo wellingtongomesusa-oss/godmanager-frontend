@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const response = await plaid.linkTokenCreate({
       user: { client_user_id: entityId },
       client_name: 'GodManager',
-      products: [Products.Auth, Products.Identity],
+      products: [Products.Auth, Products.Identity, Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
     });
