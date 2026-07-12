@@ -27200,7 +27200,10 @@ function gmJobsFollowRenderJobRow(r,isLastRow){
  var badgeTitle=isVFree?'V Free':gmHtmlEscAttr(String(vendor||''));
  var acc=r.vendorRespondedAt?('Aceite: '+String(r.vendorRespondedAt).slice(0,10)):'';
  var nameEsc=isVFree?'V Free':gmHtmlEscAttr(String(badgeLbl||''));
- var badgeInner='<div class="gm-jf-vname">'+nameEsc+'</div>'+(acc?'<div class="gm-jf-vaccept">'+gmHtmlEscAttr(String(acc))+'</div>':'');
+ var vTrig=(vendor&&!isVFree);
+ var vTrigDate=r.serviceDate?String(r.serviceDate).slice(0,10):(r.updatedAt?String(r.updatedAt).slice(0,10):'');
+ var trigHtml=vTrig?('<div class="gm-jf-vtrig" style="font-size:9px;font-weight:700;letter-spacing:.3px;color:#2a6e4e" title="Vendor acionado">🔧 ACIONADO'+(vTrigDate?(' · '+gmHtmlEscAttr(vTrigDate)):'')+'</div>'):'';
+ var badgeInner='<div class="gm-jf-vname">'+nameEsc+'</div>'+trigHtml+(acc?'<div class="gm-jf-vaccept">'+gmHtmlEscAttr(String(acc))+'</div>':'');
  var dt=(typeof gmJobsRowDateStr==='function')?gmJobsRowDateStr(r):'';
  var val=parseFloat(r.value||r.ownerCharged||r.amount||0)||0;
  var valStr=val>0?((typeof jobsMoney==='function')?jobsMoney(val):'$'+val.toFixed(2)):'';
