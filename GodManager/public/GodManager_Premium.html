@@ -2819,7 +2819,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink)">Lançar transação do Ramp</h3>
    <button type="button" onclick="gmRampPostClose()" style="border:none;background:transparent;color:var(--ink3);font-size:20px;line-height:1;cursor:pointer">×</button>
   </div>
-  <div id="gm-ramp-post-info" style="font-size:11px;color:var(--ink2);font-family:'JetBrains Mono',monospace;margin-bottom:16px"></div>
+  <div id="gm-ramp-post-info" style="font-size:11px;color:var(--ink2);font-family:'JetBrains Mono',monospace;margin-bottom:8px"></div>
+  <div id="gm-ramp-post-match-hint" style="display:none;font-size:11px;color:var(--ink);background:var(--cream);border:1px solid var(--border);border-radius:7px;padding:8px 11px;margin-bottom:14px"></div>
 
   <div style="border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:12px">
    <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Débito no statement da casa</div>
@@ -10959,6 +10960,7 @@ function rampRenderFromData(txs,cards,useMock,opts){
  gmRampTxRerender();
  rampAggregateAndRender(txs,cards);
  if(typeof gmRampRefreshAnalytics==='function')try{gmRampRefreshAnalytics();}catch(eA){}
+ if(typeof gmRampMatchRefresh==='function')try{gmRampMatchRefresh();}catch(eM){}
 }
 var GM_RAMP_TX_CAP=300;
 function gmRampTxFilteredList(){
@@ -10987,7 +10989,9 @@ function gmRampTxRerender(skipRefresh){
    var txId=String((tx&&tx.id)||'').trim();
    var tr=document.createElement('tr');
    var postCell='<td style="text-align:center" data-ramp-post-cell="'+gmHtmlEscAttr(txId)+'">'+gmRampPostCellHtml(txId)+'</td>';
-   tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>'+postCell;
+   var mt=(window.__gmRampMatches&&window.__gmRampMatches[txId])||null;
+   var houseBadge=mt?('<div style="margin-top:3px;font-size:9px;color:'+(mt.confidence==='high'?'#2a6e4e':(mt.confidence==='medium'?'#c47b28':'var(--ink3)'))+';white-space:nowrap" title="Match por vendor/valor/data ('+mt.confidence+')">🏠 '+gmHtmlEscAttr(String(mt.propertyLabel||'').slice(0,28))+(mt.monthRef?(' · '+gmHtmlEscAttr(mt.monthRef)):'')+'</div>'):'';
+   tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+houseBadge+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>'+postCell;
    tbT.appendChild(tr);
   });
  }
@@ -10996,6 +11000,22 @@ function gmRampTxRerender(skipRefresh){
  if(!skipRefresh)gmRampPostingsRefresh(shown,true);
 }
 window.gmRampTxRerender=gmRampTxRerender;
+// Casa cada transação do Ramp com um job/expense (vendor+valor+data) -> descobre a casa
+async function gmRampMatchRefresh(){
+ var cid=gmRampActiveClientId();if(!cid)return;
+ var all=(window.__gmRampAllTx||[]).slice(0,500);
+ if(!all.length)return;
+ var payload={clientId:cid,transactions:all.map(function(tx){
+  var raw=(tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||(tx&&tx.posted_at)||'';
+  return {id:String((tx&&tx.id)||'').trim(),merchant:rampTxMerchant(tx),amount:rampTxAmount(tx),date:raw};
+ })};
+ try{
+  var r=await fetch('/api/ramp/match',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(j&&j.ok){window.__gmRampMatches=j.matches||{};gmRampTxRerender(true);}
+ }catch(e){}
+}
+window.gmRampMatchRefresh=gmRampMatchRefresh;
 function gmRampTxExportCsv(){
  var list=gmRampTxFilteredList();
  if(!list.length){alert('Nenhuma transação para exportar.');return;}
@@ -11161,9 +11181,17 @@ function gmRampPostOpen(txId){
  var minfo=document.getElementById('gm-ramp-post-info');
  if(minfo)minfo.textContent=merchant+' · '+rampFmtMoney(amount)+(ym?(' · '+ym):'');
  var ymEl=document.getElementById('gm-ramp-post-ym');
- if(ymEl)ymEl.value=ym;
- gmRampLoadProps(); // carrega casas via /api/properties (value = id do banco)
+ // se houver match (vendor->casa), pré-preenche mês do job; senão o mês da transação
+ var mt=(window.__gmRampMatches&&window.__gmRampMatches[txId])||null;
+ var preYm=(mt&&mt.monthRef&&/^\d{4}-\d{2}$/.test(mt.monthRef))?mt.monthRef:ym;
+ if(ymEl)ymEl.value=preYm;
+ gmRampLoadProps(mt&&mt.propertyId?mt.propertyId:null); // carrega casas e pré-seleciona a casa do match
  gmRampQbAcctsLoad(cid); // carrega contas do QuickBooks se conectado
+ var hint=document.getElementById('gm-ramp-post-match-hint');
+ if(hint){
+  if(mt){hint.style.display='block';hint.innerHTML='🏠 Match: <b>'+gmHtmlEscAttr(String(mt.propertyLabel||''))+'</b>'+(mt.vendorName?(' · '+gmHtmlEscAttr(mt.vendorName)):'')+' <span style="color:var(--ink3)">('+mt.confidence+')</span>';}
+  else{hint.style.display='none';}
+ }
  var modal=document.getElementById('gm-ramp-post-modal');
  if(modal)modal.style.display='flex';
 }
@@ -11193,7 +11221,7 @@ async function gmRampQbAcctsLoad(cid){
   wrap.style.display='block';
  }catch(e){}
 }
-async function gmRampLoadProps(){
+async function gmRampLoadProps(preselectId){
  var sel=document.getElementById('gm-ramp-post-prop');
  if(!sel)return;
  var escA=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/"/g,'&quot;');};
@@ -11211,6 +11239,7 @@ async function gmRampLoadProps(){
    opts+='<option value="'+escA(String(p.id))+'">'+escT(label)+(p.ownerName?(' — '+escT(String(p.ownerName))):'')+'</option>';
   });
   sel.innerHTML=opts;
+  if(preselectId){try{sel.value=String(preselectId);}catch(e){}}
  }catch(e){sel.innerHTML='<option value="">— erro ao carregar —</option>';}
 }
 function gmRampPostClose(){var m=document.getElementById('gm-ramp-post-modal');if(m)m.style.display='none';}
