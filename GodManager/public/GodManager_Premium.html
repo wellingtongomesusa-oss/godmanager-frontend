@@ -20402,6 +20402,10 @@ function ltExpRender(){
   const vOwn=esc(ltFmt(isPm?r.ownerCharged:ltExpValueWithExtras(r)));
   const dStr=isPm?String(r.serviceDate||'').slice(0,10):(r.due||r.paid||'—');
   const catShow=esc(r.category);
+  var _cdMap={TENANT:'Tenant',OWNER:'Owner',MANAGER_PROP:'Manager Prop'};
+  var _cdC=_cdMap[String(r.creditParty||'').toUpperCase()]||'';
+  var _cdD=_cdMap[String(r.debitParty||'').toUpperCase()]||'';
+  var cdBadge=(_cdC||_cdD)?('<div style="margin-top:4px;font-size:9px;font-weight:600;color:var(--ink3);white-space:nowrap" title="Crédito → Débito">'+(_cdD?'<span style="color:var(--red)">'+esc(_cdD)+'</span>':'—')+' <span style="color:var(--ink3)">→</span> '+(_cdC?'<span style="color:var(--green)">'+esc(_cdC)+'</span>':'—')+'</div>'):'';
   const idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const stNorm=ltExpRowNormPmStatus(r);
   const _isFee=!!(r&&r._apiRaw&&r._apiRaw.metadata&&r._apiRaw.metadata.maintenanceFeeFor);
@@ -20452,7 +20456,7 @@ function ltExpRender(){
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--amber)">${mk}</td>
  <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${vOwn}</td>
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltFmtMonth(r.month)}</td>
- <td style="padding:9px 12px;font-size:10px;color:var(--ink3)">${catShow}</td>
+ <td style="padding:9px 12px;font-size:10px;color:var(--ink3)">${catShow}${cdBadge}</td>
  <td style="padding:9px 12px;text-align:center;font-size:10px;color:var(--ink3)">${esc(dStr)}</td>
  `+chamadosCell+`
  `+abertoCell+`
