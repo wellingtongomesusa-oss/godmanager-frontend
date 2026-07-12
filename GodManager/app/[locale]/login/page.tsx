@@ -8,6 +8,7 @@ import { SiteHeader } from '@/components/landing/SiteHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/i18n/navigation';
 import { getGodManagerPremiumUrl } from '@/lib/godmanager-premium-url';
+import { GodrealtorPromo } from '@/components/marketing/GodrealtorPromo';
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=2000&q=85';
@@ -114,19 +115,11 @@ export default async function LoginPage({ params: { locale } }: PageProps) {
                 {tFooter('security')}
               </Link>
             </nav>
-            <a
-              href="https://www.godrealtor.us"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-5 flex flex-col items-center rounded-lg border border-[#c9a96e]/40 bg-[#c9a96e]/5 px-4 py-2.5 text-center transition hover:border-[#c9a96e]/70 hover:bg-[#c9a96e]/10"
-            >
-              <span className="font-inter text-[12px] font-medium text-[#1a3a5c]">
-                {tLogin('partnerGodrealtor')}
-              </span>
-              <span className="mt-0.5 font-inter text-[10px] text-slate-400">
-                {tLogin('partnerGodrealtorSub')}
-              </span>
-            </a>
+            <GodrealtorPromo
+              locale={locale}
+              title={tLogin('partnerGodrealtor')}
+              sub={tLogin('partnerGodrealtorSub')}
+            />
             <p className="mt-8 text-center font-inter text-[11px] leading-relaxed text-slate-500">
               <NextLink
                 href={getGodManagerPremiumUrl()}
