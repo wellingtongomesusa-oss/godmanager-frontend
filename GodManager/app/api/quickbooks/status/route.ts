@@ -11,10 +11,23 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
 
   const cfg = qbConfig();
+  // Diagnóstico seguro (NÃO expõe o secret): ajuda a checar se as envs estão certas.
+  const diag = {
+    redirectUri: cfg.redirectUri || null,
+    clientIdPreview: cfg.clientId ? `${cfg.clientId.slice(0, 6)}…(${cfg.clientId.length})` : null,
+    hasSecret: Boolean(cfg.clientSecret),
+    apiBaseUrl: cfg.apiBaseUrl,
+  };
   const clientId = new URL(req.url).searchParams.get('clientId');
   const scope = await resolveBankAccountClientScope(user, clientId);
   if (!scope.ok) {
-    return NextResponse.json({ ok: true, configured: cfg.isConfigured, connected: false, environment: cfg.environment });
+    return NextResponse.json({
+      ok: true,
+      configured: cfg.isConfigured,
+      connected: false,
+      environment: cfg.environment,
+      diag,
+    });
   }
 
   const conn = await getConnectionStatus(scope.clientId);
@@ -28,5 +41,6 @@ export async function GET(req: Request) {
     connectedAt: conn?.connectedAt ? conn.connectedAt.toISOString() : null,
     expiresAt: conn?.expiresAt ? conn.expiresAt.toISOString() : null,
     lastSyncAt: conn?.lastSyncAt ? conn.lastSyncAt.toISOString() : null,
+    diag,
   });
 }
