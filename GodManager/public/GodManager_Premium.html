@@ -5067,6 +5067,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-add-expense" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('expense')" style="padding:8px 14px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Expense</button>
  <button type="button" id="osd-upload-csv" onclick="if(typeof osdCsvPick==='function')osdCsvPick()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>
  <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
+ <button type="button" id="osd-approve-all" title="Aprovar todos os lançamentos pendentes desta casa" onclick="if(typeof gmOsdApproveAll==='function')gmOsdApproveAll()" style="padding:8px 14px;background:#f0c14b;color:#7a4d00;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">✓ Aprovar tudo</button>
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  <button type="button" id="osd-preview-pdf" onclick="if(typeof osdPreviewPdf==='function')osdPreviewPdf()" title="Abrir PDF para visualização" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Visualizar PDF</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
@@ -12702,7 +12703,10 @@ window.osdRenderLineItems=function(data){
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid var(--border)';
   var isProv=!!li.provisional;
-  if(isProv)tr.style.background='var(--amber-bg)';
+  var isApproved=!!li.approved;
+  var btApprove=isApproved?'<button type="button" disabled title="Aprovado — lançamento contábil" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid #cde8d5;background:#eafaf0;color:#2a6e4e;cursor:default;margin-right:6px">✓ Aprovado</button>':'<button type="button" title="Aprovar este lançamento" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid #f0c14b;background:#fff7e0;color:#b45309;cursor:pointer;font-weight:600;margin-right:6px">⏳ Aprovar</button>';
+  if(!isApproved)tr.style.background='#fff7e0';
+  else if(isProv)tr.style.background='var(--amber-bg)';
   tr.innerHTML='<td style="padding:10px 12px;color:var(--ink2);white-space:nowrap">'+window.osdEscHtml(window.osdFmtDateShort(li.transactionDate))+'</td>'+
    '<td style="padding:10px 12px;color:var(--ink);max-width:280px">'+window.osdEscHtml(li.description||'')+window.osdLineItemProvisionalBadge(isProv)+'</td>'+
    '<td style="padding:10px 12px;text-align:center;font-size:11px;color:var(--ink2)">'+srcHtml+'</td>'+
@@ -12711,10 +12715,11 @@ window.osdRenderLineItems=function(data){
    '<td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;color:var(--blue)">'+window.osdEscHtml(window.osdFmtCurrency(run))+'</td>'+
    '<td style="padding:10px 12px;text-align:center;white-space:nowrap"></td>';
   var cell=tr.lastElementChild;
-  cell.innerHTML=btEdit+btDel;
+  cell.innerHTML=btApprove+btEdit+btDel;
   var bts=cell.querySelectorAll('button');
-  if(!noEdit&&bts[0])bts[0].onclick=function(){window.osdLiOpenEdit(li.id);};
-  if(!noEdit&&bts[1])bts[1].onclick=function(){window.osdLiDelete(li.id);};
+  if(!isApproved&&bts[0])bts[0].onclick=function(){window.gmOsdApproveLine(li.id);};
+  if(!noEdit&&bts[1])bts[1].onclick=function(){window.osdLiOpenEdit(li.id);};
+  if(!noEdit&&bts[2])bts[2].onclick=function(){window.osdLiDelete(li.id);};
   tbody.appendChild(tr);
  });
 
@@ -13024,6 +13029,28 @@ window.osdStatementSync=async function(){
  }catch(e){alert('Erro: '+(e&&e.message||''));}
 };
 
+/* Aprovação de lançamento no statement (aguardando aprovação -> aprovado = lançamento contábil) */
+window.gmOsdApproveLine=async function(lineItemId){
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/approve',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({lineItemId:lineItemId})});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));return;}
+  if(typeof window.osdLoadStatement==='function')await window.osdLoadStatement();
+ }catch(e){alert('Erro de rede ao aprovar.');}
+};
+window.gmOsdApproveAll=async function(){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){alert('Carregue um statement primeiro.');return;}
+ if(!confirm('Aprovar TODOS os lançamentos pendentes desta casa?'))return;
+ try{
+  var ym=cd.yearMonth||(typeof window.osdYearMonthCurrent==='function'?window.osdYearMonthCurrent():'');
+  var res=await fetch('/api/manager-pro/owner-statement/approve',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:cd.propertyId,yearMonth:ym})});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));return;}
+  if(typeof showToast==='function')showToast((j.approved||0)+' lançamento(s) aprovado(s).','success');
+  if(typeof window.osdLoadStatement==='function')await window.osdLoadStatement();
+ }catch(e){alert('Erro de rede ao aprovar.');}
+};
 window.osdCsvPick=function(){
  var inp=document.getElementById('osd-csv-file');if(inp)inp.click();
 };

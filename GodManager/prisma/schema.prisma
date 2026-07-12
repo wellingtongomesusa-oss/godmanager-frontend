@@ -946,6 +946,8 @@ model StatementLineItem {
   sourceRefId        String?
   provisional        Boolean          @default(false)
   transactionDate    DateTime?
+  approvedAt         DateTime?
+  approvedBy         String?
 
   @@index([ownerMonthPayoutId])
   @@index([clientId])

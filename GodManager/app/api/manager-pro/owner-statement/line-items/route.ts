@@ -45,6 +45,7 @@ function serializeLineItem(li: {
   sortOrder: number;
   provisional: boolean;
   createdAt: Date;
+  approvedAt?: Date | null;
 }) {
   return {
     id: li.id,
@@ -56,6 +57,8 @@ function serializeLineItem(li: {
     transactionDate: li.transactionDate?.toISOString() ?? null,
     sortOrder: li.sortOrder,
     provisional: li.provisional,
+    approved: li.approvedAt != null,
+    approvedAt: li.approvedAt ? li.approvedAt.toISOString() : null,
     createdAt: li.createdAt.toISOString(),
   };
 }
@@ -120,6 +123,7 @@ export async function GET(req: Request) {
             sortOrder: true,
             provisional: true,
             createdAt: true,
+            approvedAt: true,
           },
         })
       : [];
