@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
   let txnDate: Date | null = null;
   if (body?.txnDate) { const d = new Date(String(body.txnDate)); if (!Number.isNaN(d.getTime())) txnDate = d; }
-  const sourceType = ['MANUAL', 'RAMP', 'TENANT_PAYMENT', 'EXPENSE', 'GL'].includes(String(body?.sourceType))
+  const sourceType = ['MANUAL', 'RAMP', 'TENANT_PAYMENT', 'EXPENSE', 'GL', 'PLAID'].includes(String(body?.sourceType))
     ? String(body.sourceType) : 'MANUAL';
 
   const item = await prisma.bankReconciliationItem.create({

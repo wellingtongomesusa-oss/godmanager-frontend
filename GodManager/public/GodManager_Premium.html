@@ -6241,6 +6241,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <div style="width:130px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">VALOR (+/−)</label><input id="rec-it-amount" type="number" step="0.01" placeholder="0.00" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)"></div>
     <div style="width:150px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DATA</label><input id="rec-it-date" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
     <button type="button" onclick="gmRecAddItem()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">+ Item</button>
+    <button type="button" onclick="gmRecImportPlaid()" title="Puxa as transações do banco conectado (Plaid) para o período" style="padding:8px 16px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">⬇ Importar do banco</button>
    </div>
 
    <div style="overflow-x:auto">
@@ -8129,6 +8130,32 @@ async function gmRecAddItem(){
  }catch(e){alert('Erro de rede.');}
 }
 window.gmRecAddItem=gmRecAddItem;
+async function gmRecImportPlaid(){
+ var rec=window.__gmRec;if(!rec){alert('Carregue a conciliação primeiro.');return;}
+ var rid=await gmRecEnsureCreated();if(!rid)return;
+ // período = mês da conciliação (1º ao último dia)
+ var ym=rec.periodMonth||'';var from='',to='';
+ if(/^\d{4}-\d{2}$/.test(ym)){var y=+ym.slice(0,4),m=+ym.slice(5,7);from=ym+'-01';var last=new Date(Date.UTC(y,m,0)).getUTCDate();to=ym+'-'+String(last).padStart(2,'0');}
+ var q=gmRecQuery();var sep=q?'&':'?';
+ try{
+  var r=await fetch('/api/plaid/transactions'+q+sep+'from='+from+'&to='+to,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Falha ao ler o banco.');return;}
+  if(!j.linked){alert('Nenhum banco conectado (Plaid) para esta empresa. Conecte o banco primeiro.');return;}
+  var txs=(j.transactions||[]);
+  if(!txs.length){alert('Sem transações do banco no período.');return;}
+  if(!confirm('Importar '+txs.length+' transação(ões) do banco ('+(j.institutionName||'')+' '+(j.accountMask||'')+') como itens da conciliação?'))return;
+  var added=0;
+  for(var i=0;i<txs.length;i++){
+   var t=txs[i];
+   var payload=gmRecPayload();payload.reconciliationId=rid;payload.description=String(t.name||'—').slice(0,120);payload.amount=Number(t.amount)||0;if(t.date)payload.txnDate=t.date;payload.sourceType='PLAID';payload.sourceRefId=t.id;
+   try{var rr=await fetch('/api/reconciliation/item',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var jj=await rr.json();if(rr.ok&&jj.ok)added++;}catch(e){}
+  }
+  alert(added+' item(ns) importado(s) do banco.');
+  gmRecLoad();
+ }catch(e){alert('Erro de rede ao importar do banco.');}
+}
+window.gmRecImportPlaid=gmRecImportPlaid;
 async function gmRecToggleItem(itemId,cleared){
  var payload=gmRecPayload();payload.itemId=itemId;payload.cleared=cleared;
  try{
@@ -11130,9 +11157,49 @@ function gmRampRenderAnalytics(){
  if(vc)vc.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por categoria',agg)+gmRampBarsH(agg.byCategory)+gmRampAnalyticsTable('Categoria',agg.byCategory)+'</div>';
  var vm=document.getElementById('ramp-view-merchant');
  if(vm)vm.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por empresa (merchant)',agg)+gmRampBarsH(agg.byMerchant)+gmRampAnalyticsTable('Empresa',agg.byMerchant)+'</div>';
- var vh=document.getElementById('ramp-view-holder');
- if(vh)vh.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por titular do cartão',agg)+gmRampBarsH(agg.byCardholder)+gmRampAnalyticsTable('Titular',agg.byCardholder)+'</div>';
+ gmRampRenderHolderView();
 }
+// ===== Por Titular (por pessoa) com drill-down por nome =====
+function gmRampHolderTxs(name){return (window.__gmRampAllTx||[]).filter(function(tx){return rampTxHolder(tx)===name;});}
+function gmRampHolderOpen(name){window.__gmRampHolderSel=name;gmRampRenderHolderView();if(typeof gmRampTabSwitch==='function')gmRampTabSwitch('holder');}
+window.gmRampHolderOpen=gmRampHolderOpen;
+function gmRampHolderBack(){window.__gmRampHolderSel=null;gmRampRenderHolderView();}
+window.gmRampHolderBack=gmRampHolderBack;
+function gmRampRenderHolderView(){
+ var vh=document.getElementById('ramp-view-holder');if(!vh)return;
+ var agg=window.__gmRampAgg;if(!agg){vh.innerHTML='';return;}
+ if(!window.__gmRampHolderSel){
+  var rows=(agg.byCardholder||[]);
+  var max=Math.max.apply(null,rows.map(function(r){return r.total;}).concat([1]));
+  var listHtml=rows.map(function(r){var pct=Math.max(1,Math.round(r.total/max*100));
+   return '<div onclick="gmRampHolderOpen('+JSON.stringify(String(r.key)).replace(/"/g,'&quot;')+')" title="Ver detalhe de '+gmRampAggEsc(r.key)+'" style="display:flex;align-items:center;gap:10px;margin-bottom:7px;cursor:pointer;padding:5px;border-radius:6px" onmouseover="this.style.background=\'var(--cream)\'" onmouseout="this.style.background=\'transparent\'">'
+    +'<div style="width:200px;font-size:12px;color:#22558c;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+gmRampAggEsc(r.key)+' ›</div>'
+    +'<div style="flex:1;background:var(--sand);border-radius:4px;height:16px;min-width:60px"><div style="width:'+pct+'%;height:100%;background:#22558c;border-radius:4px"></div></div>'
+    +'<div style="width:100px;text-align:right;font-family:monospace;font-size:11px;color:var(--ink);font-weight:600">'+rampFmtMoney(r.total)+'</div>'
+    +'<div style="width:46px;text-align:right;font-size:10px;color:var(--ink3)">'+r.count+' tx</div></div>';
+  }).join('');
+  vh.innerHTML='<div class="gm-ix-panel">'+gmRampAnalyticsHead('Gastos por pessoa (clique no nome p/ detalhe)',agg)+(listHtml||'<div style="color:var(--ink3);font-size:12px;padding:12px 0">Sem dados.</div>')+'</div>';
+ }else{
+  var name=window.__gmRampHolderSel;
+  var txs=gmRampHolderTxs(name);
+  var cat={},mer={},total=0;
+  txs.forEach(function(tx){var a=rampTxAmount(tx)||0;total+=a;var c=rampTxCategory(tx)||'—';var m=rampTxMerchant(tx)||'—';cat[c]=(cat[c]||0)+a;mer[m]=(mer[m]||0)+a;});
+  var toRows=function(o){return Object.keys(o).map(function(k){return {key:k,total:Math.round(o[k]*100)/100,count:0};}).sort(function(x,y){return y.total-x.total;});};
+  var esc=gmRampAggEsc;
+  var txList=txs.slice(0,300).map(function(tx){
+   return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;font-size:11px;color:var(--ink3)">'+rampTxDate(tx)+'</td><td style="padding:6px 10px;font-size:12px;color:var(--ink)">'+esc(rampTxMerchant(tx))+'</td><td style="padding:6px 10px;font-size:11px;color:var(--ink3)">'+esc(rampTxCategory(tx))+'</td><td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px;color:var(--ink)">'+rampFmtMoney(rampTxAmount(tx))+'</td></tr>';
+  }).join('');
+  vh.innerHTML='<div class="gm-ix-panel">'
+   +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap"><button type="button" onclick="gmRampHolderBack()" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">← Voltar</button><h3 style="margin:0">'+esc(name)+'</h3><span style="font-size:12px;color:var(--ink3)">'+rampFmtMoney(total)+' · '+txs.length+' transações</span></div>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:16px">'
+    +'<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Por categoria</div>'+gmRampBarsH(toRows(cat),8)+'</div>'
+    +'<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Por empresa</div>'+gmRampBarsH(toRows(mer),8)+'</div>'
+   +'</div>'
+   +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:480px"><thead><tr style="border-bottom:2px solid var(--border);text-align:left"><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Empresa</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Categoria</th><th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Valor</th></tr></thead><tbody>'+txList+'</tbody></table></div>'
+   +'</div>';
+ }
+}
+window.gmRampRenderHolderView=gmRampRenderHolderView;
 function gmRampTabSwitch(tab){
  window.__gmRampTab=tab;
  var map={tx:'ramp-view-tx',period:'ramp-view-period',category:'ramp-view-category',merchant:'ramp-view-merchant',holder:'ramp-view-holder'};
@@ -11389,13 +11456,13 @@ function rampAggregateAndRender(txs,cards){
  var byPerson={};
  for(var j=0;j<txs.length;j++){
   var txp=txs[j];
-  var holder=holderOf(txp)||'Desconhecido';
+  var holder=(typeof rampTxHolder==='function'?rampTxHolder(txp):holderOf(txp))||'Desconhecido';
   holder=String(holder).trim()||'Desconhecido';
   byPerson[holder]=(byPerson[holder]||0)+rampTxAmount(txp);
  }
  var personSorted=Object.entries(byPerson).sort(function(a,b){return b[1]-a[1];});
  var elP=document.getElementById('ramp-agg-person-body');
- if(elP)elP.innerHTML=personSorted.map(function(p){return '<div class="ramp-agg-row"><span class="label">'+esc(p[0])+'</span><span class="value">'+rampFmtMoney(p[1])+'</span></div>';}).join('')||'<div style="color:#94a3b8;text-align:center;padding:10px">Sem dados</div>';
+ if(elP)elP.innerHTML=personSorted.map(function(p){return '<div class="ramp-agg-row" onclick="if(typeof gmRampHolderOpen===&#39;function&#39;)gmRampHolderOpen('+JSON.stringify(String(p[0])).replace(/"/g,'&quot;')+')" title="Ver detalhe" style="cursor:pointer"><span class="label" style="color:#22558c;font-weight:600">'+esc(p[0])+' ›</span><span class="value">'+rampFmtMoney(p[1])+'</span></div>';}).join('')||'<div style="color:#94a3b8;text-align:center;padding:10px">Sem dados</div>';
  var byMerchant={};
  for(var k=0;k<txs.length;k++){
   var txm=txs[k];
