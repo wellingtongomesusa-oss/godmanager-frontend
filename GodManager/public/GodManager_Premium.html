@@ -2829,6 +2829,13 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" class="btn-gm-ix-amber" id="af-btn-import" onclick="gmAppfolioDoImport()" disabled>Importar</button>
  </div>
  <p id="af-last-upload" style="margin-top:16px;font-size:11px;color:var(--ink3)"></p>
+ <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+  <h3 style="margin:0 0 4px">General Ledger &rarr; P&amp;L por casa</h3>
+  <p style="font-size:11px;color:var(--ink3);margin:0 0 10px">Suba o General Ledger COMPLETO do AppFolio (todas as contas). Calcula receita, despesa, mgmt fee real e lucro por casa/mês, e atualiza os statements e gráficos.</p>
+  <input type="file" id="af-glpnl-file" accept=".csv,text/csv" style="display:none" onchange="gmGlPnlUpload(this)">
+  <button type="button" class="btn-gm-ix-amber" onclick="document.getElementById('af-glpnl-file').click()">&#8593; Subir General Ledger (P&amp;L)</button>
+  <span id="af-glpnl-status" style="margin-left:12px;font-size:11px;color:var(--ink3)"></span>
+ </div>
  </div>
  </div>
  <div class="gm-ix-kpi-grid" id="af-summary-grid" style="display:none;margin-top:4px">
@@ -7429,6 +7436,22 @@ async function gmPropertyRentChartOpen(propId,label){
  overlay.addEventListener('click',function(e){if(e.target===overlay){overlay.remove();document.removeEventListener('keydown',escH);}});
 }
 window.gmPropertyRentChartOpen=gmPropertyRentChartOpen;
+async function gmGlPnlUpload(inputEl){
+ if(!inputEl||!inputEl.files||!inputEl.files[0])return;
+ var file=inputEl.files[0];
+ var st=document.getElementById('af-glpnl-status');
+ if(st){st.textContent='Processando '+file.name+'…';st.style.color='var(--ink3)';}
+ try{
+  var fd=new FormData();fd.append('file',file);
+  if(typeof gmBankAccountsClientPayload==='function'){var pl=gmBankAccountsClientPayload();if(pl&&pl.clientId)fd.append('clientId',pl.clientId);}
+  var res=await fetch('/api/analytics/gl-pnl',{method:'POST',credentials:'include',body:fd});
+  var j=await res.json().catch(function(){return{};});
+  try{inputEl.value='';}catch(_e){}
+  if(!res.ok||!j.ok){if(st){st.textContent=(j&&j.error)||('Erro '+res.status);st.style.color='var(--red)';}return;}
+  if(st){st.textContent='✓ P&L de '+j.saved+' casa-mês ('+((j.months&&j.months.length)||0)+' meses'+(j.unmatched?(', '+j.unmatched+' sem casar'):'')+').';st.style.color='#2a6e4e';}
+ }catch(e){console.warn('gmGlPnlUpload',e);if(st){st.textContent='Erro de rede.';st.style.color='var(--red)';}}
+}
+window.gmGlPnlUpload=gmGlPnlUpload;
 async function gmTrustSwapAccounts(){
  var selA=document.getElementById('trust-remap-a');
  var selB=document.getElementById('trust-remap-b');
