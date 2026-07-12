@@ -4901,6 +4901,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red)">Exp Mês (PM)</th>
 <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Mes</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
+ <th style="padding:10px 8px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)" title="Comentários / histórico da casa">💬</th>
  <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Acoes</th>
  </tr></thead>
  <tbody id="ltp-tbody"></tbody>
@@ -22576,26 +22577,42 @@ async function ltpRender(){
  ${ltpRowNetExpDia15(r, expByProp)}
  <td style="padding:9px 12px;text-align:center;font-size:11px;color:var(--ink3)">${ltCreatedMonthLabel(r)}</td>
  <td style="padding:9px 12px;text-align:center" onclick="event.stopPropagation()"><button type="button" data-ltp-st-toggle data-ltp-id="${esc(r.id)}" title="Alternar aprovado / pendente" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;${stStyle[r.status]||''};cursor:pointer;font-family:'Inter',sans-serif;border-width:1px;border-style:solid">${stLabel[r.status]||'—'}</button></td>
+ <td style="padding:9px 8px;text-align:center" onclick="event.stopPropagation()">
+ <button type="button" title="Histórico de comentários da casa" onclick="event.stopPropagation();if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY','${esc(r._apiId||r.id)}',{title:'Histórico da casa'})" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:13px;cursor:pointer">💬</button>
+ </td>
  <td style="padding:9px 10px;text-align:center" onclick="event.stopPropagation()">
- <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
- <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Ver</button>
+ <button type="button" class="ltp-act-toggle" onclick="gmLtpToggleActions(this)" title="Mostrar ações" style="padding:4px 12px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer">Ver ▾</button>
+ <div class="ltp-act-more" style="display:none;gap:4px;justify-content:center;flex-wrap:wrap;align-items:center">
+ <button type="button" data-ltp-a="detail" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Detalhe</button>
  <button type="button" onclick="event.stopPropagation();if(typeof gmPropertyPaymentsOpen==='function')gmPropertyPaymentsOpen('${esc(r.id)}');" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Pagamentos</button>
  <button type="button" data-ltp-a="movein" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);border-radius:4px;font-size:10px;cursor:pointer">Move In</button>
  <button type="button" data-ltp-a="moveout" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;cursor:pointer">Move Out</button>
  <button type="button" data-ltp-a="leases" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">Histórico</button>
- <button type="button" title="Histórico de comentários da casa" onclick="event.stopPropagation();if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY','${esc(r._apiId||r.id)}',{title:'Histórico da casa'})" style="padding:4px 8px;background:var(--cream);color:var(--ink2);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">💬</button>
  <button type="button" data-ltp-a="edit" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--slate-bg);color:var(--slate);border:1px solid #c8d0dc;border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
  <button type="button" data-ltp-a="del" data-ltp-id="${esc(r.id)}" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
+ <button type="button" onclick="gmLtpToggleActions(this)" title="Recolher" style="padding:4px 10px;background:var(--sand);color:var(--ink3);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">▴ Recolher</button>
  </div>
  </td>
  </tr>`;
 }).join('');
  if(typeof window.ltpPopulateOccupancyFilter==='function')window.ltpPopulateOccupancyFilter();
 }
+/* Expande/recolhe os botões de ação da linha de propriedade (deixa a linha limpa: só "Ver") */
+function gmLtpToggleActions(btn){
+ var td=btn&&btn.closest?btn.closest('td'):null;
+ if(!td)return;
+ var more=td.querySelector('.ltp-act-more');
+ var tog=td.querySelector('.ltp-act-toggle');
+ if(!more)return;
+ var show=(more.style.display==='none'||more.style.display==='');
+ more.style.display=show?'flex':'none';
+ if(tog)tog.style.display=show?'none':'inline-block';
+}
+window.gmLtpToggleActions=gmLtpToggleActions;
 
-// 
+//
 // LTCLNPAGE — CLEANINGS PAGE RENDER
-// 
+//
 function gmUserHasTenantClientId(){
  try{
   var u=window.__gmCurrentUser;
