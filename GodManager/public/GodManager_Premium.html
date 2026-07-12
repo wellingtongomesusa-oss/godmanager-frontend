@@ -2774,7 +2774,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  </div>
  <div class="gm-ix-panel">
- <h3>Transações Recentes</h3>
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+  <h3 style="margin:0">Transações</h3>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+   <input id="ramp-tx-search" type="text" oninput="if(typeof gmRampTxRerender==='function')gmRampTxRerender()" placeholder="Buscar merchant / titular / categoria…" style="padding:7px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);min-width:220px">
+   <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="ramp-tx-only-pending" onchange="if(typeof gmRampTxRerender==='function')gmRampTxRerender()" style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer"> Só não lançadas</label>
+   <span id="ramp-tx-count" style="font-size:11px;color:var(--ink3);white-space:nowrap">—</span>
+   <button type="button" onclick="if(typeof gmRampTxExportCsv==='function')gmRampTxExportCsv()" title="Exportar as transações filtradas para CSV" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">⬇ CSV</button>
+  </div>
+ </div>
  <div style="overflow-x:auto">
  <table class="gm-ix-table" id="ramp-table-tx">
  <thead><tr><th>Data</th><th>Merchant</th><th>Titular</th><th>Categoria</th><th>Valor ($)</th><th>Status</th><th style="text-align:center">Lançar</th></tr></thead>
@@ -10920,24 +10928,65 @@ function rampRenderFromData(txs,cards,useMock,opts){
    tbH.appendChild(tr);
   });
  }
+ // guarda a lista completa e delega o render p/ gmRampTxRerender (busca + filtro + contador)
+ window.__gmRampAllTx=(txs||[]).slice().sort(function(a,b){
+  var da=new Date((a&&a.user_transaction_time)||(a&&a.occurred_at)||0).getTime()||0;
+  var db=new Date((b&&b.user_transaction_time)||(b&&b.occurred_at)||0).getTime()||0;
+  return db-da;
+ });
+ window.__gmRampTxById=window.__gmRampTxById||{};
+ window.__gmRampAllTx.forEach(function(tx){var id=String((tx&&tx.id)||'').trim();if(id)window.__gmRampTxById[id]=tx;});
+ gmRampTxRerender();
+ rampAggregateAndRender(txs,cards);
+}
+var GM_RAMP_TX_CAP=300;
+function gmRampTxFilteredList(){
+ var all=window.__gmRampAllTx||[];
+ var q=String((document.getElementById('ramp-tx-search')||{}).value||'').toLowerCase().trim();
+ var onlyPending=!!(document.getElementById('ramp-tx-only-pending')||{}).checked;
+ return all.filter(function(tx){
+  if(onlyPending){var id=String((tx&&tx.id)||'').trim();if(window.__gmRampPostings&&window.__gmRampPostings[id])return false;}
+  if(q){
+   var hay=(rampTxMerchant(tx)+' '+rampTxHolder(tx)+' '+rampTxCategory(tx)).toLowerCase();
+   if(hay.indexOf(q)<0)return false;
+  }
+  return true;
+ });
+}
+function gmRampTxRerender(skipRefresh){
  var tbT=document.getElementById('ramp-tbody-tx');
- if(tbT){
-  tbT.innerHTML='';
-  window.__gmRampTxById=window.__gmRampTxById||{};
-  var shown=txs.slice(0,50);
+ if(!tbT)return;
+ var list=gmRampTxFilteredList();
+ var shown=list.slice(0,GM_RAMP_TX_CAP);
+ tbT.innerHTML='';
+ if(!shown.length){tbT.innerHTML='<tr><td colspan="7" style="padding:26px;text-align:center;color:var(--ink3)">Nenhuma transação.</td></tr>';}
+ else{
   shown.forEach(function(tx){
    var st=rampTxState(tx);
    var txId=String((tx&&tx.id)||'').trim();
-   if(txId)window.__gmRampTxById[txId]=tx;
    var tr=document.createElement('tr');
    var postCell='<td style="text-align:center" data-ramp-post-cell="'+gmHtmlEscAttr(txId)+'">'+gmRampPostCellHtml(txId)+'</td>';
    tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>'+postCell;
    tbT.appendChild(tr);
   });
-  gmRampPostingsRefresh(shown);
  }
- rampAggregateAndRender(txs,cards);
+ var cnt=document.getElementById('ramp-tx-count');
+ if(cnt){var total=(window.__gmRampAllTx||[]).length;cnt.textContent=list.length+' de '+total+(list.length>GM_RAMP_TX_CAP?(' (exibindo '+GM_RAMP_TX_CAP+')'):'');}
+ if(!skipRefresh)gmRampPostingsRefresh(shown,true);
 }
+window.gmRampTxRerender=gmRampTxRerender;
+function gmRampTxExportCsv(){
+ var list=gmRampTxFilteredList();
+ if(!list.length){alert('Nenhuma transação para exportar.');return;}
+ var esc=function(s){s=String(s==null?'':s);return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var rows=[['Data','Merchant','Titular','Categoria','Valor','Status']];
+ list.forEach(function(tx){rows.push([rampTxDate(tx),rampTxMerchant(tx),rampTxHolder(tx),rampTxCategory(tx),String(rampTxAmount(tx).toFixed(2)),rampTxState(tx)]);});
+ var csv=rows.map(function(r){return r.map(esc).join(',');}).join('\n');
+ var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ramp-transacoes.csv';
+ document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
+}
+window.gmRampTxExportCsv=gmRampTxExportCsv;
 // ===== #12 — Lançar transação do Ramp: statement da casa OU despesa Manager Prop =====
 function gmRampPostCellHtml(txId){
  if(!txId)return '<span style="color:var(--ink3)">—</span>';
@@ -10955,7 +11004,7 @@ function gmRampActiveClientId(){
  }catch(e){}
  return '';
 }
-async function gmRampPostingsRefresh(txsShown){
+async function gmRampPostingsRefresh(txsShown,mayReflow){
  var cid=gmRampActiveClientId();
  if(!cid)return; // sem cliente ativo não há statement/empresa p/ lançar
  var ids=(txsShown||[]).map(function(t){return String((t&&t.id)||'').trim();}).filter(Boolean);
@@ -10963,11 +11012,15 @@ async function gmRampPostingsRefresh(txsShown){
  try{
   var r=await fetch('/api/ramp/post?clientId='+encodeURIComponent(cid)+'&ids='+encodeURIComponent(ids.join(',')),{credentials:'include'});
   var j=await r.json();
-  window.__gmRampPostings=(j&&j.postings)||{};
+  window.__gmRampPostings=Object.assign(window.__gmRampPostings||{},(j&&j.postings)||{});
   ids.forEach(function(id){
    var cell=document.querySelector('[data-ramp-post-cell="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
    if(cell)cell.innerHTML=gmRampPostCellHtml(id);
   });
+  // Se o filtro "só não lançadas" está ativo, reaplica com os postings recém-carregados (sem novo fetch = sem loop)
+  if(mayReflow&&(document.getElementById('ramp-tx-only-pending')||{}).checked){
+   gmRampTxRerender(true);
+  }
  }catch(e){}
 }
 function gmRampPostOpen(txId){
