@@ -122,6 +122,7 @@ model Client {
   bankStatements        BankStatement[]         @relation("BankStatement_clientId")
   rentReceipts          PropertyRentReceipt[]   @relation("PropertyRentReceipt_clientId")
   propertyMonthPnls     PropertyMonthPnl[]      @relation("PropertyMonthPnl_clientId")
+  rampExpensePostings   RampExpensePosting[]    @relation("RampExpensePosting_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
   propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
   sophiaSnapshots       SophiaSnapshot[]        @relation("SophiaSnapshot_clientId")
@@ -242,6 +243,34 @@ model PropertyMonthPnl {
   @@unique([clientId, propertyKey, periodMonth])
   @@index([clientId, periodMonth])
   @@map("property_month_pnl")
+}
+
+/// Lançamento de uma transação do Ramp: ou vira débito no statement de uma casa
+/// (target STATEMENT, gera StatementLineItem pendente de aprovação) ou é marcada
+/// como despesa da Manager Prop (target MANAGER_PROP). rampTransactionId é único
+/// por cliente = idempotência (uma transação do Ramp lançada uma única vez).
+model RampExpensePosting {
+  id                  String    @id @default(cuid())
+  clientId            String
+  rampTransactionId   String
+  target              String    @db.VarChar(20) // STATEMENT | MANAGER_PROP
+  propertyId          String?
+  yearMonth           String? // 'YYYY-MM' (quando STATEMENT)
+  amount              Decimal   @db.Decimal(12, 2)
+  merchant            String?
+  description         String?   @db.VarChar(300)
+  transactionDate     DateTime?
+  statementLineItemId String?
+  postedById          String?
+  postedByEmail       String?
+  createdAt           DateTime  @default(now())
+
+  client Client @relation("RampExpensePosting_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, rampTransactionId])
+  @@index([clientId, target])
+  @@index([propertyId])
+  @@map("ramp_expense_postings")
 }
 
 /// Conta de consumo (utility) de uma propriedade. A senha fica CRIPTOGRAFADA
