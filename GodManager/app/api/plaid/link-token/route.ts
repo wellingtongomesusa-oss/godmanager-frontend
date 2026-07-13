@@ -58,6 +58,11 @@ export async function POST(req: Request) {
       user: { client_user_id: entityId },
       client_name: 'GodManager',
       products: [Products.Auth, Products.Identity, Products.Transactions],
+      // Statements é add-on: só entra se habilitado na conta Plaid; senão o Plaid ignora.
+      additional_consented_products:
+        String(process.env.PLAID_STATEMENTS_ENABLED || '').toLowerCase() === 'true'
+          ? [Products.Statements]
+          : undefined,
       country_codes: [CountryCode.Us],
       language: 'en',
     });

@@ -8095,10 +8095,15 @@ async function gmRecLoad(){
   var j=await r.json();
   if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao carregar.');return;}
   if(!j.reconciliation){
-   // cria vazio ao salvar; guarda contexto p/ criar no primeiro save
-   window.__gmRec={_new:true,bankAccountKey:acct,periodMonth:month,items:[],openingBalance:'0.00',statementBalance:'0.00',status:'OPEN',clearedTotal:'0.00',bookBalance:'0.00',difference:'0.00',balanced:false};
+   // novo: já sugere o saldo inicial = saldo final do mês anterior
+   var openSug=(j.suggestedOpening!=null)?j.suggestedOpening:'0.00';
+   window.__gmRec={_new:true,bankAccountKey:acct,periodMonth:month,items:[],openingBalance:openSug,statementBalance:'0.00',status:'OPEN',clearedDeposits:'0.00',clearedPayments:'0.00',clearedTotal:'0.00',unclearedDeposits:'0.00',unclearedPayments:'0.00',unclearedCount:0,bookBalance:openSug,difference:'0.00',balanced:false};
   }else{
    window.__gmRec=j.reconciliation;
+   // se o saldo inicial ainda está zerado e há sugestão do mês anterior, pré-preenche
+   if((Number(j.reconciliation.openingBalance)||0)===0&&j.suggestedOpening!=null&&Number(j.suggestedOpening)!==0){
+    window.__gmRec.openingBalance=j.suggestedOpening;window.__gmRec._openingSuggested=true;
+   }
   }
   gmRecRender();
  }catch(e){alert('Erro de rede.');}
@@ -8284,6 +8289,7 @@ async function gmPlaidBankStatus(){
    desc.textContent=(j.institutionName||'Banco')+(j.accountMask?(' ••'+j.accountMask):'')+' · conectado';
    acts.innerHTML='<button type="button" onclick="gmPlaidMapToggle()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Vincular contas</button>'
     +'<button type="button" onclick="gmPlaidPullBalances()" title="Puxa os saldos do banco e registra na Home/Statement" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">⬇ Puxar saldos</button>'
+    +'<button type="button" onclick="gmPlaidStatements()" title="Extratos do banco (Plaid Statements)" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">📄 Extratos</button>'
     +'<button type="button" onclick="gmPlaidConnectBank()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink3);font-size:11px;font-weight:600;cursor:pointer">Reconectar</button>';
   }else{
    var _mp=document.getElementById('rec-map-panel');if(_mp)_mp.style.display='none';
@@ -8340,6 +8346,26 @@ async function gmPlaidPullBalances(){
  }catch(e){alert('Erro de rede ao puxar saldos.');}
 }
 window.gmPlaidPullBalances=gmPlaidPullBalances;
+async function gmPlaidStatements(){
+ var q=gmRecQuery();var sep=q?'&':'?';
+ try{
+  var r=await fetch('/api/plaid/statements'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Plaid Statements indisponível.');return;}
+  if(!j.linked){alert('Banco não conectado.');return;}
+  var months=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var rows=[];
+  (j.accounts||[]).forEach(function(a){(a.statements||[]).forEach(function(s){rows.push({acct:a.accountName||a.accountId,label:(months[+s.month]||s.month)+'/'+s.year,id:s.statementId});});});
+  if(!rows.length){alert('Nenhum extrato disponível ainda. O Plaid Statements pode levar alguns minutos para buscar após conectar.');return;}
+  var old=document.getElementById('gm-plaid-stmt-pop');if(old)old.remove();
+  var ov=document.createElement('div');ov.id='gm-plaid-stmt-pop';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  var body=rows.map(function(x){return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--ink)">'+String(x.acct).replace(/</g,'&lt;')+' · '+x.label+'</span><a href="/api/plaid/statements'+q+sep+'download='+encodeURIComponent(x.id)+'" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#22558c">Baixar PDF ↗</a></div>';}).join('');
+  ov.innerHTML='<div style="background:var(--paper,#fff);width:100%;max-width:520px;max-height:80vh;border-radius:12px;overflow:hidden;display:flex;flex-direction:column"><div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--cream)"><span style="font-size:14px;font-weight:700;color:var(--ink)">Extratos do banco (Plaid)</span><button onclick="var e=document.getElementById(\'gm-plaid-stmt-pop\');if(e)e.remove();" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--ink2)">×</button></div><div style="overflow-y:auto">'+body+'</div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+ }catch(e){alert('Erro de rede ao buscar extratos.');}
+}
+window.gmPlaidStatements=gmPlaidStatements;
 async function gmPlaidConnectBank(){
  var eid=gmPlaidEntityId();
  try{

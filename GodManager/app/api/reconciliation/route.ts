@@ -99,7 +99,18 @@ export async function GET(req: Request) {
     where: { clientId_bankAccountKey_periodMonth: { clientId: scope.clientId, bankAccountKey, periodMonth } },
     include: { items: { orderBy: [{ txnDate: 'asc' }, { createdAt: 'asc' }] } },
   });
-  return NextResponse.json({ ok: true, reconciliation: rec ? serialize(rec) : null });
+
+  // Saldo inicial sugerido = saldo final (extrato) do mês anterior conciliado desta conta.
+  const [py, pm] = periodMonth.split('-').map((n) => parseInt(n, 10));
+  const prevD = new Date(Date.UTC(py, pm - 2, 1));
+  const prevMonth = `${prevD.getUTCFullYear()}-${String(prevD.getUTCMonth() + 1).padStart(2, '0')}`;
+  const prior = await prisma.bankReconciliation.findUnique({
+    where: { clientId_bankAccountKey_periodMonth: { clientId: scope.clientId, bankAccountKey, periodMonth: prevMonth } },
+    select: { statementBalance: true, status: true },
+  });
+  const suggestedOpening = prior ? num(prior.statementBalance).toFixed(2) : null;
+
+  return NextResponse.json({ ok: true, reconciliation: rec ? serialize(rec) : null, suggestedOpening });
 }
 
 /**
