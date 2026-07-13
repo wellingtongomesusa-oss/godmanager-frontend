@@ -23,6 +23,7 @@ type ItemRow = {
   sourceType: string;
   sourceRefId: string | null;
   cleared: boolean;
+  category?: string | null;
 };
 
 function serialize(rec: {
@@ -38,9 +39,18 @@ function serialize(rec: {
 }) {
   const opening = num(rec.openingBalance);
   const statement = num(rec.statementBalance);
-  const clearedTotal = rec.items.filter((i) => i.cleared).reduce((s, i) => s + num(i.amount), 0);
+  const cleared = rec.items.filter((i) => i.cleared);
+  // Extrato de conciliação: separa entradas (crédito, +) e saídas (débito, -)
+  const clearedDeposits = cleared.filter((i) => num(i.amount) >= 0).reduce((s, i) => s + num(i.amount), 0);
+  const clearedPayments = cleared.filter((i) => num(i.amount) < 0).reduce((s, i) => s + Math.abs(num(i.amount)), 0);
+  const clearedTotal = clearedDeposits - clearedPayments;
   const bookBalance = opening + clearedTotal;
   const difference = Math.round((statement - bookBalance) * 100) / 100;
+  const round2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
+  // Não-conciliados (ainda não marcados como cleared) — pendências
+  const uncleared = rec.items.filter((i) => !i.cleared);
+  const unclearedDeposits = uncleared.filter((i) => num(i.amount) >= 0).reduce((s, i) => s + num(i.amount), 0);
+  const unclearedPayments = uncleared.filter((i) => num(i.amount) < 0).reduce((s, i) => s + Math.abs(num(i.amount)), 0);
   return {
     id: rec.id,
     bankAccountKey: rec.bankAccountKey,
@@ -50,8 +60,13 @@ function serialize(rec: {
     status: rec.status,
     notes: rec.notes,
     reconciledAt: rec.reconciledAt ? rec.reconciledAt.toISOString() : null,
-    clearedTotal: clearedTotal.toFixed(2),
-    bookBalance: bookBalance.toFixed(2),
+    clearedDeposits: round2(clearedDeposits),
+    clearedPayments: round2(clearedPayments),
+    clearedTotal: round2(clearedTotal),
+    unclearedDeposits: round2(unclearedDeposits),
+    unclearedPayments: round2(unclearedPayments),
+    unclearedCount: uncleared.length,
+    bookBalance: round2(bookBalance),
     difference: difference.toFixed(2),
     balanced: Math.abs(difference) < 0.005,
     items: rec.items.map((i) => ({
@@ -62,6 +77,7 @@ function serialize(rec: {
       sourceType: i.sourceType,
       sourceRefId: i.sourceRefId,
       cleared: i.cleared,
+      category: i.category ?? null,
     })),
   };
 }

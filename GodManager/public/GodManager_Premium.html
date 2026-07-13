@@ -6237,33 +6237,63 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    </div>
 
    <!-- Resumo -->
-   <div id="rec-summary" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:12px 14px;border:1px solid var(--border);border-radius:9px;background:var(--cream);margin-bottom:16px">
-    <div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">Compensado</div><div id="rec-cleared" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--ink)">—</div></div>
-    <div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">Saldo contábil</div><div id="rec-book" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--ink)">—</div></div>
-    <div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">Diferença</div><div id="rec-diff" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700">—</div></div>
-    <div style="flex:1"></div>
-    <div id="rec-status-badge" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;background:var(--sand);color:var(--ink3)">—</div>
-    <button type="button" id="rec-close-btn" onclick="gmRecReconcile(true)" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Conciliar</button>
-    <button type="button" id="rec-reopen-btn" onclick="gmRecReconcile(false)" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Reabrir</button>
+   <!-- Extrato de conciliação (formato profissional) -->
+   <div style="border:1px solid var(--border);border-radius:10px;background:var(--paper);margin-bottom:16px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+     <div style="padding:14px 18px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px">Extrato de conciliação (livro)</div>
+      <table style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.5px">
+       <tr><td style="padding:3px 0;color:var(--ink2)">Saldo inicial</td><td id="rec-l-opening" style="padding:3px 0;text-align:right;color:var(--ink)">—</td></tr>
+       <tr><td style="padding:3px 0;color:#2a6e4e">(+) Depósitos compensados</td><td id="rec-l-dep" style="padding:3px 0;text-align:right;color:#2a6e4e">—</td></tr>
+       <tr><td style="padding:3px 0;color:#b83030">(−) Pagamentos compensados</td><td id="rec-l-pay" style="padding:3px 0;text-align:right;color:#b83030">—</td></tr>
+       <tr style="border-top:1px solid var(--border)"><td style="padding:6px 0 3px;font-weight:700;color:var(--ink)">(=) Saldo contábil</td><td id="rec-l-book" style="padding:6px 0 3px;text-align:right;font-weight:700;color:var(--ink)">—</td></tr>
+      </table>
+     </div>
+     <div style="padding:14px 18px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px">Banco (extrato)</div>
+      <table style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.5px">
+       <tr><td style="padding:3px 0;color:var(--ink2)">Saldo do extrato</td><td id="rec-l-stmt" style="padding:3px 0;text-align:right;color:var(--ink)">—</td></tr>
+       <tr><td style="padding:3px 0;color:var(--ink2)">(−) Saldo contábil</td><td id="rec-l-book2" style="padding:3px 0;text-align:right;color:var(--ink)">—</td></tr>
+       <tr style="border-top:1px solid var(--border)"><td style="padding:6px 0 3px;font-weight:700;color:var(--ink)">(=) Diferença</td><td id="rec-l-diff" style="padding:6px 0 3px;text-align:right;font-weight:700">—</td></tr>
+       <tr><td style="padding:6px 0 0;font-size:11px;color:var(--ink3)" colspan="2"><span id="rec-l-pending">—</span></td></tr>
+      </table>
+     </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 18px;border-top:1px solid var(--border);background:var(--cream);flex-wrap:wrap">
+     <div id="rec-status-badge" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;background:var(--sand);color:var(--ink3)">—</div>
+     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" id="rec-close-btn" onclick="gmRecReconcile(true)" style="padding:8px 18px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Conciliar e fechar</button>
+      <button type="button" id="rec-reopen-btn" onclick="gmRecReconcile(false)" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Reabrir</button>
+     </div>
+    </div>
    </div>
 
+   <datalist id="rec-cat-options"></datalist>
    <!-- Adicionar item -->
-   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
-    <div style="flex:2;min-width:180px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DESCRIÇÃO</label><input id="rec-it-desc" type="text" placeholder="Ex.: Depósito aluguel / Pagamento vendor" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
-    <div style="width:130px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">VALOR (+/−)</label><input id="rec-it-amount" type="number" step="0.01" placeholder="0.00" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)"></div>
-    <div style="width:150px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DATA</label><input id="rec-it-date" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+    <div style="flex:2;min-width:160px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DESCRIÇÃO</label><input id="rec-it-desc" type="text" placeholder="Ex.: Depósito aluguel / Pagamento vendor" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
+    <div style="width:150px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">CATEGORIA/CONTA</label><input id="rec-it-cat" type="text" list="rec-cat-options" placeholder="Ex.: Rent Income" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
+    <div style="width:120px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">VALOR (+/−)</label><input id="rec-it-amount" type="number" step="0.01" placeholder="0.00" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--sand);color:var(--ink)"></div>
+    <div style="width:140px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">DATA</label><input id="rec-it-date" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>
     <button type="button" onclick="gmRecAddItem()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">+ Item</button>
     <button type="button" onclick="gmRecImportPlaid()" title="Puxa as transações do banco conectado (Plaid) para o período" style="padding:8px 16px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">⬇ Importar do banco</button>
    </div>
+   <!-- Ações em massa -->
+   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+    <span style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Ações:</span>
+    <button type="button" onclick="gmRecBulkClear(true)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">✓ Marcar todos compensados</button>
+    <button type="button" onclick="gmRecBulkClear(false)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Limpar todos</button>
+   </div>
 
    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:560px">
+    <table style="width:100%;border-collapse:collapse;min-width:640px">
      <thead><tr style="border-bottom:2px solid var(--border);text-align:left">
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:60px;text-align:center">Cleared</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:56px;text-align:center">Comp.</th>
       <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right">Valor</th>
-      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:40px"></th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:170px">Categoria/Conta</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:90px">Data</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);text-align:right;width:110px">Valor</th>
+      <th style="padding:7px 10px;font-size:10px;text-transform:uppercase;color:var(--ink3);width:36px"></th>
      </tr></thead>
      <tbody id="rec-items-tbody"></tbody>
     </table>
@@ -8067,17 +8097,25 @@ function gmRecRender(){
  if(!rec){if(body)body.style.display='none';if(empty)empty.style.display='block';return;}
  if(body)body.style.display='block';if(empty)empty.style.display='none';
  if(typeof gmPlaidBankStatus==='function')void gmPlaidBankStatus();
+ if(typeof gmRecLoadCategories==='function')void gmRecLoadCategories();
  var setV=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
  var setT=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
  setV('rec-opening',rec.openingBalance||'0.00');
  setV('rec-statement',rec.statementBalance||'0.00');
- setT('rec-cleared',gmRecFmt(rec.clearedTotal));
- setT('rec-book',gmRecFmt(rec.bookBalance));
- var diffEl=document.getElementById('rec-diff');
+ // Extrato de conciliação (livro)
+ setT('rec-l-opening',gmRecFmt(rec.openingBalance));
+ setT('rec-l-dep',gmRecFmt(rec.clearedDeposits||'0'));
+ setT('rec-l-pay','-'+gmRecFmt(rec.clearedPayments||'0'));
+ setT('rec-l-book',gmRecFmt(rec.bookBalance));
+ setT('rec-l-stmt',gmRecFmt(rec.statementBalance));
+ setT('rec-l-book2','-'+gmRecFmt(rec.bookBalance));
+ var diffEl=document.getElementById('rec-l-diff');
  if(diffEl){diffEl.textContent=gmRecFmt(rec.difference);diffEl.style.color=rec.balanced?'#2a6e4e':'#b83030';}
+ var pend=document.getElementById('rec-l-pending');
+ if(pend){var uc=rec.unclearedCount||0;pend.textContent=uc?('⚠ '+uc+' item(ns) não compensado(s): +'+gmRecFmt(rec.unclearedDeposits||'0')+' / -'+gmRecFmt(rec.unclearedPayments||'0')):'Todos os itens compensados.';pend.style.color=uc?'#b45309':'#2a6e4e';}
  var badge=document.getElementById('rec-status-badge');
  var reconciled=(rec.status==='RECONCILED');
- if(badge){badge.textContent=reconciled?'✓ Conciliado':(rec.balanced?'Pronto para conciliar':'Em aberto');badge.style.background=reconciled?'var(--green-bg,#e6f4ec)':(rec.balanced?'var(--green-bg,#e6f4ec)':'var(--sand)');badge.style.color=reconciled?'#2a6e4e':(rec.balanced?'#2a6e4e':'var(--ink3)');}
+ if(badge){badge.textContent=reconciled?'✓ Conciliado':(rec.balanced?'Pronto para conciliar':'Em aberto · diferença '+gmRecFmt(rec.difference));badge.style.background=reconciled?'var(--green-bg,#e6f4ec)':(rec.balanced?'var(--green-bg,#e6f4ec)':'var(--sand)');badge.style.color=reconciled?'#2a6e4e':(rec.balanced?'#2a6e4e':'var(--ink3)');}
  var closeBtn=document.getElementById('rec-close-btn');var reopenBtn=document.getElementById('rec-reopen-btn');
  if(closeBtn)closeBtn.style.display=reconciled?'none':'inline-block';
  if(reopenBtn)reopenBtn.style.display=reconciled?'inline-block':'none';
@@ -8086,17 +8124,18 @@ function gmRecRender(){
  var tbody=document.getElementById('rec-items-tbody');
  if(tbody){
   var items=rec.items||[];
-  if(!items.length){tbody.innerHTML='<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--ink3);font-size:12px">Sem itens. Adicione as transações do extrato acima.</td></tr>';}
+  if(!items.length){tbody.innerHTML='<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--ink3);font-size:12px">Sem itens. Adicione ou clique em ⬇ Importar do banco.</td></tr>';}
   else{
    var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
    tbody.innerHTML=items.map(function(it){
-    var amt=Number(it.amount)||0;
-    return '<tr style="border-bottom:1px solid var(--border)">'
-     +'<td style="padding:6px 10px;text-align:center"><input type="checkbox" '+(it.cleared?'checked':'')+' onchange="gmRecToggleItem(\''+it.id+'\',this.checked)" style="width:16px;height:16px;accent-color:#2a6e4e;cursor:pointer"></td>'
-     +'<td style="padding:6px 10px;font-size:12px;color:var(--ink)">'+esc(it.description)+(it.sourceType&&it.sourceType!=='MANUAL'?' <span style="font-size:9px;color:var(--ink3)">('+esc(it.sourceType)+')</span>':'')+'</td>'
-     +'<td style="padding:6px 10px;font-size:11px;color:var(--ink3)">'+(it.txnDate||'—')+'</td>'
-     +'<td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:600;color:'+(amt>=0?'#2a6e4e':'#b83030')+'">'+gmRecFmt(amt)+'</td>'
-     +'<td style="padding:6px 10px;text-align:center"><button type="button" onclick="gmRecDeleteItem(\''+it.id+'\')" title="Excluir" style="background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:14px">×</button></td></tr>';
+    var amt=Number(it.amount)||0;var isDep=amt>=0;
+    return '<tr style="border-bottom:1px solid var(--border)"'+(it.cleared?' style="background:rgba(42,110,78,.04)"':'')+'>'
+     +'<td style="padding:5px 10px;text-align:center"><input type="checkbox" '+(it.cleared?'checked':'')+' onchange="gmRecToggleItem(\''+it.id+'\',this.checked)" style="width:16px;height:16px;accent-color:#2a6e4e;cursor:pointer"></td>'
+     +'<td style="padding:5px 10px;font-size:12px;color:var(--ink)">'+esc(it.description)+(it.sourceType&&it.sourceType!=='MANUAL'?' <span style="font-size:9px;color:var(--ink3)">('+esc(it.sourceType)+')</span>':'')+'</td>'
+     +'<td style="padding:5px 8px"><input type="text" list="rec-cat-options" value="'+esc(it.category||'')+'" placeholder="—" onchange="gmRecSetCategory(\''+it.id+'\',this.value)" style="width:100%;padding:4px 7px;border:1px solid var(--border2);border-radius:5px;font-size:11px;background:var(--sand);color:var(--ink)"></td>'
+     +'<td style="padding:5px 10px;font-size:11px;color:var(--ink3)">'+(it.txnDate||'—')+'</td>'
+     +'<td style="padding:5px 10px;text-align:right;font-family:monospace;font-size:12px;font-weight:600;color:'+(isDep?'#2a6e4e':'#b83030')+'">'+(isDep?'+':'')+gmRecFmt(amt)+'</td>'
+     +'<td style="padding:5px 8px;text-align:center"><button type="button" onclick="gmRecDeleteItem(\''+it.id+'\')" title="Excluir" style="background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:14px">×</button></td></tr>';
    }).join('');
   }
  }
@@ -8131,18 +8170,53 @@ async function gmRecAddItem(){
  var desc=(document.getElementById('rec-it-desc')||{}).value||'';
  var amount=parseFloat((document.getElementById('rec-it-amount')||{}).value||'0');
  var date=(document.getElementById('rec-it-date')||{}).value||'';
+ var cat=(document.getElementById('rec-it-cat')||{}).value||'';
  if(!desc.trim()){alert('Descrição obrigatória.');return;}
  if(!(amount!==0)){alert('Valor (use + para entrada, − para saída).');return;}
- var payload=gmRecPayload();payload.reconciliationId=rid;payload.description=desc;payload.amount=amount;if(date)payload.txnDate=date;
+ var payload=gmRecPayload();payload.reconciliationId=rid;payload.description=desc;payload.amount=amount;if(date)payload.txnDate=date;if(cat.trim())payload.category=cat.trim();
  try{
   var r=await fetch('/api/reconciliation/item',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   var j=await r.json();
   if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao adicionar.');return;}
-  document.getElementById('rec-it-desc').value='';document.getElementById('rec-it-amount').value='';
+  document.getElementById('rec-it-desc').value='';document.getElementById('rec-it-amount').value='';var ce=document.getElementById('rec-it-cat');if(ce)ce.value='';
   gmRecLoad();
  }catch(e){alert('Erro de rede.');}
 }
 window.gmRecAddItem=gmRecAddItem;
+async function gmRecSetCategory(itemId,value){
+ var payload=gmRecPayload();payload.itemId=itemId;payload.category=String(value||'');
+ try{await fetch('/api/reconciliation/item',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
+}
+window.gmRecSetCategory=gmRecSetCategory;
+async function gmRecBulkClear(cleared){
+ var rec=window.__gmRec;if(!rec||!Array.isArray(rec.items)||!rec.items.length)return;
+ var targets=rec.items.filter(function(it){return !!it.cleared!==!!cleared;});
+ if(!targets.length){gmRecLoad();return;}
+ for(var i=0;i<targets.length;i++){
+  var payload=gmRecPayload();payload.itemId=targets[i].id;payload.cleared=!!cleared;
+  try{await fetch('/api/reconciliation/item',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
+ }
+ gmRecLoad();
+}
+window.gmRecBulkClear=gmRecBulkClear;
+// Popula o datalist de categorias (chart of accounts do QuickBooks se conectado, + comuns)
+async function gmRecLoadCategories(){
+ var dl=document.getElementById('rec-cat-options');if(!dl||dl.__loaded)return;
+ var base=['Rent Income','Management Fees','Owner Distribution','Repairs & Maintenance','Cleaning','Utilities','HOA','Insurance','Property Tax','Bank Fees','Vendor Payment','Security Deposit','Transfer'];
+ var opts=base.slice();
+ try{
+  var q=gmRecQuery();
+  var r=await fetch('/api/quickbooks/accounts'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(j&&j.ok&&j.accounts){
+   var all=[].concat(j.accounts.income||[],j.accounts.expense||[],j.accounts.payment||[]);
+   all.forEach(function(a){if(a&&a.name&&opts.indexOf(a.name)<0)opts.push(a.name);});
+  }
+ }catch(e){}
+ dl.innerHTML=opts.map(function(o){return '<option value="'+String(o).replace(/"/g,'&quot;')+'">';}).join('');
+ dl.__loaded=true;
+}
+window.gmRecLoadCategories=gmRecLoadCategories;
 async function gmRecImportPlaid(){
  var rec=window.__gmRec;if(!rec){alert('Carregue a conciliação primeiro.');return;}
  var rid=await gmRecEnsureCreated();if(!rid)return;

@@ -314,6 +314,7 @@ model BankReconciliationItem {
   sourceType       String   @default("MANUAL") @db.VarChar(20) // MANUAL | RAMP | TENANT_PAYMENT | EXPENSE | GL
   sourceRefId      String?
   cleared          Boolean  @default(false)
+  category         String?  @db.VarChar(120) // conta/categoria contábil (bookkeeping coding)
   createdAt        DateTime @default(now())
 
   reconciliation BankReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)

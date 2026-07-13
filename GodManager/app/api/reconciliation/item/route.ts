@@ -47,6 +47,7 @@ export async function POST(req: Request) {
       txnDate,
       sourceType,
       sourceRefId: body?.sourceRefId ? String(body.sourceRefId).slice(0, 200) : null,
+      category: body?.category ? String(body.category).slice(0, 120) : null,
     },
     select: { id: true },
   });
@@ -75,6 +76,7 @@ export async function PATCH(req: Request) {
   if (typeof body?.cleared === 'boolean') data.cleared = body.cleared;
   if (body?.description != null) data.description = String(body.description).trim().slice(0, 300);
   if (body?.amount != null && body.amount !== '' && Number.isFinite(Number(body.amount))) data.amount = new Prisma.Decimal(Number(body.amount));
+  if (body?.category !== undefined) data.category = body.category ? String(body.category).slice(0, 120) : null;
   await prisma.bankReconciliationItem.update({ where: { id: itemId }, data });
   return NextResponse.json({ ok: true });
 }
