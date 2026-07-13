@@ -8072,14 +8072,25 @@ async function gmQbCreateInvoice(){
   if(!r.ok||!j.ok){if(out){out.textContent=(j&&j.error)||'Falha ao criar invoice.';out.style.color='var(--red)';}return;}
   if(out){
    var txt='✓ Invoice criada'+(j.docNumber?(' #'+j.docNumber):'')+'.';
-   out.innerHTML=gmHtmlEscAttr(txt)+(j.invoiceLink?(' <a href="'+gmHtmlEscAttr(j.invoiceLink)+'" target="_blank" rel="noopener" style="color:#2ca01c;font-weight:700">Link de pagamento ↗</a>'):' (sem link — verifique QuickBooks Payments)');
-   out.style.color='#2a6e4e';
+   if(j.invoiceLink){
+    out.innerHTML='<span style="color:#2a6e4e">'+gmHtmlEscAttr(txt)+'</span> <a href="'+gmHtmlEscAttr(j.invoiceLink)+'" target="_blank" rel="noopener" style="color:#2ca01c;font-weight:700">Link de pagamento ↗</a> <button type="button" onclick="gmQbCopyLink(this,\''+gmHtmlEscAttr(j.invoiceLink)+'\')" style="padding:3px 9px;border:1px solid var(--border2);border-radius:5px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Copiar link</button>';
+   }else{
+    out.innerHTML='<span style="color:#2a6e4e">'+gmHtmlEscAttr(txt)+'</span> <span style="color:var(--ink3)">(sem link — ative QuickBooks Payments no QBO)</span>';
+   }
   }
   var amtEl=document.getElementById('qb-inv-amount');if(amtEl)amtEl.value='';
   var dscEl=document.getElementById('qb-inv-desc');if(dscEl)dscEl.value='';
  }catch(e){if(out){out.textContent='Erro de rede.';out.style.color='var(--red)';}}
 }
 window.gmQbCreateInvoice=gmQbCreateInvoice;
+function gmQbCopyLink(btn,link){
+ try{
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link);}
+  else{var ta=document.createElement('textarea');ta.value=link;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
+  if(btn){var t=btn.textContent;btn.textContent='✓ Copiado';setTimeout(function(){btn.textContent=t;},1500);}
+ }catch(e){alert('Link: '+link);}
+}
+window.gmQbCopyLink=gmQbCopyLink;
 // ===== #7 — Conciliação bancária =====
 window.__gmRec=null;
 function gmRecFmt(v){var x=Number(v);if(!isFinite(x))x=0;return (x<0?'-$':'$')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
