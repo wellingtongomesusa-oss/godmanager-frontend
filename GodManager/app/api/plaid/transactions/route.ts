@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
   const link = await prisma.bankLink.findFirst({
     where: { clientId: scope.clientId, linkType: 'CLIENT', status: 'active' },
-    select: { accessTokenEnc: true, accountId: true, institutionName: true, accountMask: true },
+    select: { accessTokenEnc: true, accountId: true, institutionName: true, accountMask: true, metadata: true },
   });
   if (!link) {
     return NextResponse.json({ ok: true, linked: false, transactions: [] });
@@ -36,6 +36,12 @@ export async function GET(req: Request) {
   if (!accessToken) {
     return NextResponse.json({ ok: false, error: 'Token bancário inválido; reconecte o banco.' }, { status: 400 });
   }
+
+  // Conta a usar: a mapeada para o bankAccountKey (multi-conta) ou a conta padrão do link.
+  const bankAccountKey = (url.searchParams.get('bankAccountKey') || '').trim().toUpperCase();
+  const meta = (link.metadata as Record<string, unknown> | null) || {};
+  const mapping = (meta.mapping as Record<string, string> | undefined) || {};
+  const mappedAccountId = bankAccountKey && mapping[bankAccountKey] ? mapping[bankAccountKey] : link.accountId;
 
   const now = new Date();
   const to = (url.searchParams.get('to') || '').match(/^\d{4}-\d{2}-\d{2}$/) ? url.searchParams.get('to')! : ymd(now);
@@ -49,7 +55,7 @@ export async function GET(req: Request) {
       access_token: accessToken,
       start_date: from,
       end_date: to,
-      options: { count: 500, offset: 0, ...(link.accountId ? { account_ids: [link.accountId] } : {}) },
+      options: { count: 500, offset: 0, ...(mappedAccountId ? { account_ids: [mappedAccountId] } : {}) },
     });
     const txs = (res.data.transactions || []).map((t) => ({
       id: t.transaction_id,

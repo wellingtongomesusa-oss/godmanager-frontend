@@ -6222,6 +6222,19 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </div>
     <div id="rec-bank-actions" style="display:flex;gap:8px;flex-wrap:wrap"></div>
    </div>
+   <!-- Mapear as 3 contas do banco às contas da conciliação -->
+   <div id="rec-map-panel" style="display:none;border:1px solid var(--border);border-radius:9px;background:var(--paper);padding:14px 16px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:10px">Vincular contas do Chase</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+     <div><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">Trust (Chase)</label><select id="rec-map-TRUST_CHASE" style="width:100%;padding:7px 9px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select></div>
+     <div><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">Operating</label><select id="rec-map-OPERATING_TRUST" style="width:100%;padding:7px 9px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select></div>
+     <div><label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">Security Deposit</label><select id="rec-map-DEPOSIT_SECURITY" style="width:100%;padding:7px 9px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+     <button type="button" onclick="gmPlaidMapSave()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Salvar vínculos</button>
+     <span id="rec-map-status" style="font-size:11px;color:var(--ink3)"></span>
+    </div>
+   </div>
    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
     <div>
      <label style="display:block;font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px">SALDO INICIAL ($)</label>
@@ -8224,8 +8237,9 @@ async function gmRecImportPlaid(){
  var ym=rec.periodMonth||'';var from='',to='';
  if(/^\d{4}-\d{2}$/.test(ym)){var y=+ym.slice(0,4),m=+ym.slice(5,7);from=ym+'-01';var last=new Date(Date.UTC(y,m,0)).getUTCDate();to=ym+'-'+String(last).padStart(2,'0');}
  var q=gmRecQuery();var sep=q?'&':'?';
+ var acctKey=(document.getElementById('rec-account')||{}).value||rec.bankAccountKey||'';
  try{
-  var r=await fetch('/api/plaid/transactions'+q+sep+'from='+from+'&to='+to,{credentials:'include',cache:'no-store'});
+  var r=await fetch('/api/plaid/transactions'+q+sep+'from='+from+'&to='+to+'&bankAccountKey='+encodeURIComponent(acctKey),{credentials:'include',cache:'no-store'});
   var j=await r.json();
   if(!r.ok||!j.ok){alert((j&&j.error)||'Falha ao ler o banco.');return;}
   if(!j.linked){alert('Nenhum banco conectado (Plaid) para esta empresa. Conecte o banco primeiro.');return;}
@@ -8268,8 +8282,11 @@ async function gmPlaidBankStatus(){
   if(j.linked){
    if(dot)dot.style.background='#2a6e4e';
    desc.textContent=(j.institutionName||'Banco')+(j.accountMask?(' ••'+j.accountMask):'')+' · conectado';
-   acts.innerHTML='<button type="button" onclick="gmPlaidConnectBank()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Reconectar</button>';
+   acts.innerHTML='<button type="button" onclick="gmPlaidMapToggle()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Vincular contas</button>'
+    +'<button type="button" onclick="gmPlaidPullBalances()" title="Puxa os saldos do banco e registra na Home/Statement" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">⬇ Puxar saldos</button>'
+    +'<button type="button" onclick="gmPlaidConnectBank()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink3);font-size:11px;font-weight:600;cursor:pointer">Reconectar</button>';
   }else{
+   var _mp=document.getElementById('rec-map-panel');if(_mp)_mp.style.display='none';
    if(dot)dot.style.background='var(--ink3)';
    desc.textContent='Nenhum banco conectado';
    acts.innerHTML='<button type="button" onclick="gmPlaidConnectBank()" style="padding:8px 14px;border:none;border-radius:6px;background:#22558c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Conectar banco</button>';
@@ -8277,6 +8294,52 @@ async function gmPlaidBankStatus(){
  }catch(e){desc.textContent='erro de rede';}
 }
 window.gmPlaidBankStatus=gmPlaidBankStatus;
+function gmPlaidMapToggle(){var p=document.getElementById('rec-map-panel');if(!p)return;var show=(p.style.display==='none'||!p.style.display);p.style.display=show?'block':'none';if(show)gmPlaidMapLoad();}
+window.gmPlaidMapToggle=gmPlaidMapToggle;
+async function gmPlaidMapLoad(){
+ var q=gmRecQuery();var fmt=function(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ try{
+  var r=await fetch('/api/plaid/link-accounts'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();if(!j||!j.ok)return;
+  var accts=j.accounts||[];var map=j.mapping||{};
+  ['TRUST_CHASE','OPERATING_TRUST','DEPOSIT_SECURITY'].forEach(function(k){
+   var sel=document.getElementById('rec-map-'+k);if(!sel)return;
+   sel.innerHTML='<option value="">— não vinculada —</option>'+accts.map(function(a){
+    var lbl=(a.name||'')+(a.mask?(' ••'+a.mask):'')+(a.subtype?(' ('+a.subtype+')'):'')+(a.currentBalance!=null?(' — $'+fmt(a.currentBalance)):'');
+    return '<option value="'+String(a.id).replace(/"/g,'&quot;')+'"'+(map[k]===a.id?' selected':'')+'>'+String(lbl).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>';
+   }).join('');
+  });
+ }catch(e){}
+}
+window.gmPlaidMapLoad=gmPlaidMapLoad;
+async function gmPlaidMapSave(){
+ var mapping={};['TRUST_CHASE','OPERATING_TRUST','DEPOSIT_SECURITY'].forEach(function(k){var s=document.getElementById('rec-map-'+k);if(s&&s.value)mapping[k]=s.value;});
+ var payload=gmRecPayload();payload.mapping=mapping;
+ var st=document.getElementById('rec-map-status');if(st){st.textContent='Salvando…';st.style.color='var(--ink3)';}
+ try{
+  var r=await fetch('/api/plaid/link-accounts',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){if(st){st.textContent=(j&&j.error)||'Erro ao salvar.';st.style.color='var(--red)';}return;}
+  if(st){st.textContent='✓ Vínculos salvos. Agora "Importar do banco" e "Puxar saldos" usam a conta certa.';st.style.color='#2a6e4e';}
+ }catch(e){if(st){st.textContent='Erro de rede.';st.style.color='var(--red)';}}
+}
+window.gmPlaidMapSave=gmPlaidMapSave;
+async function gmPlaidPullBalances(){
+ var q=gmRecQuery();var sep=q?'&':'?';var fmt=function(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ try{
+  var r=await fetch('/api/plaid/balances'+q+sep+'register=1',{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Falha ao puxar saldos.');return;}
+  if(!j.linked){alert('Banco não conectado.');return;}
+  var bals=j.balances||{};
+  var acctKey=(document.getElementById('rec-account')||{}).value||'';
+  if(bals[acctKey]&&bals[acctKey].balance!=null){var se=document.getElementById('rec-statement');if(se)se.value=Number(bals[acctKey].balance).toFixed(2);gmRecSaveBalances();}
+  var names={TRUST_CHASE:'Trust (Chase)',OPERATING_TRUST:'Operating',DEPOSIT_SECURITY:'Security Deposit'};
+  var lines=Object.keys(bals).map(function(k){return bals[k]?(names[k]+': $'+fmt(bals[k].balance)):null;}).filter(Boolean).join('\n');
+  alert(lines?('Saldos puxados do banco e registrados na Home/Statement:\n\n'+lines):'Nenhuma conta vinculada. Clique em "Vincular contas" e associe cada conta do Chase.');
+ }catch(e){alert('Erro de rede ao puxar saldos.');}
+}
+window.gmPlaidPullBalances=gmPlaidPullBalances;
 async function gmPlaidConnectBank(){
  var eid=gmPlaidEntityId();
  try{
