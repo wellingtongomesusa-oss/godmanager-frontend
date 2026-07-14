@@ -1523,6 +1523,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-body">
  <div class="ss sb-ix-ic" onclick="nav('billing')" id="nav-billing" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg><span>Invoice / Bill</span></div>
  <div class="ss sb-ix-ic" onclick="nav('delinquency')" id="nav-delinquency" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>Cobrança (Atrasos)</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('billing-inbox')" id="nav-billing-inbox" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span data-i18n="nav_billing_inbox">Caixa de Entrada</span><span id="nav-billing-inbox-badge" style="display:none;margin-left:auto;background:var(--red,#b83030);color:#fff;font-size:9px;font-weight:700;border-radius:999px;padding:1px 6px;min-width:16px;text-align:center"></span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ownerportal">
@@ -3985,6 +3986,31 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
 </div>
 <!-- /TRUST STATEMENT -->
+
+<!-- CAIXA DE ENTRADA — invoices recebidas (sou o pagador; match por e-mail) -->
+<div class="page gm-ix-page" id="page-billing-inbox">
+ <div class="gm-ix-headrow ph" style="margin-bottom:20px">
+  <div>
+   <div class="pt" style="font-family:'Sora',sans-serif">Caixa de Entrada</div>
+   <div class="ps" id="binbox-sub">Faturas emitidas para você (pagador) — identificadas pelo seu e-mail</div>
+  </div>
+  <div class="gm-ix-actions"><button type="button" class="btn-gm-ix" onclick="gmBInboxLoad()">Atualizar</button></div>
+ </div>
+ <div class="gm-ix-kpi-grid" id="binbox-kpi-wrap">
+  <div class="gm-ix-kpi k4"><div class="k-l">A Pagar</div><div class="k-v" id="binbox-kpi-open"><span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span></div><div class="k-s">Faturas em aberto</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi"><div class="k-l">Vencidas</div><div class="k-v" id="binbox-kpi-overdue"><span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span></div><div class="k-s">Passaram do vencimento</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k2"><div class="k-l">Total Recebido</div><div class="k-v" id="binbox-kpi-count"><span class="gm-sk" style="display:inline-block;width:70px;height:22px"></span></div><div class="k-s">Faturas na caixa</div><div class="k-bar"></div></div>
+ </div>
+ <div class="gm-ix-panel">
+  <h3>Faturas recebidas</h3>
+  <div style="overflow-x:auto">
+   <table class="gm-ix-table">
+    <thead><tr><th>Número</th><th>De (emissor)</th><th>Emissão</th><th>Vencimento</th><th>Total ($)</th><th>Status</th><th></th></tr></thead>
+    <tbody id="binbox-tbody"><tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</td></tr></tbody>
+   </table>
+  </div>
+ </div>
+</div>
 
 <!-- COBRANÇA (delinquency) — página normal, não popup -->
 <div class="page" id="page-delinquency" style="padding:0">
@@ -8119,6 +8145,52 @@ async function gmApArLoad(){
  }catch(e){if(nc){nc.style.display='block';nc.textContent='Erro de rede ao carregar AP/AR.';}}
 }
 window.gmApArLoad=gmApArLoad;
+// ---- Caixa de Entrada: invoices recebidas (sou o pagador) ----
+function gmBInboxStatusPill(st,overdue){
+ var s=String(st||'').toUpperCase();
+ if(s==='PAID')return '<span class="pill pg">Paga</span>';
+ if(overdue)return '<span class="pill pr">Vencida</span>';
+ if(s==='SENT'||s==='APPROVED')return '<span class="pill pa">Em aberto</span>';
+ if(s==='DRAFT')return '<span class="pill">Rascunho</span>';
+ return '<span class="pill pa">'+(st||'—')+'</span>';
+}
+async function gmBInboxLoad(){
+ var tb=document.getElementById('binbox-tbody');if(!tb)return;
+ var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var today=(new Date()).toISOString().slice(0,10);
+ ['binbox-kpi-open','binbox-kpi-overdue','binbox-kpi-count'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<span class="gm-sk" style="display:inline-block;width:70px;height:22px"></span>';});
+ try{
+  var r=await fetch('/api/billing/inbox',{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok){tb.innerHTML='<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Erro ao carregar a caixa de entrada.</td></tr>';return;}
+  var docs=j.documents||[];
+  var openTotal=0,overdueTotal=0;
+  docs.forEach(function(d){
+   var due=d.dueDate?String(d.dueDate).slice(0,10):'';
+   var paid=String(d.status||'').toUpperCase()==='PAID';
+   if(!paid){openTotal+=Number(d.total)||0;if(due&&due<today)overdueTotal+=Number(d.total)||0;}
+  });
+  var setTxt=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  setTxt('binbox-kpi-open',fmt(openTotal));setTxt('binbox-kpi-overdue',fmt(overdueTotal));setTxt('binbox-kpi-count',String(docs.length));
+  // badge no menu
+  var openCount=docs.filter(function(d){return String(d.status||'').toUpperCase()!=='PAID';}).length;
+  var badge=document.getElementById('nav-billing-inbox-badge');
+  if(badge){if(openCount>0){badge.textContent=String(openCount);badge.style.display='inline-block';}else{badge.style.display='none';}}
+  if(!docs.length){tb.innerHTML='<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma fatura recebida. Faturas emitidas para o seu e-mail aparecem aqui.</td></tr>';return;}
+  tb.innerHTML=docs.map(function(d){
+   var due=d.dueDate?String(d.dueDate).slice(0,10):'—';
+   var iss=d.issueDate?String(d.issueDate).slice(0,10):'—';
+   var paid=String(d.status||'').toUpperCase()==='PAID';
+   var overdue=!paid&&d.dueDate&&String(d.dueDate).slice(0,10)<today;
+   var from=d.receiverName||d.contactName||'—';
+   return '<tr><td>'+esc(d.number||'—')+'</td><td>'+esc(from)+'</td><td>'+esc(iss)+'</td><td>'+esc(due)+'</td><td class="mono">'+fmt(d.total||0)+'</td><td>'+gmBInboxStatusPill(d.status,overdue)+'</td>'
+    +'<td><button type="button" class="btn-gm-ix sec" style="padding:4px 10px;font-size:11px" onclick="gmBInboxOpenPdf('+JSON.stringify(String(d.id||'')).replace(/"/g,'&quot;')+')">Ver PDF</button></td></tr>';
+  }).join('');
+ }catch(e){tb.innerHTML='<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Erro de rede ao carregar a caixa de entrada.</td></tr>';}
+}
+function gmBInboxOpenPdf(id){if(!id)return;window.open('/api/billing/documents/'+encodeURIComponent(id)+'/pdf','_blank','noopener');}
+window.gmBInboxLoad=gmBInboxLoad;window.gmBInboxOpenPdf=gmBInboxOpenPdf;
 window.gmQbReportLoad=gmQbReportLoad;
 function gmQbChartRender(months){
  var panel=document.getElementById('qb-chart-panel'),host=document.getElementById('qb-chart');
@@ -11004,7 +11076,7 @@ var GM_MENU_ACCESS_SECTIONS=[
  {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'},{key:'support',label:'Suporte'}]},
  {key:'properties',label:'PROPERTIES',items:[{key:'ltproperties',label:'Properties'},{key:'owner-statement',label:'Owner Statement'},{key:'statement-individual',label:'Statement individual'},{key:'tenants',label:'Tenants'},{key:'contracts',label:'Contratos'},{key:'leases-history',label:'Lease history'},{key:'properties',label:'Ranking Properties'},{key:'renovations',label:'Renovations'}]},
  {key:'expenses',label:'EXPENSES',items:[{key:'ltexpenses',label:'Expenses'},{key:'ltcleanings',label:'Cleanings'},{key:'vendors',label:'Vendors'},{key:'jobs',label:'Jobs'},{key:'jobs-follow',label:'Acompanhamento'}]},
- {key:'billing',label:'BILLING',items:[{key:'billing',label:'Invoice / Bill'},{key:'delinquency',label:'Cobrança (Atrasos)'}]},
+ {key:'billing',label:'BILLING',items:[{key:'billing',label:'Invoice / Bill'},{key:'delinquency',label:'Cobrança (Atrasos)'},{key:'billing-inbox',label:'Caixa de Entrada'}]},
  {key:'ownerportal',label:'OWNER PORTAL',items:[{key:'ownerportal',label:'Owner Portal'},{key:'ltownerpay',label:'Owner Payment'},{key:'owner-statement-detail',label:'Owner Statement (Detalhe)'},{key:'owner-audit',label:'Auditoria Repasses'},{key:'listings',label:'Listings'}]},
  {key:'tenantsgrp',label:'TENANTS',items:[{key:'tenantportal',label:'Tenant Portal'},{key:'listings-tenants',label:'Listings'}]},
  {key:'compliance',label:'COMPLIANCE',items:[{key:'licenses',label:'Licenses'},{key:'1099',label:'1099 / IRS'},{key:'gaap',label:'GAAP'}]},
@@ -13251,6 +13323,7 @@ function nav(r){
  ramp:()=>{if(typeof gmRampLoadSnapshot==='function')void gmRampLoadSnapshot();if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof gmQbInit==='function')void gmQbInit();},
  'ap-ar':()=>{if(typeof gmApArLoad==='function')void gmApArLoad();},
+ 'billing-inbox':()=>{if(typeof gmBInboxLoad==='function')void gmBInboxLoad();},
  'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
  clients:()=>{if(typeof loadClients==='function')loadClients();},
@@ -15900,6 +15973,7 @@ var GM_NAV_PAGES=[
  {key:'jobs-follow',label:'Follow-up (Jobs)',kw:['follow','acompanhamento','fila']},
  {key:'billing',label:'Invoice / Bill',kw:['invoice','bill','fatura','faturas','cobranca invoice']},
  {key:'delinquency',label:'Cobrança (Atrasos)',kw:['cobranca','cobrança','atraso','atrasos','delinquency','inadimplencia','inadimplência']},
+ {key:'billing-inbox',label:'Caixa de Entrada',kw:['caixa de entrada','inbox','faturas recebidas','invoices recebidas','contas a pagar recebidas','pagador']},
  {key:'ownerportal',label:'Owner Portal',kw:['owner portal','portal do owner','portal do proprietario']},
  {key:'ltownerpay',label:'Owner Payment',kw:['owner payment','pagamento ao owner','repasse owner']},
  {key:'ramp',label:'Ramp',kw:['ramp','cartao','cartão','corporate card','cartoes','cartões']},

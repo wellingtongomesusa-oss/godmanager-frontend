@@ -45,7 +45,7 @@ export const MENU_ACCESS_SECTIONS: MenuAccessSectionDef[] = [
   },
   {
     sectionKey: 'billing',
-    itemKeys: ['billing'],
+    itemKeys: ['billing', 'billing-inbox'],
   },
   {
     sectionKey: 'ownerportal',
