@@ -3035,6 +3035,22 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div class="gm-ix-kpi k2"><div class="k-l">Total a Receber</div><div class="k-v" id="apar-kpi-ar"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Invoices em aberto</div><div class="k-bar"></div></div>
   <div class="gm-ix-kpi k3"><div class="k-l">A Receber Vencido</div><div class="k-v" id="apar-kpi-aro"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Passou do vencimento</div><div class="k-bar"></div></div>
  </div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:4px 0 12px">
+  <div>
+   <label style="display:block;font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:3px">FORNECEDOR / CLIENTE</label>
+   <input id="apar-f-name" oninput="gmApArRenderTables()" placeholder="Buscar nome..." style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);width:180px">
+  </div>
+  <div>
+   <label style="display:block;font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:3px">EMISSÃO DE</label>
+   <input id="apar-f-from" type="date" onchange="gmApArRenderTables()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+  </div>
+  <div>
+   <label style="display:block;font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:3px">ATÉ</label>
+   <input id="apar-f-to" type="date" onchange="gmApArRenderTables()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+  </div>
+  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);cursor:pointer;padding-bottom:6px"><input type="checkbox" id="apar-f-overdue" onchange="gmApArRenderTables()" style="width:14px;height:14px;accent-color:var(--amber)"> Só vencidos</label>
+  <button type="button" onclick="gmApArClearFilters()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;cursor:pointer;margin-bottom:0">Limpar</button>
+ </div>
  <div style="display:flex;gap:8px;margin:4px 0 14px">
   <button type="button" id="apar-tab-ap" class="btn-gm-ix" onclick="gmApArTab('ap')">Contas a Pagar</button>
   <button type="button" id="apar-tab-ar" class="btn-gm-ix sec" onclick="gmApArTab('ar')">Contas a Receber</button>
@@ -8163,26 +8179,52 @@ async function gmApArLoad(){
    return;
   }
   if(nc)nc.style.display='none';
-  document.getElementById('apar-kpi-ap').textContent=fmt(j.apTotal||0);
-  document.getElementById('apar-kpi-apo').textContent=fmt(j.apOverdue||0);
-  document.getElementById('apar-kpi-ar').textContent=fmt(j.arTotal||0);
-  document.getElementById('apar-kpi-aro').textContent=fmt(j.arOverdue||0);
-  // Contas a Pagar
-  var tbAp=document.getElementById('apar-tbody-ap');
-  var ap=j.payables||[];
-  tbAp.innerHTML=ap.length?ap.map(function(b){
-   return '<tr><td>'+esc(b.vendor||'—')+'</td><td>'+esc(b.docNumber||'—')+'</td><td>'+esc(b.txnDate||'—')+'</td><td>'+esc(b.dueDate||'—')+'</td><td class="mono">'+fmt(b.balance||0)+'</td><td><span class="pill '+(b.overdue?'pr':'pa')+'">'+(b.overdue?'Vencido':'Em aberto')+'</span></td></tr>';
-  }).join(''):'<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a pagar em aberto. 🎉</td></tr>';
-  // Contas a Receber
-  var tbAr=document.getElementById('apar-tbody-ar');
-  var ar=j.receivables||[];
-  tbAr.innerHTML=ar.length?ar.map(function(v){
-   var link=v.link?'<a href="'+esc(v.link)+'" target="_blank" rel="noopener" style="color:#22558c;font-weight:600;text-decoration:none">Abrir ↗</a>':'—';
-   return '<tr><td>'+esc(v.customer||'—')+'</td><td>'+esc(v.docNumber||'—')+'</td><td>'+esc(v.txnDate||'—')+'</td><td>'+esc(v.dueDate||'—')+'</td><td class="mono">'+fmt(v.balance||0)+'</td><td><span class="pill '+(v.overdue?'pr':'pa')+'">'+(v.overdue?'Vencido':'Em aberto')+'</span></td><td>'+link+'</td></tr>';
-  }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber em aberto.</td></tr>';
+  window.__gmApAr=j;
+  gmApArRenderTables();
  }catch(e){if(nc){nc.style.display='block';nc.textContent='Erro de rede ao carregar AP/AR.';}}
 }
 window.gmApArLoad=gmApArLoad;
+function gmApArClearFilters(){
+ ['apar-f-name','apar-f-from','apar-f-to'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+ var ov=document.getElementById('apar-f-overdue');if(ov)ov.checked=false;
+ gmApArRenderTables();
+}
+window.gmApArClearFilters=gmApArClearFilters;
+function gmApArRenderTables(){
+ var j=window.__gmApAr;if(!j)return;
+ var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var term=((document.getElementById('apar-f-name')||{}).value||'').toLowerCase().trim();
+ var from=(document.getElementById('apar-f-from')||{}).value||'';
+ var to=(document.getElementById('apar-f-to')||{}).value||'';
+ var onlyOverdue=!!(document.getElementById('apar-f-overdue')||{}).checked;
+ var match=function(name,txn,overdue){
+  if(term&&String(name||'').toLowerCase().indexOf(term)<0)return false;
+  if(from&&String(txn||'')<from)return false;
+  if(to&&String(txn||'')>to)return false;
+  if(onlyOverdue&&!overdue)return false;
+  return true;
+ };
+ var ap=(j.payables||[]).filter(function(b){return match(b.vendor,b.txnDate,b.overdue);});
+ var ar=(j.receivables||[]).filter(function(v){return match(v.customer,v.txnDate,v.overdue);});
+ var sum=function(a){return a.reduce(function(s,x){return s+(x.balance||0);},0);};
+ var sumOd=function(a){return a.filter(function(x){return x.overdue;}).reduce(function(s,x){return s+(x.balance||0);},0);};
+ // KPIs refletem o filtro
+ document.getElementById('apar-kpi-ap').textContent=fmt(sum(ap));
+ document.getElementById('apar-kpi-apo').textContent=fmt(sumOd(ap));
+ document.getElementById('apar-kpi-ar').textContent=fmt(sum(ar));
+ document.getElementById('apar-kpi-aro').textContent=fmt(sumOd(ar));
+ var tbAp=document.getElementById('apar-tbody-ap');
+ tbAp.innerHTML=ap.length?ap.map(function(b){
+  return '<tr><td>'+esc(b.vendor||'—')+'</td><td>'+esc(b.docNumber||'—')+'</td><td>'+esc(b.txnDate||'—')+'</td><td>'+esc(b.dueDate||'—')+'</td><td class="mono">'+fmt(b.balance||0)+'</td><td><span class="pill '+(b.overdue?'pr':'pa')+'">'+(b.overdue?'Vencido':'Em aberto')+'</span></td></tr>';
+ }).join(''):'<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a pagar'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto. 🎉')+'</td></tr>';
+ var tbAr=document.getElementById('apar-tbody-ar');
+ tbAr.innerHTML=ar.length?ar.map(function(v){
+  var link=v.link?'<a href="'+esc(v.link)+'" target="_blank" rel="noopener" style="color:#22558c;font-weight:600;text-decoration:none">Abrir ↗</a>':'—';
+  return '<tr><td>'+esc(v.customer||'—')+'</td><td>'+esc(v.docNumber||'—')+'</td><td>'+esc(v.txnDate||'—')+'</td><td>'+esc(v.dueDate||'—')+'</td><td class="mono">'+fmt(v.balance||0)+'</td><td><span class="pill '+(v.overdue?'pr':'pa')+'">'+(v.overdue?'Vencido':'Em aberto')+'</span></td><td>'+link+'</td></tr>';
+ }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto.')+'</td></tr>';
+}
+window.gmApArRenderTables=gmApArRenderTables;
 // ---- Caixa de Entrada: invoices recebidas (sou o pagador) ----
 function gmBInboxStatusPill(st,overdue){
  var s=String(st||'').toUpperCase();
