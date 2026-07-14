@@ -125,6 +125,7 @@ model Client {
   rampExpensePostings   RampExpensePosting[]    @relation("RampExpensePosting_clientId")
   bankReconciliations   BankReconciliation[]    @relation("BankReconciliation_clientId")
   rampSpendSnapshot     RampSpendSnapshot?      @relation("RampSpendSnapshot_clientId")
+  accessRequests        AccessRequest[]         @relation("AccessRequest_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
   propertyContracts     PropertyContract[]      @relation("PropertyContract_clientId")
   sophiaSnapshots       SophiaSnapshot[]        @relation("SophiaSnapshot_clientId")
@@ -321,6 +322,29 @@ model BankReconciliationItem {
 
   @@index([reconciliationId])
   @@map("bank_reconciliation_items")
+}
+
+/// Pedido de liberação de acesso a uma área (ex.: FINANCE/QuickBooks). Um usuário
+/// solicita; um admin/super_admin aprova via popup e a role/menuAccess é atualizada.
+model AccessRequest {
+  id             String    @id @default(cuid())
+  clientId       String
+  userId         String
+  userEmail      String
+  userName       String?
+  resource       String    @db.VarChar(40) // FINANCE | ...
+  message        String?   @db.VarChar(300)
+  status         String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | DENIED
+  createdAt      DateTime  @default(now())
+  decidedById    String?
+  decidedByEmail String?
+  decidedAt      DateTime?
+
+  client Client @relation("AccessRequest_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, status])
+  @@index([userId])
+  @@map("access_requests")
 }
 
 /// Snapshot dos gastos do Ramp por cliente (agregações de todo o período), salvo

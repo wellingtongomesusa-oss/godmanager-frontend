@@ -2904,6 +2904,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <div id="qb-conn-actions" style="display:flex;gap:8px;flex-wrap:wrap"></div>
  </div>
+ <!-- Guia rápido de lançamentos (para quem não tem experiência) -->
+ <details id="qb-guide" style="display:none;margin-bottom:16px;border:1px solid var(--border);border-radius:12px;background:var(--cream);padding:0 16px">
+  <summary style="cursor:pointer;padding:12px 0;font-size:12px;font-weight:700;color:#22558c;list-style:none">💡 Guia rápido — qual lançamento usar?</summary>
+  <div style="padding:0 0 14px;font-size:12px;color:var(--ink2);line-height:1.6">
+   <div style="margin-bottom:8px"><b style="color:#2a6e4e">Recebi aluguel / vou cobrar o inquilino</b> → use <b>Criar Invoice</b> (gera o link de pagamento). Item: <i>Rent</i>.</div>
+   <div style="margin-bottom:8px"><b style="color:#b83030">Paguei uma despesa (cartão/banco)</b> → use <b>Lançar despesa · Purchase</b>. Ex.: material no Home Depot pago no cartão.</div>
+   <div style="margin-bottom:8px"><b style="color:#c47b28">Recebi conta de fornecedor pra pagar depois</b> → use <b>Lançar despesa · Bill</b> (contas a pagar). Escolha o vendor.</div>
+   <div style="margin-bottom:8px"><b>Não sei a categoria?</b> Use nomes claros: <i>Repairs &amp; Maintenance, Cleaning, Utilities, HOA, Management Fees, Owner Distribution</i>.</div>
+   <div style="font-size:11px;color:var(--ink3);border-top:1px solid var(--border);padding-top:8px;margin-top:8px">Regra de ouro: <b>entrada de dinheiro</b> = Invoice/receita · <b>saída</b> = Purchase/Bill/despesa.</div>
+  </div>
+ </details>
  <!-- #6/#13 — Lançar despesa no QuickBooks (Purchase = pago; Bill = a pagar) -->
  <div id="qb-post-panel" style="display:none;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden">
   <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
@@ -7961,6 +7972,7 @@ async function gmQbInit(){
     +'<button type="button" onclick="gmQbDisconnect()" style="padding:8px 14px;border:1px solid var(--red-bd,#e0b4b4);border-radius:7px;background:var(--red-bg,#fdecec);color:var(--red,#b83030);font-size:12px;font-weight:600;cursor:pointer">Desconectar</button>';
    var pp=document.getElementById('qb-post-panel');if(pp)pp.style.display='block';
    var ip=document.getElementById('qb-invoice-panel');if(ip)ip.style.display='block';
+   var gd=document.getElementById('qb-guide');if(gd)gd.style.display='block';
    if(typeof gmQbPostAcctsLoad==='function')void gmQbPostAcctsLoad();
   }else{
    if(dot)dot.style.background='var(--ink3)';
@@ -10277,6 +10289,7 @@ function applyPermissions(level){
  var isSuperAdmin=rPermSa==='super_admin';
  if(isSuperAdmin&&typeof gmTopbarCompanyInit==='function'){void gmTopbarCompanyInit();}
  if(typeof gmMarketTickerInit==='function'){gmMarketTickerInit();}
+ if(typeof gmAccessRequestInit==='function'){setTimeout(function(){gmAccessRequestInit();},400);}
  if(gmAd)gmAd.style.display=(isPlatform&&lvl==='ADMIN'&&isSuperAdmin)?'block':'none';
  var navAuditPlat=document.getElementById('nav-admin-audit');
  var navAuditTenant=document.getElementById('nav-audit-log-tenant');
@@ -15787,6 +15800,70 @@ async function gmMfaDisable(){
  }catch(e){alert('Erro de rede.');}
 }
 window.gmMfaDisable=gmMfaDisable;
+// ===== Pedido/aprovação de acesso ao Financeiro =====
+async function gmAccessRequestInit(){
+ var reqBtn=document.getElementById('gm-access-req-btn');
+ try{
+  var r=await fetch('/api/access-request',{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok)return;
+  if(j.isApprover){
+   if(reqBtn)reqBtn.style.display='none';
+   if(Array.isArray(j.pending)&&j.pending.length)gmAccessApproveShow(j.pending);
+  }else{
+   // usuário comum: mostra o botão só se NÃO tem acesso financeiro
+   var hasFin=false;
+   try{var u=window.__gmCurrentUser||{};var ma=Array.isArray(u.menuAccess)?u.menuAccess:[];var role=String(u.role||'').toLowerCase();
+    hasFin=(role==='super_admin'||role==='admin'||role==='manager')&&(ma.length===0||ma.indexOf('results')>=0||ma.indexOf('integrations')>=0);}catch(e){}
+   if(reqBtn){
+    if(hasFin){reqBtn.style.display='none';}
+    else if(j.myRequest&&j.myRequest.status==='PENDING'){reqBtn.style.display='block';reqBtn.textContent='⏳ Pedido de acesso enviado';reqBtn.disabled=true;reqBtn.style.background='var(--ink3)';}
+    else{reqBtn.style.display='block';reqBtn.textContent='🔒 Solicitar acesso ao Financeiro';reqBtn.disabled=false;reqBtn.style.background='#22558c';}
+   }
+  }
+ }catch(e){}
+}
+window.gmAccessRequestInit=gmAccessRequestInit;
+async function gmAccessRequestSend(){
+ var btn=document.getElementById('gm-access-req-btn');if(btn)btn.disabled=true;
+ try{
+  var r=await fetch('/api/access-request',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({resource:'FINANCE'})});
+  var j=await r.json();
+  if(j&&j.ok){if(btn){btn.textContent='⏳ Pedido de acesso enviado';btn.style.background='var(--ink3)';}alert('Pedido enviado! O administrador vai aprovar.');}
+  else{if(btn)btn.disabled=false;alert((j&&j.error)||'Falha ao enviar o pedido.');}
+ }catch(e){if(btn)btn.disabled=false;alert('Erro de rede.');}
+}
+window.gmAccessRequestSend=gmAccessRequestSend;
+function gmAccessApproveShow(pending){
+ var modal=document.getElementById('gm-access-approve-modal');var list=document.getElementById('gm-access-approve-list');
+ if(!modal||!list)return;
+ var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+ list.innerHTML=pending.map(function(p){
+  var who=esc(p.userName||p.userEmail);
+  return '<div data-req="'+p.id+'" style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">'
+   +'<div style="font-size:13px;font-weight:700;color:var(--ink)">'+who+'</div>'
+   +'<div style="font-size:11px;color:var(--ink3);margin:2px 0 10px">Pediu acesso a: <b>'+esc(p.resource==='FINANCE'?'Financeiro (QuickBooks / Bookkeeping / Conciliação)':p.resource)+'</b></div>'
+   +'<div style="display:flex;gap:8px">'
+    +'<button type="button" onclick="gmAccessDecide(\''+p.id+'\',\'APPROVED\',this)" style="flex:1;padding:9px;background:#2a6e4e;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✓ Sim, liberar</button>'
+    +'<button type="button" onclick="gmAccessDecide(\''+p.id+'\',\'DENIED\',this)" style="flex:1;padding:9px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Não</button>'
+   +'</div></div>';
+ }).join('')+'<div style="text-align:right;margin-top:4px"><button type="button" onclick="document.getElementById(\'gm-access-approve-modal\').style.display=\'none\'" style="padding:6px 12px;background:transparent;border:none;color:var(--ink3);font-size:12px;cursor:pointer">Depois</button></div>';
+ modal.style.display='flex';
+}
+async function gmAccessDecide(requestId,decision,btn){
+ var card=btn&&btn.closest?btn.closest('[data-req]'):null;
+ if(btn){btn.disabled=true;}
+ try{
+  var r=await fetch('/api/access-request',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:requestId,decision:decision})});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Falha.');if(btn)btn.disabled=false;return;}
+  if(card)card.innerHTML='<div style="font-size:12px;font-weight:700;color:'+(decision==='APPROVED'?'#2a6e4e':'var(--ink3)')+';padding:6px 0">'+(decision==='APPROVED'?'✓ Acesso liberado':'Pedido recusado')+'</div>';
+  // se não sobrou nenhum card ativo, fecha
+  var modal=document.getElementById('gm-access-approve-modal');
+  if(modal&&!modal.querySelector('button[onclick*="APPROVED"]')){setTimeout(function(){modal.style.display='none';},900);}
+ }catch(e){alert('Erro de rede.');if(btn)btn.disabled=false;}
+}
+window.gmAccessDecide=gmAccessDecide;
 function gmSupportChatAppendNav(pages){
  var box=document.getElementById('gm-support-chat-msgs');if(!box)return;
  var btns=pages.map(function(p){return '<button type="button" onclick="gmSophiaGo(\''+p.key+'\')" style="text-align:left;padding:7px 11px;background:#fff;color:var(--ink);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📂 Abrir '+p.label+' →</button>';}).join('');
@@ -41033,6 +41110,22 @@ window.gmFormsReceivedRender=async function(){
 #gm-support-fab:hover{filter:brightness(1.08)}
 #gm-support-fab svg{display:block;flex-shrink:0}
 </style>
+
+<!-- Solicitar acesso ao Financeiro (usuário sem acesso) -->
+<button type="button" id="gm-access-req-btn" onclick="gmAccessRequestSend()" style="display:none;position:fixed;left:20px;bottom:20px;z-index:9000;padding:10px 16px;background:#22558c;color:#fff;border:none;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.2);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">🔒 Solicitar acesso ao Financeiro</button>
+
+<!-- Popup de aprovação (admin/super_admin) -->
+<div id="gm-access-approve-modal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(10,12,16,.55);align-items:center;justify-content:center;padding:20px">
+ <div style="background:var(--paper,#fff);border:1px solid var(--border2);border-radius:14px;max-width:440px;width:100%;padding:22px;box-shadow:0 16px 48px rgba(0,0,0,.28);font-family:'Inter',sans-serif">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+   <span style="font-size:22px">🔐</span>
+   <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--ink)">Pedido de acesso</h3>
+  </div>
+  <p style="font-size:12px;color:var(--ink3);margin:0 0 14px">Um usuário pediu liberação para a área financeira (QuickBooks, Bookkeeping, Conciliação).</p>
+  <div id="gm-access-approve-list"></div>
+ </div>
+</div>
+
 <div id="gm-support-fab-wrap" style="display:none">
  <div id="gm-support-chat-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--cream)">
