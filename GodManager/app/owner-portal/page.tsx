@@ -59,7 +59,8 @@ export default async function OwnerPortalIndex() {
     address: true,
     ownerName: true,
     ownerMonthPayouts: {
-      where: { yearMonth: period },
+      // Só conta como "disponível" quando o gestor FECHOU o demonstrativo.
+      where: { yearMonth: period, closedAt: { not: null } },
       select: { id: true },
       take: 1,
     },

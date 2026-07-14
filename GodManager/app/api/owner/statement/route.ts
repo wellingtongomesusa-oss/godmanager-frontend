@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
     }
 
-    const payout = await prisma.ownerMonthPayout.findUnique({
+    const payoutRow = await prisma.ownerMonthPayout.findUnique({
       where: {
         propertyId_yearMonth: {
           propertyId: property.id,
@@ -65,6 +65,10 @@ export async function GET(req: NextRequest) {
         },
       },
     });
+
+    // O proprietário só enxerga demonstrativos FECHADOS (closedAt != null).
+    // Super admin (gestor) pode ver aberto/fechado para conferência.
+    const payout = ownerMatch && payoutRow && !payoutRow.closedAt ? null : payoutRow;
 
     return NextResponse.json({
       ok: true,
@@ -89,6 +93,7 @@ export async function GET(req: NextRequest) {
         ? {
             id: payout.id,
             yearMonth: payout.yearMonth,
+            closedAt: payout.closedAt?.toISOString() ?? null,
             totalIncome: payout.totalIncome?.toString() ?? '0',
             totalExpenses: payout.totalExpenses?.toString() ?? '0',
             netPayout: payout.netPayout?.toString() ?? '0',

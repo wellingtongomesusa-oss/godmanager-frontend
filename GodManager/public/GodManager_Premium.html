@@ -3518,10 +3518,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </select>
  <input type="date" id="lt-exp-filter-day" onchange="if(typeof ltExpRender==='function')ltExpRender()" title="Filtrar por dia" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <select id="lt-exp-filter-cat" onchange="ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
- <option value="">Todas as categorias</option>
+ <option value="">Todas (Manutenção + Vendor)</option>
  <option value="Manutenção">Manutenção</option>
  <option value="Vendor">Vendor</option>
- <option value="__PM__">Vendor (markup / API)</option>
  </select>
  <select id="lt-exp-filter-status" onchange="if(typeof ltExpRender==='function')ltExpRender()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
  <option value="">Todos os status</option>
@@ -4876,7 +4875,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div class="ltp-modal-panel" style="background:var(--paper);width:min(720px,95vw);max-height:min(92vh,900px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="ltp-modal-title">
 <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
 <div id="ltp-modal-title" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif">Nova Propriedade</div>
-<button type="button" onclick="ltpCloseNewPropertyModal()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;display:flex;font-size:18px;color:var(--ink3);line-height:1">×</button>
+<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+<button type="button" id="ltp-comments-btn" style="display:none;padding:7px 12px;border:1px solid var(--border2);background:var(--cream);color:var(--ink2);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">💬 Comentários</button>
+<button type="button" onclick="ltpCloseNewPropertyModal()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;display:flex;font-size:18px;color:var(--ink3);line-height:1">×</button>
+</div>
 </div>
 <div class="ltp-modal-body" style="padding:0 24px 20px;overflow-y:auto;flex:1">
 <div class="ltp-sec">1. Informações básicas</div>
@@ -5764,7 +5766,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="background:var(--paper);border-radius:12px;width:640px;max-width:98vw;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto" onclick="event.stopPropagation()">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
   <div style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Cormorant Garamond',serif">Inquilino — Informações do contrato</div>
+  <div style="display:flex;align-items:center;gap:8px">
+  <button type="button" id="tenant-comments-btn" style="display:none;padding:7px 12px;border:1px solid var(--border2);background:var(--cream);color:var(--ink2);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">💬 Comentários</button>
   <button type="button" onclick="tnCloseTenantModal()" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:var(--ink3);line-height:1">&times;</button>
+  </div>
  </div>
  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px">Informações do contrato</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
@@ -25878,6 +25883,8 @@ function tnOpenTenantModal(profileId){
  var tc=tnContractGet(profileId)||{};
  var m=document.getElementById('tenant-modal');
  if(m) m.style.display='flex';
+ var _tcb=document.getElementById('tenant-comments-btn');
+ if(_tcb){_tcb.style.display='inline-flex';_tcb.onclick=function(){if(typeof gmCommentsOpen==='function')gmCommentsOpen('TENANT',String(profileId),{title:'Comentários / histórico do inquilino'});};}
  var vMoveIn=tc.moveIn||p.moveIn||'';
  var vMoveOut=tc.moveOut||p.leaseEnd||'';
  document.getElementById('tn-f-movein').value=vMoveIn?vMoveIn.slice(0,10):'';
@@ -27186,6 +27193,7 @@ function ltpTrapTab(e){
 function ltpEscClose(e){/* lock: tecla Esc nao fecha o modal Property */}
 function ltpOpenNewPropertyModal(){
  window.__ltpEditingRecord=null;
+ var _cb=document.getElementById('ltp-comments-btn');if(_cb)_cb.style.display='none';
  ltpPrevFocus=document.activeElement;
  ltpResetPhotoStaging();
  ltpNetManual=false;
@@ -27319,6 +27327,8 @@ window.ltpOpenEditProperty._populate=function(r){
  }
  setTimeout(function(){if(typeof ltpUpdateStatusAutoDisplay==='function')ltpUpdateStatusAutoDisplay();},0);
  var t=document.getElementById('ltp-modal-title');if(t)t.textContent='Editar Propriedade';
+ var cbtn=document.getElementById('ltp-comments-btn');
+ if(cbtn){var pid=String((r&&(r._apiId||r.id))||'');if(pid){cbtn.style.display='inline-flex';cbtn.onclick=function(){if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY',pid,{title:'Comentários / histórico da casa'});};}else{cbtn.style.display='none';}}
  document.body.style.overflow='hidden';
  document.getElementById('ltp-property-modal').style.display='flex';
 };

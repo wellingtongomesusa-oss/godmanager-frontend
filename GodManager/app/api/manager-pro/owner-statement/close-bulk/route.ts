@@ -5,6 +5,7 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { getClientScopeWhere, toClientScopeUser } from '@/lib/clientScope';
 import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
+import { carryOverToNextMonth } from '@/lib/ownerStatementCarryOver';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,6 +97,8 @@ export async function POST(req: Request) {
         },
       });
     });
+    // Carry-over do saldo para o mês seguinte (se aberto).
+    await carryOverToNextMonth({ payoutId: p.id, propertyId: p.propertyId, yearMonthNorm, scopeUser });
     closedPropertyIds.push(p.propertyId);
   }
 

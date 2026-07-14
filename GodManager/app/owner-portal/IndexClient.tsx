@@ -1,8 +1,31 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import PlaidLinkCard from './_components/PlaidLinkCard';
+
+interface ClosedStatement {
+  id: string;
+  propertyId: string;
+  propertyCode: string | null;
+  address: string;
+  period: string;
+  netPayout: string;
+  closedAt: string | null;
+  paidAt: string | null;
+}
+
+const MONTHS_PT_SHORT = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+function periodLabelShort(ym: string): string {
+  const [y, m] = ym.split('-');
+  return `${MONTHS_PT_SHORT[parseInt(m ?? '0', 10)] ?? m} ${y}`;
+}
+function fmtUsd(v: string): string {
+  const n = Number(v);
+  return Number.isFinite(n)
+    ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+    : '$0.00';
+}
 
 interface PortalProperty {
   id: string;
@@ -90,6 +113,93 @@ export default function IndexClient({
           ))}
         </div>
       )}
+
+      <ClosedStatementsList />
+    </div>
+  );
+}
+
+function ClosedStatementsList() {
+  const [rows, setRows] = useState<ClosedStatement[] | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/owner/statements', { credentials: 'include', cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j && j.ok) setRows(j.statements || []);
+        else setError(true);
+      })
+      .catch(() => alive && setError(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (error) return null;
+  if (rows === null) {
+    return (
+      <div className="mt-8 text-xs text-gm-ink-secondary">Carregando demonstrativos fechados…</div>
+    );
+  }
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mt-10">
+      <h2 className="mb-1 font-heading text-lg font-semibold text-gm-ink">
+        Demonstrativos fechados
+      </h2>
+      <p className="mb-3 text-xs text-gm-ink-secondary">
+        Todos os repasses já fechados pelo seu gestor ({rows.length}). Somente leitura.
+      </p>
+      <div className="overflow-x-auto rounded-lg border border-gm-border bg-gm-paper">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gm-border text-left text-xs uppercase tracking-wider text-gm-ink-secondary">
+              <th className="px-4 py-3 font-medium">Mês</th>
+              <th className="px-4 py-3 font-medium">Imóvel</th>
+              <th className="px-4 py-3 font-medium text-right">Repasse líquido</th>
+              <th className="px-4 py-3 font-medium text-center">Pago</th>
+              <th className="px-4 py-3 font-medium text-right"> </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((s) => (
+              <tr key={s.id} className="border-b border-gm-border/60 last:border-0">
+                <td className="whitespace-nowrap px-4 py-3 font-medium text-gm-ink">
+                  {periodLabelShort(s.period)}
+                </td>
+                <td className="px-4 py-3 text-gm-ink-secondary">
+                  {s.propertyCode ? `${s.propertyCode} · ` : ''}
+                  {s.address}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right font-mono font-semibold text-gm-ink">
+                  {fmtUsd(s.netPayout)}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {s.paidAt ? (
+                    <span className="inline-flex rounded-full bg-gm-amber-bg/70 px-2 py-0.5 text-xs text-gm-ink">
+                      Sim
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gm-ink-secondary">—</span>
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right">
+                  <Link
+                    href={`/owner-portal/statement?propertyId=${encodeURIComponent(s.propertyId)}&period=${encodeURIComponent(s.period)}`}
+                    className="text-xs font-semibold text-gm-amber hover:underline"
+                  >
+                    Ver →
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

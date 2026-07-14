@@ -5,6 +5,7 @@ import { toClientScopeUser } from '@/lib/clientScope';
 import { ensureOwnerMonthPayoutWithClient } from '@/lib/ownerStatementEmail';
 import { normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
+import { carryOverToNextMonth } from '@/lib/ownerStatementCarryOver';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,16 @@ export async function POST(req: Request) {
     });
   });
 
+  // Carry-over: o saldo final deste mês vira o saldo inicial do mês seguinte (se ainda aberto).
+  const carriedTo = await carryOverToNextMonth({
+    payoutId: ensured.payoutId,
+    propertyId,
+    yearMonthNorm,
+    scopeUser,
+  });
+
   return NextResponse.json({
+    carriedTo,
     ok: true,
     payout: {
       id: updated.id,
