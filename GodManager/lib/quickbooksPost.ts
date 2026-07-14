@@ -220,3 +220,72 @@ export async function qbCreateInvoice(
     invoiceLink: inv?.InvoiceLink ? String(inv.InvoiceLink) : null,
   };
 }
+
+// ---- Relatórios (cards + gráficos) ----------------------------------------
+
+export type QbPnl = {
+  totalIncome: number;
+  totalExpenses: number;
+  netIncome: number;
+  months: Array<{ month: string; income: number; expenses: number }>;
+};
+
+function numVal(v: unknown): number {
+  const n = Number(String(v ?? '0').replace(/,/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Profit & Loss do QuickBooks (summarize por mês) → totais + série mensal. */
+export async function qbProfitAndLoss(clientId: string, from: string, to: string): Promise<QbPnl> {
+  const json = (await qbRead(
+    clientId,
+    `reports/ProfitAndLoss?start_date=${from}&end_date=${to}&summarize_column_by=Month&accounting_method=Accrual`,
+  )) as Record<string, unknown>;
+
+  const report = (json || {}) as Record<string, unknown>;
+  const cols = (((report.Columns as Record<string, unknown>)?.Column as Array<Record<string, unknown>>) || []);
+  const colKeys: string[] = cols.map((c, idx) => {
+    if (idx === 0) return '__label__';
+    const meta = (c?.MetaData as Array<Record<string, unknown>>) || [];
+    const sd = meta.find((m) => m?.Name === 'StartDate')?.Value as string | undefined;
+    if (sd && /^\d{4}-\d{2}/.test(sd)) return sd.slice(0, 7);
+    if (String(c?.ColTitle || '').toLowerCase() === 'total') return 'total';
+    return `col${idx}`;
+  });
+
+  const income: Record<string, number> = {};
+  const expenses: Record<string, number> = {};
+  const walk = (rows: Array<Record<string, unknown>>) => {
+    for (const row of rows || []) {
+      const group = row?.group;
+      if (group === 'Income' || group === 'Expenses') {
+        const summary = ((row?.Summary as Record<string, unknown>)?.ColData as Array<Record<string, unknown>>) || [];
+        const target = group === 'Income' ? income : expenses;
+        summary.forEach((cd, i) => {
+          if (i === 0) return;
+          const key = colKeys[i];
+          if (key) target[key] = numVal(cd?.value);
+        });
+      }
+      const sub = (row?.Rows as Record<string, unknown>)?.Row as Array<Record<string, unknown>> | undefined;
+      if (sub) walk(sub);
+    }
+  };
+  walk(((report.Rows as Record<string, unknown>)?.Row as Array<Record<string, unknown>>) || []);
+
+  const monthKeys = colKeys.filter((k) => /^\d{4}-\d{2}$/.test(k));
+  const sumMonths = (o: Record<string, number>) => monthKeys.reduce((s, k) => s + (o[k] || 0), 0);
+  const totalIncome = income.total ?? sumMonths(income);
+  const totalExpenses = expenses.total ?? sumMonths(expenses);
+  const months = monthKeys.map((k) => ({ month: k, income: income[k] || 0, expenses: expenses[k] || 0 }));
+  return { totalIncome, totalExpenses, netIncome: totalIncome - totalExpenses, months };
+}
+
+/** Total de contas a pagar (soma do saldo em aberto dos Bills). */
+export async function qbAccountsPayable(clientId: string): Promise<number> {
+  const json = (await qbRead(clientId, `query?query=${encodeURIComponent('select * from Bill maxresults 1000')}`)) as {
+    QueryResponse?: { Bill?: Array<Record<string, unknown>> };
+  };
+  const bills = json?.QueryResponse?.Bill || [];
+  return bills.reduce((s, b) => s + numVal(b.Balance), 0);
+}
