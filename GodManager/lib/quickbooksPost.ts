@@ -345,3 +345,58 @@ export async function qbRecentExpenses(clientId: string, limit = 25): Promise<Qb
   rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return rows.slice(0, limit);
 }
+
+// ---- AP/AR: listagens de Contas a Pagar / Receber -------------------------
+
+export type QbApRow = { id: string; docNumber: string | null; vendor: string; txnDate: string; dueDate: string; total: number; balance: number; overdue: boolean };
+export type QbArRow = { id: string; docNumber: string | null; customer: string; txnDate: string; dueDate: string; total: number; balance: number; overdue: boolean; link: string | null };
+
+function isOverdue(dueDate: string, balance: number): boolean {
+  if (!(balance > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return false;
+  return dueDate < new Date().toISOString().slice(0, 10);
+}
+
+/** Contas a Pagar: Bills em aberto (Balance > 0), mais recentes primeiro. */
+export async function qbListOpenBills(clientId: string, limit = 100): Promise<QbApRow[]> {
+  const json = (await qbRead(clientId, `query?query=${encodeURIComponent('select * from Bill where Balance > \'0\' orderby TxnDate desc maxresults ' + limit)}`)) as {
+    QueryResponse?: { Bill?: Array<Record<string, unknown>> };
+  };
+  return (json?.QueryResponse?.Bill || []).map((b) => {
+    const vend = (b?.VendorRef as Record<string, unknown>) || {};
+    const dueDate = String(b?.DueDate || '').slice(0, 10);
+    const balance = numVal(b?.Balance);
+    return { id: String(b?.Id ?? ''), docNumber: b?.DocNumber ? String(b.DocNumber) : null, vendor: String(vend?.name || '—'), txnDate: String(b?.TxnDate || '').slice(0, 10), dueDate, total: numVal(b?.TotalAmt), balance, overdue: isOverdue(dueDate, balance) };
+  });
+}
+
+/** Contas a Receber: Invoices em aberto (Balance > 0), mais recentes primeiro. */
+export async function qbListOpenInvoices(clientId: string, limit = 100): Promise<QbArRow[]> {
+  const json = (await qbRead(clientId, `query?query=${encodeURIComponent('select * from Invoice where Balance > \'0\' orderby TxnDate desc maxresults ' + limit)}`)) as {
+    QueryResponse?: { Invoice?: Array<Record<string, unknown>> };
+  };
+  return (json?.QueryResponse?.Invoice || []).map((inv) => {
+    const cust = (inv?.CustomerRef as Record<string, unknown>) || {};
+    const dueDate = String(inv?.DueDate || '').slice(0, 10);
+    const balance = numVal(inv?.Balance);
+    return { id: String(inv?.Id ?? ''), docNumber: inv?.DocNumber ? String(inv.DocNumber) : null, customer: String(cust?.name || '—'), txnDate: String(inv?.TxnDate || '').slice(0, 10), dueDate, total: numVal(inv?.TotalAmt), balance, overdue: isOverdue(dueDate, balance), link: inv?.InvoiceLink ? String(inv.InvoiceLink) : null };
+  });
+}
+
+export type QbApArSummary = {
+  payables: QbApRow[]; receivables: QbArRow[];
+  apTotal: number; apOverdue: number; arTotal: number; arOverdue: number;
+};
+
+/** Resumo consolidado AP/AR para a tela Contas a Pagar/Receber. */
+export async function qbApArSummary(clientId: string): Promise<QbApArSummary> {
+  const [payables, receivables] = await Promise.all([
+    qbListOpenBills(clientId, 100).catch(() => [] as QbApRow[]),
+    qbListOpenInvoices(clientId, 100).catch(() => [] as QbArRow[]),
+  ]);
+  const sum = (arr: Array<{ balance: number }>) => arr.reduce((s, x) => s + (x.balance || 0), 0);
+  return {
+    payables, receivables,
+    apTotal: sum(payables), apOverdue: sum(payables.filter((b) => b.overdue)),
+    arTotal: sum(receivables), arOverdue: sum(receivables.filter((r) => r.overdue)),
+  };
+}

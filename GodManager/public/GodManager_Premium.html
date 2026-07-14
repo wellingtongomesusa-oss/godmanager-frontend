@@ -1570,6 +1570,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="ss" onclick="nav('integrations')" id="nav-integrations" style="padding-left:16px" data-i18n="connect">Connect</div>
  <div class="ss sb-ix-ic" onclick="nav('ramp')" id="nav-ramp" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span data-i18n="nav_ramp">Ramp</span></div>
  <div class="ss sb-ix-ic" onclick="nav('quickbooks')" id="nav-quickbooks" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg><span data-i18n="nav_quickbooks">QuickBooks</span></div>
+ <div class="ss sb-ix-ic" onclick="nav('ap-ar')" id="nav-ap-ar" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 15h3"/></svg><span data-i18n="nav_ap_ar">A Pagar/Receber (QB)</span></div>
  <div class="ss sb-ix-ic" onclick="nav('appfolio-upload')" id="nav-appfolio-upload" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span data-i18n="appfolio_upload">AppFolio Upload</span></div>
  <div class="ss sb-ix-ic" onclick="gmPlaidMenuOpen()" id="nav-plaid-bank" style="padding-left:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 21h18"/><path d="M4 10h16"/><path d="M12 3 4 7v3h16V7z"/><path d="M6 14v4M10 14v4M14 14v4M18 14v4"/></svg><span>Banco (Plaid)</span></div>
  </div>
@@ -3015,6 +3016,46 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </table>
  </div>
 </div>
+</div>
+
+<!-- Contas a Pagar / Receber (AP/AR) — dados reais do QuickBooks -->
+<div class="page gm-ix-page" id="page-ap-ar">
+ <div class="gm-ix-headrow ph" style="margin-bottom:20px">
+  <div>
+   <div class="pt" style="font-family:'Sora',sans-serif">A Pagar / Receber — QuickBooks</div>
+   <div class="ps" id="apar-sub">Bills e Invoices em aberto direto do QuickBooks (ao vivo). Para faturas criadas no site, use <b>Invoice / Bill</b>.</div>
+  </div>
+  <div class="gm-ix-actions"><button type="button" class="btn-gm-ix" onclick="gmApArLoad()">Atualizar</button></div>
+ </div>
+ <div id="apar-notconn" style="display:none;margin-bottom:16px;border:1px solid #fed7aa;background:#fff7ed;border-radius:10px;padding:14px 16px;font-size:12.5px;color:#b45309">QuickBooks não está conectado. Conecte em <b>Integrações → QuickBooks</b> para ver as contas a pagar e a receber.</div>
+ <div class="gm-ix-kpi-grid" id="apar-kpi-wrap">
+  <div class="gm-ix-kpi k4"><div class="k-l">Total a Pagar</div><div class="k-v" id="apar-kpi-ap"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Bills em aberto</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi"><div class="k-l">A Pagar Vencido</div><div class="k-v" id="apar-kpi-apo"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Passou do vencimento</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k2"><div class="k-l">Total a Receber</div><div class="k-v" id="apar-kpi-ar"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Invoices em aberto</div><div class="k-bar"></div></div>
+  <div class="gm-ix-kpi k3"><div class="k-l">A Receber Vencido</div><div class="k-v" id="apar-kpi-aro"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Passou do vencimento</div><div class="k-bar"></div></div>
+ </div>
+ <div style="display:flex;gap:8px;margin:4px 0 14px">
+  <button type="button" id="apar-tab-ap" class="btn-gm-ix" onclick="gmApArTab('ap')">Contas a Pagar</button>
+  <button type="button" id="apar-tab-ar" class="btn-gm-ix sec" onclick="gmApArTab('ar')">Contas a Receber</button>
+ </div>
+ <div class="gm-ix-panel" id="apar-panel-ap">
+  <h3>Contas a Pagar <span style="font-size:10px;font-weight:600;color:var(--ink3)">(Bills em aberto)</span></h3>
+  <div style="overflow-x:auto">
+   <table class="gm-ix-table">
+    <thead><tr><th>Fornecedor</th><th>Doc</th><th>Emissão</th><th>Vencimento</th><th>Saldo ($)</th><th>Status</th></tr></thead>
+    <tbody id="apar-tbody-ap"></tbody>
+   </table>
+  </div>
+ </div>
+ <div class="gm-ix-panel" id="apar-panel-ar" style="display:none">
+  <h3>Contas a Receber <span style="font-size:10px;font-weight:600;color:var(--ink3)">(Invoices em aberto)</span></h3>
+  <div style="overflow-x:auto">
+   <table class="gm-ix-table">
+    <thead><tr><th>Cliente</th><th>Doc</th><th>Emissão</th><th>Vencimento</th><th>Saldo ($)</th><th>Status</th><th>Link</th></tr></thead>
+    <tbody id="apar-tbody-ar"></tbody>
+   </table>
+  </div>
+ </div>
 </div>
 
 <div class="page gm-ix-page" id="page-appfolio-upload">
@@ -8027,6 +8068,57 @@ function gmQbCatTableRender(rows){
  }).join('');
 }
 window.gmQbCatTableRender=gmQbCatTableRender;
+// ---- A Pagar / Receber (QuickBooks, ao vivo) ----
+function gmApArTab(which){
+ var ap=document.getElementById('apar-panel-ap'),ar=document.getElementById('apar-panel-ar');
+ var tab1=document.getElementById('apar-tab-ap'),tab2=document.getElementById('apar-tab-ar');
+ var showAr=(which==='ar');
+ if(ap)ap.style.display=showAr?'none':'block';
+ if(ar)ar.style.display=showAr?'block':'none';
+ if(tab1)tab1.className='btn-gm-ix'+(showAr?' sec':'');
+ if(tab2)tab2.className='btn-gm-ix'+(showAr?'':' sec');
+}
+window.gmApArTab=gmApArTab;
+async function gmApArLoad(){
+ var apK=document.getElementById('apar-kpi-ap');if(!apK)return;
+ var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var nc=document.getElementById('apar-notconn');
+ var setSk=function(){['apar-kpi-ap','apar-kpi-apo','apar-kpi-ar','apar-kpi-aro'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<span class="gm-sk" style="display:inline-block;width:90px;height:22px"></span>';});};
+ setSk();
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var r=await fetch('/api/quickbooks/ap-ar'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok){if(nc){nc.style.display='block';nc.textContent='Erro ao carregar dados do QuickBooks.';}return;}
+  if(!j.connected){
+   if(nc)nc.style.display='block';
+   ['apar-kpi-ap','apar-kpi-apo','apar-kpi-ar','apar-kpi-aro'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent='—';});
+   var tba=document.getElementById('apar-tbody-ap');if(tba)tba.innerHTML='<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Conecte o QuickBooks.</td></tr>';
+   var tbr=document.getElementById('apar-tbody-ar');if(tbr)tbr.innerHTML='<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Conecte o QuickBooks.</td></tr>';
+   return;
+  }
+  if(nc)nc.style.display='none';
+  document.getElementById('apar-kpi-ap').textContent=fmt(j.apTotal||0);
+  document.getElementById('apar-kpi-apo').textContent=fmt(j.apOverdue||0);
+  document.getElementById('apar-kpi-ar').textContent=fmt(j.arTotal||0);
+  document.getElementById('apar-kpi-aro').textContent=fmt(j.arOverdue||0);
+  // Contas a Pagar
+  var tbAp=document.getElementById('apar-tbody-ap');
+  var ap=j.payables||[];
+  tbAp.innerHTML=ap.length?ap.map(function(b){
+   return '<tr><td>'+esc(b.vendor||'—')+'</td><td>'+esc(b.docNumber||'—')+'</td><td>'+esc(b.txnDate||'—')+'</td><td>'+esc(b.dueDate||'—')+'</td><td class="mono">'+fmt(b.balance||0)+'</td><td><span class="pill '+(b.overdue?'pr':'pa')+'">'+(b.overdue?'Vencido':'Em aberto')+'</span></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a pagar em aberto. 🎉</td></tr>';
+  // Contas a Receber
+  var tbAr=document.getElementById('apar-tbody-ar');
+  var ar=j.receivables||[];
+  tbAr.innerHTML=ar.length?ar.map(function(v){
+   var link=v.link?'<a href="'+esc(v.link)+'" target="_blank" rel="noopener" style="color:#22558c;font-weight:600;text-decoration:none">Abrir ↗</a>':'—';
+   return '<tr><td>'+esc(v.customer||'—')+'</td><td>'+esc(v.docNumber||'—')+'</td><td>'+esc(v.txnDate||'—')+'</td><td>'+esc(v.dueDate||'—')+'</td><td class="mono">'+fmt(v.balance||0)+'</td><td><span class="pill '+(v.overdue?'pr':'pa')+'">'+(v.overdue?'Vencido':'Em aberto')+'</span></td><td>'+link+'</td></tr>';
+  }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber em aberto.</td></tr>';
+ }catch(e){if(nc){nc.style.display='block';nc.textContent='Erro de rede ao carregar AP/AR.';}}
+}
+window.gmApArLoad=gmApArLoad;
 window.gmQbReportLoad=gmQbReportLoad;
 function gmQbChartRender(months){
  var panel=document.getElementById('qb-chart-panel'),host=document.getElementById('qb-chart');
@@ -10917,7 +11009,7 @@ var GM_MENU_ACCESS_SECTIONS=[
  {key:'tenantsgrp',label:'TENANTS',items:[{key:'tenantportal',label:'Tenant Portal'},{key:'listings-tenants',label:'Listings'}]},
  {key:'compliance',label:'COMPLIANCE',items:[{key:'licenses',label:'Licenses'},{key:'1099',label:'1099 / IRS'},{key:'gaap',label:'GAAP'}]},
  {key:'operations',label:'OPERATIONS',items:[{key:'phonelines',label:'Phone Lines'},{key:'vault',label:'Vault'},{key:'cars',label:'Cars & Insurance'},{key:'inspections',label:'Inspections'},{key:'tasks',label:'Tasks'}]},
- {key:'integrations',label:'INTEGRATIONS',items:[{key:'integrations',label:'Connect'},{key:'ramp',label:'Ramp'},{key:'quickbooks',label:'QuickBooks'},{key:'appfolio-upload',label:'AppFolio Upload'}]},
+ {key:'integrations',label:'INTEGRATIONS',items:[{key:'integrations',label:'Connect'},{key:'ramp',label:'Ramp'},{key:'quickbooks',label:'QuickBooks'},{key:'ap-ar',label:'A Pagar/Receber (QB)'},{key:'appfolio-upload',label:'AppFolio Upload'}]},
  {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'invest',label:'Invest Home'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
  {key:'ai-assistant',label:'AI ASSISTANT',items:[{key:'bookkeeping-ai',label:'Bookkeeping AI'},{key:'analytics',label:'Analytics'},{key:'auditoria-2026',label:'Auditoria 2026'}]},
  {key:'admin',label:'ADMIN',items:[{key:'admin-dashboard',label:'Dashboard Admin'},{key:'clients',label:'Clients'},{key:'admin-users',label:'Users'},{key:'backup',label:'Backup & Restore'},{key:'settings-gm',label:'Settings'},{key:'gross-expenses',label:'Gross & Expenses'},{key:'forms-received',label:'Forms Received'},{key:'admin-audit',label:'Audit Log'},{key:'org-chart',label:'Org Chart'}]},
@@ -13009,8 +13101,8 @@ function nav(r){
    if(!window._cuMgmtClientId)r='home';
   }
  }
- if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(vb.indexOf(r)>=0)r='home';}
- if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
+ if(lvl==='VIEWER'){var vb=['licenses','1099','gaap','integrations','ramp','quickbooks','ap-ar','appfolio-upload','phonelines','vault','cars','properties','renovations','clients','settings','client-users','gross-expenses','org-chart','admin-audit','auditoria-2026'];if(vb.indexOf(r)>=0)r='home';}
+ if(lvl==='MANAGER'){var mb=['gaap','integrations','ramp','quickbooks','ap-ar','appfolio-upload','clients','settings','1099','client-users','gross-expenses','org-chart','auditoria-2026'];if(mb.indexOf(r)>=0)r='home';}
  try{
   var uNav=window.__gmCurrentUser;
   var rNav=String(uNav&&uNav.role||'').toLowerCase();
@@ -13158,6 +13250,7 @@ function nav(r){
  integrations:()=>typeof refreshIntegrationHub==='function'&&refreshIntegrationHub(),
  ramp:()=>{if(typeof gmRampLoadSnapshot==='function')void gmRampLoadSnapshot();if(typeof rampApplyPreset==='function')rampApplyPreset();if(typeof fetchRampData==='function')fetchRampData();},
  quickbooks:()=>{if(typeof gmQbInit==='function')void gmQbInit();},
+ 'ap-ar':()=>{if(typeof gmApArLoad==='function')void gmApArLoad();},
  'appfolio-upload':()=>{if(typeof gmAppfolioPageInit==='function')gmAppfolioPageInit();},
  gaap:()=>{if(typeof gaapPageRender==='function')gaapPageRender();},
  clients:()=>{if(typeof loadClients==='function')loadClients();},
@@ -15811,6 +15904,7 @@ var GM_NAV_PAGES=[
  {key:'ltownerpay',label:'Owner Payment',kw:['owner payment','pagamento ao owner','repasse owner']},
  {key:'ramp',label:'Ramp',kw:['ramp','cartao','cartão','corporate card','cartoes','cartões']},
  {key:'quickbooks',label:'QuickBooks',kw:['quickbooks','qbo','contabilidade quickbooks']},
+ {key:'ap-ar',label:'A Pagar/Receber (QB)',kw:['contas a pagar','contas a receber','ap','ar','payables','receivables','bills','invoices em aberto','vencido']},
  {key:'appfolio-upload',label:'AppFolio Upload',kw:['appfolio','importar','upload','csv','general ledger','gl']},
  {key:'bookkeeping',label:'Bookkeeping',kw:['bookkeeping','conciliacao','conciliação','reconcile','contabilidade']},
  {key:'results',label:'Results Dashboard',kw:['results','resultados','dashboard resultados']},
