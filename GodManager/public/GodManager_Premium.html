@@ -8925,6 +8925,18 @@ async function gmPlaidMapLoad(){
     return '<option value="'+String(a.id).replace(/"/g,'&quot;')+'"'+(map[k]===a.id?' selected':'')+'>'+String(lbl).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>';
    }).join('');
   });
+  // Aviso quando o item Plaid só trouxe 1 conta (falta autorizar as outras no banco)
+  var warn=document.getElementById('rec-map-fewaccts');
+  if(!warn){
+   var panel=document.getElementById('rec-map-panel');
+   if(panel){warn=document.createElement('div');warn.id='rec-map-fewaccts';warn.style.cssText='display:none;margin-top:10px;padding:9px 12px;border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;font-size:11.5px;line-height:1.5;color:#b45309';panel.appendChild(warn);}
+  }
+  if(warn){
+   if(accts.length<2){
+    warn.innerHTML='⚠️ O Chase só autorizou <b>'+accts.length+' conta</b> nesta conexão. Para vincular as 3 (Operating, Trust, Security Deposit), clique em <b>Reconectar</b> e, na tela do Chase, <b>marque as 3 contas</b> antes de continuar.';
+    warn.style.display='block';
+   }else{warn.style.display='none';}
+  }
  }catch(e){}
 }
 window.gmPlaidMapLoad=gmPlaidMapLoad;
