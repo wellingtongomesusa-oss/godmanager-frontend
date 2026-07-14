@@ -164,6 +164,8 @@ export async function POST(req: NextRequest) {
         to: email,
         subject,
         html,
+        // Cobrança sai sempre de contact@godmanager.us (independe do remetente global).
+        from: process.env.DELINQUENCY_FROM_EMAIL || 'contact@godmanager.us',
         clientId,
         author,
         propertyId: t.propertyId,

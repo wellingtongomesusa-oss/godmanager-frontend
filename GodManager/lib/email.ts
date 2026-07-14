@@ -16,6 +16,7 @@ export async function sendEmail(opts: {
   text?: string;
   replyTo?: string;
   bcc?: string | string[];
+  from?: string; // remetente por chamada (ex.: cobrança sai de contact@godmanager.us). Só o e-mail; o nome "GodManager" é fixo.
   attachments?: Array<{ filename: string; content: Buffer }>;
 }): Promise<{ ok: boolean; error?: string; id?: string }> {
   if (!RESEND_API_KEY) {
@@ -38,8 +39,9 @@ export async function sendEmail(opts: {
         }))
       : undefined;
 
+    const fromEmail = opts.from && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(opts.from) ? opts.from : FROM;
     const { data, error } = await resend.emails.send({
-      from: `GodManager <${FROM}>`,
+      from: `GodManager <${fromEmail}>`,
       to: toList,
       ...(bccList && bccList.length ? { bcc: bccList } : {}),
       subject: opts.subject,
@@ -140,6 +142,7 @@ export async function sendEmailAndLog(opts: {
   text?: string;
   replyTo?: string;
   bcc?: string | string[];
+  from?: string;
   clientId: string;
   author: { id: string; name: string; role: string };
   propertyId?: string | null;
@@ -154,6 +157,7 @@ export async function sendEmailAndLog(opts: {
     text: opts.text,
     replyTo: opts.replyTo,
     bcc: opts.bcc,
+    from: opts.from,
   });
   if (!sent.ok) return sent;
 
