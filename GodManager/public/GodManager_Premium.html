@@ -4798,6 +4798,43 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
 </div>
 
+<!-- Modal — Edição em massa de Fee / HOA Admin -->
+<div id="gm-bulk-fee-modal" style="display:none;position:fixed;inset:0;z-index:9020;align-items:center;justify-content:center;overflow-y:auto;padding:20px 12px;background:rgba(20,24,30,.45)" onclick="if(event.target===this)gmBulkFeeClose()">
+ <div style="background:var(--paper);width:min(680px,96vw);max-height:92vh;overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);margin:auto" role="dialog" aria-modal="true" aria-labelledby="gm-bulk-fee-title">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+   <div id="gm-bulk-fee-title" style="font-size:15px;font-weight:700;color:var(--ink)">Fee / HOA em massa</div>
+   <button type="button" onclick="gmBulkFeeClose()" aria-label="Fechar" style="width:34px;height:34px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;font-size:18px;color:var(--ink3)">×</button>
+  </div>
+  <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+   <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">Nova taxa MGM (%)</label>
+    <input id="gm-bulk-fee-pct" type="number" min="0" max="100" step="0.1" placeholder="ex.: 8 ou 10" style="width:130px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;background:var(--sand);color:var(--ink)">
+   </div>
+   <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">HOA Admin</label>
+    <select id="gm-bulk-fee-hoa" style="padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;background:var(--sand);color:var(--ink)">
+     <option value="">Não alterar</option>
+     <option value="true">Marcar (+2%)</option>
+     <option value="false">Desmarcar</option>
+    </select>
+   </div>
+   <div style="flex:1;min-width:160px">
+    <input id="gm-bulk-fee-search" oninput="gmBulkFeeRenderList()" placeholder="Buscar casa..." style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+   </div>
+  </div>
+  <div style="padding:8px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink2)">
+   <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="gm-bulk-fee-all" onchange="gmBulkFeeToggleAll(this.checked)" style="width:15px;height:15px;accent-color:var(--amber)"> Selecionar todas (<span id="gm-bulk-fee-count">0</span>)</label>
+   <span id="gm-bulk-fee-selcount" style="font-weight:600">0 selecionadas</span>
+  </div>
+  <div id="gm-bulk-fee-list" style="overflow-y:auto;flex:1;min-height:120px;padding:6px 12px"></div>
+  <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-shrink:0">
+   <span id="gm-bulk-fee-msg" style="font-size:12px;color:var(--ink3);margin-right:auto"></span>
+   <button type="button" onclick="gmBulkFeeClose()" style="padding:9px 16px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer">Cancelar</button>
+   <button type="button" id="gm-bulk-fee-apply" onclick="gmBulkFeeApply()" style="padding:9px 18px;border:none;border-radius:7px;background:var(--amber);color:#fff;font-size:12px;font-weight:700;cursor:pointer">Aplicar às selecionadas</button>
+  </div>
+ </div>
+</div>
+
 <!-- LTP — Modal Nova Propriedade (Long Term — Properties) -->
 <div id="ltp-property-modal" style="display:none;position:fixed;inset:0;z-index:9010;align-items:center;justify-content:center;overflow-y:auto;padding:20px 12px">
 <div class="ltp-modal-panel" style="background:var(--paper);width:min(720px,95vw);max-height:min(92vh,900px);overflow:hidden;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);margin:auto" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="ltp-modal-title">
@@ -5133,6 +5170,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" class="gm-forms-share-btn" onclick="gmShareFormOpenWizard('owner')" style="padding:8px 14px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Owner Form</button>
  <button type="button" class="gm-forms-share-btn" onclick="gmShareFormOpenWizard('tenant')" style="padding:8px 14px;background:#c47b28;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send Tenant Form</button>
  <button type="button" onclick="ltpOpenNewPropertyModal()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Propriedade</button>
+ <button type="button" onclick="gmBulkFeeOpen()" title="Alterar management fee e HOA Admin de várias casas de uma vez" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">⚙ Fee/HOA em massa</button>
  <button type="button" onclick="ltpExportCsv()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
  <button type="button" onclick="window.print()" data-i18n="export_pdf" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Exportar PDF</button>
  <button type="button" onclick="ltpExportAudit()" data-i18n="export_audit" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Exportar Auditoria</button>
@@ -17634,6 +17672,7 @@ function ltSaveRecord(){
       rent:Number(merged.rent)||0,
       deposit:Number(merged.deposit)||0,
       mgmtFeePct:Number(merged.mgmtPct)||0,
+      hoaAdmin:!!merged.hoaActive,
       status:(merged.status||'active').toLowerCase(),
       notes:merged.notes||'',
       metadata:{
@@ -26502,6 +26541,90 @@ function ltpValidate(){
  }
  return ok;
 }
+// ===== Edição em massa de Fee / HOA Admin =====
+window.__gmBulkFeeProps=[];
+window.__gmBulkFeeSel={};
+async function gmBulkFeeOpen(){
+ var modal=document.getElementById('gm-bulk-fee-modal');if(!modal)return;
+ modal.style.display='flex';
+ window.__gmBulkFeeSel={};
+ var s=document.getElementById('gm-bulk-fee-search');if(s)s.value='';
+ var all=document.getElementById('gm-bulk-fee-all');if(all)all.checked=false;
+ var list=document.getElementById('gm-bulk-fee-list');if(list)list.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink3);font-size:12px">Carregando propriedades…</div>';
+ gmBulkFeeMsg('');
+ try{
+  var q=(typeof window.gmPropertiesClientQuery==='function')?window.gmPropertiesClientQuery():'';
+  var r=await fetch('/api/properties'+(q||''),{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  var props=(j&&j.properties)?j.properties:[];
+  // super_admin: restringe ao cliente ativo p/ evitar bulk cross-cliente acidental
+  try{
+   var ac=(typeof getActiveClient==='function')?getActiveClient():null;
+   if(ac&&ac.id)props=props.filter(function(p){return !p.clientId||String(p.clientId)===String(ac.id);});
+  }catch(_e){}
+  window.__gmBulkFeeProps=props.map(function(p){return {id:p.id,code:p.code||'',address:p.address||'(sem endereço)',owner:p.ownerName||'',pct:Number(p.mgmtFeePct)||0,hoaAdmin:!!p.hoaAdmin};});
+  gmBulkFeeRenderList();
+ }catch(e){if(list)list.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">Erro ao carregar propriedades.</div>';}
+}
+function gmBulkFeeClose(){var m=document.getElementById('gm-bulk-fee-modal');if(m)m.style.display='none';}
+function gmBulkFeeMsg(t,color){var e=document.getElementById('gm-bulk-fee-msg');if(e){e.textContent=t||'';e.style.color=color||'var(--ink3)';}}
+function gmBulkFeeRenderList(){
+ var list=document.getElementById('gm-bulk-fee-list');if(!list)return;
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var term=(document.getElementById('gm-bulk-fee-search')||{}).value||'';term=term.toLowerCase();
+ var props=window.__gmBulkFeeProps||[];
+ var filtered=props.filter(function(p){return !term||(p.address+' '+p.code+' '+p.owner).toLowerCase().indexOf(term)>=0;});
+ var cnt=document.getElementById('gm-bulk-fee-count');if(cnt)cnt.textContent=String(props.length);
+ if(!filtered.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma propriedade.</div>';gmBulkFeeUpdateSelCount();return;}
+ list.innerHTML=filtered.map(function(p){
+  var checked=window.__gmBulkFeeSel[p.id]?'checked':'';
+  var badge=p.hoaAdmin?'<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-left:6px">HOA Admin</span>':'';
+  return '<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px">'
+   +'<input type="checkbox" data-bulk-id="'+esc(p.id)+'" '+checked+' onchange="gmBulkFeeToggleOne('+JSON.stringify(String(p.id)).replace(/"/g,'&quot;')+',this.checked)" style="width:15px;height:15px;accent-color:var(--amber)">'
+   +'<span style="flex:1;color:var(--ink)">'+esc(p.address)+(p.code?' <span style="color:var(--ink3)">· '+esc(p.code)+'</span>':'')+badge+'</span>'
+   +'<span style="font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+(p.pct?p.pct.toFixed(0)+'%':'—')+'</span></label>';
+ }).join('');
+ gmBulkFeeUpdateSelCount();
+}
+function gmBulkFeeToggleOne(id,on){if(on)window.__gmBulkFeeSel[id]=true;else delete window.__gmBulkFeeSel[id];gmBulkFeeUpdateSelCount();}
+function gmBulkFeeToggleAll(on){
+ var term=(document.getElementById('gm-bulk-fee-search')||{}).value||'';term=term.toLowerCase();
+ (window.__gmBulkFeeProps||[]).forEach(function(p){
+  var visible=!term||(p.address+' '+p.code+' '+p.owner).toLowerCase().indexOf(term)>=0;
+  if(visible){if(on)window.__gmBulkFeeSel[p.id]=true;else delete window.__gmBulkFeeSel[p.id];}
+ });
+ gmBulkFeeRenderList();
+}
+function gmBulkFeeUpdateSelCount(){var n=Object.keys(window.__gmBulkFeeSel||{}).length;var e=document.getElementById('gm-bulk-fee-selcount');if(e)e.textContent=n+' selecionada'+(n===1?'':'s');}
+async function gmBulkFeeApply(){
+ var ids=Object.keys(window.__gmBulkFeeSel||{});
+ if(!ids.length){gmBulkFeeMsg('Selecione ao menos uma propriedade.','var(--red)');return;}
+ var pctRaw=(document.getElementById('gm-bulk-fee-pct')||{}).value;
+ var hoaRaw=(document.getElementById('gm-bulk-fee-hoa')||{}).value;
+ var payload={ids:ids};
+ if(pctRaw!==''&&pctRaw!=null){var pct=Number(pctRaw);if(!isFinite(pct)||pct<0||pct>100){gmBulkFeeMsg('Taxa MGM inválida (0–100).','var(--red)');return;}payload.mgmtFeePct=pct;}
+ if(hoaRaw==='true')payload.hoaAdmin=true;else if(hoaRaw==='false')payload.hoaAdmin=false;
+ if(payload.mgmtFeePct===undefined&&payload.hoaAdmin===undefined){gmBulkFeeMsg('Informe a taxa MGM e/ou HOA Admin.','var(--red)');return;}
+ if(!confirm('Aplicar alterações a '+ids.length+' propriedade(s)?'))return;
+ var btn=document.getElementById('gm-bulk-fee-apply');if(btn){btn.disabled=true;btn.textContent='Aplicando…';}
+ gmBulkFeeMsg('Aplicando…');
+ try{
+  var r=await fetch('/api/properties/bulk',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+  var j=await r.json();
+  if(!j||!j.ok){gmBulkFeeMsg((j&&j.error)||'Falha ao aplicar.','var(--red)');}
+  else{
+   var skip=(j.skipped&&j.skipped.length)?(' · '+j.skipped.length+' ignorada(s)'):'';
+   gmBulkFeeMsg('✓ '+j.updated+' atualizada(s)'+skip,'var(--green)');
+   if(typeof ltpRenderNetFromApi==='function')ltpRenderNetFromApi();else if(typeof ltpRender==='function')ltpRender();
+   if(typeof window.gmPropertiesRefresh==='function'){try{await window.gmPropertiesRefresh();}catch(_e){}}
+   setTimeout(gmBulkFeeClose,1400);
+  }
+ }catch(e){gmBulkFeeMsg('Erro de rede.','var(--red)');}
+ if(btn){btn.disabled=false;btn.textContent='Aplicar às selecionadas';}
+}
+window.gmBulkFeeOpen=gmBulkFeeOpen;window.gmBulkFeeClose=gmBulkFeeClose;window.gmBulkFeeRenderList=gmBulkFeeRenderList;
+window.gmBulkFeeToggleOne=gmBulkFeeToggleOne;window.gmBulkFeeToggleAll=gmBulkFeeToggleAll;window.gmBulkFeeApply=gmBulkFeeApply;
+
 function ltpBuildRecord(){
  const br=parseFloat(document.getElementById('ltp-f-bathrooms').value);
  var rentEl=document.getElementById('ltp-f-rent');
