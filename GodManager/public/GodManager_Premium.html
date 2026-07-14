@@ -2896,6 +2896,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div class="gm-ix-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
  <button type="button" class="btn-gm-ix sec" onclick="gmGuideBkOpen()" title="Manual de bookkeeping imobiliário (Flórida)">📘 Guia Bookkeeping FL</button>
+ <button type="button" class="btn-gm-ix sec" id="qb-fin-access-btn" style="display:none" onclick="gmFinAccessOpen()" title="Liberar/revogar acesso financeiro de usuários (ex.: Lucas)">👤 Acesso financeiro</button>
  <span id="qb-head-actions"></span>
  </div>
  </div>
@@ -8085,6 +8086,7 @@ async function gmQbInit(){
  var acts=document.getElementById('qb-conn-actions');
  var sub=document.getElementById('qb-sub-status');
  if(!title||!acts)return;
+ if(typeof gmFinAccessBtnSync==='function')gmFinAccessBtnSync();
  // Banner de retorno do OAuth (?qb=connected|error) e limpeza da query
  try{
   var sp=new URLSearchParams(window.location.search);
@@ -8439,6 +8441,81 @@ async function gmGuideBkOpen(anchor){
 }
 function gmGuideBkClose(){var ov=document.getElementById('gm-guide-modal');if(ov)ov.style.display='none';}
 window.gmGuideBkOpen=gmGuideBkOpen;window.gmGuideBkClose=gmGuideBkClose;
+// ---- Acesso financeiro (liberar/revogar QuickBooks p/ usuários) ----
+function gmFinAccessIsApprover(){var u=window.__gmCurrentUser;var r=String((u&&u.role)||'').toLowerCase();return r==='super_admin'||r==='admin';}
+function gmFinAccessBtnSync(){var b=document.getElementById('qb-fin-access-btn');if(b)b.style.display=gmFinAccessIsApprover()?'inline-flex':'none';}
+window.gmFinAccessBtnSync=gmFinAccessBtnSync;
+async function gmFinAccessOpen(){
+ if(!gmFinAccessIsApprover()){alert('Apenas administradores podem liberar acesso.');return;}
+ var ov=document.getElementById('gm-finacc-modal');
+ if(!ov){
+  ov=document.createElement('div');ov.id='gm-finacc-modal';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,24,30,.5);padding:18px';
+  ov.innerHTML='<div style="max-width:560px;width:100%;max-height:88vh;background:var(--paper,#fff);border:1px solid var(--border,#e5e0d8);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden">'
+   +'<div style="display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--border,#eee);flex-shrink:0"><span style="font-size:16px">👤</span><b style="font-size:14px;color:var(--ink,#22252b);flex:1">Acesso financeiro (QuickBooks / Bookkeeping)</b><button type="button" onclick="gmFinAccessClose()" style="border:none;background:transparent;font-size:22px;color:var(--ink3,#98928a);cursor:pointer">×</button></div>'
+   +'<div style="padding:12px 18px;border-bottom:1px solid var(--border,#eee);display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'
+    +'<div style="flex:1;min-width:180px"><label style="display:block;font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:3px">LIBERAR POR E-MAIL</label><input id="gm-finacc-email" placeholder="coelho@coelho.com" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></div>'
+    +'<button type="button" onclick="gmFinAccessByEmail()" style="padding:8px 14px;border:none;border-radius:7px;background:#2a6e4e;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Liberar</button>'
+   +'</div>'
+   +'<div id="gm-finacc-list" style="overflow-y:auto;flex:1;min-height:120px;padding:6px 12px"></div>'
+   +'<div id="gm-finacc-msg" style="padding:8px 18px;font-size:11.5px;color:var(--ink3);border-top:1px solid var(--border,#eee)"></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)gmFinAccessClose();});
+  document.body.appendChild(ov);
+ }
+ ov.style.display='flex';
+ gmFinAccessLoad();
+}
+function gmFinAccessClose(){var ov=document.getElementById('gm-finacc-modal');if(ov)ov.style.display='none';}
+function gmFinAccessMsg(t,c){var e=document.getElementById('gm-finacc-msg');if(e){e.textContent=t||'';e.style.color=c||'var(--ink3)';}}
+async function gmFinAccessLoad(){
+ var list=document.getElementById('gm-finacc-list');if(!list)return;
+ list.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink3);font-size:12px">Carregando…</div>';
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var r=await fetch('/api/finance-access'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">'+((j&&j.error)||'Erro ao carregar.')+'</div>';return;}
+  var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  var users=j.users||[];
+  if(!users.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink3);font-size:12px">Nenhum usuário nesta empresa.</div>';return;}
+  list.innerHTML=users.map(function(u){
+   var on=!!u.hasFinance;
+   var btn=on
+    ?'<button type="button" onclick="gmFinAccessSet('+JSON.stringify(String(u.id)).replace(/"/g,'&quot;')+',\'revoke\',this)" style="padding:6px 12px;border:1px solid var(--red-bd,#e0b4b4);border-radius:7px;background:var(--red-bg,#fdecec);color:var(--red,#b83030);font-size:11px;font-weight:700;cursor:pointer">Revogar</button>'
+    :'<button type="button" onclick="gmFinAccessSet('+JSON.stringify(String(u.id)).replace(/"/g,'&quot;')+',\'grant\',this)" style="padding:6px 12px;border:none;border-radius:7px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:700;cursor:pointer">Liberar</button>';
+   return '<div data-fa-id="'+esc(u.id)+'" style="display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--border)">'
+    +'<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:var(--ink)">'+esc(u.name)+'</div><div style="font-size:10.5px;color:var(--ink3)">'+esc(u.email)+' · '+esc(u.role)+'</div></div>'
+    +'<span data-fa-badge style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;'+(on?'background:#dcfce7;color:#166534':'background:var(--cream);color:var(--ink3)')+'">'+(on?'Com acesso':'Sem acesso')+'</span>'
+    +btn+'</div>';
+  }).join('');
+  gmFinAccessMsg('Ao liberar, o usuário passa a ver e lançar no QuickBooks/Bookkeeping. A revogação é imediata.');
+ }catch(e){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">Erro de rede.</div>';}
+}
+async function gmFinAccessSet(userId,action,btn){
+ if(action==='revoke'&&!confirm('Revogar o acesso financeiro deste usuário?'))return;
+ if(btn){btn.disabled=true;btn.textContent='...';}
+ try{
+  var r=await fetch('/api/finance-access',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:userId,action:action})});
+  var j=await r.json();
+  if(!r.ok||!j.ok){gmFinAccessMsg((j&&j.error)||'Falha.','var(--red)');gmFinAccessLoad();return;}
+  gmFinAccessMsg(action==='grant'?'✓ Acesso liberado.':'✓ Acesso revogado.','var(--green)');
+  gmFinAccessLoad();
+ }catch(e){gmFinAccessMsg('Erro de rede.','var(--red)');gmFinAccessLoad();}
+}
+async function gmFinAccessByEmail(){
+ var em=(document.getElementById('gm-finacc-email')||{}).value||'';em=em.trim();
+ if(!em){gmFinAccessMsg('Informe o e-mail.','var(--red)');return;}
+ gmFinAccessMsg('Liberando '+em+'…');
+ try{
+  var r=await fetch('/api/finance-access',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,action:'grant'})});
+  var j=await r.json();
+  if(!r.ok||!j.ok){gmFinAccessMsg((j&&j.error)||'Falha.','var(--red)');return;}
+  gmFinAccessMsg('✓ '+em+' liberado.','var(--green)');
+  var inp=document.getElementById('gm-finacc-email');if(inp)inp.value='';
+  gmFinAccessLoad();
+ }catch(e){gmFinAccessMsg('Erro de rede.','var(--red)');}
+}
+window.gmFinAccessOpen=gmFinAccessOpen;window.gmFinAccessClose=gmFinAccessClose;window.gmFinAccessSet=gmFinAccessSet;window.gmFinAccessByEmail=gmFinAccessByEmail;
 // ---- Lançar despesa no QuickBooks (carrega chart of accounts + submit) ----
 window.__gmQbAccts=null;
 function gmQbOptList(arr,fmt){return (arr||[]).map(function(x){return '<option value="'+gmHtmlEscAttr(String(x.id))+'">'+gmHtmlEscAttr(fmt?fmt(x):String(x.name))+'</option>';}).join('');}
@@ -16182,6 +16259,45 @@ var GM_NAV_PAGES=[
 ];
 function gmSophiaNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();}
 function gmSophiaHasNavVerb(text){var t=gmSophiaNorm(text);return /\b(abrir|abre|abra|ir|vai|va|leva|leve|mostra|mostrar|ver|acessa|acessar|entra|entrar|navega|navegar|open|go|show|take me|goto)\b/.test(t);}
+// ===== Ações da SophIA (abre tela + aplica filtro / inicia fluxo) =====
+function gmSophiaCloseChat(){var p=document.getElementById('gm-support-chat-panel');if(p&&p.classList.contains('open')&&typeof gmSupportFabToggle==='function')gmSupportFabToggle();}
+function gmSophiaNavThen(key,fn,delay){if(typeof nav==='function')nav(key);if(fn)setTimeout(function(){try{fn();}catch(e){}},delay||500);gmSophiaCloseChat();}
+var GM_SOPHIA_ACTIONS=[
+ {id:'ar_overdue',label:'Ver contas a receber vencidas',kw:['contas a receber vencidas','receber vencido','a receber vencidas','recebiveis vencidos','quem esta me devendo vencido','overdue receber'],run:function(){gmSophiaNavThen('ap-ar',function(){if(typeof gmApArTab==='function')gmApArTab('ar');var ov=document.getElementById('apar-f-overdue');if(ov)ov.checked=true;if(typeof gmApArRenderTables==='function')gmApArRenderTables();},650);}},
+ {id:'ap_overdue',label:'Ver contas a pagar vencidas',kw:['contas a pagar vencidas','pagar vencido','a pagar vencidas','overdue pagar'],run:function(){gmSophiaNavThen('ap-ar',function(){if(typeof gmApArTab==='function')gmApArTab('ap');var ov=document.getElementById('apar-f-overdue');if(ov)ov.checked=true;if(typeof gmApArRenderTables==='function')gmApArRenderTables();},650);}},
+ {id:'ar',label:'Abrir Contas a Receber',kw:['contas a receber','a receber','quem me deve','recebiveis','invoices em aberto'],run:function(){gmSophiaNavThen('ap-ar',function(){if(typeof gmApArTab==='function')gmApArTab('ar');},600);}},
+ {id:'ap',label:'Abrir Contas a Pagar',kw:['contas a pagar','a pagar','pagaveis','bills em aberto'],run:function(){gmSophiaNavThen('ap-ar',function(){if(typeof gmApArTab==='function')gmApArTab('ap');},600);}},
+ {id:'ramp_qb',label:'Como lançar o Ramp no QuickBooks',kw:['lancar ramp','ramp no quickbooks','ramp quickbooks','gasto do cartao no quickbooks','lancar cartao'],run:function(){gmSophiaNavThen('ramp',function(){if(typeof gmGuideBkOpen==='function')gmGuideBkOpen('Ramp');},500);}},
+ {id:'guide',label:'Abrir o Guia de Bookkeeping (Flórida)',kw:['guia bookkeeping','manual bookkeeping','como conciliar','escrow','trust account','1099','frec','plano de contas','chart of accounts'],run:function(){if(typeof gmGuideBkOpen==='function')gmGuideBkOpen();gmSophiaCloseChat();}},
+ {id:'inbox',label:'Abrir a Caixa de Entrada de faturas',kw:['caixa de entrada','faturas recebidas','invoices recebidas','inbox'],run:function(){gmSophiaNavThen('billing-inbox',null,0);}},
+ {id:'plaid',label:'Vincular banco (Plaid)',kw:['vincular banco','conectar banco','plaid','contas do banco','vincular contas'],run:function(){gmSophiaNavThen('bookkeeping',null,0);}},
+ {id:'bulk_fee',label:'Editar Fee/HOA em massa',kw:['fee em massa','hoa em massa','taxa em massa','editar fee','mudar taxa varias casas'],run:function(){gmSophiaNavThen('ltproperties',function(){if(typeof gmBulkFeeOpen==='function')gmBulkFeeOpen();},600);}},
+ {id:'fin_access',label:'Liberar/revogar acesso financeiro',kw:['liberar acesso','acesso financeiro','liberar lucas','dar acesso ao quickbooks','revogar acesso'],approver:true,run:function(){gmSophiaNavThen('quickbooks',function(){if(typeof gmFinAccessOpen==='function')gmFinAccessOpen();},600);}}
+];
+function gmSophiaIsApprover(){var u=window.__gmCurrentUser;var r=String((u&&u.role)||'').toLowerCase();return r==='super_admin'||r==='admin';}
+function gmSophiaMatchActions(text){
+ var t=gmSophiaNorm(text);if(!t)return [];
+ var scored=[];
+ GM_SOPHIA_ACTIONS.forEach(function(a){
+  if(a.approver&&!gmSophiaIsApprover())return;
+  var score=0;
+  a.kw.forEach(function(k){var kn=gmSophiaNorm(k);if(kn&&t.indexOf(kn)>=0)score+=(kn.split(' ').length>=2?3:1);});
+  if(score>0)scored.push({a:a,score:score});
+ });
+ scored.sort(function(x,y){return y.score-x.score;});
+ return scored.slice(0,3).map(function(s){return s.a;});
+}
+function gmSophiaRunAction(id){var a=GM_SOPHIA_ACTIONS.filter(function(x){return x.id===id;})[0];if(a&&typeof a.run==='function')a.run();}
+window.gmSophiaRunAction=gmSophiaRunAction;
+function gmSupportChatAppendActions(actions){
+ var box=document.getElementById('gm-support-chat-msgs');if(!box)return;
+ var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var btns=actions.map(function(a){return '<button type="button" onclick="gmSophiaRunAction(\''+a.id+'\')" style="text-align:left;padding:7px 11px;background:#22558c;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">⚡ '+esc(a.label)+' →</button>';}).join('');
+ var row=document.createElement('div');row.style.cssText='display:flex;justify-content:flex-start;margin-bottom:8px';
+ row.innerHTML='<div style="background:var(--cream);color:var(--ink2);border:1px solid var(--border);border-radius:12px 12px 12px 2px;padding:10px 12px;max-width:92%"><div style="font-size:12px;margin-bottom:8px">Posso fazer isto para você:</div><div style="display:flex;flex-direction:column;gap:6px">'+btns+'</div></div>';
+ box.appendChild(row);box.scrollTop=box.scrollHeight;
+}
+window.gmSupportChatAppendActions=gmSupportChatAppendActions;
 function gmSophiaSearchPages(text){
  var t=gmSophiaNorm(text);if(!t)return [];
  var seen={};var out=[];
@@ -16385,6 +16501,15 @@ window.gmSupportAskAi=async function(){
  if(btn)btn.disabled=true;
  if(typeof gmSupportChatAppendMsg==='function')gmSupportChatAppendMsg(q,'user');
  inp.value='';
+ // Ações da SophIA: se combina com uma ação (abrir tela + filtro / iniciar fluxo), oferece o botão
+ try{
+  var _acts=(typeof gmSophiaMatchActions==='function')?gmSophiaMatchActions(q):[];
+  if(_acts.length){
+   gmSupportChatAppendActions(_acts);
+   if(btn)btn.disabled=false;
+   return;
+  }
+ }catch(_actErr){}
  // Busca/navegação: se pediu p/ abrir uma tela, oferece botões (sem gastar IA)
  try{
   var _pages=(typeof gmSophiaSearchPages==='function')?gmSophiaSearchPages(q):[];
