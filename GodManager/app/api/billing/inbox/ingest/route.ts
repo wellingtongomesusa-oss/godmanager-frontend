@@ -183,11 +183,33 @@ export async function POST(req: Request) {
   const to = email.to;
   if (!to) return NextResponse.json({ ok: false, error: 'Destinatário (to) ausente.' }, { status: 400 });
 
-  // 2) Destinatário precisa ser um usuário conhecido (evita órfãos/spam)
-  const recipient = await prisma.user.findFirst({
+  // 2) Resolve o destinatário.
+  //   (a) match direto: o "to" é o e-mail de um usuário → cai na caixa dele.
+  //   (b) endereço geral da empresa (BILLING_INBOX_ADDRESS, ex.: contact@godmanager.us):
+  //       roteia para o responsável (BILLING_INBOX_OWNER_EMAIL) ou, na falta, um super_admin.
+  const userFields = { id: true, email: true, firstName: true, lastName: true, clientId: true } as const;
+  let recipient = await prisma.user.findFirst({
     where: { email: { equals: to, mode: 'insensitive' } },
-    select: { id: true, email: true, firstName: true, lastName: true, clientId: true },
+    select: userFields,
   });
+
+  if (!recipient) {
+    const companyAddr = (process.env.BILLING_INBOX_ADDRESS || 'contact@godmanager.us').trim().toLowerCase();
+    if (to.trim().toLowerCase() === companyAddr) {
+      const ownerEmail = (process.env.BILLING_INBOX_OWNER_EMAIL || '').trim();
+      recipient = ownerEmail
+        ? await prisma.user.findFirst({ where: { email: { equals: ownerEmail, mode: 'insensitive' } }, select: userFields })
+        : null;
+      if (!recipient) {
+        recipient = await prisma.user.findFirst({
+          where: { role: 'super_admin' },
+          orderBy: { createdAt: 'asc' },
+          select: userFields,
+        });
+      }
+    }
+  }
+
   if (!recipient) {
     return NextResponse.json({ ok: false, error: `Destinatário ${to} não corresponde a nenhum usuário.` }, { status: 404 });
   }
