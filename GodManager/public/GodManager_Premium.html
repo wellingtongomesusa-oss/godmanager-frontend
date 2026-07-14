@@ -3034,7 +3034,13 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div class="pt" style="font-family:'Sora',sans-serif">A Pagar / Receber — QuickBooks</div>
    <div class="ps" id="apar-sub">Bills e Invoices em aberto direto do QuickBooks (ao vivo). Para faturas criadas no site, use <b>Invoice / Bill</b>.</div>
   </div>
-  <div class="gm-ix-actions"><button type="button" class="btn-gm-ix" onclick="gmApArLoad()">Atualizar</button></div>
+  <div class="gm-ix-actions" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+   <label id="apar-stripe-toggle-wrap" style="display:none;align-items:center;gap:7px;font-size:11px;color:var(--ink2);cursor:pointer;border:1px solid var(--border2);border-radius:8px;padding:6px 10px;background:var(--sand)" title="Liga/desliga a cobrança por Stripe quando o QuickBooks Payments não gera link. Desligue quando o QuickBooks Payments virar o principal.">
+    <input type="checkbox" id="apar-stripe-toggle" onchange="gmApArStripeToggle(this.checked)" style="width:15px;height:15px;accent-color:#2ca01c;cursor:pointer">
+    <span>Link por Stripe (fallback)</span>
+   </label>
+   <button type="button" class="btn-gm-ix" onclick="gmApArLoad()">Atualizar</button>
+  </div>
  </div>
  <div id="apar-notconn" style="display:none;margin-bottom:16px;border:1px solid #fed7aa;background:#fff7ed;border-radius:10px;padding:14px 16px;font-size:12.5px;color:#b45309">QuickBooks não está conectado. Conecte em <b>Integrações → QuickBooks</b> para ver as contas a pagar e a receber.</div>
  <div class="gm-ix-kpi-grid" id="apar-kpi-wrap">
@@ -8191,6 +8197,7 @@ function gmApArTab(which){
 window.gmApArTab=gmApArTab;
 async function gmApArLoad(){
  var apK=document.getElementById('apar-kpi-ap');if(!apK)return;
+ if(typeof gmApArStripeToggleLoad==='function')void gmApArStripeToggleLoad();
  var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
  var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
  var nc=document.getElementById('apar-notconn');
@@ -8259,27 +8266,64 @@ function gmApArRenderTables(){
  }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto.')+'</td></tr>';
 }
 window.gmApArRenderTables=gmApArRenderTables;
+function gmApArSetLink(invoiceId,url){
+ try{(((window.__gmApAr||{}).receivables)||[]).forEach(function(v){if(String(v.id)===String(invoiceId))v.link=url;});}catch(e){}
+ if(typeof gmApArRenderTables==='function')gmApArRenderTables();
+}
 async function gmApArGetLink(invoiceId,btn){
  if(!invoiceId)return;
  var orig=btn?btn.textContent:'';
  if(btn){btn.disabled=true;btn.textContent='…';}
+ var row=(((window.__gmApAr||{}).receivables)||[]).filter(function(v){return String(v.id)===String(invoiceId);})[0]||{};
  try{
   var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
   var sep=q?'&':'?';
+  // 1) tenta o link nativo do QuickBooks (se QuickBooks Payments estiver ativo)
   var r=await fetch('/api/quickbooks/invoice-link'+q+sep+'id='+encodeURIComponent(invoiceId),{credentials:'include',cache:'no-store'});
   var j=await r.json();
-  if(j&&j.ok&&j.link){
-   // atualiza o cache e re-renderiza para mostrar "Abrir ↗"
-   try{(((window.__gmApAr||{}).receivables)||[]).forEach(function(v){if(String(v.id)===String(invoiceId))v.link=j.link;});}catch(e){}
-   if(typeof gmApArRenderTables==='function')gmApArRenderTables();
-   window.open(j.link,'_blank','noopener');
-  }else{
-   if(btn){btn.disabled=false;btn.textContent=orig;}
-   alert((j&&(j.message||j.error))||'Não foi possível gerar o link. Ative o QuickBooks Payments no QuickBooks Online.');
+  if(j&&j.ok&&j.link){gmApArSetLink(invoiceId,j.link);window.open(j.link,'_blank','noopener');return;}
+  var qbMsg=(j&&(j.message||j.error))||'Sem link de pagamento. Ative o QuickBooks Payments no QuickBooks Online.';
+  // 2) fallback opcional: link Stripe (só se PAYMENT_LINK_STRIPE_ENABLED=true no servidor)
+  var amount=Number(row.balance||row.total||0);
+  if(amount>0){
+   if(btn)btn.textContent='…';
+   var desc='Invoice'+(row.docNumber?(' '+row.docNumber):'')+(row.customer?(' — '+row.customer):'');
+   var sr=await fetch('/api/payment-link',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amount,description:desc,reference:row.docNumber||invoiceId})});
+   var sj=await sr.json().catch(function(){return {};});
+   if(sr.ok&&sj.ok&&sj.url){gmApArSetLink(invoiceId,sj.url);window.open(sj.url,'_blank','noopener');return;}
+   // Stripe desativado (disabled) → mostra a orientação do QuickBooks; outro erro Stripe → mostra o erro
+   if(sj&&sj.error&&!sj.disabled)qbMsg=sj.error;
   }
+  if(btn){btn.disabled=false;btn.textContent=orig;}
+  alert(qbMsg);
  }catch(e){if(btn){btn.disabled=false;btn.textContent=orig;}alert('Erro de rede ao gerar o link.');}
 }
 window.gmApArGetLink=gmApArGetLink;
+// Interruptor do fallback Stripe (só super_admin; guardado no AppSetting)
+async function gmApArStripeToggleLoad(){
+ var wrap=document.getElementById('apar-stripe-toggle-wrap');if(!wrap)return;
+ var u=window.__gmCurrentUser;var isSuper=String((u&&u.role)||'').toLowerCase()==='super_admin';
+ if(!isSuper){wrap.style.display='none';return;}
+ wrap.style.display='inline-flex';
+ try{
+  var r=await fetch('/api/admin/settings/payment_link_stripe_enabled',{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  var cb=document.getElementById('apar-stripe-toggle');
+  var v=(j&&j.setting)?j.setting.value:null;
+  // sem valor salvo → padrão LIGADO (default do servidor quando Stripe configurado)
+  if(cb)cb.checked=(v===null||v===undefined)?true:(v===true||String(v).toLowerCase()==='true');
+ }catch(e){}
+}
+window.gmApArStripeToggleLoad=gmApArStripeToggleLoad;
+async function gmApArStripeToggle(on){
+ try{
+  var r=await fetch('/api/admin/settings/payment_link_stripe_enabled',{method:'PUT',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:!!on})});
+  var j=await r.json();
+  if(!r.ok||!j.ok){alert((j&&j.error)||'Falha ao salvar.');gmApArStripeToggleLoad();return;}
+  if(typeof showToast==='function')showToast(on?'Cobrança por Stripe LIGADA.':'Cobrança por Stripe DESLIGADA — usando só QuickBooks Payments.','success');
+ }catch(e){alert('Erro de rede.');gmApArStripeToggleLoad();}
+}
+window.gmApArStripeToggle=gmApArStripeToggle;
 window.__gmApArSort={ap:{key:'',dir:1},ar:{key:'',dir:1}};
 function gmApArSort(which,key){
  var st=window.__gmApArSort[which];if(!st)return;
