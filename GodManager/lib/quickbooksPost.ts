@@ -117,6 +117,20 @@ export async function qbFindOrCreateVendor(clientId: string, displayName: string
   return String(v?.Id ?? '');
 }
 
+/** Busca um customer (cliente) pelo nome; cria se não existir. Retorna o Id. */
+export async function qbFindOrCreateCustomer(clientId: string, displayName: string): Promise<string> {
+  const name = displayName.trim().slice(0, 100) || 'Unknown Customer';
+  const json = (await qbRead(
+    clientId,
+    `query?query=${encodeURIComponent(`select * from Customer where DisplayName = '${esc(name)}'`)}`,
+  )) as { QueryResponse?: { Customer?: Array<Record<string, unknown>> } };
+  const found = json?.QueryResponse?.Customer?.[0];
+  if (found?.Id) return String(found.Id);
+  const created = await qbCreate(clientId, 'customer', { DisplayName: name });
+  const c = created?.Customer as Record<string, unknown> | undefined;
+  return String(c?.Id ?? '');
+}
+
 // ---- Escrita (lançamentos) --------------------------------------------------
 
 export type PurchaseInput = {

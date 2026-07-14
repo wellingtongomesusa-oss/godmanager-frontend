@@ -2976,7 +2976,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
    <div>
     <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">CLIENTE (customer)</label>
-    <select id="qb-inv-customer" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+    <input id="qb-inv-customer-name" list="qb-inv-customer-list" placeholder="Digite ou escolha um cliente" oninput="gmQbInvNameSync()" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
+    <datalist id="qb-inv-customer-list"></datalist>
+    <select id="qb-inv-customer" onchange="gmQbInvCustSync()" style="width:100%;margin-top:6px;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+    <p style="font-size:10px;color:var(--ink3);margin:4px 0 0">Digite um nome novo (será criado no QuickBooks) ou escolha um existente.</p>
    </div>
    <div>
     <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">PRODUTO/SERVIÇO (item)</label>
@@ -8544,6 +8547,10 @@ async function gmQbPostAcctsLoad(){
   var iSel=document.getElementById('qb-inv-item');
   if(cSel)cSel.innerHTML='<option value="">— Selecionar cliente —</option>'+gmQbOptList(j.customers||[]);
   if(iSel)iSel.innerHTML='<option value="">— Selecionar item —</option>'+gmQbOptList(j.items||[]);
+  // datalist + mapa nome→id para permitir digitar o cliente
+  window.__gmQbCustomers=j.customers||[];
+  var cList=document.getElementById('qb-inv-customer-list');
+  if(cList)cList.innerHTML=(j.customers||[]).map(function(c){return '<option value="'+gmHtmlEscAttr(String(c.name||''))+'"></option>';}).join('');
   var invSt=document.getElementById('qb-inv-status');
   if(invSt)invSt.textContent=((j.customers||[]).length)+' clientes · '+((j.items||[]).length)+' itens';
   if(st){st.textContent='✓ '+(((j.accounts&&j.accounts.expense)||[]).length)+' contas de despesa · '+((j.vendors||[]).length)+' vendors';st.style.color='#2a6e4e';}
@@ -8597,19 +8604,41 @@ async function gmQbPostExpense(){
  }catch(e){if(out){out.textContent='Erro de rede.';out.style.color='var(--red)';}}
 }
 window.gmQbPostExpense=gmQbPostExpense;
+// Sincroniza dropdown ⇄ campo de texto do cliente
+function gmQbInvNameSync(){
+ var name=((document.getElementById('qb-inv-customer-name')||{}).value||'').trim();
+ var sel=document.getElementById('qb-inv-customer');if(!sel)return;
+ var match=(window.__gmQbCustomers||[]).filter(function(c){return String(c.name||'').toLowerCase()===name.toLowerCase();})[0];
+ sel.value=match?String(match.id):'';
+}
+function gmQbInvCustSync(){
+ var sel=document.getElementById('qb-inv-customer');var inp=document.getElementById('qb-inv-customer-name');
+ if(!sel||!inp)return;
+ var match=(window.__gmQbCustomers||[]).filter(function(c){return String(c.id)===String(sel.value);})[0];
+ if(match)inp.value=match.name;
+}
+window.gmQbInvNameSync=gmQbInvNameSync;window.gmQbInvCustSync=gmQbInvCustSync;
 async function gmQbCreateInvoice(){
+ var typedName=((document.getElementById('qb-inv-customer-name')||{}).value||'').trim();
  var customerId=(document.getElementById('qb-inv-customer')||{}).value||'';
+ // se o nome digitado não bate com um cliente existente, envia como nome (backend cria no QuickBooks)
+ var customerName='';
+ if(typedName){
+  var match=(window.__gmQbCustomers||[]).filter(function(c){return String(c.name||'').toLowerCase()===typedName.toLowerCase();})[0];
+  if(match){customerId=String(match.id);}else{customerName=typedName;}
+ }
  var itemId=(document.getElementById('qb-inv-item')||{}).value||'';
  var amount=parseFloat((document.getElementById('qb-inv-amount')||{}).value||'0');
  var due=(document.getElementById('qb-inv-due')||{}).value||'';
  var desc=(document.getElementById('qb-inv-desc')||{}).value||'';
  var online=!!(document.getElementById('qb-inv-online')||{}).checked;
  var out=document.getElementById('qb-inv-result');
- if(!customerId){if(out){out.textContent='Selecione o cliente.';out.style.color='var(--red)';}return;}
+ if(!customerId&&!customerName){if(out){out.textContent='Escolha ou digite o cliente.';out.style.color='var(--red)';}return;}
  if(!itemId){if(out){out.textContent='Selecione o item.';out.style.color='var(--red)';}return;}
  if(!(amount>0)){if(out){out.textContent='Informe um valor.';out.style.color='var(--red)';}return;}
  var payload=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};
- payload.customerId=customerId;payload.itemId=itemId;payload.amount=amount;payload.allowOnlinePayment=online;
+ if(customerName)payload.customerName=customerName;else payload.customerId=customerId;
+ payload.itemId=itemId;payload.amount=amount;payload.allowOnlinePayment=online;
  if(due)payload.dueDate=due;
  if(desc){payload.description=desc;payload.memo=desc;}
  if(out){out.textContent='Criando invoice…';out.style.color='var(--ink3)';}
@@ -8627,6 +8656,9 @@ async function gmQbCreateInvoice(){
   }
   var amtEl=document.getElementById('qb-inv-amount');if(amtEl)amtEl.value='';
   var dscEl=document.getElementById('qb-inv-desc');if(dscEl)dscEl.value='';
+  var nmEl=document.getElementById('qb-inv-customer-name');if(nmEl)nmEl.value='';
+  var cSel2=document.getElementById('qb-inv-customer');if(cSel2)cSel2.value='';
+  if(typeof gmQbReportLoad==='function')void gmQbReportLoad();
  }catch(e){if(out){out.textContent='Erro de rede.';out.style.color='var(--red)';}}
 }
 window.gmQbCreateInvoice=gmQbCreateInvoice;

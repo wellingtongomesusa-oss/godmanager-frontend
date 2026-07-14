@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
-import { qbCreateInvoice } from '@/lib/quickbooksPost';
+import { qbCreateInvoice, qbFindOrCreateCustomer } from '@/lib/quickbooksPost';
 import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
@@ -19,10 +19,19 @@ export async function POST(req: Request) {
   const scope = await resolveBankAccountClientScope(user, (body?.clientId as string) ?? null);
   if (!scope.ok) return NextResponse.json({ ok: false, error: scope.error }, { status: scope.status });
 
-  const customerId = String(body?.customerId || '').trim();
+  let customerId = String(body?.customerId || '').trim();
+  const customerName = String(body?.customerName || '').trim();
   const itemId = String(body?.itemId || '').trim();
   const amount = Number(body?.amount);
-  if (!customerId) return NextResponse.json({ ok: false, error: 'customerId obrigatório.' }, { status: 400 });
+  // Nome digitado tem prioridade: acha ou cria o cliente no QuickBooks.
+  if (customerName) {
+    try {
+      customerId = await qbFindOrCreateCustomer(scope.clientId, customerName);
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: `Falha ao localizar/criar o cliente "${customerName}".`, detail: e instanceof Error ? e.message : undefined }, { status: 502 });
+    }
+  }
+  if (!customerId) return NextResponse.json({ ok: false, error: 'Escolha um cliente no dropdown ou digite o nome.' }, { status: 400 });
   if (!itemId) return NextResponse.json({ ok: false, error: 'itemId obrigatório (produto/serviço ligado à conta de receita).' }, { status: 400 });
   if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ ok: false, error: 'amount deve ser positivo.' }, { status: 400 });
 
