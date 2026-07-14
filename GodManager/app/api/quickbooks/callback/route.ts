@@ -46,10 +46,12 @@ export async function GET(req: Request) {
   const realmId = url.searchParams.get('realmId');
   const state = url.searchParams.get('state') || '';
   if (!code || !state) {
+    const keys = [...url.searchParams.keys()];
     console.error('[quickbooks/callback] params incompletos', {
-      hasCode: !!code, hasState: !!state, realmId, keys: [...url.searchParams.keys()],
+      hasCode: !!code, hasState: !!state, realmId, keys, fullUrl: req.url,
     });
-    return back('error', 'Resposta incompleta do Intuit.');
+    // Mostra ao usuário o que chegou, para diagnóstico rápido sem log do servidor.
+    return back('error', `Resposta incompleta. Recebido: ${keys.length ? keys.join(', ') : '(nenhum parâmetro)'}`);
   }
 
   const clientId = verifyState(state);
