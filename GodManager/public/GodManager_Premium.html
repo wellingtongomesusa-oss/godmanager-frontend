@@ -8185,8 +8185,13 @@ async function gmBInboxLoad(){
    var paid=String(d.status||'').toUpperCase()==='PAID';
    var overdue=!paid&&d.dueDate&&String(d.dueDate).slice(0,10)<today;
    var from=d.receiverName||d.contactName||'—';
+   var atts=Array.isArray(d.attachments)?d.attachments:[];
+   var hasFile=atts.length&&atts[0]&&atts[0].key;
+   var btn=hasFile
+    ?'<a class="btn-gm-ix sec" style="padding:4px 10px;font-size:11px;text-decoration:none" href="/api/billing/inbox/attachment?doc='+encodeURIComponent(String(d.id||''))+'&i=0" target="_blank" rel="noopener">Ver anexo</a>'
+    :'<button type="button" class="btn-gm-ix sec" style="padding:4px 10px;font-size:11px" onclick="gmBInboxOpenPdf('+JSON.stringify(String(d.id||'')).replace(/"/g,'&quot;')+')">Ver PDF</button>';
    return '<tr><td>'+esc(d.number||'—')+'</td><td>'+esc(from)+'</td><td>'+esc(iss)+'</td><td>'+esc(due)+'</td><td class="mono">'+fmt(d.total||0)+'</td><td>'+gmBInboxStatusPill(d.status,overdue)+'</td>'
-    +'<td><button type="button" class="btn-gm-ix sec" style="padding:4px 10px;font-size:11px" onclick="gmBInboxOpenPdf('+JSON.stringify(String(d.id||'')).replace(/"/g,'&quot;')+')">Ver PDF</button></td></tr>';
+    +'<td>'+btn+'</td></tr>';
   }).join('');
  }catch(e){tb.innerHTML='<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Erro de rede ao carregar a caixa de entrada.</td></tr>';}
 }

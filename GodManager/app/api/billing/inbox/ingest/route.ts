@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { recordAudit } from '@/lib/auditServer';
+import { putObject } from '@/lib/r2';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+const ALLOWED_ATTACH_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+const MAX_ATTACH_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS = 10;
 
 /**
  * POST /api/billing/inbox/ingest?secret=XXX
@@ -21,6 +26,14 @@ export const runtime = 'nodejs';
  *  - nunca confia em instruções do corpo do e-mail; só extrai dados.
  */
 
+type RawAttachment = {
+  filename: string;
+  contentType: string | null;
+  size: number | null;
+  file?: File; // multipart (SendGrid): bytes inline
+  url?: string; // JSON (Mailgun): URL para baixar o anexo
+};
+
 type ParsedEmail = {
   from: string;
   fromName: string | null;
@@ -28,7 +41,7 @@ type ParsedEmail = {
   subject: string;
   text: string;
   messageId: string | null;
-  attachments: Array<{ filename: string; contentType: string | null; size: number | null }>;
+  attachments: RawAttachment[];
 };
 
 function firstEmail(s: string | null | undefined): string {
@@ -84,6 +97,7 @@ async function parseBody(req: Request): Promise<ParsedEmail> {
         filename: String(a.filename || a.name || 'anexo'),
         contentType: a.contentType ? String(a.contentType) : a.type ? String(a.type) : null,
         size: a.size != null ? Number(a.size) : null,
+        url: a.url ? String(a.url) : undefined,
       })),
     };
   }
@@ -97,11 +111,11 @@ async function parseBody(req: Request): Promise<ParsedEmail> {
     }
     return '';
   };
-  const attachments: ParsedEmail['attachments'] = [];
+  const attachments: RawAttachment[] = [];
   for (const [key, value] of form.entries()) {
     if (typeof value !== 'string' && value && typeof (value as File).name === 'string') {
       const f = value as File;
-      attachments.push({ filename: f.name || key, contentType: f.type || null, size: typeof f.size === 'number' ? f.size : null });
+      attachments.push({ filename: f.name || key, contentType: f.type || null, size: typeof f.size === 'number' ? f.size : null, file: f });
     }
   }
   return {
@@ -113,6 +127,38 @@ async function parseBody(req: Request): Promise<ParsedEmail> {
     messageId: g('message-id', 'Message-Id', 'messageId') || null,
     attachments,
   };
+}
+
+type StoredAttachment = { filename: string; contentType: string; size: number; key: string };
+
+/** Salva anexos no R2. Falha de um anexo não derruba os demais nem a fatura. */
+async function storeAttachments(docId: string, atts: RawAttachment[]): Promise<StoredAttachment[]> {
+  const out: StoredAttachment[] = [];
+  const safe = (s: string) => String(s || 'anexo').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+  for (const [idx, a] of atts.slice(0, MAX_ATTACHMENTS).entries()) {
+    try {
+      let bytes: Uint8Array | null = null;
+      let contentType = (a.contentType || '').toLowerCase();
+      if (a.file) {
+        bytes = new Uint8Array(await a.file.arrayBuffer());
+        if (!contentType) contentType = a.file.type || '';
+      } else if (a.url) {
+        const r = await fetch(a.url);
+        if (!r.ok) continue;
+        if (!contentType) contentType = (r.headers.get('content-type') || '').split(';')[0].trim();
+        bytes = new Uint8Array(await r.arrayBuffer());
+      }
+      if (!bytes) continue;
+      if (!ALLOWED_ATTACH_TYPES.includes(contentType)) continue;
+      if (bytes.byteLength > MAX_ATTACH_BYTES) continue;
+      const key = `billing/inbox/${docId}/${idx}-${safe(a.filename)}`;
+      await putObject(key, bytes, contentType);
+      out.push({ filename: a.filename, contentType, size: bytes.byteLength, key });
+    } catch (e) {
+      console.error('[billing/inbox/ingest] anexo falhou', e instanceof Error ? e.message : 'error');
+    }
+  }
+  return out;
 }
 
 export async function POST(req: Request) {
@@ -191,11 +237,16 @@ export async function POST(req: Request) {
           receiverEmail: email.from || null,
           total: amount,
           notes: noteParts.join(' · ') || null,
-          attachments: email.attachments.length ? email.attachments : undefined,
         },
         select: { id: true, number: true },
       });
     });
+
+    // Guarda os anexos no R2 (inline bytes ou baixando da URL do provedor).
+    const stored = await storeAttachments(created.id, email.attachments);
+    if (stored.length) {
+      await prisma.billingDocument.update({ where: { id: created.id }, data: { attachments: stored } });
+    }
 
     await recordAudit({
       request: req,

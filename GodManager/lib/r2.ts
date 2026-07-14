@@ -67,6 +67,24 @@ export async function generateUploadUrl(
 }
 
 /**
+ * Uploads bytes directly to R2 from the server (server DOES see the bytes).
+ * Use for server-side ingestion (e.g. inbound-email attachments) where there is
+ * no browser to perform a presigned PUT.
+ * @param key Object key (path inside the bucket)
+ * @param body File bytes
+ * @param contentType MIME type
+ */
+export async function putObject(key: string, body: Uint8Array | Buffer, contentType: string): Promise<void> {
+  const command = new PutObjectCommand({
+    Bucket: getR2Bucket(),
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+  await getR2Client().send(command);
+}
+
+/**
  * Deletes an object from R2.
  * @param key Object key to delete
  */
