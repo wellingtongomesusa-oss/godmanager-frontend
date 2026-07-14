@@ -2,6 +2,8 @@
  * Base de conhecimento (manual de uso) do GodManager para o assistente de ajuda.
  * A IA responde SOMENTE com base neste conteúdo. Ampliar aqui = a IA sabe mais.
  */
+import { BOOKKEEPING_GUIDE_FL_AI } from '@/lib/bookkeepingGuideFL';
+
 export const HELP_MANUAL = `
 # Manual de uso — GodManager
 
@@ -71,4 +73,6 @@ REGRAS:
 - Não fale de preços internos, chaves de API, ou detalhes técnicos de código.
 
 MANUAL:
-${HELP_MANUAL}`;
+${HELP_MANUAL}
+
+${BOOKKEEPING_GUIDE_FL_AI}`;
