@@ -8252,11 +8252,34 @@ function gmApArRenderTables(){
  }).join(''):'<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a pagar'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto. 🎉')+'</td></tr>';
  var tbAr=document.getElementById('apar-tbody-ar');
  tbAr.innerHTML=ar.length?ar.map(function(v){
-  var link=v.link?'<a href="'+esc(v.link)+'" target="_blank" rel="noopener" style="color:#22558c;font-weight:600;text-decoration:none">Abrir ↗</a>':'—';
+  var link=v.link
+   ?'<a href="'+esc(v.link)+'" target="_blank" rel="noopener" style="color:#22558c;font-weight:600;text-decoration:none">Abrir ↗</a>'
+   :(v.id?'<button type="button" onclick="gmApArGetLink('+JSON.stringify(String(v.id)).replace(/"/g,'&quot;')+',this)" style="padding:3px 9px;border:1px solid var(--border2);border-radius:5px;background:var(--sand);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer">🔗 Gerar link</button>':'—');
   return '<tr><td>'+esc(v.customer||'—')+'</td><td>'+esc(v.docNumber||'—')+'</td><td>'+esc(v.txnDate||'—')+'</td><td>'+esc(v.dueDate||'—')+'</td><td class="mono">'+fmt(v.balance||0)+'</td><td><span class="pill '+(v.overdue?'pr':'pa')+'">'+(v.overdue?'Vencido':'Em aberto')+'</span></td><td>'+link+'</td></tr>';
  }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto.')+'</td></tr>';
 }
 window.gmApArRenderTables=gmApArRenderTables;
+async function gmApArGetLink(invoiceId,btn){
+ if(!invoiceId)return;
+ var orig=btn?btn.textContent:'';
+ if(btn){btn.disabled=true;btn.textContent='…';}
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var sep=q?'&':'?';
+  var r=await fetch('/api/quickbooks/invoice-link'+q+sep+'id='+encodeURIComponent(invoiceId),{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(j&&j.ok&&j.link){
+   // atualiza o cache e re-renderiza para mostrar "Abrir ↗"
+   try{(((window.__gmApAr||{}).receivables)||[]).forEach(function(v){if(String(v.id)===String(invoiceId))v.link=j.link;});}catch(e){}
+   if(typeof gmApArRenderTables==='function')gmApArRenderTables();
+   window.open(j.link,'_blank','noopener');
+  }else{
+   if(btn){btn.disabled=false;btn.textContent=orig;}
+   alert((j&&(j.message||j.error))||'Não foi possível gerar o link. Ative o QuickBooks Payments no QuickBooks Online.');
+  }
+ }catch(e){if(btn){btn.disabled=false;btn.textContent=orig;}alert('Erro de rede ao gerar o link.');}
+}
+window.gmApArGetLink=gmApArGetLink;
 window.__gmApArSort={ap:{key:'',dir:1},ar:{key:'',dir:1}};
 function gmApArSort(which,key){
  var st=window.__gmApArSort[which];if(!st)return;

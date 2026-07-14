@@ -235,6 +235,40 @@ export async function qbCreateInvoice(
   };
 }
 
+/**
+ * Pega o link de pagamento (InvoiceLink) de uma invoice existente. O QuickBooks só
+ * devolve o InvoiceLink na leitura individual com include=invoiceLink. Se ainda não
+ * houver link, tenta habilitar pagamento online (sparse update) e relê.
+ * Retorna link=null quando o QuickBooks Payments não está ativo na conta.
+ */
+export async function qbGetInvoiceLink(clientId: string, invoiceId: string): Promise<{ link: string | null }> {
+  const readOne = async (): Promise<Record<string, unknown> | undefined> => {
+    const j = (await qbRead(clientId, `invoice/${encodeURIComponent(invoiceId)}?include=invoiceLink`)) as { Invoice?: Record<string, unknown> };
+    return j?.Invoice;
+  };
+  let inv = await readOne();
+  let link = inv?.InvoiceLink ? String(inv.InvoiceLink) : null;
+  if (link) return { link };
+
+  // Sem link: tenta ligar pagamento online e reler (requer QuickBooks Payments na conta).
+  if (inv?.Id && inv?.SyncToken != null) {
+    try {
+      await qbCreate(clientId, 'invoice', {
+        Id: String(inv.Id),
+        SyncToken: String(inv.SyncToken),
+        sparse: true,
+        AllowOnlineACHPayment: true,
+        AllowOnlineCreditCardPayment: true,
+      });
+      inv = await readOne();
+      link = inv?.InvoiceLink ? String(inv.InvoiceLink) : null;
+    } catch {
+      /* QuickBooks Payments provavelmente não conectado — sem link */
+    }
+  }
+  return { link };
+}
+
 // ---- Relatórios (cards + gráficos) ----------------------------------------
 
 export type QbPnl = {
