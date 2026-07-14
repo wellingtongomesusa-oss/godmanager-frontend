@@ -8150,6 +8150,7 @@ function gmBInboxStatusPill(st,overdue){
  var s=String(st||'').toUpperCase();
  if(s==='PAID')return '<span class="pill pg">Paga</span>';
  if(overdue)return '<span class="pill pr">Vencida</span>';
+ if(s==='RECEIVED')return '<span class="pill pa">Recebida</span>';
  if(s==='SENT'||s==='APPROVED')return '<span class="pill pa">Em aberto</span>';
  if(s==='DRAFT')return '<span class="pill">Rascunho</span>';
  return '<span class="pill pa">'+(st||'—')+'</span>';
