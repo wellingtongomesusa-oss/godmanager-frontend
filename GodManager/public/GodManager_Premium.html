@@ -2944,6 +2944,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div id="qb-post-vendor-wrap">
     <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">VENDOR</label>
     <select id="qb-post-vendor" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+    <p style="font-size:10px;color:#b45309;margin:5px 0 0;line-height:1.4">💡 <b>IRS 1099-NEC:</b> se este fornecedor receber <b>≥ $600</b> no ano, emita 1099. Guarde o comprovante.</p>
    </div>
    <div>
     <label style="display:block;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px">DATA</label>
@@ -6260,6 +6261,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </div>
    </div>
 
+   <!-- Alertas de compliance (FREC / IRS) -->
+   <div id="rec-compliance" style="display:none;margin-bottom:16px"></div>
+
    <!-- Resumo -->
    <!-- Extrato de conciliação (formato profissional) -->
    <div style="border:1px solid var(--border);border-radius:10px;background:var(--paper);margin-bottom:16px;overflow:hidden">
@@ -8139,6 +8143,7 @@ function gmRecRender(){
  if(body)body.style.display='block';if(empty)empty.style.display='none';
  if(typeof gmPlaidBankStatus==='function')void gmPlaidBankStatus();
  if(typeof gmRecLoadCategories==='function')void gmRecLoadCategories();
+ if(typeof gmRecRenderCompliance==='function')gmRecRenderCompliance();
  var setV=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
  var setT=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
  setV('rec-opening',rec.openingBalance||'0.00');
@@ -8258,6 +8263,50 @@ async function gmRecLoadCategories(){
  dl.__loaded=true;
 }
 window.gmRecLoadCategories=gmRecLoadCategories;
+// ===== Compliance FREC + IRS na conciliação (trust accounting) =====
+function gmRecComplianceAlerts(rec,acctKey){
+ var out=[];if(!rec)return out;
+ var isTrust=(acctKey==='TRUST_CHASE'||acctKey==='DEPOSIT_SECURITY');
+ var book=Number(rec.bookBalance)||0;var stmt=Number(rec.statementBalance)||0;
+ // FREC: contas trust separadas + conciliação mensal
+ if(isTrust){
+  out.push({level:'info',text:'<b>FREC 61J2-14:</b> conta trust (dinheiro de terceiros) — mantenha separada da operacional e <b>concilie mensalmente</b>.'});
+ }
+ // FREC: saldo negativo = shortage (violação)
+ if(isTrust&&(book<-0.005||stmt<-0.005)){
+  out.push({level:'danger',text:'<b>⚠ Violação FREC:</b> saldo negativo em conta trust indica <b>shortage</b> (falta de fundos de terceiros). Regularize imediatamente.'});
+ }
+ // FREC: mês passado ainda não conciliado
+ try{
+  var now=new Date();var cur=now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0');
+  if(isTrust&&rec.status!=='RECONCILED'&&String(rec.periodMonth||'')<cur){
+   out.push({level:'warn',text:'<b>FREC:</b> este mês (conta trust) ainda não foi conciliado. A reconciliação mensal é obrigatória.'});
+  }
+ }catch(e){}
+ // Diferença aberta
+ if(!rec.balanced){
+  out.push({level:'warn',text:'Diferença em aberto ('+gmRecFmt(rec.difference)+'). A conta só concilia quando a diferença é <b>$0.00</b>.'});
+ }
+ // IRS: depósito-caução não é renda
+ if(acctKey==='DEPOSIT_SECURITY'){
+  out.push({level:'info',text:'<b>IRS:</b> depósito-caução <b>não é renda</b> até ser retido/aplicado. Não lance como receita enquanto for do inquilino.'});
+ }
+ // IRS: lembrete 1099 (pagamentos a fornecedores)
+ out.push({level:'info',text:'<b>IRS 1099-NEC:</b> fornecedores/contratados pagos <b>≥ $600</b> no ano exigem 1099. Guarde os comprovantes.'});
+ return out;
+}
+function gmRecRenderCompliance(){
+ var box=document.getElementById('rec-compliance');var rec=window.__gmRec;
+ if(!box)return;
+ if(!rec){box.style.display='none';box.innerHTML='';return;}
+ var acctKey=(document.getElementById('rec-account')||{}).value||rec.bankAccountKey||'';
+ var alerts=gmRecComplianceAlerts(rec,acctKey);
+ if(!alerts.length){box.style.display='none';box.innerHTML='';return;}
+ var styleFor={danger:'background:#fdecec;border:1px solid #e0b4b4;color:#7a1f1f',warn:'background:#fff7ed;border:1px solid #fed7aa;color:#7a4d00',info:'background:var(--cream);border:1px solid var(--border);color:var(--ink2)'};
+ box.innerHTML=alerts.map(function(a){return '<div style="'+(styleFor[a.level]||styleFor.info)+';border-radius:8px;padding:9px 12px;margin-bottom:6px;font-size:11.5px;line-height:1.5">'+a.text+'</div>';}).join('');
+ box.style.display='block';
+}
+window.gmRecRenderCompliance=gmRecRenderCompliance;
 async function gmRecImportPlaid(){
  var rec=window.__gmRec;if(!rec){alert('Carregue a conciliação primeiro.');return;}
  var rid=await gmRecEnsureCreated();if(!rid)return;
@@ -8446,6 +8495,15 @@ async function gmRecDeleteItem(itemId){
 window.gmRecDeleteItem=gmRecDeleteItem;
 async function gmRecReconcile(close){
  var rec=window.__gmRec;if(!rec)return;
+ // Bloqueio de compliance FREC ao FECHAR: saldo trust negativo (shortage)
+ if(close){
+  var acctKey=(document.getElementById('rec-account')||{}).value||rec.bankAccountKey||'';
+  var isTrust=(acctKey==='TRUST_CHASE'||acctKey==='DEPOSIT_SECURITY');
+  var neg=(Number(rec.bookBalance)||0)<-0.005||(Number(rec.statementBalance)||0)<-0.005;
+  if(isTrust&&neg){
+   if(!confirm('⚠ ALERTA FREC: saldo NEGATIVO em conta trust (shortage — falta de fundos de terceiros). Isso é uma violação da FREC. Conciliar assim mesmo?'))return;
+  }
+ }
  var payload=gmRecPayload();payload.bankAccountKey=rec.bankAccountKey;payload.periodMonth=rec.periodMonth;payload.reconcile=!!close;
  try{
   var r=await fetch('/api/reconciliation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
