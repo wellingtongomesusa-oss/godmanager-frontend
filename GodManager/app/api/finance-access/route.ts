@@ -5,8 +5,9 @@ import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
-// Mesmos menus concedidos pela aprovação de pedido (Statement/saldos, Ramp/QuickBooks/AppFolio, Bookkeeping).
-const FINANCE_MENUS = ['home', 'integrations', 'results'];
+// Menus da área financeira: Statement/saldos (home), Ramp/QuickBooks/AppFolio (integrations),
+// Bookkeeping (results) e Invoice/Cobrança/Caixa de Entrada (billing).
+const FINANCE_MENUS = ['home', 'integrations', 'results', 'billing'];
 const APPROVER_ROLES = ['super_admin', 'admin'];
 
 function canManage(role: string): boolean {

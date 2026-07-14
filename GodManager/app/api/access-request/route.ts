@@ -5,7 +5,7 @@ import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
 
-const FINANCE_MENUS = ['home', 'integrations', 'results']; // Statement/saldos, Ramp/QuickBooks/AppFolio, Bookkeeping
+const FINANCE_MENUS = ['home', 'integrations', 'results', 'billing']; // Statement/saldos, Ramp/QuickBooks/AppFolio, Bookkeeping, Invoice/Cobrança/Caixa de Entrada
 const APPROVER_ROLES = ['super_admin', 'admin'];
 
 function canApprove(role: string): boolean {
