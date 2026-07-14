@@ -8013,8 +8013,20 @@ async function gmQbReportLoad(){
   var per=document.getElementById('qb-chart-period');
   if(per&&j.from&&j.to)per.textContent='· '+String(j.from)+' a '+String(j.to);
   gmQbChartRender(p.months||[]);
+  gmQbCatTableRender(j.expenses||[]);
  }catch(e){}
 }
+function gmQbCatTableRender(rows){
+ var tb=document.getElementById('qb-tbody-cat');if(!tb)return;
+ var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ if(!rows||!rows.length){tb.innerHTML='<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma despesa lançada no QuickBooks ainda.</td></tr>';return;}
+ tb.innerHTML=rows.map(function(r){
+  var posted=String(r.status)==='Posted';
+  return '<tr><td>'+esc(r.category||'—')+'</td><td>'+esc(r.vendor||'—')+'</td><td>'+esc(r.date||'—')+'</td><td class="mono">'+fmt(r.amount||0)+'</td><td><span class="pill '+(posted?'pg':'pa')+'">'+(posted?'Posted':'Pending')+'</span></td></tr>';
+ }).join('');
+}
+window.gmQbCatTableRender=gmQbCatTableRender;
 window.gmQbReportLoad=gmQbReportLoad;
 function gmQbChartRender(months){
  var panel=document.getElementById('qb-chart-panel'),host=document.getElementById('qb-chart');

@@ -289,3 +289,59 @@ export async function qbAccountsPayable(clientId: string): Promise<number> {
   const bills = json?.QueryResponse?.Bill || [];
   return bills.reduce((s, b) => s + numVal(b.Balance), 0);
 }
+
+export type QbExpenseRow = { category: string; vendor: string; date: string; amount: number; status: string };
+
+/** Despesas recentes do QuickBooks (Purchase + Bill) → linhas para a tabela "Despesas por Categoria". */
+export async function qbRecentExpenses(clientId: string, limit = 25): Promise<QbExpenseRow[]> {
+  const rows: QbExpenseRow[] = [];
+  const catOf = (lines: Array<Record<string, unknown>> | undefined): string => {
+    for (const ln of lines || []) {
+      const d = (ln?.AccountBasedExpenseLineDetail as Record<string, unknown>) || {};
+      const acct = (d?.AccountRef as Record<string, unknown>) || {};
+      if (acct?.name) return String(acct.name);
+    }
+    return 'Sem categoria';
+  };
+
+  try {
+    const pj = (await qbRead(
+      clientId,
+      `query?query=${encodeURIComponent('select * from Purchase orderby TxnDate desc maxresults ' + limit)}`,
+    )) as { QueryResponse?: { Purchase?: Array<Record<string, unknown>> } };
+    for (const p of pj?.QueryResponse?.Purchase || []) {
+      const payee = (p?.EntityRef as Record<string, unknown>) || (p?.PayeeRef as Record<string, unknown>) || {};
+      rows.push({
+        category: catOf(p?.Line as Array<Record<string, unknown>>),
+        vendor: String(payee?.name || '—'),
+        date: String(p?.TxnDate || '').slice(0, 10),
+        amount: numVal(p?.TotalAmt),
+        status: 'Posted',
+      });
+    }
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    const bj = (await qbRead(
+      clientId,
+      `query?query=${encodeURIComponent('select * from Bill orderby TxnDate desc maxresults ' + limit)}`,
+    )) as { QueryResponse?: { Bill?: Array<Record<string, unknown>> } };
+    for (const b of bj?.QueryResponse?.Bill || []) {
+      const vend = (b?.VendorRef as Record<string, unknown>) || {};
+      rows.push({
+        category: catOf(b?.Line as Array<Record<string, unknown>>),
+        vendor: String(vend?.name || '—'),
+        date: String(b?.TxnDate || '').slice(0, 10),
+        amount: numVal(b?.TotalAmt),
+        status: numVal(b?.Balance) > 0 ? 'Pending' : 'Posted',
+      });
+    }
+  } catch {
+    /* ignore */
+  }
+
+  rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  return rows.slice(0, limit);
+}

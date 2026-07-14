@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
-import { qbProfitAndLoss, qbAccountsPayable } from '@/lib/quickbooksPost';
+import { qbProfitAndLoss, qbAccountsPayable, qbRecentExpenses } from '@/lib/quickbooksPost';
 import { getConnectionStatus } from '@/lib/quickbooks';
 
 export const dynamic = 'force-dynamic';
@@ -30,11 +30,12 @@ export async function GET(req: Request) {
   const to = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('to') || '') ? url.searchParams.get('to')! : toDefault;
 
   try {
-    const [pnl, ap] = await Promise.all([
+    const [pnl, ap, expenses] = await Promise.all([
       qbProfitAndLoss(scope.clientId, from, to),
       qbAccountsPayable(scope.clientId).catch(() => 0),
+      qbRecentExpenses(scope.clientId, 25).catch(() => []),
     ]);
-    return NextResponse.json({ ok: true, connected: true, from, to, pnl, accountsPayable: ap });
+    return NextResponse.json({ ok: true, connected: true, from, to, pnl, accountsPayable: ap, expenses });
   } catch (e) {
     console.error('[quickbooks/report]', e instanceof Error ? e.message : 'error');
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Falha ao ler relatório.' }, { status: 502 });
