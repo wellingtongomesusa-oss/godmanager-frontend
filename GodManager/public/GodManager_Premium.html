@@ -3063,7 +3063,14 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <h3>Contas a Pagar <span style="font-size:10px;font-weight:600;color:var(--ink3)">(Bills em aberto)</span></h3>
   <div style="overflow-x:auto">
    <table class="gm-ix-table">
-    <thead><tr><th>Fornecedor</th><th>Doc</th><th>Emissão</th><th>Vencimento</th><th>Saldo ($)</th><th>Status</th></tr></thead>
+    <thead><tr>
+     <th onclick="gmApArSort('ap','vendor')" style="cursor:pointer;user-select:none">Fornecedor <span data-apar-sort="ap:vendor"></span></th>
+     <th onclick="gmApArSort('ap','docNumber')" style="cursor:pointer;user-select:none">Doc <span data-apar-sort="ap:docNumber"></span></th>
+     <th onclick="gmApArSort('ap','txnDate')" style="cursor:pointer;user-select:none">Emissão <span data-apar-sort="ap:txnDate"></span></th>
+     <th onclick="gmApArSort('ap','dueDate')" style="cursor:pointer;user-select:none">Vencimento <span data-apar-sort="ap:dueDate"></span></th>
+     <th onclick="gmApArSort('ap','balance')" style="cursor:pointer;user-select:none">Saldo ($) <span data-apar-sort="ap:balance"></span></th>
+     <th onclick="gmApArSort('ap','overdue')" style="cursor:pointer;user-select:none">Status <span data-apar-sort="ap:overdue"></span></th>
+    </tr></thead>
     <tbody id="apar-tbody-ap"></tbody>
    </table>
   </div>
@@ -3072,7 +3079,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <h3>Contas a Receber <span style="font-size:10px;font-weight:600;color:var(--ink3)">(Invoices em aberto)</span></h3>
   <div style="overflow-x:auto">
    <table class="gm-ix-table">
-    <thead><tr><th>Cliente</th><th>Doc</th><th>Emissão</th><th>Vencimento</th><th>Saldo ($)</th><th>Status</th><th>Link</th></tr></thead>
+    <thead><tr>
+     <th onclick="gmApArSort('ar','customer')" style="cursor:pointer;user-select:none">Cliente <span data-apar-sort="ar:customer"></span></th>
+     <th onclick="gmApArSort('ar','docNumber')" style="cursor:pointer;user-select:none">Doc <span data-apar-sort="ar:docNumber"></span></th>
+     <th onclick="gmApArSort('ar','txnDate')" style="cursor:pointer;user-select:none">Emissão <span data-apar-sort="ar:txnDate"></span></th>
+     <th onclick="gmApArSort('ar','dueDate')" style="cursor:pointer;user-select:none">Vencimento <span data-apar-sort="ar:dueDate"></span></th>
+     <th onclick="gmApArSort('ar','balance')" style="cursor:pointer;user-select:none">Saldo ($) <span data-apar-sort="ar:balance"></span></th>
+     <th onclick="gmApArSort('ar','overdue')" style="cursor:pointer;user-select:none">Status <span data-apar-sort="ar:overdue"></span></th>
+     <th>Link</th>
+    </tr></thead>
     <tbody id="apar-tbody-ar"></tbody>
    </table>
   </div>
@@ -8212,6 +8227,8 @@ function gmApArRenderTables(){
  };
  var ap=(j.payables||[]).filter(function(b){return match(b.vendor,b.txnDate,b.overdue);});
  var ar=(j.receivables||[]).filter(function(v){return match(v.customer,v.txnDate,v.overdue);});
+ gmApArApplySort(ap,'ap');gmApArApplySort(ar,'ar');
+ gmApArUpdateSortIndicators();
  var sum=function(a){return a.reduce(function(s,x){return s+(x.balance||0);},0);};
  var sumOd=function(a){return a.filter(function(x){return x.overdue;}).reduce(function(s,x){return s+(x.balance||0);},0);};
  // KPIs refletem o filtro
@@ -8230,6 +8247,35 @@ function gmApArRenderTables(){
  }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto.')+'</td></tr>';
 }
 window.gmApArRenderTables=gmApArRenderTables;
+window.__gmApArSort={ap:{key:'',dir:1},ar:{key:'',dir:1}};
+function gmApArSort(which,key){
+ var st=window.__gmApArSort[which];if(!st)return;
+ if(st.key===key)st.dir=-st.dir;else{st.key=key;st.dir=1;}
+ gmApArRenderTables();
+}
+window.gmApArSort=gmApArSort;
+function gmApArApplySort(arr,which){
+ var st=window.__gmApArSort[which];if(!st||!st.key)return;
+ var k=st.key,dir=st.dir;
+ var numeric=(k==='balance');
+ arr.sort(function(a,b){
+  var va=a[k],vb=b[k];
+  if(k==='overdue'){va=va?1:0;vb=vb?1:0;}
+  if(numeric){va=Number(va)||0;vb=Number(vb)||0;return (va-vb)*dir;}
+  va=String(va==null?'':va).toLowerCase();vb=String(vb==null?'':vb).toLowerCase();
+  if(va<vb)return -1*dir;if(va>vb)return 1*dir;return 0;
+ });
+}
+function gmApArUpdateSortIndicators(){
+ var spans=document.querySelectorAll('[data-apar-sort]');
+ spans.forEach(function(sp){
+  var parts=String(sp.getAttribute('data-apar-sort')).split(':');
+  var st=window.__gmApArSort[parts[0]];
+  if(st&&st.key===parts[1]){sp.textContent=st.dir>0?'▲':'▼';sp.style.color='var(--amber)';}
+  else{sp.textContent='⇅';sp.style.color='var(--ink3)';sp.style.opacity='.5';}
+  sp.style.fontSize='9px';
+ });
+}
 // ---- Caixa de Entrada: invoices recebidas (sou o pagador) ----
 function gmBInboxStatusPill(st,overdue){
  var s=String(st||'').toUpperCase();
