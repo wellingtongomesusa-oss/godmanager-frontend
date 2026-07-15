@@ -23,6 +23,33 @@ function plaidConfigErrorMessage(e: unknown): string | null {
   return null;
 }
 
+/**
+ * Erros da Plaid chegam como erro do Axios: o motivo real (error_code / error_message /
+ * error_type / display_message) fica em e.response.data, NAO em e.message (que vira so
+ * "Request failed with status code 4xx"). Extrai esse detalhe para log e resposta.
+ * Nenhum campo aqui contem segredo (client_id/secret nunca sao ecoados pela Plaid).
+ */
+function extractPlaidError(e: unknown): {
+  status: number;
+  errorType?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  displayMessage?: string;
+  requestId?: string;
+} | null {
+  const resp = (e as { response?: { status?: number; data?: Record<string, unknown> } })?.response;
+  const data = resp?.data;
+  if (!data || typeof data !== 'object') return null;
+  return {
+    status: typeof resp?.status === 'number' ? resp.status : 500,
+    errorType: typeof data.error_type === 'string' ? data.error_type : undefined,
+    errorCode: typeof data.error_code === 'string' ? data.error_code : undefined,
+    errorMessage: typeof data.error_message === 'string' ? data.error_message : undefined,
+    displayMessage: typeof data.display_message === 'string' ? data.display_message : undefined,
+    requestId: typeof data.request_id === 'string' ? data.request_id : undefined,
+  };
+}
+
 export async function POST(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) {
@@ -54,6 +81,9 @@ export async function POST(req: Request) {
     }
 
     const plaid = getPlaidClient();
+    // OAuth (Chase e afins) exige redirect_uri registrado no Plaid Dashboard (Allowed redirect URIs).
+    // So enviamos se estiver configurado; caso contrario a Plaid rejeita URIs nao registradas.
+    const redirectUri = (process.env.PLAID_REDIRECT_URI || '').trim() || undefined;
     const response = await plaid.linkTokenCreate({
       user: { client_user_id: entityId },
       client_name: 'GodManager',
@@ -65,6 +95,7 @@ export async function POST(req: Request) {
           : undefined,
       country_codes: [CountryCode.Us],
       language: 'en',
+      ...(redirectUri ? { redirect_uri: redirectUri } : {}),
     });
 
     const linkToken = response.data.link_token;
@@ -77,6 +108,35 @@ export async function POST(req: Request) {
     const configMsg = plaidConfigErrorMessage(e);
     if (configMsg) {
       return NextResponse.json({ ok: false, error: configMsg }, { status: 503 });
+    }
+    const plaidErr = extractPlaidError(e);
+    if (plaidErr) {
+      // Log completo no servidor (com env atual para diagnostico rapido de sandbox vs production).
+      console.error('[POST /api/plaid/link-token] Plaid', {
+        env: process.env.PLAID_ENV || 'sandbox',
+        status: plaidErr.status,
+        error_type: plaidErr.errorType,
+        error_code: plaidErr.errorCode,
+        error_message: plaidErr.errorMessage,
+        request_id: plaidErr.requestId,
+      });
+      // Devolve o motivo real (nao contem segredos) para facilitar o diagnostico no front/cowork.
+      const detail = [plaidErr.errorCode, plaidErr.errorMessage || plaidErr.displayMessage]
+        .filter(Boolean)
+        .join(': ');
+      return NextResponse.json(
+        {
+          ok: false,
+          error: detail || 'Falha ao criar link token.',
+          plaid: {
+            errorType: plaidErr.errorType,
+            errorCode: plaidErr.errorCode,
+            errorMessage: plaidErr.errorMessage,
+            requestId: plaidErr.requestId,
+          },
+        },
+        { status: plaidErr.status >= 400 && plaidErr.status < 600 ? plaidErr.status : 502 },
+      );
     }
     console.error('[POST /api/plaid/link-token]', e instanceof Error ? e.message : 'Plaid error');
     return NextResponse.json({ ok: false, error: 'Falha ao criar link token.' }, { status: 500 });
