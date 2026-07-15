@@ -22711,6 +22711,38 @@ function ltSaveExpense(){
   if(!isVFree&&!vid){alert('Selecione um vendor cadastrado ou marque Sem vendor (V Free).');return;}
   if(!isJobCtx&&!isVFree&&!(vc>0)){alert('Valor pago ao vendor deve ser maior que zero.');return;}
   if(isVFree&&!(vc>=0)){alert('Valor estimado inválido.');return;}
+  // Guard anti-duplicidade: ao criar (nao editar) uma despesa de vendor — em especial +Vendor / Sem vendor (V Free),
+  // em que o vendor nao e selecionado — avisa se ja existe uma despesa ativa para o mesmo job/casa (mesma casa + mes
+  // e mesma descricao OU mesmo tipo de servico). Nao bloqueia: pede confirmacao para evitar lancar a WO 2x por engano.
+  if(!ltExpEditingPmId){
+   var dupExisting=(function(){
+    try{
+     var rows=window.__jobsExpensesCache||window.__jobsApiRowsCache||[];
+     if(!rows||!rows.length)return null;
+     var pc=String(propId||'').trim();
+     var mo=String(month||'').trim();
+     var dn=String(descVal||'').trim().toLowerCase();
+     var sv=String(svc||'').trim().toLowerCase();
+     for(var i=0;i<rows.length;i++){
+      var r=rows[i];if(!r)continue;
+      if(String(r.propertyCode||'').trim()!==pc)continue;
+      var stt=String(r.status||r.uiStatus||'').toLowerCase();
+      if(stt.indexOf('cancel')>=0)continue;
+      if(mo&&String(r.month||'').trim()!==mo)continue;
+      var rd=String(r.desc||'').trim().toLowerCase();
+      var rsv=String(r.category||'').trim().toLowerCase();
+      var sameDesc=dn&&rd&&rd===dn;
+      var sameSvc=sv&&rsv&&rsv===sv&&sv!=='vendor';
+      if(sameDesc||sameSvc)return r;
+     }
+    }catch(eDup){}
+    return null;
+   })();
+   if(dupExisting){
+    var dupLbl=(dupExisting.desc||dupExisting.category||'despesa')+' · '+(dupExisting.propAddress||dupExisting.propertyCode||'')+(dupExisting.month?(' · '+dupExisting.month):'');
+    if(!confirm('Já existe uma despesa para este job/casa:\n\n'+dupLbl+'\n\nCriar outra mesmo assim?'))return;
+   }
+  }
   (async function(){
    var vfFrom=null;
    try{vfFrom=window.__lastVendorFreeFrom;}catch(eVf0){}
