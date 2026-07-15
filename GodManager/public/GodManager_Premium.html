@@ -15161,6 +15161,10 @@ window.osdRenderWorkOrders=async function(){
   try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
   if(!res.ok||!data.ok)throw new Error('expenses fetch failed');
   var list=(data.expenses||[]).filter(function(e){return e&&String(e.propertyId||'')===String(cd.propertyId);});
+  try{window.OSD_STATE.woList=list;}catch(eStore){}
+  // WOs ja lançadas no statement: qualquer line-item com sourceRefId apontando para a despesa.
+  var postedWo={};
+  try{(window.OSD_STATE&&window.OSD_STATE.detailLines||[]).forEach(function(li){if(li&&li.sourceRefId)postedWo[String(li.sourceRefId)]=true;});}catch(ePw){}
   var esc=window.osdEscHtml;
   var fmt=window.osdFmtCurrency;
   var html='<div style="padding:12px 14px;border-top:1px solid var(--border)">';
@@ -15186,6 +15190,16 @@ window.osdRenderWorkOrders=async function(){
     var val=(typeof fmt==='function')?fmt(Number(e.ownerCharged||0)):String(e.ownerCharged||'');
     var dt=String(e.serviceDate||'').slice(0,10);
     var eidJs=String(e.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var oc=Number(e.ownerCharged||0);
+    var isPosted=!!postedWo[String(e.id)];
+    var launchBtn;
+    if(isPosted){
+     launchBtn='<span style="display:inline-block;padding:4px 8px;background:var(--green-bg,#e8f5e9);color:var(--green,#2e7d32);border:1px solid var(--green-bd,#a5d6a7);border-radius:4px;font-size:10px;font-weight:600;font-family:\'Inter\',sans-serif">✓ No statement</span>';
+    }else if(oc>0){
+     launchBtn='<button type="button" onclick="event.stopPropagation();if(typeof osdWoPostToStatement===\'function\')osdWoPostToStatement(\''+eidJs+'\')" style="padding:4px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;font-family:\'Inter\',sans-serif">Lançar no Statement</button>';
+    }else{
+     launchBtn='<span style="opacity:.4;font-size:10px">—</span>';
+    }
     html+='<tr style="border-bottom:1px solid var(--border)">';
     html+='<td style="padding:8px 10px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink2)">'+esc(woLbl||'—')+'</td>';
     html+='<td style="padding:8px 10px;color:var(--ink);max-width:220px">'+esc(desc||'—')+'</td>';
@@ -15193,7 +15207,7 @@ window.osdRenderWorkOrders=async function(){
     html+='<td style="padding:8px 10px;text-align:center;color:var(--ink2)">'+esc(st||'—')+'</td>';
     html+='<td style="padding:8px 10px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+esc(val)+'</td>';
     html+='<td style="padding:8px 10px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt||'—')+'</td>';
-    html+='<td style="padding:8px 10px;text-align:center"><button type="button" onclick="event.stopPropagation();if(typeof gmJobOpenPhotoPopup===\'function\')gmJobOpenPhotoPopup(\''+eidJs+'\')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">Ver fotos</button></td>';
+    html+='<td style="padding:8px 10px;text-align:center;white-space:nowrap">'+launchBtn+' <button type="button" onclick="event.stopPropagation();if(typeof gmJobOpenPhotoPopup===\'function\')gmJobOpenPhotoPopup(\''+eidJs+'\')" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer;font-family:\'Inter\',sans-serif">Ver fotos</button></td>';
     html+='</tr>';
    });
    html+='</tbody></table></div>';
@@ -15204,6 +15218,39 @@ window.osdRenderWorkOrders=async function(){
   console.warn('osdRenderWorkOrders',e);
   wrap.innerHTML='<div style="opacity:.6;font-size:13px;padding:8px 14px;color:var(--ink3)">Erro ao carregar work orders.</div>';
  }
+};
+
+// Lança o débito de uma Work Order (PmExpense) no statement individual da casa como uma
+// linha de expense (source=AUTO_EXPENSE, sourceRefId=id da despesa → idempotente: nao duplica).
+window.osdWoPostToStatement=async function(expenseId){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){alert('Abra o statement de uma casa primeiro.');return;}
+ var e=(window.OSD_STATE.woList||[]).find(function(x){return String(x.id)===String(expenseId);});
+ if(!e){alert('Work order nao encontrada.');return;}
+ var amt=Number(e.ownerCharged||0);
+ if(!(amt>0)){alert('Esta work order nao tem valor (owner charged) para lançar.');return;}
+ var woLbl=e.jobLabel||(e.jobNumber!=null?('#'+String(e.jobNumber)):'');
+ var desc=String(e.description||e.serviceType||'Work order');
+ var fullDesc=(woLbl?(woLbl+' — '):'')+desc;
+ var amtLbl=(typeof window.osdFmtCurrency==='function')?window.osdFmtCurrency(amt):('$'+amt.toFixed(2));
+ if(!confirm('Lançar esta despesa no statement da casa?\n\n'+fullDesc+'\nValor: '+amtLbl)){return;}
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/line-items',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   propertyId:cd.propertyId,
+   yearMonth:cd.yearMonth,
+   lineType:'expense',
+   description:fullDesc,
+   amount:amt,
+   transactionDate:(String(e.serviceDate||'').slice(0,10))||undefined,
+   source:'AUTO_EXPENSE',
+   sourceRefId:String(e.id)
+  })});
+  var data={};try{data=await res.json();}catch(pe){data={};}
+  if(!res.ok||!data.ok){alert((data&&data.error)||('Erro '+res.status));return;}
+  if(typeof showToast==='function')showToast(data.alreadyPosted?'Esta WO ja estava no statement.':'Despesa lançada no statement.');
+  // Recarrega o statement inteiro: a linha aparece no Statement e a WO vira "✓ No statement".
+  if(typeof osdLoadStatement==='function')await osdLoadStatement();
+ }catch(err){console.error(err);alert('Falha ao lançar no statement.');}
 };
 
 window.osdLoadStatement=async function(){

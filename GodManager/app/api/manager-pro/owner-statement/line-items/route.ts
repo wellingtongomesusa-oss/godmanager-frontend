@@ -172,6 +172,19 @@ export async function POST(req: Request) {
     const lineType = typeof body?.lineType === 'string' ? body.lineType.trim().toLowerCase() : '';
     const descriptionRaw = typeof body?.description === 'string' ? body.description : '';
 
+    // Origem opcional: permite lançar uma linha vinculada a uma fonte (ex.: uma Work Order /
+    // PmExpense). O unique (ownerMonthPayoutId, source, sourceRefId) garante idempotencia — a mesma
+    // WO nao pode ser lançada duas vezes. Sem source/sourceRefId, mantém o comportamento MANUAL.
+    const ALLOWED_SOURCES = ['MANUAL', 'AUTO_EXPENSE', 'AUTO_RENTAL', 'BILLING', 'CSV_UPLOAD'] as const;
+    const sourceRaw = typeof body?.source === 'string' ? body.source.trim().toUpperCase() : '';
+    const source = (ALLOWED_SOURCES as readonly string[]).includes(sourceRaw)
+      ? (sourceRaw as (typeof ALLOWED_SOURCES)[number])
+      : 'MANUAL';
+    const sourceRefId =
+      typeof body?.sourceRefId === 'string' && body.sourceRefId.trim()
+        ? body.sourceRefId.trim().slice(0, 200)
+        : null;
+
     if (!propertyId) {
       return NextResponse.json({ ok: false, error: 'propertyId required' }, { status: 400 });
     }
@@ -269,8 +282,8 @@ export async function POST(req: Request) {
           amount: amountNum,
           sortOrder,
           clientId: syncClientId,
-          source: 'MANUAL',
-          sourceRefId: null,
+          source,
+          sourceRefId,
           transactionDate,
         },
         select: {
@@ -320,6 +333,10 @@ export async function POST(req: Request) {
       },
     });
   } catch (e) {
+    // Duplicata da mesma fonte (mesma WO ja lançada): trata como sucesso idempotente.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      return NextResponse.json({ ok: true, alreadyPosted: true });
+    }
     console.error('[POST /api/manager-pro/owner-statement/line-items]', e);
     return NextResponse.json({ ok: false, error: 'Failed' }, { status: 500 });
   }
