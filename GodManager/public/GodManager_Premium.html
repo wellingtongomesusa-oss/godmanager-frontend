@@ -8495,8 +8495,58 @@ function gmWaUploadOpen(propertyId,address){
  document.getElementById('gm-wa-text').value='';
  var f=document.getElementById('gm-wa-file');if(f)f.value='';
  document.getElementById('gm-wa-result').innerHTML='';
+ // injeta busca + lista de conversas salvas no topo do corpo do modal (uma vez)
+ var bodyEl=ov.querySelector('div[style*="overflow-y:auto"]');
+ if(bodyEl&&!document.getElementById('gm-wa-saved')){
+  var wrap=document.createElement('div');
+  wrap.innerHTML='<input id="gm-wa-search" oninput="gmWaSearch()" placeholder="🔎 Buscar palavra nas conversas (ex.: 1099, aluguel, extrato)…" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--sand);color:var(--ink);margin-bottom:12px"><div id="gm-wa-saved" style="margin-bottom:14px"></div><div style="border-top:1px solid var(--border);padding-top:10px;font-size:11px;font-weight:700;color:#0b7a3b">➕ Enviar nova conversa</div>';
+  bodyEl.insertBefore(wrap,bodyEl.firstChild);
+ }
+ var sb=document.getElementById('gm-wa-search');if(sb)sb.value='';
  ov.style.display='flex';
+ gmWaLoad();
 }
+window.__gmWaConvs=[];
+async function gmWaLoad(){
+ var box=document.getElementById('gm-wa-saved');if(!box)return;
+ box.innerHTML='<div style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Carregando conversas…</div>';
+ try{
+  var r=await fetch('/api/whatsapp/list?propertyId='+encodeURIComponent(window.__gmWaPid),{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  window.__gmWaConvs=(j&&j.ok&&j.conversations)?j.conversations:[];
+  gmWaRenderSaved('');
+ }catch(e){box.innerHTML='<div style="padding:14px;text-align:center;color:var(--red);font-size:12px">Erro ao carregar.</div>';}
+}
+window.gmWaLoad=gmWaLoad;
+function gmWaSearch(){gmWaRenderSaved(((document.getElementById('gm-wa-search')||{}).value||'').toLowerCase().trim());}
+window.gmWaSearch=gmWaSearch;
+function gmWaRenderSaved(term){
+ var box=document.getElementById('gm-wa-saved');if(!box)return;
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var convs=window.__gmWaConvs||[];
+ if(!convs.length){box.innerHTML='<div style="padding:12px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conversa salva ainda.</div>';return;}
+ var allItems=[];convs.forEach(function(c){var o=c.overview;if(o&&o.items)o.items.forEach(function(i){allItems.push(i);});});
+ if(term)allItems=allItems.filter(function(i){return ((i.text||'')+' '+(i.from||'')).toLowerCase().indexOf(term)>=0;});
+ var pend=allItems.filter(function(i){return i.status==='PENDENTE';});
+ var qaHtml='';
+ if(allItems.length){
+  qaHtml='<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px">Perguntas / pedidos ('+pend.length+' pendente'+(pend.length===1?'':'s')+')</div>'
+   +allItems.slice().sort(function(a,b){return (a.status==='PENDENTE'?0:1)-(b.status==='PENDENTE'?0:1);}).map(function(i){
+    var p=i.status==='PENDENTE';
+    return '<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;flex-shrink:0;'+(p?'background:#fef3c7;color:#92400e':'background:#dcfce7;color:#166534')+'">'+(p?'PENDENTE':'OK')+'</span><div style="flex:1"><div style="font-size:12px;color:var(--ink)">'+esc(i.text)+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+esc(i.from||'')+' · '+esc(i.audience||'')+(i.date?(' · '+esc(i.date)):'')+'</div></div></div>';
+   }).join('');
+ }
+ var msgHtml='';
+ if(term){
+  var hits=[];convs.forEach(function(c){(c.transcript||[]).forEach(function(m){if(String(m.t||'').toLowerCase().indexOf(term)>=0)hits.push(m);});});
+  var reEsc=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  msgHtml='<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px">Mensagens com &quot;'+esc(term)+'&quot; ('+hits.length+')</div>'
+   +(hits.length?hits.slice(0,60).map(function(m){var tt=esc(m.t||'');tt=tt.replace(new RegExp('('+reEsc+')','ig'),'<mark style="background:#fff3a3">$1</mark>');return '<div style="font-size:11.5px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--ink3)">['+esc(m.d||'')+'] '+esc(m.s||'')+':</span> '+tt+'</div>';}).join(''):'<div style="font-size:11px;color:var(--ink3)">Nenhuma mensagem com esse termo.</div>');
+ }
+ var head='<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+convs.length+' conversa(s) · '+convs.reduce(function(s,c){return s+(c.messageCount||0);},0)+' mensagens</div>';
+ box.innerHTML=head+(qaHtml||'<div style="font-size:12px;color:var(--ink3)">Sem perguntas detectadas.</div>')+msgHtml;
+}
+window.gmWaRenderSaved=gmWaRenderSaved;
 function gmWaClose(){var ov=document.getElementById('gm-wa-modal');if(ov)ov.style.display='none';}
 function gmWaFilePick(){
  var f=document.getElementById('gm-wa-file');if(!f||!f.files||!f.files[0])return;
@@ -8515,6 +8565,8 @@ async function gmWaSubmit(){
   if(!r.ok||!j.ok){if(res)res.innerHTML='<span style="color:var(--red);font-size:12px">'+((j&&j.error)||'Falha ao processar.')+'</span>';if(btn){btn.disabled=false;btn.textContent='Analisar e salvar no histórico';}return;}
   res.innerHTML=gmWaRenderOverview(j);
   if(btn){btn.disabled=false;btn.textContent='Analisar outra';}
+  var tx=document.getElementById('gm-wa-text');if(tx)tx.value='';
+  if(typeof gmWaLoad==='function')gmWaLoad();
  }catch(e){if(res)res.innerHTML='<span style="color:var(--red);font-size:12px">Erro de rede.</span>';if(btn){btn.disabled=false;btn.textContent='Analisar e salvar no histórico';}}
 }
 window.gmWaSubmit=gmWaSubmit;
