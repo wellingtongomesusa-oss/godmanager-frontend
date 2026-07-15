@@ -15178,15 +15178,8 @@ window.osdRenderWorkOrders=async function(){
   try{(window.OSD_STATE&&window.OSD_STATE.detailLines||[]).forEach(function(li){if(li&&li.sourceRefId)postedWo[String(li.sourceRefId)]=true;});}catch(ePw){}
   var esc=window.osdEscHtml;
   var fmt=window.osdFmtCurrency;
-  // Quantas WO ainda nao estao no statement (com valor > 0)? Para o botao "lançar todas".
-  var pendWo=list.filter(function(e){return e&&!postedWo[String(e.id)]&&Number(e.ownerCharged||0)>0;});
   var html='<div style="padding:12px 14px;border-top:1px solid var(--border)">';
-  html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap">';
-  html+='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Work Orders do mês ('+list.length+')</div>';
-  if(pendWo.length){
-   html+='<button type="button" onclick="if(typeof osdWoPostAllToStatement===\'function\')osdWoPostAllToStatement()" title="Lança todas as Work Orders ainda fora como débito no statement" style="padding:6px 12px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">↑ Lançar todas no statement ('+pendWo.length+')</button>';
-  }
-  html+='</div>';
+  html+='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3);margin-bottom:10px">Work Orders do mês ('+list.length+')</div>';
   if(!list.length){
    html+='<div style="opacity:.6;font-size:13px;padding:8px 0;color:var(--ink2)">Nenhuma work order neste mês.</div>';
   }else{
@@ -15300,37 +15293,6 @@ window.osdNetListExportCsv=function(){
  lines.push(['TOTAL','','',total.toFixed(2),'','',''].join(','));
  var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='NET_por_owner_'+ym+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
-};
-
-// Lança TODAS as Work Orders do mês (ainda fora, com valor > 0) como débito no statement,
-// de uma vez. Idempotente por WO (source=AUTO_EXPENSE + sourceRefId) — nao duplica.
-window.osdWoPostAllToStatement=async function(){
- var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
- if(!cd||!cd.propertyId){alert('Abra o statement de uma casa primeiro.');return;}
- var posted={};
- try{(window.OSD_STATE&&window.OSD_STATE.detailLines||[]).forEach(function(li){if(li&&li.sourceRefId)posted[String(li.sourceRefId)]=true;});}catch(eP){}
- var pend=(window.OSD_STATE.woList||[]).filter(function(e){return e&&!posted[String(e.id)]&&Number(e.ownerCharged||0)>0;});
- if(!pend.length){alert('Nenhuma Work Order fora do statement.');return;}
- if(!confirm('Lançar '+pend.length+' Work Order(s) como débito no statement da casa?')){return;}
- var okN=0,failN=0;
- for(var i=0;i<pend.length;i++){
-  var e=pend[i];
-  var woLbl=e.jobLabel||(e.jobNumber!=null?('#'+String(e.jobNumber)):'');
-  var desc=String(e.description||e.serviceType||'Work order');
-  var fullDesc=(woLbl?(woLbl+' — '):'')+desc;
-  try{
-   var res=await fetch('/api/manager-pro/owner-statement/line-items',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    propertyId:cd.propertyId,yearMonth:cd.yearMonth,lineType:'expense',
-    description:fullDesc,amount:Number(e.ownerCharged||0),
-    transactionDate:(String(e.serviceDate||'').slice(0,10))||undefined,
-    source:'AUTO_EXPENSE',sourceRefId:String(e.id)
-   })});
-   var data={};try{data=await res.json();}catch(pe){data={};}
-   if(res.ok&&data.ok)okN++; else failN++;
-  }catch(err){failN++;}
- }
- if(typeof showToast==='function')showToast(okN+' Work Order(s) lançada(s) no statement'+(failN?(' · '+failN+' falha(s)'):'.'));
- if(typeof osdLoadStatement==='function')await osdLoadStatement();
 };
 
 // Lança o débito de uma Work Order (PmExpense) no statement individual da casa como uma
