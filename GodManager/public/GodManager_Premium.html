@@ -4880,6 +4880,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div id="ltp-modal-title" style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif">Nova Propriedade</div>
 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
 <button type="button" id="ltp-comments-btn" style="display:none;padding:7px 12px;border:1px solid var(--border2);background:var(--cream);color:var(--ink2);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">💬 Comentários</button>
+<button type="button" id="ltp-wa-btn" style="display:none;padding:7px 12px;border:1px solid #25d366;background:#eafff1;color:#0b7a3b;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📱 WhatsApp</button>
 <button type="button" onclick="ltpCloseNewPropertyModal()" aria-label="Fechar" style="width:36px;height:36px;border:none;background:var(--cream);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;display:flex;font-size:18px;color:var(--ink3);line-height:1">×</button>
 </div>
 </div>
@@ -8470,6 +8471,71 @@ async function gmGuideBkOpen(anchor){
 }
 function gmGuideBkClose(){var ov=document.getElementById('gm-guide-modal');if(ov)ov.style.display='none';}
 window.gmGuideBkOpen=gmGuideBkOpen;window.gmGuideBkClose=gmGuideBkClose;
+// ---- Upload de conversa WhatsApp + overview de pendências ----
+window.__gmWaPid=null;
+function gmWaUploadOpen(propertyId,address){
+ window.__gmWaPid=propertyId;
+ var ov=document.getElementById('gm-wa-modal');
+ if(!ov){
+  ov=document.createElement('div');ov.id='gm-wa-modal';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,24,30,.5);padding:18px';
+  ov.innerHTML='<div style="max-width:640px;width:100%;max-height:90vh;background:var(--paper,#fff);border:1px solid var(--border,#e5e0d8);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden">'
+   +'<div style="display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--border,#eee)"><span style="font-size:16px">📱</span><b id="gm-wa-title" style="font-size:14px;color:var(--ink,#22252b);flex:1">Conversa WhatsApp da casa</b><button type="button" onclick="gmWaClose()" style="border:none;background:transparent;font-size:22px;color:var(--ink3,#98928a);cursor:pointer">×</button></div>'
+   +'<div style="padding:14px 18px;overflow-y:auto;flex:1">'
+    +'<p style="font-size:12px;color:var(--ink3);margin:0 0 10px">Envie o arquivo <b>_chat.txt</b> exportado do WhatsApp (se veio .zip, descompacte primeiro) ou <b>cole o texto</b> abaixo. A IA gera um resumo e lista as pendências.</p>'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="file" id="gm-wa-file" accept=".txt,text/plain" onchange="gmWaFilePick()" style="font-size:12px"></div>'
+    +'<textarea id="gm-wa-text" placeholder="…ou cole aqui o conteúdo da conversa" style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border2);border-radius:8px;font-size:12px;font-family:monospace;background:var(--sand);color:var(--ink)"></textarea>'
+    +'<div style="text-align:right;margin-top:10px"><button type="button" id="gm-wa-submit" onclick="gmWaSubmit()" style="padding:9px 18px;border:none;border-radius:7px;background:#25d366;color:#083d20;font-size:12px;font-weight:700;cursor:pointer">Analisar e salvar no histórico</button></div>'
+    +'<div id="gm-wa-result" style="margin-top:14px"></div>'
+   +'</div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)gmWaClose();});
+  document.body.appendChild(ov);
+ }
+ var t=document.getElementById('gm-wa-title');if(t)t.textContent='Conversa WhatsApp'+(address?(' — '+address):'');
+ document.getElementById('gm-wa-text').value='';
+ var f=document.getElementById('gm-wa-file');if(f)f.value='';
+ document.getElementById('gm-wa-result').innerHTML='';
+ ov.style.display='flex';
+}
+function gmWaClose(){var ov=document.getElementById('gm-wa-modal');if(ov)ov.style.display='none';}
+function gmWaFilePick(){
+ var f=document.getElementById('gm-wa-file');if(!f||!f.files||!f.files[0])return;
+ var rd=new FileReader();rd.onload=function(){document.getElementById('gm-wa-text').value=String(rd.result||'');};rd.readAsText(f.files[0]);
+}
+window.gmWaUploadOpen=gmWaUploadOpen;window.gmWaClose=gmWaClose;window.gmWaFilePick=gmWaFilePick;
+async function gmWaSubmit(){
+ var text=(document.getElementById('gm-wa-text')||{}).value||'';
+ var res=document.getElementById('gm-wa-result');
+ if(text.trim().length<20){if(res)res.innerHTML='<span style="color:var(--red);font-size:12px">Cole o conteúdo da conversa ou selecione o _chat.txt.</span>';return;}
+ var btn=document.getElementById('gm-wa-submit');if(btn){btn.disabled=true;btn.textContent='Analisando…';}
+ if(res)res.innerHTML='<span style="color:var(--ink3);font-size:12px">Analisando a conversa com IA…</span>';
+ try{
+  var r=await fetch('/api/whatsapp/ingest',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:window.__gmWaPid,text:text})});
+  var j=await r.json();
+  if(!r.ok||!j.ok){if(res)res.innerHTML='<span style="color:var(--red);font-size:12px">'+((j&&j.error)||'Falha ao processar.')+'</span>';if(btn){btn.disabled=false;btn.textContent='Analisar e salvar no histórico';}return;}
+  res.innerHTML=gmWaRenderOverview(j);
+  if(btn){btn.disabled=false;btn.textContent='Analisar outra';}
+ }catch(e){if(res)res.innerHTML='<span style="color:var(--red);font-size:12px">Erro de rede.</span>';if(btn){btn.disabled=false;btn.textContent='Analisar e salvar no histórico';}}
+}
+window.gmWaSubmit=gmWaSubmit;
+function gmWaRenderOverview(j){
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ var p=j.parsed||{};var o=j.overview;
+ var head='<div style="background:#eafff1;border:1px solid #25d366;border-radius:8px;padding:10px 12px;font-size:12px;color:#0b7a3b;margin-bottom:10px">✓ Salvo no histórico da casa · '+(p.count||0)+' mensagens · '+((p.participants||[]).join(', '))+'</div>';
+ if(!o){return head+'<p style="font-size:12px;color:var(--ink3)">A conversa foi salva. (O resumo por IA não pôde ser gerado agora — a transcrição fica no histórico.)</p>';}
+ var items=(o.items||[]);
+ var rows=items.map(function(i){
+  var pend=i.status==='PENDENTE';
+  return '<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">'
+   +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;flex-shrink:0;'+(pend?'background:#fef3c7;color:#92400e':'background:#dcfce7;color:#166534')+'">'+(pend?'PENDENTE':'OK')+'</span>'
+   +'<div style="flex:1"><div style="font-size:12px;color:var(--ink)">'+esc(i.text)+'</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">'+esc(i.from||'')+' · '+esc(i.audience||'')+(i.date?(' · '+esc(i.date)):'')+'</div></div></div>';
+ }).join('');
+ return head
+  +(o.summary?'<div style="font-size:12.5px;color:var(--ink2);margin-bottom:8px"><b>Resumo:</b> '+esc(o.summary)+'</div>':'')
+  +'<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin:6px 0">Perguntas / pedidos ('+(o.pendingCount||0)+' pendente(s))</div>'
+  +(rows||'<p style="font-size:12px;color:var(--ink3)">Nenhum pedido/pergunta detectado.</p>');
+}
+window.gmWaRenderOverview=gmWaRenderOverview;
 // ---- Acesso financeiro (liberar/revogar QuickBooks p/ usuários) ----
 function gmFinAccessIsApprover(){var u=window.__gmCurrentUser;var r=String((u&&u.role)||'').toLowerCase();return r==='super_admin'||r==='admin';}
 function gmFinAccessBtnSync(){var b=document.getElementById('qb-fin-access-btn');if(b)b.style.display=gmFinAccessIsApprover()?'inline-flex':'none';}
@@ -27259,6 +27325,7 @@ function ltpEscClose(e){/* lock: tecla Esc nao fecha o modal Property */}
 function ltpOpenNewPropertyModal(){
  window.__ltpEditingRecord=null;
  var _cb=document.getElementById('ltp-comments-btn');if(_cb)_cb.style.display='none';
+ var _wa=document.getElementById('ltp-wa-btn');if(_wa)_wa.style.display='none';
  ltpPrevFocus=document.activeElement;
  ltpResetPhotoStaging();
  ltpNetManual=false;
@@ -27393,7 +27460,10 @@ window.ltpOpenEditProperty._populate=function(r){
  setTimeout(function(){if(typeof ltpUpdateStatusAutoDisplay==='function')ltpUpdateStatusAutoDisplay();},0);
  var t=document.getElementById('ltp-modal-title');if(t)t.textContent='Editar Propriedade';
  var cbtn=document.getElementById('ltp-comments-btn');
- if(cbtn){var pid=String((r&&(r._apiId||r.id))||'');if(pid){cbtn.style.display='inline-flex';cbtn.onclick=function(){if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY',pid,{title:'Comentários / histórico da casa'});};}else{cbtn.style.display='none';}}
+ var wabtn=document.getElementById('ltp-wa-btn');
+ var _pid=String((r&&(r._apiId||r.id))||'');
+ if(cbtn){if(_pid){cbtn.style.display='inline-flex';cbtn.onclick=function(){if(typeof gmCommentsOpen==='function')gmCommentsOpen('PROPERTY',_pid,{title:'Comentários / histórico da casa'});};}else{cbtn.style.display='none';}}
+ if(wabtn){if(_pid){wabtn.style.display='inline-flex';var _addr=String((r&&r.address)||'');wabtn.onclick=function(){gmWaUploadOpen(_pid,_addr);};}else{wabtn.style.display='none';}}
  document.body.style.overflow='hidden';
  document.getElementById('ltp-property-modal').style.display='flex';
 };
