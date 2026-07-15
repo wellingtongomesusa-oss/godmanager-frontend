@@ -228,10 +228,22 @@ export async function qbCreateInvoice(
   };
   const res = await qbCreate(clientId, 'invoice', body);
   const inv = res?.Invoice as Record<string, unknown> | undefined;
+  const id = String(inv?.Id ?? '');
+  let invoiceLink = inv?.InvoiceLink ? String(inv.InvoiceLink) : null;
+  // O QuickBooks NÃO devolve o InvoiceLink na resposta do create — só numa leitura
+  // com include=invoiceLink. Como criamos com pagamento online ligado, buscamos o link.
+  if (!invoiceLink && id) {
+    try {
+      const g = await qbGetInvoiceLink(clientId, id);
+      invoiceLink = g.link;
+    } catch {
+      /* mantém null; o gestor pode gerar/colar depois */
+    }
+  }
   return {
-    id: String(inv?.Id ?? ''),
+    id,
     docNumber: inv?.DocNumber ? String(inv.DocNumber) : null,
-    invoiceLink: inv?.InvoiceLink ? String(inv.InvoiceLink) : null,
+    invoiceLink,
   };
 }
 
@@ -392,6 +404,45 @@ export async function qbRecentExpenses(clientId: string, limit = 25): Promise<Qb
 
   rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return rows.slice(0, limit);
+}
+
+export type QbLinkStatsMonth = { month: string; generated: number; paid: number; generatedAmount: number; paidAmount: number };
+
+/**
+ * Estatística de links de pagamento por mês: quantas invoices com pagamento online
+ * (link) foram geradas e quantas já foram pagas (Balance = 0). Últimos ~6 meses.
+ */
+export async function qbInvoiceLinkStats(clientId: string, months = 6): Promise<QbLinkStatsMonth[]> {
+  const now = new Date();
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+  const fromStr = `${from.getUTCFullYear()}-${String(from.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  const json = (await qbRead(
+    clientId,
+    `query?query=${encodeURIComponent(`select * from Invoice where TxnDate >= '${fromStr}' orderby TxnDate desc maxresults 1000`)}`,
+  )) as { QueryResponse?: { Invoice?: Array<Record<string, unknown>> } };
+
+  const buckets = new Map<string, QbLinkStatsMonth>();
+  for (let i = 0; i < months; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    const m = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    buckets.set(m, { month: m, generated: 0, paid: 0, generatedAmount: 0, paidAmount: 0 });
+  }
+  for (const inv of json?.QueryResponse?.Invoice || []) {
+    const online = inv?.AllowOnlineACHPayment === true || inv?.AllowOnlineCreditCardPayment === true;
+    if (!online) continue;
+    const m = String(inv?.TxnDate || '').slice(0, 7);
+    const b = buckets.get(m);
+    if (!b) continue;
+    const total = numVal(inv?.TotalAmt);
+    const balance = numVal(inv?.Balance);
+    b.generated += 1;
+    b.generatedAmount += total;
+    if (balance <= 0) {
+      b.paid += 1;
+      b.paidAmount += total;
+    }
+  }
+  return Array.from(buckets.values()).sort((a, b) => (a.month < b.month ? 1 : -1));
 }
 
 export type QbTxnDetail = {

@@ -3043,6 +3043,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <div class="gm-ix-kpi k2"><div class="k-l">Total a Receber</div><div class="k-v" id="apar-kpi-ar"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Invoices em aberto</div><div class="k-bar"></div></div>
   <div class="gm-ix-kpi k3"><div class="k-l">A Receber Vencido</div><div class="k-v" id="apar-kpi-aro"><span class="gm-sk" style="display:inline-block;width:100px;height:22px"></span></div><div class="k-s">Passou do vencimento</div><div class="k-bar"></div></div>
  </div>
+ <div id="apar-linkstats" style="margin:4px 0 14px"></div>
  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:4px 0 12px">
   <div>
    <label style="display:block;font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:3px">FORNECEDOR / CLIENTE</label>
@@ -8193,6 +8194,7 @@ window.gmApArTab=gmApArTab;
 async function gmApArLoad(){
  var apK=document.getElementById('apar-kpi-ap');if(!apK)return;
  var _ichip=document.getElementById('apar-integ-chip');if(_ichip&&typeof gmIntegRulesChip==='function')_ichip.innerHTML=gmIntegRulesChip('quickbooks_payments','Custos e prazos');
+ if(typeof gmApArLinkStats==='function')void gmApArLinkStats();
  var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
  var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
  var nc=document.getElementById('apar-notconn');
@@ -8352,6 +8354,28 @@ async function gmApArDetail(type,id){
  }catch(e){if(typeof gmInfoPop==='function')gmInfoPop('Detalhe','Erro de rede ao buscar o detalhamento.','warn');}
 }
 window.gmApArDetail=gmApArDetail;
+async function gmApArLinkStats(){
+ var host=document.getElementById('apar-linkstats');if(!host)return;
+ var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});};
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var r=await fetch('/api/quickbooks/link-stats'+q,{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok||!j.connected||!j.stats||!j.stats.length){host.innerHTML='';return;}
+  var monLbl=function(m){var p=String(m).split('-');var n=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return (n[parseInt(p[1],10)]||p[1])+'/'+String(p[0]).slice(2);};
+  var cards=j.stats.map(function(s){
+   var pct=s.generated>0?Math.round((s.paid/s.generated)*100):0;
+   return '<div style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:10px;background:var(--paper);padding:10px 12px">'
+    +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+monLbl(s.month)+'</div>'
+    +'<div style="font-size:16px;font-weight:800;color:var(--ink);margin-top:2px">'+s.generated+' <span style="font-size:10px;font-weight:600;color:var(--ink3)">links</span></div>'
+    +'<div style="font-size:11px;color:#166534;margin-top:2px">✓ '+s.paid+' pagos ('+pct+'%)</div>'
+    +'<div style="font-size:10px;color:var(--ink3);margin-top:3px">'+fmt(s.paidAmount)+' de '+fmt(s.generatedAmount)+'</div>'
+    +'</div>';
+  }).join('');
+  host.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Links de pagamento por mês</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+cards+'</div>';
+ }catch(e){host.innerHTML='';}
+}
+window.gmApArLinkStats=gmApArLinkStats;
 window.__gmApArSort={ap:{key:'',dir:1},ar:{key:'',dir:1}};
 function gmApArSort(which,key){
  var st=window.__gmApArSort[which];if(!st)return;
@@ -8921,7 +8945,7 @@ async function gmQbCreateInvoice(){
    if(j.invoiceLink){
     out.innerHTML='<span style="color:#2a6e4e">'+gmHtmlEscAttr(txt)+'</span> <a href="'+gmHtmlEscAttr(j.invoiceLink)+'" target="_blank" rel="noopener" style="color:#2ca01c;font-weight:700">Link de pagamento ↗</a> <button type="button" onclick="gmQbCopyLink(this,\''+gmHtmlEscAttr(j.invoiceLink)+'\')" style="padding:3px 9px;border:1px solid var(--border2);border-radius:5px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer">Copiar link</button>';
    }else{
-    out.innerHTML='<span style="color:#2a6e4e">'+gmHtmlEscAttr(txt)+'</span> <span style="color:var(--ink3)">(sem link — ative QuickBooks Payments no QBO)</span>';
+    out.innerHTML='<span style="color:#2a6e4e">'+gmHtmlEscAttr(txt)+'</span> <span style="color:var(--ink3)">A invoice já saiu com pagamento online ligado. Se o link não apareceu aqui, abra a invoice no QuickBooks e use “Share link” — ou pegue o link em A Pagar/Receber (botão Gerar link).</span>';
    }
   }
   var amtEl=document.getElementById('qb-inv-amount');if(amtEl)amtEl.value='';
