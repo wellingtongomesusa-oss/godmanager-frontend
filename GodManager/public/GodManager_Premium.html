@@ -2971,7 +2971,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div id="qb-invoice-panel" style="display:none;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden">
   <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#2ca01c">Criar invoice (com link de pagamento)</div>
-   <span id="qb-inv-status" style="font-size:11px;color:var(--ink3)">—</span>
+   <div style="display:flex;align-items:center;gap:8px"><button type="button" onclick="gmIntegRulesOpen('quickbooks_payments')" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border:1px solid var(--border2);border-radius:999px;background:var(--paper);color:var(--ink3);font-size:10px;font-weight:600;cursor:pointer"><span>ⓘ</span>Custos e prazos</button><span id="qb-inv-status" style="font-size:11px;color:var(--ink3)">—</span></div>
   </div>
   <div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
    <div>
@@ -3034,7 +3034,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <div class="pt" style="font-family:'Sora',sans-serif">A Pagar / Receber — QuickBooks</div>
    <div class="ps" id="apar-sub">Bills e Invoices em aberto direto do QuickBooks (ao vivo). Para faturas criadas no site, use <b>Invoice / Bill</b>.</div>
   </div>
-  <div class="gm-ix-actions"><button type="button" class="btn-gm-ix" onclick="gmApArLoad()">Atualizar</button></div>
+  <div class="gm-ix-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="apar-integ-chip"></span><button type="button" class="btn-gm-ix" onclick="gmApArLoad()">Atualizar</button></div>
  </div>
  <div id="apar-notconn" style="display:none;margin-bottom:16px;border:1px solid #fed7aa;background:#fff7ed;border-radius:10px;padding:14px 16px;font-size:12.5px;color:#b45309">QuickBooks não está conectado. Conecte em <b>Integrações → QuickBooks</b> para ver as contas a pagar e a receber.</div>
  <div class="gm-ix-kpi-grid" id="apar-kpi-wrap">
@@ -6383,7 +6383,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <div style="display:flex;align-items:center;gap:10px;min-width:0">
      <span id="rec-bank-dot" style="width:10px;height:10px;border-radius:50%;background:var(--ink3);flex-shrink:0"></span>
      <div>
-      <div style="font-size:12px;font-weight:700;color:var(--ink)">Banco (Plaid)</div>
+      <div style="font-size:12px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px">Banco (Plaid) <button type="button" onclick="gmIntegRulesOpen('plaid')" title="Status e prazos do Plaid" style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border:1px solid var(--border2);border-radius:999px;background:var(--paper);color:var(--ink3);font-size:9px;font-weight:600;cursor:pointer">ⓘ status</button></div>
       <div id="rec-bank-desc" style="font-size:11px;color:var(--ink3)">Verificando…</div>
      </div>
     </div>
@@ -8192,6 +8192,7 @@ function gmApArTab(which){
 window.gmApArTab=gmApArTab;
 async function gmApArLoad(){
  var apK=document.getElementById('apar-kpi-ap');if(!apK)return;
+ var _ichip=document.getElementById('apar-integ-chip');if(_ichip&&typeof gmIntegRulesChip==='function')_ichip.innerHTML=gmIntegRulesChip('quickbooks_payments','Custos e prazos');
  var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
  var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
  var nc=document.getElementById('apar-notconn');
@@ -8488,6 +8489,37 @@ function gmInfoChip(title,html,kind,label){
   +'<span style="font-size:11px">ⓘ</span>'+(label||'Lembrete')+'</button>';
 }
 window.gmInfoChip=gmInfoChip;
+// ---- Regras/custos/prazos das integrações financeiras (popup no ponto de uso) ----
+var GM_INTEG_RULES={
+ quickbooks_payments:{title:'QuickBooks Payments — custos e prazos',icon:'irs',html:
+  '<b>Taxas por transação:</b>'
+  +'<table style="width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12px">'
+  +'<tr><td style="padding:3px 6px;border-bottom:1px solid var(--border)">Link na invoice (cartão)</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);text-align:right;font-weight:700">2,99%</td></tr>'
+  +'<tr><td style="padding:3px 6px;border-bottom:1px solid var(--border)">ACH (transferência bancária)</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);text-align:right;font-weight:700">1%</td></tr>'
+  +'<tr><td style="padding:3px 6px;border-bottom:1px solid var(--border)">Cartão digitado (keyed)</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);text-align:right">3,5%</td></tr>'
+  +'<tr><td style="padding:3px 6px;border-bottom:1px solid var(--border)">Presencial</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);text-align:right">2,5%</td></tr>'
+  +'<tr><td style="padding:3px 6px;border-bottom:1px solid var(--border)">PayPal / Venmo · Affirm</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);text-align:right">2,99%</td></tr>'
+  +'</table>'
+  +'<b>Prazos de depósito:</b><br>• Cartão: <b>1 dia útil</b> · ACH: <b>1–5 dias úteis</b>.<br><br>'
+  +'<b>Limite:</b> US$ 300.000 a cada 30 dias.<br>'
+  +'<b>Depósito cai em:</b> Chase ••6352 (conta Operating).<br><br>'
+  +'<i>Dica: o cliente pagando por <b>ACH (1%)</b> em vez de cartão (2,99%) reduz muito o custo. Alguns depósitos podem exigir lançamento manual como Bank Deposit (conciliação).</i>'},
+ plaid:{title:'Plaid — status e prazos',icon:'frec',html:
+  'Usado para puxar saldos/transações do banco e (futuramente) transferências.<br><br>'
+  +'<b>Status atual:</b><br>• Production: <b>em análise</b> (2 de 4 etapas).<br>• Faltam: <i>Apply for Signal</i> e <i>Security diligence questionnaire</i>.<br>• Produto <b>Transfer: não elegível</b> ainda.<br><br>'
+  +'<i>Enquanto não aprovar, pagamentos/transferências por Plaid ficam indisponíveis. Saldos/transações de leitura funcionam quando o banco está vinculado.</i>'},
+ boompay:{title:'BoomPay — integração',icon:'info',html:
+  'O portal do BoomPay <b>não expõe API</b> self-service (sem API keys, sem webhooks, sem docs).<br><br>'
+  +'Para integrar (ver retornos/lançar no site) é preciso <b>solicitar acesso de API ao time da Boom</b> (Support/comercial). Sem isso, não há integração por código.'}
+};
+function gmIntegRulesOpen(key){
+ var r=GM_INTEG_RULES[key];if(!r){return;}
+ if(typeof gmInfoPop==='function')gmInfoPop(r.title,r.html,r.icon||'info');
+}
+function gmIntegRulesChip(key,label){
+ return '<button type="button" onclick="gmIntegRulesOpen(\''+key+'\')" style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid var(--border2);border-radius:999px;background:var(--cream);color:var(--ink3);font-size:10px;font-weight:600;cursor:pointer;line-height:1.6"><span style="font-size:11px">ⓘ</span>'+(label||'Custos e prazos')+'</button>';
+}
+window.gmIntegRulesOpen=gmIntegRulesOpen;window.gmIntegRulesChip=gmIntegRulesChip;
 // ---- Guia Bookkeeping FL (manual oficial) — popup com markdown ----
 window.__gmGuideMd=null;
 function gmGuideMdToHtml(md){
