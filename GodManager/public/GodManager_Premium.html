@@ -30533,10 +30533,20 @@ function gmJobsGetDateRange(){
 
 function gmJobsRowDateStr(r){
  if(!r) return '';
- var d=r.serviceDate||r.date||r.createdAt||r.savedAt||'';
+ var d=r.serviceDate||r.scheduledDate||r.due||r.dueDate||r.date||r.createdAt||r.savedAt||'';
  if(!d) return '';
  return String(d).slice(0,10);
 }
+// Todas as datas candidatas de um job (para o filtro de data não esconder jobs
+// cuja data de agendamento está em outro campo que não serviceDate).
+function gmJobsRowDatesForFilter(r){
+ var out=[];
+ ['serviceDate','scheduledDate','due','dueDate','date','savedAt','createdAt'].forEach(function(k){
+  if(r&&r[k]){var d=String(r[k]).slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&out.indexOf(d)<0)out.push(d);}
+ });
+ return out;
+}
+window.gmJobsRowDatesForFilter=gmJobsRowDatesForFilter;
 
 window.gmJobsSetDateFilter=function(f,custom){
  window.__jobsDateFilter=f;
@@ -31127,10 +31137,14 @@ function jobsFilteredExpensesCore(){
   else if(jobsVendorSourceStr(r)){passType=true;}
   if(!passType)return false;
   if(range.from || range.to){
-   var rd=gmJobsRowDateStr(r);
-   if(!rd)return false;
-   if(range.from && rd<range.from)return false;
-   if(range.to && rd>range.to)return false;
+   var rds=(typeof gmJobsRowDatesForFilter==='function')?gmJobsRowDatesForFilter(r):[gmJobsRowDateStr(r)].filter(Boolean);
+   if(!rds.length)return false;
+   var _inRange=rds.some(function(rd){
+    if(range.from && rd<range.from)return false;
+    if(range.to && rd>range.to)return false;
+    return true;
+   });
+   if(!_inRange)return false;
   }
   if(vendorFilter){
    var rv=jobsVendorSourceStr(r);
