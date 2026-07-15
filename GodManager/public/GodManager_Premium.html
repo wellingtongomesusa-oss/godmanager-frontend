@@ -5422,6 +5422,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  <button type="button" id="osd-preview-pdf" onclick="if(typeof osdPreviewPdf==='function')osdPreviewPdf()" title="Abrir PDF para visualização" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Visualizar PDF</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
+ <button type="button" id="osd-export-list" onclick="if(typeof osdExportListOpen==='function')osdExportListOpen()" title="Extrair todos os statements do mes em tabela e CSV" style="padding:8px 14px;background:var(--paper);color:var(--ink);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Extrair statements</button>
  </div>
  <div id="osd-toolbar-close" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;flex-shrink:0">
  <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
@@ -5431,6 +5432,21 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  </div>
  <div id="osd-closing-summary" style="display:none;border-bottom:1px solid var(--border)"></div>
+ <div id="osd-export-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto">
+  <div style="background:var(--paper);border-radius:10px;max-width:1000px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--cream)">
+    <div>
+     <div style="font-size:15px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif">Extração de statements — <span id="osd-export-month"></span></div>
+     <div style="font-size:11px;color:var(--ink3);margin-top:2px">Totais por casa: créditos, débitos e NET a pagar ao owner.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+     <button type="button" onclick="if(typeof osdExportListCsv==='function')osdExportListCsv()" style="padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar CSV</button>
+     <button type="button" onclick="var m=document.getElementById('osd-export-modal');if(m)m.style.display='none'" style="padding:8px 14px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif">Fechar</button>
+    </div>
+   </div>
+   <div id="osd-export-body" style="max-height:70vh;overflow:auto"></div>
+  </div>
+ </div>
  <div style="overflow-x:auto">
  <table style="width:100%;border-collapse:collapse;min-width:920px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
@@ -15251,6 +15267,77 @@ window.osdWoPostToStatement=async function(expenseId){
   // Recarrega o statement inteiro: a linha aparece no Statement e a WO vira "✓ No statement".
   if(typeof osdLoadStatement==='function')await osdLoadStatement();
  }catch(err){console.error(err);alert('Falha ao lançar no statement.');}
+};
+
+// Extracao de todos os statements do mes (uma linha por casa) em tabela e CSV. Somente leitura.
+window.__osdExportRows=[];
+window.osdExportListOpen=async function(){
+ var ymSel=document.getElementById('osd-period');
+ var ym=(ymSel&&/^\d{4}-\d{2}$/.test(ymSel.value))?ymSel.value:((typeof osdYearMonthCurrent==='function')?osdYearMonthCurrent():new Date().toISOString().slice(0,7));
+ var cid=(typeof gmClientUsersResolveScopeId==='function')?gmClientUsersResolveScopeId():'';
+ var modal=document.getElementById('osd-export-modal');
+ var body=document.getElementById('osd-export-body');
+ var mlbl=document.getElementById('osd-export-month');
+ var fmt=window.osdFmtCurrency||function(n){return '$'+Number(n||0).toFixed(2);};
+ var esc=window.osdEscHtml||function(s){return String(s==null?'':s);};
+ if(mlbl)mlbl.textContent=((typeof window.osdFmtPeriod==='function')?window.osdFmtPeriod(ym):ym)+' ('+ym+')';
+ if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3);font-family:\'Inter\',sans-serif;font-size:12px">Carregando...</div>';
+ if(modal)modal.style.display='flex';
+ try{
+  var url='/api/manager-pro/owner-statement/export-list?yearMonth='+encodeURIComponent(ym)+(cid?('&clientId='+encodeURIComponent(cid)):'');
+  var res=await fetch(url,{credentials:'same-origin',cache:'no-store'});
+  var data={};try{data=await res.json();}catch(pe){data={};}
+  if(!res.ok||!data.ok){if(body)body.innerHTML='<div style="padding:24px;color:var(--red);font-family:\'Inter\',sans-serif;font-size:12px">'+esc((data&&data.error)||('Erro '+res.status))+'</div>';return;}
+  window.__osdExportRows=data.rows||[];
+  window.__osdExportMonth=ym;
+  window.__osdExportTotals=data.totals||{credits:0,debits:0,net:0};
+  if(!data.rows||!data.rows.length){if(body)body.innerHTML='<div style="padding:24px;color:var(--ink3);font-family:\'Inter\',sans-serif;font-size:12px">Nenhum statement neste mes.</div>';return;}
+  var thBase='padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);font-family:\'Inter\',sans-serif;position:sticky;top:0;background:var(--cream);border-bottom:1px solid var(--border)';
+  var h='<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:\'Inter\',sans-serif">';
+  h+='<thead><tr>';
+  h+='<th style="text-align:left;'+thBase+'">Casa</th>';
+  h+='<th style="text-align:left;'+thBase+'">Endereco</th>';
+  h+='<th style="text-align:left;'+thBase+'">Owner</th>';
+  h+='<th style="text-align:right;'+thBase+'">Creditos</th>';
+  h+='<th style="text-align:right;'+thBase+'">Debitos</th>';
+  h+='<th style="text-align:right;'+thBase+'">NET a pagar</th>';
+  h+='<th style="text-align:center;'+thBase+'">Status</th>';
+  h+='</tr></thead><tbody>';
+  data.rows.forEach(function(r){
+   var net=Number(r.net||0);
+   h+='<tr style="border-bottom:1px solid var(--border)">';
+   h+='<td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(r.code)+'</td>';
+   h+='<td style="padding:8px 12px;color:var(--ink)">'+esc(r.address)+'</td>';
+   h+='<td style="padding:8px 12px;color:var(--ink2)">'+esc(r.ownerName||'-')+'</td>';
+   h+='<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+esc(fmt(Number(r.credits||0)))+'</td>';
+   h+='<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">'+esc(fmt(Number(r.debits||0)))+'</td>';
+   h+='<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:'+(net>=0?'var(--ink)':'var(--red)')+'">'+esc(fmt(net))+'</td>';
+   h+='<td style="padding:8px 12px;text-align:center;color:var(--ink2)">'+esc(r.status||'-')+'</td>';
+   h+='</tr>';
+  });
+  var t=window.__osdExportTotals;
+  h+='</tbody><tfoot><tr style="border-top:2px solid var(--ink);background:var(--cream)">';
+  h+='<td colspan="3" style="padding:11px 12px;font-weight:700;color:var(--ink)">TOTAL ('+data.count+' casa'+(data.count===1?'':'s')+')</td>';
+  h+='<td style="padding:11px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:var(--green)">'+esc(fmt(Number(t.credits||0)))+'</td>';
+  h+='<td style="padding:11px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:var(--red)">'+esc(fmt(Number(t.debits||0)))+'</td>';
+  h+='<td style="padding:11px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:800;color:var(--ink)">'+esc(fmt(Number(t.net||0)))+'</td>';
+  h+='<td></td></tr></tfoot></table>';
+  if(body)body.innerHTML=h;
+ }catch(e){console.error(e);if(body)body.innerHTML='<div style="padding:24px;color:var(--red);font-family:\'Inter\',sans-serif;font-size:12px">Falha ao carregar.</div>';}
+};
+window.osdExportListCsv=function(){
+ var rows=window.__osdExportRows||[];
+ if(!rows.length){alert('Nada para exportar.');return;}
+ var ym=window.__osdExportMonth||'';
+ var q=function(v){var s=String(v==null?'':v);return /[",\n;]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var lines=['Casa,Endereco,Owner,Creditos,Debitos,NET a pagar,Status'];
+ rows.forEach(function(r){
+  lines.push([q(r.code),q(r.address),q(r.ownerName),Number(r.credits||0).toFixed(2),Number(r.debits||0).toFixed(2),Number(r.net||0).toFixed(2),q(r.status)].join(','));
+ });
+ var t=window.__osdExportTotals||{credits:0,debits:0,net:0};
+ lines.push(['TOTAL','','',Number(t.credits||0).toFixed(2),Number(t.debits||0).toFixed(2),Number(t.net||0).toFixed(2),''].join(','));
+ var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='statements_'+ym+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
 };
 
 window.osdLoadStatement=async function(){
