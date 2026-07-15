@@ -8275,12 +8275,53 @@ async function gmApArGetLink(invoiceId,btn){
   var j=await r.json();
   if(j&&j.ok&&j.link){gmApArSetLink(invoiceId,j.link);window.open(j.link,'_blank','noopener');return;}
   if(btn){btn.disabled=false;btn.textContent=orig;}
-  if(typeof gmInfoPop==='function'){
-   gmInfoPop('Ativar o QuickBooks Payments','O QuickBooks só gera link de pagamento se o <b>QuickBooks Payments</b> estiver ativo na sua conta. Como ativar:<br><br>1. Entre no <b>QuickBooks Online</b> (conta Manager Prop).<br>2. Engrenagem ⚙ → <b>Account and Settings</b> → aba <b>Payments</b>.<br>3. Clique em <b>Set up Payments</b> e preencha (EIN, dados do responsável, conta bancária).<br>4. Após a aprovação da Intuit, o botão <b>Gerar link</b> passa a funcionar sozinho — sem mexer em mais nada aqui.<br><br><i>É um serviço de merchant (pago) da Intuit; a aprovação leva de minutos a alguns dias.</i>','irs');
-  }else{alert((j&&(j.message||j.error))||'Ative o QuickBooks Payments no QuickBooks Online.');}
+  // sem link automático → deixa o gestor COLAR o link que gerou dentro do QuickBooks
+  gmApArPasteLink(invoiceId);
  }catch(e){if(btn){btn.disabled=false;btn.textContent=orig;}alert('Erro de rede ao gerar o link.');}
 }
 window.gmApArGetLink=gmApArGetLink;
+function gmApArPasteLink(invoiceId){
+ var ov=document.getElementById('gm-aparlink-modal');
+ if(!ov){
+  ov=document.createElement('div');ov.id='gm-aparlink-modal';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,24,30,.5);padding:18px';
+  ov.innerHTML='<div style="max-width:460px;width:100%;background:var(--paper,#fff);border:1px solid var(--border,#e5e0d8);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.3);overflow:hidden">'
+   +'<div style="display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--border,#eee)"><span style="font-size:16px">🔗</span><b style="font-size:13px;color:var(--ink);flex:1">Link de pagamento (QuickBooks)</b><button type="button" onclick="gmApArPasteClose()" style="border:none;background:transparent;font-size:20px;color:var(--ink3);cursor:pointer">×</button></div>'
+   +'<div style="padding:14px 16px">'
+    +'<p style="font-size:12px;color:var(--ink2);margin:0 0 10px;line-height:1.5">Dentro do <b>QuickBooks Online</b>, abra esta invoice e use <b>“Share link”</b> / <b>“Get link”</b> (ou envie a invoice) para gerar o link de pagamento. <b>Cole o link aqui</b> — ele fica salvo nesta conta e vira o botão “Abrir ↗”.</p>'
+    +'<input id="gm-aparlink-input" placeholder="https://…" style="width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:7px;font-size:12px;background:var(--sand);color:var(--ink)">'
+    +'<div id="gm-aparlink-msg" style="font-size:11px;color:var(--ink3);margin-top:6px"></div>'
+    +'<div style="text-align:right;margin-top:12px"><button type="button" onclick="gmApArPasteClose()" style="padding:8px 14px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;margin-right:8px">Cancelar</button><button type="button" id="gm-aparlink-save" onclick="gmApArSaveLink()" style="padding:8px 16px;border:none;border-radius:7px;background:#2ca01c;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Salvar e abrir</button></div>'
+   +'</div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)gmApArPasteClose();});
+  document.body.appendChild(ov);
+ }
+ ov.setAttribute('data-inv',String(invoiceId));
+ var inp=document.getElementById('gm-aparlink-input');if(inp)inp.value='';
+ var msg=document.getElementById('gm-aparlink-msg');if(msg)msg.textContent='';
+ ov.style.display='flex';
+ if(inp)setTimeout(function(){inp.focus();},60);
+}
+function gmApArPasteClose(){var ov=document.getElementById('gm-aparlink-modal');if(ov)ov.style.display='none';}
+window.gmApArPasteLink=gmApArPasteLink;window.gmApArPasteClose=gmApArPasteClose;
+async function gmApArSaveLink(){
+ var ov=document.getElementById('gm-aparlink-modal');var invoiceId=ov?ov.getAttribute('data-inv'):'';
+ var url=((document.getElementById('gm-aparlink-input')||{}).value||'').trim();
+ var msg=document.getElementById('gm-aparlink-msg');
+ if(!/^https:\/\/\S+/.test(url)){if(msg){msg.textContent='Cole um link válido (começa com https://).';msg.style.color='var(--red)';}return;}
+ var sv=document.getElementById('gm-aparlink-save');if(sv){sv.disabled=true;sv.textContent='Salvando…';}
+ try{
+  var q=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};
+  q.id=invoiceId;q.url=url;
+  var r=await fetch('/api/quickbooks/invoice-link',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(q)});
+  var j=await r.json();
+  if(!r.ok||!j.ok){if(msg){msg.textContent=(j&&j.error)||'Falha ao salvar.';msg.style.color='var(--red)';}if(sv){sv.disabled=false;sv.textContent='Salvar e abrir';}return;}
+  gmApArSetLink(invoiceId,j.link||url);
+  gmApArPasteClose();
+  window.open(j.link||url,'_blank','noopener');
+ }catch(e){if(msg){msg.textContent='Erro de rede.';msg.style.color='var(--red)';}if(sv){sv.disabled=false;sv.textContent='Salvar e abrir';}}
+}
+window.gmApArSaveLink=gmApArSaveLink;
 async function gmApArDetail(type,id){
  if(!id)return;
  var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
