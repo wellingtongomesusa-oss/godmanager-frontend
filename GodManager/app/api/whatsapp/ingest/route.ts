@@ -58,7 +58,8 @@ export async function POST(req: Request) {
   if (text.trim().length < 20) return NextResponse.json({ ok: false, error: 'Conteúdo da conversa muito curto ou vazio.' }, { status: 400 });
 
   const scopeUser = toClientScopeUser(user);
-  const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, clientId: true, address: true, code: true } });
+  let property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, clientId: true, address: true, code: true } });
+  if (!property) property = await prisma.property.findFirst({ where: { code: propertyId }, select: { id: true, clientId: true, address: true, code: true } });
   if (!property) return NextResponse.json({ ok: false, error: 'Propriedade não encontrada.' }, { status: 404 });
   if (!canAccessClientId(scopeUser, property.clientId)) return NextResponse.json({ ok: false, error: 'Sem acesso a esta propriedade.' }, { status: 403 });
 

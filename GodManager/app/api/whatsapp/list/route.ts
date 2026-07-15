@@ -18,12 +18,13 @@ export async function GET(req: Request) {
   if (!propertyId) return NextResponse.json({ ok: false, error: 'propertyId obrigatório.' }, { status: 400 });
 
   const scopeUser = toClientScopeUser(user);
-  const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { clientId: true } });
+  let property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, clientId: true } });
+  if (!property) property = await prisma.property.findFirst({ where: { code: propertyId }, select: { id: true, clientId: true } });
   if (!property) return NextResponse.json({ ok: false, error: 'Propriedade não encontrada.' }, { status: 404 });
   if (!canAccessClientId(scopeUser, property.clientId)) return NextResponse.json({ ok: false, error: 'Sem acesso.' }, { status: 403 });
 
   const rows = await prisma.comment.findMany({
-    where: { entityType: 'PROPERTY', entityId: propertyId, deletedAt: null },
+    where: { entityType: 'PROPERTY', entityId: property.id, deletedAt: null },
     orderBy: { createdAt: 'desc' },
     select: { id: true, createdAt: true, metadata: true },
   });
