@@ -5422,7 +5422,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-send-individual" onclick="if(typeof osdSendOwnerStatement==='function')osdSendOwnerStatement()" title="Envia PDF por e-mail ao owner" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Enviar e-mail ao Owner</button>
  <button type="button" id="osd-preview-pdf" onclick="if(typeof osdPreviewPdf==='function')osdPreviewPdf()" title="Abrir PDF para visualização" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Visualizar PDF</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
- <button type="button" id="osd-net-list" onclick="if(typeof osdNetListOpen==='function')osdNetListOpen()" title="Lista de todas as casas do mês com o NET a pagar a cada owner" style="padding:8px 14px;background:#1e7e46;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">📋 NET por owner (mês)</button>
  </div>
  <div id="osd-toolbar-close" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;flex-shrink:0">
  <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
@@ -5432,22 +5431,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  </div>
  <div id="osd-closing-summary" style="display:none;border-bottom:1px solid var(--border)"></div>
- <!-- Modal: lista de NET por owner (todas as casas do mês) -->
- <div id="osd-netlist-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto">
-  <div style="background:var(--paper);border-radius:12px;max-width:960px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--cream)">
-    <div>
-     <div style="font-size:15px;font-weight:700;color:var(--ink)">NET por owner — <span id="osd-netlist-month"></span></div>
-     <div style="font-size:11px;color:var(--ink3);margin-top:2px">Valor a pagar a cada owner (NET real do ledger de cada casa).</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-     <button type="button" onclick="if(typeof osdNetListExportCsv==='function')osdNetListExportCsv()" style="padding:7px 14px;background:#1e7e46;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Baixar CSV</button>
-     <button type="button" onclick="var m=document.getElementById('osd-netlist-modal');if(m)m.style.display='none'" style="padding:7px 12px;background:var(--sand);color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:11px;cursor:pointer">Fechar</button>
-    </div>
-   </div>
-   <div id="osd-netlist-body" style="max-height:70vh;overflow:auto;padding:0"></div>
-  </div>
- </div>
  <div style="overflow-x:auto">
  <table style="width:100%;border-collapse:collapse;min-width:920px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
@@ -15251,70 +15234,6 @@ window.osdRenderWorkOrders=async function(){
   console.warn('osdRenderWorkOrders',e);
   wrap.innerHTML='<div style="opacity:.6;font-size:13px;padding:8px 14px;color:var(--ink3)">Erro ao carregar work orders.</div>';
  }
-};
-
-// Lista o NET (valor a pagar ao owner) de TODAS as casas do mês selecionado, com export CSV.
-window.__osdNetListRows=[];
-window.osdNetListOpen=async function(){
- var ymSel=document.getElementById('osd-period');
- var ym=(ymSel&&/^\d{4}-\d{2}$/.test(ymSel.value))?ymSel.value:((typeof osdYearMonthCurrent==='function')?osdYearMonthCurrent():new Date().toISOString().slice(0,7));
- var cid=(typeof gmClientUsersResolveScopeId==='function')?gmClientUsersResolveScopeId():'';
- var modal=document.getElementById('osd-netlist-modal');
- var body=document.getElementById('osd-netlist-body');
- var mlbl=document.getElementById('osd-netlist-month');
- var fmt=window.osdFmtCurrency||function(n){return '$'+Number(n||0).toFixed(2);};
- var esc=window.osdEscHtml||function(s){return String(s==null?'':s);};
- if(mlbl)mlbl.textContent=((typeof window.osdFmtPeriod==='function')?window.osdFmtPeriod(ym):ym)+' ('+ym+')';
- if(body)body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3)">Carregando…</div>';
- if(modal)modal.style.display='flex';
- try{
-  var url='/api/manager-pro/owner-statement/net-list?yearMonth='+encodeURIComponent(ym)+(cid?('&clientId='+encodeURIComponent(cid)):'');
-  var res=await fetch(url,{credentials:'same-origin',cache:'no-store'});
-  var data={};try{data=await res.json();}catch(pe){data={};}
-  if(!res.ok||!data.ok){if(body)body.innerHTML='<div style="padding:24px;color:var(--red)">'+esc((data&&data.error)||('Erro '+res.status))+'</div>';return;}
-  window.__osdNetListRows=data.rows||[];
-  window.__osdNetListMonth=ym;
-  if(!data.rows||!data.rows.length){if(body)body.innerHTML='<div style="padding:24px;color:var(--ink3)">Nenhum statement neste mês.</div>';return;}
-  var h='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  h+='<thead><tr style="position:sticky;top:0;background:var(--cream);border-bottom:1px solid var(--border)">';
-  h+='<th style="padding:9px 12px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">Casa</th>';
-  h+='<th style="padding:9px 12px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">Endereço</th>';
-  h+='<th style="padding:9px 12px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">Owner</th>';
-  h+='<th style="padding:9px 12px;text-align:right;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">NET a pagar</th>';
-  h+='<th style="padding:9px 12px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">Status</th>';
-  h+='</tr></thead><tbody>';
-  data.rows.forEach(function(r){
-   var net=Number(r.netPayout||0);
-   var stt=r.paid?'<span style="color:#1e7e46;font-weight:600">Pago</span>':(r.closed?'<span style="color:var(--amber);font-weight:600">Fechado</span>':'<span style="color:var(--ink3)">Aberto</span>');
-   h+='<tr style="border-bottom:1px solid var(--border)">';
-   h+='<td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(r.code)+'</td>';
-   h+='<td style="padding:8px 12px;color:var(--ink)">'+esc(r.address)+'</td>';
-   h+='<td style="padding:8px 12px;color:var(--ink2)">'+esc(r.ownerName||'—')+'</td>';
-   h+='<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:'+(net>=0?'#1e7e46':'var(--red)')+'">'+esc(fmt(net))+'</td>';
-   h+='<td style="padding:8px 12px;text-align:center">'+stt+'</td>';
-   h+='</tr>';
-  });
-  h+='</tbody><tfoot><tr style="border-top:2px solid var(--border);background:var(--cream)">';
-  h+='<td colspan="3" style="padding:10px 12px;font-weight:700;color:var(--ink)">TOTAL ('+data.count+' casa'+(data.count===1?'':'s')+')</td>';
-  h+='<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:800;color:'+(Number(data.totalNet)>=0?'#1e7e46':'var(--red)')+'">'+esc(fmt(Number(data.totalNet||0)))+'</td>';
-  h+='<td></td></tr></tfoot></table>';
-  if(body)body.innerHTML=h;
- }catch(e){console.error(e);if(body)body.innerHTML='<div style="padding:24px;color:var(--red)">Falha ao carregar.</div>';}
-};
-window.osdNetListExportCsv=function(){
- var rows=window.__osdNetListRows||[];
- if(!rows.length){alert('Nada para exportar.');return;}
- var ym=window.__osdNetListMonth||'';
- var esc=function(v){var s=String(v==null?'':v);return /[",\n;]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
- var lines=['Casa,Endereco,Owner,NET a pagar,Credito,Debito,Status'];
- rows.forEach(function(r){
-  var st=r.paid?'Pago':(r.closed?'Fechado':'Aberto');
-  lines.push([esc(r.code),esc(r.address),esc(r.ownerName),Number(r.netPayout||0).toFixed(2),Number(r.totalIncome||0).toFixed(2),Number(r.totalExpenses||0).toFixed(2),st].join(','));
- });
- var total=rows.reduce(function(s,r){return s+Number(r.netPayout||0);},0);
- lines.push(['TOTAL','','',total.toFixed(2),'','',''].join(','));
- var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
- var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='NET_por_owner_'+ym+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
 };
 
 // Lança o débito de uma Work Order (PmExpense) no statement individual da casa como uma
