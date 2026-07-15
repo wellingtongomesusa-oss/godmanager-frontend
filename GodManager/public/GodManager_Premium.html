@@ -8586,8 +8586,8 @@ function gmWaUploadOpen(propertyId,address){
   ov.innerHTML='<div style="max-width:640px;width:100%;max-height:90vh;background:var(--paper,#fff);border:1px solid var(--border,#e5e0d8);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden">'
    +'<div style="display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--border,#eee)"><span style="font-size:16px">📱</span><b id="gm-wa-title" style="font-size:14px;color:var(--ink,#22252b);flex:1">Conversa WhatsApp da casa</b><button type="button" onclick="gmWaClose()" style="border:none;background:transparent;font-size:22px;color:var(--ink3,#98928a);cursor:pointer">×</button></div>'
    +'<div style="padding:14px 18px;overflow-y:auto;flex:1">'
-    +'<p style="font-size:12px;color:var(--ink3);margin:0 0 10px">Envie o arquivo <b>_chat.txt</b> exportado do WhatsApp (se veio .zip, descompacte primeiro) ou <b>cole o texto</b> abaixo. A IA gera um resumo e lista as pendências.</p>'
-    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="file" id="gm-wa-file" accept=".txt,text/plain" onchange="gmWaFilePick()" style="font-size:12px"></div>'
+    +'<p style="font-size:12px;color:var(--ink3);margin:0 0 10px">Envie o <b>.zip</b> exportado do WhatsApp (ou o <b>_chat.txt</b>), ou <b>cole o texto</b>. A IA gera resumo e pendências.</p>'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="file" id="gm-wa-file" accept=".txt,.zip,text/plain,application/zip" onchange="gmWaFilePick()" style="font-size:12px"></div>'
     +'<textarea id="gm-wa-text" placeholder="…ou cole aqui o conteúdo da conversa" style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border2);border-radius:8px;font-size:12px;font-family:monospace;background:var(--sand);color:var(--ink)"></textarea>'
     +'<div style="text-align:right;margin-top:10px"><button type="button" id="gm-wa-submit" onclick="gmWaSubmit()" style="padding:9px 18px;border:none;border-radius:7px;background:#25d366;color:#083d20;font-size:12px;font-weight:700;cursor:pointer">Analisar e salvar no histórico</button></div>'
     +'<div id="gm-wa-result" style="margin-top:14px"></div>'
@@ -8652,10 +8652,37 @@ function gmWaRenderSaved(term){
 }
 window.gmWaRenderSaved=gmWaRenderSaved;
 function gmWaClose(){var ov=document.getElementById('gm-wa-modal');if(ov)ov.style.display='none';}
-function gmWaFilePick(){
- var f=document.getElementById('gm-wa-file');if(!f||!f.files||!f.files[0])return;
- var rd=new FileReader();rd.onload=function(){document.getElementById('gm-wa-text').value=String(rd.result||'');};rd.readAsText(f.files[0]);
+async function gmUnzipFirstFile(buf){
+ var dv=new DataView(buf),u8=new Uint8Array(buf),eocd=-1;
+ for(var i=buf.byteLength-22;i>=0;i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+ if(eocd<0)throw new Error('Zip inválido (EOCD).');
+ var cdOffset=dv.getUint32(eocd+16,true);
+ if(dv.getUint32(cdOffset,true)!==0x02014b50)throw new Error('Zip inválido (CD).');
+ var method=dv.getUint16(cdOffset+10,true),compSize=dv.getUint32(cdOffset+20,true);
+ var localOff=dv.getUint32(cdOffset+42,true);
+ var lNameLen=dv.getUint16(localOff+26,true),lExtraLen=dv.getUint16(localOff+28,true);
+ var dataStart=localOff+30+lNameLen+lExtraLen;
+ var comp=u8.slice(dataStart,dataStart+compSize);
+ if(method===0)return new TextDecoder('utf-8').decode(comp);
+ if(typeof DecompressionStream==='undefined')throw new Error('Navegador sem suporte a descompactar (use o Chrome).');
+ var ds=new DecompressionStream('deflate-raw');
+ var stream=new Blob([comp]).stream().pipeThrough(ds);
+ var ab=await new Response(stream).arrayBuffer();
+ return new TextDecoder('utf-8').decode(ab);
 }
+async function gmWaFilePick(){
+ var f=document.getElementById('gm-wa-file');if(!f||!f.files||!f.files[0])return;
+ var file=f.files[0];var ta=document.getElementById('gm-wa-text');
+ var isZip=/\.zip$/i.test(file.name)||file.type==='application/zip';
+ if(isZip){
+  if(ta)ta.value='Descompactando o .zip…';
+  try{var buf=await file.arrayBuffer();var txt=await gmUnzipFirstFile(buf);if(ta)ta.value=txt;}
+  catch(e){if(ta)ta.value='';alert('Não consegui abrir o .zip: '+(e&&e.message||'')+'\nDescompacte e envie o _chat.txt, ou cole o texto.');}
+ }else{
+  var rd=new FileReader();rd.onload=function(){if(ta)ta.value=String(rd.result||'');};rd.readAsText(file);
+ }
+}
+window.gmUnzipFirstFile=gmUnzipFirstFile;
 window.gmWaUploadOpen=gmWaUploadOpen;window.gmWaClose=gmWaClose;window.gmWaFilePick=gmWaFilePick;
 async function gmWaSubmit(){
  var text=(document.getElementById('gm-wa-text')||{}).value||'';
