@@ -229,22 +229,23 @@ export async function qbCreateInvoice(
   const res = await qbCreate(clientId, 'invoice', body);
   const inv = res?.Invoice as Record<string, unknown> | undefined;
   const id = String(inv?.Id ?? '');
+  let docNumber = inv?.DocNumber ? String(inv.DocNumber) : null;
   let invoiceLink = inv?.InvoiceLink ? String(inv.InvoiceLink) : null;
-  // O QuickBooks NÃO devolve o InvoiceLink na resposta do create — só numa leitura
-  // com include=invoiceLink. Como criamos com pagamento online ligado, buscamos o link.
-  if (!invoiceLink && id) {
+  // O QuickBooks NÃO devolve InvoiceLink (nem sempre DocNumber) na resposta do create —
+  // só numa leitura com include=invoiceLink. Relemos a invoice recém-criada e pegamos ambos.
+  if (id && (!invoiceLink || !docNumber)) {
     try {
-      const g = await qbGetInvoiceLink(clientId, id);
-      invoiceLink = g.link;
+      const j = (await qbRead(clientId, `invoice/${encodeURIComponent(id)}?include=invoiceLink`)) as { Invoice?: Record<string, unknown> };
+      const fresh = j?.Invoice;
+      if (fresh) {
+        if (!invoiceLink && fresh.InvoiceLink) invoiceLink = String(fresh.InvoiceLink);
+        if (!docNumber && fresh.DocNumber) docNumber = String(fresh.DocNumber);
+      }
     } catch {
-      /* mantém null; o gestor pode gerar/colar depois */
+      /* mantém o que temos; o gestor pode gerar/colar depois */
     }
   }
-  return {
-    id,
-    docNumber: inv?.DocNumber ? String(inv.DocNumber) : null,
-    invoiceLink,
-  };
+  return { id, docNumber, invoiceLink };
 }
 
 /**
@@ -404,6 +405,86 @@ export async function qbRecentExpenses(clientId: string, limit = 25): Promise<Qb
 
   rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return rows.slice(0, limit);
+}
+
+export type QbBreakdownRow = { name: string; total: number; count: number };
+export type QbExpensesBreakdown = {
+  from: string;
+  byMerchant: QbBreakdownRow[];
+  byOrigin: QbBreakdownRow[];
+  byHouse: QbBreakdownRow[];
+  totalAmount: number;
+  totalCount: number;
+};
+
+/**
+ * Volume de despesas (Purchase + Bill) por MERCHANT (fornecedor), por ORIGEM (conta/categoria)
+ * e por CASA (Class/Location), nos últimos N meses.
+ */
+export async function qbExpensesBreakdown(clientId: string, months = 6): Promise<QbExpensesBreakdown> {
+  const now = new Date();
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+  const fromStr = `${from.getUTCFullYear()}-${String(from.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+  const merchant = new Map<string, QbBreakdownRow>();
+  const origin = new Map<string, QbBreakdownRow>();
+  const house = new Map<string, QbBreakdownRow>();
+  let totalAmount = 0;
+  let totalCount = 0;
+
+  const add = (map: Map<string, QbBreakdownRow>, name: string, amount: number) => {
+    const key = name || '—';
+    const r = map.get(key) || { name: key, total: 0, count: 0 };
+    r.total += amount;
+    r.count += 1;
+    map.set(key, r);
+  };
+  const originOf = (lines: Array<Record<string, unknown>> | undefined): string => {
+    for (const ln of lines || []) {
+      const d = (ln?.AccountBasedExpenseLineDetail as Record<string, unknown>) || {};
+      const acct = (d?.AccountRef as Record<string, unknown>) || {};
+      if (acct?.name) return String(acct.name);
+    }
+    return 'Sem categoria';
+  };
+  const houseOf = (tx: Record<string, unknown>): string => {
+    const cls = (tx?.ClassRef as Record<string, unknown>) || {};
+    const loc = (tx?.DepartmentRef as Record<string, unknown>) || {};
+    return String(cls?.name || loc?.name || '');
+  };
+
+  for (const type of ['Purchase', 'Bill'] as const) {
+    try {
+      const json = (await qbRead(
+        clientId,
+        `query?query=${encodeURIComponent(`select * from ${type} where TxnDate >= '${fromStr}' maxresults 1000`)}`,
+      )) as { QueryResponse?: Record<string, Array<Record<string, unknown>>> };
+      const rows = json?.QueryResponse?.[type] || [];
+      for (const tx of rows) {
+        const amount = numVal(tx?.TotalAmt);
+        if (!amount) continue;
+        const payee = (tx?.EntityRef as Record<string, unknown>) || (tx?.VendorRef as Record<string, unknown>) || {};
+        totalAmount += amount;
+        totalCount += 1;
+        add(merchant, String(payee?.name || 'Sem fornecedor'), amount);
+        add(origin, originOf(tx?.Line as Array<Record<string, unknown>>), amount);
+        const h = houseOf(tx);
+        if (h) add(house, h, amount);
+      }
+    } catch {
+      /* ignora um tipo que falhe */
+    }
+  }
+
+  const sortDesc = (m: Map<string, QbBreakdownRow>) => Array.from(m.values()).sort((a, b) => b.total - a.total);
+  return {
+    from: fromStr,
+    byMerchant: sortDesc(merchant),
+    byOrigin: sortDesc(origin),
+    byHouse: sortDesc(house),
+    totalAmount,
+    totalCount,
+  };
 }
 
 export type QbLinkStatsMonth = { month: string; generated: number; paid: number; generatedAmount: number; paidAmount: number };
