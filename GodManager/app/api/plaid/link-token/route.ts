@@ -84,15 +84,16 @@ export async function POST(req: Request) {
     // OAuth (Chase e afins) exige redirect_uri registrado no Plaid Dashboard (Allowed redirect URIs).
     // So enviamos se estiver configurado; caso contrario a Plaid rejeita URIs nao registradas.
     const redirectUri = (process.env.PLAID_REDIRECT_URI || '').trim() || undefined;
+    // Statements é add-on: vai em optional_products (a Plaid coleta se a instituição/conta
+    // suportar e nao quebra o Link caso nao suporte). NAO pode ir em additional_consented_products
+    // — a Plaid rejeita com INVALID_FIELD "additional_consented_products cannot contain: [statements]".
+    const wantStatements =
+      String(process.env.PLAID_STATEMENTS_ENABLED || '').toLowerCase() === 'true';
     const response = await plaid.linkTokenCreate({
       user: { client_user_id: entityId },
       client_name: 'GodManager',
       products: [Products.Auth, Products.Identity, Products.Transactions],
-      // Statements é add-on: só entra se habilitado na conta Plaid; senão o Plaid ignora.
-      additional_consented_products:
-        String(process.env.PLAID_STATEMENTS_ENABLED || '').toLowerCase() === 'true'
-          ? [Products.Statements]
-          : undefined,
+      ...(wantStatements ? { optional_products: [Products.Statements] } : {}),
       country_codes: [CountryCode.Us],
       language: 'en',
       ...(redirectUri ? { redirect_uri: redirectUri } : {}),

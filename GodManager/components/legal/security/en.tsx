@@ -170,11 +170,12 @@ export function SecurityContentEn() {
       Godroox is formalizing this procedure into a written incident-response plan with defined notification timelines. <strong>Target: within 60 days.</strong>
     </p>
     <hr style={{ margin: '32px 0', border: 0, borderTop: '1px solid #e5e7eb' }} />
-    <h2 style={{ fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif', fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 8 }}>13. User Authentication and MFA Roadmap</h2>
+    <h2 style={{ fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif', fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 8 }}>13. User Authentication and MFA</h2>
     <ul style={{ margin: '0 0 12px', paddingLeft: 24 }}>
       <li style={{ marginBottom: 6 }}>Administrative access to production infrastructure is protected by MFA at the provider level.</li>
-      <li style={{ marginBottom: 6 }}>End-user accounts in the Service currently authenticate with username and password, with brute-force rate limiting.</li>
-      <li style={{ marginBottom: 6 }}><strong>Planned improvement:</strong> Godroox is evaluating and intends to implement multi-factor authentication for end users, prioritizing accounts that can link financial accounts via Plaid. <strong>Target: under evaluation; roadmap item.</strong></li>
+      <li style={{ marginBottom: 6 }}>End-user accounts authenticate with username and password, protected by brute-force rate limiting.</li>
+      <li style={{ marginBottom: 6 }}><strong>Multi-factor authentication (MFA) is available to all end users.</strong> The Service offers app-based, time-based one-time password (TOTP) MFA compatible with standard authenticator apps (e.g., Google Authenticator, Authy, 1Password). Each user can enable MFA from their account; the TOTP secret is encrypted at rest, and one-time backup codes are issued for account recovery.</li>
+      <li style={{ marginBottom: 6 }}>When a user enables MFA, it is enforced at login: a valid TOTP code (or a backup code) is required in addition to the password before a session is granted. This applies to accounts that link financial accounts via Plaid.</li>
     </ul>
     <hr style={{ margin: '32px 0', border: 0, borderTop: '1px solid #e5e7eb' }} />
     <h2 style={{ fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif', fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 8 }}>14. Privacy</h2>

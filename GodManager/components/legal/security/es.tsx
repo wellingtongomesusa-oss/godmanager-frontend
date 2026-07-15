@@ -170,11 +170,12 @@ export function SecurityContentEs() {
       Godroox está formalizando este procedimiento en un plan escrito de respuesta a incidentes con plazos de notificación definidos. <strong>Plazo: hasta 60 días.</strong>
     </p>
     <hr style={{ margin: '32px 0', border: 0, borderTop: '1px solid #e5e7eb' }} />
-    <h2 style={{ fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif', fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 8 }}>13. Autenticación de Usuario y Hoja de Ruta de MFA</h2>
+    <h2 style={{ fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif', fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 8 }}>13. Autenticación de Usuario y MFA</h2>
     <ul style={{ margin: '0 0 12px', paddingLeft: 24 }}>
       <li style={{ marginBottom: 6 }}>El acceso administrativo a la infraestructura de producción está protegido por MFA a nivel de proveedor.</li>
-      <li style={{ marginBottom: 6 }}>Las cuentas de usuario final en el Servicio se autentican actualmente con nombre de usuario y contraseña, con limitación de intentos contra fuerza bruta.</li>
-      <li style={{ marginBottom: 6 }}><strong>Mejora planificada:</strong> Godroox está evaluando e intenta implementar autenticación multifactor para los usuarios finales, priorizando las cuentas que puedan vincular cuentas financieras a través de Plaid. <strong>Plazo: en evaluación; elemento de hoja de ruta.</strong></li>
+      <li style={{ marginBottom: 6 }}>Las cuentas de usuario final se autentican con nombre de usuario y contraseña, protegidas por limitación de intentos contra fuerza bruta.</li>
+      <li style={{ marginBottom: 6 }}><strong>La autenticación multifactor (MFA) está disponible para todos los usuarios finales.</strong> El Servicio ofrece MFA por contraseña de un solo uso basada en tiempo (TOTP) compatible con aplicaciones autenticadoras estándar (p. ej., Google Authenticator, Authy, 1Password). Cada usuario puede activar el MFA en su cuenta; el secreto TOTP se cifra en reposo y se emiten códigos de respaldo de un solo uso para la recuperación de la cuenta.</li>
+      <li style={{ marginBottom: 6 }}>Cuando el usuario activa el MFA, se exige en el inicio de sesión: además de la contraseña, se requiere un código TOTP válido (o un código de respaldo) antes de conceder la sesión. Esto aplica a las cuentas que vinculan cuentas financieras a través de Plaid.</li>
     </ul>
     <hr style={{ margin: '32px 0', border: 0, borderTop: '1px solid #e5e7eb' }} />
     <h2 style={{ fontFamily: 'var(--font-playfair, "Cormorant Garamond"), serif', fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 8 }}>14. Privacidad</h2>
