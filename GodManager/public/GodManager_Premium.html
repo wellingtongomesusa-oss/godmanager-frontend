@@ -8249,14 +8249,14 @@ function gmApArRenderTables(){
  document.getElementById('apar-kpi-aro').textContent=fmt(sumOd(ar));
  var tbAp=document.getElementById('apar-tbody-ap');
  tbAp.innerHTML=ap.length?ap.map(function(b){
-  return '<tr><td>'+esc(b.vendor||'—')+'</td><td>'+esc(b.docNumber||'—')+'</td><td>'+esc(b.txnDate||'—')+'</td><td>'+esc(b.dueDate||'—')+'</td><td class="mono">'+fmt(b.balance||0)+'</td><td><span class="pill '+(b.overdue?'pr':'pa')+'">'+(b.overdue?'Vencido':'Em aberto')+'</span></td></tr>';
+  return '<tr style="cursor:pointer" title="Ver detalhamento" onclick="gmApArDetail(\'bill\','+JSON.stringify(String(b.id||'')).replace(/"/g,'&quot;')+')"><td>'+esc(b.vendor||'—')+'</td><td>'+esc(b.docNumber||'—')+'</td><td>'+esc(b.txnDate||'—')+'</td><td>'+esc(b.dueDate||'—')+'</td><td class="mono">'+fmt(b.balance||0)+'</td><td><span class="pill '+(b.overdue?'pr':'pa')+'">'+(b.overdue?'Vencido':'Em aberto')+'</span></td></tr>';
  }).join(''):'<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a pagar'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto. 🎉')+'</td></tr>';
  var tbAr=document.getElementById('apar-tbody-ar');
  tbAr.innerHTML=ar.length?ar.map(function(v){
   var link=v.link
    ?'<a href="'+esc(v.link)+'" target="_blank" rel="noopener" style="color:#22558c;font-weight:600;text-decoration:none">Abrir ↗</a>'
    :(v.id?'<button type="button" onclick="gmApArGetLink('+JSON.stringify(String(v.id)).replace(/"/g,'&quot;')+',this)" style="padding:3px 9px;border:1px solid var(--border2);border-radius:5px;background:var(--sand);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer">🔗 Gerar link</button>':'—');
-  return '<tr><td>'+esc(v.customer||'—')+'</td><td>'+esc(v.docNumber||'—')+'</td><td>'+esc(v.txnDate||'—')+'</td><td>'+esc(v.dueDate||'—')+'</td><td class="mono">'+fmt(v.balance||0)+'</td><td><span class="pill '+(v.overdue?'pr':'pa')+'">'+(v.overdue?'Vencido':'Em aberto')+'</span></td><td>'+link+'</td></tr>';
+  return '<tr style="cursor:pointer" title="Ver detalhamento" onclick="gmApArDetail(\'invoice\','+JSON.stringify(String(v.id||'')).replace(/"/g,'&quot;')+')"><td>'+esc(v.customer||'—')+'</td><td>'+esc(v.docNumber||'—')+'</td><td>'+esc(v.txnDate||'—')+'</td><td>'+esc(v.dueDate||'—')+'</td><td class="mono">'+fmt(v.balance||0)+'</td><td><span class="pill '+(v.overdue?'pr':'pa')+'">'+(v.overdue?'Vencido':'Em aberto')+'</span></td><td onclick="event.stopPropagation()">'+link+'</td></tr>';
  }).join(''):'<tr><td colspan="7" style="padding:14px;text-align:center;color:var(--ink3);font-size:12px">Nenhuma conta a receber'+((term||from||to||onlyOverdue)?' com esse filtro.':' em aberto.')+'</td></tr>';
 }
 window.gmApArRenderTables=gmApArRenderTables;
@@ -8275,10 +8275,41 @@ async function gmApArGetLink(invoiceId,btn){
   var j=await r.json();
   if(j&&j.ok&&j.link){gmApArSetLink(invoiceId,j.link);window.open(j.link,'_blank','noopener');return;}
   if(btn){btn.disabled=false;btn.textContent=orig;}
-  alert((j&&(j.message||j.error))||'Sem link de pagamento. Ative o QuickBooks Payments no QuickBooks Online para gerar o link.');
+  if(typeof gmInfoPop==='function'){
+   gmInfoPop('Ativar o QuickBooks Payments','O QuickBooks só gera link de pagamento se o <b>QuickBooks Payments</b> estiver ativo na sua conta. Como ativar:<br><br>1. Entre no <b>QuickBooks Online</b> (conta Manager Prop).<br>2. Engrenagem ⚙ → <b>Account and Settings</b> → aba <b>Payments</b>.<br>3. Clique em <b>Set up Payments</b> e preencha (EIN, dados do responsável, conta bancária).<br>4. Após a aprovação da Intuit, o botão <b>Gerar link</b> passa a funcionar sozinho — sem mexer em mais nada aqui.<br><br><i>É um serviço de merchant (pago) da Intuit; a aprovação leva de minutos a alguns dias.</i>','irs');
+  }else{alert((j&&(j.message||j.error))||'Ative o QuickBooks Payments no QuickBooks Online.');}
  }catch(e){if(btn){btn.disabled=false;btn.textContent=orig;}alert('Erro de rede ao gerar o link.');}
 }
 window.gmApArGetLink=gmApArGetLink;
+async function gmApArDetail(type,id){
+ if(!id)return;
+ var fmt=(typeof rampFmtMoney==='function')?rampFmtMoney:function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=(typeof gmHtmlEscAttr==='function')?gmHtmlEscAttr:function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+ if(typeof gmInfoPop==='function')gmInfoPop('Carregando…','<div style="padding:8px;color:var(--ink3);font-size:12px">Buscando detalhamento no QuickBooks…</div>','info');
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var sep=q?'&':'?';
+  var r=await fetch('/api/quickbooks/txn-detail'+q+sep+'type='+type+'&id='+encodeURIComponent(id),{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  if(!j||!j.ok||!j.detail){if(typeof gmInfoPop==='function')gmInfoPop('Detalhe',((j&&j.error)||'Não foi possível carregar.'),'warn');return;}
+  var d=j.detail;
+  var linesHtml=(d.lines||[]).map(function(l){
+   return '<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:12px">'+esc(l.description||l.detail||'—')+(l.detail&&l.description?(' <span style="color:var(--ink3)">· '+esc(l.detail)+'</span>'):'')+'</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);text-align:right;font-family:monospace;font-size:12px">'+fmt(l.amount||0)+'</td></tr>';
+  }).join('')||'<tr><td colspan="2" style="padding:8px;color:var(--ink3);font-size:12px">Sem linhas.</td></tr>';
+  var html='<div style="font-size:12px;line-height:1.6">'
+   +'<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>'+(type==='invoice'?'Cliente':'Fornecedor')+':</b> <span>'+esc(d.party)+'</span></div>'
+   +'<div style="display:flex;justify-content:space-between"><b>Documento:</b> <span>'+esc(d.docNumber||'—')+'</span></div>'
+   +'<div style="display:flex;justify-content:space-between"><b>Emissão:</b> <span>'+esc(d.txnDate||'—')+'</span></div>'
+   +'<div style="display:flex;justify-content:space-between"><b>Vencimento:</b> <span>'+esc(d.dueDate||'—')+'</span></div>'
+   +'<div style="display:flex;justify-content:space-between"><b>Total:</b> <span class="mono">'+fmt(d.total||0)+'</span></div>'
+   +'<div style="display:flex;justify-content:space-between"><b>Saldo em aberto:</b> <span class="mono" style="color:var(--red)">'+fmt(d.balance||0)+'</span></div>'
+   +(d.memo?('<div style="margin-top:6px;color:var(--ink3)"><b>Obs:</b> '+esc(d.memo)+'</div>'):'')
+   +'<table style="width:100%;border-collapse:collapse;margin-top:10px"><thead><tr><th style="text-align:left;padding:5px 8px;font-size:10px;color:var(--ink3);text-transform:uppercase;border-bottom:1px solid var(--border)">Item / conta</th><th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--ink3);text-transform:uppercase;border-bottom:1px solid var(--border)">Valor</th></tr></thead><tbody>'+linesHtml+'</tbody></table>'
+   +'</div>';
+  if(typeof gmInfoPop==='function')gmInfoPop((type==='invoice'?'Conta a Receber':'Conta a Pagar')+(d.docNumber?(' · '+d.docNumber):''),html,'info');
+ }catch(e){if(typeof gmInfoPop==='function')gmInfoPop('Detalhe','Erro de rede ao buscar o detalhamento.','warn');}
+}
+window.gmApArDetail=gmApArDetail;
 window.__gmApArSort={ap:{key:'',dir:1},ar:{key:'',dir:1}};
 function gmApArSort(which,key){
  var st=window.__gmApArSort[which];if(!st)return;
@@ -16744,6 +16775,29 @@ window.gmSupportFabToggle=gmSupportFabToggle;
 window.gmSupportChatPrefill=gmSupportChatPrefill;
 window.gmSupportChatAppendMsg=gmSupportChatAppendMsg;
 window.gmSupportChatSend=gmSupportChatSend;
+// ---- SophIA por áudio (voz → texto) ----
+window.__gmSophiaRec=null;
+function gmSophiaMicToggle(){
+ var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ var btn=document.getElementById('gm-support-chat-mic');
+ if(!SR){alert('Seu navegador não suporta ditado por voz. Use o Chrome.');return;}
+ // se já está gravando, para
+ if(window.__gmSophiaRec){try{window.__gmSophiaRec.stop();}catch(e){}window.__gmSophiaRec=null;if(btn){btn.textContent='🎤';btn.style.background='var(--sand)';}return;}
+ var rec=new SR();
+ rec.lang='pt-BR';rec.interimResults=true;rec.continuous=false;
+ var inp=document.getElementById('gm-support-chat-input');
+ var baseText=inp?inp.value:'';
+ rec.onstart=function(){if(btn){btn.textContent='⏺';btn.style.background='#fdecec';btn.title='Gravando… clique para parar';}};
+ rec.onresult=function(ev){
+  var txt='';for(var i=0;i<ev.results.length;i++){txt+=ev.results[i][0].transcript;}
+  if(inp)inp.value=(baseText?(baseText+' '):'')+txt;
+ };
+ rec.onerror=function(ev){if(btn){btn.textContent='🎤';btn.style.background='var(--sand)';}window.__gmSophiaRec=null;if(ev&&ev.error==='not-allowed')alert('Permita o acesso ao microfone no navegador para falar com a SophIA.');};
+ rec.onend=function(){if(btn){btn.textContent='🎤';btn.style.background='var(--sand)';btn.title='Perguntar por áudio (falar)';}window.__gmSophiaRec=null;};
+ window.__gmSophiaRec=rec;
+ try{rec.start();}catch(e){window.__gmSophiaRec=null;if(btn){btn.textContent='🎤';btn.style.background='var(--sand)';}}
+}
+window.gmSophiaMicToggle=gmSophiaMicToggle;
 window.gmSupportFabSyncVisibility=gmSupportFabSyncVisibility;
 try{
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){gmSupportFabSyncVisibility();});
@@ -42025,7 +42079,8 @@ window.gmFormsReceivedRender=async function(){
   <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--paper)">
    <button type="button" id="gm-support-chat-attach-btn" onclick="document.getElementById('gm-support-chat-file-input').click()" title="Anexar print" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">📎</button>
    <input type="file" id="gm-support-chat-file-input" accept="image/*" style="display:none" onchange="gmSupportBubbleAttachmentPick(this)">
-   <textarea id="gm-support-chat-input" rows="2" placeholder="Pergunte, busque uma tela (ex.: abrir Ramp) ou descreva um problema…" style="flex:1"></textarea>
+   <button type="button" id="gm-support-chat-mic" onclick="gmSophiaMicToggle()" title="Perguntar por áudio (falar)" style="width:36px;height:36px;flex-shrink:0;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center">🎤</button>
+   <textarea id="gm-support-chat-input" rows="2" placeholder="Pergunte, fale no 🎤, busque uma tela (ex.: abrir Ramp) ou descreva um problema…" style="flex:1"></textarea>
    <button type="button" id="gm-support-chat-send" onclick="gmSupportChatSend()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Enviar</button>
   </div>
  </div>

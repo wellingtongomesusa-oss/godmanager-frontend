@@ -394,6 +394,51 @@ export async function qbRecentExpenses(clientId: string, limit = 25): Promise<Qb
   return rows.slice(0, limit);
 }
 
+export type QbTxnDetail = {
+  type: 'invoice' | 'bill';
+  id: string;
+  docNumber: string | null;
+  party: string;
+  txnDate: string;
+  dueDate: string;
+  total: number;
+  balance: number;
+  memo: string | null;
+  lines: Array<{ description: string; amount: number; detail: string }>;
+};
+
+/** Detalhe de uma Invoice (AR) ou Bill (AP) do QuickBooks, com linhas. */
+export async function qbGetTxnDetail(clientId: string, type: 'invoice' | 'bill', id: string): Promise<QbTxnDetail | null> {
+  const entity = type === 'invoice' ? 'Invoice' : 'Bill';
+  const json = (await qbRead(clientId, `${type}/${encodeURIComponent(id)}`)) as Record<string, unknown>;
+  const tx = json?.[entity] as Record<string, unknown> | undefined;
+  if (!tx) return null;
+  const partyRef = (type === 'invoice' ? (tx.CustomerRef as Record<string, unknown>) : (tx.VendorRef as Record<string, unknown>)) || {};
+  const lines: QbTxnDetail['lines'] = [];
+  for (const ln of (tx.Line as Array<Record<string, unknown>>) || []) {
+    const amount = numVal(ln?.Amount);
+    if (!amount && !ln?.Description) continue;
+    let detail = '';
+    const sales = ln?.SalesItemLineDetail as Record<string, unknown> | undefined;
+    const acct = ln?.AccountBasedExpenseLineDetail as Record<string, unknown> | undefined;
+    if (sales?.ItemRef) detail = String((sales.ItemRef as Record<string, unknown>).name || '');
+    else if (acct?.AccountRef) detail = String((acct.AccountRef as Record<string, unknown>).name || '');
+    lines.push({ description: String(ln?.Description || ''), amount, detail });
+  }
+  return {
+    type,
+    id: String(tx.Id ?? id),
+    docNumber: tx.DocNumber ? String(tx.DocNumber) : null,
+    party: String(partyRef?.name || '—'),
+    txnDate: String(tx.TxnDate || '').slice(0, 10),
+    dueDate: String(tx.DueDate || '').slice(0, 10),
+    total: numVal(tx.TotalAmt),
+    balance: numVal(tx.Balance),
+    memo: tx.CustomerMemo ? String((tx.CustomerMemo as Record<string, unknown>).value || '') : tx.PrivateNote ? String(tx.PrivateNote) : null,
+    lines,
+  };
+}
+
 // ---- AP/AR: listagens de Contas a Pagar / Receber -------------------------
 
 export type QbApRow = { id: string; docNumber: string | null; vendor: string; txnDate: string; dueDate: string; total: number; balance: number; overdue: boolean };
