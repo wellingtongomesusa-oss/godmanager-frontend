@@ -274,6 +274,10 @@ export async function POST(req: Request) {
         },
       });
 
+      // Lançamento por quem tem autoridade de aprovacao (super_admin/admin/manager) ja entra
+      // aprovado — reflete no statement na hora, sem etapa pendente que possa "sumir". Usuarios
+      // sem autoridade continuam criando lançamento pendente (aguardando aprovacao).
+      const canApproveOwn = ['super_admin', 'admin', 'manager'].includes(String(user.role || ''));
       const created = await tx.statementLineItem.create({
         data: {
           ownerMonthPayoutId: payout.id,
@@ -285,6 +289,8 @@ export async function POST(req: Request) {
           source,
           sourceRefId,
           transactionDate,
+          approvedAt: canApproveOwn ? new Date() : null,
+          approvedBy: canApproveOwn ? user.id : null,
         },
         select: {
           id: true,
@@ -297,6 +303,7 @@ export async function POST(req: Request) {
           sortOrder: true,
           provisional: true,
           createdAt: true,
+          approvedAt: true,
         },
       });
 
