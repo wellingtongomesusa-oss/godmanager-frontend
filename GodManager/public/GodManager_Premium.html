@@ -5416,7 +5416,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div id="osd-toolbar-left" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1;min-width:0">
  <button type="button" id="osd-add-income" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('income')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Income</button>
  <button type="button" id="osd-add-expense" onclick="if(typeof osdLiOpenCreate==='function')osdLiOpenCreate('expense')" style="padding:8px 14px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Adicionar Expense</button>
- <button type="button" id="osd-add-rent" onclick="if(typeof osdQuickAddRent==='function')osdQuickAddRent()" title="Lança o aluguel do contrato (crédito) e a taxa de gestão na % desta casa (débito)" style="padding:8px 14px;background:#eafaf0;color:#1e7e46;border:1px solid #a5d6a7;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Aluguel + taxa (MGM)</button>
  <button type="button" id="osd-upload-csv" onclick="if(typeof osdCsvPick==='function')osdCsvPick()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Upload CSV</button>
  <button type="button" id="osd-sync" title="Importa rentals e expenses do mês" onclick="if(typeof osdStatementSync==='function')osdStatementSync()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sincronizar</button>
  <button type="button" id="osd-approve-all" title="Aprovar todos os lançamentos pendentes desta casa" onclick="if(typeof gmOsdApproveAll==='function')gmOsdApproveAll()" style="padding:8px 14px;background:#f0c14b;color:#7a4d00;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">✓ Aprovar tudo</button>
@@ -5467,10 +5466,6 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <td id="osd-foot-expenses" style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--red);font-size:14px">$0.00</td>
  <td style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:15px"><span id="osd-foot-net">$0.00</span></td>
  <td style="padding:12px"></td>
- </tr>
- <tr style="background:var(--cream);border-top:2px solid var(--ink)">
- <td colspan="5" style="padding:14px;text-align:right;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink)">Saldo a pagar ao owner</td>
- <td colspan="2" style="padding:14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800"><span id="osd-foot-saldo">$0.00</span></td>
  </tr></tfoot>
  </table>
  </div>
@@ -15073,20 +15068,47 @@ window.osdRenderLineItems=function(data){
   fn.textContent=window.osdFmtCurrency(tn);
   fn.style.color= tn>0?'var(--green)':(tn<0?'var(--red)':'var(--ink)');
  }
- var fsal=document.getElementById('osd-foot-saldo');
- if(fsal){
-  fsal.textContent=window.osdFmtCurrency(tn);
-  fsal.style.color= tn>0?'#1e7e46':(tn<0?'#b83030':'var(--ink)');
- }
  window.osdRenderDetailBadges(payout||null);
  window.osdApplyClosedState(payout||null);
 };
 
 window.osdRenderClosingSummary=async function(){
- // O saldo a pagar ao owner é mostrado ABAIXO das linhas (no rodapé do ledger), como num statement.
- // Esta barra de topo foi removida para não duplicar o saldo em cima.
  var wrap=document.getElementById('osd-closing-summary');
- if(wrap){wrap.innerHTML='';wrap.style.display='none';}
+ if(!wrap)return;
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ if(!cd||!cd.propertyId){wrap.innerHTML='';wrap.style.display='none';return;}
+ var fmt=window.osdFmtCurrency;
+ var esc=window.osdEscHtml;
+ try{
+  // O statement É o ledger: soma dos créditos e débitos dos lançamentos. Sem projeção separada —
+  // aluguel, prorated e despesas sao linhas do proprio ledger (lançadas via +Income/+Expense/sync).
+  var _lines=(window.OSD_STATE&&window.OSD_STATE.detailLines)||[];
+  var ledgerInc=0,ledgerExp=0;
+  _lines.forEach(function(li){
+   var a=Number((typeof window.osdParseNum==='function')?window.osdParseNum(li.amount):(parseFloat(li.amount)||0))||0;
+   if(String(li.lineType).toLowerCase()==='income')ledgerInc+=a; else ledgerExp+=a;
+  });
+  var _payout=window.OSD_STATE&&window.OSD_STATE.currentPayout;
+  var ledgerNet=(_payout&&_payout.netPayout!=null&&!isNaN(Number(_payout.netPayout)))?Number(_payout.netPayout):Math.round((ledgerInc-ledgerExp)*100)/100;
+  ledgerInc=Math.round(ledgerInc*100)/100; ledgerExp=Math.round(ledgerExp*100)/100;
+  var html='<div style="padding:12px 18px;background:var(--cream);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">';
+  html+='<div style="display:flex;gap:26px;flex-wrap:wrap">';
+  html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Créditos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:#1e7e46">'+esc(typeof fmt==='function'?fmt(ledgerInc):String(ledgerInc))+'</div></div>';
+  html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Débitos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:#b83030">'+esc(typeof fmt==='function'?fmt(ledgerExp):String(ledgerExp))+'</div></div>';
+  var _rentC=Number((cd&&cd.rent)||0);
+  if(_rentC>0){
+   html+='<div style="display:flex;align-items:center"><button type="button" onclick="if(typeof osdQuickAddRent===\'function\')osdQuickAddRent()" title="Lançar o aluguel do contrato como crédito no ledger (abre para confirmar)" style="padding:6px 12px;background:#eafaf0;color:#1e7e46;border:1px solid #a5d6a7;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">+ Aluguel do contrato ('+esc(typeof fmt==='function'?fmt(_rentC):String(_rentC))+')</button></div>';
+  }
+  html+='</div>';
+  html+='<div style="text-align:right"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Saldo do statement · NET ao owner</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:22px;font-weight:800;color:'+(ledgerNet>=0?'#1e7e46':'#b83030')+'">'+esc(typeof fmt==='function'?fmt(ledgerNet):String(ledgerNet))+'</div></div>';
+  html+='</div>';
+  wrap.innerHTML=html;
+  wrap.style.display='block';
+ }catch(e){
+  console.warn('osdRenderClosingSummary',e);
+  wrap.innerHTML='';
+  wrap.style.display='none';
+ }
 };
 
 window.osdRenderAccumulatedCards=function(data){
@@ -15407,32 +15429,16 @@ window.osdLiOpenCreate=function(lineType){
  var m=document.getElementById('osd-li-modal');if(m)m.style.display='block';
 };
 
-// Lança o aluguel do contrato (crédito) E a taxa de gestão MGM calculada na % DESTA casa
-// (mgmtFeePct — débito) no statement. Respeita a taxa de cada casa. Idempotente por mês
-// (sourceRefId fixo) — nao duplica se clicar de novo.
-window.osdQuickAddRent=async function(){
+// Abre o modal de +Income ja pre-preenchido com o aluguel do contrato, para o usuario confirmar
+// e lançar como um crédito real no ledger (nada é gravado automaticamente).
+window.osdQuickAddRent=function(){
  var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
- if(!cd||!cd.propertyId){alert('Abra o statement de uma casa primeiro.');return;}
  var rent=Number((cd&&cd.rent)||0);
- var ym=cd.yearMonth;
- var fmt=window.osdFmtCurrency||function(n){return '$'+Number(n||0).toFixed(2);};
- if(!(rent>0)){
-  // Sem aluguel de contrato cadastrado: abre o modal manual de +Income.
-  if(typeof osdLiOpenCreate==='function'){osdLiOpenCreate('income');var dc0=document.getElementById('osd-li-desc');if(dc0)dc0.value='Aluguel';}
-  return;
- }
- var pct=(typeof ltDetailMgmtFeePct==='function')?Number(ltDetailMgmtFeePct(cd.mgmtFeePct)):(Number(cd.mgmtFeePct)||8);
- if(!(pct>=0))pct=Number(cd.mgmtFeePct)||8;
- var fee=Math.round(rent*pct/100*100)/100;
- var msg='Lançar no statement desta casa:\n\n• Aluguel (contrato): +'+fmt(rent)+' (crédito)';
- if(fee>0)msg+='\n• Taxa de gestão MGM ('+pct+'%): −'+fmt(fee)+' (débito)';
- msg+='\n\nConfirmar?';
- if(!confirm(msg))return;
- async function post(b){try{var r=await fetch('/api/manager-pro/owner-statement/line-items',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});var d={};try{d=await r.json();}catch(e){}return r.ok&&d.ok;}catch(e){return false;}}
- var ok1=await post({propertyId:cd.propertyId,yearMonth:ym,lineType:'income',description:'Aluguel (contrato)',amount:rent,source:'MANUAL',sourceRefId:'contract-rent:'+ym});
- var ok2=(fee>0)?await post({propertyId:cd.propertyId,yearMonth:ym,lineType:'expense',description:'Taxa de gestão MGM ('+pct+'%)',amount:fee,source:'MANUAL',sourceRefId:'mgmt-fee:'+ym}):true;
- if(typeof showToast==='function')showToast((ok1&&ok2)?'Aluguel e taxa de gestão ('+pct+'%) lançados.':'Lançado — confira os itens.');
- if(typeof osdLoadStatement==='function')await osdLoadStatement();
+ if(typeof osdLiOpenCreate!=='function')return;
+ osdLiOpenCreate('income');
+ var dc=document.getElementById('osd-li-desc');if(dc)dc.value='Aluguel (contrato)';
+ var da=document.getElementById('osd-li-amt');if(da&&rent>0)da.value=rent.toFixed(2);
+ if(da)da.focus();
 };
 
 window.osdLiOpenEdit=function(id){
