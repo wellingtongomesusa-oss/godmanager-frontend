@@ -15095,6 +15095,10 @@ window.osdRenderClosingSummary=async function(){
   html+='<div style="display:flex;gap:26px;flex-wrap:wrap">';
   html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Créditos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:#1e7e46">'+esc(typeof fmt==='function'?fmt(ledgerInc):String(ledgerInc))+'</div></div>';
   html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Débitos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:#b83030">'+esc(typeof fmt==='function'?fmt(ledgerExp):String(ledgerExp))+'</div></div>';
+  var _rentC=Number((cd&&cd.rent)||0);
+  if(_rentC>0){
+   html+='<div style="display:flex;align-items:center"><button type="button" onclick="if(typeof osdQuickAddRent===\'function\')osdQuickAddRent()" title="Lançar o aluguel do contrato como crédito no ledger (abre para confirmar)" style="padding:6px 12px;background:#eafaf0;color:#1e7e46;border:1px solid #a5d6a7;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">+ Aluguel do contrato ('+esc(typeof fmt==='function'?fmt(_rentC):String(_rentC))+')</button></div>';
+  }
   html+='</div>';
   html+='<div style="text-align:right"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Saldo do statement · NET ao owner</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:22px;font-weight:800;color:'+(ledgerNet>=0?'#1e7e46':'#b83030')+'">'+esc(typeof fmt==='function'?fmt(ledgerNet):String(ledgerNet))+'</div></div>';
   html+='</div>';
@@ -15385,6 +15389,18 @@ window.osdLiOpenCreate=function(lineType){
  var dc=document.getElementById('osd-li-desc');if(dc)dc.value='';
  var da=document.getElementById('osd-li-amt');if(da)da.value='';
  var m=document.getElementById('osd-li-modal');if(m)m.style.display='block';
+};
+
+// Abre o modal de +Income ja pre-preenchido com o aluguel do contrato, para o usuario confirmar
+// e lançar como um crédito real no ledger (nada é gravado automaticamente).
+window.osdQuickAddRent=function(){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ var rent=Number((cd&&cd.rent)||0);
+ if(typeof osdLiOpenCreate!=='function')return;
+ osdLiOpenCreate('income');
+ var dc=document.getElementById('osd-li-desc');if(dc)dc.value='Aluguel (contrato)';
+ var da=document.getElementById('osd-li-amt');if(da&&rent>0)da.value=rent.toFixed(2);
+ if(da)da.focus();
 };
 
 window.osdLiOpenEdit=function(id){
