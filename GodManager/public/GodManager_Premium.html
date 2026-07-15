@@ -23088,6 +23088,8 @@ function ltExpRender(){
   const pkg=esc(isPm?r.pkgLabel:'—');
   const mk=esc(isPm?(r.markupLabel!=null&&r.markupLabel!==''?r.markupLabel:(!isNaN(r.markupPct)?String(r.markupPct)+'%':'\u2014')):'\u2014');
   const vOwn=esc(ltFmt(isPm?r.ownerCharged:ltExpValueWithExtras(r)));
+  // Valor do débito a lançar no statement (o que reduz o Net Owner): owner charged (PM) ou o valor (legado).
+  var _debitAmt=Number(isPm?(r.ownerCharged||0):((typeof ltExpValueWithExtras==='function'?ltExpValueWithExtras(r):(r.value||0))||0))||0;
   const dStr=isPm?String(r.serviceDate||'').slice(0,10):(r.due||r.paid||'—');
   const catShow=esc(r.category);
   var _cdMap={TENANT:'Tenant',OWNER:'Owner',MANAGER_PROP:'Manager Prop'};
@@ -23156,6 +23158,7 @@ function ltExpRender(){
  <div class="ltp-act-more" style="display:none;gap:5px;justify-content:center;flex-wrap:wrap;align-items:center">
  <button type="button" class="gmc-trigger" data-gmc-eid="${gmHtmlEscAttr(String(r.id))}" onclick="if(typeof gmCommentsOpen==='function')gmCommentsOpen('JOB',this.getAttribute('data-gmc-eid'),{title:'Comentários'})" title="Comentários">&#128172;</button>
  <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltOpenEditExpense==='function')ltOpenEditExpense(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);border-radius:4px;font-size:10px;cursor:pointer">Editar</button>
+ <button type="button" data-exp-id="${gmHtmlEscAttr(String(r.id))}" data-exp-pid="${gmHtmlEscAttr(String(r.propertyId||''))}" data-exp-ym="${gmHtmlEscAttr(String(r.month||''))}" data-exp-amt="${gmHtmlEscAttr(String(_debitAmt))}" data-exp-lbl="${gmHtmlEscAttr(String((r.jobLabel?r.jobLabel+' — ':'')+(r.desc||r.serviceType||r.category||'Despesa')))}" onclick="if(typeof ltExpPostToStatement==='function')ltExpPostToStatement(this)" title="Lançar esta despesa como débito no statement da casa (reduz o Net Owner)" style="padding:4px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);border-radius:4px;font-size:10px;font-weight:600;cursor:pointer">Lançar no Statement</button>
  <button type="button" data-lt-eid="${gmHtmlEscAttr(r.id)}" onclick="if(typeof ltExpDelete==='function')ltExpDelete(this.getAttribute('data-lt-eid'))" style="padding:4px 8px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:4px;font-size:10px;cursor:pointer">Excluir</button>
  <button type="button" onclick="gmLtpToggleActions(this)" title="Recolher" style="padding:4px 10px;background:var(--sand);color:var(--ink3);border:1px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer">▴ Recolher</button>
  </div>
@@ -23171,6 +23174,46 @@ function ltExpRender(){
  if(typeof ltExpUpdateBulkBar==='function')ltExpUpdateBulkBar();
  ltExpSchedulePmPhotoCounts();
 }
+
+// Lança uma despesa (qualquer linha da lista de Expenses) como débito no statement individual
+// da casa correspondente. Reduz o Net Owner. Idempotente (source=AUTO_EXPENSE + sourceRefId=id).
+window.ltExpPostToStatement=async function(btn){
+ if(!btn)return;
+ var eid=String(btn.getAttribute('data-exp-id')||'').trim();
+ var pid=String(btn.getAttribute('data-exp-pid')||'').trim();
+ var ym=String(btn.getAttribute('data-exp-ym')||'').trim();
+ var amt=Number(btn.getAttribute('data-exp-amt')||0)||0;
+ var lbl=String(btn.getAttribute('data-exp-lbl')||'Despesa').trim();
+ if(!pid){alert('Esta despesa nao tem casa (property) vinculada — nao dá para lançar no statement.');return;}
+ if(!ym){alert('Esta despesa nao tem mes de referencia — nao dá para lançar no statement.');return;}
+ if(!(amt>0)){alert('Esta despesa nao tem valor a lançar (o valor deve ser maior que zero).');return;}
+ var amtLbl=(typeof ltFmt==='function')?ltFmt(amt):('$'+amt.toFixed(2));
+ if(!confirm('Lançar esta despesa como débito no statement da casa?\n\n'+lbl+'\nValor: '+amtLbl+'\nMês: '+ym+'\n\nIsto reduz o Net Owner do proprietario.')){return;}
+ var oldTxt=btn.textContent; btn.disabled=true; btn.textContent='Lançando…';
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/line-items',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   propertyId:pid,
+   yearMonth:ym,
+   lineType:'expense',
+   description:lbl,
+   amount:amt,
+   source:'AUTO_EXPENSE',
+   sourceRefId:eid
+  })});
+  var data={};try{data=await res.json();}catch(pe){data={};}
+  if(!res.ok||!data.ok){
+   btn.disabled=false; btn.textContent=oldTxt;
+   alert((data&&data.error)||('Erro '+res.status));
+   return;
+  }
+  btn.textContent=data.alreadyPosted?'✓ Já no statement':'✓ Lançado';
+  btn.style.background='var(--green-bg,#e8f5e9)';btn.style.color='var(--green,#2e7d32)';btn.style.borderColor='var(--green-bd,#a5d6a7)';
+  if(typeof showToast==='function')showToast(data.alreadyPosted?'Esta despesa ja estava no statement.':'Despesa lançada no statement (débito).');
+ }catch(err){
+  console.error(err); btn.disabled=false; btn.textContent=oldTxt;
+  alert('Falha ao lançar no statement.');
+ }
+};
 
 function ltExpExportCSV(){
  const records=(typeof ltExpMergeAll==='function')?ltExpMergeAll():ltExpGetRecords();
