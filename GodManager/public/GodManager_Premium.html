@@ -15080,8 +15080,27 @@ window.osdRenderClosingSummary=async function(){
  var fmt=window.osdFmtCurrency;
  var esc=window.osdEscHtml;
  try{
-  // O statement É o ledger: soma dos créditos e débitos dos lançamentos. Sem projeção separada —
-  // aluguel, prorated e despesas sao linhas do proprio ledger (lançadas via +Income/+Expense/sync).
+  var rent=Number(cd.rent||0);
+  var pct=(typeof ltDetailMgmtFeePct==='function')?ltDetailMgmtFeePct(cd.mgmtFeePct):(Number(cd.mgmtFeePct)||8);
+  var mgm=rent*pct/100;
+  var despesas=0;
+  var res=await fetch('/api/pm/expenses?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'same-origin',cache:'no-store'});
+  var bodyText=await res.text();
+  var data={};
+  try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
+  if(res.ok&&data.ok){
+   (data.expenses||[]).forEach(function(e){
+    if(!e||String(e.propertyId||'')!==String(cd.propertyId))return;
+    if(String(e.status||'').toUpperCase()==='CANCELLED')return;
+    despesas+=Number(e.ownerCharged||0);
+   });
+  }
+  despesas=Math.round(despesas*100)/100;
+  mgm=Math.round(mgm*100)/100;
+  var netEst=Math.round((rent-mgm-despesas)*100)/100;
+  var pctLbl=String(pct).replace(/%/g,'')+'%';
+  // NET REAL do statement = soma dos lançamentos do ledger (créditos − débitos). É o que reflete
+  // o que voce aprova/lança. Vem das line-items ja carregadas (ou do payout recalculado no servidor).
   var _lines=(window.OSD_STATE&&window.OSD_STATE.detailLines)||[];
   var ledgerInc=0,ledgerExp=0;
   _lines.forEach(function(li){
@@ -15091,13 +15110,20 @@ window.osdRenderClosingSummary=async function(){
   var _payout=window.OSD_STATE&&window.OSD_STATE.currentPayout;
   var ledgerNet=(_payout&&_payout.netPayout!=null&&!isNaN(Number(_payout.netPayout)))?Number(_payout.netPayout):Math.round((ledgerInc-ledgerExp)*100)/100;
   ledgerInc=Math.round(ledgerInc*100)/100; ledgerExp=Math.round(ledgerExp*100)/100;
-  var html='<div style="padding:12px 18px;background:var(--cream);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">';
-  html+='<div style="display:flex;gap:26px;flex-wrap:wrap">';
-  html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Créditos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:#1e7e46">'+esc(typeof fmt==='function'?fmt(ledgerInc):String(ledgerInc))+'</div></div>';
-  html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Débitos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:#b83030">'+esc(typeof fmt==='function'?fmt(ledgerExp):String(ledgerExp))+'</div></div>';
-  html+='</div>';
-  html+='<div style="text-align:right"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Saldo do statement · NET ao owner</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:22px;font-weight:800;color:'+(ledgerNet>=0?'#1e7e46':'#b83030')+'">'+esc(typeof fmt==='function'?fmt(ledgerNet):String(ledgerNet))+'</div></div>';
-  html+='</div>';
+  var html='<div style="padding:14px 18px;background:var(--cream)">';
+  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:10px">Resumo de fechamento</div>';
+  // NET OFICIAL do statement (ledger) — em destaque, reflete os lançamentos aprovados/lançados.
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:'+(ledgerNet>=0?'#eafaf0':'#fdecea')+';border:1px solid '+(ledgerNet>=0?'#a5d6a7':'#f5b7b1')+';margin-bottom:12px">';
+  html+='<div><div style="font-size:13px;font-weight:700;color:'+(ledgerNet>=0?'#1e7e46':'#b83030')+'">NET do statement ao Owner</div><div style="font-size:10px;color:var(--ink3);margin-top:2px">Total do ledger abaixo (créditos '+esc(typeof fmt==='function'?fmt(ledgerInc):String(ledgerInc))+' − débitos '+esc(typeof fmt==='function'?fmt(ledgerExp):String(ledgerExp))+'). É o valor oficial enviado ao owner.</div></div>';
+  html+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:20px;font-weight:800;color:'+(ledgerNet>=0?'#1e7e46':'#b83030')+';white-space:nowrap">'+esc(typeof fmt==='function'?fmt(ledgerNet):String(ledgerNet))+'</div></div>';
+  // Projeção (estimativa) — só para conferência; NAO é o statement.
+  html+='<div style="font-size:11px;color:var(--ink3);margin-bottom:8px;line-height:1.45">Projeção para conferência (não é o statement — não muda ao aprovar lançamentos):</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px;opacity:.9">';
+  html+='<tr><td style="padding:6px 0;color:var(--green);font-weight:600">Aluguel (contrato)</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">+'+esc(typeof fmt==='function'?fmt(rent):String(rent))+'</td></tr>';
+  html+='<tr><td style="padding:6px 0;color:var(--ink2)">Taxa de gestão MGM ('+esc(pctLbl)+')</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--amber)">−'+esc(typeof fmt==='function'?fmt(mgm):String(mgm))+'</td></tr>';
+  html+='<tr><td style="padding:6px 0;color:var(--ink2)">Despesas do mês (PM)</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">−'+esc(typeof fmt==='function'?fmt(despesas):String(despesas))+'</td></tr>';
+  html+='<tr style="border-top:1px solid var(--border)"><td style="padding:8px 0;font-size:12px;font-weight:600;color:var(--ink3)">NET estimado (projeção)</td><td style="padding:8px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:600;color:var(--ink3)">'+esc(typeof fmt==='function'?fmt(netEst):String(netEst))+'</td></tr>';
+  html+='</table></div>';
   wrap.innerHTML=html;
   wrap.style.display='block';
  }catch(e){
