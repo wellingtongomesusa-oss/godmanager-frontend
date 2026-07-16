@@ -5465,6 +5465,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <td id="osd-foot-expenses" style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--red);font-size:14px">$0.00</td>
  <td style="padding:12px 14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:15px"><span id="osd-foot-net">$0.00</span></td>
  <td style="padding:12px"></td>
+ </tr>
+ <tr style="background:var(--cream);border-top:2px solid var(--ink)">
+ <td colspan="5" style="padding:14px;text-align:right;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink)">Total do Balance</td>
+ <td colspan="2" style="padding:14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800"><span id="osd-foot-balance">$0.00</span></td>
  </tr></tfoot>
  </table>
  </div>
@@ -15067,6 +15071,11 @@ window.osdRenderLineItems=function(data){
   fn.textContent=window.osdFmtCurrency(tn);
   fn.style.color= tn>0?'var(--green)':(tn<0?'var(--red)':'var(--ink)');
  }
+ var fb=document.getElementById('osd-foot-balance');
+ if(fb){
+  fb.textContent=window.osdFmtCurrency(tn);
+  fb.style.color= tn>0?'#1e7e46':(tn<0?'#b83030':'var(--ink)');
+ }
  window.osdRenderDetailBadges(payout||null);
  window.osdApplyClosedState(payout||null);
 };
@@ -15079,34 +15088,24 @@ window.osdRenderClosingSummary=async function(){
  var fmt=window.osdFmtCurrency;
  var esc=window.osdEscHtml;
  try{
-  var rent=Number(cd.rent||0);
-  var pct=(typeof ltDetailMgmtFeePct==='function')?ltDetailMgmtFeePct(cd.mgmtFeePct):(Number(cd.mgmtFeePct)||8);
-  var mgm=rent*pct/100;
-  var despesas=0;
-  var res=await fetch('/api/pm/expenses?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'same-origin',cache:'no-store'});
-  var bodyText=await res.text();
-  var data={};
-  try{data=bodyText?JSON.parse(bodyText):{};}catch(pe){data={};}
-  if(res.ok&&data.ok){
-   (data.expenses||[]).forEach(function(e){
-    if(!e||String(e.propertyId||'')!==String(cd.propertyId))return;
-    if(String(e.status||'').toUpperCase()==='CANCELLED')return;
-    despesas+=Number(e.ownerCharged||0);
-   });
-  }
-  despesas=Math.round(despesas*100)/100;
-  mgm=Math.round(mgm*100)/100;
-  var netEst=Math.round((rent-mgm-despesas)*100)/100;
-  var pctLbl=String(pct).replace(/%/g,'')+'%';
-  var html='<div style="padding:14px 18px;background:var(--cream)">';
-  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:10px">Resumo de fechamento (estimativa)</div>';
-  html+='<div style="font-size:11px;color:var(--ink3);margin-bottom:12px;line-height:1.45">Valores estimados para conferência. O NET oficial lançado é o do ledger abaixo (totais do statement).</div>';
-  html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html+='<tr><td style="padding:6px 0;color:var(--green);font-weight:600">Aluguel</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">+'+esc(typeof fmt==='function'?fmt(rent):String(rent))+'</td></tr>';
-  html+='<tr><td style="padding:6px 0;color:var(--ink2)">Taxa de gestão MGM ('+esc(pctLbl)+')</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--amber)">−'+esc(typeof fmt==='function'?fmt(mgm):String(mgm))+'</td></tr>';
-  html+='<tr><td style="padding:6px 0;color:var(--ink2)">Despesas do mês</td><td style="padding:6px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">−'+esc(typeof fmt==='function'?fmt(despesas):String(despesas))+'</td></tr>';
-  html+='<tr style="border-top:2px solid var(--border)"><td style="padding:10px 0;font-size:13px;font-weight:700;color:var(--blue)">NET estimado ao Owner</td><td style="padding:10px 0;text-align:right;font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:'+(netEst>=0?'var(--blue)':'var(--red)')+'">'+esc(typeof fmt==='function'?fmt(netEst):String(netEst))+'</td></tr>';
-  html+='</table></div>';
+  // Balance real do statement = soma dos lançamentos do ledger (créditos − débitos). Atualiza
+  // sozinho quando novas linhas sao lançadas (ex.: Work Orders). Nao altera nenhum lançamento.
+  var _lines=(window.OSD_STATE&&window.OSD_STATE.detailLines)||[];
+  var ledInc=0,ledExp=0;
+  _lines.forEach(function(li){
+   var a=Number((typeof window.osdParseNum==='function')?window.osdParseNum(li.amount):(parseFloat(li.amount)||0))||0;
+   if(String(li.lineType).toLowerCase()==='income')ledInc+=a; else ledExp+=a;
+  });
+  var _po=window.OSD_STATE&&window.OSD_STATE.currentPayout;
+  var balance=(_po&&_po.netPayout!=null&&!isNaN(Number(_po.netPayout)))?Number(_po.netPayout):Math.round((ledInc-ledExp)*100)/100;
+  ledInc=Math.round(ledInc*100)/100; ledExp=Math.round(ledExp*100)/100;
+  var html='<div style="padding:14px 18px;background:var(--cream);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">';
+  html+='<div style="display:flex;gap:26px;flex-wrap:wrap">';
+  html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Créditos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:var(--green)">'+esc(typeof fmt==='function'?fmt(ledInc):String(ledInc))+'</div></div>';
+  html+='<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Débitos</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:700;color:var(--red)">'+esc(typeof fmt==='function'?fmt(ledExp):String(ledExp))+'</div></div>';
+  html+='</div>';
+  html+='<div style="text-align:right"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Balance · NET ao owner</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:20px;font-weight:800;color:'+(balance>=0?'var(--ink)':'var(--red)')+'">'+esc(typeof fmt==='function'?fmt(balance):String(balance))+'</div></div>';
+  html+='</div>';
   wrap.innerHTML=html;
   wrap.style.display='block';
  }catch(e){
