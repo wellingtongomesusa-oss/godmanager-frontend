@@ -5423,6 +5423,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="osd-preview-pdf" onclick="if(typeof osdPreviewPdf==='function')osdPreviewPdf()" title="Abrir PDF para visualização" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Visualizar PDF</button>
  <button type="button" id="osd-download-pdf" onclick="if(typeof osdDownloadPdf==='function')osdDownloadPdf()" title="Baixar PDF do statement" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Baixar PDF</button>
  <button type="button" id="osd-export-list" onclick="if(typeof osdExportListOpen==='function')osdExportListOpen()" title="Extrair todos os statements do mes em tabela e CSV" style="padding:8px 14px;background:var(--paper);color:var(--ink);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Extrair statements</button>
+ <button type="button" id="osd-post-mgm-bulk" onclick="if(typeof osdPostMgmBulk==='function')osdPostMgmBulk()" title="Lança a taxa de gestao (MGM) do mes em todos os statements, na taxa de cada casa. Nao duplica; respeita statements fechados." style="padding:8px 14px;background:#7c3aed;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Lançar MGM (mês)</button>
  </div>
  <div id="osd-toolbar-close" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;flex-shrink:0">
  <button type="button" id="osd-close" onclick="if(typeof osdCloseStatement==='function')osdCloseStatement()" style="padding:8px 14px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">Fechar statement</button>
@@ -15337,6 +15338,28 @@ window.osdExportListCsv=function(){
  lines.push(['TOTAL','','',Number(t.credits||0).toFixed(2),Number(t.debits||0).toFixed(2),Number(t.net||0).toFixed(2),''].join(','));
  var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='statements_'+ym+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
+};
+
+// Lança em massa a taxa de gestao (MGM) do mes em todos os statements, na taxa de cada casa.
+// Idempotente por mes (nao duplica); pula statements fechados. Somente aprovadores.
+window.osdPostMgmBulk=async function(){
+ var ymSel=document.getElementById('osd-period');
+ var ym=(ymSel&&/^\d{4}-\d{2}$/.test(ymSel.value))?ymSel.value:((typeof osdYearMonthCurrent==='function')?osdYearMonthCurrent():new Date().toISOString().slice(0,7));
+ var cid=(typeof gmClientUsersResolveScopeId==='function')?gmClientUsersResolveScopeId():'';
+ var lbl=(typeof window.osdFmtPeriod==='function')?window.osdFmtPeriod(ym):ym;
+ if(!confirm('Lançar a taxa de gestao (MGM) de '+lbl+' ('+ym+') em todos os statements desse mes?\n\n- Usa a taxa de cada casa.\n- Nao duplica (uma MGM por casa por mes).\n- Pula statements ja fechados.')) return;
+ var btn=document.getElementById('osd-post-mgm-bulk');
+ var old=btn?btn.textContent:'';
+ if(btn){btn.disabled=true;btn.textContent='Lançando...';}
+ try{
+  var res=await fetch('/api/manager-pro/owner-statement/post-mgm-bulk',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({yearMonth:ym,clientId:cid||undefined})});
+  var data={};try{data=await res.json();}catch(pe){data={};}
+  if(!res.ok||!data.ok){alert((data&&data.error)||('Erro '+res.status));return;}
+  var s=data.summary||{};
+  alert('MGM de '+lbl+':\n\n- Lançadas: '+(s.posted||0)+'\n- Ja existiam (nao duplicou): '+(s.duplicated||0)+'\n- Statements fechados (pulados): '+(s.closed||0)+'\n- Sem taxa/aluguel (pulados): '+(s.noFee||0)+(s.failed?('\n- Falhas: '+s.failed):''));
+  if(typeof osdLoadStatement==='function')await osdLoadStatement();
+ }catch(e){console.error(e);alert('Falha ao lançar MGM em massa.');}
+ finally{if(btn){btn.disabled=false;btn.textContent=old;}}
 };
 
 window.osdLoadStatement=async function(){
