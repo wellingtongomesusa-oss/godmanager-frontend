@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   try {
     const scopeUser = toClientScopeUser(user);
-    const body = (await req.json().catch(() => ({}))) as { yearMonth?: string; clientId?: string };
+    const body = (await req.json().catch(() => ({}))) as { yearMonth?: string; clientId?: string; undo?: boolean };
     const ym = normalizeYearMonthForWrite(String(body?.yearMonth || '').trim());
     if (!ym || !YEAR_MONTH.test(ym)) {
       return NextResponse.json({ ok: false, error: 'yearMonth invalido.' }, { status: 400 });
@@ -55,13 +55,49 @@ export async function POST(req: Request) {
       propWhere.clientId = clientIdParam;
     }
 
+    const sourceRefId = `mgmt-fee:${ym}`;
+
+    // DESFAZER: remove somente as linhas de MGM que ESTE botao lançou (source=MANUAL,
+    // sourceRefId=mgmt-fee:<mes>), no escopo, pulando statements fechados. Nao toca em MGM de
+    // outra origem (CSV/manual) nem em qualquer outro lançamento.
+    if (body?.undo === true) {
+      const lines = await prisma.statementLineItem.findMany({
+        where: {
+          source: 'MANUAL',
+          sourceRefId,
+          ownerMonthPayout: { yearMonth: ym, closedAt: null, property: propWhere },
+        },
+        select: { id: true, ownerMonthPayoutId: true },
+      });
+      const payoutIds = Array.from(new Set(lines.map((l) => l.ownerMonthPayoutId)));
+      let removed = 0;
+      if (lines.length) {
+        await prisma.statementLineItem.deleteMany({ where: { id: { in: lines.map((l) => l.id) } } });
+        removed = lines.length;
+        for (const pid of payoutIds) {
+          await recomputeOwnerMonthPayoutTotals(pid, prisma);
+        }
+        await prisma.auditEntry.create({
+          data: {
+            actorId: user.id,
+            actorEmail: user.email ?? null,
+            action: 'owner_statement.mgm_bulk.undo',
+            entity: 'owner_month_payout',
+            entityId: ym,
+            clientId: clientIdParam || scopeUser.clientId || null,
+            details: JSON.stringify({ yearMonth: ym, removed, payouts: payoutIds.length }),
+          },
+        });
+      }
+      return NextResponse.json({ ok: true, yearMonth: ym, undo: true, summary: { removed, payouts: payoutIds.length } });
+    }
+
     const properties = await prisma.property.findMany({
       where: propWhere,
       select: { id: true, code: true, rent: true, mgmtFeePct: true, clientId: true },
       orderBy: { code: 'asc' },
     });
 
-    const sourceRefId = `mgmt-fee:${ym}`;
     let posted = 0, duplicated = 0, closed = 0, noFee = 0, failed = 0;
 
     for (const p of properties) {
