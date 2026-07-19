@@ -61,23 +61,32 @@ const nextConfig = {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains',
           },
+          {
+            // Permite so o que o app usa na propria origem (microfone p/ voz da SophIA,
+            // geolocalizacao p/ execucao de Jobs) e bloqueia camera/pagamento/usb.
+            key: 'Permissions-Policy',
+            value: 'geolocation=(self), microphone=(self), camera=(), payment=(), usb=()',
+          },
         ],
       },
     ];
   },
   /**
    * Mesma origem na porta do Next (ex.: 3101): /crm/* e APIs do CRM Flask passam pelo proxy.
-   * Inclui QuickBooks: /crm/integrations/quickbooks/* e /api/quickbooks/* (mesmo destino CRM).
+   * ATENÇÃO: /api/quickbooks/* é NATIVO do Next.js (NÃO proxyar — o proxy engole o code/state
+   * do OAuth callback). O legado /crm/integrations/quickbooks/* segue proxyado.
    * O servidor Flask deve estar a correr (ex.: run_crm_manager_prop.py na 5001), salvo outro CRM_BACKEND_URL.
    */
   async rewrites() {
     const b = crmBackend.replace(/\/$/, '');
     return [
+      // NOTA: /api/quickbooks/* NÃO é mais proxyado ao Flask — o QuickBooks OAuth +
+      // lançamentos são rotas nativas do Next.js (app/api/quickbooks/*). O proxy antigo
+      // engolia o code/state do callback (ia p/ o backend legado 'godmanager', hoje caído).
       {
         source: '/crm/integrations/quickbooks/:path*',
         destination: `${b}/crm/integrations/quickbooks/:path*`,
       },
-      { source: '/api/quickbooks/:path*', destination: `${b}/api/quickbooks/:path*` },
       { source: '/crm/:path*', destination: `${b}/crm/:path*` },
       { source: '/api/integrations/:path*', destination: `${b}/api/integrations/:path*` },
       { source: '/api/webhooks/:path*', destination: `${b}/api/webhooks/:path*` },
