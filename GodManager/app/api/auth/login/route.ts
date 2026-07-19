@@ -10,6 +10,7 @@ import {
 import { createSessionCookie } from '@/lib/authServer';
 import { decryptField } from '@/lib/encryption';
 import { verifyTotp, hashBackupCode } from '@/lib/totp';
+import { sendEmail } from '@/lib/email';
 import type { UserRole } from '@/lib/types';
 
 function isDatabaseUnreachable(e: unknown): boolean {
@@ -109,6 +110,50 @@ export async function POST(req: Request) {
       where: { id: user.id },
       data: updateData,
     });
+
+    // Alerta de login de novo dispositivo/IP — PURAMENTE ADITIVO: envelopado em try/catch,
+    // nunca bloqueia nem altera o login, nao apaga nada. Registra cada login bem-sucedido no
+    // audit (ip+userAgent) e, se ja existe historico e o IP e novo, avisa o usuario por e-mail.
+    try {
+      const ua = (req.headers.get('user-agent') || '').slice(0, 300);
+      const ipKnown = !!ip && ip !== 'unknown';
+      let isNewDevice = false;
+      if (ipKnown) {
+        const [priorSameIp, priorAny] = await Promise.all([
+          prisma.auditEntry.findFirst({ where: { actorId: user.id, action: 'auth.login.success', ip }, select: { id: true } }),
+          prisma.auditEntry.findFirst({ where: { actorId: user.id, action: 'auth.login.success' }, select: { id: true } }),
+        ]);
+        // so alerta se ja ha baseline de login (priorAny) E este IP nunca foi visto.
+        isNewDevice = !priorSameIp && !!priorAny;
+      }
+      await prisma.auditEntry.create({
+        data: {
+          actorId: user.id,
+          actorEmail: user.email ?? null,
+          action: 'auth.login.success',
+          entity: 'user',
+          entityId: user.id,
+          clientId: user.clientId ?? null,
+          ip: ipKnown ? ip : null,
+          userAgent: ua || null,
+          details: JSON.stringify({ newDevice: isNewDevice }),
+        },
+      });
+      if (isNewDevice && user.email) {
+        const when = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+        const uaSafe = ua.replace(/[<>]/g, '');
+        void sendEmail({
+          to: user.email,
+          subject: 'GodManager — novo acesso à sua conta',
+          html: `<p>Detectámos um acesso à sua conta GodManager a partir de um dispositivo ou local novo.</p>`
+            + `<p><b>Quando:</b> ${when}<br/><b>IP:</b> ${ip}<br/><b>Dispositivo:</b> ${uaSafe}</p>`
+            + `<p>Se foi você, pode ignorar este aviso. Se não reconhece este acesso, troque a sua senha imediatamente e ative a verificação em duas etapas (2FA) nas configurações.</p>`,
+          text: `Novo acesso à sua conta GodManager. Quando: ${when}. IP: ${ip}. Dispositivo: ${ua}. Se não foi você, troque a senha e ative o 2FA.`,
+        }).catch(() => {});
+      }
+    } catch {
+      /* nunca impacta o login */
+    }
 
     const cookie = createSessionCookie(user.id, user.role as UserRole);
     const res = NextResponse.json({
