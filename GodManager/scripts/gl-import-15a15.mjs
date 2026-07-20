@@ -30,7 +30,14 @@ if (!csvPath || !clientId) {
   process.exit(1);
 }
 
-const prisma = new PrismaClient();
+// Pool pequeno + timeout curto: evita "too many clients already" no Postgres local.
+const _db = process.env.DATABASE_URL || '';
+const _url = _db ? _db + (_db.includes('?') ? '&' : '?') + 'connection_limit=3&pool_timeout=10' : undefined;
+const prisma = new PrismaClient(_url ? { datasources: { db: { url: _url } } } : undefined);
+// Garante o disconnect em qualquer saida (evita conexoes penduradas).
+for (const sig of ['exit', 'SIGINT', 'SIGTERM', 'uncaughtException']) {
+  process.on(sig, () => { try { prisma.$disconnect(); } catch { /* noop */ } });
+}
 
 function parseCsvLine(line) {
   const out = []; let cur = '', q = false;

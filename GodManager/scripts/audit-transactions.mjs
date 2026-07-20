@@ -80,9 +80,8 @@ for (const [key, ref] of refByName) {
     ambig.push({ rule: 'Descasamento de caução', date: '', name: key, acct: 'Security Deposit', amount: ref - dep, why: `reembolso ${money(ref)} vs retido ${money(dep)} — diferença ${money(ref - dep)}` });
   }
 }
-// R6: numeracao de invoice — lacunas + Voided
-const invoiceTypes = /invoice|charge/i;
-const nums = rows.filter((r) => invoiceTypes.test(r.type) && /^\d+$/.test(r.numRaw)).map((r) => parseInt(r.numRaw, 10));
+// R6: numeracao de invoice — lacunas + Voided. So a serie "Invoice" (Charges nao sao sequenciais).
+const nums = rows.filter((r) => /^invoice$/i.test(r.type) && /^\d+$/.test(r.numRaw)).map((r) => parseInt(r.numRaw, 10));
 const voided = rows.filter((r) => /void/i.test(r.type) || /void/i.test(r.memo));
 let gaps = [];
 if (nums.length) {
