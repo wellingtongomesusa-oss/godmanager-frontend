@@ -82,6 +82,7 @@ export async function GET(req: Request) {
           mgm: round2(b.mgm),
           rep: round2(b.rep),
           mgmPct: b.rent ? round2((b.mgm / b.rent) * 100) : 0,
+          repPct: b.rent ? round2((b.rep / b.rent) * 100) : 0,
           rentCount: b.rentCount,
           rentedHouses: rented,
           paidHouses: paid,
@@ -121,6 +122,7 @@ export async function GET(req: Request) {
       totals: {
         rent: tRent, mgm: tMgm, rep: tRep,
         mgmPct: tRent ? round2((tMgm / tRent) * 100) : 0,
+        repPct: tRent ? round2((tRep / tRent) * 100) : 0,
         feeExpected: tFeeExpected,
         feeDiff: round2(tMgm - tFeeExpected),
         properties: properties.length,
