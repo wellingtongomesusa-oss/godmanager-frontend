@@ -1582,6 +1582,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
  <div class="ss" onclick="nav('gl-study')" id="nav-gl-study" style="padding-left:16px"><span>Estudo GL (Aluguéis × MGM)</span></div>
+ <div class="ss" onclick="nav('correlations')" id="nav-correlations" style="padding-left:16px"><span>Correlações &amp; Padrões</span></div>
  <div class="ss" onclick="gmInvestModalOpen()" id="nav-invest" style="padding-left:16px"><span>Invest Home</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
  <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span data-i18n="nav_bookkeeping">Bookkeeping</span></div>
@@ -7081,6 +7082,22 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
 
 <!-- ============================================================ -->
+<div class="page" id="page-correlations">
+ <div class="ph">
+  <div class="pt">Correlações &amp; Padrões</div>
+  <div class="ps">Dados conectados por imóvel: aluguel (GL) × manutenção/chamados × repasse. Só leitura.</div>
+ </div>
+ <div style="margin:0 0 14px"><button onclick="gmCorrelationsRender()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Recalcular</button> <span id="corr-status" style="font-size:11px;color:var(--ink3);margin-left:8px"></span></div>
+ <div id="corr-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px"></div>
+ <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px">Correlações (Pearson, −1 a +1)</div>
+ <div id="corr-list" style="display:grid;gap:10px;margin-bottom:22px"></div>
+ <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px">Top 10 — maior razão manutenção/receita</div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper);margin-bottom:22px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Aluguel</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#b83030">Manutenção</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Chamados</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:#b45309" title="Custo de manutenção ÷ aluguel recebido">Manut./receita</th></tr></thead><tbody id="corr-maint"></tbody></table></div>
+ <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px">Top 10 — maior lag recebimento→repasse (dias)</div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper);margin-bottom:22px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Aluguel</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#b83030">Repasse</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="Dias médios entre receber o aluguel e repassar ao owner (no ciclo)">Lag (dias)</th></tr></thead><tbody id="corr-lag"></tbody></table></div>
+</div>
+
+<!-- ============================================================ -->
 <div class="page" id="page-results-upload">
  <div class="ph">
   <div class="pt" data-i18n="upload_reports">Upload Reports</div>
@@ -12149,7 +12166,7 @@ var GM_MENU_ACCESS_SECTIONS=[
  {key:'compliance',label:'COMPLIANCE',items:[{key:'licenses',label:'Licenses'},{key:'1099',label:'1099 / IRS'},{key:'gaap',label:'GAAP'}]},
  {key:'operations',label:'OPERATIONS',items:[{key:'phonelines',label:'Phone Lines'},{key:'vault',label:'Vault'},{key:'cars',label:'Cars & Insurance'},{key:'inspections',label:'Inspections'},{key:'tasks',label:'Tasks'}]},
  {key:'integrations',label:'INTEGRATIONS',items:[{key:'integrations',label:'Connect'},{key:'ramp',label:'Ramp'},{key:'quickbooks',label:'QuickBooks'},{key:'ap-ar',label:'A Pagar/Receber (QB)'},{key:'appfolio-upload',label:'AppFolio Upload'},{key:'uploads-central',label:'Central de uploads'}]},
- {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'gl-study',label:'Estudo GL'},{key:'invest',label:'Invest Home'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
+ {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'gl-study',label:'Estudo GL'},{key:'correlations',label:'Correlações & Padrões'},{key:'invest',label:'Invest Home'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
  {key:'ai-assistant',label:'AI ASSISTANT',items:[{key:'bookkeeping-ai',label:'Bookkeeping AI'},{key:'analytics',label:'Analytics'},{key:'auditoria-2026',label:'Auditoria 2026'}]},
  {key:'admin',label:'ADMIN',items:[{key:'admin-dashboard',label:'Dashboard Admin'},{key:'clients',label:'Clients'},{key:'admin-users',label:'Users'},{key:'backup',label:'Backup & Restore'},{key:'settings-gm',label:'Settings'},{key:'gross-expenses',label:'Gross & Expenses'},{key:'forms-received',label:'Forms Received'},{key:'admin-audit',label:'Audit Log'},{key:'org-chart',label:'Org Chart'}]},
  {key:'mycompany',label:'MY COMPANY',items:[{key:'client-users',label:'Equipe'},{key:'audit-log-tenant',label:'Audit Log'},{key:'settings-co',label:'Settings'}]}
@@ -14505,6 +14522,7 @@ function nav(r){
  'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();},
  results:()=>{if(typeof gmResRender==='function')gmResRender();},
  'gl-study':()=>{if(typeof gmGlStudyRender==='function')gmGlStudyRender();},
+ 'correlations':()=>{if(typeof gmCorrelationsRender==='function')gmCorrelationsRender();},
  'uploads-central':()=>{},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();var _rm=document.getElementById('rec-month');if(_rm&&!_rm.value){var _d=new Date();_rm.value=_d.getUTCFullYear()+'-'+String(_d.getUTCMonth()+1).padStart(2,'0');}},
@@ -15185,10 +15203,74 @@ window.gmGlStudyRender=async function(){
    cards.innerHTML=card('Aluguel recebido (4100)',money(t.rent),'#2a6e4e')+card('MGM fee cobrado (6111)',money(t.mgm),'var(--ink)')+card('MGM fee esperado (cadastro)',money(t.feeExpected),'var(--ink)')+card('Dif fee (cobrado − esperado)',((Number(t.feeDiff)||0)>0?'+':'')+money(t.feeDiff),dfeeCol)+card('% MGM efetivo',(t.mgmPct||0).toFixed(1)+'%','var(--amber)')+card('Repasse ao owner (3250)',money(t.rep),'#b83030')+card('% repasse médio (repasse÷aluguel)',(t.repPct||0).toFixed(1)+'%','#b83030')+card('Casas',(t.properties||0),'var(--ink)');
   }
   var mb=document.getElementById('gl-study-months');
-  if(mb){mb.innerHTML=(j.months||[]).map(function(m){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace">'+esc(m.month)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(m.rent)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(m.mgm)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+(m.mgm===0&&m.rent>0?';color:#b45309;font-weight:700':'')+'">'+(m.mgmPct||0).toFixed(1)+'%</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(m.rep)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+(m.repPct||0).toFixed(1)+'%</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+(m.rentedHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e;font-weight:700">'+(m.paidHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+((m.pendingPayoutHouses||0)>0?';color:#b45309;font-weight:700':';color:var(--ink3)')+'">'+(m.pendingPayoutHouses||0)+'</td></tr>';}).join('')||'<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink3)">Sem dados. Importe o GL (Central de uploads ou Statement individual) e reimporte para trazer o 6111.</td></tr>';}
+  if(mb){mb.innerHTML=(j.months||[]).map(function(m){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace">'+esc(m.month)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(m.rent)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(m.mgm)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+(m.mgm===0&&m.rent>0?';color:#b45309;font-weight:700':'')+'">'+(m.mgmPct||0).toFixed(1)+'%</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(m.rep)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+(m.repPct||0).toFixed(1)+'%</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+(m.rentedHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e;font-weight:700">'+(m.paidHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+((m.pendingPayoutHouses||0)>0?';color:#b45309;font-weight:700':';color:var(--ink3)')+'">'+((m.pendingPayoutHouses||0)>0?'<span onclick="gmGlPendingOpen(\''+esc(m.month)+'\')" title="Ver casas pendentes de repasse" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">'+(m.pendingPayoutHouses||0)+'</span>':(m.pendingPayoutHouses||0))+'</td></tr>';}).join('')||'<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink3)">Sem dados. Importe o GL (Central de uploads ou Statement individual) e reimporte para trazer o 6111.</td></tr>';}
   var pb=document.getElementById('gl-study-props');
   if(pb){pb.innerHTML=(j.properties||[]).map(function(p){return '<tr style="border-bottom:1px solid var(--border)'+(!p.matched?';background:#fffdf8':'')+'"><td style="padding:7px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(p.code||'—')+'</td><td style="padding:7px 12px">'+esc(p.name||'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(p.rent)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(p.mgm)+'</td><td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace">'+(p.mgmPct||0).toFixed(1)+'%</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(p.rep)+'</td><td style="padding:5px 8px;text-align:center;white-space:nowrap">'+(p.matched?('<input type="number" step="0.1" min="0" max="100" value="'+(p.regPct||0)+'" onchange="if(typeof gmGlStudySetFee===\'function\')gmGlStudySetFee(\''+esc(p.propertyId)+'\',this.value)" title="% de gestão cadastrado — edite para corrigir" style="width:54px;padding:3px 5px;border:1px solid var(--border2);border-radius:5px;font-size:11px;text-align:right;background:var(--sand);color:var(--ink)"> %'):'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+money(p.feeExpected)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:'+((Number(p.feeDiff)||0)<-0.5?'#b83030':((Number(p.feeDiff)||0)>0.5?'#2a6e4e':'var(--ink3)'))+';font-weight:'+(Math.abs(Number(p.feeDiff)||0)>0.5?'700':'400')+'">'+((Number(p.feeDiff)||0)>0?'+':'')+money(p.feeDiff)+'</td></tr>';}).join('');}
   if(st)st.textContent=(j.months||[]).length+' meses · '+(j.properties||[]).length+' casas';
+ }catch(e){if(st)st.textContent='Erro de rede.';}
+};
+// Popup das casas pendentes de repasse num mês (coluna Pendentes do Estudo GL).
+window.gmGlPendingOpen=function(month){
+ var j=window.__gmGlStudy;if(!j||!j.months){alert('Clique em Atualizar primeiro.');return;}
+ var m=(j.months||[]).filter(function(x){return String(x.month)===String(month);})[0];
+ if(!m){return;}
+ var list=m.pendingList||[];
+ window.__gmGlPending={month:month,list:list};
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var totRent=0,totApr=0;list.forEach(function(p){totRent+=Number(p.rent)||0;totApr+=Number(p.approxPayout)||0;});
+ var rows=list.map(function(p){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(p.code||'—')+'</td><td style="padding:7px 12px">'+esc(p.name||'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(p.rent)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b45309;font-weight:700">'+money(p.approxPayout)+'</td></tr>';}).join('')||'<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--ink3)">Sem casas pendentes neste mês.</td></tr>';
+ var ov=document.getElementById('gm-glpending-ov');if(ov)ov.remove();
+ ov=document.createElement('div');ov.id='gm-glpending-ov';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(20,16,10,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+ ov.onclick=function(e){if(e.target===ov)ov.remove();};
+ ov.innerHTML='<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:720px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.28)">'
+  +'<div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:16px;font-weight:700;color:var(--ink)">Casas pendentes de repasse — '+esc(month)+'</div><div style="font-size:11px;color:var(--ink3);margin-top:3px">Receberam aluguel mas o owner ainda não foi pago. Valor aprox. = aluguel − fee de gestão cadastrado.</div></div><button onclick="document.getElementById(\'gm-glpending-ov\').remove()" style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--ink3)">×</button></div>'
+  +'<div style="padding:0 22px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream);position:sticky;top:0"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Código</th><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Aluguel recebido</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#b45309">Repasse aprox.</th></tr></thead><tbody>'+rows+'</tbody>'
+  +'<tfoot><tr style="border-top:2px solid var(--border);font-weight:700"><td style="padding:9px 12px" colspan="2">Total ('+list.length+' casas)</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(totRent)+'</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b45309">'+money(totApr)+'</td></tr></tfoot></table></div>'
+  +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px"><button onclick="gmGlPendingCsv()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">↓ Baixar CSV</button></div>'
+  +'</div>';
+ document.body.appendChild(ov);
+};
+window.gmGlPendingCsv=function(){
+ var d=window.__gmGlPending;if(!d){return;}
+ var cell=function(v){var s=String(v==null?'':v);return /[",\r\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var lines=[['Codigo','Propriedade','Aluguel recebido','Repasse aproximado'].join(',')];
+ (d.list||[]).forEach(function(p){lines.push([cell(p.code||''),cell(p.name||''),cell(Number(p.rent||0).toFixed(2)),cell(Number(p.approxPayout||0).toFixed(2))].join(','));});
+ var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='casas_pendentes_'+(d.month||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
+};
+// #46 Correlações & Padrões: conecta GL (aluguel/repasse/mgm) com despesas/chamados por casa.
+window.gmCorrelationsRender=async function(){
+ var st=document.getElementById('corr-status');if(st)st.textContent='Calculando…';
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var res=await fetch('/api/analytics/correlations'+q,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){if(st)st.textContent=(j&&j.error)||('Erro '+res.status);return;}
+  window.__gmCorr=j;var t=j.totals||{};
+  var cards=document.getElementById('corr-cards');
+  if(cards){
+   var card=function(lbl,val,col){return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--paper);padding:16px 18px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">'+lbl+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:20px;font-weight:700;color:'+(col||'var(--ink)')+';margin-top:6px">'+val+'</div></div>';};
+   var mrp=(t.maintRatioPct==null?'—':(Number(t.maintRatioPct).toFixed(1)+'%'));
+   cards.innerHTML=card('Casas analisadas',(t.properties||0),'var(--ink)')+card('Aluguel recebido',money(t.rent),'#2a6e4e')+card('Custo de manutenção',money(t.maint),'#b83030')+card('Manutenção ÷ receita',mrp,'var(--amber)');
+  }
+  var cl=document.getElementById('corr-list');
+  if(cl){cl.innerHTML=(j.correlations||[]).map(function(c){
+    var r=c.r;var has=r!=null;var pct=has?Math.round(Math.abs(r)*100):0;
+    var col=!has?'var(--ink3)':(r>=0?'#2a6e4e':'#b83030');
+    var val=has?((r>0?'+':'')+Number(r).toFixed(2)):'n/d';
+    return '<div style="border:1px solid var(--border);border-radius:10px;background:var(--paper);padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div style="font-size:12px;font-weight:600;color:var(--ink)">'+esc(c.label)+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:16px;font-weight:700;color:'+col+'">'+val+'</div></div><div style="height:6px;background:var(--cream);border-radius:4px;margin-top:8px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:5px">'+esc(c.note||'')+'</div></div>';
+   }).join('')||'<div style="color:var(--ink3);font-size:12px">Sem dados suficientes. Importe o GL e registre despesas/chamados.</div>';}
+  var mrow=function(p){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 12px">'+esc(p.name||'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(p.rent)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(p.maint)+'</td><td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace">'+(p.jobs||0)+'</td><td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:'+((Number(p.maintRatioPct)||0)>=30?'#b83030':((Number(p.maintRatioPct)||0)>=15?'#b45309':'var(--ink2)'))+'">'+(p.maintRatioPct==null?'—':(Number(p.maintRatioPct).toFixed(1)+'%'))+'</td></tr>';};
+  var mb=document.getElementById('corr-maint');
+  if(mb){mb.innerHTML=(j.topMaintRatio||[]).map(mrow).join('')||'<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--ink3)">Sem dados.</td></tr>';}
+  var lrow=function(p){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 12px">'+esc(p.name||'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(p.rent)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(p.sent)+'</td><td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:'+((Number(p.lagDays)||0)>=20?'#b83030':((Number(p.lagDays)||0)>=10?'#b45309':'var(--ink2)'))+'">'+(p.lagDays==null?'—':Number(p.lagDays).toFixed(1))+'</td></tr>';};
+  var lb=document.getElementById('corr-lag');
+  if(lb){lb.innerHTML=(j.topLag||[]).map(lrow).join('')||'<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--ink3)">Sem dados.</td></tr>';}
+  if(st)st.textContent=(t.properties||0)+' casas · '+(t.matched||0)+' casadas';
  }catch(e){if(st)st.textContent='Erro de rede.';}
 };
 window.gmGlStudyCsv=function(which){

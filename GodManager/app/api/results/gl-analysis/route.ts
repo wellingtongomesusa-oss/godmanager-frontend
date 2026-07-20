@@ -71,11 +71,24 @@ export async function GET(req: Request) {
       .map(([month, b]) => {
         const mp = monthProp.get(month) || new Map();
         let paid = 0, pendingPayout = 0, rented = 0;
-        for (const cell of mp.values()) {
+        // Lista das casas pendentes de repasse: receberam aluguel (rent>0) mas sem repasse (rep<=0).
+        const pendingList: { code: string; name: string; rent: number; approxPayout: number }[] = [];
+        for (const [pkey, cell] of mp.entries()) {
           if (cell.rent > 0) rented += 1;
           if (cell.rep > 0) paid += 1;
-          else if (cell.rent > 0) pendingPayout += 1;
+          else if (cell.rent > 0) {
+            pendingPayout += 1;
+            const bp = byProp.get(pkey);
+            const reg = bp?.propertyId ? effPct(feePctById.get(bp.propertyId) ?? 8) : 8;
+            pendingList.push({
+              code: bp?.code || '',
+              name: bp?.name || pkey.replace(/^__u__:/, ''),
+              rent: round2(cell.rent),
+              approxPayout: round2(cell.rent * (1 - reg / 100)),
+            });
+          }
         }
+        pendingList.sort((a, b) => b.rent - a.rent);
         return {
           month,
           rent: round2(b.rent),
@@ -87,6 +100,7 @@ export async function GET(req: Request) {
           rentedHouses: rented,
           paidHouses: paid,
           pendingPayoutHouses: pendingPayout,
+          pendingList,
         };
       });
 
