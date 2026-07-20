@@ -5467,6 +5467,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" onclick="if(typeof osdShiftPeriod==='function')osdShiftPeriod(1)" title="Próximo mês" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;line-height:1">▶</button>
  <input id="osd-search-tenant" type="text" oninput="if(typeof osdRebuildPropertySelect==='function')osdRebuildPropertySelect()" placeholder="Filtrar por tenant..." style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none;width:220px">
  <button type="button" id="osd-load" onclick="if(typeof osdLoadActiveTab==='function')osdLoadActiveTab()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Carregar</button>
+ <input type="file" id="osd-gl-file" accept=".csv,text/csv" style="display:none" onchange="if(typeof gmOsdGlImport==='function')gmOsdGlImport(this)">
+ <button type="button" onclick="document.getElementById('osd-gl-file').click()" title="Importa o General Ledger (AppFolio) — recebidos (4100) e enviados ao owner (3250) por casa, ciclo 15-a-15" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#8593; Importar GL (CSV)</button>
+ <span id="osd-gl-status" style="font-size:11px;color:var(--ink3)"></span>
  </div>
 
  <div id="osd-empty-state" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px;background:var(--paper);border:1px solid var(--border);border-radius:10px">Selecione uma propriedade e o mês</div>
@@ -5582,10 +5585,12 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Pagador</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tipo</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Referência</th>
  </tr></thead>
  <tbody id="osd-tab-rc-tbody"></tbody>
+ <tfoot><tr style="background:var(--cream);border-top:2px solid var(--border);font-weight:700"><td colspan="3" style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Total recebido</td><td id="osd-tab-rc-total" style="padding:10px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--green)">$0.00</td><td></td></tr></tfoot>
  </table>
  </div>
  </div>
@@ -5595,13 +5600,15 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden">
  <div id="osd-tab-pg-empty" style="padding:36px;text-align:center;color:var(--ink3);font-size:13px">Nenhum repasse registrado neste mês.</div>
  <div id="osd-tab-pg-table-wrap" style="display:none;overflow-x:auto">
- <table style="width:100%;border-collapse:collapse;min-width:520px">
+ <table style="width:100%;border-collapse:collapse;min-width:680px">
  <thead><tr style="background:var(--cream);border-bottom:1px solid var(--border)">
  <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Data</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Beneficiário / Descrição</th>
+ <th style="padding:10px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Tipo</th>
  <th style="padding:10px 12px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Valor</th>
- <th style="padding:10px 12px;text-align:center;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)">Status</th>
  </tr></thead>
  <tbody id="osd-tab-pg-tbody"></tbody>
+ <tfoot><tr style="background:var(--cream);border-top:2px solid var(--border);font-weight:700"><td colspan="3" style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Total enviado ao owner</td><td id="osd-tab-pg-total" style="padding:10px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--red)">$0.00</td></tr></tfoot>
  </table>
  </div>
  </div>
@@ -14867,98 +14874,79 @@ window.osdLoadTabWorkOrders=async function(){
  }
 };
 
-window.osdLoadTabRecebimentos=async function(){
- var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
- var emptyEl=document.getElementById('osd-tab-rc-empty');
- var wrap=document.getElementById('osd-tab-rc-table-wrap');
- var tbody=document.getElementById('osd-tab-rc-tbody');
- if(!cd||!cd.propertyId||!tbody)return;
- if(emptyEl)emptyEl.textContent='Carregando…';
- if(wrap)wrap.style.display='none';
- if(emptyEl)emptyEl.style.display='block';
+// #41 — abas Recebimentos (GL 4100) e Pagamentos (GL 3250) alimentadas pelo General Ledger.
+window.OSD_GL_TIPOS={RECEIVED:['Aluguel','Pet Fee','Multa/atraso','Reembolso','Taxa de aplicação','Outro'],SENT:['Repasse ao owner','Reembolso','Ajuste','Outro']};
+function osdGlClientQ(){return (typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';}
+function osdGlTipoSelect(id,kind,cur){
+ var opts=(window.OSD_GL_TIPOS[kind]||[]).slice();
+ if(cur&&opts.indexOf(cur)<0)opts.unshift(cur);
+ var esc=window.osdEscHtml||function(s){return String(s==null?'':s);};
+ var h='<select onchange="gmOsdGlSetTipo(\''+id+'\',this.value)" style="padding:4px 6px;border:1px solid var(--border2);border-radius:5px;font-size:11px;background:var(--sand);color:var(--ink);max-width:160px">';
+ h+='<option value=""'+(!cur?' selected':'')+'>—</option>';
+ opts.forEach(function(o){h+='<option value="'+esc(o)+'"'+(o===cur?' selected':'')+'>'+esc(o)+'</option>';});
+ return h+'</select>';
+}
+window.gmOsdGlSetTipo=async function(id,value){
  try{
-  var res=await fetch('/api/tenant-payments/by-property/'+encodeURIComponent(cd.propertyId),{credentials:'include',cache:'no-store'});
+  var p=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};
+  var body={id:id,tipo:value};if(p&&p.clientId)body.clientId=p.clientId;
+  await fetch('/api/owner-statement/gl-entries',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ }catch(e){}
+};
+async function osdGlLoadTab(kind,ids){
+ var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
+ var emptyEl=document.getElementById(ids.empty),wrap=document.getElementById(ids.wrap),tbody=document.getElementById(ids.tbody),totalEl=document.getElementById(ids.total);
+ if(!cd||!cd.propertyId||!tbody)return;
+ if(emptyEl){emptyEl.textContent='Carregando…';emptyEl.style.display='block';}
+ if(wrap)wrap.style.display='none';
+ var ym=cd.yearMonth||(window.osdGetYearMonth&&window.osdGetYearMonth())||'';
+ try{
+  var q=osdGlClientQ();var sep=q?'&':'?';
+  var res=await fetch('/api/owner-statement/gl-entries'+q+sep+'propertyId='+encodeURIComponent(cd.propertyId)+'&periodMonth='+encodeURIComponent(ym)+'&kind='+kind,{credentials:'include',cache:'no-store'});
   var data=await res.json().catch(function(){return{};});
-  if(!res.ok)throw new Error('tenant-payments fetch failed');
-  var ym=cd.yearMonth||window.osdGetYearMonth();
-  var list=(data.payments||[]).filter(function(p){
-   return p&&window.osdPaymentInYearMonth(p.paymentDate,ym);
-  });
-  var esc=window.osdEscHtml;
-  var fmt=window.osdFmtCurrency;
+  if(!res.ok||!data.ok)throw new Error('gl-entries failed');
+  var esc=window.osdEscHtml,fmt=window.osdFmtCurrency;var list=data.entries||[];
   tbody.innerHTML='';
-  if(!list.length){
-   if(emptyEl){emptyEl.textContent='Nenhum recebimento neste mês.';emptyEl.style.display='block';}
-   if(wrap)wrap.style.display='none';
-   return;
-  }
-  list.forEach(function(p){
-   var payer=String(p.payerName||((p.tenant&&p.tenant.name)||'')||'—');
-   var val=(typeof fmt==='function')?fmt(Number(p.receiptAmount||0)):String(p.receiptAmount||'');
-   var ref=String(p.reference||p.description||'—');
-   var dt=window.osdFmtDateShort(p.paymentDate);
-   var tr=document.createElement('tr');
-   tr.style.borderBottom='1px solid var(--border)';
-   tr.innerHTML='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt)+'</td>'
-    +'<td style="padding:10px 12px;color:var(--ink)">'+esc(payer)+'</td>'
-    +'<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+esc(val)+'</td>'
-    +'<td style="padding:10px 12px;color:var(--ink2)">'+esc(ref)+'</td>';
+  if(totalEl)totalEl.textContent=(typeof fmt==='function')?fmt(data.total||0):('$'+(data.total||0));
+  if(!list.length){if(emptyEl){emptyEl.textContent=(kind==='RECEIVED'?'Nenhum recebimento (GL 4100) neste ciclo. Importe o GL (CSV).':'Nenhum repasse (GL 3250) neste ciclo. Importe o GL (CSV).');emptyEl.style.display='block';}if(wrap)wrap.style.display='none';return;}
+  list.forEach(function(e){
+   var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';
+   var val=(typeof fmt==='function')?fmt(Number(e.amount||0)):String(e.amount||'');
+   if(kind==='RECEIVED'){
+    tr.innerHTML='<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(e.date)+'</td>'
+     +'<td style="padding:9px 12px;color:var(--ink)">'+esc(e.payerPayee||'—')+'</td>'
+     +'<td style="padding:9px 12px">'+osdGlTipoSelect(e.id,'RECEIVED',e.tipo)+'</td>'
+     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+esc(val)+'</td>'
+     +'<td style="padding:9px 12px;color:var(--ink2);font-size:11px">'+esc(e.reference||e.description||'—')+'</td>';
+   }else{
+    tr.innerHTML='<td style="padding:9px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(e.date)+'</td>'
+     +'<td style="padding:9px 12px;color:var(--ink)">'+esc(e.payerPayee||e.description||'—')+'</td>'
+     +'<td style="padding:9px 12px">'+osdGlTipoSelect(e.id,'SENT',e.tipo)+'</td>'
+     +'<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--red)">'+esc(val)+'</td>';
+   }
    tbody.appendChild(tr);
   });
-  if(emptyEl)emptyEl.style.display='none';
-  if(wrap)wrap.style.display='block';
- }catch(e){
-  console.warn('osdLoadTabRecebimentos',e);
-  if(emptyEl){emptyEl.textContent='Erro ao carregar recebimentos.';emptyEl.style.display='block';}
-  if(wrap)wrap.style.display='none';
- }
-};
+  if(emptyEl)emptyEl.style.display='none';if(wrap)wrap.style.display='block';
+ }catch(e){console.warn('osdGlLoadTab',e);if(emptyEl){emptyEl.textContent='Erro ao carregar o GL.';emptyEl.style.display='block';}if(wrap)wrap.style.display='none';}
+}
+window.osdLoadTabRecebimentos=function(){return osdGlLoadTab('RECEIVED',{empty:'osd-tab-rc-empty',wrap:'osd-tab-rc-table-wrap',tbody:'osd-tab-rc-tbody',total:'osd-tab-rc-total'});};
 
-window.osdLoadTabPagamentos=async function(){
- var cd=window.OSD_STATE&&window.OSD_STATE.currentDetail;
- var emptyEl=document.getElementById('osd-tab-pg-empty');
- var wrap=document.getElementById('osd-tab-pg-table-wrap');
- var tbody=document.getElementById('osd-tab-pg-tbody');
- if(!cd||!cd.propertyId||!tbody)return;
- if(emptyEl)emptyEl.textContent='Carregando…';
- if(wrap)wrap.style.display='none';
- if(emptyEl)emptyEl.style.display='block';
+window.osdLoadTabPagamentos=function(){return osdGlLoadTab('SENT',{empty:'osd-tab-pg-empty',wrap:'osd-tab-pg-table-wrap',tbody:'osd-tab-pg-tbody',total:'osd-tab-pg-total'});};
+// Importa o General Ledger (AppFolio) → grava recebidos (4100) e enviados (3250) por casa (15-a-15).
+window.gmOsdGlImport=async function(input){
+ var f=input&&input.files&&input.files[0];if(!f)return;
+ var st=document.getElementById('osd-gl-status');if(st)st.textContent='Importando GL…';
  try{
-  var res=await fetch('/api/pm/owner-payouts?month='+encodeURIComponent(cd.yearMonth||''),{credentials:'include',cache:'no-store'});
-  var data=await res.json().catch(function(){return{};});
-  if(!res.ok||!data.ok)throw new Error('owner-payouts fetch failed');
-  var propRow=null;
-  (data.owners||[]).forEach(function(og){
-   (og.properties||[]).forEach(function(p){
-    if(String(p.propertyId||'')===String(cd.propertyId))propRow=p;
-   });
-  });
-  var esc=window.osdEscHtml;
-  var fmt=window.osdFmtCurrency;
-  tbody.innerHTML='';
-  if(!propRow){
-   if(emptyEl){emptyEl.textContent='Nenhum repasse registrado neste mês.';emptyEl.style.display='block';}
-   if(wrap)wrap.style.display='none';
-   return;
-  }
-  var paidAt=propRow.paidAt||null;
-  var net=Number(propRow.net)||0;
-  var status=paidAt?'Pago':'Pendente';
-  var dt=paidAt?window.osdFmtDateShort(paidAt):'—';
-  var val=(typeof fmt==='function')?fmt(net):String(net);
-  var tr=document.createElement('tr');
-  tr.style.borderBottom='1px solid var(--border)';
-  tr.innerHTML='<td style="padding:10px 12px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink3)">'+esc(dt)+'</td>'
-   +'<td style="padding:10px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink)">'+esc(val)+'</td>'
-   +'<td style="padding:10px 12px;text-align:center;color:var(--ink2)">'+esc(status)+'</td>';
-  tbody.appendChild(tr);
-  if(emptyEl)emptyEl.style.display='none';
-  if(wrap)wrap.style.display='block';
- }catch(e){
-  console.warn('osdLoadTabPagamentos',e);
-  if(emptyEl){emptyEl.textContent='Erro ao carregar pagamentos.';emptyEl.style.display='block';}
-  if(wrap)wrap.style.display='none';
- }
+  var fd=new FormData();fd.append('file',f);
+  var p=(typeof gmBankAccountsClientPayload==='function')?gmBankAccountsClientPayload():{};if(p&&p.clientId)fd.append('clientId',p.clientId);
+  var res=await fetch('/api/owner-statement/gl-import',{method:'POST',credentials:'include',body:fd});
+  var j=await res.json().catch(function(){return{};});
+  input.value='';
+  if(!res.ok||!j.ok){if(st)st.textContent='';if(typeof showToast==='function')showToast((j&&j.error)||'Falha ao importar GL.','error');else alert((j&&j.error)||'Falha ao importar GL.');return;}
+  if(st)st.textContent=j.inserted+' novas · '+j.received+' recebidas / '+j.sent+' enviadas · '+j.matched+' casadas'+(j.unmatched?(' · '+j.unmatched+' sem casa'):'');
+  if(typeof showToast==='function')showToast('GL importado: '+j.inserted+' linhas novas ('+(j.months||[]).join(', ')+').','success');
+  if(typeof osdLoadActiveTab==='function')await osdLoadActiveTab();
+ }catch(e){if(st)st.textContent='';if(typeof showToast==='function')showToast('Erro de rede ao importar GL.','error');else alert('Erro de rede.');}
 };
 
 window.osdGetSelectedPropertyId=function(){

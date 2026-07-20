@@ -125,6 +125,7 @@ model Client {
   rampExpensePostings   RampExpensePosting[]    @relation("RampExpensePosting_clientId")
   bankReconciliations   BankReconciliation[]    @relation("BankReconciliation_clientId")
   bankStatementTxns     BankStatementTxn[]      @relation("BankStatementTxn_clientId")
+  propertyGlTxns        PropertyGlTxn[]         @relation("PropertyGlTxn_clientId")
   rampSpendSnapshot     RampSpendSnapshot?      @relation("RampSpendSnapshot_clientId")
   accessRequests        AccessRequest[]         @relation("AccessRequest_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
@@ -347,6 +348,35 @@ model BankStatementTxn {
   @@unique([clientId, bankAccountKey, sourceRefId])
   @@index([clientId, bankAccountKey, periodMonth])
   @@map("bank_statement_txns")
+}
+
+/// Linha do General Ledger (AppFolio) por casa no Statement individual (#41): RECEBIDO (conta 4100
+/// Credit) ou ENVIADO ao owner (conta 3250 Debit). periodMonth = ciclo 15-a-15. `tipo` editável
+/// ("tipo de recebimento"). Idempotente por (clientId, sourceRefId).
+model PropertyGlTxn {
+  id            String   @id @default(cuid())
+  clientId      String
+  propertyId    String?
+  propertyKey   String   @db.VarChar(200)
+  propertyLabel String   @db.VarChar(200)
+  periodMonth   String // 'YYYY-MM' (ciclo 15-a-15)
+  txnDate       DateTime @db.Date
+  account       String   @db.VarChar(10) // '4100' | '3250'
+  kind          String   @db.VarChar(10) // RECEIVED | SENT
+  amount        Decimal  @db.Decimal(12, 2)
+  payerPayee    String?  @db.VarChar(200)
+  reference     String?  @db.VarChar(200)
+  description   String?  @db.VarChar(300)
+  tipo          String?  @db.VarChar(60)
+  sourceRefId   String   @db.VarChar(140)
+  createdAt     DateTime @default(now())
+
+  client Client @relation("PropertyGlTxn_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, sourceRefId])
+  @@index([clientId, propertyId, periodMonth])
+  @@index([clientId, periodMonth, kind])
+  @@map("property_gl_txns")
 }
 
 /// Pedido de liberação de acesso a uma área (ex.: FINANCE/QuickBooks). Um usuário

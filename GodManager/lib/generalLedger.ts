@@ -88,6 +88,77 @@ export function parseGeneralLedgerPayments(csv: string): GlPayment[] {
   return rows;
 }
 
+/** Ciclo de fechamento 15-a-15 (rotulado pelo mês de início). Ex.: 10/07 → junho; 20/06 → junho. */
+export function glCycle15(dateMMDDYYYY: string): string {
+  const m = String(dateMMDDYYYY || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return '';
+  let year = Number(m[3]);
+  let month = Number(m[1]);
+  const day = Number(m[2]);
+  if (day < 15) {
+    month -= 1;
+    if (month < 1) { month = 12; year -= 1; }
+  }
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+/** Linha do GL relevante para o Statement: recebido (4100 Credit) ou enviado (3250 Debit). */
+export interface GlEntry {
+  account: string; // '4100' | '3250'
+  accountLabel: string;
+  kind: 'RECEIVED' | 'SENT';
+  propertyRaw: string;
+  propertyShort: string;
+  payerPayee: string;
+  date: string; // MM/DD/YYYY
+  reference: string;
+  amount: number; // magnitude positiva
+  description: string;
+}
+
+/**
+ * Extrai as linhas de RECEBIDO (conta 4100, Credit>0) e ENVIADO ao owner (conta 3250, Debit>0),
+ * rastreando o cabeçalho de conta "-> XXXX - Label". Puro; não toca banco.
+ */
+export function parseGeneralLedgerEntries(csv: string): GlEntry[] {
+  const lines = String(csv || '').split(/\r?\n/);
+  const out: GlEntry[] = [];
+  let curAccount = '';
+  let curLabel = '';
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const f = parseCsvLine(line);
+    const c0 = (f[0] || '').trim();
+    const hm = c0.match(/->\s*(\d{3,5})\s*-\s*(.+?)\s*$/);
+    if (hm) { curAccount = hm[1]; curLabel = hm[2].trim(); continue; }
+    if (!c0 || c0 === 'Property' || /^(Starting Balance|Total|Ending Balance)/i.test(c0)) continue;
+    const date = (f[1] || '').trim();
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date)) continue;
+
+    const debit = parseAmount(f[5]);
+    const credit = parseAmount(f[6]);
+    let kind: 'RECEIVED' | 'SENT' | null = null;
+    let amount = 0;
+    if (curAccount === '4100' && credit > 0) { kind = 'RECEIVED'; amount = credit; }
+    else if (curAccount === '3250' && debit > 0) { kind = 'SENT'; amount = debit; }
+    else continue;
+
+    out.push({
+      account: curAccount,
+      accountLabel: curLabel,
+      kind,
+      propertyRaw: c0,
+      propertyShort: c0.split(' - ')[0].trim(),
+      payerPayee: (f[2] || '').trim(),
+      date,
+      reference: (f[4] || '').trim(),
+      amount,
+      description: (f[8] || '').trim(),
+    });
+  }
+  return out;
+}
+
 /** Normaliza endereço/propriedade para casar GL com Property.address/code. */
 export function normalizePropertyKey(s: string | null | undefined): string {
   return String(s || '')
