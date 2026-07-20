@@ -7652,7 +7652,7 @@ window.gmBankGraphOpen=async function(accountType,label){
  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
  var card=document.createElement('div');
  card.style.cssText='background:#fff;border-radius:12px;padding:22px;max-width:560px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
- card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:14px;font-weight:700;color:var(--ink)">Histórico — '+String(label||at).replace(/</g,'&lt;')+'</div><button type="button" onclick="var p=document.getElementById(\'gm-bank-graph-popup\');if(p)p.remove();" style="background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1">&times;</button></div>'
+ card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:14px;font-weight:700;color:var(--ink)">Gráfico — '+String(label||at).replace(/</g,'&lt;')+'</div><button type="button" onclick="var p=document.getElementById(\'gm-bank-graph-popup\');if(p)p.remove();" style="background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1">&times;</button></div>'
   +'<div id="gm-bank-graph-delta" style="font-size:12px;color:var(--ink2);margin-bottom:10px">Carregando…</div>'
   +'<div style="position:relative;height:240px"><canvas id="gm-bank-graph-canvas"></canvas></div>';
  overlay.appendChild(card);
@@ -7764,27 +7764,60 @@ async function gmTrustStatementRender(){
  var host=document.getElementById('trust-statement-cards');
  if(!host)return;
  host.innerHTML='<div style="grid-column:1/-1;color:var(--ink3);font-size:13px;padding:24px;text-align:center">Carregando saldos…</div>';
- var balances={};
+ var balances={},flows={},secHeld=null;
+ var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
  try{
-  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
   var res=await fetch('/api/bank-accounts/balances'+q,{credentials:'include',cache:'no-store'});
   var j=await res.json().catch(function(){return null;});
   if(j&&j.ok&&j.balances)balances=j.balances;
- }catch(e){console.warn('gmTrustStatementRender fetch',e);}
+ }catch(e){console.warn('gmTrustStatementRender balances',e);}
+ try{
+  var rf=await fetch('/api/bank-accounts/statement-flows'+q,{credentials:'include',cache:'no-store'});
+  var jf=await rf.json().catch(function(){return null;});
+  if(jf&&jf.ok){flows=jf.flows||{};if(jf.securityDepositHeld!=null)secHeld=Number(jf.securityDepositHeld);}
+ }catch(e){console.warn('gmTrustStatementRender flows',e);}
  var canEdit=(typeof gmCanEditBankAccounts==='function')?gmCanEditBankAccounts():false;
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var money=gmTrustFmtMoney;
  host.innerHTML=window.__gmTrustAccounts.map(function(a){
   var b=balances[a.type]||null;
-  var val=b?gmTrustFmtMoney(b.balance):'—';
+  var val=b?money(b.balance):'—';
   var when=b&&b.balanceDate?('Saldo em '+String(b.balanceDate).slice(0,10)):'Sem saldo registrado';
   var editBtn=canEdit?('<button type="button" class="gm-trust-edit" data-acct="'+a.type+'" style="flex:1;padding:9px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Registrar saldo</button>'):'';
+  // Fluxos (entradas/saídas + por tipo) do mês mais recente importado
+  var f=flows[a.type]||null;var flowHtml='';
+  if(f){
+   var chips=(f.byType||[]).map(function(t){
+    var parts=[];if(t.in>0)parts.push('<span style="color:#2a6e4e">+'+money(t.in)+'</span>');if(t.out>0)parts.push('<span style="color:#b83030">-'+money(t.out)+'</span>');
+    return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:3px 0;border-bottom:1px dashed var(--border)"><span style="color:var(--ink2)">'+esc(t.type)+' <span style="color:var(--ink3)">('+t.count+')</span></span><span style="font-family:\'JetBrains Mono\',monospace">'+(parts.join(' / ')||'—')+'</span></div>';
+   }).join('');
+   flowHtml='<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
+    +'<div style="display:flex;gap:8px;margin-bottom:10px">'
+     +'<div style="flex:1;background:var(--cream);border-radius:8px;padding:8px 10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Entradas</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:#2a6e4e">'+money(f.entradas)+'</div></div>'
+     +'<div style="flex:1;background:var(--cream);border-radius:8px;padding:8px 10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Saídas</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:700;color:#b83030">'+money(f.saidas)+'</div></div>'
+    +'</div>'
+    +'<div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:2px">Por tipo · '+esc(f.periodMonth)+'</div>'+chips+'</div>';
+  }
+  // Divergência da conta de caução vs total de caução dos contratos
+  var divHtml='';
+  if(a.type==='DEPOSIT_SECURITY'&&secHeld!=null&&b&&isFinite(Number(b.balance))){
+   var diff=Math.round((Number(b.balance)-Number(secHeld))*100)/100;
+   if(Math.abs(diff)>1){
+    divHtml='<div style="margin-top:12px;padding:9px 11px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;color:#b45309;font-size:11px;line-height:1.45">⚠ <b>Divergência com a caução dos contratos:</b> banco '+money(b.balance)+' vs contratos '+money(secHeld)+' <b>(dif '+(diff>=0?'+':'')+money(diff)+')</b>.</div>';
+   }else{
+    divHtml='<div style="margin-top:12px;padding:7px 11px;border-radius:8px;background:#e6f4ec;border:1px solid #b7e0c6;color:#2a6e4e;font-size:11px">✓ Bate com a caução dos contratos ('+money(secHeld)+').</div>';
+   }
+  }
   return '<div style="border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:22px 24px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">'
    +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+a.color+'"></div>'
    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:'+a.color+'">'+a.label+'</div>'
    +'<div style="font-size:11px;color:var(--ink3);margin-top:3px;min-height:28px">'+a.desc+'</div>'
    +'<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:30px;font-weight:700;color:var(--ink);margin-top:12px;letter-spacing:-.01em">'+val+'</div>'
    +'<div style="font-size:11px;color:var(--ink3);margin-top:4px">'+when+'</div>'
+   +divHtml
+   +flowHtml
    +'<div style="display:flex;gap:8px;margin-top:16px">'
-   +'<button type="button" class="gm-trust-hist" data-acct="'+a.type+'" data-label="'+String(a.label).replace(/"/g,'&quot;')+'" style="flex:1;padding:9px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Hist\xf3rico</button>'
+   +'<button type="button" class="gm-trust-hist" data-acct="'+a.type+'" data-label="'+String(a.label).replace(/"/g,'&quot;')+'" style="flex:1;padding:9px;border:1px solid var(--border2);border-radius:8px;background:var(--cream);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Gr\xe1fico</button>'
    +editBtn
    +'</div></div>';
  }).join('');
