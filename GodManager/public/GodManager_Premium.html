@@ -14968,23 +14968,67 @@ window.gmOsdGlSummary=async function(){
   var res=await fetch('/api/owner-statement/gl-summary'+q+sep+'periodMonth='+encodeURIComponent(ym),{credentials:'include',cache:'no-store'});
   var j=await res.json().catch(function(){return{};});
   if(!res.ok||!j.ok){body.innerHTML='<div style="padding:24px;color:#b83030">'+esc((j&&j.error)||('Erro '+res.status))+'</div>';return;}
+  window.__gmGlSummary=j;
   var t=j.totals||{};
+  var difQ=(t.matchedReceivedCount!=null&&t.matchedSentCount!=null)?(t.matchedReceivedCount-t.matchedSentCount):null;
+  var difV=Number(t.matchedReceived||0)-Number(t.matchedSent||0);
   var h='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--cream)">'
    +'<div><div style="font-size:15px;font-weight:700;color:var(--ink)">Resumo do GL — ciclo '+esc(j.periodMonth)+' (15-a-15)</div>'
-   +'<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+j.count+' casa(s) · Aluguel recebido <b style="color:#2a6e4e">'+money(t.matchedReceived)+'</b> · Pago ao owner <b style="color:#b83030">'+money(t.matchedSent)+'</b></div></div>'
-   +'<button type="button" onclick="var p=document.getElementById(\'gm-gl-summary-pop\');if(p)p.remove();" style="background:transparent;border:none;font-size:24px;color:var(--ink3);cursor:pointer;line-height:1">&times;</button></div>';
+   +'<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+j.count+' casa(s) · Recebido <b style="color:#2a6e4e">'+money(t.matchedReceived)+'</b> · Pago <b style="color:#b83030">'+money(t.matchedSent)+'</b> · Dif valor <b>'+money(difV)+'</b>'+(difQ!=null?(' · Dif qtd <b>'+difQ+'</b>'):'')+'</div></div>'
+   +'<div style="display:flex;gap:8px;align-items:center"><button type="button" onclick="if(typeof gmOsdGlSummaryCsv===\'function\')gmOsdGlSummaryCsv()" style="padding:7px 13px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">&#8595; Baixar CSV</button>'
+   +'<button type="button" onclick="var p=document.getElementById(\'gm-gl-summary-pop\');if(p)p.remove();" style="background:transparent;border:none;font-size:24px;color:var(--ink3);cursor:pointer;line-height:1">&times;</button></div></div>';
   if(!j.rows.length&&(!j.unmatched||!j.unmatched.length)){
    h+='<div style="padding:32px;text-align:center;color:var(--ink3);font-size:13px">Nenhum lançamento do GL neste ciclo. Lembre: pagamentos de dia 1–14 caem no ciclo do mês <b>anterior</b> (regra 15-a-15). Tente o mês anterior, ou importe o GL.</div>';
   }else{
-   h+='<div style="overflow:auto;max-height:66vh"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--sand);position:sticky;top:0"><th style="padding:9px 14px;text-align:left;color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Casa</th><th style="padding:9px 14px;text-align:right;color:#2a6e4e;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Aluguel recebido</th><th style="padding:9px 14px;text-align:right;color:#b83030;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Pago ao owner</th></tr></thead><tbody>';
-   j.rows.forEach(function(r){h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 14px;color:var(--ink)">'+esc(r.label)+'</td><td style="padding:8px 14px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(r.received)+'</td><td style="padding:8px 14px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(r.sent)+'</td></tr>';});
+   var th='padding:9px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.06em';
+   h+='<div style="overflow:auto;max-height:66vh"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--sand);position:sticky;top:0">'
+    +'<th style="'+th+';text-align:left;color:var(--ink3)">Código</th>'
+    +'<th style="'+th+';text-align:left;color:var(--ink3)">Propriedade</th>'
+    +'<th style="'+th+';text-align:center;color:var(--ink3)" title="Quantidade de recebimentos">Qtd rec.</th>'
+    +'<th style="'+th+';text-align:right;color:#2a6e4e">Aluguel recebido</th>'
+    +'<th style="'+th+';text-align:center;color:var(--ink3)" title="Quantidade de pagamentos ao owner">Qtd pag.</th>'
+    +'<th style="'+th+';text-align:right;color:#b83030">Pago ao owner</th>'
+    +'<th style="'+th+';text-align:center;color:var(--ink3)" title="Diferença de quantidade (rec − pag)">Dif qtd</th>'
+    +'<th style="'+th+';text-align:right;color:var(--ink3)" title="Diferença de valor (recebido − pago)">Dif valor</th></tr></thead><tbody>';
+   j.rows.forEach(function(r){
+    var rc=Number(r.receivedCount)||0,sc=Number(r.sentCount)||0;
+    var dq=rc-sc,dv=(Number(r.received)||0)-(Number(r.sent)||0);
+    var diff=rc!==sc;
+    var noPay=rc>0&&sc===0;
+    var rowBg=noPay?'background:#fff7ed':(diff?'background:#fbfaf6':'');
+    var cntStyle='padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+(diff?';color:#b45309;font-weight:700':';color:var(--ink3)');
+    h+='<tr style="border-bottom:1px solid var(--border);'+rowBg+'">'
+     +'<td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(r.code||'—')+'</td>'
+     +'<td style="padding:8px 12px;color:var(--ink)">'+esc(r.name||'—')+(noPay?' <span title="Recebeu aluguel mas nada foi pago ao owner" style="color:#b45309">⚠</span>':'')+'</td>'
+     +'<td style="'+cntStyle+'">'+rc+'</td>'
+     +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(r.received)+'</td>'
+     +'<td style="'+cntStyle+'">'+sc+'</td>'
+     +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(r.sent)+'</td>'
+     +'<td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+(dq!==0?';color:#b45309;font-weight:700':';color:var(--ink3)')+'">'+(dq>0?'+':'')+dq+'</td>'
+     +'<td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+money(dv)+'</td></tr>';
+   });
    h+='</tbody></table></div>';
+   h+='<div style="padding:8px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--ink3)">Linhas destacadas em <span style="background:#fbfaf6;padding:1px 4px">bege</span> = quantidade de recebimentos ≠ pagamentos; <span style="background:#fff7ed;padding:1px 4px">âmbar ⚠</span> = recebeu aluguel mas nada foi pago ao owner.</div>';
    if(j.unmatched&&j.unmatched.length){
-    h+='<div style="padding:12px 20px;border-top:1px solid var(--border);background:#fff7ed;color:#b45309;font-size:11px;line-height:1.5">⚠ <b>'+j.unmatched.length+' linha(s) do GL não casaram com nenhuma casa cadastrada</b> (recebido '+money(t.unmatchedReceived)+' · pago '+money(t.unmatchedSent)+'). Ex.: '+esc(j.unmatched.slice(0,4).map(function(u){return u.label;}).join('; '))+'. Ajuste o endereço/código da propriedade para casar.</div>';
+    h+='<div style="padding:12px 20px;border-top:1px solid var(--border);background:#fff7ed;color:#b45309;font-size:11px;line-height:1.5">⚠ <b>'+j.unmatched.length+' linha(s) do GL não casaram com nenhuma casa cadastrada</b> (recebido '+money(t.unmatchedReceived)+' · pago '+money(t.unmatchedSent)+'). Ex.: '+esc(j.unmatched.slice(0,4).map(function(u){return u.name;}).join('; '))+'. Ajuste o endereço/código da propriedade para casar.</div>';
    }
   }
   body.innerHTML=h;
  }catch(e){body.innerHTML='<div style="padding:24px;color:#b83030">Erro de rede.</div>';}
+};
+// Exporta o Resumo do GL (por casa) em CSV.
+window.gmOsdGlSummaryCsv=function(){
+ var j=window.__gmGlSummary;if(!j){alert('Abra o resumo primeiro.');return;}
+ var cell=function(v){var s=String(v==null?'':v);return /[",\r\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var lines=['Codigo,Endereco,Qtd rec,Aluguel recebido,Qtd pag,Pago ao owner,Dif qtd,Dif valor,Casada'];
+ var push=function(r,matched){
+  var rc=Number(r.receivedCount)||0,sc=Number(r.sentCount)||0;
+  lines.push([cell(r.code||''),cell(r.name||''),rc,(Number(r.received)||0).toFixed(2),sc,(Number(r.sent)||0).toFixed(2),(rc-sc),((Number(r.received)||0)-(Number(r.sent)||0)).toFixed(2),matched?'sim':'nao'].join(','));
+ };
+ (j.rows||[]).forEach(function(r){push(r,true);});
+ (j.unmatched||[]).forEach(function(r){push(r,false);});
+ var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='resumo_gl_'+(j.periodMonth||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
 };
 
 window.osdGetSelectedPropertyId=function(){

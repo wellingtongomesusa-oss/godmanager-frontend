@@ -32,37 +32,43 @@ export async function GET(req: Request) {
       select: { propertyId: true, propertyLabel: true, kind: true, amount: true },
     });
 
-    // Agrega por casa (propertyId), + bucket sem casa (propertyId null).
-    const byProp = new Map<string, { propertyId: string | null; label: string; received: number; sent: number }>();
+    // Agrega por casa (propertyId), + bucket sem casa (propertyId null). Guarda valor E contagem.
+    type Agg = { propertyId: string | null; code: string; name: string; received: number; sent: number; receivedCount: number; sentCount: number };
+    const byProp = new Map<string, Agg>();
     const UNMATCHED = '__unmatched__';
     for (const t of txns) {
       const key = t.propertyId || UNMATCHED;
-      const cur = byProp.get(key) || { propertyId: t.propertyId, label: t.propertyLabel, received: 0, sent: 0 };
+      const cur: Agg = byProp.get(key) || { propertyId: t.propertyId, code: '', name: t.propertyLabel, received: 0, sent: 0, receivedCount: 0, sentCount: 0 };
       const amt = Number(t.amount);
-      if (t.kind === 'RECEIVED') cur.received += amt;
-      else if (t.kind === 'SENT') cur.sent += amt;
+      if (t.kind === 'RECEIVED') { cur.received += amt; cur.receivedCount += 1; }
+      else if (t.kind === 'SENT') { cur.sent += amt; cur.sentCount += 1; }
       byProp.set(key, cur);
     }
 
-    // Nomes bonitos das casas casadas.
+    // Código + nome (endereço) das casas casadas.
     const ids = [...byProp.values()].map((v) => v.propertyId).filter((x): x is string => !!x);
     if (ids.length) {
       const props = await prisma.property.findMany({
         where: { id: { in: ids } },
         select: { id: true, code: true, address: true },
       });
-      const nameById = new Map(props.map((p) => [p.id, p.code || p.address || '']));
+      const byId = new Map(props.map((p) => [p.id, p]));
       for (const v of byProp.values()) {
-        if (v.propertyId && nameById.get(v.propertyId)) v.label = nameById.get(v.propertyId) as string;
+        if (!v.propertyId) continue;
+        const p = byId.get(v.propertyId);
+        if (p) { v.code = p.code || ''; v.name = p.address || v.name; }
       }
     }
 
     const all = [...byProp.values()].map((v) => ({
       propertyId: v.propertyId,
-      label: v.label,
+      code: v.code,
+      name: v.name,
       matched: !!v.propertyId,
       received: round2(v.received),
       sent: round2(v.sent),
+      receivedCount: v.receivedCount,
+      sentCount: v.sentCount,
     }));
     const rows = all.filter((r) => r.matched).sort((a, b) => b.received - a.received);
     const unmatched = all.filter((r) => !r.matched);
@@ -78,6 +84,8 @@ export async function GET(req: Request) {
         sent: round2(all.reduce((s, r) => s + r.sent, 0)),
         matchedReceived: round2(rows.reduce((s, r) => s + r.received, 0)),
         matchedSent: round2(rows.reduce((s, r) => s + r.sent, 0)),
+        matchedReceivedCount: rows.reduce((s, r) => s + r.receivedCount, 0),
+        matchedSentCount: rows.reduce((s, r) => s + r.sentCount, 0),
         unmatchedReceived: round2(unmatched.reduce((s, r) => s + r.received, 0)),
         unmatchedSent: round2(unmatched.reduce((s, r) => s + r.sent, 0)),
       },
