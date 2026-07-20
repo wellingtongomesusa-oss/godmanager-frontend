@@ -2832,9 +2832,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <button type="button" onclick="if(typeof gmRampTxExportCsv==='function')gmRampTxExportCsv()" title="Exportar as transações filtradas para CSV" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">⬇ CSV</button>
   </div>
  </div>
+ <div id="ramp-batch-bar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:8px 0;background:var(--cream);border:1px solid var(--border);border-radius:8px">
+  <span id="ramp-batch-count" style="font-size:12px;font-weight:700;color:var(--ink)">0 selecionadas</span>
+  <button type="button" onclick="if(typeof gmRampBatchManagerProp==='function')gmRampBatchManagerProp()" style="padding:7px 12px;background:var(--sand);color:var(--ink);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Marcar como Manager Prop</button>
+  <span style="width:1px;height:20px;background:var(--border)"></span>
+  <select id="ramp-batch-prop" style="padding:6px 9px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand);color:var(--ink);max-width:220px"><option value="">— casa —</option></select>
+  <input type="month" id="ramp-batch-ym" style="padding:6px 9px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand);color:var(--ink)">
+  <button type="button" onclick="if(typeof gmRampBatchStatement==='function')gmRampBatchStatement()" style="padding:7px 12px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Lançar na casa &rarr;</button>
+  <span id="ramp-batch-status" style="font-size:11px;color:var(--ink3)"></span>
+ </div>
  <div style="overflow-x:auto">
  <table class="gm-ix-table" id="ramp-table-tx">
- <thead><tr><th>Data</th><th>Merchant</th><th>Titular</th><th>Categoria</th><th>Valor ($)</th><th>Tipo</th><th>Status</th><th style="text-align:center">Lançar</th></tr></thead>
+ <thead><tr><th style="width:28px;text-align:center"><input type="checkbox" id="ramp-batch-all" onclick="if(typeof gmRampBatchToggleAll==='function')gmRampBatchToggleAll(this.checked)" style="cursor:pointer"></th><th>Data</th><th>Merchant</th><th>Titular</th><th>Categoria</th><th>Valor ($)</th><th>Tipo</th><th>Status</th><th style="text-align:center">Lançar</th></tr></thead>
  <tbody id="ramp-tbody-tx"></tbody>
  </table>
  </div>
@@ -12430,7 +12439,7 @@ function gmRampTxRerender(skipRefresh){
  var list=gmRampTxFilteredList();
  var shown=list.slice(0,GM_RAMP_TX_CAP);
  tbT.innerHTML='';
- if(!shown.length){tbT.innerHTML='<tr><td colspan="8" style="padding:26px;text-align:center;color:var(--ink3)">Nenhuma transação.</td></tr>';}
+ if(!shown.length){tbT.innerHTML='<tr><td colspan="9" style="padding:26px;text-align:center;color:var(--ink3)">Nenhuma transação.</td></tr>';}
  else{
   shown.forEach(function(tx){
    var st=rampTxState(tx);
@@ -12439,7 +12448,7 @@ function gmRampTxRerender(skipRefresh){
    var postCell='<td style="text-align:center" data-ramp-post-cell="'+gmHtmlEscAttr(txId)+'">'+gmRampPostCellHtml(txId)+'</td>';
    var mt=(window.__gmRampMatches&&window.__gmRampMatches[txId])||null;
    var houseBadge=mt?('<div style="margin-top:3px;font-size:9px;color:'+(mt.confidence==='high'?'#2a6e4e':(mt.confidence==='medium'?'#c47b28':'var(--ink3)'))+';white-space:nowrap" title="Match por vendor/valor/data ('+mt.confidence+')">🏠 '+gmHtmlEscAttr(String(mt.propertyLabel||'').slice(0,28))+(mt.monthRef?(' · '+gmHtmlEscAttr(mt.monthRef)):'')+'</div>'):'';
-   tr.innerHTML='<td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+houseBadge+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td>'+rampTxTipo(txId,tx)+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>'+postCell;
+   tr.innerHTML='<td style="text-align:center"><input type="checkbox" class="ramp-cb" data-tx-id="'+gmHtmlEscAttr(txId)+'" onchange="if(typeof gmRampBatchUpdate===\'function\')gmRampBatchUpdate()" style="cursor:pointer"></td><td>'+rampTxDate(tx)+'</td><td>'+rampTxMerchant(tx)+houseBadge+'</td><td>'+rampTxHolder(tx)+'</td><td>'+rampTxCategory(tx)+'</td><td class="mono">'+rampFmtMoney(rampTxAmount(tx))+'</td><td>'+rampTxTipo(txId,tx)+'</td><td><span class="pill '+(st==='CLEARED'?'pg':'pa')+'">'+st+'</span></td>'+postCell;
    tbT.appendChild(tr);
   });
  }
@@ -12448,6 +12457,84 @@ function gmRampTxRerender(skipRefresh){
  if(!skipRefresh)gmRampPostingsRefresh(shown,true);
 }
 window.gmRampTxRerender=gmRampTxRerender;
+// ===== Lançamento em LOTE das transações Ramp (Manager Prop ou uma casa) =====
+function gmRampBatchSelectedIds(){
+ var ids=[];
+ document.querySelectorAll('#ramp-tbody-tx input.ramp-cb:checked').forEach(function(cb){var id=cb.getAttribute('data-tx-id');if(id)ids.push(id);});
+ return ids;
+}
+async function gmRampBatchLoadProps(){
+ var sel=document.getElementById('ramp-batch-prop');
+ if(!sel||sel.getAttribute('data-loaded')==='1')return;
+ try{
+  var r=await fetch('/api/properties',{credentials:'include',cache:'no-store'});
+  var j=await r.json();
+  var list=(j&&j.ok&&Array.isArray(j.properties))?j.properties:[];
+  list=list.filter(function(p){var a=String((p&&p.address)||'').trim();return p&&p.id&&a&&a!=='Total';});
+  list.sort(function(a,b){return String(a.address||'').localeCompare(String(b.address||''));});
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+  var opts='<option value="">— casa —</option>';
+  list.forEach(function(p){opts+='<option value="'+String(p.id).replace(/"/g,'&quot;')+'">'+esc(p.code?(p.code+' · '):'')+esc(String(p.address||'').slice(0,40))+'</option>';});
+  sel.innerHTML=opts; sel.setAttribute('data-loaded','1');
+ }catch(e){}
+}
+function gmRampBatchUpdate(){
+ var ids=gmRampBatchSelectedIds();
+ var bar=document.getElementById('ramp-batch-bar'), cnt=document.getElementById('ramp-batch-count');
+ if(cnt)cnt.textContent=ids.length+' selecionada'+(ids.length===1?'':'s');
+ if(bar)bar.style.display=ids.length?'flex':'none';
+ if(ids.length)gmRampBatchLoadProps();
+}
+window.gmRampBatchUpdate=gmRampBatchUpdate;
+function gmRampBatchToggleAll(checked){
+ document.querySelectorAll('#ramp-tbody-tx input.ramp-cb').forEach(function(cb){cb.checked=!!checked;});
+ gmRampBatchUpdate();
+}
+window.gmRampBatchToggleAll=gmRampBatchToggleAll;
+async function gmRampBatchPost(target,extra){
+ var ids=gmRampBatchSelectedIds();
+ if(!ids.length){alert('Selecione ao menos uma transação.');return;}
+ var cid=(typeof gmRampActiveClientId==='function')?gmRampActiveClientId():'';
+ var all=window.__gmRampAllTx||[]; var byId={}; all.forEach(function(t){byId[String((t&&t.id)||'')]=t;});
+ var st=document.getElementById('ramp-batch-status'); var ok=0,fail=0;
+ for(var i=0;i<ids.length;i++){
+  if(st)st.textContent='Lançando '+(i+1)+'/'+ids.length+'…';
+  var tx=byId[ids[i]]; if(!tx){fail++;continue;}
+  var dt=(tx&&tx.user_transaction_time)||(tx&&tx.occurred_at)||(tx&&tx.posted_at)||'';
+  var payload={rampTransactionId:ids[i],clientId:cid,target:target,amount:(typeof rampTxAmount==='function'?rampTxAmount(tx):0),merchant:(typeof rampTxMerchant==='function'?rampTxMerchant(tx):''),transactionDate:dt};
+  if(target==='STATEMENT'){payload.propertyId=extra.propertyId;payload.yearMonth=extra.yearMonth;}
+  try{
+   var r=await fetch('/api/ramp/post',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   var j=await r.json().catch(function(){return{};});
+   if(r.ok&&j.ok)ok++; else fail++;
+  }catch(e){fail++;}
+ }
+ if(st)st.textContent='';
+ if(typeof showToast==='function')showToast(ok+' lançada(s)'+(fail?(' · '+fail+' falha(s)'):'.'),fail?'error':'success');
+ document.querySelectorAll('#ramp-tbody-tx input.ramp-cb').forEach(function(cb){cb.checked=false;});
+ var allCb=document.getElementById('ramp-batch-all'); if(allCb)allCb.checked=false;
+ if(typeof gmRampPostingsRefresh==='function')try{gmRampPostingsRefresh(window.__gmRampAllTx||[],true);}catch(e){}
+ if(typeof gmRampTxRerender==='function')gmRampTxRerender(true);
+ gmRampBatchUpdate();
+}
+function gmRampBatchManagerProp(){
+ var ids=gmRampBatchSelectedIds();
+ if(!ids.length){alert('Selecione ao menos uma transação.');return;}
+ if(!confirm('Marcar '+ids.length+' transação(ões) como despesa da Manager Prop?'))return;
+ gmRampBatchPost('MANAGER_PROP',{});
+}
+window.gmRampBatchManagerProp=gmRampBatchManagerProp;
+function gmRampBatchStatement(){
+ var ids=gmRampBatchSelectedIds();
+ if(!ids.length){alert('Selecione ao menos uma transação.');return;}
+ var pid=(document.getElementById('ramp-batch-prop')||{}).value||'';
+ var ym=(document.getElementById('ramp-batch-ym')||{}).value||'';
+ if(!pid){alert('Escolha a casa.');return;}
+ if(!/^\d{4}-\d{2}$/.test(ym)){alert('Escolha o mês (YYYY-MM).');return;}
+ if(!confirm('Lançar '+ids.length+' transação(ões) no statement da casa selecionada ('+ym+')?'))return;
+ gmRampBatchPost('STATEMENT',{propertyId:pid,yearMonth:ym});
+}
+window.gmRampBatchStatement=gmRampBatchStatement;
 // Casa cada transação do Ramp com um job/expense (vendor+valor+data) -> descobre a casa
 async function gmRampMatchRefresh(){
  var cid=gmRampActiveClientId();if(!cid)return;
