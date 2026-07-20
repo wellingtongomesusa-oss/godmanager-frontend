@@ -7,6 +7,13 @@ const crmBackend =
 
 const nextConfig = {
   /**
+   * unpdf (pdf.js) é lib de servidor (leitura de PDF do Chase, #39): tratar como pacote externo
+   * para não passar pelo bundle do Next e evitar quebra do pdf.js no server build.
+   */
+  experimental: {
+    serverComponentsExternalPackages: ['unpdf'],
+  },
+  /**
    * Inlined em client: query ?v= em redirects para o HTML estatico (cache-bust no primeiro load apos deploy).
    */
   env: {

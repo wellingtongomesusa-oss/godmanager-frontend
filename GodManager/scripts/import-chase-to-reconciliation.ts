@@ -21,14 +21,17 @@ const ACCOUNT_KEY_BY_LAST4: Record<string, string> = {
   '7509': 'DEPOSIT_SECURITY',
 };
 
-const dir = process.argv[2];
-const clientId = process.argv[3];
-const apply = process.argv.includes('--apply');
-const csvIdx = process.argv.indexOf('--csv');
-const csvDir = csvIdx >= 0 ? process.argv[csvIdx + 1] : null;
+// Coleta argumentos posicionais (ignora flags e o valor de --csv).
+const argv = process.argv.slice(2);
+const apply = argv.includes('--apply');
+const csvIdx = argv.indexOf('--csv');
+const csvDir = csvIdx >= 0 ? argv[csvIdx + 1] : null;
+const positionals = argv.filter((a, i) => !a.startsWith('--') && !(csvIdx >= 0 && i === csvIdx + 1));
+const dir = positionals[0];
+let clientId = positionals[1] || ''; // opcional: se vazio, busca a Manager Prop pelo nome
 
-if (!dir || !clientId) {
-  console.error('Uso: tsx scripts/import-chase-to-reconciliation.ts <pastaPDFs> <clientId> [--apply] [--csv <dir>]');
+if (!dir) {
+  console.error('Uso: tsx scripts/import-chase-to-reconciliation.ts <pastaPDFs> [clientId] [--apply] [--csv <dir>]');
   process.exit(1);
 }
 
@@ -62,7 +65,32 @@ process.on('SIGINT', async () => { await cleanup(); process.exit(130); });
 
 type Row = { periodMonth: string; account: ChaseAccount; key: string };
 
+async function resolveClientId(): Promise<string> {
+  if (clientId) {
+    const c = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true, companyName: true } });
+    if (!c) { console.error(`Cliente ${clientId} não encontrado.`); process.exit(1); }
+    console.log(`Cliente: ${c.companyName} (${c.id})`);
+    return c.id;
+  }
+  const matches = await prisma.client.findMany({
+    where: { companyName: { contains: 'Manager Prop', mode: 'insensitive' } },
+    select: { id: true, companyName: true },
+  });
+  if (matches.length === 1) {
+    console.log(`Cliente encontrado automaticamente: ${matches[0].companyName} (${matches[0].id})`);
+    return matches[0].id;
+  }
+  if (matches.length === 0) {
+    console.error('Nenhum cliente "Manager Prop" encontrado. Passe o clientId manualmente.');
+    process.exit(1);
+  }
+  console.error('Vários clientes "Manager Prop" — passe o clientId. Opções:');
+  for (const m of matches) console.error(`  ${m.id}  ${m.companyName}`);
+  process.exit(1);
+}
+
 async function main() {
+  clientId = await resolveClientId();
   const rows: Row[] = [];
   for (const file of files) {
     const st = parseChaseStatement(pdfToText(file));
