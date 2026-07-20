@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { csrfGuard } from '@/lib/csrfGuard';
+import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
@@ -20,6 +21,8 @@ const cents = (n: number) => Math.round(n * 100);
 export async function POST(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
 

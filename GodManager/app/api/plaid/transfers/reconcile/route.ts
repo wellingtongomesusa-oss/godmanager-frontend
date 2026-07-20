@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { csrfGuard } from '@/lib/csrfGuard';
+import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { reconcilePendingTransfers, isPlaidTransferEnabled } from '@/lib/plaidTransfer';
 
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'super_admin') {

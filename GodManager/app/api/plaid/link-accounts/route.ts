@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { csrfGuard } from '@/lib/csrfGuard';
+import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -56,6 +57,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as { clientId?: string; mapping?: Record<string, string> };

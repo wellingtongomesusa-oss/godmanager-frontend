@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { csrfGuard } from '@/lib/csrfGuard';
+import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { CountryCode, Products } from 'plaid';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import {
@@ -54,6 +55,8 @@ function extractPlaidError(e: unknown): {
 export async function POST(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });

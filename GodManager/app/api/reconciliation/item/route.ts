@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { csrfGuard } from '@/lib/csrfGuard';
+import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -21,6 +22,8 @@ async function loadScopedRecon(userClientId: string | null, reconciliationId: st
 export async function POST(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -61,6 +64,8 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -90,6 +95,8 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const bad = csrfGuard(req);
   if (bad) return bad;
+  const rl = rateLimitGuard(req);
+  if (rl) return rl;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const url = new URL(req.url);
