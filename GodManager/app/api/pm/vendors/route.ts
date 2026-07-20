@@ -28,6 +28,9 @@ function toJson(v: {
   paymentType: string | null;
   commissionMp: boolean;
   send1099: boolean;
+  taxId: string | null;
+  taxIdType: string | null;
+  w9OnFile: boolean;
   status: string;
   notes: string | null;
   source: string | null;
@@ -57,6 +60,9 @@ function toJson(v: {
     payment_type: v.paymentType ?? '',
     commission_mp: v.commissionMp,
     send_1099: v.send1099,
+    tax_id: v.taxId ?? '',
+    tax_id_type: v.taxIdType ?? '',
+    w9_on_file: v.w9OnFile,
     status: v.status,
     notes: v.notes ?? '',
     source: v.source ?? '',
@@ -139,6 +145,9 @@ export async function POST(req: Request) {
         paymentType: String(body.payment_type || body.paymentType || '').trim() || null,
         commissionMp: !!body.commission_mp || !!body.commissionMp,
         send1099: body.send_1099 !== false && body.send1099 !== 'false',
+        taxId: String(body.tax_id || body.taxId || '').trim() || null,
+        taxIdType: String(body.tax_id_type || body.taxIdType || '').trim().toUpperCase() || null,
+        w9OnFile: !!body.w9_on_file || !!body.w9OnFile,
         status: String(body.status || 'Active').trim() || 'Active',
         notes: String(body.notes || '').trim() || null,
         source: String(body.source || 'manual').trim() || 'manual',

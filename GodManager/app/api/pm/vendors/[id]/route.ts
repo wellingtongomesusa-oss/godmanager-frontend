@@ -28,6 +28,9 @@ function toJson(v: {
   paymentType: string | null;
   commissionMp: boolean;
   send1099: boolean;
+  taxId: string | null;
+  taxIdType: string | null;
+  w9OnFile: boolean;
   status: string;
   notes: string | null;
   source: string | null;
@@ -57,6 +60,9 @@ function toJson(v: {
     payment_type: v.paymentType ?? '',
     commission_mp: v.commissionMp,
     send_1099: v.send1099,
+    tax_id: v.taxId ?? '',
+    tax_id_type: v.taxIdType ?? '',
+    w9_on_file: v.w9OnFile,
     status: v.status,
     notes: v.notes ?? '',
     source: v.source ?? '',
@@ -103,6 +109,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.payment_type != null) data.paymentType = String(body.payment_type).trim() || null;
     if (body.commission_mp != null) data.commissionMp = !!body.commission_mp;
     if (body.send_1099 != null) data.send1099 = body.send_1099 !== false && body.send_1099 !== 'false';
+    if (body.tax_id != null) data.taxId = String(body.tax_id).trim() || null;
+    if (body.tax_id_type != null) data.taxIdType = String(body.tax_id_type).trim().toUpperCase() || null;
+    if (body.w9_on_file != null) data.w9OnFile = !!body.w9_on_file;
     if (body.status != null) data.status = String(body.status).trim();
     if (body.notes != null) data.notes = String(body.notes).trim() || null;
     if (body.source != null) data.source = String(body.source).trim() || null;

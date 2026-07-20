@@ -12,6 +12,12 @@ const UpdateOwnerSchema = z.object({
   phone: z.string().trim().max(60).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   active: z.boolean().optional(),
+  taxId: z.string().trim().max(40).nullable().optional(),
+  taxIdType: z.string().trim().max(10).nullable().optional(),
+  addressStreet: z.string().trim().max(200).nullable().optional(),
+  addressCity: z.string().trim().max(120).nullable().optional(),
+  addressState: z.string().trim().max(40).nullable().optional(),
+  addressZip: z.string().trim().max(20).nullable().optional(),
 });
 
 async function loadOwnerScoped(
@@ -127,12 +133,24 @@ export async function PATCH(
       phone?: string | null;
       notes?: string | null;
       active?: boolean;
+      taxId?: string | null;
+      taxIdType?: string | null;
+      addressStreet?: string | null;
+      addressCity?: string | null;
+      addressState?: string | null;
+      addressZip?: string | null;
     } = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email === '' ? null : data.email;
     if (data.phone !== undefined) updateData.phone = data.phone === '' ? null : data.phone;
     if (data.notes !== undefined) updateData.notes = data.notes === '' ? null : data.notes;
     if (data.active !== undefined) updateData.active = data.active;
+    if (data.taxId !== undefined) updateData.taxId = data.taxId ? data.taxId : null;
+    if (data.taxIdType !== undefined) updateData.taxIdType = data.taxIdType ? data.taxIdType.toUpperCase() : null;
+    if (data.addressStreet !== undefined) updateData.addressStreet = data.addressStreet ? data.addressStreet : null;
+    if (data.addressCity !== undefined) updateData.addressCity = data.addressCity ? data.addressCity : null;
+    if (data.addressState !== undefined) updateData.addressState = data.addressState ? data.addressState : null;
+    if (data.addressZip !== undefined) updateData.addressZip = data.addressZip ? data.addressZip : null;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ ok: false, error: 'validation', details: 'no fields to update' }, { status: 400 });

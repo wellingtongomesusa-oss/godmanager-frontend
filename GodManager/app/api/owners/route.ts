@@ -19,7 +19,15 @@ const CreateOwnerSchema = z.object({
     .or(z.literal('')),
   phone: z.string().trim().max(60).optional().or(z.literal('')),
   notes: z.string().max(2000).optional().or(z.literal('')),
+  taxId: z.string().trim().max(40).optional().or(z.literal('')),
+  taxIdType: z.string().trim().max(10).optional().or(z.literal('')),
+  addressStreet: z.string().trim().max(200).optional().or(z.literal('')),
+  addressCity: z.string().trim().max(120).optional().or(z.literal('')),
+  addressState: z.string().trim().max(40).optional().or(z.literal('')),
+  addressZip: z.string().trim().max(20).optional().or(z.literal('')),
 });
+
+const emptyToNull = (v: string | undefined | null) => (v && v !== '' ? v : null);
 
 function clientScopeWhere(user: { role: string; clientId: string | null }) {
   if (user.role === 'super_admin') return {};
@@ -75,6 +83,12 @@ export async function GET(req: NextRequest) {
         email: o.email,
         phone: o.phone,
         notes: o.notes,
+        taxId: o.taxId ?? '',
+        taxIdType: o.taxIdType ?? '',
+        addressStreet: o.addressStreet ?? '',
+        addressCity: o.addressCity ?? '',
+        addressState: o.addressState ?? '',
+        addressZip: o.addressZip ?? '',
         active: o.active,
         clientId: o.clientId,
         clientName: o.client?.companyName ?? null,
@@ -157,6 +171,12 @@ export async function POST(req: NextRequest) {
         email,
         phone: data.phone && data.phone !== '' ? data.phone : null,
         notes: data.notes && data.notes !== '' ? data.notes : null,
+        taxId: emptyToNull(data.taxId),
+        taxIdType: data.taxIdType && data.taxIdType !== '' ? data.taxIdType.toUpperCase() : null,
+        addressStreet: emptyToNull(data.addressStreet),
+        addressCity: emptyToNull(data.addressCity),
+        addressState: emptyToNull(data.addressState),
+        addressZip: emptyToNull(data.addressZip),
         active: true,
       },
     });

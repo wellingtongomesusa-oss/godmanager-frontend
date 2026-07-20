@@ -676,6 +676,13 @@ model Owner {
   name       String
   email      String?
   phone      String?
+  /// TIN/EIN do owner (1099-MISC Rents) — a partir do W-9. Nullable/aditivo.
+  taxId         String?
+  taxIdType     String?
+  addressStreet String?
+  addressCity   String?
+  addressState  String?
+  addressZip    String?
   notes      String?    @db.Text
   active     Boolean    @default(true)
   createdAt  DateTime   @default(now())
@@ -901,6 +908,12 @@ model PmVendor {
   paymentType    String?
   commissionMp   Boolean         @default(false)
   send1099       Boolean         @default(true)
+  /// TIN/EIN do fornecedor (1099-NEC) — preenchido a partir do W-9. Nullable/aditivo.
+  taxId          String?
+  /// Tipo de TIN: "EIN" (empresa) ou "SSN" (individual).
+  taxIdType      String?
+  /// W-9 recebido e em arquivo.
+  w9OnFile       Boolean         @default(false)
   status         String          @default("Active")
   isInternal     Boolean         @default(false)
   notes          String?         @db.Text
