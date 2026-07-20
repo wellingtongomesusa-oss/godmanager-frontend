@@ -11,6 +11,9 @@ import { createSessionCookie } from '@/lib/authServer';
 import { decryptField } from '@/lib/encryption';
 import { verifyTotp, hashBackupCode } from '@/lib/totp';
 import { sendEmail } from '@/lib/email';
+import { twilioConfigured } from '@/lib/twilioSms';
+import { issueSmsCode, verifySmsCode, smsErrorPt } from '@/lib/smsMfaCode';
+import { PORTAL_ROLES } from '@/lib/clientPlanLimits';
 import type { UserRole } from '@/lib/types';
 
 function isDatabaseUnreachable(e: unknown): boolean {
@@ -94,6 +97,43 @@ export async function POST(req: Request) {
       if (!mfaOk) {
         recordFailedLogin(key);
         return NextResponse.json({ ok: false, mfaRequired: true, error: 'Código de verificação inválido.' }, { status: 401 });
+      }
+    }
+
+    // 2FA por SMS (Twilio) — OBRIGATÓRIO só para quem JÁ tem telefone cadastrado, e SÓ quando o
+    // Twilio está configurado. Sem Twilio, o login segue normal (zero lockout). Não se aplica a
+    // quem já usa TOTP (evita 2 fatores), nem a papéis de portal (owner/tenant/vendor).
+    // Válvula de segurança: SMS_MFA_LOGIN_DISABLED=1 desliga o enforcement mesmo com Twilio ativo.
+    const isPortalRole = (PORTAL_ROLES as readonly string[]).includes(String(user.role));
+    const smsMfaApplies =
+      twilioConfigured() &&
+      process.env.SMS_MFA_LOGIN_DISABLED !== '1' &&
+      !!user.phone &&
+      !(user.mfaEnabled && user.mfaSecret) &&
+      !isPortalRole;
+    if (smsMfaApplies) {
+      const smsCode = String(body?.smsCode || '').trim();
+      if (!smsCode) {
+        const issued = await issueSmsCode(user.id, user.phone as string);
+        return NextResponse.json(
+          {
+            ok: false,
+            smsMfaRequired: true,
+            to: issued.to ?? null,
+            error: issued.ok
+              ? 'Enviamos um código por SMS. Digite-o para entrar.'
+              : smsErrorPt(issued.error),
+          },
+          { status: 200 },
+        );
+      }
+      const check = await verifySmsCode(user.id, smsCode);
+      if (!check.ok) {
+        recordFailedLogin(key);
+        return NextResponse.json(
+          { ok: false, smsMfaRequired: true, error: smsErrorPt(check.error) },
+          { status: 401 },
+        );
       }
     }
 

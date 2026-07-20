@@ -25,17 +25,27 @@ export async function loginAsync(
   email: string,
   password: string,
   mfaCode?: string,
-): Promise<{ ok: true; user: User } | { ok: false; error: string; mfaRequired?: boolean }> {
+  smsCode?: string,
+): Promise<
+  | { ok: true; user: User }
+  | { ok: false; error: string; mfaRequired?: boolean; smsMfaRequired?: boolean; to?: string | null }
+> {
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, mfaCode: mfaCode || undefined }),
+      body: JSON.stringify({ email, password, mfaCode: mfaCode || undefined, smsCode: smsCode || undefined }),
       credentials: 'include',
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data?.ok) {
-      return { ok: false, error: data?.error || 'Login falhou.', mfaRequired: !!data?.mfaRequired };
+      return {
+        ok: false,
+        error: data?.error || 'Login falhou.',
+        mfaRequired: !!data?.mfaRequired,
+        smsMfaRequired: !!data?.smsMfaRequired,
+        to: data?.to ?? null,
+      };
     }
     return { ok: true, user: data.user as User };
   } catch (e) {

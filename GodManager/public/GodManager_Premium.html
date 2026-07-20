@@ -2031,6 +2031,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="cl-fg"><label>Nome *</label><input class="fi" id="cu-first-name" type="text" required autocomplete="given-name"></div>
  <div class="cl-fg"><label>Sobrenome *</label><input class="fi" id="cu-last-name" type="text" required autocomplete="family-name"></div>
  <div class="cl-fg"><label>Email (login) *</label><input class="fi" id="cu-em" type="email" required autocomplete="email"></div>
+ <div class="cl-fg"><label id="cu-phone-label">Telefone (2FA) *</label><input class="fi" id="cu-phone" type="tel" placeholder="+14075551234" autocomplete="tel"><div style="font-size:11px;color:var(--ink3);margin-top:4px">Usado no 2º fator por SMS. Formato internacional (+1...). Opcional só para Vendor.</div></div>
  <div class="cl-fg"><label>Função *</label><select class="fi" id="cu-lvl" required onchange="if(typeof gmCuOnRoleChange==='function')gmCuOnRoleChange()"><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="maintenance">Manutenção</option><option value="field">Piscineiro (field)</option><option value="supervisor">Supervisor</option><option value="supervisor_2">Supervisor 2</option><option value="vendor">Vendor</option></select></div>
  <div class="cl-fg" id="cu-vendor-wrap" style="display:none"><label>Equipe (fornecedor) *</label><select class="fi" id="cu-vendor-id"><option value="">— Selecione a equipe —</option></select><div style="font-size:11px;color:var(--ink3);margin-top:4px">Obrigatório para piscineiros — só vê jobs desta equipe.</div></div>
  <div class="cl-fg" style="grid-column:1/-1"><label>Senha *</label><div style="display:flex;gap:8px;align-items:stretch"><input class="fi" id="cu-pass" type="text" required minlength="8" autocomplete="new-password" style="flex:1"><button type="button" class="cl-btn-sec" onclick="var el=document.getElementById('cu-pass');if(el&amp;&amp;window.gmGenerateStrongPassword)el.value=window.gmGenerateStrongPassword(20);" style="flex-shrink:0;background:var(--amber);color:#fff;border-color:var(--amber);padding:0 16px;border-radius:8px;font-weight:600;font-family:'DM Sans',sans-serif">Gerar senha forte</button></div><div style="font-size:11px;color:var(--ink3);margin-top:4px">A senha será mostrada uma vez após o cadastro.</div></div>
@@ -2069,6 +2070,11 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="cu-edit-modal-head">
   <div class="cu-edit-modal-title">Editar acesso ao menu</div>
   <div id="cu-edit-user-line" class="cu-edit-user-line"></div>
+ </div>
+ <div style="padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:10px">
+  <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px">Telefone (2FA por SMS)</label>
+  <input id="cu-edit-phone" type="tel" placeholder="+14075551234" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:12px;background:var(--sand);color:var(--ink);box-sizing:border-box">
+  <div style="font-size:11px;color:var(--ink3);margin-top:3px">Preencha para ativar o 2º fator deste usuário. Formato internacional (+1...).</div>
  </div>
  <div id="cu-edit-matrix"></div>
  <div class="cu-edit-modal-actions">
@@ -11721,6 +11727,8 @@ async function gmCuOnRoleChange(){
  var needsVendor=rl.value==='field'||rl.value==='vendor';
  wrap.style.display=needsVendor?'':'none';
  if(vsel)vsel.required=!!needsVendor;
+ var phLbl=document.getElementById('cu-phone-label');
+ if(phLbl)phLbl.textContent=(rl.value==='vendor')?'Telefone (2FA)':'Telefone (2FA) *';
  if(needsVendor){
   await gmCuEnsureVendorsLoaded();
   gmCuPopulateVendorSelect();
@@ -11852,6 +11860,12 @@ async function gmClientUsersCreateSubmit(e){
    return false;
   }
  }
+ var phEl=document.getElementById('cu-phone');
+ var phone=phEl?String(phEl.value||'').trim().replace(/[\s()-]/g,''):'';
+ if(rl.value!=='vendor'){
+  if(!phone){alert('Telefone é obrigatório (2FA por SMS). Use formato internacional, ex.: +14075551234.');return false;}
+  if(!/^\+?[0-9]{8,15}$/.test(phone)){alert('Telefone inválido. Use formato internacional, ex.: +14075551234.');return false;}
+ }
  var payload={
   firstName:fn.value.trim(),
   lastName:ln.value.trim(),
@@ -11859,6 +11873,7 @@ async function gmClientUsersCreateSubmit(e){
   password:pw.value.trim(),
   role:rl.value
  };
+ if(phone)payload.phone=phone;
  if((rl.value==='field'||rl.value==='vendor')&&vsel)payload.vendorId=String(vsel.value||'').trim();
  var scopeId=gmClientUsersResolveScopeId();
  var role=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
@@ -12050,6 +12065,8 @@ function gmCuOpenEdit(uid){
   var nm=(String(u.firstName||'')+' '+String(u.lastName||'')).trim();
   line.textContent=(nm||u.email||'')+' · '+String(u.email||'')+' · '+gmCuRoleLabelPt(u.role);
  }
+ var phEl=document.getElementById('cu-edit-phone');
+ if(phEl)phEl.value=String(u.phone||'');
  var ma=Array.isArray(u.menuAccess)?u.menuAccess:[];
  var keys=ma.length?ma.slice():gmCuRoleDefaultMenuKeys(u.role);
  gmCuApplyMatrixKeys(keys);
@@ -12066,6 +12083,12 @@ async function gmCuSaveEditMenuAccess(){
  if(!uid)return;
  var menuAccess=gmCuCollectMatrixKeys();
  var body={menuAccess:menuAccess};
+ var phEl=document.getElementById('cu-edit-phone');
+ if(phEl){
+  var ph=String(phEl.value||'').trim().replace(/[\s()-]/g,'');
+  if(ph&&!/^\+?[0-9]{8,15}$/.test(ph)){if(typeof showToast==='function')showToast('Telefone inválido. Use +14075551234.','error');else alert('Telefone inválido.');return;}
+  body.phone=ph;
+ }
  var scopeId=gmClientUsersResolveScopeId();
  if(scopeId)body.clientId=scopeId;
  try{

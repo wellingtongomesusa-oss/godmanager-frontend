@@ -59,8 +59,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ ok: false, error: 'Operação não permitida.' }, { status: 403 });
     }
 
-    const data: { status?: UserStatus; menuAccess?: string[] } = {};
+    const data: { status?: UserStatus; menuAccess?: string[]; phone?: string | null } = {};
     const changedFields: string[] = [];
+
+    if (typeof body.phone === 'string') {
+      const phone = body.phone.trim().replace(/[\s()-]/g, '');
+      if (phone && !/^\+?[0-9]{8,15}$/.test(phone)) {
+        return NextResponse.json(
+          { ok: false, error: 'Telefone inválido. Use formato internacional, ex.: +14075551234.' },
+          { status: 400 },
+        );
+      }
+      data.phone = phone || null;
+      changedFields.push('phone');
+    }
 
     if (typeof body.status === 'string') {
       const st = body.status as UserStatus;

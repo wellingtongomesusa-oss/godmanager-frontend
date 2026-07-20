@@ -34,6 +34,12 @@ export default function ManagerProLoginPage() {
       const json = await res.json();
 
       if (!json.ok) {
+        if (json.mfaRequired || json.smsMfaRequired) {
+          // Login legacy não coleta 2º fator — direciona ao login principal, que suporta 2FA.
+          setError('Sua conta usa verificação em duas etapas (2FA). Entre pela página principal de login.');
+          setLoading(false);
+          return;
+        }
         setError(json.message ?? json.error ?? 'Credenciais invalidas.');
         setLoading(false);
         return;

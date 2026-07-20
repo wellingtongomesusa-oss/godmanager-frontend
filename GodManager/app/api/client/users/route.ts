@@ -183,6 +183,25 @@ export async function POST(req: Request) {
     const email = String(body?.email || '').trim().toLowerCase();
     const rawPassword = String(body?.password ?? '').trim();
 
+    // Telefone: obrigatório para papéis que recebem 2FA por SMS (todos menos vendor), para que
+    // TODO cadastro novo já nasça protegido pelo 2º fator. Formato internacional (+14075551234).
+    const phone = String(body?.phone ?? '').trim().replace(/[\s()-]/g, '');
+    const phoneRequired = role !== 'vendor';
+    if (phoneRequired) {
+      if (!phone) {
+        return NextResponse.json(
+          { ok: false, error: 'Telefone é obrigatório (2FA por SMS). Use formato internacional, ex.: +14075551234.' },
+          { status: 400 },
+        );
+      }
+      if (!/^\+?[0-9]{8,15}$/.test(phone)) {
+        return NextResponse.json(
+          { ok: false, error: 'Telefone inválido. Use formato internacional, ex.: +14075551234.' },
+          { status: 400 },
+        );
+      }
+    }
+
     if (!email || !firstName || !lastName) {
       return NextResponse.json(
         { ok: false, error: 'firstName, lastName e email são obrigatórios.' },
@@ -244,6 +263,7 @@ export async function POST(req: Request) {
         status: 'active',
         permissions: [],
         passwordHash,
+        phone: phone || null,
         clientId: scope.clientId,
         vendorId: role === 'field' || role === 'vendor' ? vendorId : null,
       },

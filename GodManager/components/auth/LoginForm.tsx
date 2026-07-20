@@ -46,6 +46,9 @@ export function LoginForm() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
+  const [smsMfaRequired, setSmsMfaRequired] = useState(false);
+  const [smsCode, setSmsCode] = useState('');
+  const [smsTo, setSmsTo] = useState<string | null>(null);
 
   useEffect(() => {
     // E-mail vindo do checkout (?email=) tem prioridade; senão usa o "lembrar".
@@ -107,16 +110,33 @@ export function LoginForm() {
       toast('Digite o código de 6 dígitos do app autenticador.', 'error');
       return;
     }
+    if (smsMfaRequired && smsCode.trim().length < 6) {
+      toast('Digite o código de 6 dígitos enviado por SMS.', 'error');
+      return;
+    }
 
     setLoading(true);
     await new Promise((r) => setTimeout(r, 400));
-    const res = await loginAsync(email.trim(), password, mfaRequired ? mfaCode.trim() : undefined);
+    const res = await loginAsync(
+      email.trim(),
+      password,
+      mfaRequired ? mfaCode.trim() : undefined,
+      smsMfaRequired ? smsCode.trim() : undefined,
+    );
 
     if (!res.ok) {
       setLoading(false);
       if (res.mfaRequired) {
         setMfaRequired(true);
         toast(mfaRequired ? 'Código inválido. Tente novamente.' : 'Verificação em duas etapas: digite o código do app autenticador.', mfaRequired ? 'error' : 'info');
+        return;
+      }
+      if (res.smsMfaRequired) {
+        const first = !smsMfaRequired;
+        setSmsMfaRequired(true);
+        if (res.to) setSmsTo(res.to);
+        if (!first) setSmsCode('');
+        toast(res.error || (first ? 'Enviamos um código por SMS.' : 'Código inválido. Tente novamente.'), first ? 'info' : 'error');
         return;
       }
       // Corrida pós-pagamento: o webhook pode não ter ativado a conta ainda.
@@ -284,6 +304,28 @@ export function LoginForm() {
             autoFocus
           />
           <p className="text-[12px] text-login-muted">Abra seu app autenticador e digite o código de 6 dígitos (ou um código de backup).</p>
+        </div>
+      ) : null}
+
+      {smsMfaRequired ? (
+        <div className="space-y-1.5">
+          <label htmlFor="login-sms" className="text-[10px] font-semibold uppercase tracking-[0.2em] text-login-gold">
+            Código por SMS (2FA)
+          </label>
+          <Input
+            id="login-sms"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="000000"
+            value={smsCode}
+            onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            className={`${inputLoginClass} !pl-4 tracking-[0.4em]`}
+            autoFocus
+          />
+          <p className="text-[12px] text-login-muted">
+            Enviamos um código de 6 dígitos por SMS{smsTo ? ` para ${smsTo}` : ''}. Digite-o para entrar.
+          </p>
         </div>
       ) : null}
 
