@@ -15148,7 +15148,7 @@ window.gmGlStudyRender=async function(){
   if(cards){
    var card=function(lbl,val,col){return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--paper);padding:16px 18px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">'+lbl+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:20px;font-weight:700;color:'+(col||'var(--ink)')+';margin-top:6px">'+val+'</div></div>';};
    var dfeeCol=(Number(t.feeDiff)||0)<-0.5?'#b83030':((Number(t.feeDiff)||0)>0.5?'#2a6e4e':'var(--ink)');
-   cards.innerHTML=card('Aluguel recebido (4100)',money(t.rent),'#2a6e4e')+card('MGM fee cobrado (6111)',money(t.mgm),'var(--ink)')+card('MGM fee esperado (cadastro)',money(t.feeExpected),'var(--ink)')+card('Dif fee (cobrado − esperado)',((Number(t.feeDiff)||0)>0?'+':'')+money(t.feeDiff),dfeeCol)+card('% MGM efetivo',(t.mgmPct||0).toFixed(1)+'%','var(--amber)')+card('Repasse ao owner (3250)',money(t.rep),'#b83030')+card('Casas',(t.properties||0),'var(--ink)');
+   cards.innerHTML=card('Aluguel recebido (4100)',money(t.rent),'#2a6e4e')+card('MGM fee cobrado (6111)',money(t.mgm),'var(--ink)')+card('MGM fee esperado (cadastro)',money(t.feeExpected),'var(--ink)')+card('Dif fee (cobrado − esperado)',((Number(t.feeDiff)||0)>0?'+':'')+money(t.feeDiff),dfeeCol)+card('% MGM efetivo',(t.mgmPct||0).toFixed(1)+'%','var(--amber)')+card('Repasse ao owner (3250)',money(t.rep),'#b83030')+card('% repasse médio (repasse÷aluguel)',(t.repPct||0).toFixed(1)+'%','#b83030')+card('Casas',(t.properties||0),'var(--ink)');
   }
   var mb=document.getElementById('gl-study-months');
   if(mb){mb.innerHTML=(j.months||[]).map(function(m){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace">'+esc(m.month)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(m.rent)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(m.mgm)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+(m.mgm===0&&m.rent>0?';color:#b45309;font-weight:700':'')+'">'+(m.mgmPct||0).toFixed(1)+'%</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(m.rep)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+(m.rentedHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e;font-weight:700">'+(m.paidHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+((m.pendingPayoutHouses||0)>0?';color:#b45309;font-weight:700':';color:var(--ink3)')+'">'+(m.pendingPayoutHouses||0)+'</td></tr>';}).join('')||'<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink3)">Sem dados. Importe o GL (Statement individual → Importar GL) e reimporte para trazer o 6111.</td></tr>';}
@@ -15217,7 +15217,16 @@ window.gmCentralUpload=async function(kind,input){
   if(!res.ok||!j.ok){if(st)st.textContent='';if(typeof showToast==='function')showToast((j&&j.error)||'Falha no upload.','error');else alert((j&&j.error)||'Falha.');return;}
   var msg;
   if(kind==='gl'){msg='✓ GL importado: '+j.inserted+' novas linhas · '+j.received+' recebidas / '+j.sent+' enviadas / '+(j.mgmFee||0)+' mgmt fee · '+j.matched+' casadas'+(j.unmatched?(' · '+j.unmatched+' sem casa'):'')+'. Veja em Results → Estudo GL.';}
-  else{var imp=(j.imported||[]).map(function(i){return i.bankAccountKey+' (fim '+ '$'+Number(i.ending).toLocaleString('en-US',{minimumFractionDigits:2})+')';}).join(' · ');msg='✓ Extrato '+j.periodMonth+' importado: '+((j.imported||[]).length)+' conta(s) — '+imp+(j.unmatched&&j.unmatched.length?(' · '+j.unmatched.length+' sem vínculo'):'')+'. Veja na Conciliação.';}
+  else{
+   var imp=(j.imported||[]).map(function(i){return i.bankAccountKey+' (fim '+ '$'+Number(i.ending).toLocaleString('en-US',{minimumFractionDigits:2})+')';}).join(' · ');
+   msg='✓ Extrato '+j.periodMonth+' importado: '+((j.imported||[]).length)+' conta(s) — '+imp+(j.unmatched&&j.unmatched.length?(' · '+j.unmatched.length+' sem vínculo'):'')+'. Na Conciliação.';
+   // Arquiva também o PDF (aparece em Statement → Extratos PDF) — 1 upload, 2 destinos.
+   try{
+    var fd2=new FormData();fd2.append('file',f);fd2.append('periodMonth',j.periodMonth||'');if(p&&p.clientId)fd2.append('clientId',p.clientId);
+    var r2=await fetch('/api/bank-accounts/statements',{method:'POST',credentials:'include',body:fd2});
+    if(r2.ok)msg+=' Arquivado em Extratos (PDF).';
+   }catch(_a){}
+  }
   if(st)st.innerHTML='<span style="color:#2a6e4e">'+String(msg).replace(/</g,'&lt;')+'</span>';
   if(typeof showToast==='function')showToast('Upload concluído.','success');
  }catch(e){if(st)st.textContent='';if(typeof showToast==='function')showToast('Erro de rede no upload.','error');else alert('Erro de rede.');}
