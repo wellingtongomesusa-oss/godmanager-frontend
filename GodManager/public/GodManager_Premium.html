@@ -3150,6 +3150,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <button type="button" class="btn-gm-ix-amber" onclick="document.getElementById('af-statements-file').click()">&#8593; Subir Statements (PDF)</button>
   <span id="af-statements-status" style="margin-left:12px;font-size:11px;color:var(--ink3)"></span>
  </div>
+ <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+  <h3 style="margin:0 0 4px">Auditoria contábil (trust accounting / FREC)</h3>
+  <p style="font-size:11px;color:var(--ink3);margin:0 0 10px">Roda a auditoria direto do QuickBooks conectado (sem CSV). Detecta duplicidade, veículo em conta errada, descasamento de caução, invoices Voided/lacunas e atraso de reconhecimento de receita. Somente leitura — não altera nada.</p>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+   <label style="font-size:11px;color:var(--ink2)">De <input type="date" id="af-audit-from" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></label>
+   <label style="font-size:11px;color:var(--ink2)">Até <input type="date" id="af-audit-to" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></label>
+   <button type="button" class="btn-gm-ix-amber" onclick="if(typeof gmAuditRun==='function')gmAuditRun()">Auditar do QuickBooks</button>
+   <span id="af-audit-status" style="font-size:11px;color:var(--ink3)"></span>
+  </div>
+  <div id="af-audit-result" style="margin-top:14px"></div>
+ </div>
  </div>
  </div>
  <div class="gm-ix-kpi-grid" id="af-summary-grid" style="display:none;margin-top:4px">
@@ -7830,6 +7841,43 @@ async function gmAfStatementsUpload(input){
  if(typeof gmTrustLoadStatements==='function'){try{await gmTrustLoadStatements();}catch(_e2){}}
 }
 window.gmAfStatementsUpload=gmAfStatementsUpload;
+// Roda a auditoria contábil direto do QuickBooks conectado e mostra o relatório em 3 seções.
+window.gmAuditRun=async function(){
+ var fromEl=document.getElementById('af-audit-from'), toEl=document.getElementById('af-audit-to');
+ var status=document.getElementById('af-audit-status'), out=document.getElementById('af-audit-result');
+ var from=(fromEl&&fromEl.value)||'', to=(toEl&&toEl.value)||'';
+ var cid='';
+ if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)cid=p.clientId;}
+ if(status)status.textContent='Auditando…';
+ if(out)out.innerHTML='';
+ try{
+  var q='?'+(from?('from='+encodeURIComponent(from)+'&'):'')+(to?('to='+encodeURIComponent(to)+'&'):'')+(cid?('clientId='+encodeURIComponent(cid)):'');
+  var res=await fetch('/api/audit/quickbooks'+q,{credentials:'include',cache:'no-store'});
+  var data={};try{data=await res.json();}catch(e){}
+  if(!res.ok||!data.ok){if(status)status.textContent='';if(out)out.innerHTML='<div style="color:var(--red);font-size:12px">'+String((data&&data.error)||('Erro '+res.status))+'</div>';return;}
+  if(data.connected===false){if(status)status.textContent='';if(out)out.innerHTML='<div style="color:var(--amber);font-size:12px">QuickBooks não conectado. Conecte nas Integrações primeiro.</div>';return;}
+  if(status)status.textContent=data.total+' transações · '+data.from+' a '+data.to;
+  var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+  var money=function(n){return '$'+Number(n||0).toFixed(2);};
+  function section(title,color,arr){
+   var h='<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:'+color+';margin-bottom:6px">'+title+' ('+arr.length+')</div>';
+   if(!arr.length){h+='<div style="font-size:11px;color:var(--ink3)">Nenhum.</div></div>';return h;}
+   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;font-family:Inter,sans-serif"><thead><tr style="background:var(--cream)"><th style="padding:6px 8px;text-align:left">Regra</th><th style="padding:6px 8px;text-align:left">Data</th><th style="padding:6px 8px;text-align:left">Nome</th><th style="padding:6px 8px;text-align:right">Valor</th><th style="padding:6px 8px;text-align:left">Conta</th><th style="padding:6px 8px;text-align:left">Motivo</th></tr></thead><tbody>';
+   arr.slice(0,200).forEach(function(x){
+    h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:5px 8px">'+esc(x.rule)+'</td><td style="padding:5px 8px">'+esc(x.date)+'</td><td style="padding:5px 8px">'+esc(x.name)+'</td><td style="padding:5px 8px;text-align:right;font-family:monospace">'+money(x.amount)+'</td><td style="padding:5px 8px">'+esc(x.account)+'</td><td style="padding:5px 8px;color:var(--ink3)">'+esc(x.why)+'</td></tr>';
+   });
+   h+='</tbody></table></div></div>';return h;
+  }
+  var html='<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">';
+  html+='<div><b style="color:#1e7e46">Conformes:</b> '+data.conformes+'</div>';
+  html+='<div><b style="color:#b83030">Corrigir:</b> '+data.corrigir.length+'</div>';
+  html+='<div><b style="color:var(--amber)">Ambíguos:</b> '+data.ambiguos.length+'</div>';
+  html+='<div><b>Invoices:</b> '+data.invoices.numbered+' · Voided '+data.invoices.voided+' · lacunas '+(data.invoices.gaps?data.invoices.gaps.length:0)+'</div></div>';
+  html+=section('Exigem correção / repasse','#b83030',data.corrigir||[]);
+  html+=section('Ambíguos — confirmação humana','#b45309',data.ambiguos||[]);
+  if(out)out.innerHTML=html;
+ }catch(e){console.error(e);if(status)status.textContent='';if(out)out.innerHTML='<div style="color:var(--red);font-size:12px">Falha ao auditar.</div>';}
+};
 /* Popup para o super_admin escolher a EMPRESA (cliente) de um upload/ação. */
 async function gmPickCompany(title,onPick){
  var ex=document.getElementById('gm-company-pick');if(ex)ex.remove();
