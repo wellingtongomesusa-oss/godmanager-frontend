@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -141,6 +142,8 @@ export async function GET(req: Request) {
  * Cria/atualiza o cabeçalho. reconcile:true fecha (RECONCILED) se a diferença = 0.
  */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;

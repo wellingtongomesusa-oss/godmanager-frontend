@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
@@ -58,6 +59,8 @@ export async function GET(req: Request) {
 
 /** PATCH { id, tipo } — define o "tipo de recebimento" de uma linha. */
 export async function PATCH(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   try {

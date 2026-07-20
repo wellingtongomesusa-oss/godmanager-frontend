@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -20,6 +21,8 @@ export const maxDuration = 60;
  * Idempotente. Restrito a admin/manager/super_admin.
  */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import {
@@ -106,6 +107,8 @@ export async function GET(req: Request) {
  * Aceita multipart (campo "file") ou JSON { csv }. super_admin manda clientId.
  */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   if (!canManageBankBalances(user.role)) {

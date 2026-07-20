@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import {
@@ -71,6 +72,8 @@ export async function GET(req: Request) {
  * Sobe o extrato para o R2 e cria/atualiza a linha do mês.
  */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });

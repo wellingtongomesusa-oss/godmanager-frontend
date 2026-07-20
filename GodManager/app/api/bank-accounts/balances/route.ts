@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import type { BankAccountType } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
@@ -110,6 +111,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -23,6 +24,7 @@ export const runtime = 'nodejs';
  */
 function defaultTipo(kind: string, description: string): string {
   const d = String(description || '').toLowerCase();
+  if (kind === 'MGM_FEE') return 'Management fee';
   if (kind === 'SENT') return 'Repasse ao owner';
   if (/pet/.test(d)) return 'Pet Fee';
   if (/late/.test(d)) return 'Multa/atraso';
@@ -32,6 +34,8 @@ function defaultTipo(kind: string, description: string): string {
 }
 
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
 
@@ -113,6 +117,7 @@ export async function POST(req: Request) {
       inserted: created.count,
       received: entries.filter((e) => e.kind === 'RECEIVED').length,
       sent: entries.filter((e) => e.kind === 'SENT').length,
+      mgmFee: entries.filter((e) => e.kind === 'MGM_FEE').length,
       matched,
       unmatched: unmatchedKeys.size,
       unmatchedSample: [...unmatchedKeys].slice(0, 8),

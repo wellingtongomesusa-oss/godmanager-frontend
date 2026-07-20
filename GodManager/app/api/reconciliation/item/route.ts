@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -18,6 +19,8 @@ async function loadScopedRecon(userClientId: string | null, reconciliationId: st
 
 /** POST /api/reconciliation/item  { clientId?, reconciliationId, description, amount, txnDate?, sourceType?, sourceRefId? } */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -56,6 +59,8 @@ export async function POST(req: Request) {
 
 /** PATCH /api/reconciliation/item  { clientId?, itemId, cleared?, description?, amount? } */
 export async function PATCH(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -83,6 +88,8 @@ export async function PATCH(req: Request) {
 
 /** DELETE /api/reconciliation/item?itemId=&clientId= */
 export async function DELETE(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
   const url = new URL(req.url);

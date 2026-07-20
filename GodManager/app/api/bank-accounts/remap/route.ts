@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import type { BankAccountType } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -18,6 +19,8 @@ export const dynamic = 'force-dynamic';
  * (ex.: Trust <-> Operating trocados). Feito por id (o enum não tem valor temporário).
  */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });

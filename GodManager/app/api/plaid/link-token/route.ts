@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { csrfGuard } from '@/lib/csrfGuard';
 import { CountryCode, Products } from 'plaid';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import {
@@ -51,6 +52,8 @@ function extractPlaidError(e: unknown): {
 }
 
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -87,13 +90,26 @@ export async function POST(req: Request) {
     // Statements é add-on: vai em optional_products (a Plaid coleta se a instituição/conta
     // suportar e nao quebra o Link caso nao suporte). NAO pode ir em additional_consented_products
     // — a Plaid rejeita com INVALID_FIELD "additional_consented_products cannot contain: [statements]".
+    // Alem disso, ao pedir Statements a Plaid exige o objeto statements:{start_date,end_date}
+    // ("Statements product requires a Statements object to be passed in."). So enviamos os dois
+    // juntos quando PLAID_STATEMENTS_ENABLED=true E o add-on estiver habilitado na conta Plaid;
+    // com o flag desligado, nada de statements e enviado (reconectar funciona normalmente).
     const wantStatements =
       String(process.env.PLAID_STATEMENTS_ENABLED || '').toLowerCase() === 'true';
+    let statementsCfg: { optional_products: Products[]; statements: { start_date: string; end_date: string } } | undefined;
+    if (wantStatements) {
+      const end = new Date();
+      const start = new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000);
+      statementsCfg = {
+        optional_products: [Products.Statements],
+        statements: { start_date: start.toISOString().slice(0, 10), end_date: end.toISOString().slice(0, 10) },
+      };
+    }
     const response = await plaid.linkTokenCreate({
       user: { client_user_id: entityId },
       client_name: 'GodManager',
       products: [Products.Auth, Products.Identity, Products.Transactions],
-      ...(wantStatements ? { optional_products: [Products.Statements] } : {}),
+      ...(statementsCfg ?? {}),
       country_codes: [CountryCode.Us],
       language: 'en',
       ...(redirectUri ? { redirect_uri: redirectUri } : {}),
