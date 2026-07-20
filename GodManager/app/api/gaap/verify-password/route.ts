@@ -4,7 +4,10 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 
 export const dynamic = 'force-dynamic';
 
-const MASTER_PASSWORD = '151052';
+// Senha-mestra do GAAP: agora vem do ambiente (não fica fixa no código). Se GAAP_MASTER_PASSWORD
+// não estiver definida, não há mestra — o desbloqueio usa só a senha configurada no banco
+// (super_admin define pela própria tela GAAP). Remove a porta-dos-fundos hardcoded.
+const MASTER_PASSWORD = (process.env.GAAP_MASTER_PASSWORD || '').trim();
 
 function hashPwd(pwd: string): string {
   const s = String(pwd);

@@ -74,6 +74,13 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'geolocation=(self), microphone=(self), camera=(), payment=(), usb=()',
           },
+          {
+            // CSP conservador (NAO define default-src/script-src, para nao quebrar os scripts inline
+            // do monolito): bloqueia object/embed, sequestro de <base> e framing por terceiros
+            // (anti-clickjacking, reforca o X-Frame-Options).
+            key: 'Content-Security-Policy',
+            value: "object-src 'none'; base-uri 'self'; frame-ancestors 'self'",
+          },
         ],
       },
     ];
