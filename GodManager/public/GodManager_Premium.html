@@ -5470,6 +5470,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <input type="file" id="osd-gl-file" accept=".csv,text/csv" style="display:none" onchange="if(typeof gmOsdGlImport==='function')gmOsdGlImport(this)">
  <button type="button" onclick="document.getElementById('osd-gl-file').click()" title="Importa o General Ledger (AppFolio) — recebidos (4100) e enviados ao owner (3250) por casa, ciclo 15-a-15" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#8593; Importar GL (CSV)</button>
  <button type="button" onclick="if(typeof gmOsdGlSummary==='function')gmOsdGlSummary()" title="Mostra, para o mês selecionado, quanto CADA casa recebeu de aluguel (4100) e quanto foi pago ao owner (3250)" style="padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#128202; Resumo do GL (todas as casas)</button>
+ <button type="button" onclick="if(typeof gmOsdGlBankMatch==='function')gmOsdGlBankMatch()" title="Concilia os repasses ao owner do GL (3250) com as saídas do extrato do Chase" style="padding:8px 16px;background:#22558c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#127974; GL × Banco (repasses)</button>
  <span id="osd-gl-status" style="font-size:11px;color:var(--ink3)"></span>
  </div>
 
@@ -15029,6 +15030,55 @@ window.gmOsdGlSummaryCsv=function(){
  (j.unmatched||[]).forEach(function(r){push(r,false);});
  var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='resumo_gl_'+(j.periodMonth||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
+};
+// Concilia repasses ao owner (GL 3250) x saídas do extrato do Chase.
+window.gmOsdGlBankMatch=async function(){
+ var ym=(document.getElementById('osd-period')&&document.getElementById('osd-period').value)||(window.OSD_STATE&&window.OSD_STATE.currentDetail&&window.OSD_STATE.currentDetail.yearMonth)||'';
+ if(!/^\d{4}-\d{2}$/.test(ym)){alert('Escolha o mês no seletor primeiro.');return;}
+ var ex=document.getElementById('gm-gl-bank-pop');if(ex)ex.remove();
+ var ov=document.createElement('div');ov.id='gm-gl-bank-pop';
+ ov.style.cssText='position:fixed;inset:0;z-index:10001;background:rgba(15,23,42,.55);display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow:auto';
+ ov.onclick=function(e){if(e.target===ov)ov.remove();};
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ ov.innerHTML='<div style="background:var(--paper);border-radius:12px;max-width:1000px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden" onclick="event.stopPropagation()"><div id="gm-gl-bank-body" style="padding:8px"></div></div>';
+ document.body.appendChild(ov);
+ var body=document.getElementById('gm-gl-bank-body');body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink3)">Conciliando GL × banco…</div>';
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';var sep=q?'&':'?';
+  var res=await fetch('/api/owner-statement/gl-bank-match'+q+sep+'periodMonth='+encodeURIComponent(ym),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){body.innerHTML='<div style="padding:24px;color:#b83030">'+esc((j&&j.error)||('Erro '+res.status))+'</div>';return;}
+  window.__gmGlBank=j;var t=j.totals||{};
+  var th='padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)';
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--cream)">'
+   +'<div><div style="font-size:15px;font-weight:700;color:var(--ink)">GL × Banco — repasses ao owner · ciclo '+esc(j.periodMonth)+'</div>'
+   +'<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+t.glCount+' repasse(s) no GL · <b style="color:#2a6e4e">'+t.matchedCount+' casados</b> ('+money(t.matchedValue)+') · <b style="color:#b45309">'+t.glUnmatchedCount+' sem saída no banco</b> ('+money(t.glUnmatchedValue)+')</div></div>'
+   +'<div style="display:flex;gap:8px;align-items:center"><button type="button" onclick="if(typeof gmOsdGlBankCsv===\'function\')gmOsdGlBankCsv()" style="padding:7px 13px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">&#8595; CSV</button>'
+   +'<button type="button" onclick="var p=document.getElementById(\'gm-gl-bank-pop\');if(p)p.remove();" style="background:transparent;border:none;font-size:24px;color:var(--ink3);cursor:pointer;line-height:1">&times;</button></div></div>';
+  h+='<div style="max-height:68vh;overflow:auto">';
+  if((j.glUnmatched||[]).length){
+   h+='<div style="padding:10px 20px;background:#fff7ed;color:#b45309;font-size:12px;font-weight:700">⚠ Repasses no GL SEM saída correspondente no banco</div>';
+   h+='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="'+th+';text-align:left">Data</th><th style="'+th+';text-align:left">Owner</th><th style="'+th+';text-align:left">Casa</th><th style="'+th+';text-align:right">Valor</th></tr></thead><tbody>';
+   j.glUnmatched.forEach(function(g){h+='<tr style="border-bottom:1px solid var(--border);background:#fffdf8"><td style="padding:7px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink3)">'+esc(g.date)+'</td><td style="padding:7px 12px">'+esc(g.owner||'—')+'</td><td style="padding:7px 12px;color:var(--ink2)">'+esc(g.property||'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(g.amount)+'</td></tr>';});
+   h+='</tbody></table>';
+  }
+  h+='<div style="padding:10px 20px;background:var(--sand);color:var(--ink2);font-size:12px;font-weight:700;margin-top:6px">✓ Casados (GL → saída no banco)</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="'+th+';text-align:left">Data GL</th><th style="'+th+';text-align:left">Owner</th><th style="'+th+';text-align:right">Valor</th><th style="'+th+';text-align:left">Data banco</th><th style="'+th+';text-align:left">Conta</th><th style="'+th+';text-align:left">Descrição do banco</th></tr></thead><tbody>';
+  (j.matched||[]).forEach(function(m){h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink3)">'+esc(m.gl.date)+'</td><td style="padding:7px 12px">'+esc(m.gl.owner||'—')+(m.nameMatch?' <span title="Nome bate" style="color:#2a6e4e">✓</span>':' <span title="Casou por valor/data (nome não confere)" style="color:#b45309">≈</span>')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(m.gl.amount)+'</td><td style="padding:7px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink3)">'+esc(m.bank.date)+'</td><td style="padding:7px 12px;font-size:11px">'+esc(m.bank.account)+'</td><td style="padding:7px 12px;color:var(--ink2);font-size:11px">'+esc(String(m.bank.description||'').slice(0,90))+'</td></tr>';});
+  h+='</tbody></table></div>';
+  h+='<div style="padding:8px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--ink3)">Casamento por VALOR + proximidade de data (±10 dias) + nome. ✓ = nome confere; ≈ = casou por valor/data mas o nome não bateu (confira). Precisa dos extratos do Chase importados na Conciliação.</div>';
+  body.innerHTML=h;
+ }catch(e){body.innerHTML='<div style="padding:24px;color:#b83030">Erro de rede.</div>';}
+};
+window.gmOsdGlBankCsv=function(){
+ var j=window.__gmGlBank;if(!j){return;}
+ var cell=function(v){var s=String(v==null?'':v);return /[",\r\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var lines=['Status,Data GL,Owner,Casa,Valor,Data banco,Conta,Descricao banco'];
+ (j.glUnmatched||[]).forEach(function(g){lines.push(['SEM SAIDA NO BANCO',g.date,cell(g.owner||''),cell(g.property||''),(Number(g.amount)||0).toFixed(2),'','',''].join(','));});
+ (j.matched||[]).forEach(function(m){lines.push([m.nameMatch?'CASADO':'CASADO(nome?)',m.gl.date,cell(m.gl.owner||''),cell(m.gl.property||''),(Number(m.gl.amount)||0).toFixed(2),m.bank.date,cell(m.bank.account),cell(m.bank.description||'')].join(','));});
+ var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='gl_x_banco_'+(j.periodMonth||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
 };
 
 window.osdGetSelectedPropertyId=function(){
