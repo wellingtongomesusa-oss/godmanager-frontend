@@ -7651,10 +7651,10 @@ window.gmBankGraphOpen=async function(accountType,label){
  overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
  var card=document.createElement('div');
- card.style.cssText='background:#fff;border-radius:12px;padding:22px;max-width:560px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
+ card.style.cssText='background:#fff;border-radius:12px;padding:22px;max-width:1000px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,0.2)';
  card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:14px;font-weight:700;color:var(--ink)">Gráfico — '+String(label||at).replace(/</g,'&lt;')+'</div><button type="button" onclick="var p=document.getElementById(\'gm-bank-graph-popup\');if(p)p.remove();" style="background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1">&times;</button></div>'
   +'<div id="gm-bank-graph-delta" style="font-size:12px;color:var(--ink2);margin-bottom:10px">Carregando…</div>'
-  +'<div style="position:relative;height:240px"><canvas id="gm-bank-graph-canvas"></canvas></div>';
+  +'<div style="position:relative;height:clamp(320px,58vh,540px)"><canvas id="gm-bank-graph-canvas"></canvas></div>';
  overlay.appendChild(card);
  document.body.appendChild(overlay);
  try{
@@ -9282,7 +9282,10 @@ function gmRecRenderBankTxns(){
  var h='<div style="border:1px solid var(--border);border-radius:10px;background:var(--paper);overflow:hidden">';
  h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border)">';
  h+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">Extrato do banco (Chase) — '+txns.length+' lançamento(s)</div>';
- h+='<div style="font-size:11px;color:var(--ink3)">Conferidos <b style="color:#2a6e4e">'+matched+'/'+txns.length+'</b> · entradas <b style="color:#2a6e4e">'+money(dep)+'</b> · saídas <b style="color:#b83030">'+money(pay)+'</b></div></div>';
+ h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+ h+='<button type="button" onclick="gmRecAutoMatch()" title="Casa cada lançamento do banco com um item de livro de mesmo valor" style="padding:6px 12px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⚡ Casar automático por valor</button>';
+ h+='<div style="font-size:11px;color:var(--ink3)">Conferidos <b style="color:#2a6e4e">'+matched+'/'+txns.length+'</b> · entradas <b style="color:#2a6e4e">'+money(dep)+'</b> · saídas <b style="color:#b83030">'+money(pay)+'</b></div>';
+ h+='</div></div>';
  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:560px;font-size:12px">';
  h+='<thead><tr style="background:var(--sand)"><th style="padding:6px 8px;text-align:center;width:34px">✓</th><th style="padding:6px 8px;text-align:left;width:84px">Data</th><th style="padding:6px 8px;text-align:left">Descrição</th><th style="padding:6px 8px;text-align:right;width:110px">Valor</th></tr></thead><tbody>';
  txns.forEach(function(t){
@@ -9308,6 +9311,22 @@ window.gmRecToggleBankTxn=async function(id,checked){
   if(!r.ok||!j.ok){if(t)t.matched=!checked;if(typeof showToast==='function')showToast((j&&j.error)||'Falha ao salvar.','error');}
  }catch(e){if(t)t.matched=!checked;}
  gmRecRenderBankTxns();
+};
+// Casa automaticamente cada lançamento do banco com um item de livro de mesmo valor.
+window.gmRecAutoMatch=async function(){
+ var acct=(document.getElementById('rec-account')||{}).value||'TRUST_CHASE';
+ var month=(document.getElementById('rec-month')||{}).value||'';
+ if(!/^\d{4}-\d{2}$/.test(month)){alert('Escolha o mês.');return;}
+ try{
+  var p=(typeof gmRecPayload==='function')?gmRecPayload():{};
+  var body={bankAccountKey:acct,periodMonth:month};if(p&&p.clientId)body.clientId=p.clientId;
+  var r=await fetch('/api/reconciliation/auto-match',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await r.json().catch(function(){return{};});
+  if(!r.ok||!j.ok){if(typeof showToast==='function')showToast((j&&j.error)||'Falha ao casar.','error');else alert((j&&j.error)||'Falha ao casar.');return;}
+  var msg=(j.matched||0)+' lançamento(s) casado(s) por valor'+((j.remainingBankTxns!=null)?(' · '+j.remainingBankTxns+' do banco e '+j.remainingBookItems+' do livro sem par'):'')+'.';
+  if(typeof showToast==='function')showToast(msg,(j.matched?'success':'info'));else alert(msg);
+  if(typeof gmRecLoad==='function')await gmRecLoad();
+ }catch(e){if(typeof showToast==='function')showToast('Erro de rede.','error');else alert('Erro de rede.');}
 };
 function gmRecRender(){
  var rec=window.__gmRec;
