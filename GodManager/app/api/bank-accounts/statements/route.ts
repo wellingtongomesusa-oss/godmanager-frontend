@@ -26,6 +26,7 @@ export async function GET(req: Request) {
   if (!canManageBankBalances(user.role)) {
     return NextResponse.json({ ok: false, error: 'Acesso negado.' }, { status: 403 });
   }
+  void recordAudit({ request: req, actor: { id: user.id, email: user.email }, action: 'bank_data.access', entity: 'bank_data', entityId: 'bank-statements' });
 
   try {
     const url = new URL(req.url);

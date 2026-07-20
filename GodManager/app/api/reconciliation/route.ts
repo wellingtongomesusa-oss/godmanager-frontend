@@ -88,6 +88,7 @@ function serialize(rec: {
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
+  void recordAudit({ request: req, actor: { id: user.id, email: user.email }, action: 'bank_data.access', entity: 'bank_data', entityId: 'reconciliation' });
   const url = new URL(req.url);
   const scope = await resolveBankAccountClientScope(user, url.searchParams.get('clientId'));
   if (!scope.ok) return NextResponse.json({ ok: false, error: scope.error }, { status: scope.status });

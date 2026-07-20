@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordAudit } from '@/lib/auditServer';
 import { LeaseStatus } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
@@ -20,6 +21,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
+  void recordAudit({ request: req, actor: { id: user.id, email: user.email }, action: 'bank_data.access', entity: 'bank_data', entityId: 'statement-flows' });
 
   try {
     const url = new URL(req.url);

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordAudit } from '@/lib/auditServer';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
@@ -19,6 +20,7 @@ function ymd(d: Date): string {
 export async function GET(req: Request) {
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 });
+  void recordAudit({ request: req, actor: { id: user.id, email: user.email }, action: 'bank_data.access', entity: 'bank_data', entityId: 'plaid-transactions' });
 
   const url = new URL(req.url);
   const scope = await resolveBankAccountClientScope(user, url.searchParams.get('clientId'));
