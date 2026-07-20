@@ -83,6 +83,24 @@ export async function POST(req: Request) {
           statementBalance: new Prisma.Decimal(a.endingBalance),
         },
       });
+
+      // Transações do banco (lado banco). Idempotente: remove as ainda-não-conferidas e recria;
+      // preserva as já marcadas como conferidas (matched) via skipDuplicates no sourceRefId.
+      await prisma.bankStatementTxn.deleteMany({
+        where: { clientId: scope.clientId, bankAccountKey: key, periodMonth: st.periodMonth, matched: false },
+      });
+      const rows = a.transactions.map((t, i) => ({
+        clientId: scope.clientId,
+        bankAccountKey: key,
+        periodMonth: st.periodMonth as string,
+        txnDate: new Date(t.date + 'T00:00:00Z'),
+        description: t.description.slice(0, 400),
+        amount: new Prisma.Decimal(t.amount),
+        section: t.section,
+        sourceRefId: `${key}:${st.periodMonth}:${i}`,
+      }));
+      if (rows.length) await prisma.bankStatementTxn.createMany({ data: rows, skipDuplicates: true });
+
       imported.push({ last4: a.last4, bankAccountKey: key, opening: a.beginningBalance, ending: a.endingBalance, txns: a.transactions.length });
     }
 

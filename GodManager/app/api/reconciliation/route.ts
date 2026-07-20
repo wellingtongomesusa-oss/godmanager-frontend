@@ -110,7 +110,29 @@ export async function GET(req: Request) {
   });
   const suggestedOpening = prior ? num(prior.statementBalance).toFixed(2) : null;
 
-  return NextResponse.json({ ok: true, reconciliation: rec ? serialize(rec) : null, suggestedOpening });
+  // Transações do EXTRATO do banco (lado banco) importadas do PDF do Chase, para casar linha-a-linha.
+  const bankTxns = await prisma.bankStatementTxn.findMany({
+    where: { clientId: scope.clientId, bankAccountKey, periodMonth },
+    orderBy: [{ txnDate: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, txnDate: true, description: true, amount: true, section: true, matched: true },
+  });
+  const bankTransactions = bankTxns.map((t) => ({
+    id: t.id,
+    txnDate: t.txnDate.toISOString().slice(0, 10),
+    description: t.description,
+    amount: num(t.amount).toFixed(2),
+    section: t.section,
+    matched: t.matched,
+  }));
+  const bankMatched = bankTransactions.filter((t) => t.matched).length;
+
+  return NextResponse.json({
+    ok: true,
+    reconciliation: rec ? serialize(rec) : null,
+    suggestedOpening,
+    bankTransactions,
+    bankSummary: { count: bankTransactions.length, matched: bankMatched },
+  });
 }
 
 /**

@@ -6564,6 +6564,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </div>
    </div>
 
+   <!-- Extrato do banco (transações importadas do PDF do Chase) -->
+   <div id="rec-bank-txns" style="display:none;margin-bottom:16px"></div>
+
    <datalist id="rec-cat-options"></datalist>
    <!-- Adicionar item -->
    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
@@ -9215,6 +9218,8 @@ async function gmRecLoad(){
   var r=await fetch('/api/reconciliation'+q+sep+'bankAccountKey='+encodeURIComponent(acct)+'&periodMonth='+encodeURIComponent(month),{credentials:'include',cache:'no-store'});
   var j=await r.json();
   if(!r.ok||!j.ok){alert((j&&j.error)||'Erro ao carregar.');return;}
+  window.__gmRecBankTxns=Array.isArray(j.bankTransactions)?j.bankTransactions:[];
+  window.__gmRecBankSummary=j.bankSummary||{count:0,matched:0};
   if(!j.reconciliation){
    // novo: já sugere o saldo inicial = saldo final do mês anterior
    var openSug=(j.suggestedOpening!=null)?j.suggestedOpening:'0.00';
@@ -9230,6 +9235,47 @@ async function gmRecLoad(){
  }catch(e){alert('Erro de rede.');}
 }
 window.gmRecLoad=gmRecLoad;
+// Extrato do banco (transações do PDF do Chase) — lista para casar linha-a-linha com os livros.
+function gmRecRenderBankTxns(){
+ var box=document.getElementById('rec-bank-txns');if(!box)return;
+ var txns=Array.isArray(window.__gmRecBankTxns)?window.__gmRecBankTxns:[];
+ if(!txns.length){box.style.display='none';box.innerHTML='';return;}
+ box.style.display='block';
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var money=function(n){var x=Number(n)||0;return (x<0?'-$':'$')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var matched=txns.filter(function(t){return t.matched;}).length;
+ var dep=txns.filter(function(t){return Number(t.amount)>=0;}).reduce(function(s,t){return s+Number(t.amount);},0);
+ var pay=txns.filter(function(t){return Number(t.amount)<0;}).reduce(function(s,t){return s+Math.abs(Number(t.amount));},0);
+ var h='<div style="border:1px solid var(--border);border-radius:10px;background:var(--paper);overflow:hidden">';
+ h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border)">';
+ h+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">Extrato do banco (Chase) — '+txns.length+' lançamento(s)</div>';
+ h+='<div style="font-size:11px;color:var(--ink3)">Conferidos <b style="color:#2a6e4e">'+matched+'/'+txns.length+'</b> · entradas <b style="color:#2a6e4e">'+money(dep)+'</b> · saídas <b style="color:#b83030">'+money(pay)+'</b></div></div>';
+ h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:560px;font-size:12px">';
+ h+='<thead><tr style="background:var(--sand)"><th style="padding:6px 8px;text-align:center;width:34px">✓</th><th style="padding:6px 8px;text-align:left;width:84px">Data</th><th style="padding:6px 8px;text-align:left">Descrição</th><th style="padding:6px 8px;text-align:right;width:110px">Valor</th></tr></thead><tbody>';
+ txns.forEach(function(t){
+  var neg=Number(t.amount)<0;
+  h+='<tr style="border-bottom:1px solid var(--border)'+(t.matched?';opacity:.55':'')+'">'
+   +'<td style="padding:5px 8px;text-align:center"><input type="checkbox" '+(t.matched?'checked':'')+' onchange="gmRecToggleBankTxn(\''+esc(t.id)+'\',this.checked)" style="width:15px;height:15px;accent-color:#2a6e4e;cursor:pointer"></td>'
+   +'<td style="padding:5px 8px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(t.txnDate)+'</td>'
+   +'<td style="padding:5px 8px;color:var(--ink)">'+esc(String(t.description||'').slice(0,120))+'</td>'
+   +'<td style="padding:5px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:'+(neg?'#b83030':'#2a6e4e')+'">'+money(t.amount)+'</td></tr>';
+ });
+ h+='</tbody></table></div></div>';
+ box.innerHTML=h;
+}
+window.gmRecRenderBankTxns=gmRecRenderBankTxns;
+window.gmRecToggleBankTxn=async function(id,checked){
+ var txns=Array.isArray(window.__gmRecBankTxns)?window.__gmRecBankTxns:[];
+ var t=txns.filter(function(x){return x.id===id;})[0];if(t)t.matched=!!checked; // otimista
+ try{
+  var p=(typeof gmRecPayload==='function')?gmRecPayload():{};
+  var body={id:id,matched:!!checked};if(p&&p.clientId)body.clientId=p.clientId;
+  var r=await fetch('/api/reconciliation/bank-txn',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var j=await r.json().catch(function(){return{};});
+  if(!r.ok||!j.ok){if(t)t.matched=!checked;if(typeof showToast==='function')showToast((j&&j.error)||'Falha ao salvar.','error');}
+ }catch(e){if(t)t.matched=!checked;}
+ gmRecRenderBankTxns();
+};
 function gmRecRender(){
  var rec=window.__gmRec;
  var body=document.getElementById('rec-body');var empty=document.getElementById('rec-empty');
@@ -9238,6 +9284,7 @@ function gmRecRender(){
  if(typeof gmPlaidBankStatus==='function')void gmPlaidBankStatus();
  if(typeof gmRecLoadCategories==='function')void gmRecLoadCategories();
  if(typeof gmRecRenderCompliance==='function')gmRecRenderCompliance();
+ if(typeof gmRecRenderBankTxns==='function')gmRecRenderBankTxns();
  var setV=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
  var setT=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
  setV('rec-opening',rec.openingBalance||'0.00');

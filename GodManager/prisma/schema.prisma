@@ -124,6 +124,7 @@ model Client {
   propertyMonthPnls     PropertyMonthPnl[]      @relation("PropertyMonthPnl_clientId")
   rampExpensePostings   RampExpensePosting[]    @relation("RampExpensePosting_clientId")
   bankReconciliations   BankReconciliation[]    @relation("BankReconciliation_clientId")
+  bankStatementTxns     BankStatementTxn[]      @relation("BankStatementTxn_clientId")
   rampSpendSnapshot     RampSpendSnapshot?      @relation("RampSpendSnapshot_clientId")
   accessRequests        AccessRequest[]         @relation("AccessRequest_clientId")
   utilityAccounts       UtilityAccount[]        @relation("UtilityAccount_clientId")
@@ -322,6 +323,30 @@ model BankReconciliationItem {
 
   @@index([reconciliationId])
   @@map("bank_reconciliation_items")
+}
+
+/// Transação do EXTRATO do banco (lado banco da conciliação), extraída do PDF do Chase (#39 fase 3).
+/// amount: crédito > 0, débito < 0. `matched` = conferida/casada com os livros. Idempotente por
+/// (clientId, bankAccountKey, sourceRefId). Ver [[godmanager-chase-contas-mapa]].
+model BankStatementTxn {
+  id             String   @id @default(cuid())
+  clientId       String
+  bankAccountKey String   @db.VarChar(40) // TRUST_CHASE | OPERATING_TRUST | DEPOSIT_SECURITY
+  periodMonth    String   // 'YYYY-MM'
+  txnDate        DateTime @db.Date
+  description    String   @db.VarChar(400)
+  amount         Decimal  @db.Decimal(14, 2)
+  section        String   @db.VarChar(20) // DEPOSIT | ATM_DEBIT | ELECTRONIC | FEE
+  sourceRefId    String   @db.VarChar(80) // idempotência: bankAccountKey:periodMonth:index
+  matched        Boolean  @default(false)
+  matchedItemId  String?  // opcional: item de livro (BankReconciliationItem) casado
+  createdAt      DateTime @default(now())
+
+  client Client @relation("BankStatementTxn_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, bankAccountKey, sourceRefId])
+  @@index([clientId, bankAccountKey, periodMonth])
+  @@map("bank_statement_txns")
 }
 
 /// Pedido de liberação de acesso a uma área (ex.: FINANCE/QuickBooks). Um usuário
