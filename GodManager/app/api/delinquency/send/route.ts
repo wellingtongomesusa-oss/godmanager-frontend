@@ -8,6 +8,7 @@ import {
   toClientScopeUser,
 } from '@/lib/clientScope';
 import { sendEmailAndLog } from '@/lib/email';
+import { resolveFinanceCc } from '@/lib/financeEmail';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,6 +124,9 @@ export async function POST(req: NextRequest) {
       [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'Unknown';
     const author = { id: user.id, name: authorName, role: user.role };
 
+    // CC financeiro: cópia da cobrança para a empresa contratante (resolvido uma vez).
+    const financeCc = await resolveFinanceCc(clientId);
+
     // Revalida todos os inquilinos de uma vez, dentro do escopo do cliente
     const scope = getClientScopeWhere(scopeUser);
     const ids = items.map((i) => String(i.tenantId)).filter(Boolean);
@@ -166,6 +170,7 @@ export async function POST(req: NextRequest) {
         html,
         // Cobrança sai sempre de contact@godmanager.us (independe do remetente global).
         from: process.env.DELINQUENCY_FROM_EMAIL || 'contact@godmanager.us',
+        ...(financeCc.length ? { cc: financeCc } : {}),
         clientId,
         author,
         propertyId: t.propertyId,

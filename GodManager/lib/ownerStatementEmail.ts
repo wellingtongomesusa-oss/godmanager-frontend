@@ -8,6 +8,7 @@ import {
   type ClientScopeUser,
 } from '@/lib/clientScope';
 import { sendEmail } from '@/lib/email';
+import { FINANCE_FROM_EMAIL, resolveFinanceCc } from '@/lib/financeEmail';
 import { StatementPDF, validHttpLogoUrl } from '@/lib/pdf/StatementPDF';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 
@@ -321,10 +322,19 @@ export async function sendOwnerStatementForProperty(params: {
     ? `[TEST → owner: ${ownerEmailReal}] ${subjectBase}`
     : subjectBase;
 
+  // Statement é documento financeiro: sai de finance@godmanager.us com CÓPIA (CC) p/ a empresa
+  // contratante. Em modo teste não põe CC para não vazar o e-mail da empresa.
+  const financeCc =
+    useTest || !property.clientId
+      ? []
+      : await resolveFinanceCc(property.clientId, [ownerEmailReal]);
+
   const mail = await sendEmail({
     to: sentTo,
     subject,
     html,
+    from: FINANCE_FROM_EMAIL,
+    ...(financeCc.length ? { cc: financeCc } : {}),
     attachments: [{ filename: `${statementNumber}.pdf`, content: pdfBuf }],
   });
 

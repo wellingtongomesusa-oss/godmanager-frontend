@@ -2143,6 +2143,16 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <p id="admin-company-name-current" style="font-size:11px;color:var(--ink3);margin-top:8px;font-style:italic">A carregar…</p>
   </div>
   <div style="padding:22px 24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);position:relative">
+   <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber);border-radius:0 0 12px 12px"></div>
+   <h3 style="margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">E-mail financeiro (CC)</h3>
+   <p style="font-size:12px;color:var(--ink3);margin:0 0 16px">Statements e cobranças são enviados por <b>finance@godmanager.us</b> com <b>cópia (CC)</b> para a empresa contratante. Vazio = usa o e-mail cadastrado da empresa. Vários e-mails separados por vírgula.</p>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input id="gm-finance-cc-input" type="text" placeholder="accounting@suaempresa.com, financeiro@suaempresa.com" style="flex:1;min-width:200px;padding:9px 10px;border:1px solid var(--border2);border-radius:7px;font-size:12px;font-family:'Inter',sans-serif;background:var(--sand);color:var(--ink)"/>
+    <button type="button" onclick="if(typeof window.gmSaveFinanceCc==='function')window.gmSaveFinanceCc();" style="padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;font-family:'DM Sans',sans-serif">Salvar</button>
+   </div>
+   <p id="gm-finance-cc-current" style="font-size:11px;color:var(--ink3);margin-top:8px;font-style:italic">A carregar…</p>
+  </div>
+  <div style="padding:22px 24px;border:1px solid var(--border);border-radius:12px;background:var(--paper);position:relative">
    <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--blue);border-radius:0 0 12px 12px"></div>
    <h3 style="margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)">Logo da empresa</h3>
    <p style="font-size:12px;color:var(--ink3);margin:0 0 16px">Exibido em documentos e comunicações do seu cliente. Apenas administradores do cliente podem alterar.</p>
@@ -14232,7 +14242,7 @@ function nav(r){
  listings:()=>typeof listingsRender==='function'&&listingsRender(),
  tasks:()=>{if(typeof ltTasksRender==='function')ltTasksRender();if(typeof ltUpdateTaskNavBadge==='function')ltUpdateTaskNavBadge();},
  vendors:()=>{if(typeof gvNavigateVendors==='function')void gvNavigateVendors();},
- settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof gmMfaInit==='function')void gmMfaInit();if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);if(typeof window.gmClientLogoLoad==='function')setTimeout(function(){window.gmClientLogoLoad();},200);},
+ settings:()=>{var w=document.getElementById('settings-vendor-sync-wrap');if(w){var rAd=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();var isAd=(rAd==='admin'||rAd==='super_admin');w.style.display=isAd?'block':'none';}if(typeof gmMfaInit==='function')void gmMfaInit();if(typeof adminRenderGaapHistory==='function')adminRenderGaapHistory();if(typeof window.adminLoadCompanyName==='function')setTimeout(function(){window.adminLoadCompanyName();},200);if(typeof window.gmClientLogoLoad==='function')setTimeout(function(){window.gmClientLogoLoad();},200);if(typeof window.gmLoadFinanceCc==='function')setTimeout(function(){window.gmLoadFinanceCc();},200);},
  properties:()=>{if(typeof rankingRender==='function')rankingRender();},
  'admin-audit':()=>{if(typeof adminAuditEnterPage==='function')adminAuditEnterPage();},
  'forms-received':()=>{if(typeof gmFormsReceivedRender==='function')void gmFormsReceivedRender();},
@@ -36164,6 +36174,32 @@ window.tenantViewDetails=function(tid){
    if(typeof window.gmUpdateCompanyNameInSidebar==='function')window.gmUpdateCompanyNameInSidebar(name);
    var cur=document.getElementById('admin-company-name-current');
    if(cur)cur.textContent='Nome actual: '+name;
+  }catch(e){alert('Erro: '+(e&&e.message?e.message:String(e)));}
+ };
+ window.gmLoadFinanceCc=async function(){
+  var cur=document.getElementById('gm-finance-cc-current');var input=document.getElementById('gm-finance-cc-input');
+  if(!input&&!cur)return;
+  try{
+   var cid='';if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)cid=p.clientId;}
+   var res=await fetch('/api/settings/finance-cc'+(cid?('?clientId='+encodeURIComponent(cid)):''),{credentials:'include',cache:'no-store'});
+   var data=await res.json().catch(function(){return{};});
+   if(!res.ok||!data.ok){if(cur)cur.textContent='';return;}
+   var ov=(data.override||[]).join(', ');var eff=(data.effective||[]).join(', ');
+   if(input)input.value=ov;
+   if(cur)cur.textContent=eff?('CC actual: '+eff+(ov?'':' (e-mail da empresa)')):'Sem CC — statements/cobranças sairão sem cópia.';
+  }catch(e){if(cur)cur.textContent='';}
+ };
+ window.gmSaveFinanceCc=async function(){
+  var input=document.getElementById('gm-finance-cc-input');if(!input)return;
+  var val=String(input.value||'').trim();
+  try{
+   var cid='';if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)cid=p.clientId;}
+   var res=await fetch('/api/settings/finance-cc',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({cc:val,clientId:cid||undefined})});
+   var d=await res.json().catch(function(){return{};});
+   if(!res.ok||!d.ok){if(res.status===403){alert('Apenas admin pode alterar.');return;}alert('Erro: '+((d&&d.error)||('HTTP '+res.status)));return;}
+   if(typeof showToast==='function')showToast('CC financeiro salvo.','success');
+   var cur=document.getElementById('gm-finance-cc-current');var eff=(d.effective||[]).join(', ');
+   if(cur)cur.textContent=eff?('CC actual: '+eff):'Sem CC definido.';
   }catch(e){alert('Erro: '+(e&&e.message?e.message:String(e)));}
  };
  window.gmClientLogoLoad=async function(){
