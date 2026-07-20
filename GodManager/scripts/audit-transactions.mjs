@@ -9,27 +9,33 @@ import fs from 'fs';
 const csvPath = process.argv[2];
 if (!csvPath) { console.error('Uso: node scripts/audit-transactions.mjs "<csvPath>"'); process.exit(1); }
 
-function parseCsvLine(line) {
-  const out = []; let cur = '', q = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (q) { if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
-    else { if (c === '"') q = true; else if (c === ',') { out.push(cur); cur = ''; } else cur += c; }
+// Parser de CSV que respeita campos multi-linha entre aspas (o memo do QuickBooks tem \n).
+function parseCsv(text) {
+  const records = []; let field = '', record = [], q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') q = false;
+      else field += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ',') { record.push(field); field = ''; }
+      else if (c === '\r') { /* ignora */ }
+      else if (c === '\n') { record.push(field); records.push(record); field = ''; record = []; }
+      else field += c;
+    }
   }
-  out.push(cur); return out;
+  if (field.length || record.length) { record.push(field); records.push(record); }
+  return records;
 }
 const num = (s) => { const n = Number(String(s || '').replace(/[^0-9.\-]/g, '')); return Number.isFinite(n) ? n : 0; };
 const money = (n) => '$' + Number(n || 0).toFixed(2);
 
-const raw = fs.readFileSync(csvPath, 'utf8').split(/\r?\n/);
-// acha a linha de cabecalho (comeca com "Date,Transaction type")
-let start = raw.findIndex((l) => /^Date,Transaction type/i.test(l));
-if (start < 0) start = 0;
+const records = parseCsv(fs.readFileSync(csvPath, 'utf8'));
 const rows = [];
-for (let i = start + 1; i < raw.length; i++) {
-  const l = raw[i]; if (!l.trim()) continue;
-  const f = parseCsvLine(l);
-  if (!f[0] || !/^\d{2}\/\d{2}\/\d{4}$/.test(f[0].trim())) continue;
+for (const f of records) {
+  if (!f[0] || !/^\d{2}\/\d{2}\/\d{4}$/.test(String(f[0]).trim())) continue;
   rows.push({
     date: f[0].trim(), type: (f[1] || '').trim(), numRaw: (f[2] || '').trim(),
     posting: (f[3] || '').trim(), name: (f[4] || '').trim(), memo: (f[5] || '').trim(),
@@ -64,6 +70,26 @@ for (const r of rows) {
   if (isVehicle && !inAuto && !TELECOM.test(r.account + ' ' + r.split)) {
     const bucket = HOA_ACCT.test(r.account + ' ' + r.split) ? need : ambig;
     bucket.push({ rule: 'Veículo em conta errada', date: r.date, name: r.name, acct: r.account + (r.split ? ' / ' + r.split : ''), amount: r.amount, why: 'parece despesa de veículo fora de "Auto Expense"' + (HOA_ACCT.test(r.account + ' ' + r.split) ? ' (está em HOA)' : ''), memo: r.memo.slice(0, 60) });
+  }
+}
+// R7: reconhecimento de receita por competencia — fee (management/placement) lançado muito
+// depois do mes de servico referido no memo/nome. Vai para "ambiguos" (confirmacao humana).
+const MONTHS_MAP = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
+const FEE = /management (income|fee)|placement fee|leasing fee|lease renewal fee|4100|4150|4140/i;
+for (const r of rows) {
+  if (!FEE.test(r.account + ' ' + r.split)) continue;
+  const dm = r.date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if (!dm) continue;
+  const txn = new Date(Number(dm[3]), Number(dm[1]) - 1, Number(dm[2]));
+  const mm = (r.memo + ' ' + r.name).toLowerCase().match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/);
+  if (!mm) continue;
+  let refYear = txn.getFullYear();
+  const refMonth = MONTHS_MAP[mm[1]];
+  // se o mes referido e maior que o mes da transacao, provavelmente e do ano anterior
+  if (refMonth > txn.getMonth()) refYear -= 1;
+  const refEnd = new Date(refYear, refMonth + 1, 0); // ultimo dia do mes de servico
+  const days = Math.round((txn - refEnd) / 86400000);
+  if (days > 30) {
+    ambig.push({ rule: 'Atraso de reconhecimento de receita', date: r.date, name: r.name, acct: (r.account || r.split).slice(0, 40), amount: r.amount || r.debit || r.credit, why: `fee de ${mm[1]} lançado ${days} dias após o mês de competência` });
   }
 }
 // R5: caução — casar reembolsos (saida) com retencoes (entrada) por nome
