@@ -1,4 +1,5 @@
 import { qbApiFetch, tidOf } from '@/lib/quickbooks';
+import type { AuditRow } from '@/lib/auditTransactions';
 
 /**
  * Lançamentos no QuickBooks Online (API v3) seguindo double-entry / US GAAP.
@@ -340,6 +341,54 @@ export async function qbProfitAndLoss(clientId: string, from: string, to: string
   const totalExpenses = expenses.total ?? sumMonths(expenses);
   const months = monthKeys.map((k) => ({ month: k, income: income[k] || 0, expenses: expenses[k] || 0 }));
   return { totalIncome, totalExpenses, netIncome: totalIncome - totalExpenses, months };
+}
+
+/**
+ * Transaction List do QuickBooks (Reports API) → linhas no formato do motor de auditoria.
+ * Substitui o download/upload de CSV: puxa direto da API já conectada. Somente leitura.
+ */
+export async function qbTransactionList(clientId: string, from: string, to: string): Promise<AuditRow[]> {
+  const cols = 'tx_date,txn_type,doc_num,name,memo,account_name,split_acc,subt_nat_amount';
+  const json = (await qbRead(
+    clientId,
+    `reports/TransactionList?start_date=${from}&end_date=${to}&columns=${encodeURIComponent(cols)}`,
+  )) as Record<string, unknown>;
+  const report = (json || {}) as Record<string, unknown>;
+  const columns = ((report.Columns as Record<string, unknown>)?.Column as Array<Record<string, unknown>>) || [];
+  const keyByIdx: string[] = columns.map((c) => {
+    const meta = (c?.MetaData as Array<Record<string, unknown>>) || [];
+    const k = meta.find((m) => m?.Name === 'ColKey')?.Value as string | undefined;
+    return k || String(c?.ColType || '');
+  });
+  const toMMDD = (d: string) => {
+    const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[2]}/${m[3]}/${m[1]}` : String(d || '');
+  };
+  const rows: AuditRow[] = [];
+  const walk = (rs: Array<Record<string, unknown>>) => {
+    for (const row of rs || []) {
+      const cd = row?.ColData as Array<Record<string, unknown>> | undefined;
+      if (cd && cd.length) {
+        const get = (key: string) => {
+          const i = keyByIdx.indexOf(key);
+          return i >= 0 ? String((cd[i]?.value ?? '')) : '';
+        };
+        const dateRaw = get('tx_date');
+        if (dateRaw) {
+          const amt = numVal(get('subt_nat_amount'));
+          rows.push({
+            date: toMMDD(dateRaw), type: get('txn_type'), numRaw: get('doc_num'),
+            name: get('name'), memo: get('memo'), account: get('account_name'), split: get('split_acc'),
+            amount: amt, debit: amt > 0 ? amt : 0, credit: amt < 0 ? -amt : 0,
+          });
+        }
+      }
+      const sub = (row?.Rows as Record<string, unknown>)?.Row as Array<Record<string, unknown>> | undefined;
+      if (sub) walk(sub);
+    }
+  };
+  walk(((report.Rows as Record<string, unknown>)?.Row as Array<Record<string, unknown>>) || []);
+  return rows;
 }
 
 /** Total de contas a pagar (soma do saldo em aberto dos Bills). */

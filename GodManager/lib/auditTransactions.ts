@@ -51,10 +51,13 @@ const SECDEP = /security deposit|held security|escrow/i;
 const FEE = /management (income|fee)|placement fee|leasing fee|lease renewal fee|4100|4150|4140/i;
 const MONTHS_MAP: Record<string, number> = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
 
-export function auditTransactions(csvText: string): AuditResult {
+/** Linha normalizada de transação — pode vir do CSV (QuickBooks export) OU da API do QuickBooks. */
+export type AuditRow = { date: string; type: string; numRaw: string; name: string; memo: string; account: string; split: string; amount: number; debit: number; credit: number };
+
+/** Constrói as linhas a partir do texto do CSV "Transaction List by Date". */
+export function rowsFromCsv(csvText: string): AuditRow[] {
   const records = parseCsv(csvText);
-  type Row = { date: string; type: string; numRaw: string; name: string; memo: string; account: string; split: string; amount: number; debit: number; credit: number };
-  const rows: Row[] = [];
+  const rows: AuditRow[] = [];
   for (const f of records) {
     if (!f[0] || !/^\d{2}\/\d{2}\/\d{4}$/.test(String(f[0]).trim())) continue;
     rows.push({
@@ -63,7 +66,16 @@ export function auditTransactions(csvText: string): AuditResult {
       amount: numOf(f[8]), debit: numOf(f[9]), credit: numOf(f[10]),
     });
   }
+  return rows;
+}
 
+/** Auditoria a partir do CSV. */
+export function auditTransactions(csvText: string): AuditResult {
+  return runAudit(rowsFromCsv(csvText));
+}
+
+/** Auditoria a partir de linhas já normalizadas (ex.: vindas da API do QuickBooks). */
+export function runAudit(rows: AuditRow[]): AuditResult {
   const corrigir: AuditFinding[] = [];
   const ambiguos: AuditFinding[] = [];
 
