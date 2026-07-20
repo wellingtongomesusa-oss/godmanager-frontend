@@ -65,23 +65,40 @@ function nameMatches(payeeNorm, set) {
   return false;
 }
 
-const [properties, owners, vendors] = await Promise.all([
+const [properties, owners, vendors, tenants] = await Promise.all([
   prisma.property.findMany({ where: { clientId }, select: { id: true, code: true, address: true, clientId: true } }),
   prisma.owner.findMany({ where: { clientId }, select: { name: true } }),
   prisma.pmVendor.findMany({ where: { clientId }, select: { companyName: true } }),
+  prisma.tenant.findMany({ select: { name: true } }),
 ]);
 const ownerSet = new Set(owners.map((o) => norm(o.name)).filter(Boolean));
 const vendorSet = new Set(vendors.map((v) => norm(v.companyName)).filter(Boolean));
-// index de casas por endereco normalizado (usa o maior; match por contains)
-const propIndex = properties.map((p) => ({ p, key: norm(p.address) })).filter((x) => x.key);
+const tenantSet = new Set(tenants.map((t) => norm(t.name)).filter(Boolean));
+
+// Matching de casa robusto: exige o NUMERO da rua igual; pontua por tokens compartilhados;
+// se ambos tem unidade (A/B), ela tem que bater. Lida com unidades e enderecos truncados.
+function houseNumber(s) { const m = norm(s).match(/\b(\d{2,6})\b/); return m ? m[1] : null; }
+function unitLetter(s) { const m = String(s).match(/(?:#|unit\s+|-\s+)([a-z])\b/i); return m ? m[1].toLowerCase() : null; }
+const propIndex = properties.map((p) => ({
+  p, key: norm(p.address), num: houseNumber(p.address), unit: unitLetter(p.address),
+  toks: new Set(norm(p.address).split(' ').filter((x) => x.length > 1)),
+})).filter((x) => x.key);
 
 function matchProperty(glProp) {
-  const g = norm(glProp);
-  let best = null, bestLen = 0;
-  for (const { p, key } of propIndex) {
-    if ((g.includes(key) || key.includes(g)) && key.length > bestLen) { best = p; bestLen = key.length; }
+  const gNum = houseNumber(glProp);
+  const gUnit = unitLetter(glProp);
+  const gToks = new Set(norm(glProp).split(' ').filter((x) => x.length > 1));
+  let best = null, bestScore = 0;
+  for (const pi of propIndex) {
+    if (gNum && pi.num && gNum !== pi.num) continue;            // numero da rua tem que bater
+    if (gUnit && pi.unit && gUnit !== pi.unit) continue;        // se ambos tem unidade, tem que bater
+    let sc = 0;
+    for (const t of pi.toks) if (gToks.has(t)) sc++;
+    if (gNum && pi.num && gNum === pi.num) sc += 2;             // bonus numero igual
+    if (gUnit && pi.unit && gUnit === pi.unit) sc += 3;         // bonus unidade igual
+    if (sc > bestScore) { best = pi.p; bestScore = sc; }
   }
-  return best;
+  return bestScore >= 3 ? best : null;
 }
 
 function classify(type, desc, debit, credit, payeeNorm) {
@@ -97,7 +114,8 @@ function classify(type, desc, debit, credit, payeeNorm) {
   }
   if (credit > 0) {
     if (/management fee|house cleaning|hoa|lease fee/.test(d)) return 'expense';
-    if (nameMatches(payeeNorm, ownerSet)) return 'exclude';   // repasse ao owner
+    if (nameMatches(payeeNorm, ownerSet)) return 'exclude';    // repasse ao owner
+    if (nameMatches(payeeNorm, tenantSet)) return 'exclude';   // reembolso/deposito ao inquilino
     if (nameMatches(payeeNorm, vendorSet)) return 'expense';   // pagamento a fornecedor
     return 'review';                                           // payee nao identificado
   }
@@ -108,6 +126,7 @@ const raw = fs.readFileSync(csvPath, 'utf8').split(/\r?\n/);
 const perHouse = new Map(); // propId||ym -> {code, income, expense}
 const items = [];           // linhas a gravar
 const stat = { income: 0, expense: 0, excludeC: 0, review: 0, noProp: 0, rows: 0 };
+const noPropAgg = new Map(); // glProp -> {count, sum}
 
 for (const line of raw) {
   if (!line.trim()) continue;
@@ -124,7 +143,13 @@ for (const line of raw) {
   if (cls === 'exclude') { stat.excludeC++; continue; }
   if (cls === 'review') { stat.review++; continue; }
   const pm = matchProperty(prop);
-  if (!pm) { stat.noProp++; continue; }
+  if (!pm) {
+    stat.noProp++;
+    const na = noPropAgg.get(prop) || { count: 0, sum: 0 };
+    na.count++; na.sum += (cls === 'income' ? debit : credit);
+    noPropAgg.set(prop, na);
+    continue;
+  }
   const amount = cls === 'income' ? debit : credit;
   const desc = (f[8] || '').trim() || (cls === 'income' ? 'Pagamento recebido' : 'Pagamento enviado');
   const ref = crypto.createHash('sha1').update([f[1], f[2], f[4], f[8], debit, credit].join('|')).digest('hex').slice(0, 24);
@@ -136,7 +161,7 @@ for (const line of raw) {
   perHouse.set(k, a);
 }
 
-console.log(`Casas na empresa: ${properties.length} | owners: ${owners.length} | vendors: ${vendors.length}`);
+console.log(`Casas na empresa: ${properties.length} | owners: ${owners.length} | vendors: ${vendors.length} | tenants: ${tenants.length}`);
 console.log(`Linhas de transacao: ${stat.rows}`);
 console.log(`  -> a lançar: income $${stat.income.toFixed(2)} | expense $${stat.expense.toFixed(2)} (${items.length} linhas)`);
 console.log(`  -> excluidas: ${stat.excludeC} | em revisao (payee?): ${stat.review} | sem casa casada: ${stat.noProp}`);
@@ -148,8 +173,23 @@ for (const [ym, c] of Array.from(cyc.entries()).sort()) {
   console.log(`  ${ym}: ${c.n} casas | credito $${c.inc.toFixed(2)} | debito $${c.exp.toFixed(2)} | net $${(c.inc - c.exp).toFixed(2)}`);
 }
 
+// Diagnostico das casas "sem match": mostra o endereco do GL e os candidatos mais proximos do
+// banco (por tokens compartilhados), para corrigir cadastro/matching. Ativa com --diag.
+if (args.includes('--diag') && noPropAgg.size) {
+  const items2 = Array.from(noPropAgg.entries()).sort((a, b) => b[1].sum - a[1].sum);
+  console.log(`\n=== SEM CASA CASADA — diagnostico (${items2.length} enderecos, $${items2.reduce((s, [, v]) => s + v.sum, 0).toFixed(2)}) ===`);
+  for (const [glProp, v] of items2) {
+    const gToks = new Set(norm(glProp).split(' ').filter((x) => x.length > 1));
+    const cands = propIndex.map((pi) => { let sc = 0; for (const t of pi.toks) if (gToks.has(t)) sc++; return { c: pi.p.code, a: pi.p.address, sc }; })
+      .filter((x) => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, 2);
+    console.log(`  GL: "${glProp.slice(0, 60)}" (${v.count}x, $${v.sum.toFixed(2)})`);
+    for (const c of cands) console.log(`      candidato: [${c.c}] ${String(c.a).slice(0, 50)} (score ${c.sc})`);
+    if (!cands.length) console.log('      (nenhum candidato no banco)');
+  }
+}
+
 if (!apply) {
-  console.log('\n== PREVIA (nada gravado). Use --apply para gravar. ==');
+  console.log('\n== PREVIA (nada gravado). Use --apply para gravar. Adicione --diag para ver as casas sem match. ==');
   await prisma.$disconnect();
   process.exit(0);
 }
