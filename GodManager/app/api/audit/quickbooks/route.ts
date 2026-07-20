@@ -4,6 +4,12 @@ import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
 import { getConnectionStatus } from '@/lib/quickbooks';
 import { qbTransactionList } from '@/lib/quickbooksPost';
 import { runAudit } from '@/lib/auditTransactions';
+import {
+  parsePersonalList,
+  loadPersonalAccounts,
+  savePersonalAccounts,
+  mergePersonalLists,
+} from '@/lib/auditPersonalAccounts';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,9 +43,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: 'Datas inválidas (use YYYY-MM-DD).' }, { status: 400 });
     }
 
+    // Regra 1 (billback): lista de contas "pessoais" — persistida por cliente + termos inline.
+    const inlinePersonal = parsePersonalList(url.searchParams.get('personalAccounts'));
+    if (inlinePersonal.length && url.searchParams.get('savePersonal') === '1') {
+      await savePersonalAccounts(scope.clientId, inlinePersonal);
+    }
+    const persisted = await loadPersonalAccounts(scope.clientId);
+    const personalAccounts = mergePersonalLists(persisted, inlinePersonal);
+
     const rows = await qbTransactionList(scope.clientId, from, to);
-    const result = runAudit(rows);
-    return NextResponse.json({ ok: true, connected: true, from, to, source: 'quickbooks', ...result });
+    const result = runAudit(rows, { personalAccounts });
+    return NextResponse.json({
+      ok: true, connected: true, from, to, source: 'quickbooks',
+      personalAccounts, ...result,
+    });
   } catch (e) {
     console.error('[GET /api/audit/quickbooks]', e instanceof Error ? e.message : 'error');
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Falha ao auditar via QuickBooks.' }, { status: 502 });

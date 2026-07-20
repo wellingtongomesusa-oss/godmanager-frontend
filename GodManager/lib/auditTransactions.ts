@@ -43,6 +43,15 @@ function parseCsv(text: string): string[][] {
 }
 const numOf = (s: string) => { const n = Number(String(s || '').replace(/[^0-9.\-]/g, '')); return Number.isFinite(n) ? n : 0; };
 
+// Regra 1 (billback): despesa pessoal/owner sem Billable Expense Charge no mesmo periodo.
+// Padroes fortes = tratados como nao-conformidade; a lista configurada (opts.personalAccounts) soma a estes.
+const PERSONAL_STRONG = /\b(grocery|groceries|supermarket|supermercado|whole foods|publix|aldi|trader joe|restaurant|dining|meals?|doordash|uber eats|grubhub|instacart|starbucks|electronics|best buy|apple store|cvs|walgreens|pharmacy|personal|corporate card personal|clothing|apparel)\b/i;
+const BILLABLE_CHARGE = /billable expense charge|billable charge|reimb(ursable)? charge/i;
+const monthKey = (dateMMDDYYYY: string): string => {
+  const m = dateMMDDYYYY.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[1]}` : '';
+};
+
 const VEHICLE = /\b(vehicle expense|auto expense|car tag|car tags|license plate|\bdmv\b|sunpass|e-?zpass|smog check|emission test|oil change|car wash|\bseguro carro\b|placa do carro)\b/i;
 const AUTO_ACCT = /auto/i;
 const TELECOM = /telephone|internet|t-?mobile|software|subscription/i;
@@ -69,15 +78,55 @@ export function rowsFromCsv(csvText: string): AuditRow[] {
   return rows;
 }
 
+export type AuditOptions = {
+  /** Contas/descrições que o cliente considera "pessoais" (regra 1 de billback). Somam aos padrões default. */
+  personalAccounts?: string[];
+};
+
 /** Auditoria a partir do CSV. */
-export function auditTransactions(csvText: string): AuditResult {
-  return runAudit(rowsFromCsv(csvText));
+export function auditTransactions(csvText: string, opts: AuditOptions = {}): AuditResult {
+  return runAudit(rowsFromCsv(csvText), opts);
 }
 
 /** Auditoria a partir de linhas já normalizadas (ex.: vindas da API do QuickBooks). */
-export function runAudit(rows: AuditRow[]): AuditResult {
+export function runAudit(rows: AuditRow[], opts: AuditOptions = {}): AuditResult {
   const corrigir: AuditFinding[] = [];
   const ambiguos: AuditFinding[] = [];
+
+  // Regra 1 — Despesa pessoal/owner sem Billable Expense Charge no mesmo periodo (billback).
+  const personalExtra = (opts.personalAccounts || [])
+    .map((s) => String(s || '').trim())
+    .filter(Boolean);
+  const personalExtraRe = personalExtra.length
+    ? new RegExp(personalExtra.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i')
+    : null;
+  // Assinaturas de Billable Expense Charge existentes: nome (cliente/owner) + mes.
+  const billableByKey = new Set<string>();
+  for (const r of rows) {
+    if (BILLABLE_CHARGE.test(r.type) || BILLABLE_CHARGE.test(r.memo)) {
+      billableByKey.add(`${r.name.toLowerCase().trim()}|${monthKey(r.date)}`);
+    }
+  }
+  for (const r of rows) {
+    const acct = `${r.account} ${r.split} ${r.name} ${r.memo}`;
+    const isPersonal = PERSONAL_STRONG.test(acct) || (personalExtraRe ? personalExtraRe.test(acct) : false);
+    if (!isPersonal) continue;
+    if (BILLABLE_CHARGE.test(r.type)) continue; // a própria linha já é o billback
+    const amt = r.amount || r.debit || r.credit;
+    if (!amt) continue;
+    const hasBillback = billableByKey.has(`${r.name.toLowerCase().trim()}|${monthKey(r.date)}`);
+    if (!hasBillback) {
+      corrigir.push({
+        rule: 'Despesa pessoal sem billback',
+        date: r.date,
+        name: r.name || '(sem nome)',
+        account: (r.account || r.split).slice(0, 50),
+        amount: amt,
+        why: 'despesa de categoria pessoal/owner sem Billable Expense Charge no mesmo mês — exige repasse (billback) ou reclassificação',
+        memo: r.memo.slice(0, 80),
+      });
+    }
+  }
 
   // Duplicidade
   for (const r of rows) {

@@ -3191,12 +3191,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
  <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
   <h3 style="margin:0 0 4px">Auditoria contábil (trust accounting / FREC)</h3>
-  <p style="font-size:11px;color:var(--ink3);margin:0 0 10px">Roda a auditoria direto do QuickBooks conectado (sem CSV). Detecta duplicidade, veículo em conta errada, descasamento de caução, invoices Voided/lacunas e atraso de reconhecimento de receita. Somente leitura — não altera nada.</p>
+  <p style="font-size:11px;color:var(--ink3);margin:0 0 10px">Roda a auditoria direto do QuickBooks conectado (sem CSV). Detecta as 6 regras de trust accounting: (1) despesa pessoal/owner sem billback, (2) veículo em conta errada, (3) depósito duplicado, (4) descasamento de caução, (5) invoices Voided/lacunas e (6) atraso de reconhecimento de receita. Somente leitura — não altera nada.</p>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
    <label style="font-size:11px;color:var(--ink2)">De <input type="date" id="af-audit-from" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></label>
    <label style="font-size:11px;color:var(--ink2)">Até <input type="date" id="af-audit-to" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></label>
    <button type="button" class="btn-gm-ix-amber" onclick="if(typeof gmAuditRun==='function')gmAuditRun()">Auditar do QuickBooks</button>
    <span id="af-audit-status" style="font-size:11px;color:var(--ink3)"></span>
+  </div>
+  <div style="margin-top:10px">
+   <label style="font-size:11px;color:var(--ink2);display:block;margin-bottom:4px">Contas/descrições consideradas <b>pessoais</b> (regra 1 — billback). Uma por linha ou separadas por vírgula. Vazio = usa só os padrões automáticos.</label>
+   <textarea id="af-audit-personal" rows="2" placeholder="ex.: Amazon pessoal, Supermercado, Costco, Cartão pessoal, Eletrônicos" style="width:100%;padding:7px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);box-sizing:border-box"></textarea>
+   <label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);margin-top:5px;cursor:pointer"><input type="checkbox" id="af-audit-personal-save" style="width:14px;height:14px;accent-color:#2d7252">Salvar esta lista para as próximas auditorias</label>
   </div>
   <div id="af-audit-result" style="margin-top:14px"></div>
  </div>
@@ -7890,7 +7895,9 @@ window.gmAuditRun=async function(){
  if(status)status.textContent='Auditando…';
  if(out)out.innerHTML='';
  try{
-  var q='?'+(from?('from='+encodeURIComponent(from)+'&'):'')+(to?('to='+encodeURIComponent(to)+'&'):'')+(cid?('clientId='+encodeURIComponent(cid)):'');
+  var perEl=document.getElementById('af-audit-personal');var per=(perEl&&perEl.value.trim())||'';
+  var saveEl=document.getElementById('af-audit-personal-save');var savePer=!!(saveEl&&saveEl.checked);
+  var q='?'+(from?('from='+encodeURIComponent(from)+'&'):'')+(to?('to='+encodeURIComponent(to)+'&'):'')+(cid?('clientId='+encodeURIComponent(cid)+'&'):'')+(per?('personalAccounts='+encodeURIComponent(per)+'&'):'')+(savePer?'savePersonal=1':'');
   var res=await fetch('/api/audit/quickbooks'+q,{credentials:'include',cache:'no-store'});
   var data={};try{data=await res.json();}catch(e){}
   if(!res.ok||!data.ok){if(status)status.textContent='';if(out)out.innerHTML='<div style="color:var(--red);font-size:12px">'+String((data&&data.error)||('Erro '+res.status))+'</div>';return;}
@@ -7912,6 +7919,7 @@ window.gmAuditRun=async function(){
   html+='<div><b style="color:#b83030">Corrigir:</b> '+data.corrigir.length+'</div>';
   html+='<div><b style="color:var(--amber)">Ambíguos:</b> '+data.ambiguos.length+'</div>';
   html+='<div><b>Invoices:</b> '+data.invoices.numbered+' · Voided '+data.invoices.voided+' · lacunas '+(data.invoices.gaps?data.invoices.gaps.length:0)+'</div></div>';
+  if(data.personalAccounts&&data.personalAccounts.length){html+='<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">Regra 1 — contas pessoais aplicadas: '+esc(data.personalAccounts.join(', '))+'</div>';}
   html+=section('Exigem correção / repasse','#b83030',data.corrigir||[]);
   html+=section('Ambíguos — confirmação humana','#b45309',data.ambiguos||[]);
   if(out)out.innerHTML=html;

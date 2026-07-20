@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { auditTransactions } from '@/lib/auditTransactions';
+import {
+  parsePersonalList,
+  loadPersonalAccounts,
+  savePersonalAccounts,
+  mergePersonalLists,
+} from '@/lib/auditPersonalAccounts';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,12 +25,18 @@ export async function POST(req: Request) {
   }
 
   try {
+    const url = new URL(req.url);
     let csv = '';
+    let inlinePersonalRaw = url.searchParams.get('personalAccounts');
+    let savePersonal = url.searchParams.get('savePersonal') === '1';
     const ct = req.headers.get('content-type') || '';
     if (ct.includes('multipart/form-data')) {
       const form = await req.formData();
       const file = form.get('file');
       if (file instanceof File) csv = await file.text();
+      const pf = form.get('personalAccounts');
+      if (typeof pf === 'string' && pf) inlinePersonalRaw = pf;
+      if (String(form.get('savePersonal') || '') === '1') savePersonal = true;
     } else {
       csv = await req.text();
     }
@@ -34,8 +46,18 @@ export async function POST(req: Request) {
     if (csv.length > 20 * 1024 * 1024) {
       return NextResponse.json({ ok: false, error: 'Arquivo muito grande (máx 20MB).' }, { status: 413 });
     }
-    const result = auditTransactions(csv);
-    return NextResponse.json({ ok: true, ...result });
+
+    // Regra 1 (billback): lista de contas "pessoais" — persistida por cliente + termos inline.
+    const clientId = user.clientId ?? null;
+    const inlinePersonal = parsePersonalList(inlinePersonalRaw);
+    if (inlinePersonal.length && savePersonal) {
+      await savePersonalAccounts(clientId, inlinePersonal);
+    }
+    const persisted = await loadPersonalAccounts(clientId);
+    const personalAccounts = mergePersonalLists(persisted, inlinePersonal);
+
+    const result = auditTransactions(csv, { personalAccounts });
+    return NextResponse.json({ ok: true, personalAccounts, ...result });
   } catch (e) {
     console.error('[POST /api/audit/transactions]', e instanceof Error ? e.message : 'error');
     return NextResponse.json({ ok: false, error: 'Falha ao processar a auditoria.' }, { status: 500 });
