@@ -3,6 +3,7 @@ import type { ClientPlan, ClientProductType, UserRole } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { hashPassword } from '@/lib/password';
+import { csrfGuard } from '@/lib/csrfGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,8 @@ type AdminPayload = {
 
 /** Cria Client + primeiro utilizador admin (password bcrypt) — apenas super_admin. */
 export async function POST(req: Request) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const gate = await requireSuperAdmin();
   if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status });
 

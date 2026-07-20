@@ -3,6 +3,7 @@ import type { ClientPlan } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { recordAudit } from '@/lib/auditServer';
+import { csrfGuard } from '@/lib/csrfGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ async function requireSuperAdmin(): Promise<
 
 /** Remove Client e todos os Users com clientId — apenas super_admin. Falha se existirem FKs órfãs (dados ligados ao client). */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const bad = csrfGuard(_req);
+  if (bad) return bad;
   const gate = await requireSuperAdmin();
   if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status });
 
@@ -62,6 +65,8 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
  * consegue logar (enforcement no login). Aditivo, com auditoria.
  */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const bad = csrfGuard(req);
+  if (bad) return bad;
   const user = await getCurrentUserFromSession();
   if (!user) return NextResponse.json({ ok: false, error: 'Nao autenticado.' }, { status: 401 });
   if (user.role !== 'super_admin') return NextResponse.json({ ok: false, error: 'Acesso negado.' }, { status: 403 });
