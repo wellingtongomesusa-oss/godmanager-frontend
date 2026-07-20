@@ -1580,6 +1580,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_results">RESULTS</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
+ <div class="ss" onclick="nav('gl-study')" id="nav-gl-study" style="padding-left:16px"><span>Estudo GL (Aluguéis × MGM)</span></div>
  <div class="ss" onclick="gmInvestModalOpen()" id="nav-invest" style="padding-left:16px"><span>Invest Home</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
  <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span data-i18n="nav_bookkeeping">Bookkeeping</span></div>
@@ -7029,6 +7030,22 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <!-- ============================================================ -->
 <!-- RESULTS UPLOAD -->
+<!-- Estudo GL — Aluguéis (4100) × MGM fee (6111) × Repasse (3250) -->
+<div class="page" id="page-gl-study">
+ <div class="ph"><div class="pt">Estudo do GL — Aluguéis × MGM fee</div><div class="ps">Aluguel recebido (4100), management fee (6111) e repasse ao owner (3250), por mês e por casa. Fonte: General Ledger do AppFolio importado.</div></div>
+ <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+  <button type="button" onclick="if(typeof gmGlStudyRender==='function')gmGlStudyRender()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
+  <button type="button" onclick="if(typeof gmGlStudyCsv==='function')gmGlStudyCsv('months')" style="padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">&#8595; CSV por mês</button>
+  <button type="button" onclick="if(typeof gmGlStudyCsv==='function')gmGlStudyCsv('props')" style="padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">&#8595; CSV por casa</button>
+  <span id="gl-study-status" style="font-size:11px;color:var(--ink3)"></span>
+ </div>
+ <div id="gl-study-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px"></div>
+ <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px">Por mês (calendário)</div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper);margin-bottom:22px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Mês</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Aluguel (4100)</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">MGM fee (6111)</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">%</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#b83030">Repasse (3250)</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="Casas que receberam aluguel no mês">Casas alug.</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:#2a6e4e" title="Casas com repasse ao owner feito">Pagas</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:#b45309" title="Receberam aluguel mas o owner ainda não foi pago">Pendentes</th></tr></thead><tbody id="gl-study-months"></tbody></table></div>
+ <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px">Por casa (todo o período importado)</div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper)"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Código</th><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Propriedade</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Aluguel</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">MGM fee</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">%</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#b83030">Repasse</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="% de gestão cadastrado no GodManager">% cad.</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="Fee que deveria ser (aluguel × % cadastrado)">Fee esperado</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="Cobrado (GL) − esperado. Negativo = cobrou menos que o cadastro">Dif</th></tr></thead><tbody id="gl-study-props"></tbody></table></div>
+</div>
+
 <!-- ============================================================ -->
 <div class="page" id="page-results-upload">
  <div class="ph">
@@ -12064,7 +12081,7 @@ var GM_MENU_ACCESS_SECTIONS=[
  {key:'compliance',label:'COMPLIANCE',items:[{key:'licenses',label:'Licenses'},{key:'1099',label:'1099 / IRS'},{key:'gaap',label:'GAAP'}]},
  {key:'operations',label:'OPERATIONS',items:[{key:'phonelines',label:'Phone Lines'},{key:'vault',label:'Vault'},{key:'cars',label:'Cars & Insurance'},{key:'inspections',label:'Inspections'},{key:'tasks',label:'Tasks'}]},
  {key:'integrations',label:'INTEGRATIONS',items:[{key:'integrations',label:'Connect'},{key:'ramp',label:'Ramp'},{key:'quickbooks',label:'QuickBooks'},{key:'ap-ar',label:'A Pagar/Receber (QB)'},{key:'appfolio-upload',label:'AppFolio Upload'}]},
- {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'invest',label:'Invest Home'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
+ {key:'results',label:'RESULTS',items:[{key:'results',label:'Results Dashboard'},{key:'gl-study',label:'Estudo GL'},{key:'invest',label:'Invest Home'},{key:'results-upload',label:'Upload Reports'},{key:'bookkeeping',label:'Bookkeeping'},{key:'gaap-results',label:'GAAP'}]},
  {key:'ai-assistant',label:'AI ASSISTANT',items:[{key:'bookkeeping-ai',label:'Bookkeeping AI'},{key:'analytics',label:'Analytics'},{key:'auditoria-2026',label:'Auditoria 2026'}]},
  {key:'admin',label:'ADMIN',items:[{key:'admin-dashboard',label:'Dashboard Admin'},{key:'clients',label:'Clients'},{key:'admin-users',label:'Users'},{key:'backup',label:'Backup & Restore'},{key:'settings-gm',label:'Settings'},{key:'gross-expenses',label:'Gross & Expenses'},{key:'forms-received',label:'Forms Received'},{key:'admin-audit',label:'Audit Log'},{key:'org-chart',label:'Org Chart'}]},
  {key:'mycompany',label:'MY COMPANY',items:[{key:'client-users',label:'Equipe'},{key:'audit-log-tenant',label:'Audit Log'},{key:'settings-co',label:'Settings'}]}
@@ -14419,6 +14436,7 @@ function nav(r){
  'gross-expenses':()=>{if(typeof geWirePageOnce==='function')geWirePageOnce();if(typeof geLoadPage==='function')geLoadPage();},
  'org-chart':()=>{if(typeof ocWirePageOnce==='function')ocWirePageOnce();if(typeof ocLoadPage==='function')ocLoadPage();},
  results:()=>{if(typeof gmResRender==='function')gmResRender();},
+ 'gl-study':()=>{if(typeof gmGlStudyRender==='function')gmGlStudyRender();},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();var _rm=document.getElementById('rec-month');if(_rm&&!_rm.value){var _d=new Date();_rm.value=_d.getUTCFullYear()+'-'+String(_d.getUTCMonth()+1).padStart(2,'0');}},
  'bookkeeping-ai':()=>{setTimeout(function(){try{var i=document.getElementById('bk-ai-input');if(i)i.focus();}catch(eBkAi){}},40);},
@@ -15079,6 +15097,46 @@ window.gmOsdGlBankCsv=function(){
  (j.matched||[]).forEach(function(m){lines.push([m.nameMatch?'CASADO':'CASADO(nome?)',m.gl.date,cell(m.gl.owner||''),cell(m.gl.property||''),(Number(m.gl.amount)||0).toFixed(2),m.bank.date,cell(m.bank.account),cell(m.bank.description||'')].join(','));});
  var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='gl_x_banco_'+(j.periodMonth||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
+};
+// Estudo do GL na seção Results: Aluguel(4100) x MGM fee(6111) x Repasse(3250), por mês e por casa.
+window.gmGlStudyRender=async function(){
+ var st=document.getElementById('gl-study-status');if(st)st.textContent='Carregando…';
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var res=await fetch('/api/results/gl-analysis'+q,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){if(st)st.textContent=(j&&j.error)||('Erro '+res.status);return;}
+  window.__gmGlStudy=j;var t=j.totals||{};
+  var cards=document.getElementById('gl-study-cards');
+  if(cards){
+   var card=function(lbl,val,col){return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--paper);padding:16px 18px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">'+lbl+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:20px;font-weight:700;color:'+(col||'var(--ink)')+';margin-top:6px">'+val+'</div></div>';};
+   var dfeeCol=(Number(t.feeDiff)||0)<-0.5?'#b83030':((Number(t.feeDiff)||0)>0.5?'#2a6e4e':'var(--ink)');
+   cards.innerHTML=card('Aluguel recebido (4100)',money(t.rent),'#2a6e4e')+card('MGM fee cobrado (6111)',money(t.mgm),'var(--ink)')+card('MGM fee esperado (cadastro)',money(t.feeExpected),'var(--ink)')+card('Dif fee (cobrado − esperado)',((Number(t.feeDiff)||0)>0?'+':'')+money(t.feeDiff),dfeeCol)+card('% MGM efetivo',(t.mgmPct||0).toFixed(1)+'%','var(--amber)')+card('Repasse ao owner (3250)',money(t.rep),'#b83030')+card('Casas',(t.properties||0),'var(--ink)');
+  }
+  var mb=document.getElementById('gl-study-months');
+  if(mb){mb.innerHTML=(j.months||[]).map(function(m){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px;font-family:\'JetBrains Mono\',monospace">'+esc(m.month)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(m.rent)+'</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(m.mgm)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+(m.mgm===0&&m.rent>0?';color:#b45309;font-weight:700':'')+'">'+(m.mgmPct||0).toFixed(1)+'%</td><td style="padding:8px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(m.rep)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+(m.rentedHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e;font-weight:700">'+(m.paidHouses||0)+'</td><td style="padding:8px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace'+((m.pendingPayoutHouses||0)>0?';color:#b45309;font-weight:700':';color:var(--ink3)')+'">'+(m.pendingPayoutHouses||0)+'</td></tr>';}).join('')||'<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink3)">Sem dados. Importe o GL (Statement individual → Importar GL) e reimporte para trazer o 6111.</td></tr>';}
+  var pb=document.getElementById('gl-study-props');
+  if(pb){pb.innerHTML=(j.properties||[]).map(function(p){return '<tr style="border-bottom:1px solid var(--border)'+(!p.matched?';background:#fffdf8':'')+'"><td style="padding:7px 12px;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+esc(p.code||'—')+'</td><td style="padding:7px 12px">'+esc(p.name||'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#2a6e4e">'+money(p.rent)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace">'+money(p.mgm)+'</td><td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace">'+(p.mgmPct||0).toFixed(1)+'%</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:#b83030">'+money(p.rep)+'</td><td style="padding:7px 12px;text-align:center;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+(p.regPct!=null?(p.regPct.toFixed(1)+'%'):'—')+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--ink2)">'+money(p.feeExpected)+'</td><td style="padding:7px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:'+((Number(p.feeDiff)||0)<-0.5?'#b83030':((Number(p.feeDiff)||0)>0.5?'#2a6e4e':'var(--ink3)'))+';font-weight:'+(Math.abs(Number(p.feeDiff)||0)>0.5?'700':'400')+'">'+((Number(p.feeDiff)||0)>0?'+':'')+money(p.feeDiff)+'</td></tr>';}).join('');}
+  if(st)st.textContent=(j.months||[]).length+' meses · '+(j.properties||[]).length+' casas';
+ }catch(e){if(st)st.textContent='Erro de rede.';}
+};
+window.gmGlStudyCsv=function(which){
+ var j=window.__gmGlStudy;if(!j){alert('Clique em Atualizar primeiro.');return;}
+ var cell=function(v){var s=String(v==null?'':v);return /[",\r\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var lines,name;
+ if(which==='props'){
+  lines=['Codigo,Propriedade,Aluguel (4100),MGM fee cobrado (6111),% MGM efetivo,% cadastrado,Fee esperado,Dif fee,Repasse (3250)'];
+  (j.properties||[]).forEach(function(p){lines.push([cell(p.code||''),cell(p.name||''),(p.rent||0).toFixed(2),(p.mgm||0).toFixed(2),(p.mgmPct||0).toFixed(1),(p.regPct!=null?p.regPct.toFixed(1):''),(p.feeExpected||0).toFixed(2),(p.feeDiff||0).toFixed(2),(p.rep||0).toFixed(2)].join(','));});
+  name='estudo_gl_por_casa.csv';
+ }else{
+  lines=['Mes,Aluguel (4100),MGM fee (6111),% MGM,Repasse (3250),Casas alugadas,Casas pagas (owner),Casas pendentes'];
+  (j.months||[]).forEach(function(m){lines.push([m.month,(m.rent||0).toFixed(2),(m.mgm||0).toFixed(2),(m.mgmPct||0).toFixed(1),(m.rep||0).toFixed(2),(m.rentedHouses||0),(m.paidHouses||0),(m.pendingPayoutHouses||0)].join(','));});
+  name='estudo_gl_por_mes.csv';
+ }
+ var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
 };
 
 window.osdGetSelectedPropertyId=function(){
