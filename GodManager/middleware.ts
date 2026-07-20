@@ -32,6 +32,14 @@ const ADMIN_PLATFORM_SUPER_ONLY: string[] = [
   '/admin/demo-leads',
 ];
 
+/** Páginas /admin acessíveis a admin/manager (não só super_admin) — a própria API gateia por papel. */
+const ADMIN_PLATFORM_MANAGER_OK: string[] = ['/admin/delinquency'];
+
+function isAdminManagerAllowed(pathname: string, role: string): boolean {
+  if (!['admin', 'manager'].includes(role)) return false;
+  return ADMIN_PLATFORM_MANAGER_OK.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 function isAdminPlatformPage(pathname: string): boolean {
   return ADMIN_PLATFORM_SUPER_ONLY.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
@@ -184,7 +192,11 @@ export function middleware(request: NextRequest) {
     if (isAdminPlatformPage(pathname) && session.role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    if (pathname.startsWith('/admin') && session.role !== 'super_admin') {
+    if (
+      pathname.startsWith('/admin') &&
+      session.role !== 'super_admin' &&
+      !isAdminManagerAllowed(pathname, session.role)
+    ) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();
