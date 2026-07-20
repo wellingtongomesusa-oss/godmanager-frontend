@@ -11418,6 +11418,33 @@ window.gmDeleteClient=async function gmDeleteClient(clientId,companyName){
   alert(j.error||('Erro '+res.status));
  }catch(err){console.warn('[gmDeleteClient]',err);alert('Erro de rede.');}
 };
+/** Bloqueia/ativa um tenant (DB). Tenant inativo não consegue logar (enforcement no /api/auth/login). */
+window.gmTenantSetActive=async function gmTenantSetActive(clientId,active){
+ var makeActive=(active===true||active==='true');
+ var nm='';try{var c=findClientById(clientId);nm=String((c&&(c.company||c.companyName))||'');}catch(e){}
+ var msg=makeActive
+  ?("Reativar o cliente '"+nm+"'? Os usuários da empresa voltam a conseguir entrar.")
+  :("Bloquear o cliente '"+nm+"'? NENHUM usuário da empresa conseguirá entrar até você reativar. Os dados são preservados.");
+ if(!confirm(msg))return;
+ try{
+  var res=await fetch('/api/admin/clients/'+encodeURIComponent(clientId),{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:makeActive})});
+  var j=await res.json().catch(function(){return {};});
+  if(res.ok&&j.ok){if(typeof loadClients==='function')loadClients();return;}
+  alert(j.error||('Erro '+res.status));
+ }catch(err){console.warn('[gmTenantSetActive]',err);alert('Erro de rede.');}
+};
+/** Muda o plano de um tenant (DB): starter | professional | enterprise. */
+window.gmTenantSetPlan=async function gmTenantSetPlan(clientId,plan){
+ var p=String(plan||'').toLowerCase();
+ if(p!=='starter'&&p!=='professional'&&p!=='enterprise'){if(typeof loadClients==='function')loadClients();return;}
+ try{
+  var res=await fetch('/api/admin/clients/'+encodeURIComponent(clientId),{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p})});
+  var j=await res.json().catch(function(){return {};});
+  if(res.ok&&j.ok){if(typeof loadClients==='function')loadClients();return;}
+  alert(j.error||('Erro '+res.status));
+  if(typeof loadClients==='function')loadClients();
+ }catch(err){console.warn('[gmTenantSetPlan]',err);alert('Erro de rede.');if(typeof loadClients==='function')loadClients();}
+};
 function renderClientTableRow(c){
  var st=c.status==='active';
  var pc=accessPillCls(c.accessLevel);
@@ -11431,8 +11458,15 @@ function renderClientTableRow(c){
  var nmEsc=gmEscapeJsQuotes(c.company||c.companyName||'');
  var delBtn='<button type="button" onclick="gmDeleteClient(\''+id+'\',\''+nmEsc+'\')" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">Excluir</button>';
  var api=c._fromApi===true;
+ var curPlan=String(c.plan||'professional').toLowerCase();
+ var planSel='<select class="cl-btn-sec" title="Mudar plano" style="padding:7px 8px;cursor:pointer" onchange="gmTenantSetPlan(\''+id+'\',this.value)">'
+  +'<option value="starter"'+(curPlan==='starter'?' selected':'')+'>Starter</option>'
+  +'<option value="professional"'+(curPlan==='professional'?' selected':'')+'>Professional</option>'
+  +'<option value="enterprise"'+(curPlan==='enterprise'?' selected':'')+'>Enterprise</option>'
+  +'</select>';
+ var blockBtn='<button type="button" class="cl-btn-sec cl-act-red" onclick="gmTenantSetActive(\''+id+'\','+(st?'false':'true')+')">'+(st?'Bloquear':'Ativar')+'</button>';
  var btns=api
- ?'<button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Equipe</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button>'+delBtn
+ ?planSel+'<button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Equipe</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button>'+blockBtn+delBtn
  :'<button type="button" class="cl-btn-sec cl-act-navy" onclick="editClient(\''+id+'\')">Edit</button><button type="button" class="cl-btn-sec cl-act-blue" onclick="openUsers(\''+id+'\')">Users</button><button type="button" class="cl-btn-sec cl-act-amber" onclick="loginAsClient(\''+id+'\')">Login As</button><button type="button" class="cl-btn-sec cl-act-red" onclick="toggleClientStatus(\''+id+'\')">'+(st?'Deactivate':'Activate')+'</button>'+delBtn;
  return '<tr><td>'+co+'</td><td>'+String(c.contactName||'').replace(/</g,'&lt;')+'</td><td>'+String(c.email||'').replace(/</g,'&lt;')+'</td><td><span class="'+pp+'">'+plab+'</span></td><td><span class="'+prCls+'">'+prLab+'</span></td><td><span class="'+pc+'">'+(c.accessLevel||'')+'</span></td><td style="font-family:JetBrains Mono,monospace;font-size:11px">'+uc+'</td><td><span class="cl-dot '+(st?'cl-dot-on':'cl-dot-off')+'"></span>'+(st?'Active':'Inactive')+'</td><td class="cl-act-wrap">'+btns+'</td></tr>';
 }

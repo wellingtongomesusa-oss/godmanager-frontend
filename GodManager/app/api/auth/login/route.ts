@@ -64,6 +64,13 @@ export async function POST(req: Request) {
     if (user.status === 'pending') {
       return NextResponse.json({ ok: false, error: 'Conta pendente de aprovacao.' }, { status: 403 });
     }
+    // Tenant bloqueado (Client.active=false) → ninguém da empresa loga. super_admin (sem clientId) passa.
+    if (user.role !== 'super_admin' && user.clientId) {
+      const client = await prisma.client.findUnique({ where: { id: user.clientId }, select: { active: true } });
+      if (client && client.active === false) {
+        return NextResponse.json({ ok: false, error: 'Empresa suspensa. Contacte o suporte.' }, { status: 403 });
+      }
+    }
 
     const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
     if (!valid) {
