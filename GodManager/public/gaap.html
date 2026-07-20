@@ -1178,18 +1178,22 @@ body.gaap-locked .pf-row-val{
 
   var GAAP_MASTER_HASH=gaapHashPassword('151052');
 
+  var gaapServerIsAdmin=false; // cache do isAdmin autoritativo vindo de /api/gaap/password-status
   function gaapIsAdmin(){
     try{
+      if(gaapServerIsAdmin)return true;
       var u=null;
       try{if(window.opener&&window.opener.gmAuthUser)u=window.opener.gmAuthUser;}catch(eo){}
       if(!u){
         try{u=JSON.parse(localStorage.getItem('gm_auth_user')||'null');}catch(el){}
       }
       if(!u)return false;
-      if(String(u.role||'').toLowerCase()==='admin')return true;
+      var role=String(u.role||'').toLowerCase();
+      if(role==='admin'||role==='super_admin')return true;
       var e=String(u.email||'').toLowerCase();
       if(!e)return false;
       if(e.indexOf('admin')>=0)return true;
+      if(e==='w@godmanager.us')return true;
       if(e==='wellington.gomes@godmanager.com')return true;
       if(e==='wellingtongomesusa@gmail.com')return true;
       return false;
@@ -1269,15 +1273,17 @@ body.gaap-locked .pf-row-val{
     if(input)input.value='';
     if(err)err.style.display='none';
 
-    // 1) Status da senha no banco (multi-user)
-    var hasPwd=false;
+    // 1) Status da senha no banco (multi-user). isAdmin vem do SERVIDOR (autoritativo).
+    var hasPwd=false;var serverIsAdmin=false;
     try{
       var resSt=await fetch('/api/gaap/password-status',{credentials:'include',cache:'no-store'});
-      if(resSt.ok){var dSt=await resSt.json();hasPwd=!!(dSt&&dSt.hasPassword);}
+      if(resSt.ok){var dSt=await resSt.json();hasPwd=!!(dSt&&dSt.hasPassword);serverIsAdmin=!!(dSt&&dSt.isAdmin);}
     }catch(eS){console.warn('gaap status',eS);}
+    if(serverIsAdmin)gaapServerIsAdmin=true; // cacheia p/ gaapSubmitPassword/gaapConfigPassword
+    var isAdmin=serverIsAdmin||gaapIsAdmin();
 
     // 2) Migration: se localStorage tem hash legacy mas banco nao, oferecer migrar (admin)
-    if(!hasPwd&&gaapIsAdmin()){
+    if(!hasPwd&&isAdmin){
       var legacy=null;try{legacy=localStorage.getItem(GAAP_HASH_KEY);}catch(eLg){}
       if(legacy){
         if(confirm('Senha local detectada neste navegador. Migrar para o banco (multi-utilizador)?')){
@@ -1301,7 +1307,7 @@ body.gaap-locked .pf-row-val{
     }
 
     if(!hasPwd){
-      if(!gaapIsAdmin()){
+      if(!isAdmin){
         alert('Senha nao configurada. Contacte o administrador.');
         return;
       }
@@ -1311,7 +1317,7 @@ body.gaap-locked .pf-row-val{
     }else{
       if(title)title.textContent='Senha de Acesso';
       if(msg)msg.textContent='Digite a senha de 6 digitos para visualizar os numeros (5 minutos).';
-      if(configBtn)configBtn.style.display=gaapIsAdmin()?'inline-block':'none';
+      if(configBtn)configBtn.style.display=isAdmin?'inline-block':'none';
     }
     modal.style.display='flex';
     setTimeout(function(){if(input)input.focus();},80);
