@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/db';
 import { monthRefQueryValues, normalizeYearMonthForWrite } from '@/lib/pmMonthRef';
+import { monthRefToCycleRange } from '@/lib/pmCycleRef';
 import { recomputeOwnerMonthPayoutTotals } from '@/lib/ownerStatementTotals';
 import { isPayoutClosed } from '@/lib/statementWriteGuard';
 
@@ -26,6 +27,13 @@ function truncDescription(raw: string): string {
 function monthBoundsUtc(yearMonth: string): { start: Date; end: Date } | null {
   const norm = normalizeYearMonthForWrite(yearMonth);
   if (!norm) return null;
+  // Regra de fechamento 15-a-15 (Manager Prop): o income (TenantPayment) segue a MESMA janela das
+  // despesas (serviceDateToMonthRef) — ciclo do dia 15 ao dia 14 do mês seguinte, rotulado pelo mês
+  // de início. Antes o income usava mês-calendário, o que era inconsistente com as despesas.
+  // Override de emergência: OWNER_STATEMENT_CYCLE=calendar volta ao mês-calendário.
+  if (process.env.OWNER_STATEMENT_CYCLE !== 'calendar') {
+    return monthRefToCycleRange(norm);
+  }
   const [ys, ms] = norm.split('-');
   const y = Number(ys);
   const mo = Number(ms);
@@ -170,9 +178,13 @@ export async function syncOwnerStatementForProperty(args: {
       },
     });
 
+    const cycle15 = process.env.OWNER_STATEMENT_CYCLE !== 'calendar';
     for (const tp of tenantPayments) {
       const description = rentalDescription(tp.type);
-      const sortOrder = dayOfMonthUtc(tp.paymentDate) * 10;
+      // Ordenação cíclica: no ciclo 15-a-15, dias 15–31 (mês de início) vêm antes de 1–14 (mês seguinte).
+      const dd = dayOfMonthUtc(tp.paymentDate);
+      const cycleDay = cycle15 ? (dd >= 15 ? dd : dd + 50) : dd;
+      const sortOrder = cycleDay * 10;
       const existing = await tx.statementLineItem.findUnique({
         where: {
           uniq_line_item_source: {
