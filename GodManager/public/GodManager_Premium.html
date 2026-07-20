@@ -11804,15 +11804,31 @@ async function gmClientUsersCreateSubmit(e){
  };
  if((rl.value==='field'||rl.value==='vendor')&&vsel)payload.vendorId=String(vsel.value||'').trim();
  var scopeId=gmClientUsersResolveScopeId();
+ var role=String((window.__gmCurrentUser&&window.__gmCurrentUser.role)||'').toLowerCase();
+ // super_admin sem empresa selecionada: abre o seletor de empresa (em vez de bloquear).
+ if(!scopeId&&role==='super_admin'&&typeof gmPickCompany==='function'){
+  gmPickCompany('Adicionar usuário — para qual empresa?',function(cid){
+   if(!cid)return;
+   payload.clientId=cid;
+   gmClientUsersDoCreate(payload);
+  });
+  return false;
+ }
  if(scopeId)payload.clientId=scopeId;
+ gmClientUsersDoCreate(payload);
+ return false;
+}
+async function gmClientUsersDoCreate(payload){
  var btn=document.getElementById('cu-btn-add');
  if(btn){btn.disabled=true;}
  try{
   var res=await fetch('/api/client/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   var j=await res.json().catch(function(){return {};});
   if(!res.ok||!j.ok){
-   alert(j.error||('Erro '+res.status));
-   return false;
+   var em=String(j.error||('Erro '+res.status));
+   if(/clientid|cliente selecionado|dashboard admin|cliente não definido/i.test(em))em='Selecione a empresa (topo: escolher empresa, ou Clientes) antes de adicionar o usuário.';
+   alert(em);
+   return;
   }
   var shownPwd=j.passwordPlain||payload.password;
   gmShowCuUserSuccessModal(j.user&&j.user.email||payload.email,shownPwd);
@@ -11821,12 +11837,12 @@ async function gmClientUsersCreateSubmit(e){
   await renderClientUsersPage();
  }catch(err){
   alert('Erro de rede ao criar utilizador.');
-  console.warn('[gmClientUsersCreateSubmit]',err);
+  console.warn('[gmClientUsersDoCreate]',err);
  }finally{
   if(btn)refreshCuFormState();
  }
- return false;
 }
+window.gmClientUsersDoCreate=gmClientUsersDoCreate;
 var GM_MENU_ACCESS_SECTIONS=[
  {key:'home',label:'HOME',items:[{key:'home',label:'Home'},{key:'longterm',label:'Statement'}]},
  {key:'communications',label:'COMMUNICATIONS',items:[{key:'news',label:'News'},{key:'support',label:'Suporte'}]},
