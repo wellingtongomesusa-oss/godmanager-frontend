@@ -1530,6 +1530,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_owner_portal">OWNER PORTAL</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('ownerportal')" id="nav-ownerportal" data-i18n="owner_portal">Owner Portal</div>
+ <div class="ss" onclick="nav('recebimentos')" id="nav-recebimentos" style="padding-left:16px">Recebimentos</div>
  <div class="ss" onclick="nav('ltownerpay')" id="nav-ltownerpay" style="padding-left:16px" data-i18n="nav_ltownerpay">Owner Payment</div>
  <div class="ss" onclick="nav('owner-statement-detail')" id="nav-owner-statement-detail" style="padding-left:16px" data-i18n="nav_owner_statement_detail">Owner Statement (Detalhe)</div>
  <div class="ss sb-ix-ic" onclick="nav('owner-audit')" id="nav-owner-audit" style="padding-left:16px;display:none" title="Auditoria de Repasses (super_admin)">
@@ -6019,6 +6020,20 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </table></div>
  <div id="ltclnp-empty" style="display:none;padding:30px;text-align:center;font-size:12px;color:var(--ink3)">Nenhuma limpeza registrada.</div>
  </div>
+</div>
+
+<!-- Recebimentos — sinalizar aluguel recebido, destaque vermelho/verde, filtros (#61) -->
+<div class="page" id="page-recebimentos">
+ <div class="ph"><div class="pt">Recebimentos</div><div class="ps">Confirme o aluguel recebido por casa. Vencimento dia 05: sem recebimento fica <b style="color:#b83030">vermelho</b>, confirmado fica <b style="color:#2a6e4e">verde</b>. Fonte: GL 4100 + confirmação manual.</div></div>
+ <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+  <label style="font-size:11px;color:var(--ink3)">Mês <input type="month" id="receb-month" onchange="gmRecebRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"></label>
+  <input id="receb-search" oninput="gmRecebRenderFilterOnly()" placeholder="Buscar casa / owner…" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);width:240px">
+  <button onclick="gmRecebRender()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
+  <button onclick="if(typeof nav==='function')nav('ltownerpay')" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" title="Ir para o repasse por owner (Account Payables)">Confirmar → Account Payables</button>
+  <span id="receb-status" style="font-size:11px;color:var(--ink3)"></span>
+ </div>
+ <div id="receb-filters" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper)"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Casa</th><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Owner</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Recebido (GL)</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Status</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Ação</th></tr></thead><tbody id="receb-body"><tr><td colspan="5" style="padding:24px;color:var(--ink3)">Clique em Atualizar.</td></tr></tbody></table></div>
 </div>
 
 <!-- Owner Payment (dia 15, NET owner) -->
@@ -14535,6 +14550,7 @@ function nav(r){
  'gl-study':()=>{if(typeof gmGlStudyRender==='function')gmGlStudyRender();},
  'correlations':()=>{if(typeof gmCorrelationsRender==='function')gmCorrelationsRender();},
  'renovations':()=>{if(typeof gmGlMatrixRender==='function')gmGlMatrixRender();},
+ 'recebimentos':()=>{if(typeof gmRecebRender==='function')gmRecebRender();},
  'uploads-central':()=>{},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();var _rm=document.getElementById('rec-month');if(_rm&&!_rm.value){var _d=new Date();_rm.value=_d.getUTCFullYear()+'-'+String(_d.getUTCMonth()+1).padStart(2,'0');}},
@@ -15332,6 +15348,64 @@ window.gmGlMatrixCsv=function(){
  });
  var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='recebido_x_pago_'+(j.year||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
+};
+// #61 Recebimentos: sinalizar recebido, destaque vermelho/verde, filtros.
+window.__gmReceb={data:null,filter:'all'};
+window.gmRecebRender=async function(){
+ var st=document.getElementById('receb-status');if(st)st.textContent='Carregando…';
+ var mEl=document.getElementById('receb-month');
+ if(mEl&&!mEl.value){var d=new Date();mEl.value=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
+ var month=(mEl&&mEl.value)||'';
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var sep=q?'&':'?';
+  var res=await fetch('/api/rent-receipts'+q+sep+'month='+encodeURIComponent(month),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){if(st)st.textContent=(j&&j.error)||('Erro '+res.status);return;}
+  window.__gmReceb.data=j;
+  gmRecebRenderFilters();
+  gmRecebRenderRows();
+  if(st)st.textContent=(j.counts&&j.counts.all||0)+' casas · dia venc. '+(j.dueDay||5)+(j.pastDue?' · mês vencido':'');
+ }catch(e){if(st)st.textContent='Erro de rede.';}
+};
+window.gmRecebRenderFilters=function(){
+ var wrap=document.getElementById('receb-filters');if(!wrap)return;
+ var j=window.__gmReceb.data;if(!j){wrap.innerHTML='';return;}
+ var c=j.counts||{};
+ var defs=[['all','Todos',c.all||0,'var(--ink)'],['received','Recebidos',c.received||0,'#2a6e4e'],['overdue','Vencidos',c.overdue||0,'#b83030'],['paid','Pagos',c.paid||0,'#2a6e4e'],['awaiting','Aguardando',c.awaiting||0,'#b45309']];
+ wrap.innerHTML=defs.map(function(d){var on=window.__gmReceb.filter===d[0];return '<button onclick="gmRecebSetFilter(\''+d[0]+'\')" style="padding:6px 12px;border-radius:16px;border:1px solid '+(on?d[3]:'var(--border2)')+';background:'+(on?d[3]:'var(--sand)')+';color:'+(on?'#fff':'var(--ink2)')+';font-size:11px;font-weight:600;cursor:pointer">'+d[1]+' ('+d[2]+')</button>';}).join('');
+};
+window.gmRecebSetFilter=function(f){window.__gmReceb.filter=f;gmRecebRenderFilters();gmRecebRenderRows();};
+window.gmRecebRenderFilterOnly=function(){gmRecebRenderRows();};
+window.gmRecebRenderRows=function(){
+ var body=document.getElementById('receb-body');if(!body)return;
+ var j=window.__gmReceb.data;if(!j){return;}
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var f=window.__gmReceb.filter||'all';
+ var qs=(document.getElementById('receb-search')&&document.getElementById('receb-search').value||'').toLowerCase().trim();
+ var badge=function(s){var m={paid:['Pago','#2a6e4e','rgba(42,110,78,.14)'],received:['Recebido','#2a6e4e','rgba(42,110,78,.14)'],overdue:['Vencido','#b83030','rgba(184,48,48,.12)'],awaiting:['Aguardando','#b45309','rgba(180,83,9,.12)']}[s]||['—','var(--ink3)','transparent'];return '<span style="display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;color:'+m[1]+';background:'+m[2]+'">'+m[0]+'</span>';};
+ var rows=(j.rows||[]).filter(function(r){return f==='all'||r.status===f;}).filter(function(r){return !qs||[r.code,r.name,r.owner].join(' ').toLowerCase().indexOf(qs)>=0;});
+ body.innerHTML=rows.map(function(r){
+  var rowBg=r.status==='overdue'?'background:rgba(184,48,48,.06)':(r.status==='received'||r.status==='paid'?'background:rgba(42,110,78,.05)':'');
+  var lock=r.status==='paid';
+  var pid=r.propertyId?('\''+String(r.propertyId).replace(/'/g,"\\'")+'\''):'null';
+  var lbl='\''+String(r.name||'').replace(/'/g,"\\'")+'\'';
+  var btn=lock?'<span style="font-size:11px;color:var(--ink3)">pago</span>':(r.confirmed?'<button onclick="gmRecebConfirm('+pid+','+lbl+',false)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;cursor:pointer">Desfazer</button>':'<button onclick="gmRecebConfirm('+pid+','+lbl+',true)" style="padding:5px 10px;border:none;border-radius:6px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer">Confirmar recebido</button>');
+  return '<tr style="border-bottom:1px solid var(--border);'+rowBg+'"><td style="padding:8px 12px"><div style="font-weight:600;color:var(--ink)">'+esc(r.name||'—')+'</div><div style="font-size:10px;color:var(--ink3);font-family:JetBrains Mono,monospace">'+esc(r.code||'')+'</div></td><td style="padding:8px 12px;color:var(--ink2)">'+esc(r.owner||'—')+'</td><td style="padding:8px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:#2a6e4e">'+(r.glReceived>0?money(r.glReceived):'—')+'</td><td style="padding:8px 12px;text-align:center">'+badge(r.status)+'</td><td style="padding:8px 12px;text-align:center">'+btn+'</td></tr>';
+ }).join('')||'<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--ink3)">Nenhuma casa neste filtro.</td></tr>';
+};
+window.gmRecebConfirm=async function(propertyId,propertyLabel,confirmed){
+ var mEl=document.getElementById('receb-month');var month=(mEl&&mEl.value)||'';
+ try{
+  var acId='';try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;acId=(ac&&ac.id)?String(ac.id):'';}catch(e){}
+  var payload={propertyId:propertyId||null,propertyLabel:propertyLabel||'',periodMonth:month,confirmed:!!confirmed};
+  if(acId)payload.clientId=acId;
+  var res=await fetch('/api/rent-receipts/confirm',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));return;}
+  gmRecebRender();
+ }catch(e){alert('Erro de rede.');}
 };
 // #46 Correlações & Padrões: conecta GL (aluguel/repasse/mgm) com despesas/chamados por casa.
 window.gmCorrelationsRender=async function(){
