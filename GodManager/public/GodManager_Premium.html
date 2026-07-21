@@ -2381,7 +2381,17 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  </div>
 </div>
 
-<div class="page" id="page-renovations"><div class="ph"><div class="pt">Renovations</div><div class="ps">Projetos com fluxo de pagamento</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Renovations</h3><p>Upload do CSV de renovações.</p><div class="ur"><div class="ub"><h4>Renovations CSV</h4><p>property_address, total_amount, status</p></div></div><button class="bp">Process</button></div></div>
+<div class="page" id="page-renovations">
+ <div class="ph"><div class="pt">Recebido × Pago ao Owner — <span id="glm-title-year">2026</span></div><div class="ps">Matriz por casa e mês: aluguel <b style="color:#b45309">recebido</b> e <b style="color:#2a6e4e">pago ao owner</b>. Verde = pago bate com recebido − mgm fee; diferenças em mapa de calor. Total = a pagar (+) ou a receber de volta (−).</div></div>
+ <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+  <button onclick="gmGlMatrixRender()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
+  <label style="font-size:11px;color:var(--ink2)">Ano <select id="glm-year" onchange="gmGlMatrixRender()" style="padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"><option value="2026">2026</option><option value="2025">2025</option><option value="2027">2027</option></select></label>
+  <button onclick="gmGlMatrixCsv()" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">↓ Baixar CSV</button>
+  <span id="glm-status" style="font-size:11px;color:var(--ink3)"></span>
+  <span style="margin-left:auto;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--ink3)"><span><span style="display:inline-block;width:10px;height:10px;background:#fde68a;border-radius:2px;vertical-align:middle"></span> Recebido</span><span><span style="display:inline-block;width:10px;height:10px;background:rgba(42,110,78,.55);border-radius:2px;vertical-align:middle"></span> Pago</span><span><span style="display:inline-block;width:10px;height:10px;background:rgba(42,110,78,.16);border:1px solid #2a6e4e;border-radius:2px;vertical-align:middle"></span> Bate</span><span><span style="display:inline-block;width:10px;height:10px;background:rgba(184,48,48,.42);border-radius:2px;vertical-align:middle"></span> Diferença (calor)</span></span>
+ </div>
+ <div style="overflow:auto;max-height:78vh;border:1px solid var(--border);border-radius:10px;background:var(--paper)"><table id="glm-table" style="border-collapse:separate;border-spacing:0;font-size:11px;width:max-content;min-width:100%"><thead id="glm-head"></thead><tbody id="glm-body"><tr><td style="padding:24px;color:var(--ink3)">Clique em Atualizar. Precisa do GL importado (Central de uploads).</td></tr></tbody></table></div>
+</div>
 
 <div class="page" id="page-housekeeper"><div class="ph"><div class="pt">Housekeeper</div><div class="ps">Dashboard de limpezas por empresa e cleaner</div></div><div class="mw"><div style="width:48px;height:48px;background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.06));border:1.5px solid rgba(201,169,110,.3);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Housekeeper</h3><p>Upload Housekeeper.csv + Cleaners_empresas.csv.</p><div class="ur"><div class="ub"><h4>Housekeeper CSV</h4><p>Housekeeper, Unit, Type, Gross earnings</p></div><div class="ub"><h4>Empresas CSV</h4><p>Company, Cleaner</p></div></div><button class="bp">Process Fusão</button></div></div>
 
@@ -14523,6 +14533,7 @@ function nav(r){
  results:()=>{if(typeof gmResRender==='function')gmResRender();},
  'gl-study':()=>{if(typeof gmGlStudyRender==='function')gmGlStudyRender();},
  'correlations':()=>{if(typeof gmCorrelationsRender==='function')gmCorrelationsRender();},
+ 'renovations':()=>{if(typeof gmGlMatrixRender==='function')gmGlMatrixRender();},
  'uploads-central':()=>{},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();var _rm=document.getElementById('rec-month');if(_rm&&!_rm.value){var _d=new Date();_rm.value=_d.getUTCFullYear()+'-'+String(_d.getUTCMonth()+1).padStart(2,'0');}},
@@ -15239,6 +15250,87 @@ window.gmGlPendingCsv=function(){
  (d.list||[]).forEach(function(p){lines.push([cell(p.code||''),cell(p.name||''),cell(Number(p.rent||0).toFixed(2)),cell(Number(p.approxPayout||0).toFixed(2))].join(','));});
  var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='casas_pendentes_'+(d.month||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
+};
+// Matriz Recebido × Pago ao Owner por casa/mês (tela Renovations).
+window.gmGlMatrixRender=async function(){
+ var st=document.getElementById('glm-status');if(st)st.textContent='Carregando…';
+ var yEl=document.getElementById('glm-year');var year=(yEl&&yEl.value)||'2026';
+ var ty=document.getElementById('glm-title-year');if(ty)ty.textContent=year;
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var m0=function(n){return '$'+Math.round(Number(n||0)).toLocaleString('en-US');};
+ var m2=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var MON=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+ var mlabel=function(ym){var p=String(ym).split('-');return (MON[Number(p[1])]||p[1])+'/'+String(p[0]).slice(2);};
+ // cor de calor: verde se pago bate com esperado (±3%), senão vermelho proporcional à diferença.
+ var heat=function(expected,paid){
+  if((Number(expected)||0)<=0&&(Number(paid)||0)<=0)return '';
+  var diff=(Number(expected)||0)-(Number(paid)||0);
+  var rel=(Number(expected)||0)>0?Math.abs(diff)/Number(expected):((Number(paid)||0)>0?1:0);
+  if(rel<=0.03)return 'background:rgba(42,110,78,.16)';
+  var a=Math.min(0.10+rel*0.45,0.55);
+  return 'background:rgba(184,48,48,'+a.toFixed(3)+')';
+ };
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var sep=q?'&':'?';
+  var res=await fetch('/api/results/gl-matrix'+q+sep+'year='+encodeURIComponent(year),{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){if(st)st.textContent=(j&&j.error)||('Erro '+res.status);return;}
+  window.__gmGlMatrix=j;
+  var months=j.months||[];var rows=j.rows||[];
+  var thBase='padding:8px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3);background:var(--cream);position:sticky;top:0;border-bottom:1px solid var(--border)';
+  var head=document.getElementById('glm-head');
+  if(head){
+   var h='<tr>';
+   h+='<th style="'+thBase+';left:0;z-index:3;text-align:left;width:220px;min-width:220px;max-width:220px">Propriedade</th>';
+   h+='<th style="'+thBase+';z-index:2;text-align:left;min-width:130px">Owner</th>';
+   months.forEach(function(mm){h+='<th style="'+thBase+';z-index:2;min-width:120px;border-left:1px solid var(--border)">'+esc(mlabel(mm))+'</th>';});
+   h+='<th style="'+thBase+';z-index:2;min-width:120px;border-left:2px solid var(--border)">Total a pagar/receber</th>';
+   h+='</tr>';head.innerHTML=h;
+  }
+  var body=document.getElementById('glm-body');
+  var stickyName='position:sticky;left:0;background:var(--paper);z-index:1;border-right:1px solid var(--border);width:220px;min-width:220px;max-width:220px';
+  var out=rows.map(function(r){
+   var tr='<tr>';
+   tr+='<td style="padding:6px 8px;'+stickyName+'"><div style="font-weight:600;color:var(--ink);white-space:normal;word-break:break-word">'+esc(r.name||'—')+'</div><div style="font-size:10px;color:var(--ink3);font-family:JetBrains Mono,monospace">'+esc(r.code||'')+(r.matched?'':' · sem casa')+'</div></td>';
+   tr+='<td style="padding:6px 8px;min-width:130px;color:var(--ink2)">'+esc(r.owner||'—')+'</td>';
+   months.forEach(function(mm){
+    var c=(r.cells&&r.cells[mm])||null;
+    if(!c){tr+='<td style="border-left:1px solid var(--border);border-bottom:1px solid var(--border)"></td>';return;}
+    var recv=Number(c.received)||0,paid=Number(c.paid)||0,exp=Number(c.expected)||0;
+    var chips='';
+    if(recv>0)chips+='<span title="Recebido" style="display:inline-block;padding:1px 5px;border-radius:4px;background:#fde68a;color:#7c5310;font-family:JetBrains Mono,monospace;font-size:10px">'+m0(recv)+'</span>';
+    if(paid>0)chips+=(chips?' ':'')+'<span title="Pago ao owner" style="display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(42,110,78,.9);color:#fff;font-family:JetBrains Mono,monospace;font-size:10px">'+m0(paid)+'</span>';
+    tr+='<td style="padding:4px 6px;text-align:center;white-space:nowrap;border-left:1px solid var(--border);border-bottom:1px solid var(--border);'+heat(exp,paid)+'">'+(chips||'<span style="color:var(--ink3)">—</span>')+'</td>';
+   });
+   var net=Number(r.net)||0;var exp=Number(r.expected)||0;
+   var rel=exp>0?Math.abs(net)/exp:(net!==0?1:0);
+   var tcol=rel<=0.03?'background:rgba(42,110,78,.16)':'background:rgba(184,48,48,'+Math.min(0.10+rel*0.45,0.55).toFixed(3)+')';
+   var lab=Math.abs(net)<0.5?'ok':(net>0?'a pagar':'a receber');
+   tr+='<td style="padding:6px 8px;text-align:right;white-space:nowrap;border-left:2px solid var(--border);border-bottom:1px solid var(--border);'+tcol+'"><div style="font-family:JetBrains Mono,monospace;font-weight:700;color:'+(net>0.5?'#b83030':(net<-0.5?'#2a6e4e':'var(--ink2)'))+'">'+(net>0?'+':'')+m2(net)+'</div><div style="font-size:9px;text-transform:uppercase;color:var(--ink3)">'+lab+'</div></td>';
+   tr+='</tr>';return tr;
+  }).join('');
+  if(body)body.innerHTML=out||'<tr><td style="padding:24px;color:var(--ink3)">Sem dados de '+esc(year)+'. Importe o GL na Central de uploads.</td></tr>';
+  var t=j.totals||{};
+  if(st)st.textContent=(t.properties||0)+' casas · Recebido '+m2(t.received)+' · Pago '+m2(t.paid)+' · Esperado '+m2(t.expected)+' · Total '+((t.net||0)>0?'a pagar ':'')+m2(t.net);
+ }catch(e){if(st)st.textContent='Erro de rede.';}
+};
+window.gmGlMatrixCsv=function(){
+ var j=window.__gmGlMatrix;if(!j){alert('Clique em Atualizar primeiro.');return;}
+ var months=j.months||[];var rows=j.rows||[];
+ var cell=function(v){var s=String(v==null?'':v);return /[",\r\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s;};
+ var head=['Codigo','Propriedade','Owner'];
+ months.forEach(function(mm){head.push(mm+' recebido');head.push(mm+' pago');});
+ head.push('Recebido total','Pago total','Esperado (liq. mgm)','Total a pagar(+)/receber(-)');
+ var lines=[head.map(cell).join(',')];
+ rows.forEach(function(r){
+  var row=[cell(r.code||''),cell(r.name||''),cell(r.owner||'')];
+  months.forEach(function(mm){var c=(r.cells&&r.cells[mm])||null;row.push(cell(c?Number(c.received||0).toFixed(2):'0.00'));row.push(cell(c?Number(c.paid||0).toFixed(2):'0.00'));});
+  row.push(cell(Number(r.received||0).toFixed(2)),cell(Number(r.paid||0).toFixed(2)),cell(Number(r.expected||0).toFixed(2)),cell(Number(r.net||0).toFixed(2)));
+  lines.push(row.join(','));
+ });
+ var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='recebido_x_pago_'+(j.year||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
 };
 // #46 Correlações & Padrões: conecta GL (aluguel/repasse/mgm) com despesas/chamados por casa.
 window.gmCorrelationsRender=async function(){
