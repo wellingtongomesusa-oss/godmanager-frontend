@@ -115,6 +115,7 @@ model Client {
   leaseImports          LeaseImport[]           @relation("LeaseImport_clientId")
   leases                Lease[]                 @relation("Lease_clientId")
   leaseAgreements       LeaseAgreement[]        @relation("LeaseAgreement_clientId")
+  rentReceiptConfirmations RentReceiptConfirmation[] @relation("RentReceiptConfirmation_clientId")
   glAuditSnapshots      GlAuditSnapshot[]       @relation("GlAuditSnapshot_clientId")
   mgmtFeeContracts      MgmtFeeContract[]       @relation("MgmtFeeContract_clientId")
   feeAuditSnapshots     FeeAuditSnapshot[]      @relation("FeeAuditSnapshot_clientId")
@@ -225,6 +226,39 @@ model PropertyRentReceipt {
   @@unique([clientId, propertyKey, periodMonth])
   @@index([clientId, periodMonth])
   @@map("property_rent_receipts")
+}
+
+/// Confirmação manual de aluguel RECEBIDO por casa/mês + anexo do recibo de pagamento.
+/// Complementa o GL 4100 (recebido automático). Regra visual: confirmado=verde; após dia 05
+/// sem confirmação nem GL=vermelho (vencido); antes do dia 05=aguardando.
+model RentReceiptConfirmation {
+  id            String  @id @default(cuid())
+  clientId      String
+  propertyId    String?
+  propertyKey   String // endereço normalizado (chave de dedup, casa com/sem propertyId)
+  propertyLabel String
+  periodMonth   String // 'YYYY-MM'
+
+  receivedConfirmed Boolean   @default(false)
+  receivedAt        DateTime?
+  amount            Decimal?  @db.Decimal(12, 2)
+  source            String    @default("manual") // manual | gl
+  confirmedByUserId String?
+
+  // Recibo de pagamento anexado (R2). O robô do AppFolio também popula isto.
+  receiptFileKey  String?
+  receiptFileName String?
+  receiptSource   String? // manual | appfolio_robot
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client Client @relation("RentReceiptConfirmation_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, propertyKey, periodMonth])
+  @@index([clientId, periodMonth])
+  @@index([clientId, propertyId])
+  @@map("rent_receipt_confirmations")
 }
 
 /// P&L por casa por mês, do GENERAL LEDGER completo (AppFolio). Receita (4xxx),
