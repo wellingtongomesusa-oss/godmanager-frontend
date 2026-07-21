@@ -4,8 +4,14 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { verifyPassword } from '@/lib/password';
 import { encryptField, decryptField } from '@/lib/encryption';
 import { generateBase32Secret, otpauthUri, verifyTotp, generateBackupCodes } from '@/lib/totp';
+import { checkLoginRateLimit, recordFailedLogin, clearLoginAttempts } from '@/lib/rateLimit';
+import { recordAudit } from '@/lib/auditServer';
 
 export const dynamic = 'force-dynamic';
+
+function clientIp(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
 
 /** GET /api/auth/mfa → estado do MFA do usuário logado. */
 export async function GET() {
@@ -37,27 +43,51 @@ export async function POST(req: Request) {
   }
 
   if (action === 'enable') {
+    const rlKey = `mfa-enable:${clientIp(req)}:${user.id}`;
+    const rl = checkLoginRateLimit(rlKey);
+    if (!rl.allowed) {
+      return NextResponse.json({ ok: false, error: 'Muitas tentativas. Tente mais tarde.', retryAfter: rl.retryAfterSeconds }, { status: 429 });
+    }
     const code = String(body?.code || '').trim();
     const secret = decryptField(user.mfaSecret) || '';
     if (!secret) return NextResponse.json({ ok: false, error: 'Rode o setup primeiro.' }, { status: 400 });
     if (!verifyTotp(secret, code)) {
+      recordFailedLogin(rlKey);
       return NextResponse.json({ ok: false, error: 'Código inválido. Confira o app autenticador.' }, { status: 400 });
     }
+    clearLoginAttempts(rlKey);
     const { codes, hashes } = generateBackupCodes();
     await prisma.user.update({
       where: { id: user.id },
       data: { mfaEnabled: true, mfaBackupCodes: encryptField(JSON.stringify(hashes)) },
     });
+    await recordAudit({
+      request: req, actor: { id: user.id, email: user.email },
+      action: 'auth.mfa.enable', entity: 'user', entityId: user.id, clientId: user.clientId ?? null, details: '',
+    });
     return NextResponse.json({ ok: true, enabled: true, backupCodes: codes });
   }
 
   if (action === 'disable') {
+    const rlKey = `mfa-disable:${clientIp(req)}:${user.id}`;
+    const rl = checkLoginRateLimit(rlKey);
+    if (!rl.allowed) {
+      return NextResponse.json({ ok: false, error: 'Muitas tentativas. Tente mais tarde.', retryAfter: rl.retryAfterSeconds }, { status: 429 });
+    }
     const password = String(body?.password || '');
     const { valid } = await verifyPassword(password, user.passwordHash);
-    if (!valid) return NextResponse.json({ ok: false, error: 'Senha incorreta.' }, { status: 401 });
+    if (!valid) {
+      recordFailedLogin(rlKey);
+      return NextResponse.json({ ok: false, error: 'Senha incorreta.' }, { status: 401 });
+    }
+    clearLoginAttempts(rlKey);
     await prisma.user.update({
       where: { id: user.id },
       data: { mfaEnabled: false, mfaSecret: null, mfaBackupCodes: null },
+    });
+    await recordAudit({
+      request: req, actor: { id: user.id, email: user.email },
+      action: 'auth.mfa.disable', entity: 'user', entityId: user.id, clientId: user.clientId ?? null, details: '',
     });
     return NextResponse.json({ ok: true, enabled: false });
   }
