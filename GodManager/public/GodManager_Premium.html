@@ -4512,9 +4512,10 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   </div>
   <p style="font-size:10px;color:var(--ink3);margin:12px 0 0;line-height:1.45">Rent do inquilino menos a soma destes valores (com markup) alimenta o NET do owner. Mesma lógica que Owner Payment e Properties.</p>
  </div>
+ <div style="font-size:10px;color:var(--ink3);margin-bottom:8px;line-height:1.4">Defina <b>quem paga</b> a despesa (débito) — <b>Owner</b> ou <b>Tenant</b> — e quem recebe/é creditado. Disponível para gestores.</div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
   <div>
-   <label for="lt-nexp-credit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CRÉDITO</label>
+   <label for="lt-nexp-credit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">CRÉDITO (quem recebe)</label>
    <select id="lt-nexp-credit" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
     <option value="">— Nenhum —</option>
     <option value="TENANT">Tenant</option>
@@ -4523,7 +4524,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    </select>
   </div>
   <div>
-   <label for="lt-nexp-debit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DÉBITO</label>
+   <label for="lt-nexp-debit" style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px">DÉBITO — QUEM PAGA</label>
    <select id="lt-nexp-debit" style="width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;background:var(--sand);color:var(--ink);outline:none">
     <option value="">— Nenhum —</option>
     <option value="TENANT">Tenant</option>
@@ -24114,7 +24115,7 @@ function ltExpRender(){
   var _cdMap={TENANT:'Tenant',OWNER:'Owner',MANAGER_PROP:'Manager Prop'};
   var _cdC=_cdMap[String(r.creditParty||'').toUpperCase()]||'';
   var _cdD=_cdMap[String(r.debitParty||'').toUpperCase()]||'';
-  var cdBadge=(_cdC||_cdD)?('<div style="margin-top:4px;font-size:9px;font-weight:600;color:var(--ink3);white-space:nowrap" title="Crédito → Débito">'+(_cdD?'<span style="color:var(--red)">'+esc(_cdD)+'</span>':'—')+' <span style="color:var(--ink3)">→</span> '+(_cdC?'<span style="color:var(--green)">'+esc(_cdC)+'</span>':'—')+'</div>'):'';
+  var cdBadge=(_cdC||_cdD)?('<div style="margin-top:4px;font-size:9px;font-weight:600;color:var(--ink3);white-space:nowrap" title="Quem paga (débito) → Quem recebe (crédito)">'+(_cdD?'<span style="color:var(--red)" title="Quem paga">'+esc(_cdD)+'</span>':'—')+' <span style="color:var(--ink3)">→</span> '+(_cdC?'<span style="color:var(--green)">'+esc(_cdC)+'</span>':'—')+'</div>'):'';
   const idAttr=String(r.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const stNorm=ltExpRowNormPmStatus(r);
   const _isFee=!!(r&&r._apiRaw&&r._apiRaw.metadata&&r._apiRaw.metadata.maintenanceFeeFor);
