@@ -114,6 +114,7 @@ model Client {
   analyticsSnapshots    AnalyticsSnapshot[]     @relation("AnalyticsSnapshot_clientId")
   leaseImports          LeaseImport[]           @relation("LeaseImport_clientId")
   leases                Lease[]                 @relation("Lease_clientId")
+  leaseAgreements       LeaseAgreement[]        @relation("LeaseAgreement_clientId")
   glAuditSnapshots      GlAuditSnapshot[]       @relation("GlAuditSnapshot_clientId")
   mgmtFeeContracts      MgmtFeeContract[]       @relation("MgmtFeeContract_clientId")
   feeAuditSnapshots     FeeAuditSnapshot[]      @relation("FeeAuditSnapshot_clientId")
@@ -788,6 +789,7 @@ model Property {
   tenantPayments    TenantPayment[]         @relation("TenantPayment_propertyId")
   glEntries         GLEntry[]               @relation("GLEntry_propertyId")
   leases            Lease[]                 @relation("Lease_propertyId")
+  leaseAgreements   LeaseAgreement[]        @relation("LeaseAgreement_propertyId")
   utilityAccounts   UtilityAccount[]        @relation("UtilityAccount_propertyId")
   contracts         PropertyContract[]      @relation("PropertyContract_propertyId")
 
@@ -827,6 +829,7 @@ model Tenant {
   maintenanceCalls MaintenanceCall[]
   tenantPayments   TenantPayment[]   @relation("TenantPayment_tenantId")
   leases           Lease[]           @relation("Lease_tenantId")
+  leaseAgreements  LeaseAgreement[]  @relation("LeaseAgreement_tenantId")
   users            User[]            @relation("User_tenantId")
 
   @@index([code])
@@ -1655,6 +1658,82 @@ model Lease {
   @@index([propertyId])
   @@index([tenantId])
   @@map("leases")
+}
+
+/// Status do LeaseAgreement (contrato de locação autorado no GodManager, modelo Flórida).
+enum LeaseAgreementStatus {
+  DRAFT
+  ACTIVE
+  TERMINATED
+  RENEWED
+}
+
+/// Período de cobrança do aluguel.
+enum LeaseRentPeriod {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+/// Contrato de locação AUTORADO no GodManager (distinto de `Lease`, que é importado do AppFolio).
+/// Modelo Flórida (Heist/Weisse/Wolk). Sempre vinculado a um imóvel; nº sequencial único por cliente.
+/// Guarda o formulário FL completo em `leaseForm` (Json) para o PDF e o envio ao advogado.
+model LeaseAgreement {
+  id          String               @id @default(cuid())
+  clientId    String
+  leaseNumber Int // sequencial por cliente (único)
+  status      LeaseAgreementStatus @default(DRAFT)
+  isRenewal   Boolean              @default(false)
+
+  propertyId String
+  tenantId   String?
+  ownerId    String?
+
+  // Financeiro
+  monthlyRent        Decimal         @default(0) @db.Decimal(12, 2)
+  rentPeriod         LeaseRentPeriod @default(MONTHLY)
+  mgmtFeePct         Decimal         @default(8) @db.Decimal(5, 2)
+  tenantPlacementPct Decimal?        @db.Decimal(5, 2)
+  lateFeeFlat        Decimal         @default(150) @db.Decimal(12, 2) // late fee fixo (US$)
+  lateFeeDaily       Decimal         @default(5) @db.Decimal(12, 2) // por dia de atraso (US$)
+  securityDeposit    Decimal         @default(0) @db.Decimal(12, 2)
+  securityReserve    Decimal         @default(0) @db.Decimal(12, 2) // reserva de segurança
+  is1099             Boolean         @default(false)
+  guaranteeType      String          @default("SECURITY_DEPOSIT")
+
+  // HOA
+  hoaEnabled Boolean  @default(false)
+  hoaValue   Decimal? @db.Decimal(12, 2)
+
+  // Vigência
+  startDate      DateTime?
+  endDate        DateTime?
+  durationMonths Int?
+  moveOutDate    DateTime?
+
+  // Advogado (envio do lease para preparo) / QuickBooks (link de invoice do lease fee)
+  attorneySentAt DateTime?
+  qbInvoiceId    String?
+  qbInvoiceUrl   String?
+
+  // Formulário FL completo (modelo do advogado) + snapshot do PDF gerado.
+  leaseForm Json?
+
+  notes           String?  @db.Text
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  client   Client   @relation("LeaseAgreement_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  property Property @relation("LeaseAgreement_propertyId", fields: [propertyId], references: [id], onDelete: Restrict)
+  tenant   Tenant?  @relation("LeaseAgreement_tenantId", fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@unique([clientId, leaseNumber])
+  @@index([clientId, status])
+  @@index([clientId, propertyId])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@map("lease_agreements")
 }
 
 model TrialInvite {
