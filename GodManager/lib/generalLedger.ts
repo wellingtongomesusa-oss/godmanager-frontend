@@ -102,11 +102,11 @@ export function glCycle15(dateMMDDYYYY: string): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
-/** Linha do GL relevante para o Statement: recebido (4100 Credit) ou enviado (3250 Debit). */
+/** Linha do GL: recebido (4100 Credit), enviado ao owner (3250 Debit) ou management fee (6111 Debit). */
 export interface GlEntry {
-  account: string; // '4100' | '3250'
+  account: string; // '4100' | '3250' | '6111'
   accountLabel: string;
-  kind: 'RECEIVED' | 'SENT';
+  kind: 'RECEIVED' | 'SENT' | 'MGM_FEE';
   propertyRaw: string;
   propertyShort: string;
   payerPayee: string;
@@ -137,10 +137,11 @@ export function parseGeneralLedgerEntries(csv: string): GlEntry[] {
 
     const debit = parseAmount(f[5]);
     const credit = parseAmount(f[6]);
-    let kind: 'RECEIVED' | 'SENT' | null = null;
+    let kind: 'RECEIVED' | 'SENT' | 'MGM_FEE' | null = null;
     let amount = 0;
     if (curAccount === '4100' && credit > 0) { kind = 'RECEIVED'; amount = credit; }
     else if (curAccount === '3250' && debit > 0) { kind = 'SENT'; amount = debit; }
+    else if (curAccount === '6111' && debit > 0) { kind = 'MGM_FEE'; amount = debit; }
     else continue;
 
     out.push({
