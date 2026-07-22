@@ -132,3 +132,54 @@ export function flReconcilePlan(description: string, amount: number, bankAccount
     autoApply: false,
   };
 }
+
+/** Conta do QuickBooks (subconjunto do QbAccount) usada só para o mapeamento. */
+export interface QboAccountLite {
+  id: string;
+  name: string;
+  acctNum: string;
+  classification: string;
+  accountType: string;
+}
+
+/**
+ * Mapeia o plano FL para uma conta REAL do plano de contas do QuickBooks do cliente.
+ * Prioridade: (1) número de conta do guia FL (2100/2200/4100…), (2) palavra-chave + classificação.
+ * Retorna null quando não há candidata clara (o usuário escolhe na tela For Review).
+ */
+export function resolveQboAccount(plan: FlReconcilePlan, accounts: QboAccountLite[]): QboAccountLite | null {
+  if (!Array.isArray(accounts) || accounts.length === 0) return null;
+
+  // 1) casar pelo número de conta presente no glAccount (ex.: "2100 Security Deposits…")
+  const num = (plan.glAccount.match(/\b(\d{3,5})\b/) || [])[1] || '';
+  if (num) {
+    const byNum = accounts.find((a) => a.acctNum && a.acctNum === num);
+    if (byNum) return byNum;
+  }
+
+  // 2) casar por palavra-chave + classificação contábil
+  const KW: Array<{ when: RegExp; name: RegExp; cls?: string }> = [
+    { when: /security deposit/i, name: /security deposit|tenant deposit|deposits? held|caução/i, cls: 'Liability' },
+    { when: /owner distribution|repasse/i, name: /owner|distribution|due to owner|payable to owner|repasse/i, cls: 'Liability' },
+    { when: /management fee|property management/i, name: /management fee|property management|mgmt/i, cls: 'Revenue' },
+    { when: /rent recebido|rent \(trust|aluguel/i, name: /rent|tenant|aluguel/i, cls: 'Liability' },
+    { when: /utilit/i, name: /utilit|electric|water|sewer|power|energy/i, cls: 'Expense' },
+    { when: /hoa/i, name: /hoa|association|condo/i, cls: 'Expense' },
+    { when: /insurance/i, name: /insurance/i, cls: 'Expense' },
+    { when: /repairs|maintenance/i, name: /repair|maintenance|r ?& ?m|handyman/i, cls: 'Expense' },
+    { when: /bank service charge|bank charge|tarifa/i, name: /bank (charge|fee|service)|service charge|merchant fee/i, cls: 'Expense' },
+    { when: /payroll|tax|imposto/i, name: /payroll|tax|imposto/i },
+  ];
+  for (const r of KW) {
+    if (r.when.test(plan.glAccount) || r.when.test(plan.category)) {
+      const cand = accounts.filter((a) => (!r.cls || a.classification === r.cls) && r.name.test(a.name));
+      if (cand.length) {
+        // prefere a conta com número (plano estruturado) e nome mais curto (mais específico)
+        cand.sort((a, b) => (b.acctNum ? 1 : 0) - (a.acctNum ? 1 : 0) || a.name.length - b.name.length);
+        return cand[0];
+      }
+      return null; // categoria reconhecida, mas sem conta correspondente no plano do cliente
+    }
+  }
+  return null;
+}

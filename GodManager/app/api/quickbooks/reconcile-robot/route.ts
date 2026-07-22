@@ -3,8 +3,9 @@ import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
 import { getConnectionStatus } from '@/lib/quickbooks';
+import { qbListAccounts } from '@/lib/quickbooksPost';
 import { categorizeChaseTxn } from '@/lib/chaseTxnCategory';
-import { flReconcilePlan } from '@/lib/flReconcileRules';
+import { flReconcilePlan, resolveQboAccount, type QboAccountLite } from '@/lib/flReconcileRules';
 import { csrfGuard } from '@/lib/csrfGuard';
 import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { recordAudit } from '@/lib/auditServer';
@@ -47,9 +48,21 @@ export async function GET(req: Request) {
       select: { id: true, bankAccountKey: true, periodMonth: true, txnDate: true, description: true, amount: true, section: true },
     });
 
+    // Plano de contas REAL do QuickBooks (best-effort — só quando conectado) para mapear a conta.
+    let qboAccounts: QboAccountLite[] = [];
+    let accountsError: string | null = null;
+    if (connected) {
+      try {
+        qboAccounts = (await qbListAccounts(clientId)) as QboAccountLite[];
+      } catch (e) {
+        accountsError = e instanceof Error ? e.message : 'Falha ao ler o plano de contas do QuickBooks.';
+      }
+    }
+
     const rows = txns.map((t) => {
       const amount = round2(Number(t.amount));
       const plan = flReconcilePlan(t.description, amount, t.bankAccountKey);
+      const qa = qboAccounts.length ? resolveQboAccount(plan, qboAccounts) : null;
       return {
         id: t.id,
         account: t.bankAccountKey,
@@ -60,8 +73,18 @@ export async function GET(req: Request) {
         section: t.section,
         suggestedType: categorizeChaseTxn(t.description),
         plan,
+        qboAccount: qa ? { id: qa.id, name: qa.name, acctNum: qa.acctNum } : null,
       };
     });
+
+    // Resumo do mapeamento: categoria FL → conta do QuickBooks (para conferência antes de aplicar).
+    const accountMap: Record<string, { qboAccount: string | null; count: number }> = {};
+    for (const r of rows) {
+      const k = r.plan.category;
+      if (!accountMap[k]) accountMap[k] = { qboAccount: r.qboAccount ? (r.qboAccount.acctNum ? r.qboAccount.acctNum + ' · ' : '') + r.qboAccount.name : null, count: 0 };
+      accountMap[k].count += 1;
+    }
+    const mappedCount = rows.filter((r) => r.qboAccount).length;
 
     const byType: Record<string, { count: number; amount: number }> = {};
     for (const r of rows) {
@@ -82,6 +105,9 @@ export async function GET(req: Request) {
       autoApplyCount,
       reviewCount,
       byType,
+      accountMap,
+      mappedCount,
+      accountsError,
       rows,
     });
   } catch (e) {

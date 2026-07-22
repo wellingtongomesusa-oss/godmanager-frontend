@@ -61,7 +61,7 @@ async function qbCreate(clientId: string, entity: string, body: unknown): Promis
 
 // ---- Leitura (para dropdowns de mapeamento) ---------------------------------
 
-export type QbAccount = { id: string; name: string; accountType: string; accountSubType: string; classification: string; active: boolean };
+export type QbAccount = { id: string; name: string; acctNum: string; accountType: string; accountSubType: string; classification: string; active: boolean };
 export type QbNamed = { id: string; name: string; active: boolean };
 
 function esc(v: string): string {
@@ -76,6 +76,7 @@ export async function qbListAccounts(clientId: string): Promise<QbAccount[]> {
   return rows.map((a) => ({
     id: String(a.Id ?? ''),
     name: String(a.Name ?? ''),
+    acctNum: String(a.AcctNum ?? ''),
     accountType: String(a.AccountType ?? ''),
     accountSubType: String(a.AccountSubType ?? ''),
     classification: String(a.Classification ?? ''),
