@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Upload, RefreshCw, Eye, Download, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { HouseDetailModal } from './HouseDetailModal';
 
 type Row = {
   propertyId: string;
@@ -40,6 +41,7 @@ export function ContractsAdmin() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [openHouse, setOpenHouse] = useState<Row | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pendingProp = useRef<string | null>(null);
 
@@ -253,9 +255,9 @@ export function ContractsAdmin() {
                 {filtered.map((r, i) => (
                   <tr key={r.propertyId} className={`border-b border-slate-100 align-middle ${i % 2 ? 'bg-slate-50/40' : ''}`}>
                     <td className="px-3 py-2.5">
-                      <div className="truncate font-medium text-slate-800" title={r.address}>
+                      <button onClick={() => setOpenHouse(r)} className="truncate text-left font-medium text-[#22558c] underline hover:text-[#1c4675]" title={r.address}>
                         {r.address}
-                      </div>
+                      </button>
                       <div className="truncate text-xs text-slate-400">{r.code}</div>
                     </td>
                     <td className="truncate px-3 py-2.5 text-slate-700" title={r.tenantName || ''}>
@@ -273,6 +275,12 @@ export function ContractsAdmin() {
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setOpenHouse(r)}
+                          className="inline-flex items-center gap-1 rounded-md border border-[#22558c] bg-[#22558c]/5 px-2 py-1 text-xs font-semibold text-[#22558c] hover:bg-[#22558c]/10"
+                        >
+                          Abrir
+                        </button>
                         {r.contract?.viewUrl && (
                           <a
                             href={r.contract.viewUrl}
@@ -327,6 +335,17 @@ export function ContractsAdmin() {
             </table>
           </div>
         </>
+      )}
+
+      {openHouse && (
+        <HouseDetailModal
+          propertyId={openHouse.propertyId}
+          address={openHouse.address}
+          code={openHouse.code || ''}
+          tenantName={openHouse.tenantName || ''}
+          clientId={clientId}
+          onClose={() => setOpenHouse(null)}
+        />
       )}
     </div>
   );

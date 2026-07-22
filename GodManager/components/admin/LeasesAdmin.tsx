@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { LeaseDetailModal } from './LeaseDetailModal';
 
 type PropOpt = { propertyId: string; code: string | null; address: string; tenantName: string | null };
 type Lease = {
@@ -37,6 +38,7 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [propSearch, setPropSearch] = useState('');
+  const [openLeaseId, setOpenLeaseId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     propertyId: '',
@@ -262,8 +264,8 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
               </tr>
             )}
             {leases.map((l) => (
-              <tr key={l.id} className="border-b border-slate-100">
-                <td className="px-4 py-3 font-mono text-slate-600">{l.leaseNumber}</td>
+              <tr key={l.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setOpenLeaseId(l.id)}>
+                <td className="px-4 py-3 font-mono text-slate-600 underline">{l.leaseNumber}</td>
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-800">{l.propertyAddress}</div>
                   <div className="font-mono text-xs text-slate-400">{l.propertyCode}</div>
@@ -280,6 +282,15 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
           </tbody>
         </table>
       </div>
+
+      {openLeaseId && (
+        <LeaseDetailModal
+          leaseId={openLeaseId}
+          clientId={clientId}
+          onClose={() => setOpenLeaseId(null)}
+          onSaved={() => void load()}
+        />
+      )}
     </div>
   );
 }
