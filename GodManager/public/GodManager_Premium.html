@@ -9568,10 +9568,11 @@ window.gmQbRobotOpen=async function(){
    +'<div style="padding:8px 22px 0"><div style="height:8px;background:var(--cream);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+(j.progressPct||0)+'%;background:linear-gradient(90deg,#2a6e4e,#7c3aed);border-radius:99px;transition:width .3s"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px">'+(j.reconciledCount||0)+' conciliadas · '+j.pending+' pendentes · <b>'+(j.progressPct||0)+'% concluído</b></div></div>'
    +'<div style="padding:10px 22px">'+chips+'</div>'
    +'<div style="padding:0 22px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream);position:sticky;top:0"><th style="padding:7px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="Marcar/desmarcar todas as visíveis"><input type="checkbox" onclick="var cs=document.querySelectorAll(\'.gm-qbrec-chk\');for(var i=0;i<cs.length;i++)cs[i].checked=this.checked;"></th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th><th style="padding:7px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Valor</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Plano (regras FL)</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta no QuickBooks</th><th style="padding:7px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Confiança</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
-   +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div>'+applyMsg+'</div><div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="gmQbRobotMarkAuto()" title="Marca as pendências de alta confiança (auto-aplicáveis) como conciliadas — use depois de aplicá-las no QBO" style="background:var(--paper);color:#2a6e4e;border:1px solid #b7e0c6;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">✓ Marcar auto-aplicáveis</button><button onclick="gmQbRobotMarkSelected()" title="Marca as selecionadas como conciliadas (saem da fila do robô)" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">✓ Marcar selecionadas</button><button onclick="gmQbMapOpen()" title="Escolha as contas reais do seu QuickBooks para cada categoria/banco" style="background:#22558c;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer">Mapear contas (QBO)</button><button onclick="gmQbReconHelp()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Como fazer</button><button onclick="gmQbRobotCsv()" title="Planilha à prova de auditor: cada pendência com conta contábil, tipo de lançamento e a regra FREC/FL" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">↓ Baixar CSV (auditoria)</button>'+(j.applyEnabled?'<button onclick="gmQbRobotApply(1)" title="Cria 1 lançamento real no QBO para você validar antes do lote" style="background:#b45309;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Testar com 1 (real)</button>':'')+'<button onclick="gmQbRobotApply()" title="'+(j.applyEnabled?'Cria os lançamentos de alta confiança no QuickBooks':'Ative QBO_RECONCILE_ENABLED=1 no servidor para liberar a escrita')+'" style="background:'+(j.applyEnabled?'#2a6e4e':'var(--border2)')+';color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:'+(j.applyEnabled?'pointer':'not-allowed')+'"'+(j.applyEnabled?'':' disabled')+'>Aprovar &amp; aplicar no QBO</button></div></div>'
+   +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div>'+applyMsg+'</div><div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="gmQbRobotMarkAuto()" title="Marca as pendências de alta confiança (auto-aplicáveis) como conciliadas — use depois de aplicá-las no QBO" style="background:var(--paper);color:#2a6e4e;border:1px solid #b7e0c6;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">✓ Marcar auto-aplicáveis</button><button onclick="gmQbRobotMarkSelected()" title="Marca as selecionadas como conciliadas (saem da fila do robô)" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">✓ Marcar selecionadas</button><button onclick="gmQbMapOpen()" title="Escolha as contas reais do seu QuickBooks para cada categoria/banco" style="background:#22558c;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer">Mapear contas (QBO)</button><button onclick="gmQbReconHelp()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Como fazer</button><button onclick="gmQbRobotCsv()" title="Planilha à prova de auditor: cada pendência com conta contábil, tipo de lançamento e a regra FREC/FL" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">↓ Baixar CSV (auditoria)</button><button onclick="gmQbRobotReport()" title="Baixa o relatório dos lançamentos já criados no QuickBooks (com o ID de cada um)" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Relatório de lançamentos</button>'+(j.applyEnabled?'<button onclick="gmQbRobotApply(1)" title="Cria 1 lançamento real no QBO para você validar antes do lote" style="background:#b45309;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Testar com 1 (real)</button>':'')+'<button onclick="gmQbRobotApply()" title="'+(j.applyEnabled?'Cria os lançamentos de alta confiança no QuickBooks':'Ative QBO_RECONCILE_ENABLED=1 no servidor para liberar a escrita')+'" style="background:'+(j.applyEnabled?'#2a6e4e':'var(--border2)')+';color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:'+(j.applyEnabled?'pointer':'not-allowed')+'"'+(j.applyEnabled?'':' disabled')+'>Aprovar &amp; aplicar no QBO</button></div></div>'
    +'</div>';
   window.__gmQbRobotMonth=j.month||month;
   window.__gmQbRobotRows=j.rows||[];
+  window.__gmQbCompliant=j.compliantCount||0;
  }catch(e){ov.querySelector('div').textContent='Erro de rede.';}
 };
 // Export CSV à prova de auditor: cada pendência com a classificação de trust accounting (FREC 61J2-14).
@@ -9589,23 +9590,54 @@ window.gmQbRobotCsv=function(){
 };
 window.gmQbRobotApply=async function(limit){
  var isTest=(limit===1);
- var msg=isTest
-  ?'TESTE — criar 1 lançamento REAL no QuickBooks agora?\n\nRecomendado antes de rodar o lote. Depois confira no QuickBooks e valide.'
-  :'APLICAR no QuickBooks — criar os lançamentos das pendências de ALTA confiança (Deposit/Purchase) nas contas mapeadas.\n\nIsso cria entradas REAIS no seu QuickBooks. Confirmar?';
- if(!confirm(msg))return;
+ var acId=(function(){try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;return (ac&&ac.id)?String(ac.id):'';}catch(e){return '';}})();
+ var mSel=(typeof window.__gmQbRobotMonthSel==='string')?window.__gmQbRobotMonthSel:'';
+ if(isTest){
+  if(!confirm('TESTE — criar 1 lançamento REAL no QuickBooks agora?\n\nRecomendado antes do lote. Depois confira no QBO e valide.'))return;
+  try{
+   var res=await fetch('/api/quickbooks/reconcile-robot',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({month:mSel,approve:true,limit:1,clientId:acId||undefined})});
+   var j=await res.json().catch(function(){return{};});
+   if(res.ok&&j.ok){var rr=(j.results||[]);var d='';for(var i=0;i<rr.length&&i<4;i++){var x=rr[i];d+='\n• '+(x.ok?('OK '+(x.type||'')+' #'+(x.qboId||'')):(x.skipped?('pulado: '+x.skipped):('falha: '+(x.error||''))));}alert('Teste:\n'+(j.created||0)+' criado · '+(j.failed||0)+' falha · '+(j.skipped||0)+' pulado.'+d+'\n\nConfira no QuickBooks (Banking → For Review) e faça o Match.');if(typeof gmQbRobotOpen==='function')gmQbRobotOpen();return;}
+   alert((j&&(j.error||''))||('Erro '+res.status));
+  }catch(e){alert('Erro de rede.');}
+  return;
+ }
+ if(!confirm('APLICAR no QuickBooks — criar os lançamentos de ALTA confiança (Deposit/Purchase) nas contas mapeadas.\n\nCria entradas REAIS no seu QuickBooks (em lote, com barra de progresso). Não duplica (cada transação é lançada uma vez). Confirmar?'))return;
+ var target=Number(window.__gmQbCompliant)||0;
+ var prog=document.createElement('div');prog.id='gm-qbapply-prog';
+ prog.style.cssText='position:fixed;inset:0;background:rgba(20,16,10,.55);z-index:10002;display:flex;align-items:center;justify-content:center';
+ prog.innerHTML='<div style="background:var(--paper);border-radius:14px;padding:26px 32px;min-width:380px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px">Lançando no QuickBooks…</div><div style="height:10px;background:var(--cream);border-radius:99px;overflow:hidden"><div id="gm-qbapply-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#2a6e4e,#7c3aed);transition:width .3s"></div></div><div id="gm-qbapply-txt" style="font-size:12px;color:var(--ink3);margin-top:8px">Iniciando…</div></div>';
+ document.body.appendChild(prog);
+ var totalCreated=0,totalFailed=0,firstSkipped=0;
  try{
-  var ac=(typeof getActiveClient==='function')?getActiveClient():null;var acId=(ac&&ac.id)?String(ac.id):'';
-  var payload={month:window.__gmQbRobotMonth||'',approve:true,clientId:acId||undefined};
-  if(limit)payload.limit=limit;
-  var res=await fetch('/api/quickbooks/reconcile-robot',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  var j=await res.json().catch(function(){return{};});
-  if(res.ok&&j.ok){
-   var det='';var rr=(j.results||[]);
-   for(var i=0;i<rr.length&&i<8;i++){var x=rr[i];det+='\n• '+(x.ok?('OK '+(x.type||'')+' #'+(x.qboId||'')):(x.skipped?('pulado: '+x.skipped):('falha: '+(x.error||''))));}
-   alert('Aplicado no QuickBooks:\n'+(j.created||0)+' criado(s) · '+(j.failed||0)+' falha(s) · '+(j.skipped||0)+' pulado(s).'+det+'\n\nAgora confira no QuickBooks (Banking → For Review) e faça o "Match" dos lançamentos criados.');
-   if(typeof gmQbRobotOpen==='function')gmQbRobotOpen();return;
+  for(var iter=0;iter<400;iter++){
+   var r2=await fetch('/api/quickbooks/reconcile-robot',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({month:mSel,approve:true,limit:20,clientId:acId||undefined})});
+   var j2=await r2.json().catch(function(){return{};});
+   if(!r2.ok||!j2.ok){prog.remove();alert((j2&&j2.error)||('Erro '+r2.status));if(typeof gmQbRobotOpen==='function')gmQbRobotOpen();return;}
+   totalCreated+=(j2.created||0);totalFailed+=(j2.failed||0);if(iter===0)firstSkipped=(j2.skipped||0);
+   var pct=target>0?Math.min(100,Math.round(totalCreated/target*100)):((j2.created||0)>0?60:100);
+   var bar=document.getElementById('gm-qbapply-bar');if(bar)bar.style.width=pct+'%';
+   var txt=document.getElementById('gm-qbapply-txt');if(txt)txt.textContent=totalCreated+' criado(s)'+(target?(' de ~'+target):'')+' · '+totalFailed+' falha(s)';
+   if((j2.created||0)===0)break; // não há mais o que criar (restantes: bloqueadas/revisão)
   }
-  alert((j&&(j.error||''))||('Erro '+res.status));
+ }catch(e){prog.remove();alert('Erro de rede durante o lote (o que já foi criado está salvo).');if(typeof gmQbRobotOpen==='function')gmQbRobotOpen();return;}
+ var b3=document.getElementById('gm-qbapply-bar');if(b3)b3.style.width='100%';
+ setTimeout(function(){if(prog)prog.remove();alert('Lançamento concluído:\n'+totalCreated+' criado(s) · '+totalFailed+' falha(s).\n\nAs bloqueadas/para revisão NÃO foram lançadas (seguro). Baixe o "Relatório de lançamentos" e faça o Match no QuickBooks (Banking → For Review).');if(typeof gmQbRobotOpen==='function')gmQbRobotOpen();},400);
+};
+// Relatório dos lançamentos efetuados pelo robô (com o ID de cada um no QuickBooks) → CSV.
+window.gmQbRobotReport=async function(){
+ var acId=(typeof gmQbMapAcId==='function')?gmQbMapAcId():'';var qs=acId?('&clientId='+encodeURIComponent(acId)):'';
+ try{
+  var res=await fetch('/api/quickbooks/reconcile-robot?posted=1'+qs,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){alert((j&&j.error)||'Erro ao ler o relatório.');return;}
+  if(!j.posted||!j.posted.length){alert('Nenhum lançamento criado ainda pelo robô.');return;}
+  var q=function(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"';};
+  var head=['Data','Conta bancaria','Mes','Descricao','Valor','Tipo QBO','ID no QuickBooks'];
+  var lines=[head.map(q).join(',')];
+  j.posted.forEach(function(p){lines.push([q(p.date),q(p.account),q(p.month),q(p.description),q(Number(p.amount||0).toFixed(2)),q(p.qboType||''),q(p.qboId||'')].join(','));});
+  var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='lancamentos_qbo_efetuados.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1500);
  }catch(e){alert('Erro de rede.');}
 };
 // Caminho A: marca as pendências já conciliadas no QBO (matched=true) — saem da fila do robô.

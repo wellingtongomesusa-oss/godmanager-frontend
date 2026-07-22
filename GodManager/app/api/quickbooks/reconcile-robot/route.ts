@@ -37,6 +37,24 @@ export async function GET(req: Request) {
     if (!scope.ok) return NextResponse.json({ ok: false, error: scope.error }, { status: scope.status });
     const clientId = scope.clientId;
 
+    // Relatório dos lançamentos JÁ criados no QuickBooks pelo robô (rastreio/auditoria).
+    if (url.searchParams.get('posted') === '1') {
+      const posted = await prisma.bankStatementTxn.findMany({
+        where: { clientId, matchedQboId: { not: null } },
+        orderBy: [{ txnDate: 'asc' }],
+        take: 5000,
+        select: { id: true, bankAccountKey: true, periodMonth: true, txnDate: true, description: true, amount: true, matchedQboId: true, matchedQboType: true },
+      });
+      return NextResponse.json({
+        ok: true,
+        count: posted.length,
+        posted: posted.map((p) => ({
+          id: p.id, account: p.bankAccountKey, month: p.periodMonth, date: p.txnDate.toISOString().slice(0, 10),
+          description: p.description, amount: round2(Number(p.amount)), qboId: p.matchedQboId, qboType: p.matchedQboType,
+        })),
+      });
+    }
+
     const conn = await getConnectionStatus(clientId);
     const connected = !!conn && (conn as { connected?: boolean }).connected !== false;
 
@@ -204,8 +222,9 @@ export async function POST(req: Request) {
     const savedCat = savedMap.cat || {};
     const savedBank = savedMap.bank || {};
 
+    // Anti-duplicação: só pega transações AINDA não conciliadas E sem lançamento QBO criado.
     const txns = await prisma.bankStatementTxn.findMany({
-      where: { clientId: scope.clientId, matched: false, ...(month ? { periodMonth: month } : {}), ...(onlyIds ? { id: { in: onlyIds } } : {}) },
+      where: { clientId: scope.clientId, matched: false, matchedQboId: null, ...(month ? { periodMonth: month } : {}), ...(onlyIds ? { id: { in: onlyIds } } : {}) },
       orderBy: [{ txnDate: 'asc' }],
       take: 500,
       select: { id: true, bankAccountKey: true, txnDate: true, description: true, amount: true },
@@ -232,7 +251,8 @@ export async function POST(req: Request) {
         continue;
       }
       const txnDate = t.txnDate.toISOString().slice(0, 10);
-      const memo = `GodManager robô · ${plan.category} · ${plan.rule.slice(0, 120)}`;
+      // memo com ref único (idempotência/rastreio): permite identificar duplicata no próprio QBO.
+      const memo = `GodManager robô · ${plan.category} · ref:${t.id} · ${plan.rule.slice(0, 90)}`;
       try {
         let qboId = '', qboType = '';
         if (plan.entryType === 'deposit') {
