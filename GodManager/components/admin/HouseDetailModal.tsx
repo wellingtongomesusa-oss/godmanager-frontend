@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 type Cell = { received: number; paid: number; expected: number };
 type MatrixRow = { propertyId: string; owner: string; rent: number; months: string[]; cells: Record<string, Cell> };
@@ -119,6 +119,7 @@ export function HouseDetailModal({
           {tabBtn('contract', 'Contrato')}
           {tabBtn('docs', 'Documentos')}
           {tabBtn('jobs', 'Chamados')}
+          {tabBtn('graphs', 'Gráficos')}
         </div>
 
         <div className="flex-1 overflow-auto px-6 py-4">
@@ -194,6 +195,16 @@ export function HouseDetailModal({
             <div className="py-6 text-sm text-slate-500">
               Suba o arquivo do contrato desta casa pela lista (botão <b>Upload</b>). Geração automática de documentos (chaves, listing, administração) vem na próxima fase.
             </div>
+          ) : tab === 'graphs' ? (
+            <div className="py-4">
+              <div className="mb-3 text-sm text-slate-600">Abra os gráficos desta casa em popup:</div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setGraphOpen('received')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📈 Recebido por mês</button>
+                <button onClick={() => setGraphOpen('payout')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📈 Repasse (esperado × pago)</button>
+                <button onClick={() => setGraphOpen('compare')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📊 Recebido × Pago</button>
+              </div>
+              {monthsWith.length === 0 && <p className="mt-3 text-xs text-slate-400">Sem dados do GL para gerar gráficos.</p>}
+            </div>
           ) : (
             <div>
               {jobsLoading ? (
@@ -254,6 +265,58 @@ export function HouseDetailModal({
           )}
         </div>
       </div>
+
+      {graphOpen && row && (() => {
+        const series = monthsWith.map((m) => ({ m, c: row.cells[m] }));
+        const title = graphOpen === 'received' ? 'Recebido por mês' : graphOpen === 'payout' ? 'Repasse: esperado × pago' : 'Recebido × Pago';
+        let max = 1;
+        series.forEach((s) => { max = Math.max(max, s.c.received, s.c.paid, s.c.expected); });
+        const W = Math.max(360, series.length * 70), H = 220, pad = 30;
+        const bw = series.length ? (W - pad * 2) / series.length : 0;
+        return (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4" onClick={() => setGraphOpen(null)}>
+            <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div className="text-base font-bold text-slate-800">{address} — {title}</div>
+                <button onClick={() => setGraphOpen(null)} className="text-2xl text-slate-400 hover:text-slate-600">×</button>
+              </div>
+              <div className="overflow-x-auto px-6 py-4">
+                {series.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400">Sem dados.</div>
+                ) : (
+                  <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: Math.min(W, 700) }}>
+                    {series.map((s, i) => {
+                      const x = pad + i * bw;
+                      const bars: ReactNode[] = [];
+                      if (graphOpen === 'received') {
+                        const h = (s.c.received / max) * (H - pad * 2);
+                        bars.push(<rect key="r" x={x + bw * 0.25} y={H - pad - h} width={bw * 0.5} height={h} fill="#2a6e4e" />);
+                      } else if (graphOpen === 'payout') {
+                        const he = (s.c.expected / max) * (H - pad * 2), hp = (s.c.paid / max) * (H - pad * 2);
+                        bars.push(<rect key="e" x={x + bw * 0.15} y={H - pad - he} width={bw * 0.3} height={he} fill="#22558c" />);
+                        bars.push(<rect key="p" x={x + bw * 0.55} y={H - pad - hp} width={bw * 0.3} height={hp} fill="#b83030" />);
+                      } else {
+                        const hr = (s.c.received / max) * (H - pad * 2), hp = (s.c.paid / max) * (H - pad * 2);
+                        bars.push(<rect key="r" x={x + bw * 0.15} y={H - pad - hr} width={bw * 0.3} height={hr} fill="#2a6e4e" />);
+                        bars.push(<rect key="p" x={x + bw * 0.55} y={H - pad - hp} width={bw * 0.3} height={hp} fill="#b83030" />);
+                      }
+                      return (
+                        <g key={s.m}>
+                          {bars}
+                          <text x={x + bw * 0.5} y={H - pad + 14} fontSize="9" textAnchor="middle" fill="#999">{s.m.slice(2)}</text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                )}
+                <div className="mt-2 text-xs text-slate-400">
+                  {graphOpen === 'received' ? 'Verde: recebido (GL 4100).' : graphOpen === 'payout' ? 'Azul: repasse esperado · Vermelho: pago ao owner.' : 'Verde: recebido · Vermelho: pago ao owner.'}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
