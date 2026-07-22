@@ -147,17 +147,6 @@ export function HouseDetailModal({
           {secBtn('Contas a Pagar', false, 'ltownerpay')}
           {secBtn('Pay/Receipt', false, 'renovations')}
           <span className="mx-1 h-5 w-px bg-slate-300" />
-          <select
-            value={propertyId}
-            onChange={(e) => onSelect?.(e.target.value)}
-            className="mr-2 max-w-[260px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
-            title="Selecionar casa"
-          >
-            {(houses || []).map((h) => (
-              <option key={h.propertyId} value={h.propertyId}>{(h.code ? h.code + ' · ' : '') + h.address}</option>
-            ))}
-          </select>
-          <button onClick={onClose} className="mr-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title="Ver a lista de todas as casas">Todas as casas</button>
           {tabBtn('receipts', 'Recebimentos')}
           {tabBtn('payout', 'Repasse')}
           {tabBtn('contract', 'Contrato')}
@@ -182,6 +171,21 @@ export function HouseDetailModal({
               📄 Gerar statement (PDF)
             </a>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 py-2">
+          <span className="text-xs font-semibold text-slate-500">Casa:</span>
+          <select
+            value={propertyId}
+            onChange={(e) => onSelect?.(e.target.value)}
+            className="max-w-[320px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+            title="Selecionar casa"
+          >
+            {(houses || []).map((h) => (
+              <option key={h.propertyId} value={h.propertyId}>{(h.code ? h.code + ' · ' : '') + h.address}</option>
+            ))}
+          </select>
+          <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title="Ver a lista de todas as casas">Todas as casas</button>
         </div>
 
         <div className="px-1 py-2 text-xs text-slate-500">
