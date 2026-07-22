@@ -15548,7 +15548,7 @@ window.gmGlMatrixCsv=function(){
 window.gmPayTabsHtml=function(active){
  var sec=[['files','Contratos por casa',"gmContratosGoto('files')"],['recebimentos','Recebimentos',"nav('recebimentos')"],['ltownerpay','Contas a Pagar',"nav('ltownerpay')"],['renovations','Pay/Receipt',"nav('renovations')"]];
  var secHtml=sec.map(function(t){var on=(t[0]===active);return '<button onclick="'+t[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'#1a1a1c':'transparent')+';color:'+(on?'#fff':'#4a4540')+'">'+t[1]+'</button>';}).join('');
- var house=[['receipts','Aluguéis'],['payout','Repasse'],['contract','Contrato'],['docs','Documentos'],['jobs','Chamados'],['graphs','Gráficos'],['whatsapp','WhatsApp histórico']];
+ var house=[['receipts','Aluguéis'],['payout','Repasse'],['contract','Contrato'],['docs','Documentos'],['jobs','Chamados'],['vendors','Vendors'],['graphs','Gráficos'],['whatsapp','WhatsApp histórico'],['logs','Logs'],['eviction','Eviction']];
  var houseHtml=house.map(function(t){return '<button onclick="gmContratosGoto(\'files\',\''+t[0]+'\')" style="padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:#64748b">'+t[1]+'</button>';}).join('');
  var sep='<span style="display:inline-block;width:1px;height:20px;background:#cbd5e1;margin:0 6px"></span>';
  var novoBtn='<button onclick="gmContratosGoto(\'leases\')" style="margin-left:auto;margin-bottom:4px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;background:#2a6e4e;color:#fff">+ Novo contrato</button>';

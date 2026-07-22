@@ -45,8 +45,8 @@ export function HouseDetailModal({
   initialTab?: string;
 }) {
   const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
-  type HouseTab = 'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs' | 'whatsapp';
-  const validTabs: HouseTab[] = ['receipts', 'payout', 'contract', 'docs', 'jobs', 'graphs', 'whatsapp'];
+  type HouseTab = 'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs' | 'whatsapp' | 'vendors' | 'logs' | 'eviction';
+  const validTabs: HouseTab[] = ['receipts', 'payout', 'contract', 'docs', 'jobs', 'graphs', 'whatsapp', 'vendors', 'logs', 'eviction'];
   const [tab, setTab] = useState<HouseTab>(validTabs.includes(initialTab as HouseTab) ? (initialTab as HouseTab) : 'receipts');
   const [graphOpen, setGraphOpen] = useState<'received' | 'payout' | 'compare' | null>(null);
   const [stmtMonth, setStmtMonth] = useState(() => { const d = new Date(); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; });
@@ -113,6 +113,8 @@ export function HouseDetailModal({
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [jobsLoading, setJobsLoading] = useState(false);
+  const [logs, setLogs] = useState<{ id: string; createdAt: string; content: string; authorName?: string | null }[] | null>(null);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const loadJobs = useCallback(async () => {
     setJobsLoading(true);
@@ -128,9 +130,26 @@ export function HouseDetailModal({
     }
   }, [propertyId, qs]);
 
+  const loadLogs = useCallback(async () => {
+    setLogsLoading(true);
+    try {
+      const r = await fetch(`/api/comments?entityType=PROPERTY&entityId=${encodeURIComponent(propertyId)}`, { credentials: 'include', cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      setLogs(Array.isArray(j?.comments) ? j.comments : []);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [propertyId]);
+
   useEffect(() => {
-    if (tab === 'jobs' && jobs === null) void loadJobs();
+    if ((tab === 'jobs' || tab === 'vendors') && jobs === null) void loadJobs();
   }, [tab, jobs, loadJobs]);
+
+  useEffect(() => {
+    if (tab === 'logs' && logs === null) void loadLogs();
+  }, [tab, logs, loadLogs]);
 
   useEffect(() => {
     if (tab === 'whatsapp' && waList === null) void loadWa();
@@ -199,8 +218,11 @@ export function HouseDetailModal({
           {tabBtn('contract', 'Contrato')}
           {tabBtn('docs', 'Documentos')}
           {tabBtn('jobs', 'Chamados')}
+          {tabBtn('vendors', 'Vendors')}
           {tabBtn('graphs', 'Gráficos')}
           {tabBtn('whatsapp', 'WhatsApp histórico')}
+          {tabBtn('logs', 'Logs')}
+          {tabBtn('eviction', 'Eviction')}
           <div className="ml-auto flex items-center gap-2 pb-1">
             <button
               onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
@@ -389,6 +411,70 @@ export function HouseDetailModal({
                   ))
                 )}
               </div>
+            </div>
+          ) : tab === 'vendors' ? (
+            <div className="py-2">
+              {jobsLoading ? (
+                <div className="py-8 text-center text-slate-400">Carregando…</div>
+              ) : !jobs || jobs.filter((j) => (j.vendorName || '').trim()).length === 0 ? (
+                <div className="py-8 text-center text-slate-400">Nenhum vendor atendeu esta casa ainda.</div>
+              ) : (
+                <div className="space-y-3">
+                  {(() => {
+                    const byV = new Map<string, Job[]>();
+                    jobs.forEach((j) => { const n = (j.vendorName || '').trim(); if (!n) return; const a = byV.get(n) || []; a.push(j); byV.set(n, a); });
+                    return Array.from(byV.entries()).map(([n, js]) => (
+                      <div key={n} className="overflow-hidden rounded-lg border border-slate-200">
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
+                          <b className="text-sm text-slate-800">{n}</b>
+                          <span className="text-xs text-slate-500">{js.length} atendimento(s)</span>
+                        </div>
+                        <table className="w-full text-sm">
+                          <tbody>
+                            {js.slice().sort((a, b) => ((b.serviceDate || b.createdAt || '') > (a.serviceDate || a.createdAt || '') ? 1 : -1)).map((j) => (
+                              <tr key={j.id} className="border-b border-slate-100 last:border-0">
+                                <td className="px-3 py-1.5 font-mono text-xs text-slate-500">{(j.serviceDate || j.createdAt || '').slice(0, 10)}</td>
+                                <td className="px-3 py-1.5">{j.serviceType || j.description || '—'}</td>
+                                <td className="px-3 py-1.5 text-right font-mono">{money(j.ownerCharged)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+          ) : tab === 'logs' ? (
+            <div className="py-2">
+              {logsLoading ? (
+                <div className="py-8 text-center text-slate-400">Carregando…</div>
+              ) : !logs || logs.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">Nenhum registro no histórico desta casa.</div>
+              ) : (
+                <div className="space-y-2">
+                  {logs.slice().reverse().map((l) => (
+                    <div key={l.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="mb-1 text-[10px] text-slate-400">{(l.createdAt || '').slice(0, 16).replace('T', ' ')}{l.authorName ? ` · ${l.authorName}` : ''}</div>
+                      <div className="whitespace-pre-wrap text-sm text-slate-700">{l.content}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : tab === 'eviction' ? (
+            <div className="py-6 text-sm">
+              {lease && lease.status === 'TERMINATED' ? (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-800">
+                  Contrato {lease.contractCode || `#${lease.leaseNumber}`} rescindido — move-out/terminação registrada.
+                </div>
+              ) : (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-600">
+                  Nenhum despejo (eviction) ou rescisão registrada para esta casa.
+                </div>
+              )}
+              <p className="mt-3 text-xs text-slate-400">O histórico de despejo é alimentado pelas rescisões de contrato (aba Rescisão) e registros de move-out. Ações formais de eviction podem ser anotadas nos Logs.</p>
             </div>
           ) : (
             <div>
