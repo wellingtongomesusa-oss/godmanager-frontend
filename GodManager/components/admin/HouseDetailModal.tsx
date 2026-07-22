@@ -39,8 +39,30 @@ export function HouseDetailModal({
   onOpenLeasesTab?: () => void;
 }) {
   const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
-  const [tab, setTab] = useState<'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs'>('receipts');
+  const [tab, setTab] = useState<'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs' | 'whatsapp'>('receipts');
   const [graphOpen, setGraphOpen] = useState<'received' | 'payout' | 'compare' | null>(null);
+  const [stmtMonth, setStmtMonth] = useState(() => { const d = new Date(); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; });
+  const [waList, setWaList] = useState<{ id: string; createdAt: string; label?: string | null; participants?: string[]; messageCount?: number; overview?: unknown; transcript?: { d?: string; s?: string; t?: string }[] }[] | null>(null);
+  const [waText, setWaText] = useState('');
+  const [waBusy, setWaBusy] = useState(false);
+
+  const loadWa = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/whatsapp/list?propertyId=${encodeURIComponent(propertyId)}`, { credentials: 'include', cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      setWaList(Array.isArray(j?.conversations) ? j.conversations : []);
+    } catch { setWaList([]); }
+  }, [propertyId]);
+
+  async function waSubmit() {
+    const text = waText.trim();
+    if (!text) return;
+    setWaBusy(true);
+    try {
+      const r = await fetch('/api/whatsapp/ingest', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId, text }) });
+      if (r.ok) { setWaText(''); await loadWa(); }
+    } finally { setWaBusy(false); }
+  }
   const [row, setRow] = useState<MatrixRow | null>(null);
   const [lease, setLease] = useState<LeaseLite | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +86,10 @@ export function HouseDetailModal({
   useEffect(() => {
     if (tab === 'jobs' && jobs === null) void loadJobs();
   }, [tab, jobs, loadJobs]);
+
+  useEffect(() => {
+    if (tab === 'whatsapp' && waList === null) void loadWa();
+  }, [tab, waList, loadWa]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,13 +139,25 @@ export function HouseDetailModal({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 border-b border-slate-200 px-6 pt-3">
+        <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-6 pt-3">
           {tabBtn('receipts', 'Recebimentos')}
           {tabBtn('payout', 'Repasse')}
           {tabBtn('contract', 'Contrato')}
           {tabBtn('docs', 'Documentos')}
           {tabBtn('jobs', 'Chamados')}
           {tabBtn('graphs', 'Gráficos')}
+          {tabBtn('whatsapp', 'WhatsApp histórico')}
+          <div className="ml-auto flex items-center gap-2 pb-2">
+            <input type="month" value={stmtMonth} onChange={(e) => setStmtMonth(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs" />
+            <a
+              href={`/api/manager-pro/owner-statement/pdf?propertyId=${encodeURIComponent(propertyId)}&period=${encodeURIComponent(stmtMonth)}&lang=en`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg bg-[#22558c] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1c4675]"
+            >
+              📄 Gerar statement (PDF)
+            </a>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto px-6 py-4">
@@ -204,6 +242,50 @@ export function HouseDetailModal({
                 <button onClick={() => setGraphOpen('compare')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📊 Recebido × Pago</button>
               </div>
               {monthsWith.length === 0 && <p className="mt-3 text-xs text-slate-400">Sem dados do GL para gerar gráficos.</p>}
+            </div>
+          ) : tab === 'whatsapp' ? (
+            <div className="py-2">
+              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Adicionar conversa de WhatsApp</div>
+              <textarea
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#22558c]"
+                rows={4}
+                placeholder="Cole aqui a conversa exportada do WhatsApp desta casa…"
+                value={waText}
+                onChange={(e) => setWaText(e.target.value)}
+              />
+              <div className="mt-2 flex justify-end">
+                <button onClick={waSubmit} disabled={waBusy || !waText.trim()} className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
+                  {waBusy ? 'Salvando…' : '📱 Adicionar ao histórico'}
+                </button>
+              </div>
+              <div className="mt-4 space-y-2">
+                {waList === null ? (
+                  <div className="py-6 text-center text-slate-400">Carregando…</div>
+                ) : waList.length === 0 ? (
+                  <div className="py-6 text-center text-slate-400">Nenhuma conversa registrada para esta casa.</div>
+                ) : (
+                  waList.map((w) => (
+                    <div key={w.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="mb-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
+                        <span>{(w.createdAt || '').slice(0, 16).replace('T', ' ')}</span>
+                        {w.label && <span className="font-semibold text-slate-600">{w.label}</span>}
+                        {typeof w.messageCount === 'number' && <span>{w.messageCount} msgs</span>}
+                        {w.participants && w.participants.length > 0 && <span>· {w.participants.join(', ')}</span>}
+                      </div>
+                      {typeof w.overview === 'string' && w.overview && (
+                        <div className="mb-2 whitespace-pre-wrap rounded bg-white p-2 text-xs text-slate-700">{w.overview}</div>
+                      )}
+                      {w.transcript && w.transcript.length > 0 && (
+                        <div className="max-h-40 space-y-0.5 overflow-auto text-[11px] text-slate-600">
+                          {w.transcript.slice(0, 200).map((m, i) => (
+                            <div key={i}><span className="text-slate-400">{m.d} </span><b>{m.s}:</b> {m.t}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           ) : (
             <div>
