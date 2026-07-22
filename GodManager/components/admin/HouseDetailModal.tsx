@@ -39,7 +39,8 @@ export function HouseDetailModal({
   onOpenLeasesTab?: () => void;
 }) {
   const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
-  const [tab, setTab] = useState<'receipts' | 'payout' | 'contract' | 'docs' | 'jobs'>('receipts');
+  const [tab, setTab] = useState<'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs'>('receipts');
+  const [graphOpen, setGraphOpen] = useState<'received' | 'payout' | 'compare' | null>(null);
   const [row, setRow] = useState<MatrixRow | null>(null);
   const [lease, setLease] = useState<LeaseLite | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,16 +99,18 @@ export function HouseDetailModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full px-6 py-4 sm:px-8">
+      <div className="flex w-full flex-col rounded-2xl border border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-800">{address}</h2>
-            <p className="text-xs text-slate-500">
-              {code} · Inquilino: {tenantName || '—'} {row?.owner ? `· Owner: ${row.owner}` : ''}
-            </p>
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">← Voltar</button>
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">{address}</h2>
+              <p className="text-xs text-slate-500">
+                {code} · Inquilino: {tenantName || '—'} {row?.owner ? `· Owner: ${row.owner}` : ''}
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-2xl text-slate-400 hover:text-slate-600">×</button>
         </div>
 
         <div className="flex flex-wrap gap-1 border-b border-slate-200 px-6 pt-3">

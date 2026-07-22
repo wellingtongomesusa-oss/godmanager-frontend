@@ -171,6 +171,17 @@ export function ContractsAdmin() {
         onChange={(e) => void onFile(e.target.files?.[0] || null)}
       />
 
+      {openHouse ? (
+        <HouseDetailModal
+          propertyId={openHouse.propertyId}
+          address={openHouse.address}
+          code={openHouse.code || ''}
+          tenantName={openHouse.tenantName || ''}
+          clientId={clientId}
+          onClose={() => setOpenHouse(null)}
+        />
+      ) : (
+      <>
       <div className="mb-5 flex items-center gap-3">
         <FileText className="h-6 w-6 text-[#22558c]" />
         <div>
@@ -336,16 +347,7 @@ export function ContractsAdmin() {
           </div>
         </>
       )}
-
-      {openHouse && (
-        <HouseDetailModal
-          propertyId={openHouse.propertyId}
-          address={openHouse.address}
-          code={openHouse.code || ''}
-          tenantName={openHouse.tenantName || ''}
-          clientId={clientId}
-          onClose={() => setOpenHouse(null)}
-        />
+      </>
       )}
     </div>
   );
