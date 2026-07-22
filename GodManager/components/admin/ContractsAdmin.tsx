@@ -284,7 +284,7 @@ export function ContractsAdmin() {
                     <td className="px-3 py-2.5">
                       {r.contract ? (
                         <div className="truncate text-slate-700" title={r.contract.fileName}>
-                          📄 {r.contract.fileName}
+                          {r.contract.fileName}
                           <span className="ml-1 text-xs text-slate-400">{kb(r.contract.fileSize)}</span>
                         </div>
                       ) : (

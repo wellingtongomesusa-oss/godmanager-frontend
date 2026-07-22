@@ -190,7 +190,7 @@ export function HouseDetailModal({
               rel="noopener noreferrer"
               className="rounded-lg bg-[#22558c] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1c4675]"
             >
-              📄 Gerar statement (PDF)
+              Gerar statement (PDF)
             </a>
           </div>
         </div>
@@ -276,9 +276,9 @@ export function HouseDetailModal({
             <div className="py-4">
               <div className="mb-3 text-sm text-slate-600">Abra os gráficos desta casa em popup:</div>
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => setGraphOpen('received')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📈 Recebido por mês</button>
-                <button onClick={() => setGraphOpen('payout')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📈 Repasse (esperado × pago)</button>
-                <button onClick={() => setGraphOpen('compare')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">📊 Recebido × Pago</button>
+                <button onClick={() => setGraphOpen('received')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Recebido por mês</button>
+                <button onClick={() => setGraphOpen('payout')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Repasse (esperado × pago)</button>
+                <button onClick={() => setGraphOpen('compare')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Recebido × Pago</button>
               </div>
               {monthsWith.length === 0 && <p className="mt-3 text-xs text-slate-400">Sem dados do GL para gerar gráficos.</p>}
             </div>
@@ -294,7 +294,7 @@ export function HouseDetailModal({
               />
               <div className="mt-2 flex justify-end">
                 <button onClick={waSubmit} disabled={waBusy || !waText.trim()} className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
-                  {waBusy ? 'Salvando…' : '📱 Adicionar ao histórico'}
+                  {waBusy ? 'Salvando…' : 'Adicionar ao histórico'}
                 </button>
               </div>
               <div className="mt-4 space-y-2">
