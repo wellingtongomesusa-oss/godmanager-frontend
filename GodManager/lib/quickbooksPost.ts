@@ -197,6 +197,35 @@ export async function qbCreateBill(clientId: string, input: BillInput): Promise<
   return { id: String(b?.Id ?? ''), docNumber: b?.DocNumber ? String(b.DocNumber) : null };
 }
 
+export type DepositInput = {
+  amount: number;
+  bankAccountId: string;   // conta bancária que RECEBE (débito)
+  fromAccountId: string;   // conta de origem (crédito): receita/passivo (ex.: 4100 income, 2100/2200 liability)
+  txnDate?: string | null; // YYYY-MM-DD
+  memo?: string | null;
+  description?: string | null;
+};
+
+/** Deposit no QBO (entrada): débito na conta bancária, crédito na conta de origem (receita/passivo). */
+export async function qbCreateDeposit(clientId: string, input: DepositInput): Promise<{ id: string; docNumber: string | null }> {
+  const body: Record<string, unknown> = {
+    DepositToAccountRef: { value: input.bankAccountId },
+    TxnDate: input.txnDate || undefined,
+    PrivateNote: input.memo || undefined,
+    Line: [
+      {
+        Amount: Number(input.amount.toFixed(2)),
+        DetailType: 'DepositLineDetail',
+        Description: input.description || undefined,
+        DepositLineDetail: { AccountRef: { value: input.fromAccountId } },
+      },
+    ],
+  };
+  const res = await qbCreate(clientId, 'deposit', body);
+  const d = res?.Deposit as Record<string, unknown> | undefined;
+  return { id: String(d?.Id ?? ''), docNumber: d?.DocNumber ? String(d.DocNumber) : null };
+}
+
 export type InvoiceInput = {
   customerId: string;
   itemId: string; // Item de serviço ligado a uma conta de receita

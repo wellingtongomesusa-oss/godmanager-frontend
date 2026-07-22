@@ -377,6 +377,8 @@ model BankStatementTxn {
   sourceRefId    String   @db.VarChar(80) // idempotência: bankAccountKey:periodMonth:index
   matched        Boolean  @default(false)
   matchedItemId  String?  // opcional: item de livro (BankReconciliationItem) casado
+  matchedQboId   String?  @db.VarChar(40) // ID do lançamento criado no QuickBooks (robô Caminho B)
+  matchedQboType String?  @db.VarChar(20) // Purchase | Deposit | Transfer | JournalEntry
   createdAt      DateTime @default(now())
 
   client Client @relation("BankStatementTxn_clientId", fields: [clientId], references: [id], onDelete: Cascade)

@@ -183,3 +183,24 @@ export function resolveQboAccount(plan: FlReconcilePlan, accounts: QboAccountLit
   }
   return null;
 }
+
+/** last4 de cada conta bancária Chase (papel → final do número). Ver memória chase-contas-mapa. */
+export const FL_BANK_LAST4: Record<string, string> = {
+  OPERATING_TRUST: '6352',
+  TRUST_CHASE: '7236',
+  DEPOSIT_SECURITY: '7509',
+};
+
+/**
+ * Encontra a CONTA BANCÁRIA no QuickBooks correspondente à conta Chase (por last4 no número/nome).
+ * Só considera contas do tipo Bank. Retorna null se não achar (o robô então NÃO escreve — segurança).
+ */
+export function resolveQboBankAccount(bankAccountKey: FlAccountKey, accounts: QboAccountLite[]): QboAccountLite | null {
+  const last4 = FL_BANK_LAST4[bankAccountKey];
+  if (!last4 || !Array.isArray(accounts)) return null;
+  const banks = accounts.filter((a) => /bank/i.test(a.accountType));
+  const byNum = banks.find((a) => a.acctNum && a.acctNum.replace(/\D/g, '').endsWith(last4));
+  if (byNum) return byNum;
+  const byName = banks.find((a) => a.name.replace(/\D/g, '').includes(last4));
+  return byName || null;
+}
