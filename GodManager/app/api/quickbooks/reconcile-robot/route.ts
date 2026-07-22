@@ -4,6 +4,7 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
 import { getConnectionStatus } from '@/lib/quickbooks';
 import { categorizeChaseTxn } from '@/lib/chaseTxnCategory';
+import { flReconcilePlan } from '@/lib/flReconcileRules';
 import { csrfGuard } from '@/lib/csrfGuard';
 import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { recordAudit } from '@/lib/auditServer';
@@ -46,24 +47,31 @@ export async function GET(req: Request) {
       select: { id: true, bankAccountKey: true, periodMonth: true, txnDate: true, description: true, amount: true, section: true },
     });
 
-    const rows = txns.map((t) => ({
-      id: t.id,
-      account: t.bankAccountKey,
-      month: t.periodMonth,
-      date: t.txnDate.toISOString().slice(0, 10),
-      description: t.description,
-      amount: round2(Number(t.amount)),
-      section: t.section,
-      suggestedType: categorizeChaseTxn(t.description),
-    }));
+    const rows = txns.map((t) => {
+      const amount = round2(Number(t.amount));
+      const plan = flReconcilePlan(t.description, amount, t.bankAccountKey);
+      return {
+        id: t.id,
+        account: t.bankAccountKey,
+        month: t.periodMonth,
+        date: t.txnDate.toISOString().slice(0, 10),
+        description: t.description,
+        amount,
+        section: t.section,
+        suggestedType: categorizeChaseTxn(t.description),
+        plan,
+      };
+    });
 
     const byType: Record<string, { count: number; amount: number }> = {};
     for (const r of rows) {
-      const k = r.suggestedType;
+      const k = r.plan.category;
       byType[k] = byType[k] || { count: 0, amount: 0 };
       byType[k].count += 1;
-      byType[k].amount = round2(byType[k].amount + r.amount);
+      byType[k].amount = round2(byType[k].amount + Math.abs(r.amount));
     }
+    const autoApplyCount = rows.filter((r) => r.plan.autoApply).length;
+    const reviewCount = rows.length - autoApplyCount;
 
     return NextResponse.json({
       ok: true,
@@ -71,6 +79,8 @@ export async function GET(req: Request) {
       applyEnabled: process.env.QBO_RECONCILE_ENABLED === '1',
       month: month || null,
       pending: rows.length,
+      autoApplyCount,
+      reviewCount,
       byType,
       rows,
     });
