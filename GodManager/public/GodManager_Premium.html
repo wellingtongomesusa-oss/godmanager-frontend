@@ -1499,10 +1499,9 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_properties">PROPERTIES</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('ltproperties')" id="nav-ltproperties" data-i18n="properties">Properties</div>
- <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement" data-i18n="nav_owner_statement">Owner Statement</div>
+ <div class="ss" onclick="nav('contratos')" id="nav-contracts">Contratos</div>
  <div class="ss" onclick="nav('statement-individual')" id="nav-statement-individual" data-i18n="nav_statement_individual">Statement individual</div>
  <div class="ss" onclick="nav('tenants')" id="nav-tenants" data-i18n="nav_tenants">Tenants</div>
- <div class="ss" onclick="nav('contratos')" id="nav-contracts">Contratos</div>
  <div class="ss" onclick="nav('leases-history')" id="nav-leases-history" data-i18n="nav_leases_history">Lease history</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties" data-i18n="ranking_properties">Ranking Properties</div>
  <div class="ss" onclick="nav('renovations')" id="nav-renovations">Pay/Receipt</div>
@@ -15521,8 +15520,10 @@ window.gmGlMatrixCsv=function(){
 // Contratos como PÁGINA (aba) — embute /admin/contracts no iframe, sem popup.
 // Barra de abas PADRONIZADA (uma função só) para Contratos/Recebimentos/Contas a Pagar/Pay-Receipt.
 window.gmPayTabsHtml=function(active){
- var tabs=[['files','Contratos por casa',"gmContratosGoto('files')"],['leases','Leases / Novo contrato',"gmContratosGoto('leases')"],['recebimentos','Recebimentos',"nav('recebimentos')"],['ltownerpay','Contas a Pagar',"nav('ltownerpay')"],['renovations','Pay/Receipt',"nav('renovations')"]];
- return tabs.map(function(t){var on=(t[0]===active);return '<button onclick="'+t[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'var(--ink)':'transparent')+';color:'+(on?'#fff':'var(--ink2)')+'">'+t[1]+'</button>';}).join('');
+ var tabs=[['files','Contratos por casa',"gmContratosGoto('files')"],['recebimentos','Recebimentos',"nav('recebimentos')"],['ltownerpay','Contas a Pagar',"nav('ltownerpay')"],['renovations','Pay/Receipt',"nav('renovations')"]];
+ var tabsHtml=tabs.map(function(t){var on=(t[0]===active);return '<button onclick="'+t[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'var(--ink)':'transparent')+';color:'+(on?'#fff':'var(--ink2)')+'">'+t[1]+'</button>';}).join('');
+ var novoBtn='<button onclick="gmContratosGoto(\'leases\')" style="margin-left:auto;margin-bottom:4px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;background:#2a6e4e;color:#fff">+ Novo contrato</button>';
+ return tabsHtml+novoBtn;
 };
 window.gmPayTabsFill=function(){var els=document.querySelectorAll('.gm-paytabs');for(var i=0;i<els.length;i++){els[i].innerHTML=gmPayTabsHtml(els[i].getAttribute('data-active')||'');}};
 window.gmContratosPageRender=function(){
@@ -15531,7 +15532,7 @@ window.gmContratosPageRender=function(){
  var cid='';try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;cid=(ac&&ac.id)?String(ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(e){}
  var src='/admin/contracts?embed=1&tab='+tab+(cid?('&clientId='+encodeURIComponent(cid)):'');
  if(ifr.getAttribute('data-src')!==src){ifr.setAttribute('data-src',src);ifr.src=src;}
- var bar=document.querySelector('#page-contratos .gm-paytabs');if(bar)bar.setAttribute('data-active',tab);
+ var bar=document.querySelector('#page-contratos .gm-paytabs');if(bar)bar.setAttribute('data-active',tab==='files'?'files':'');
  if(typeof gmPayTabsFill==='function')gmPayTabsFill();
 };
 window.gmContratosSetTab=function(tab){window.__gmContratosTab=(tab==='leases')?'leases':'files';gmContratosPageRender();};
@@ -37469,7 +37470,19 @@ window.tenantViewDetails=function(tid){
  window.rankingRender=async function(){
   var container=document.getElementById('ranking-container');
   if(!container)return;
-  container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3);font-style:italic">A carregar rankings...</div>';
+  container.innerHTML='<div style="padding:48px 16px;text-align:center;color:var(--ink3)">Carregando…</div>';
+  try{
+   var _q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+   var _res=await fetch('/api/results/gl-analysis'+_q,{credentials:'include',cache:'no-store'});
+   var _j=await _res.json().catch(function(){return{};});
+   if(!_res.ok||!_j.ok){container.innerHTML='<div style="padding:32px;color:var(--ink3)">'+((_j&&_j.error)||'Erro ao carregar')+'</div>';return;}
+   var _money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+   var _esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+   var _top=(_j.properties||[]).slice().sort(function(a,b){return (Number(b.rent)||0)-(Number(a.rent)||0);}).slice(0,10);
+   var _rows=_top.map(function(p,i){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 12px;font-weight:700;color:var(--amber);width:40px">'+(i+1)+'º</td><td style="padding:10px 12px"><div style="font-weight:600;color:var(--ink)">'+_esc(p.name||'—')+'</div><div style="font-size:10px;color:var(--ink3);font-family:JetBrains Mono,monospace">'+_esc(p.code||'')+'</div></td><td style="padding:10px 12px;text-align:right;font-family:JetBrains Mono,monospace;font-size:15px;font-weight:700;color:#2a6e4e">'+_money(p.rent)+'</td></tr>';}).join('')||'<tr><td colspan="3" style="padding:32px;text-align:center;color:var(--ink3)">Sem dados de arrecadação. Importe o GL.</td></tr>';
+   container.innerHTML='<div style="max-width:720px;border:1px solid var(--border);border-radius:12px;background:var(--paper);overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--ink)">Top 10 casas que mais arrecadam · aluguel recebido (GL 4100)</div><table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>'+_rows+'</tbody></table></div>';
+  }catch(e){container.innerHTML='<div style="padding:32px;color:var(--ink3)">Erro de rede.</div>';}
+  return;
   var properties=[],expenses=[];
   try{
    var pRes=await fetch('/api/properties',{credentials:'include'});

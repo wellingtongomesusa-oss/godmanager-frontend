@@ -125,21 +125,10 @@ export function HouseDetailModal({
   );
 
   return (
-    <div className="w-full px-6 py-4 sm:px-8">
-      <div className="flex w-full flex-col rounded-2xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">← Voltar</button>
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">{address}</h2>
-              <p className="text-xs text-slate-500">
-                {code} · Inquilino: {tenantName || '—'} {row?.owner ? `· Owner: ${row.owner}` : ''}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 px-6 pt-3">
+    <div className="w-full px-6 pt-2 sm:px-8">
+      <div className="flex w-full flex-col">
+        <div className="flex flex-wrap items-center gap-1 border-b border-slate-200">
+          <button onClick={onClose} className="mr-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">← Voltar</button>
           {tabBtn('receipts', 'Recebimentos')}
           {tabBtn('payout', 'Repasse')}
           {tabBtn('contract', 'Contrato')}
@@ -160,7 +149,11 @@ export function HouseDetailModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto px-6 py-4">
+        <div className="px-1 py-2 text-xs text-slate-500">
+          <b className="text-sm text-slate-800">{address}</b> · {code} · Inquilino: {tenantName || '—'} {row?.owner ? `· Owner: ${row.owner}` : ''}
+        </div>
+
+        <div className="flex-1 overflow-auto px-1 py-2">
           {loading ? (
             <div className="py-10 text-center text-slate-400">Carregando…</div>
           ) : (tab === 'receipts' || tab === 'payout') ? (
