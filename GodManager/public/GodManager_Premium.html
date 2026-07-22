@@ -9539,10 +9539,24 @@ window.gmQbRobotOpen=async function(){
    +'<div style="padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:16px;font-weight:700;color:var(--ink)">Conciliação QuickBooks — prévia'+(j.month?(' · '+esc(j.month)):'')+'</div><div style="font-size:11px;margin-top:3px">'+connMsg+' · '+j.pending+' a conciliar · <b style="color:#2a6e4e">'+(j.autoApplyCount||0)+' auto-aplicáveis (alta confiança)</b> · <b style="color:#b45309">'+(j.reviewCount||0)+' para revisar</b></div></div><button onclick="document.getElementById(\'gm-qbrobot-ov\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div>'
    +'<div style="padding:10px 22px">'+chips+'</div>'
    +'<div style="padding:0 22px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream);position:sticky;top:0"><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th><th style="padding:7px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Valor</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Plano (regras FL)</th><th style="padding:7px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Confiança</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
-   +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div>'+applyMsg+'</div><div style="display:flex;gap:10px"><button onclick="gmQbReconHelp()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">ℹ️ Como fazer</button><button onclick="gmQbRobotApply()" style="background:'+(j.applyEnabled?'#2a6e4e':'var(--border2)')+';color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Aprovar &amp; aplicar no QBO</button></div></div>'
+   +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div>'+applyMsg+'</div><div style="display:flex;gap:10px"><button onclick="gmQbReconHelp()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">ℹ️ Como fazer</button><button onclick="gmQbRobotCsv()" title="Planilha à prova de auditor: cada pendência com conta contábil, tipo de lançamento e a regra FREC/FL" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">↓ Baixar CSV (auditoria)</button><button onclick="gmQbRobotApply()" style="background:'+(j.applyEnabled?'#2a6e4e':'var(--border2)')+';color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Aprovar &amp; aplicar no QBO</button></div></div>'
    +'</div>';
   window.__gmQbRobotMonth=j.month||month;
+  window.__gmQbRobotRows=j.rows||[];
  }catch(e){ov.querySelector('div').textContent='Erro de rede.';}
+};
+// Export CSV à prova de auditor: cada pendência com a classificação de trust accounting (FREC 61J2-14).
+window.gmQbRobotCsv=function(){
+ var rows=Array.isArray(window.__gmQbRobotRows)?window.__gmQbRobotRows:[];
+ if(!rows.length){alert('Abra a prévia primeiro (nenhuma transação carregada).');return;}
+ var q=function(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"';};
+ var head=['Data','Conta bancaria','Descricao','Valor','Categoria (FL)','Conta contabil (GL)','Tipo de lancamento','Direcao','Confianca','Auto-aplicavel','Regra (FREC/FL)'];
+ var lines=[head.map(q).join(',')];
+ var confLbl={high:'ALTA',medium:'MEDIA',low:'BAIXA'};
+ var dirLbl={'in':'Entrada','out':'Saida'};
+ rows.forEach(function(r){var p=r.plan||{};lines.push([q(r.date),q(r.account),q(r.description),q(Number(r.amount||0).toFixed(2)),q(p.category||r.suggestedType||''),q(p.glAccount||''),q(p.entryType||''),q(dirLbl[p.direction]||p.direction||''),q(confLbl[p.confidence]||p.confidence||''),q(p.autoApply?'SIM':'nao'),q(p.rule||'')].join(','));});
+ var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+ var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='conciliacao_quickbooks_FL_'+(window.__gmQbRobotMonth||'todos')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1500);
 };
 window.gmQbRobotApply=async function(){
  if(!confirm('Aprovar e aplicar a conciliação no QuickBooks?'))return;
