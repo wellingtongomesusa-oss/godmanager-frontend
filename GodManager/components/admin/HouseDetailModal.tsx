@@ -122,6 +122,16 @@ export function HouseDetailModal({
   }, [load]);
 
   const monthsWith = row ? row.months.filter((m) => row.cells[m]) : [];
+  const parentNav = (k: string) => { const p = window.parent as unknown as { nav?: (k: string) => void }; p.nav?.(k); };
+  const secBtn = (label: string, active: boolean, navKey: string | null) => (
+    <button
+      key={label}
+      onClick={() => { if (navKey) parentNav(navKey); }}
+      className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${active ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+    >
+      {label}
+    </button>
+  );
   const tabBtn = (k: typeof tab, label: string) => (
     <button key={k} onClick={() => setTab(k)} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === k ? 'bg-[#22558c] text-white' : 'text-slate-500 hover:text-slate-700'}`}>
       {label}
@@ -132,10 +142,15 @@ export function HouseDetailModal({
     <div className="w-full px-6 pt-2 sm:px-8">
       <div className="flex w-full flex-col">
         <div className="flex flex-wrap items-center gap-1 border-b border-slate-200">
+          {secBtn('Contratos por casa', true, null)}
+          {secBtn('Recebimentos', false, 'recebimentos')}
+          {secBtn('Contas a Pagar', false, 'ltownerpay')}
+          {secBtn('Pay/Receipt', false, 'renovations')}
+          <span className="mx-1 h-5 w-px bg-slate-300" />
           <select
             value={propertyId}
             onChange={(e) => onSelect?.(e.target.value)}
-            className="mr-2 max-w-[300px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+            className="mr-2 max-w-[260px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
             title="Selecionar casa"
           >
             {(houses || []).map((h) => (
