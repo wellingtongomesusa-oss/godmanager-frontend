@@ -96,6 +96,13 @@ export async function GET(req: Request) {
     const autoApplyCount = rows.filter((r) => r.plan.autoApply).length;
     const reviewCount = rows.length - autoApplyCount;
 
+    // Progresso: quantas já foram marcadas como conciliadas (matched=true) no mesmo período.
+    const reconciledCount = await prisma.bankStatementTxn.count({
+      where: { clientId, matched: true, ...(month ? { periodMonth: month } : {}) },
+    });
+    const totalTxn = rows.length + reconciledCount;
+    const progressPct = totalTxn > 0 ? Math.round((reconciledCount / totalTxn) * 100) : 0;
+
     return NextResponse.json({
       ok: true,
       connected,
@@ -104,6 +111,9 @@ export async function GET(req: Request) {
       pending: rows.length,
       autoApplyCount,
       reviewCount,
+      reconciledCount,
+      totalTxn,
+      progressPct,
       byType,
       accountMap,
       mappedCount,
