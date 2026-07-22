@@ -151,6 +151,12 @@ export function HouseDetailModal({
           {tabBtn('graphs', 'Gráficos')}
           {tabBtn('whatsapp', 'WhatsApp histórico')}
           <div className="ml-auto flex items-center gap-2 pb-2">
+            <button
+              onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
+              className="rounded-lg bg-[#2a6e4e] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+            >
+              + Novo contrato
+            </button>
             <input type="month" value={stmtMonth} onChange={(e) => setStmtMonth(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs" />
             <a
               href={`/api/manager-pro/owner-statement/pdf?propertyId=${encodeURIComponent(propertyId)}&period=${encodeURIComponent(stmtMonth)}&lang=en`}

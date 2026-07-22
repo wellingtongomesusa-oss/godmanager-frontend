@@ -140,7 +140,13 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
   return (
     <div className="w-full px-6 py-6 sm:px-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('files') : undefined; }}
+            className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            ← Contratos por casa
+          </button>
           <h2 className="text-lg font-bold text-slate-800">Leases / Contratos (Flórida)</h2>
           <p className="text-sm text-slate-500">Crie e gerencie contratos de locação — nº único por casa, com depósito, HOA, late fee e 1099.</p>
         </div>
