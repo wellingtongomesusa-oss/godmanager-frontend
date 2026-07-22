@@ -42,6 +42,7 @@ export function ContractsAdmin() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [openHouse, setOpenHouse] = useState<Row | null>(null);
+  const autoSelected = useRef(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pendingProp = useRef<string | null>(null);
 
@@ -90,6 +91,14 @@ export function ContractsAdmin() {
     if (isSuper && !clientId) return; // espera escolher empresa
     void load();
   }, [load, isSuper, clientId]);
+
+  // Abre a primeira casa automaticamente (abas já visíveis, sem precisar clicar em Abrir).
+  useEffect(() => {
+    if (!autoSelected.current && !openHouse && rows.length > 0) {
+      autoSelected.current = true;
+      setOpenHouse(rows[0]);
+    }
+  }, [rows, openHouse]);
 
   const pickFile = (propertyId: string) => {
     pendingProp.current = propertyId;
@@ -179,6 +188,8 @@ export function ContractsAdmin() {
           tenantName={openHouse.tenantName || ''}
           clientId={clientId}
           onClose={() => setOpenHouse(null)}
+          houses={filtered.map((r) => ({ propertyId: r.propertyId, address: r.address, code: r.code, tenantName: r.tenantName }))}
+          onSelect={(id) => setOpenHouse(rows.find((r) => r.propertyId === id) || openHouse)}
         />
       ) : (
       <>

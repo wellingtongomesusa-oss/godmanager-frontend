@@ -29,6 +29,8 @@ export function HouseDetailModal({
   clientId,
   onClose,
   onOpenLeasesTab,
+  houses,
+  onSelect,
 }: {
   propertyId: string;
   address: string;
@@ -37,6 +39,8 @@ export function HouseDetailModal({
   clientId: string;
   onClose: () => void;
   onOpenLeasesTab?: () => void;
+  houses?: { propertyId: string; address: string; code: string | null; tenantName: string | null }[];
+  onSelect?: (propertyId: string) => void;
 }) {
   const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
   const [tab, setTab] = useState<'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs' | 'whatsapp'>('receipts');
@@ -128,7 +132,17 @@ export function HouseDetailModal({
     <div className="w-full px-6 pt-2 sm:px-8">
       <div className="flex w-full flex-col">
         <div className="flex flex-wrap items-center gap-1 border-b border-slate-200">
-          <button onClick={onClose} className="mr-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">← Voltar</button>
+          <select
+            value={propertyId}
+            onChange={(e) => onSelect?.(e.target.value)}
+            className="mr-2 max-w-[300px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+            title="Selecionar casa"
+          >
+            {(houses || []).map((h) => (
+              <option key={h.propertyId} value={h.propertyId}>{(h.code ? h.code + ' · ' : '') + h.address}</option>
+            ))}
+          </select>
+          <button onClick={onClose} className="mr-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title="Ver a lista de todas as casas">Todas as casas</button>
           {tabBtn('receipts', 'Recebimentos')}
           {tabBtn('payout', 'Repasse')}
           {tabBtn('contract', 'Contrato')}
