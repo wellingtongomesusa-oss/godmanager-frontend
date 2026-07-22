@@ -6058,6 +6058,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
   <button type="button" id="op-expand-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Expandir todos</button>
   <button type="button" id="op-collapse-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Colapsar todos</button>
   <button type="button" onclick="gmPayReportOpen()" style="padding:6px 12px;border:none;border-radius:8px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" title="Relatório final de pagamento (linhas) + CSV + statement">📋 Relatório de pagamento</button>
+  <button type="button" onclick="gmClosingCertOpen()" style="padding:6px 12px;border:none;border-radius:8px;background:#6d28d9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" title="Termo de Conferido do fechamento — Broker assina (digital)">🖊️ Termo de Conferido</button>
  </div>
  <div id="ltop-filter-bar" style="max-width:900px;margin-bottom:10px">
   <div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap">
@@ -15598,6 +15599,84 @@ window.gmPayReportApproveAll=async function(){
  alert('Marcadas pagas: '+ok+(fail?(' · falhas: '+fail):''));
  var m=document.getElementById('gm-payreport-ov');if(m)m.remove();
  if(typeof ltOwnerPayRender==='function')await ltOwnerPayRender();
+};
+// Termo de Conferido do fechamento — Broker assina (digital). Recebimentos, pagamentos, depósito, contas.
+window.__gmClosingCert=null;
+window.gmClosingCertMonth=function(){var el=document.getElementById('ltop-month');return (el&&el.value)||(new Date().getUTCFullYear()+'-'+String(new Date().getUTCMonth()+1).padStart(2,'0'));};
+window.gmClosingCertClientId=function(){try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;return (ac&&ac.id)?String(ac.id):'';}catch(e){return '';}};
+window.gmClosingCertOpen=async function(){
+ var month=gmClosingCertMonth();var acId=gmClosingCertClientId();
+ var ov=document.getElementById('gm-cert-ov');if(ov)ov.remove();
+ ov=document.createElement('div');ov.id='gm-cert-ov';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(20,16,10,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+ ov.onclick=function(e){if(e.target===ov)ov.remove();};
+ ov.innerHTML='<div style="background:var(--paper);border-radius:14px;padding:40px;color:var(--ink3)">Carregando…</div>';
+ document.body.appendChild(ov);
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ try{
+  var q='/api/closing/certificate?month='+encodeURIComponent(month)+(acId?('&clientId='+encodeURIComponent(acId)):'');
+  var res=await fetch(q,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){ov.querySelector('div').textContent=(j&&j.error)||('Erro '+res.status);return;}
+  window.__gmClosingCert={month:month,data:j.snapshot,signed:j.signed};
+  var s=j.snapshot||{};
+  var bal=function(o){return o?(money(o.balance)+' <span style="font-size:10px;color:var(--ink3)">('+esc(o.date)+')</span>'):'<span style="color:var(--ink3)">—</span>';};
+  var row=function(l,v){return '<tr><td style="padding:7px 4px;color:var(--ink2)">'+l+'</td><td style="padding:7px 4px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:600">'+v+'</td></tr>';};
+  var signedBox=j.signed?('<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(42,110,78,.12);color:#2a6e4e;font-size:13px">✔ Conferido e assinado por <b>'+esc(j.signed.signerName)+'</b> ('+esc(j.signed.signerRole||'Broker')+') em '+esc(String(j.signed.signedAt).slice(0,10))+'.</div>'):'<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(180,83,9,.1);color:#b45309;font-size:13px">Ainda não assinado. Confira os valores e assine (Broker).</div>';
+  ov.innerHTML='<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:620px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
+   +'<div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:16px;font-weight:700;color:var(--ink)">Termo de Conferido — '+esc(month)+'</div><div style="font-size:11px;color:var(--ink3);margin-top:3px">Fechamento após pagamentos. Para o Broker conferir e assinar.</div></div><button onclick="document.getElementById(\'gm-cert-ov\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div>'
+   +'<div style="padding:18px 22px"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+   +row('Recebimentos do mês (aluguéis)','<span style="color:#2a6e4e">'+money(s.received)+'</span>')
+   +row('Pagamentos aos owners','<span style="color:#b83030">'+money(s.paid)+'</span>')
+   +row('Depósito de segurança (contratos ativos)',money(s.securityDeposit))
+   +row('Reserva de segurança',money(s.securityReserve))
+   +row('Casas com recebimento / pagas',(s.housesReceived||0)+' / '+(s.housesPaid||0))
+   +'<tr><td colspan="2" style="padding:10px 4px 4px;font-size:10px;text-transform:uppercase;color:var(--ink3);border-top:1px solid var(--border)">Saldos das contas</td></tr>'
+   +row('Conta operacional (Operating 6352)',bal(s.operational))
+   +row('Conta trust (Trust 7236)',bal(s.trust))
+   +row('Conta depósito de segurança (7509)',bal(s.depositSecurityAccount))
+   +'</table>'+signedBox+'</div>'
+   +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px"><button onclick="gmClosingCertPrint()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Imprimir / PDF</button><button onclick="gmClosingCertSign()" style="background:#6d28d9;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">'+(j.signed?'Reassinar':'Conferir e assinar (Broker)')+'</button></div>'
+   +'</div>';
+ }catch(e){ov.querySelector('div').textContent='Erro de rede.';}
+};
+window.gmClosingCertSign=async function(){
+ var d=window.__gmClosingCert;if(!d)return;
+ var nm=prompt('Nome do Broker que confere e assina:','');
+ if(nm===null)return;
+ if(!confirm('Confirmar: os valores estão conferidos e corretos? Isto emite o Termo de Conferido assinado.'))return;
+ try{
+  var acId=gmClosingCertClientId();
+  var res=await fetch('/api/closing/certificate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({month:d.month,signerName:nm||undefined,clientId:acId||undefined})});
+  var j=await res.json().catch(function(){return{};});
+  if(res.ok&&j.ok){alert('Termo de Conferido assinado por '+(j.signerName||'Broker')+'.');gmClosingCertOpen();return;}
+  alert((j&&j.error)||('Erro '+res.status));
+ }catch(e){alert('Erro de rede.');}
+};
+window.gmClosingCertPrint=function(){
+ var d=window.__gmClosingCert;if(!d){return;}var s=d.data||{};var sg=d.signed;
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var bal=function(o){return o?(money(o.balance)+' ('+o.date+')'):'—';};
+ var w=window.open('','_blank','width=800,height=1000');if(!w)return;
+ var comp='';try{comp=(window.gmPlatformCompanyName||'Manager Prop LLC');}catch(e){comp='Manager Prop LLC';}
+ var sigLine=sg?('<p><b>Conferido e assinado por:</b> '+String(sg.signerName)+' ('+(sg.signerRole||'Broker')+') — '+String(sg.signedAt).slice(0,10)+'</p>'):'<p style="margin-top:40px">_______________________________<br/>Broker (assinatura)</p>';
+ w.document.write('<!doctype html><html><head><title>Termo de Conferido '+d.month+'</title><style>body{font-family:Georgia,serif;color:#1a2332;padding:40px;line-height:1.6}h1{color:#4c1d95;font-size:22px}h2{font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;margin-top:22px}table{width:100%;border-collapse:collapse}td{padding:5px 8px;font-size:14px}td.r{text-align:right;font-family:monospace}</style></head><body>'
+  +'<h1>Termo de Conferido — Fechamento '+d.month+'</h1><div style="color:#666">'+comp+' · Conferência de fechamento após pagamentos</div>'
+  +'<h2>Movimentação do mês</h2><table>'
+  +'<tr><td>Recebimentos (aluguéis)</td><td class="r">'+money(s.received)+'</td></tr>'
+  +'<tr><td>Pagamentos aos owners</td><td class="r">'+money(s.paid)+'</td></tr>'
+  +'<tr><td>Casas com recebimento / pagas</td><td class="r">'+(s.housesReceived||0)+' / '+(s.housesPaid||0)+'</td></tr>'
+  +'<tr><td>Depósito de segurança (contratos ativos)</td><td class="r">'+money(s.securityDeposit)+'</td></tr>'
+  +'<tr><td>Reserva de segurança</td><td class="r">'+money(s.securityReserve)+'</td></tr></table>'
+  +'<h2>Saldos das contas</h2><table>'
+  +'<tr><td>Conta operacional (Operating 6352)</td><td class="r">'+bal(s.operational)+'</td></tr>'
+  +'<tr><td>Conta trust (Trust 7236)</td><td class="r">'+bal(s.trust)+'</td></tr>'
+  +'<tr><td>Conta depósito de segurança (7509)</td><td class="r">'+bal(s.depositSecurityAccount)+'</td></tr></table>'
+  +'<p style="margin-top:20px">Declaro que os valores acima foram conferidos e estão corretos referentes ao fechamento de '+d.month+'.</p>'
+  +sigLine
+  +'<scr'+'ipt>window.onload=function(){window.print();}<\/scr'+'ipt></body></html>');
+ w.document.close();
 };
 // #46 Correlações & Padrões: conecta GL (aluguel/repasse/mgm) com despesas/chamados por casa.
 window.gmCorrelationsRender=async function(){

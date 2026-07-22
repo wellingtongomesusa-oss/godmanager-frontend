@@ -116,6 +116,7 @@ model Client {
   leases                Lease[]                 @relation("Lease_clientId")
   leaseAgreements       LeaseAgreement[]        @relation("LeaseAgreement_clientId")
   rentReceiptConfirmations RentReceiptConfirmation[] @relation("RentReceiptConfirmation_clientId")
+  closingCertificates   ClosingCertificate[]    @relation("ClosingCertificate_clientId")
   glAuditSnapshots      GlAuditSnapshot[]       @relation("GlAuditSnapshot_clientId")
   mgmtFeeContracts      MgmtFeeContract[]       @relation("MgmtFeeContract_clientId")
   feeAuditSnapshots     FeeAuditSnapshot[]      @relation("FeeAuditSnapshot_clientId")
@@ -1785,6 +1786,28 @@ model LeaseDepositDeduction {
 
   @@index([clientId, leaseId])
   @@map("lease_deposit_deductions")
+}
+
+/// Termo de Conferido do fechamento mensal — emitido após pagamentos, para o Broker assinar
+/// (digitalmente). Guarda o snapshot: recebimentos, pagamentos, depósito de segurança e os
+/// saldos das contas operacional e trust no momento da assinatura.
+model ClosingCertificate {
+  id             String    @id @default(cuid())
+  clientId       String
+  yearMonth      String // 'YYYY-MM'
+  snapshot       Json // { received, paid, securityDeposit, operational, trust, depositSecurity, ... }
+  signerName     String?
+  signerRole     String?
+  signedByUserId String?
+  signedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  client Client @relation("ClosingCertificate_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, yearMonth])
+  @@index([clientId, yearMonth])
+  @@map("closing_certificates")
 }
 
 model TrialInvite {
