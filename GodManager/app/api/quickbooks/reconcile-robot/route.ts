@@ -58,12 +58,17 @@ export async function GET(req: Request) {
         accountsError = e instanceof Error ? e.message : 'Falha ao ler o plano de contas do QuickBooks.';
       }
     }
+    // Mapa manual do cliente (categoria FL / banco → conta real do QBO) — prioridade sobre o palpite.
+    const mapRow = await prisma.qboReconcileMap.findUnique({ where: { clientId } });
+    const savedMap = (mapRow?.mapping as { cat?: Record<string, string>; bank?: Record<string, string> } | undefined) || {};
+    const savedCat = savedMap.cat || {};
+    const savedBank = savedMap.bank || {};
 
     const rows = txns.map((t) => {
       const amount = round2(Number(t.amount));
       const plan = flReconcilePlan(t.description, amount, t.bankAccountKey);
-      const qa = qboAccounts.length ? resolveQboAccount(plan, qboAccounts) : null;
-      const bank = qboAccounts.length ? resolveQboBankAccount(t.bankAccountKey, qboAccounts) : null;
+      const qa = qboAccounts.length ? resolveQboAccount(plan, qboAccounts, savedCat) : null;
+      const bank = qboAccounts.length ? resolveQboBankAccount(t.bankAccountKey, qboAccounts, savedBank) : null;
       // Conformidade FL: só há validação real quando o plano de contas foi lido.
       const compliance = qboAccounts.length ? flValidateEntry(plan, qa, bank, t.bankAccountKey, amount) : null;
       return {
@@ -194,6 +199,10 @@ export async function POST(req: Request) {
     } catch (e) {
       return NextResponse.json({ ok: false, error: 'Não consegui ler o plano de contas do QuickBooks: ' + (e instanceof Error ? e.message : 'erro') }, { status: 502 });
     }
+    const mapRow = await prisma.qboReconcileMap.findUnique({ where: { clientId: scope.clientId } });
+    const savedMap = (mapRow?.mapping as { cat?: Record<string, string>; bank?: Record<string, string> } | undefined) || {};
+    const savedCat = savedMap.cat || {};
+    const savedBank = savedMap.bank || {};
 
     const txns = await prisma.bankStatementTxn.findMany({
       where: { clientId: scope.clientId, matched: false, ...(month ? { periodMonth: month } : {}), ...(onlyIds ? { id: { in: onlyIds } } : {}) },
@@ -214,8 +223,8 @@ export async function POST(req: Request) {
         skipped++; results.push({ id: t.id, ok: false, skipped: 'baixa confiança / tipo não automatizável (' + plan.entryType + ')' });
         continue;
       }
-      const flAcct = resolveQboAccount(plan, accounts);
-      const bankAcct = resolveQboBankAccount(t.bankAccountKey, accounts);
+      const flAcct = resolveQboAccount(plan, accounts, savedCat);
+      const bankAcct = resolveQboBankAccount(t.bankAccountKey, accounts, savedBank);
       // TRAVA DE CONFORMIDADE FL — bloqueia qualquer lançamento fora do padrão trust accounting.
       const val = flValidateEntry(plan, flAcct, bankAcct, t.bankAccountKey, amount);
       if (!val.ok || !flAcct || !bankAcct) {

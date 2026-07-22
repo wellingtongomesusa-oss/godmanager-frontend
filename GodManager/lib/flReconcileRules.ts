@@ -147,8 +147,34 @@ export interface QboAccountLite {
  * Prioridade: (1) número de conta do guia FL (2100/2200/4100…), (2) palavra-chave + classificação.
  * Retorna null quando não há candidata clara (o usuário escolhe na tela For Review).
  */
-export function resolveQboAccount(plan: FlReconcilePlan, accounts: QboAccountLite[]): QboAccountLite | null {
+/** Chave canônica da categoria FL (para o mapa manual de contas do cliente). '' = não mapeável. */
+export function flKeyOf(plan: FlReconcilePlan): string {
+  const c = plan.category.toLowerCase();
+  if (/repasse ao owner/.test(c)) return 'owner_distribution';
+  if (/aluguel recebido/.test(c)) return 'rent_trust';
+  if (/security deposit recebido/.test(c)) return 'security_deposit_in';
+  if (/security deposit devolvido/.test(c)) return 'security_deposit_out';
+  if (/management fee/.test(c)) return 'mgmt_fee';
+  if (/utilities/.test(c)) return 'utilities';
+  if (/^hoa$/.test(c) || /\bhoa\b/.test(c)) return 'hoa';
+  if (/manuten|vendor/.test(c)) return 'maintenance';
+  if (/tarifa banc/.test(c)) return 'bank_fee';
+  return '';
+}
+
+/**
+ * Resolve a conta contábil. Se `savedCat` (mapa manual: flKey → qboAccountId) tiver a categoria,
+ * usa a conta escolhida pelo cliente (fonte de verdade). Senão, tenta o palpite por número/nome.
+ */
+export function resolveQboAccount(plan: FlReconcilePlan, accounts: QboAccountLite[], savedCat?: Record<string, string> | null): QboAccountLite | null {
   if (!Array.isArray(accounts) || accounts.length === 0) return null;
+
+  // 0) mapa manual do cliente (prioridade máxima)
+  if (savedCat) {
+    const k = flKeyOf(plan);
+    const id = k ? savedCat[k] : '';
+    if (id) { const a = accounts.find((x) => x.id === id); if (a) return a; }
+  }
 
   // 1) casar pelo número de conta presente no glAccount (ex.: "2100 Security Deposits…")
   const num = (plan.glAccount.match(/\b(\d{3,5})\b/) || [])[1] || '';
@@ -195,9 +221,15 @@ export const FL_BANK_LAST4: Record<string, string> = {
  * Encontra a CONTA BANCÁRIA no QuickBooks correspondente à conta Chase (por last4 no número/nome).
  * Só considera contas do tipo Bank. Retorna null se não achar (o robô então NÃO escreve — segurança).
  */
-export function resolveQboBankAccount(bankAccountKey: FlAccountKey, accounts: QboAccountLite[]): QboAccountLite | null {
+export function resolveQboBankAccount(bankAccountKey: FlAccountKey, accounts: QboAccountLite[], savedBank?: Record<string, string> | null): QboAccountLite | null {
+  if (!Array.isArray(accounts)) return null;
+  // 0) mapa manual do cliente
+  if (savedBank && savedBank[bankAccountKey]) {
+    const a = accounts.find((x) => x.id === savedBank[bankAccountKey]);
+    if (a) return a;
+  }
   const last4 = FL_BANK_LAST4[bankAccountKey];
-  if (!last4 || !Array.isArray(accounts)) return null;
+  if (!last4) return null;
   const banks = accounts.filter((a) => /bank/i.test(a.accountType));
   const byNum = banks.find((a) => a.acctNum && a.acctNum.replace(/\D/g, '').endsWith(last4));
   if (byNum) return byNum;

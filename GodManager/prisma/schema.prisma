@@ -2115,3 +2115,16 @@ model SupportTicketMessage {
   @@index([ticketId, authorId, createdAt, clientId])
   @@map("support_ticket_messages")
 }
+
+/// Mapa de conciliação do robô: categoria FL / conta bancária → conta REAL do QuickBooks do cliente.
+/// mapping = { cat: { owner_distribution: "<qboAcctId>", rent_trust, security_deposit_in, ... },
+///             bank: { OPERATING_TRUST, TRUST_CHASE, DEPOSIT_SECURITY } }
+model QboReconcileMap {
+  id        String   @id @default(cuid())
+  clientId  String   @unique
+  mapping   Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("qbo_reconcile_maps")
+}
