@@ -128,9 +128,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Acesso negado.' }, { status: 403 });
   }
   try {
-    const body = (await req.json().catch(() => ({}))) as { month?: string; approve?: boolean; clientId?: string };
+    const body = (await req.json().catch(() => ({}))) as { month?: string; approve?: boolean; clientId?: string; markReconciled?: unknown };
     const scope = await resolveBankAccountClientScope(user, body.clientId || null);
     if (!scope.ok) return NextResponse.json({ ok: false, error: scope.error }, { status: scope.status });
+
+    // Caminho A: o usuário categoriza no QBO (For Review) e marca aqui as pendências já conciliadas
+    // (matched=true) para elas saírem da fila do robô. Só toca no nosso banco — nunca no QBO. Seguro.
+    if (Array.isArray(body.markReconciled)) {
+      const ids = (body.markReconciled as unknown[]).map((x) => String(x || '').trim()).filter(Boolean).slice(0, 2000);
+      if (!ids.length) return NextResponse.json({ ok: false, error: 'Nenhuma transação informada.' }, { status: 400 });
+      const res = await prisma.bankStatementTxn.updateMany({
+        where: { id: { in: ids }, clientId: scope.clientId },
+        data: { matched: true },
+      });
+      await recordAudit({
+        request: req, actor: { id: user.id, email: user.email },
+        action: 'quickbooks.reconcile_mark', entity: 'bank_statement_txn', entityId: scope.clientId, clientId: scope.clientId,
+        details: `mark reconciled ${res.count} txn`,
+      });
+      return NextResponse.json({ ok: true, reconciled: res.count });
+    }
 
     if (!body.approve) return NextResponse.json({ ok: false, error: 'Aprovação necessária (approve=true).' }, { status: 400 });
     if (process.env.QBO_RECONCILE_ENABLED !== '1') {
