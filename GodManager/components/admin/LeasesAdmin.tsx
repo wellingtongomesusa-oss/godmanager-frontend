@@ -40,6 +40,7 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [propSearch, setPropSearch] = useState('');
   const [openLeaseId, setOpenLeaseId] = useState<string | null>(null);
+  const [payLink, setPayLink] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     propertyId: '',
@@ -47,6 +48,7 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
     rentPeriod: 'MONTHLY',
     mgmtFeePct: '8',
     tenantPlacementPct: '',
+    leaseFee: '150',
     lateFeeFlat: '150',
     lateFeeDaily: '5',
     securityDeposit: '',
@@ -120,7 +122,25 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.ok) {
-        setMsg({ ok: true, text: `Contrato #${j.leaseNumber} criado.` });
+        setPayLink(null);
+        // Lease Fee: gera a invoice com link de pagamento no QuickBooks (parte do onboarding do tenant).
+        const leaseFee = Number(form.leaseFee);
+        let feeMsg = '';
+        if (j.id && Number.isFinite(leaseFee) && leaseFee > 0) {
+          try {
+            const fr = await fetch(`/api/lease-agreements/${encodeURIComponent(j.id)}/qb-invoice`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ leaseFee, description: `Lease fee — contrato #${j.leaseNumber}` }),
+            });
+            const fj = await fr.json().catch(() => ({}));
+            if (fr.ok && fj.ok && (fj.invoiceUrl || fj.url)) { setPayLink(fj.invoiceUrl || fj.url); feeMsg = ' Link de pagamento do Lease Fee gerado.'; }
+            else if (fr.status === 501 || fj.notConnected) feeMsg = ' (QuickBooks não conectado — gere o link do Lease Fee depois na aba do contrato.)';
+            else feeMsg = ' (Não foi possível gerar o link do Lease Fee agora: ' + (fj.error || `erro ${fr.status}`) + ')';
+          } catch { feeMsg = ' (Falha de rede ao gerar o link do Lease Fee.)'; }
+        }
+        setMsg({ ok: true, text: `Contrato #${j.leaseNumber} criado.${feeMsg}` });
         setShowForm(false);
         setForm((f) => ({ ...f, propertyId: '', monthlyRent: '', securityDeposit: '', securityReserve: '', notes: '' }));
         void load();
@@ -158,6 +178,16 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
         </button>
       </div>
 
+      {payLink && (
+        <div className="mb-4 rounded-lg border border-[#22558c] bg-blue-50 px-4 py-3 text-sm">
+          <div className="mb-1 font-semibold text-[#1c4675]">Link de pagamento do Lease Fee</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <a href={payLink} target="_blank" rel="noopener noreferrer" className="break-all text-[#22558c] underline">{payLink}</a>
+            <button onClick={() => { void navigator.clipboard?.writeText(payLink); }} className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">Copiar</button>
+          </div>
+          <div className="mt-1 text-[11px] text-slate-500">Envie este link ao inquilino para pagar o Lease Fee (QuickBooks Payments).</div>
+        </div>
+      )}
       {msg && (
         <div className={`mb-4 rounded-lg px-4 py-3 text-sm ${msg.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{msg.text}</div>
       )}
@@ -198,6 +228,11 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
             <div>
               <label className={lbl}>Tenant placement %</label>
               <input className={`${inp} w-full`} type="number" step="0.1" value={form.tenantPlacementPct} onChange={(e) => set('tenantPlacementPct', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Lease Fee ($) — link de pagamento</label>
+              <input className={`${inp} w-full`} type="number" value={form.leaseFee} onChange={(e) => set('leaseFee', e.target.value)} />
+              <div className="mt-1 text-[11px] text-slate-400">Padrão $150. Ao criar o contrato, gera um link de pagamento no QuickBooks (onboarding do tenant). Deixe 0 para não gerar.</div>
             </div>
             <div>
               <label className={lbl}>Late fee fixo ($)</label>
