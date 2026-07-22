@@ -1333,6 +1333,7 @@ window.gmAfterLangChange = function gmAfterLangChange(){
     if(pageId==='page-ltexpenses'&&typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
     if(pageId==='page-jobs'&&typeof gmJobsRefreshI18n==='function')gmJobsRefreshI18n();
     if(pageId==='page-recebimentos'&&window.__gmReceb&&window.__gmReceb.data){if(typeof gmRecebRenderFilters==='function')gmRecebRenderFilters();if(typeof gmRecebRenderRows==='function')gmRecebRenderRows();}
+    if(pageId==='page-ltownerpay'&&typeof ltOwnerPayRender==='function')ltOwnerPayRender();
     if(typeof window.gmCurrentPageRefresh==='function')window.gmCurrentPageRefresh();
     // Barra unificada de contratos: re-render com o novo idioma
     if(typeof gmPayTabsFill==='function')gmPayTabsFill();
@@ -6068,30 +6069,30 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="gm-paytabs" data-active="ltownerpay" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"></div>
  <div style="display:flex;align-items:center;gap:4px;padding:8px 0 12px;border-bottom:1px solid var(--line-2,#ecebe5);margin-bottom:12px"><b id="ltop-pt" style="font-size:15px;color:var(--ink)" data-i18n="pay_tab_payables">Contas a Pagar</b><span id="ltop-ps" style="display:none"></span><button type="button" onclick="gmInfoShow('ltownerpay')" aria-label="Mais informações" title="Mais informações" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:none;background:none;color:var(--ink3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></div>
  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
-  <label style="font-size:11px;color:var(--ink3)">Mês</label>
+  <label style="font-size:11px;color:var(--ink3)" data-i18n="receb_month">Mês</label>
   <input type="month" id="ltop-month" value="2026-04" onchange="ltOwnerPayRender()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px">
-  <span id="ltop-d15-hint" style="font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(201,169,110,.12);color:var(--amber);border:1px solid rgba(201,169,110,.3)">Próximo dia 15</span>
-  <button type="button" id="op-expand-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Expandir todos</button>
-  <button type="button" id="op-collapse-all" class="op-expand-collapse-btn" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Colapsar todos</button>
-  <button type="button" onclick="gmPayReportOpen()" style="padding:6px 12px;border:none;border-radius:8px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" title="Relatório final de pagamento (linhas) + CSV + statement">Relatório de pagamento</button>
-  <button type="button" onclick="gmClosingCertOpen()" style="padding:6px 12px;border:none;border-radius:8px;background:#6d28d9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" title="Termo de Conferido do fechamento — Broker assina (digital)">Termo de Conferido</button>
+  <span id="ltop-d15-hint" data-i18n="op_next_15" style="font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;background:rgba(201,169,110,.12);color:var(--amber);border:1px solid rgba(201,169,110,.3)">Próximo dia 15</span>
+  <button type="button" id="op-expand-all" class="op-expand-collapse-btn" data-i18n="op_expand_all" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Expandir todos</button>
+  <button type="button" id="op-collapse-all" class="op-expand-collapse-btn" data-i18n="op_collapse_all" style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Colapsar todos</button>
+  <button type="button" onclick="gmPayReportOpen()" data-i18n="op_pay_report" data-i18n-title="op_pay_report_title" style="padding:6px 12px;border:none;border-radius:8px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" title="Relatório final de pagamento (linhas) + CSV + statement">Relatório de pagamento</button>
+  <button type="button" onclick="gmClosingCertOpen()" data-i18n="op_closing_cert" data-i18n-title="op_closing_cert_title" style="padding:6px 12px;border:none;border-radius:8px;background:#6d28d9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" title="Termo de Conferido do fechamento — Broker assina (digital)">Termo de Conferido</button>
  </div>
  <div id="ltop-filter-bar" style="max-width:900px;margin-bottom:10px">
   <div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap">
-   <input type="search" id="op-search-input" placeholder="Buscar owner, propriedade ou endere&#231;o..." autocomplete="off" style="flex:1;min-width:200px;max-width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px" />
+   <input type="search" id="op-search-input" placeholder="Buscar owner, propriedade ou endere&#231;o..." data-i18n-placeholder="op_search_ph" autocomplete="off" style="flex:1;min-width:200px;max-width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px" />
    <select id="op-status-filter" style="min-width:130px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">
-    <option value="todos" selected>Todos</option>
-    <option value="pendente">Pendente</option>
-    <option value="pago">Pago</option>
+    <option value="todos" selected data-i18n="flt_all">Todos</option>
+    <option value="pendente" data-i18n="op_st_pending">Pendente</option>
+    <option value="pago" data-i18n="st_paid">Pago</option>
    </select>
-   <button type="button" id="op-clear-filter" style="min-width:40px;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:20px;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif" title="Limpar" aria-label="Limpar">&#215;</button>
+   <button type="button" id="op-clear-filter" style="min-width:40px;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--paper);color:var(--ink2);font-size:20px;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif" title="Limpar" data-i18n-title="op_clear" data-i18n-aria="op_clear" aria-label="Limpar">&#215;</button>
   </div>
   <div id="op-filter-count" style="font-size:11px;color:var(--ink3);margin-top:6px;letter-spacing:.02em">Exibindo 0 de 0 owners</div>
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint gm-kpis-shell--floating" style="margin-bottom:22px;max-width:900px"><div class="gm-kpis-row gm-kpis-row--floating" style="--gm-kpi-cols-desktop:3;--gm-kpi-cols-tablet:3">
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Total a pagar (OUTstanding NET)</div><div id="ltop-kpi-due" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Propriedades pagas</div><div id="ltop-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--green);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
-  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">Pendentes</div><div id="ltop-kpi-pend" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ink2);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--ink2)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)" data-i18n="op_kpi_due">Total a pagar (OUTstanding NET)</div><div id="ltop-kpi-due" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--amber)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)" data-i18n="op_kpi_paid">Propriedades pagas</div><div id="ltop-kpi-paid" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--green);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--green)"></div></div>
+  <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative"><div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)" data-i18n="op_kpi_pend">Pendentes</div><div id="ltop-kpi-pend" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ink2);margin-top:6px">—</div><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--ink2)"></div></div>
  </div></div>
  <div id="ltop-host" style="display:flex;flex-direction:column;gap:16px"></div>
 </div>
@@ -27151,13 +27152,14 @@ function opApplyFilter(){
   block.style.display=visible?'':'none';
   if(visible){shown++;lastVisible=block;}
  }
+ var TR=function(k){return (window.t?window.t(k):k);};
  var counter=document.getElementById('op-filter-count');
- if(counter)counter.textContent='Exibindo '+shown+' de '+ownerBlocks.length+' owners';
+ if(counter)counter.textContent=TR('op_showing')+' '+shown+' '+TR('op_of')+' '+ownerBlocks.length+' '+TR('op_owners');
  if(shown===1&&lastVisible&&(term||status!=='todos')){
   var t1=lastVisible.querySelectorAll('.op-detail-table');
   var t2=lastVisible.querySelectorAll('.op-toggle-btn');
   for(var i=0;i<t1.length;i++)t1[i].style.display='block';
-  for(var j=0;j<t2.length;j++)t2[j].textContent='\u25B2 Fechar';
+  for(var j=0;j<t2.length;j++)t2[j].textContent='\u25B2 '+TR('op_close');
  }
 }
 function ltopOwnerPayBindFilterBarOnce(){
@@ -27232,6 +27234,7 @@ function ltOwnerPayInitUiOnce(){
  });
 }
 async function ltOwnerPayRender(){
+ var TR=function(k){return (window.t?window.t(k):k);};
  ltopOwnerPayBindFilterBarOnce();
  ltOwnerPayInitUiOnce();
  const ym=(document.getElementById('ltop-month')||{}).value||'2026-04';
@@ -27246,7 +27249,7 @@ async function ltOwnerPayRender(){
  }
  try{
   const r=await fetch('/api/pm/owner-payouts?month='+encodeURIComponent(ym),{credentials:'include'});
-  if(!r.ok){document.getElementById('ltop-host').innerHTML='<p style="color:var(--ink3);font-size:13px">Sessão necessária ou API indisponível.</p>';if(typeof opApplyFilter==='function')opApplyFilter();return;}
+  if(!r.ok){document.getElementById('ltop-host').innerHTML='<p style="color:var(--ink3);font-size:13px">'+TR('op_session_needed')+'</p>';if(typeof opApplyFilter==='function')opApplyFilter();return;}
   const j=await r.json();
   window._ltopData=j;
   const s=j.summary||{};
@@ -27256,7 +27259,7 @@ async function ltOwnerPayRender(){
   const host=document.getElementById('ltop-host');
   if(!host)return;
   const own=j.owners||[];
-  if(!own.length){host.innerHTML='<p style="color:var(--ink3)">Nenhum owner.</p>';if(typeof opApplyFilter==='function')opApplyFilter();return;}
+  if(!own.length){host.innerHTML='<p style="color:var(--ink3)">'+TR('op_no_owners')+'</p>';if(typeof opApplyFilter==='function')opApplyFilter();return;}
   host.innerHTML=own.map(function(og){
    var props=(og.properties||[]).map(function(p){
     var pkgMap={PACOTE_1:'P1',PACOTE_2:'P2',PACOTE_3:'P3',PACOTE_4:'P4'};
@@ -27265,18 +27268,18 @@ async function ltOwnerPayRender(){
      var pLab=pkgMap[pk]||'—';
      var mPct=typeof e.markupPct==='number'?e.markupPct:(pk==='PACOTE_2'?18:(pk==='PACOTE_3'?25:(pk==='PACOTE_4'?0:15)));
      return '<tr><td style="padding:6px 8px;font-size:11px">'+String(e.vendorName||'—')+'</td><td style="padding:6px 8px;font-size:11px;text-align:right">'+String(e.vendorCost)+'</td><td style="padding:6px 8px;font-size:11px">'+pLab+'</td><td style="padding:6px 8px;font-size:11px">'+mPct+'%</td><td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:600">'+String(e.ownerCharged)+'</td></tr>';
-    }).join('')||'<tr><td colspan="5" style="padding:8px;font-size:11px;color:var(--ink3)">Nenhuma despesa vendor (mês)</td></tr>';
+    }).join('')||'<tr><td colspan="5" style="padding:8px;font-size:11px;color:var(--ink3)">'+TR('op_no_vendor_exp')+'</td></tr>';
     var tVendor=typeof p.totalVendorCost==='number'?p.totalVendorCost:(function(){var s=0;(p.expenses||[]).forEach(function(x){s+=parseFloat(String(x.vendorCost))||0;});return Math.round(s*100)/100;})();
     var tMarkup=typeof p.totalMarkupAmount==='number'?p.totalMarkupAmount:(function(){var s=0;(p.expenses||[]).forEach(function(x){var a=parseFloat(String(x.vendorCost))||0,b=parseFloat(String(x.ownerCharged))||0;s+=b-a;});return Math.round(s*100)/100;})();
     var netD=typeof p.net==='number'?p.net:0;
-    var totBlock='<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Totais (m\u00ea)</div><div style="display:grid;gap:6px;font-size:11px"><div><span style="color:var(--ink3)">TOTAL DESPESAS VENDOR:</span> <b style="font-family:\'JetBrains Mono\',monospace">'+tVendor.toFixed(2)+'</b></div><div><span style="color:var(--ink3)">MARKUP TOTAL:</span> <b style="font-family:\'JetBrains Mono\',monospace">'+tMarkup.toFixed(2)+'</b></div><div><span style="color:var(--ink3)">NET DO OWNER (dia 15):</span> <b style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:'+(netD>=0?'var(--green)':'var(--red)')+'">'+netD.toFixed(2)+'</b></div></div></div>';
-    var paid=p.paidAt?('<span style="font-size:10px;padding:3px 8px;border-radius:999px;background:var(--green-bg);color:var(--green)">Pago '+String(p.paidAt).slice(0,10)+'</span>'):'';
+    var totBlock='<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">'+TR('op_totals')+'</div><div style="display:grid;gap:6px;font-size:11px"><div><span style="color:var(--ink3)">'+TR('op_total_vendor')+'</span> <b style="font-family:\'JetBrains Mono\',monospace">'+tVendor.toFixed(2)+'</b></div><div><span style="color:var(--ink3)">'+TR('op_markup_total')+'</span> <b style="font-family:\'JetBrains Mono\',monospace">'+tMarkup.toFixed(2)+'</b></div><div><span style="color:var(--ink3)">'+TR('op_net_owner15')+'</span> <b style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:'+(netD>=0?'var(--green)':'var(--red)')+'">'+netD.toFixed(2)+'</b></div></div></div>';
+    var paid=p.paidAt?('<span style="font-size:10px;padding:3px 8px;border-radius:999px;background:var(--green-bg);color:var(--green)">'+TR('st_paid')+' '+String(p.paidAt).slice(0,10)+'</span>'):'';
     var enc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
     var pid=enc(p.propertyId);
     var ymEnc=enc(ym);
-    var markBtn=p.paidAt?'':('<button type="button" class="op-mark-paid-btn" data-prop-id="'+pid+'" data-ym="'+ymEnc+'" style="padding:6px 12px;border-radius:6px;border:none;background:var(--amber);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Marcar como pago</button>');
-    var toggleBtn='<button type="button" class="op-toggle-btn" data-prop-id="'+pid+'" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--paper);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">\u25BC Ver detalhes</button>';
-    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end">'+paid+markBtn+toggleBtn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>Rent: <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>Despesas: <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><div class="op-detail-table" data-prop-id="'+pid+'" style="display:none"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">Vendor</th><th style="text-align:right">Custo</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">Owner</th></tr></thead><tbody>'+exRows+'</tbody></table>'+totBlock+'</div></div>';
+    var markBtn=p.paidAt?'':('<button type="button" class="op-mark-paid-btn" data-prop-id="'+pid+'" data-ym="'+ymEnc+'" style="padding:6px 12px;border-radius:6px;border:none;background:var(--amber);color:#fff;font-size:11px;font-weight:600;cursor:pointer">'+TR('op_mark_paid')+'</button>');
+    var toggleBtn='<button type="button" class="op-toggle-btn" data-prop-id="'+pid+'" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--paper);color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif">\u25BC '+TR('op_view_details')+'</button>';
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--paper)"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:12px;font-weight:700">'+p.code+'</div><div style="font-size:11px;color:var(--ink3)">'+p.address+'</div></div><div style="text-align:right;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end">'+paid+markBtn+toggleBtn+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;margin-bottom:8px"><div>'+TR('op_rent')+': <b style="color:var(--green)">'+p.rent.toFixed(2)+'</b></div><div>'+TR('op_expenses')+': <b style="color:var(--red)">'+p.expensesTotal.toFixed(2)+'</b></div><div>NET: <b style="color:'+(p.net>=0?'var(--green)':'var(--red)')+'">'+p.net.toFixed(2)+'</b></div></div><div class="op-detail-table" data-prop-id="'+pid+'" style="display:none"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="text-align:left;padding:6px 8px">'+TR('op_th_vendor')+'</th><th style="text-align:right">'+TR('op_th_cost')+'</th><th style="text-align:left">P.</th><th style="text-align:left">M%</th><th style="text-align:right">'+TR('col_owner')+'</th></tr></thead><tbody>'+exRows+'</tbody></table>'+totBlock+'</div></div>';
    }).join('');
    var pl=og.properties||[];
    var ownerSt='pendente';
@@ -27286,12 +27289,12 @@ async function ltOwnerPayRender(){
   if(typeof opApplyFilter==='function')opApplyFilter();
  }catch(e){
   console.error(e);
-  document.getElementById('ltop-host').innerHTML='<p style="color:var(--red)">Erro ao carregar.</p>';
+  document.getElementById('ltop-host').innerHTML='<p style="color:var(--red)">'+TR('op_load_error')+'</p>';
   if(typeof opApplyFilter==='function')opApplyFilter();
  }
 }
 async function ltOwnerPayMark(propertyId,ym){
- var dt=prompt('Data do pagamento (YYYY-MM-DD)',new Date().toISOString().slice(0,10));
+ var dt=prompt((window.t?window.t('op_pay_date_prompt'):'Data do pagamento (YYYY-MM-DD)'),new Date().toISOString().slice(0,10));
  if(!dt)return;
  try{
   const r=await fetch('/api/pm/owner-payouts',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({propertyId,yearMonth:ym,paidAt:dt})});
