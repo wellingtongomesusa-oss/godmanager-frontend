@@ -1332,6 +1332,7 @@ window.gmAfterLangChange = function gmAfterLangChange(){
     if((pageId==='page-results'||pageId==='page-results-upload')&&typeof gmResRender==='function')gmResRender();
     if(pageId==='page-ltexpenses'&&typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
     if(pageId==='page-jobs'&&typeof gmJobsRefreshI18n==='function')gmJobsRefreshI18n();
+    if(pageId==='page-recebimentos'&&window.__gmReceb&&window.__gmReceb.data){if(typeof gmRecebRenderFilters==='function')gmRecebRenderFilters();if(typeof gmRecebRenderRows==='function')gmRecebRenderRows();}
     if(typeof window.gmCurrentPageRefresh==='function')window.gmCurrentPageRefresh();
     // Barra unificada de contratos: re-render com o novo idioma
     if(typeof gmPayTabsFill==='function')gmPayTabsFill();
@@ -6050,16 +6051,16 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="gm-paytabs" data-active="recebimentos" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"></div>
  <div style="display:flex;align-items:center;gap:4px;padding:8px 0 12px;border-bottom:1px solid var(--line-2,#ecebe5);margin-bottom:12px"><b style="font-size:15px;color:var(--ink)" data-i18n="pay_tab_receivables">Recebimentos</b><button type="button" onclick="gmInfoShow('recebimentos')" aria-label="Mais informações" title="Mais informações" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:none;background:none;color:var(--ink3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-  <label style="font-size:11px;color:var(--ink3)">Mês <input type="month" id="receb-month" onchange="gmRecebRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"></label>
-  <input id="receb-search" oninput="gmRecebRenderFilterOnly()" placeholder="Buscar casa / owner…" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);width:240px">
-  <button onclick="gmRecebRender()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
-  <button onclick="if(typeof nav==='function')nav('ltownerpay')" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" title="Ir para o repasse por owner (Account Payables)">Confirmar → Account Payables</button>
-  <button onclick="gmRecebRobot()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" title="Robô: buscar comprovantes no AppFolio e anexar nas casas">Buscar Recibos</button>
+  <label style="font-size:11px;color:var(--ink3)"><span data-i18n="receb_month">Mês</span> <input type="month" id="receb-month" onchange="gmRecebRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"></label>
+  <input id="receb-search" oninput="gmRecebRenderFilterOnly()" placeholder="Buscar casa / owner…" data-i18n-placeholder="receb_search_ph" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);width:240px">
+  <button onclick="gmRecebRender()" data-i18n="receb_refresh" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
+  <button onclick="if(typeof nav==='function')nav('ltownerpay')" data-i18n="receb_confirm_ap" data-i18n-title="receb_ap_title" style="background:#2a6e4e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" title="Ir para o repasse por owner (Account Payables)">Confirmar → Account Payables</button>
+  <button onclick="gmRecebRobot()" data-i18n="receb_search_receipts" data-i18n-title="receb_robot_title" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" title="Robô: buscar comprovantes no AppFolio e anexar nas casas">Buscar Recibos</button>
   <span id="receb-status" style="font-size:11px;color:var(--ink3)"></span>
   <input type="file" id="receb-receipt-file" accept="application/pdf,image/png,image/jpeg" style="display:none">
  </div>
  <div id="receb-filters" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
- <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper)"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Casa</th><th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Owner</th><th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Recebido (GL)</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Status</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Recibo</th><th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Ação</th></tr></thead><tbody id="receb-body"><tr><td colspan="5" style="padding:24px;color:var(--ink3)">Clique em Atualizar.</td></tr></tbody></table></div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper)"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--cream)"><th data-i18n="col_house" style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Casa</th><th data-i18n="col_owner" style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Owner</th><th data-i18n="col_received_gl" style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#2a6e4e">Recebido (GL)</th><th data-i18n="col_status" style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Status</th><th data-i18n="col_receipt" style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Recibo</th><th data-i18n="col_action" style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Ação</th></tr></thead><tbody id="receb-body"><tr><td colspan="5" data-i18n="receb_click_refresh" style="padding:24px;color:var(--ink3)">Clique em Atualizar.</td></tr></tbody></table></div>
 </div>
 
 <!-- Owner Payment (dia 15, NET owner) -->
@@ -15593,7 +15594,8 @@ try{if(document.readyState!=='loading')gmPayTabsFill();else document.addEventLis
 // #61 Recebimentos: sinalizar recebido, destaque vermelho/verde, filtros.
 window.__gmReceb={data:null,filter:'all'};
 window.gmRecebRender=async function(){
- var st=document.getElementById('receb-status');if(st)st.textContent='Carregando…';
+ var TR=function(k){return (window.t?window.t(k):k);};
+ var st=document.getElementById('receb-status');if(st)st.textContent=TR('receb_loading');
  var mEl=document.getElementById('receb-month');
  if(mEl&&!mEl.value){var d=new Date();mEl.value=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
  var month=(mEl&&mEl.value)||'';
@@ -15606,14 +15608,15 @@ window.gmRecebRender=async function(){
   window.__gmReceb.data=j;
   gmRecebRenderFilters();
   gmRecebRenderRows();
-  if(st)st.textContent=(j.counts&&j.counts.all||0)+' casas · dia venc. '+(j.dueDay||5)+(j.pastDue?' · mês vencido':'');
- }catch(e){if(st)st.textContent='Erro de rede.';}
+  if(st)st.textContent=(j.counts&&j.counts.all||0)+' '+TR('receb_stat_houses')+' · '+TR('receb_stat_dueday')+' '+(j.dueDay||5)+(j.pastDue?(' · '+TR('receb_stat_pastdue')):'');
+ }catch(e){if(st)st.textContent=TR('net_error');}
 };
 window.gmRecebRenderFilters=function(){
  var wrap=document.getElementById('receb-filters');if(!wrap)return;
  var j=window.__gmReceb.data;if(!j){wrap.innerHTML='';return;}
  var c=j.counts||{};
- var defs=[['all','Todos',c.all||0,'var(--ink)'],['received','Recebidos',c.received||0,'#2a6e4e'],['overdue','Vencidos',c.overdue||0,'#b83030'],['paid','Pagos',c.paid||0,'#2a6e4e'],['awaiting','Aguardando',c.awaiting||0,'#b45309']];
+ var TR=function(k){return (window.t?window.t(k):k);};
+ var defs=[['all',TR('flt_all'),c.all||0,'var(--ink)'],['received',TR('flt_received'),c.received||0,'#2a6e4e'],['overdue',TR('flt_overdue'),c.overdue||0,'#b83030'],['paid',TR('flt_paid'),c.paid||0,'#2a6e4e'],['awaiting',TR('flt_awaiting'),c.awaiting||0,'#b45309']];
  wrap.innerHTML=defs.map(function(d){var on=window.__gmReceb.filter===d[0];return '<button onclick="gmRecebSetFilter(\''+d[0]+'\')" style="padding:6px 12px;border-radius:16px;border:1px solid '+(on?d[3]:'var(--border2)')+';background:'+(on?d[3]:'var(--sand)')+';color:'+(on?'#fff':'var(--ink2)')+';font-size:11px;font-weight:600;cursor:pointer">'+d[1]+' ('+d[2]+')</button>';}).join('');
 };
 window.gmRecebSetFilter=function(f){window.__gmReceb.filter=f;gmRecebRenderFilters();gmRecebRenderRows();};
@@ -15623,20 +15626,21 @@ window.gmRecebRenderRows=function(){
  var j=window.__gmReceb.data;if(!j){return;}
  var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
  var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var TR=function(k){return (window.t?window.t(k):k);};
  var f=window.__gmReceb.filter||'all';
  var qs=(document.getElementById('receb-search')&&document.getElementById('receb-search').value||'').toLowerCase().trim();
- var badge=function(s){var m={paid:['Pago','#2a6e4e','rgba(42,110,78,.14)'],received:['Recebido','#2a6e4e','rgba(42,110,78,.14)'],overdue:['Vencido','#b83030','rgba(184,48,48,.12)'],awaiting:['Aguardando','#b45309','rgba(180,83,9,.12)']}[s]||['—','var(--ink3)','transparent'];return '<span style="display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;color:'+m[1]+';background:'+m[2]+'">'+m[0]+'</span>';};
+ var badge=function(s){var m={paid:[TR('st_paid'),'#2a6e4e','rgba(42,110,78,.14)'],received:[TR('st_received'),'#2a6e4e','rgba(42,110,78,.14)'],overdue:[TR('st_overdue'),'#b83030','rgba(184,48,48,.12)'],awaiting:[TR('st_awaiting'),'#b45309','rgba(180,83,9,.12)']}[s]||['—','var(--ink3)','transparent'];return '<span style="display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;color:'+m[1]+';background:'+m[2]+'">'+m[0]+'</span>';};
  var rows=(j.rows||[]).filter(function(r){return f==='all'||r.status===f;}).filter(function(r){return !qs||[r.code,r.name,r.owner].join(' ').toLowerCase().indexOf(qs)>=0;});
  body.innerHTML=rows.map(function(r){
   var rowBg=r.status==='overdue'?'background:rgba(184,48,48,.06)':(r.status==='received'||r.status==='paid'?'background:rgba(42,110,78,.05)':'');
   var lock=r.status==='paid';
   var pid=r.propertyId?('\''+String(r.propertyId).replace(/'/g,"\\'")+'\''):'null';
   var lbl='\''+String(r.name||'').replace(/'/g,"\\'")+'\'';
-  var btn=lock?'<span style="font-size:11px;color:var(--ink3)">pago</span>':(r.confirmed?'<button onclick="gmRecebConfirm('+pid+','+lbl+',false)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;cursor:pointer">Desfazer</button>':'<button onclick="gmRecebConfirm('+pid+','+lbl+',true)" style="padding:5px 10px;border:none;border-radius:6px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer">Confirmar recebido</button>');
+  var btn=lock?'<span style="font-size:11px;color:var(--ink3)">'+TR('receb_paid_lc')+'</span>':(r.confirmed?'<button onclick="gmRecebConfirm('+pid+','+lbl+',false)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:11px;cursor:pointer">'+TR('receb_undo')+'</button>':'<button onclick="gmRecebConfirm('+pid+','+lbl+',true)" style="padding:5px 10px;border:none;border-radius:6px;background:#2a6e4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer">'+TR('receb_confirm_received')+'</button>');
   var pkEsc='\''+String(r.propertyKey||'').replace(/'/g,"\\'")+'\'';
-  var rc=(r.hasReceipt?'<a href="javascript:void(0)" onclick="gmRecebReceiptView('+pkEsc+')" style="font-size:11px;color:#2a6e4e;text-decoration:underline;cursor:pointer" title="'+esc(r.receiptFileName||'recibo')+'">Ver</a> ':'')+'<button onclick="gmRecebReceiptUpload('+pid+','+lbl+')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:10px;cursor:pointer" title="Anexar recibo (PDF/JPG/PNG)">'+(r.hasReceipt?'Trocar':'Anexar')+'</button>';
+  var rc=(r.hasReceipt?'<a href="javascript:void(0)" onclick="gmRecebReceiptView('+pkEsc+')" style="font-size:11px;color:#2a6e4e;text-decoration:underline;cursor:pointer" title="'+esc(r.receiptFileName||'recibo')+'">'+TR('act_view')+'</a> ':'')+'<button onclick="gmRecebReceiptUpload('+pid+','+lbl+')" style="padding:4px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink2);font-size:10px;cursor:pointer" title="Anexar recibo (PDF/JPG/PNG)">'+(r.hasReceipt?TR('act_replace'):TR('act_attach'))+'</button>';
   return '<tr style="border-bottom:1px solid var(--border);'+rowBg+'"><td style="padding:8px 12px"><div style="font-weight:600;color:var(--ink)">'+esc(r.name||'—')+'</div><div style="font-size:10px;color:var(--ink3);font-family:JetBrains Mono,monospace">'+esc(r.code||'')+'</div></td><td style="padding:8px 12px;color:var(--ink2)">'+esc(r.owner||'—')+'</td><td style="padding:8px 12px;text-align:right;font-family:JetBrains Mono,monospace;color:#2a6e4e">'+(r.glReceived>0?money(r.glReceived):'—')+'</td><td style="padding:8px 12px;text-align:center">'+badge(r.status)+'</td><td style="padding:8px 12px;text-align:center;white-space:nowrap">'+rc+'</td><td style="padding:8px 12px;text-align:center">'+btn+'</td></tr>';
- }).join('')||'<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--ink3)">Nenhuma casa neste filtro.</td></tr>';
+ }).join('')||'<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--ink3)">'+TR('receb_empty_filter')+'</td></tr>';
 };
 window.gmRecebConfirm=async function(propertyId,propertyLabel,confirmed){
  var mEl=document.getElementById('receb-month');var month=(mEl&&mEl.value)||'';
