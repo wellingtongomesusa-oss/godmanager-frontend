@@ -52,6 +52,7 @@ export async function GET(req: Request) {
       .map((l) => ({
         id: l.id,
         leaseNumber: l.leaseNumber,
+        contractCode: l.contractCode || '',
         status: l.status,
         isRenewal: l.isRenewal,
         propertyId: l.propertyId,
@@ -77,7 +78,7 @@ export async function GET(req: Request) {
       }))
       .filter((l) => {
         if (!q) return true;
-        return [String(l.leaseNumber), l.propertyAddress, l.propertyCode, l.owner, l.tenantName]
+        return [String(l.leaseNumber), l.contractCode, l.propertyAddress, l.propertyCode, l.owner, l.tenantName]
           .join(' ')
           .toLowerCase()
           .includes(q);
@@ -106,8 +107,15 @@ export async function POST(req: Request) {
     const propertyId = String(body.propertyId || '').trim();
     if (!propertyId) return NextResponse.json({ ok: false, error: 'Imóvel é obrigatório.' }, { status: 400 });
 
-    const prop = await prisma.property.findFirst({ where: { id: propertyId, clientId }, select: { id: true } });
+    const prop = await prisma.property.findFirst({ where: { id: propertyId, clientId }, select: { id: true, code: true, address: true } });
     if (!prop) return NextResponse.json({ ok: false, error: 'Imóvel não encontrado neste cliente.' }, { status: 404 });
+
+    // Código do contrato: CTGD + AAAAMMDD + código da casa + 2 primeiras letras do endereço.
+    const now = new Date();
+    const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const firstWord = String(prop.address || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/)[0] || '';
+    const twoLetters = firstWord.slice(0, 2).toUpperCase();
+    const contractCode = `CTGD${ymd}${String(prop.code || '').toUpperCase()}${twoLetters}`;
 
     const tenantId = String(body.tenantId || '').trim() || null;
     if (tenantId) {
@@ -130,6 +138,7 @@ export async function POST(req: Request) {
         data: {
           clientId,
           leaseNumber,
+          contractCode,
           propertyId,
           tenantId,
           isRenewal: body.isRenewal === true,
@@ -162,7 +171,7 @@ export async function POST(req: Request) {
       details: `Contrato #${created.leaseNumber} · imóvel ${propertyId}`,
     });
 
-    return NextResponse.json({ ok: true, id: created.id, leaseNumber: created.leaseNumber });
+    return NextResponse.json({ ok: true, id: created.id, leaseNumber: created.leaseNumber, contractCode });
   } catch (e) {
     console.error('[lease-agreements POST]', e instanceof Error ? e.message : e);
     return NextResponse.json({ ok: false, error: 'Erro ao criar contrato.' }, { status: 500 });

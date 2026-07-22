@@ -8,6 +8,7 @@ type LeaseForm = Record<string, string | boolean>;
 type LeaseDetail = {
   id: string;
   leaseNumber: number;
+  contractCode?: string | null;
   status: string;
   propertyId: string;
   mgmtFeePct: string;
@@ -235,7 +236,10 @@ export function LeaseDetailModal({ leaseId, clientId, onClose, onSaved }: { leas
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <div>
             <h2 className="text-lg font-bold text-slate-800">Contrato #{lease?.leaseNumber ?? ''} — Formulário FL</h2>
-            <p className="text-xs text-slate-500">Modelo Heist, Weisse &amp; Wolk. Preencha e gere o PDF para envio ao advogado.</p>
+            <p className="text-xs text-slate-500">
+              {lease?.contractCode ? <span className="font-mono text-[#22558c]">{lease.contractCode} · </span> : null}
+              Modelo Heist, Weisse &amp; Wolk. Preencha e gere o PDF para envio ao advogado.
+            </p>
           </div>
           <button onClick={onClose} className="text-2xl text-slate-400 hover:text-slate-600">×</button>
         </div>

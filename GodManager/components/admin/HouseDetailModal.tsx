@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 type Cell = { received: number; paid: number; expected: number };
 type MatrixRow = { propertyId: string; owner: string; rent: number; months: string[]; cells: Record<string, Cell> };
-type LeaseLite = { id: string; leaseNumber: number; status: string; monthlyRent: string; securityDeposit: string; tenantName: string };
+type LeaseLite = { id: string; leaseNumber: number; contractCode?: string; status: string; monthlyRent: string; securityDeposit: string; tenantName: string };
 type Job = {
   id: string;
   propertyId: string;
@@ -167,7 +167,8 @@ export function HouseDetailModal({
             <div className="py-4">
               {lease ? (
                 <div className="rounded-lg border border-slate-200 p-4 text-sm">
-                  <div className="mb-2 font-semibold text-slate-800">Contrato FL #{lease.leaseNumber} · {lease.status}</div>
+                  <div className="mb-1 font-semibold text-slate-800">Contrato FL #{lease.leaseNumber} · {lease.status}</div>
+                  {lease.contractCode && <div className="mb-2 font-mono text-xs text-[#22558c]">{lease.contractCode}</div>}
                   <div className="grid grid-cols-2 gap-2 text-slate-600">
                     <div>Aluguel: <b>{money(lease.monthlyRent)}</b></div>
                     <div>Depósito: <b>{money(lease.securityDeposit)}</b></div>

@@ -7,6 +7,7 @@ type PropOpt = { propertyId: string; code: string | null; address: string; tenan
 type Lease = {
   id: string;
   leaseNumber: number;
+  contractCode: string;
   status: string;
   propertyCode: string;
   propertyAddress: string;
@@ -265,7 +266,10 @@ export function LeasesAdmin({ clientId }: { clientId: string }) {
             )}
             {leases.map((l) => (
               <tr key={l.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setOpenLeaseId(l.id)}>
-                <td className="px-4 py-3 font-mono text-slate-600 underline">{l.leaseNumber}</td>
+                <td className="px-4 py-3 font-mono text-slate-600">
+                  <div className="underline">{l.leaseNumber}</div>
+                  {l.contractCode && <div className="text-[10px] normal-case text-slate-400">{l.contractCode}</div>}
+                </td>
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-800">{l.propertyAddress}</div>
                   <div className="font-mono text-xs text-slate-400">{l.propertyCode}</div>

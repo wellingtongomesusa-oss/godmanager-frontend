@@ -1714,11 +1714,12 @@ enum LeaseRentPeriod {
 /// Modelo Flórida (Heist/Weisse/Wolk). Sempre vinculado a um imóvel; nº sequencial único por cliente.
 /// Guarda o formulário FL completo em `leaseForm` (Json) para o PDF e o envio ao advogado.
 model LeaseAgreement {
-  id          String               @id @default(cuid())
-  clientId    String
-  leaseNumber Int // sequencial por cliente (único)
-  status      LeaseAgreementStatus @default(DRAFT)
-  isRenewal   Boolean              @default(false)
+  id           String               @id @default(cuid())
+  clientId     String
+  leaseNumber  Int // sequencial por cliente (único)
+  contractCode String? // CTGD + AAAAMMDD + código da casa + 2 letras do endereço (ex.: CTGD20260721P0002GR)
+  status       LeaseAgreementStatus @default(DRAFT)
+  isRenewal    Boolean              @default(false)
 
   propertyId String
   tenantId   String?
