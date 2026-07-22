@@ -6531,6 +6531,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     <button type="button" onclick="gmRecLoad()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Carregar</button>
     <input type="file" id="rec-chase-file" accept="application/pdf,.pdf" style="display:none" onchange="if(typeof gmRecImportChase==='function')gmRecImportChase(this)">
     <button type="button" onclick="document.getElementById('rec-chase-file').click()" title="Sobe o PDF consolidado do Chase e preenche o saldo inicial/final das 3 contas do mês" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">&#8593; Importar extrato Chase (PDF)</button>
+    <button type="button" onclick="gmQbRobotOpen()" title="Robô: prévia de conciliação no QuickBooks (categoriza as transações do banco)" style="padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">🤖 Conciliar QuickBooks</button>
+    <button type="button" onclick="gmQbReconHelp()" aria-label="Como conciliar no QuickBooks" title="Como conciliar no QuickBooks" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);background:var(--sand);color:var(--ink2);font-size:14px;font-weight:700;cursor:pointer;line-height:1">&#8505;</button>
    </div>
   </div>
   <div id="rec-chase-import" style="display:none;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--sand);font-size:12px;color:var(--ink2)"></div>
@@ -9409,6 +9411,63 @@ function gmRecRenderBankTxns(){
  box.innerHTML=h;
 }
 window.gmRecRenderBankTxns=gmRecRenderBankTxns;
+// #66 Robô de conciliação QuickBooks — prévia (nunca concilia às cegas) + info.
+window.gmQbReconClientQs=function(){try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;var id=(ac&&ac.id)?String(ac.id):'';return id?('clientId='+encodeURIComponent(id)):'';}catch(e){return '';}};
+window.gmQbReconHelp=function(){
+ var ov=document.getElementById('gm-qbhelp-ov');if(ov)ov.remove();
+ ov=document.createElement('div');ov.id='gm-qbhelp-ov';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(20,16,10,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+ ov.onclick=function(e){if(e.target===ov)ov.remove();};
+ ov.innerHTML='<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
+  +'<div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div style="font-size:16px;font-weight:700;color:var(--ink)">Como conciliar no QuickBooks</div><button onclick="document.getElementById(\'gm-qbhelp-ov\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div>'
+  +'<div style="padding:20px 22px;font-size:13px;line-height:1.6;color:var(--ink)">'
+  +'<p style="margin:0 0 12px"><b>Por que existem 273 pendentes?</b> São as transações do banco na fila <b>“For Review”</b> do QuickBooks Online (Bank transactions). O QBO <b>não expõe essa fila pela API</b>, então o robô não “aprova” diretamente por lá.</p>'
+  +'<p style="margin:0 0 8px"><b>O que o robô faz (caminho suportado):</b></p>'
+  +'<ol style="margin:0 0 12px 18px;padding:0"><li>Lê as transações do <b>extrato do Chase</b> que você já importou aqui (Conciliação).</li><li><b>Sugere a categoria</b> de cada uma (Zelle, ACH, Wire, Cartão, Cheque…).</li><li>Na prévia, você <b>revisa e aprova</b>.</li><li>Com a aprovação, o robô <b>cria a entrada correspondente no QBO</b> (Purchase/Deposit) — aí ela <b>casa sozinha</b> com a pendente “For Review”.</li></ol>'
+  +'<p style="margin:0 0 8px"><b>Passo a passo hoje:</b></p>'
+  +'<ol style="margin:0 0 12px 18px;padding:0"><li>Importe o extrato Chase do mês (botão “Importar extrato Chase”).</li><li>Clique em <b>🤖 Conciliar QuickBooks</b> para ver a prévia categorizada.</li><li>Revise. A escrita automática no QBO é ativada por segurança só depois de testada (variável <code>QBO_RECONCILE_ENABLED</code>).</li></ol>'
+  +'<p style="margin:0;color:var(--ink3);font-size:12px">Enquanto a escrita não está ativada, a prévia serve de <b>checklist</b>: você concilia manualmente no QBO com a categoria sugerida ao lado.</p>'
+  +'</div></div>';
+ document.body.appendChild(ov);
+};
+window.gmQbRobotOpen=async function(){
+ var month=(document.getElementById('rec-month')&&document.getElementById('rec-month').value)||'';
+ var qs=gmQbReconClientQs();var url='/api/quickbooks/reconcile-robot?'+(qs?(qs+'&'):'')+'month='+encodeURIComponent(month);
+ var ov=document.getElementById('gm-qbrobot-ov');if(ov)ov.remove();
+ ov=document.createElement('div');ov.id='gm-qbrobot-ov';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(20,16,10,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+ ov.onclick=function(e){if(e.target===ov)ov.remove();};
+ ov.innerHTML='<div style="background:var(--paper);border-radius:14px;padding:40px;color:var(--ink3)">Carregando prévia…</div>';
+ document.body.appendChild(ov);
+ var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ try{
+  var res=await fetch(url,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){ov.querySelector('div').textContent=(j&&j.error)||('Erro '+res.status);return;}
+  var byT=j.byType||{};var chips=Object.keys(byT).map(function(k){return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:var(--cream);font-size:11px;margin:2px">'+esc(k)+': <b>'+byT[k].count+'</b> ('+money(byT[k].amount)+')</span>';}).join('');
+  var rows=(j.rows||[]).slice(0,400).map(function(r){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:5px 8px;font-family:JetBrains Mono,monospace">'+esc(r.date)+'</td><td style="padding:5px 8px;font-size:10px;color:var(--ink3)">'+esc(r.account)+'</td><td style="padding:5px 8px">'+esc(r.description)+'</td><td style="padding:5px 8px;text-align:right;font-family:JetBrains Mono,monospace;color:'+((Number(r.amount)||0)<0?'#b83030':'#2a6e4e')+'">'+money(r.amount)+'</td><td style="padding:5px 8px;text-align:center"><span style="font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(34,85,140,.1);color:#22558c;font-weight:600">'+esc(r.suggestedType)+'</span></td></tr>';}).join('')||'<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--ink3)">Nenhuma transação pendente. Importe o extrato Chase do mês.</td></tr>';
+  var connMsg=j.connected?'<span style="color:#2a6e4e">QuickBooks conectado</span>':'<span style="color:#b45309">QuickBooks não conectado</span>';
+  var applyMsg=j.applyEnabled?'':'<div style="font-size:11px;color:var(--ink3);margin-top:6px">Escrita automática no QBO desativada (QBO_RECONCILE_ENABLED). Use a prévia como checklist. <a href="javascript:void(0)" onclick="gmQbReconHelp()" style="color:var(--amber);text-decoration:underline">Como fazer</a></div>';
+  ov.innerHTML='<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:960px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
+   +'<div style="padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:16px;font-weight:700;color:var(--ink)">Conciliação QuickBooks — prévia'+(j.month?(' · '+esc(j.month)):'')+'</div><div style="font-size:11px;margin-top:3px">'+connMsg+' · '+j.pending+' transação(ões) do banco a conciliar</div></div><button onclick="document.getElementById(\'gm-qbrobot-ov\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div>'
+   +'<div style="padding:10px 22px">'+chips+'</div>'
+   +'<div style="padding:0 22px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream);position:sticky;top:0"><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th><th style="padding:7px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Valor</th><th style="padding:7px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Categoria sugerida</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+   +'<div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div>'+applyMsg+'</div><div style="display:flex;gap:10px"><button onclick="gmQbReconHelp()" style="background:var(--paper);color:var(--ink2);border:1px solid var(--border2);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">ℹ️ Como fazer</button><button onclick="gmQbRobotApply()" style="background:'+(j.applyEnabled?'#2a6e4e':'var(--border2)')+';color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer">Aprovar &amp; aplicar no QBO</button></div></div>'
+   +'</div>';
+  window.__gmQbRobotMonth=j.month||month;
+ }catch(e){ov.querySelector('div').textContent='Erro de rede.';}
+};
+window.gmQbRobotApply=async function(){
+ if(!confirm('Aprovar e aplicar a conciliação no QuickBooks?'))return;
+ try{
+  var ac=(typeof getActiveClient==='function')?getActiveClient():null;var acId=(ac&&ac.id)?String(ac.id):'';
+  var res=await fetch('/api/quickbooks/reconcile-robot',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({month:window.__gmQbRobotMonth||'',approve:true,clientId:acId||undefined})});
+  var j=await res.json().catch(function(){return{};});
+  if(res.ok&&j.ok){alert('Aplicado: '+(j.created||0)+' entrada(s)'+(j.note?('\n'+j.note):''));return;}
+  alert((j&&j.error)||('Erro '+res.status));
+ }catch(e){alert('Erro de rede.');}
+};
 window.gmRecToggleBankTxn=async function(id,checked){
  var txns=Array.isArray(window.__gmRecBankTxns)?window.__gmRecBankTxns:[];
  var t=txns.filter(function(x){return x.id===id;})[0];if(t)t.matched=!!checked; // otimista
