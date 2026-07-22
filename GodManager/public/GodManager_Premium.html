@@ -15541,24 +15541,42 @@ window.gmGlMatrixCsv=function(){
 };
 // Contratos como PÁGINA (aba) — embute /admin/contracts no iframe, sem popup.
 // Barra de abas PADRONIZADA (uma função só) para Contratos/Recebimentos/Contas a Pagar/Pay-Receipt.
+// Barra de abas UNIFICADA (mesma em todas as telas): abas de seção + abas da casa + seletor embaixo.
 window.gmPayTabsHtml=function(active){
- var tabs=[['files','Contratos por casa',"gmContratosGoto('files')"],['recebimentos','Recebimentos',"nav('recebimentos')"],['ltownerpay','Contas a Pagar',"nav('ltownerpay')"],['renovations','Pay/Receipt',"nav('renovations')"]];
- var tabsHtml=tabs.map(function(t){var on=(t[0]===active);return '<button onclick="'+t[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'var(--ink)':'transparent')+';color:'+(on?'#fff':'var(--ink2)')+'">'+t[1]+'</button>';}).join('');
+ var sec=[['files','Contratos por casa',"gmContratosGoto('files')"],['recebimentos','Recebimentos',"nav('recebimentos')"],['ltownerpay','Contas a Pagar',"nav('ltownerpay')"],['renovations','Pay/Receipt',"nav('renovations')"]];
+ var secHtml=sec.map(function(t){var on=(t[0]===active);return '<button onclick="'+t[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'#1a1a1c':'transparent')+';color:'+(on?'#fff':'#4a4540')+'">'+t[1]+'</button>';}).join('');
+ var house=[['receipts','Aluguéis'],['payout','Repasse'],['contract','Contrato'],['docs','Documentos'],['jobs','Chamados'],['graphs','Gráficos'],['whatsapp','WhatsApp histórico']];
+ var houseHtml=house.map(function(t){return '<button onclick="gmContratosGoto(\'files\',\''+t[0]+'\')" style="padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:#64748b">'+t[1]+'</button>';}).join('');
+ var sep='<span style="display:inline-block;width:1px;height:20px;background:#cbd5e1;margin:0 6px"></span>';
  var novoBtn='<button onclick="gmContratosGoto(\'leases\')" style="margin-left:auto;margin-bottom:4px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;background:#2a6e4e;color:#fff">+ Novo contrato</button>';
- return tabsHtml+novoBtn;
+ var row1='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;border-bottom:1px solid var(--border)">'+secHtml+sep+houseHtml+novoBtn+'</div>';
+ var row2='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-2,#ecebe5)"><span style="font-size:12px;font-weight:600;color:#64748b">Casa:</span><select class="gm-paytab-house" onchange="if(this.value)gmPayHousePick(this.value)" style="max-width:320px;padding:6px 8px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--paper);color:var(--ink)"><option value="">Selecionar casa…</option></select><button onclick="gmContratosGoto(\'files\')" style="padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2)">Todas as casas</button></div>';
+ return row1+row2;
 };
-window.gmPayTabsFill=function(){var els=document.querySelectorAll('.gm-paytabs');for(var i=0;i<els.length;i++){els[i].innerHTML=gmPayTabsHtml(els[i].getAttribute('data-active')||'');}};
+window.__gmPayHouses=null;
+window.gmPayHousesLoad=function(){
+ if(window.__gmPayHouses)return Promise.resolve(window.__gmPayHouses);
+ var cid='';try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;cid=(ac&&ac.id)?String(ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(e){}
+ return fetch('/api/contracts'+(cid?('?clientId='+encodeURIComponent(cid)):''),{credentials:'include',cache:'no-store'}).then(function(r){return r.json();}).then(function(d){window.__gmPayHouses=(d&&d.properties)||[];return window.__gmPayHouses;}).catch(function(){return [];});
+};
+window.gmPayFillHouseSelect=function(){
+ var houses=window.__gmPayHouses||[];
+ var opts='<option value="">Selecionar casa…</option>'+houses.map(function(h){return '<option value="'+String(h.propertyId)+'">'+((h.code?h.code+' · ':'')+String(h.address||'')).replace(/[<>]/g,'')+'</option>';}).join('');
+ var all=document.querySelectorAll('.gm-paytab-house');for(var i=0;i<all.length;i++){all[i].innerHTML=opts;}
+};
+window.gmPayHousePick=function(pid){window.__gmContratosHouse=pid;window.__gmContratosTab='files';if(!window.__gmContratosHouseTab)window.__gmContratosHouseTab='receipts';if(typeof nav==='function')nav('contratos');};
+window.gmPayTabsFill=function(){var els=document.querySelectorAll('.gm-paytabs');for(var i=0;i<els.length;i++){els[i].innerHTML=gmPayTabsHtml(els[i].getAttribute('data-active')||'');}gmPayHousesLoad().then(function(){gmPayFillHouseSelect();});};
 window.gmContratosPageRender=function(){
  var ifr=document.getElementById('contratos-iframe');if(!ifr)return;
  var tab=(window.__gmContratosTab==='leases')?'leases':'files';
  var cid='';try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;cid=(ac&&ac.id)?String(ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(e){}
- var src='/admin/contracts?embed=1&tab='+tab+(cid?('&clientId='+encodeURIComponent(cid)):'');
+ var ht=window.__gmContratosHouseTab||'';var ph=window.__gmContratosHouse||'';
+ var src='/admin/contracts?embed=1&tab='+tab+(cid?('&clientId='+encodeURIComponent(cid)):'')+(ht?('&housetab='+encodeURIComponent(ht)):'')+(ph?('&propertyId='+encodeURIComponent(ph)):'');
  if(ifr.getAttribute('data-src')!==src){ifr.setAttribute('data-src',src);ifr.src=src;}
- var bar=document.querySelector('#page-contratos .gm-paytabs');if(bar)bar.setAttribute('data-active',tab==='files'?'files':'');
  if(typeof gmPayTabsFill==='function')gmPayTabsFill();
 };
 window.gmContratosSetTab=function(tab){window.__gmContratosTab=(tab==='leases')?'leases':'files';gmContratosPageRender();};
-window.gmContratosGoto=function(tab){window.__gmContratosTab=(tab==='leases')?'leases':'files';if(typeof nav==='function')nav('contratos');else gmContratosPageRender();};
+window.gmContratosGoto=function(tab,houseTab){window.__gmContratosTab=(tab==='leases')?'leases':'files';if(houseTab)window.__gmContratosHouseTab=houseTab;if(typeof nav==='function')nav('contratos');else gmContratosPageRender();};
 try{if(document.readyState!=='loading')gmPayTabsFill();else document.addEventListener('DOMContentLoaded',function(){gmPayTabsFill();});}catch(e){}
 // #61 Recebimentos: sinalizar recebido, destaque vermelho/verde, filtros.
 window.__gmReceb={data:null,filter:'all'};

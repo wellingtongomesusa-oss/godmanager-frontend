@@ -33,6 +33,15 @@ export function ContractsAdmin() {
     if (typeof window === 'undefined') return '';
     return new URLSearchParams(window.location.search).get('clientId') || '';
   }, []);
+  // Casa e aba iniciais vindas do monólito (seletor/abas da barra unificada).
+  const urlPropertyId = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('propertyId') || '';
+  }, []);
+  const urlHouseTab = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('housetab') || '';
+  }, []);
 
   const [clients, setClients] = useState<ClientOpt[]>([]);
   const [clientId, setClientId] = useState(urlClientId);
@@ -92,13 +101,14 @@ export function ContractsAdmin() {
     void load();
   }, [load, isSuper, clientId]);
 
-  // Abre a primeira casa automaticamente (abas já visíveis, sem precisar clicar em Abrir).
+  // Abre automaticamente a casa da URL (se veio do seletor do monólito) ou a primeira.
   useEffect(() => {
     if (!autoSelected.current && !openHouse && rows.length > 0) {
       autoSelected.current = true;
-      setOpenHouse(rows[0]);
+      const fromUrl = urlPropertyId ? rows.find((r) => r.propertyId === urlPropertyId) : null;
+      setOpenHouse(fromUrl || rows[0]);
     }
-  }, [rows, openHouse]);
+  }, [rows, openHouse, urlPropertyId]);
 
   const pickFile = (propertyId: string) => {
     pendingProp.current = propertyId;
@@ -190,6 +200,7 @@ export function ContractsAdmin() {
           onClose={() => setOpenHouse(null)}
           houses={filtered.map((r) => ({ propertyId: r.propertyId, address: r.address, code: r.code, tenantName: r.tenantName }))}
           onSelect={(id) => setOpenHouse(rows.find((r) => r.propertyId === id) || openHouse)}
+          initialTab={urlHouseTab}
         />
       ) : (
       <>

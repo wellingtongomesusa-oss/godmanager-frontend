@@ -31,6 +31,7 @@ export function HouseDetailModal({
   onOpenLeasesTab,
   houses,
   onSelect,
+  initialTab,
 }: {
   propertyId: string;
   address: string;
@@ -41,9 +42,12 @@ export function HouseDetailModal({
   onOpenLeasesTab?: () => void;
   houses?: { propertyId: string; address: string; code: string | null; tenantName: string | null }[];
   onSelect?: (propertyId: string) => void;
+  initialTab?: string;
 }) {
   const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
-  const [tab, setTab] = useState<'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs' | 'whatsapp'>('receipts');
+  type HouseTab = 'receipts' | 'payout' | 'contract' | 'docs' | 'jobs' | 'graphs' | 'whatsapp';
+  const validTabs: HouseTab[] = ['receipts', 'payout', 'contract', 'docs', 'jobs', 'graphs', 'whatsapp'];
+  const [tab, setTab] = useState<HouseTab>(validTabs.includes(initialTab as HouseTab) ? (initialTab as HouseTab) : 'receipts');
   const [graphOpen, setGraphOpen] = useState<'received' | 'payout' | 'compare' | null>(null);
   const [stmtMonth, setStmtMonth] = useState(() => { const d = new Date(); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; });
   const [waList, setWaList] = useState<{ id: string; createdAt: string; label?: string | null; participants?: string[]; messageCount?: number; overview?: unknown; transcript?: { d?: string; s?: string; t?: string }[] }[] | null>(null);
