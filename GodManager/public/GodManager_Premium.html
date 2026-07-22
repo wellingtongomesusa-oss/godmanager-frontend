@@ -1333,6 +1333,10 @@ window.gmAfterLangChange = function gmAfterLangChange(){
     if(pageId==='page-ltexpenses'&&typeof ltExpRenderWithPm==='function')void ltExpRenderWithPm();
     if(pageId==='page-jobs'&&typeof gmJobsRefreshI18n==='function')gmJobsRefreshI18n();
     if(typeof window.gmCurrentPageRefresh==='function')window.gmCurrentPageRefresh();
+    // Barra unificada de contratos: re-render com o novo idioma
+    if(typeof gmPayTabsFill==='function')gmPayTabsFill();
+    // Avisa o iframe React (contratos) para re-renderizar no novo idioma
+    try{var _ifr=document.getElementById('contratos-iframe');var _lang=(function(){try{return localStorage.getItem('gm_lang')||'en';}catch(e){return 'en';}})();if(_ifr&&_ifr.contentWindow)_ifr.contentWindow.postMessage({type:'gm-lang',lang:_lang},'*');}catch(e){}
     console.debug('[gm-i18n] gmAfterLangChange applied, page:',pageId||'(none)');
   }catch(e){console.warn('[gm-i18n] gmAfterLangChange error',e);}
 };
@@ -6044,7 +6048,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <div class="page" id="page-recebimentos">
  <div class="gm-paytabs" data-active="recebimentos" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"></div>
- <div style="display:flex;align-items:center;gap:4px;padding:8px 0 12px;border-bottom:1px solid var(--line-2,#ecebe5);margin-bottom:12px"><b style="font-size:15px;color:var(--ink)">Recebimentos</b><button type="button" onclick="gmInfoShow('recebimentos')" aria-label="Mais informações" title="Mais informações" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:none;background:none;color:var(--ink3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></div>
+ <div style="display:flex;align-items:center;gap:4px;padding:8px 0 12px;border-bottom:1px solid var(--line-2,#ecebe5);margin-bottom:12px"><b style="font-size:15px;color:var(--ink)" data-i18n="pay_tab_receivables">Recebimentos</b><button type="button" onclick="gmInfoShow('recebimentos')" aria-label="Mais informações" title="Mais informações" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:none;background:none;color:var(--ink3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
   <label style="font-size:11px;color:var(--ink3)">Mês <input type="month" id="receb-month" onchange="gmRecebRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"></label>
   <input id="receb-search" oninput="gmRecebRenderFilterOnly()" placeholder="Buscar casa / owner…" style="padding:7px 12px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);width:240px">
@@ -6061,7 +6065,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <!-- Owner Payment (dia 15, NET owner) -->
 <div class="page" id="page-ltownerpay">
  <div class="gm-paytabs" data-active="ltownerpay" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"></div>
- <div style="display:flex;align-items:center;gap:4px;padding:8px 0 12px;border-bottom:1px solid var(--line-2,#ecebe5);margin-bottom:12px"><b id="ltop-pt" style="font-size:15px;color:var(--ink)">Contas a Pagar</b><span id="ltop-ps" style="display:none"></span><button type="button" onclick="gmInfoShow('ltownerpay')" aria-label="Mais informações" title="Mais informações" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:none;background:none;color:var(--ink3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></div>
+ <div style="display:flex;align-items:center;gap:4px;padding:8px 0 12px;border-bottom:1px solid var(--line-2,#ecebe5);margin-bottom:12px"><b id="ltop-pt" style="font-size:15px;color:var(--ink)" data-i18n="pay_tab_payables">Contas a Pagar</b><span id="ltop-ps" style="display:none"></span><button type="button" onclick="gmInfoShow('ltownerpay')" aria-label="Mais informações" title="Mais informações" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:none;background:none;color:var(--ink3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button></div>
  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
   <label style="font-size:11px;color:var(--ink3)">Mês</label>
   <input type="month" id="ltop-month" value="2026-04" onchange="ltOwnerPayRender()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px">
@@ -15550,14 +15554,15 @@ window.gmGlMatrixCsv=function(){
 // Barra de abas PADRONIZADA (uma função só) para Contratos/Recebimentos/Contas a Pagar/Pay-Receipt.
 // Barra de abas UNIFICADA (mesma em todas as telas): abas de seção + abas da casa + seletor embaixo.
 window.gmPayTabsHtml=function(active){
- var sec=[['files','Contratos por casa',"gmContratosGoto('files')"],['recebimentos','Recebimentos',"nav('recebimentos')"],['ltownerpay','Contas a Pagar',"nav('ltownerpay')"],['renovations','Pay/Receipt',"nav('renovations')"]];
- var secHtml=sec.map(function(t){var on=(t[0]===active);return '<button onclick="'+t[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'#1a1a1c':'transparent')+';color:'+(on?'#fff':'#4a4540')+'">'+t[1]+'</button>';}).join('');
- var house=[['receipts','Aluguéis'],['payout','Repasse'],['contract','Contrato'],['docs','Documentos'],['jobs','Chamados'],['vendors','Vendors'],['graphs','Gráficos'],['whatsapp','WhatsApp histórico'],['logs','Logs'],['eviction','Eviction']];
- var houseHtml=house.map(function(t){return '<button onclick="gmContratosGoto(\'files\',\''+t[0]+'\')" style="padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:#64748b">'+t[1]+'</button>';}).join('');
+ var TR=function(k){return (window.t?window.t(k):k);};
+ var sec=[['files','pay_tab_contracts',"gmContratosGoto('files')"],['recebimentos','pay_tab_receivables',"nav('recebimentos')"],['ltownerpay','pay_tab_payables',"nav('ltownerpay')"],['renovations','pay_tab_payreceipt',"nav('renovations')"]];
+ var secHtml=sec.map(function(x){var on=(x[0]===active);return '<button onclick="'+x[2]+'" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:'+(on?'#1a1a1c':'transparent')+';color:'+(on?'#fff':'#4a4540')+'">'+TR(x[1])+'</button>';}).join('');
+ var house=[['receipts','house_tab_rents'],['payout','house_tab_payout'],['contract','house_tab_contract'],['docs','house_tab_documents'],['jobs','house_tab_jobs'],['vendors','house_tab_vendors'],['graphs','house_tab_graphs'],['whatsapp','house_tab_whatsapp'],['logs','house_tab_logs'],['eviction','house_tab_eviction']];
+ var houseHtml=house.map(function(x){return '<button onclick="gmContratosGoto(\'files\',\''+x[0]+'\')" style="padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:#64748b">'+TR(x[1])+'</button>';}).join('');
  var sep='<span style="display:inline-block;width:1px;height:20px;background:#cbd5e1;margin:0 6px"></span>';
- var novoBtn='<button onclick="gmContratosGoto(\'leases\')" style="margin-left:auto;margin-bottom:4px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;background:#2a6e4e;color:#fff">+ Novo contrato</button>';
+ var novoBtn='<button onclick="gmContratosGoto(\'leases\')" style="margin-left:auto;margin-bottom:4px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;background:#2a6e4e;color:#fff">'+TR('pay_new_contract')+'</button>';
  var row1='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;border-bottom:1px solid var(--border)">'+secHtml+sep+houseHtml+novoBtn+'</div>';
- var row2='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-2,#ecebe5)"><span style="font-size:12px;font-weight:600;color:#64748b">Casa:</span><select class="gm-paytab-house" onchange="if(this.value)gmPayHousePick(this.value)" style="max-width:320px;padding:6px 8px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--paper);color:var(--ink)"><option value="">Selecionar casa…</option></select><button onclick="gmContratosGoto(\'files\')" style="padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2)">Todas as casas</button></div>';
+ var row2='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-2,#ecebe5)"><span style="font-size:12px;font-weight:600;color:#64748b">'+TR('pay_house_label')+'</span><select class="gm-paytab-house" onchange="if(this.value)gmPayHousePick(this.value)" style="max-width:320px;padding:6px 8px;border:1px solid var(--border2);border-radius:8px;font-size:12px;background:var(--paper);color:var(--ink)"><option value="">'+TR('pay_house_select')+'</option></select><button onclick="gmContratosGoto(\'files\')" style="padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);border-radius:8px;background:var(--sand);color:var(--ink2)">'+TR('pay_all_houses')+'</button></div>';
  return row1+row2;
 };
 window.__gmPayHouses=null;
@@ -15568,7 +15573,7 @@ window.gmPayHousesLoad=function(){
 };
 window.gmPayFillHouseSelect=function(){
  var houses=window.__gmPayHouses||[];
- var opts='<option value="">Selecionar casa…</option>'+houses.map(function(h){return '<option value="'+String(h.propertyId)+'">'+((h.code?h.code+' · ':'')+String(h.address||'')).replace(/[<>]/g,'')+'</option>';}).join('');
+ var opts='<option value="">'+(window.t?window.t('pay_house_select'):'Selecionar casa…')+'</option>'+houses.map(function(h){return '<option value="'+String(h.propertyId)+'">'+((h.code?h.code+' · ':'')+String(h.address||'')).replace(/[<>]/g,'')+'</option>';}).join('');
  var all=document.querySelectorAll('.gm-paytab-house');for(var i=0;i<all.length;i++){all[i].innerHTML=opts;}
 };
 window.gmPayHousePick=function(pid){window.__gmContratosHouse=pid;window.__gmContratosTab='files';if(!window.__gmContratosHouseTab)window.__gmContratosHouseTab='receipts';if(typeof nav==='function')nav('contratos');};

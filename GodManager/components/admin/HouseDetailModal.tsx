@@ -183,6 +183,20 @@ export function HouseDetailModal({
 
   const monthsWith = row ? row.months.filter((m) => row.cells[m]) : [];
   const parentNav = (k: string) => { const p = window.parent as unknown as { nav?: (k: string) => void }; p.nav?.(k); };
+  // i18n: reusa o dicionário do monólito (window.parent.t) e re-renderiza ao trocar de idioma.
+  const [lang, setLang] = useState<string>(() => { try { return localStorage.getItem('gm_lang') || 'en'; } catch { return 'en'; } });
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => { const d = e.data as { type?: string; lang?: string }; if (d && d.type === 'gm-lang' && d.lang) setLang(d.lang); };
+    const onStorage = (e: StorageEvent) => { if (e.key === 'gm_lang' && e.newValue) setLang(e.newValue); };
+    window.addEventListener('message', onMsg);
+    window.addEventListener('storage', onStorage);
+    return () => { window.removeEventListener('message', onMsg); window.removeEventListener('storage', onStorage); };
+  }, []);
+  const t = useCallback((key: string, fallback: string) => {
+    try { const pt = (window.parent as unknown as { t?: (k: string) => string }).t; if (pt) { const v = pt(key); if (v && v !== key) return v; } } catch { /* noop */ }
+    return fallback;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
   // Nível 1 — abas de SEÇÃO (idênticas às barras do monólito: #1a1a1c ativo / transparente inativo).
   const secBtn = (label: string, active: boolean, navKey: string | null) => (
     <button
@@ -208,54 +222,54 @@ export function HouseDetailModal({
       <div className="flex w-full flex-col">
         {/* TODAS as abas em UMA linha (seções + abas da casa) */}
         <div className="flex flex-wrap items-center gap-0.5 border-b border-[#e2ddd4]">
-          {secBtn('Contratos por casa', true, null)}
-          {secBtn('Recebimentos', false, 'recebimentos')}
-          {secBtn('Contas a Pagar', false, 'ltownerpay')}
-          {secBtn('Pay/Receipt', false, 'renovations')}
+          {secBtn(t('pay_tab_contracts', 'Contratos por casa'), true, null)}
+          {secBtn(t('pay_tab_receivables', 'Recebimentos'), false, 'recebimentos')}
+          {secBtn(t('pay_tab_payables', 'Contas a Pagar'), false, 'ltownerpay')}
+          {secBtn(t('pay_tab_payreceipt', 'Pay/Receipt'), false, 'renovations')}
           <span className="mx-1 h-5 w-px bg-slate-300" />
-          {tabBtn('receipts', 'Aluguéis')}
-          {tabBtn('payout', 'Repasse')}
-          {tabBtn('contract', 'Contrato')}
-          {tabBtn('docs', 'Documentos')}
-          {tabBtn('jobs', 'Chamados')}
-          {tabBtn('vendors', 'Vendors')}
-          {tabBtn('graphs', 'Gráficos')}
-          {tabBtn('whatsapp', 'WhatsApp histórico')}
-          {tabBtn('logs', 'Logs')}
-          {tabBtn('eviction', 'Eviction')}
+          {tabBtn('receipts', t('house_tab_rents', 'Aluguéis'))}
+          {tabBtn('payout', t('house_tab_payout', 'Repasse'))}
+          {tabBtn('contract', t('house_tab_contract', 'Contrato'))}
+          {tabBtn('docs', t('house_tab_documents', 'Documentos'))}
+          {tabBtn('jobs', t('house_tab_jobs', 'Chamados'))}
+          {tabBtn('vendors', t('house_tab_vendors', 'Vendors'))}
+          {tabBtn('graphs', t('house_tab_graphs', 'Gráficos'))}
+          {tabBtn('whatsapp', t('house_tab_whatsapp', 'WhatsApp histórico'))}
+          {tabBtn('logs', t('house_tab_logs', 'Logs'))}
+          {tabBtn('eviction', t('house_tab_eviction', 'Eviction'))}
           <div className="ml-auto flex items-center gap-2 pb-1">
             <button
               onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
               className="rounded-lg bg-[#2a6e4e] px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90"
             >
-              + Novo contrato
+              {t('pay_new_contract', '+ Novo contrato')}
             </button>
             <input type="month" value={stmtMonth} onChange={(e) => setStmtMonth(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs" />
             <a
-              href={`/api/manager-pro/owner-statement/pdf?propertyId=${encodeURIComponent(propertyId)}&period=${encodeURIComponent(stmtMonth)}&lang=en`}
+              href={`/api/manager-pro/owner-statement/pdf?propertyId=${encodeURIComponent(propertyId)}&period=${encodeURIComponent(stmtMonth)}&lang=${encodeURIComponent(lang)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-lg bg-[#22558c] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1c4675]"
             >
-              Gerar statement (PDF)
+              {t('pay_gen_statement', 'Gerar statement (PDF)')}
             </a>
           </div>
         </div>
 
         {/* Linha de baixo: SÓ o seletor de casa */}
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 py-2">
-          <span className="text-xs font-semibold text-slate-500">Casa:</span>
+          <span className="text-xs font-semibold text-slate-500">{t('pay_house_label', 'Casa:')}</span>
           <select
             value={propertyId}
             onChange={(e) => onSelect?.(e.target.value)}
             className="max-w-[320px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
-            title="Selecionar casa"
+            title={t('pay_house_select', 'Selecionar casa')}
           >
             {(houses || []).map((h) => (
               <option key={h.propertyId} value={h.propertyId}>{(h.code ? h.code + ' · ' : '') + h.address}</option>
             ))}
           </select>
-          <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title="Ver a lista de todas as casas">Todas as casas</button>
+          <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title={t('pay_all_houses', 'Todas as casas')}>{t('pay_all_houses', 'Todas as casas')}</button>
         </div>
 
         <div className="px-1 py-2 text-xs text-slate-500">
