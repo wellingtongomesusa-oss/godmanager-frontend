@@ -146,34 +146,12 @@ export function HouseDetailModal({
   return (
     <div className="w-full px-6 pt-2 sm:px-8">
       <div className="flex w-full flex-col">
-        {/* NÍVEL 1 — barra de seções, estável em todas as telas */}
+        {/* TODAS as abas em UMA linha (seções + abas da casa) */}
         <div className="flex flex-wrap items-center gap-0.5 border-b border-[#e2ddd4]">
           {secBtn('Contratos por casa', true, null)}
           {secBtn('Recebimentos', false, 'recebimentos')}
           {secBtn('Contas a Pagar', false, 'ltownerpay')}
           {secBtn('Pay/Receipt', false, 'renovations')}
-          <button
-            onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
-            className="mb-1 ml-auto rounded-lg bg-[#2a6e4e] px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90"
-          >
-            + Novo contrato
-          </button>
-        </div>
-
-        {/* NÍVEL 2 — seletor de casa + abas da casa (só em Contratos por casa) */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 py-2">
-          <span className="text-xs font-semibold text-slate-500">Casa:</span>
-          <select
-            value={propertyId}
-            onChange={(e) => onSelect?.(e.target.value)}
-            className="max-w-[300px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
-            title="Selecionar casa"
-          >
-            {(houses || []).map((h) => (
-              <option key={h.propertyId} value={h.propertyId}>{(h.code ? h.code + ' · ' : '') + h.address}</option>
-            ))}
-          </select>
-          <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title="Ver a lista de todas as casas">Todas as casas</button>
           <span className="mx-1 h-5 w-px bg-slate-300" />
           {tabBtn('receipts', 'Recebimentos')}
           {tabBtn('payout', 'Repasse')}
@@ -182,7 +160,13 @@ export function HouseDetailModal({
           {tabBtn('jobs', 'Chamados')}
           {tabBtn('graphs', 'Gráficos')}
           {tabBtn('whatsapp', 'WhatsApp histórico')}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 pb-1">
+            <button
+              onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
+              className="rounded-lg bg-[#2a6e4e] px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+            >
+              + Novo contrato
+            </button>
             <input type="month" value={stmtMonth} onChange={(e) => setStmtMonth(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs" />
             <a
               href={`/api/manager-pro/owner-statement/pdf?propertyId=${encodeURIComponent(propertyId)}&period=${encodeURIComponent(stmtMonth)}&lang=en`}
@@ -193,6 +177,22 @@ export function HouseDetailModal({
               Gerar statement (PDF)
             </a>
           </div>
+        </div>
+
+        {/* Linha de baixo: SÓ o seletor de casa */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 py-2">
+          <span className="text-xs font-semibold text-slate-500">Casa:</span>
+          <select
+            value={propertyId}
+            onChange={(e) => onSelect?.(e.target.value)}
+            className="max-w-[320px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+            title="Selecionar casa"
+          >
+            {(houses || []).map((h) => (
+              <option key={h.propertyId} value={h.propertyId}>{(h.code ? h.code + ' · ' : '') + h.address}</option>
+            ))}
+          </select>
+          <button onClick={onClose} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" title="Ver a lista de todas as casas">Todas as casas</button>
         </div>
 
         <div className="px-1 py-2 text-xs text-slate-500">
