@@ -1502,7 +1502,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="ss" onclick="nav('owner-statement')" id="nav-owner-statement" data-i18n="nav_owner_statement">Owner Statement</div>
  <div class="ss" onclick="nav('statement-individual')" id="nav-statement-individual" data-i18n="nav_statement_individual">Statement individual</div>
  <div class="ss" onclick="nav('tenants')" id="nav-tenants" data-i18n="nav_tenants">Tenants</div>
- <div class="ss" onclick="gmContractsHubOpen()" id="nav-contracts">Contratos</div>
+ <div class="ss" onclick="nav('contratos')" id="nav-contracts">Contratos</div>
  <div class="ss" onclick="nav('leases-history')" id="nav-leases-history" data-i18n="nav_leases_history">Lease history</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties" data-i18n="ranking_properties">Ranking Properties</div>
  <div class="ss" onclick="nav('renovations')" id="nav-renovations">Pay/Receipt</div>
@@ -2383,7 +2383,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
 
 <div class="page" id="page-renovations">
- <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button onclick="gmContractsHubOpen()" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contratos</button><button onclick="nav('recebimentos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Recebimentos</button><button onclick="nav('ltownerpay')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contas a Pagar</button><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Pay/Receipt</button></div>
+ <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button onclick="nav('contratos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contratos</button><button onclick="nav('recebimentos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Recebimentos</button><button onclick="nav('ltownerpay')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contas a Pagar</button><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Pay/Receipt</button></div>
  <div class="ph"><div class="pt">Pay/Receipt — <span id="glm-title-year">2026</span></div><div class="ps">Matriz por casa e mês: aluguel <b style="color:#b45309">recebido</b> e <b style="color:#2a6e4e">pago ao owner</b>. Verde = pago bate com recebido − mgm fee; diferenças em mapa de calor. Total = a pagar (+) ou a receber de volta (−). 1º aluguel: Manager Prop 80% / owner 20%, menos depósito de segurança + reserva.</div></div>
  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
   <button onclick="gmGlMatrixRender()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
@@ -6024,8 +6024,14 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
 
 <!-- Recebimentos — sinalizar aluguel recebido, destaque vermelho/verde, filtros (#61) -->
+<!-- Contratos — página (aba), embute /admin/contracts sem popup -->
+<div class="page" id="page-contratos">
+ <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Contratos</button><button onclick="nav('recebimentos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Recebimentos</button><button onclick="nav('ltownerpay')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contas a Pagar</button><button onclick="nav('renovations')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Pay/Receipt</button></div>
+ <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff"><iframe id="contratos-iframe" title="Contratos" style="width:100%;height:calc(100vh - 210px);min-height:520px;border:none;display:block"></iframe></div>
+</div>
+
 <div class="page" id="page-recebimentos">
- <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button onclick="gmContractsHubOpen()" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contratos</button><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Recebimentos</button><button onclick="nav('ltownerpay')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contas a Pagar</button><button onclick="nav('renovations')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Pay/Receipt</button></div>
+ <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button onclick="nav('contratos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contratos</button><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Recebimentos</button><button onclick="nav('ltownerpay')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contas a Pagar</button><button onclick="nav('renovations')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Pay/Receipt</button></div>
  <div class="ph"><div class="pt">Recebimentos</div><div class="ps">Confirme o aluguel recebido por casa. Vencimento dia 05: sem recebimento fica <b style="color:#b83030">vermelho</b>, confirmado fica <b style="color:#2a6e4e">verde</b>. Fonte: GL 4100 + confirmação manual.</div></div>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
   <label style="font-size:11px;color:var(--ink3)">Mês <input type="month" id="receb-month" onchange="gmRecebRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"></label>
@@ -6042,7 +6048,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 
 <!-- Owner Payment (dia 15, NET owner) -->
 <div class="page" id="page-ltownerpay">
- <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button onclick="gmContractsHubOpen()" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contratos</button><button onclick="nav('recebimentos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Recebimentos</button><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Contas a Pagar</button><button onclick="nav('renovations')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Pay/Receipt</button></div>
+ <div class="gm-paytabs" style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap"><button onclick="nav('contratos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Contratos</button><button onclick="nav('recebimentos')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Recebimentos</button><button style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:var(--ink);color:#fff">Contas a Pagar</button><button onclick="nav('renovations')" style="padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2)">Pay/Receipt</button></div>
  <div class="ph"><div class="pt" id="ltop-pt">Owner Payment</div><div class="ps" id="ltop-ps">Repasse líquido ao owner · Rent menos despesas com markup (vendors)</div></div>
  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
   <label style="font-size:11px;color:var(--ink3)">Mês</label>
@@ -14616,6 +14622,7 @@ function nav(r){
  'correlations':()=>{if(typeof gmCorrelationsRender==='function')gmCorrelationsRender();},
  'renovations':()=>{if(typeof gmGlMatrixRender==='function')gmGlMatrixRender();},
  'recebimentos':()=>{if(typeof gmRecebRender==='function')gmRecebRender();},
+ 'contratos':()=>{if(typeof gmContratosPageRender==='function')gmContratosPageRender();},
  'uploads-central':()=>{},
  'results-upload':()=>{if(typeof gmResUploadInit==='function')gmResUploadInit();},
  bookkeeping:()=>{if(typeof gmBookkeepingLoad==='function')gmBookkeepingLoad();var _rm=document.getElementById('rec-month');if(_rm&&!_rm.value){var _d=new Date();_rm.value=_d.getUTCFullYear()+'-'+String(_d.getUTCMonth()+1).padStart(2,'0');}},
@@ -15422,6 +15429,14 @@ window.gmGlMatrixCsv=function(){
  });
  var blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download='recebido_x_pago_'+(j.year||'')+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1200);
+};
+// Contratos como PÁGINA (aba) — embute /admin/contracts no iframe, sem popup.
+window.gmContratosPageRender=function(){
+ var ifr=document.getElementById('contratos-iframe');if(!ifr)return;
+ var cid='';try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;cid=(ac&&ac.id)?String(ac.id):((window.__gmCurrentUser&&window.__gmCurrentUser.clientId)||'');}catch(e){}
+ var src='/admin/contracts'+(cid?('?clientId='+encodeURIComponent(cid)):'');
+ // só (re)carrega se mudou o cliente ou ainda não carregou.
+ if(ifr.getAttribute('data-src')!==src){ifr.setAttribute('data-src',src);ifr.src=src;}
 };
 // #61 Recebimentos: sinalizar recebido, destaque vermelho/verde, filtros.
 window.__gmReceb={data:null,filter:'all'};
