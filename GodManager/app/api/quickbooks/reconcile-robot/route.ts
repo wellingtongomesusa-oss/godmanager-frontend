@@ -5,7 +5,7 @@ import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
 import { getConnectionStatus } from '@/lib/quickbooks';
 import { qbListAccounts, qbCreatePurchase, qbCreateDeposit } from '@/lib/quickbooksPost';
 import { categorizeChaseTxn } from '@/lib/chaseTxnCategory';
-import { flReconcilePlan, resolveQboAccount, resolveQboBankAccount, type QboAccountLite } from '@/lib/flReconcileRules';
+import { flReconcilePlan, resolveQboAccount, resolveQboBankAccount, flValidateEntry, type QboAccountLite } from '@/lib/flReconcileRules';
 import { csrfGuard } from '@/lib/csrfGuard';
 import { rateLimitGuard } from '@/lib/apiRateLimit';
 import { recordAudit } from '@/lib/auditServer';
@@ -63,6 +63,9 @@ export async function GET(req: Request) {
       const amount = round2(Number(t.amount));
       const plan = flReconcilePlan(t.description, amount, t.bankAccountKey);
       const qa = qboAccounts.length ? resolveQboAccount(plan, qboAccounts) : null;
+      const bank = qboAccounts.length ? resolveQboBankAccount(t.bankAccountKey, qboAccounts) : null;
+      // Conformidade FL: só há validação real quando o plano de contas foi lido.
+      const compliance = qboAccounts.length ? flValidateEntry(plan, qa, bank, t.bankAccountKey, amount) : null;
       return {
         id: t.id,
         account: t.bankAccountKey,
@@ -74,6 +77,7 @@ export async function GET(req: Request) {
         suggestedType: categorizeChaseTxn(t.description),
         plan,
         qboAccount: qa ? { id: qa.id, name: qa.name, acctNum: qa.acctNum } : null,
+        compliance: compliance ? { ok: compliance.ok, reason: compliance.reason || null } : null,
       };
     });
 
@@ -85,6 +89,8 @@ export async function GET(req: Request) {
       accountMap[k].count += 1;
     }
     const mappedCount = rows.filter((r) => r.qboAccount).length;
+    const compliantCount = rows.filter((r) => r.compliance && r.compliance.ok).length;
+    const blockedCount = rows.filter((r) => r.compliance && !r.compliance.ok).length;
 
     const byType: Record<string, { count: number; amount: number }> = {};
     for (const r of rows) {
@@ -114,6 +120,8 @@ export async function GET(req: Request) {
       reconciledCount,
       totalTxn,
       progressPct,
+      compliantCount,
+      blockedCount,
       byType,
       accountMap,
       mappedCount,
@@ -208,8 +216,10 @@ export async function POST(req: Request) {
       }
       const flAcct = resolveQboAccount(plan, accounts);
       const bankAcct = resolveQboBankAccount(t.bankAccountKey, accounts);
-      if (!flAcct || !bankAcct) {
-        skipped++; results.push({ id: t.id, ok: false, skipped: !flAcct ? 'conta contábil FL não mapeada no QBO' : 'conta bancária não mapeada no QBO' });
+      // TRAVA DE CONFORMIDADE FL — bloqueia qualquer lançamento fora do padrão trust accounting.
+      const val = flValidateEntry(plan, flAcct, bankAcct, t.bankAccountKey, amount);
+      if (!val.ok || !flAcct || !bankAcct) {
+        skipped++; results.push({ id: t.id, ok: false, skipped: val.reason || 'conta não mapeada no QBO' });
         continue;
       }
       const txnDate = t.txnDate.toISOString().slice(0, 10);
@@ -230,10 +240,13 @@ export async function POST(req: Request) {
       }
     }
 
+    // Auditoria interna: registra o que foi criado (com o ID do QBO) e os motivos de bloqueio.
+    const createdList = results.filter((r) => r.ok).map((r) => `${r.type}#${r.qboId}`).join(',');
+    const blockReasons = Array.from(new Set(results.filter((r) => r.skipped).map((r) => r.skipped))).slice(0, 8).join(' | ');
     await recordAudit({
       request: req, actor: { id: user.id, email: user.email },
       action: 'quickbooks.reconcile_robot_apply', entity: 'bank_statement_txn', entityId: scope.clientId, clientId: scope.clientId,
-      details: `apply month=${month || 'all'} created=${created} failed=${failed} skipped=${skipped} limit=${limit}`,
+      details: `apply month=${month || 'all'} created=${created} failed=${failed} blocked=${skipped} limit=${limit} · criados=[${createdList}] · bloqueios=[${blockReasons}]`,
     });
     return NextResponse.json({ ok: true, created, failed, skipped, results });
   } catch (e) {

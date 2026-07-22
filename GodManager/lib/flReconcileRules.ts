@@ -204,3 +204,67 @@ export function resolveQboBankAccount(bankAccountKey: FlAccountKey, accounts: Qb
   const byName = banks.find((a) => a.name.replace(/\D/g, '').includes(last4));
   return byName || null;
 }
+
+export interface FlValidation {
+  ok: boolean;
+  reason?: string;
+  checks: string[];
+}
+
+/**
+ * VALIDAÇÃO DE CONFORMIDADE FL — trava anti-erro (FREC 61J2-14 / Ch. 475 F.S.).
+ * Bloqueia o lançamento se qualquer invariante de trust accounting não bater. O robô só grava no
+ * QuickBooks quando isto retorna ok=true. É a proteção que impede posting errado antes da auditoria.
+ */
+export function flValidateEntry(
+  plan: FlReconcilePlan,
+  flAccount: QboAccountLite | null,
+  bankAccount: QboAccountLite | null,
+  bankAccountKey: FlAccountKey,
+  amount: number,
+): FlValidation {
+  const checks: string[] = [];
+  const fail = (reason: string): FlValidation => ({ ok: false, reason, checks });
+
+  if (!flAccount) return fail('Conta contábil FL não mapeada no QuickBooks.');
+  if (!bankAccount) return fail('Conta bancária não mapeada no QuickBooks.');
+
+  // 1) Classificação esperada da conta contábil (caução/repasse=Liability, mgmt fee=Revenue, despesa=Expense).
+  const gl = plan.glAccount.toLowerCase();
+  let expectedCls: string | null = null;
+  if (/security deposit|2100/.test(gl)) expectedCls = 'Liability';
+  else if (/owner distribution|2200|rent|aluguel/.test(gl)) expectedCls = 'Liability';
+  else if (/management fee|4100|income|receita/.test(gl)) expectedCls = 'Revenue';
+  else if (/expense|utilit|hoa|insurance|repair|maintenance|bank (charge|fee|service)|despesa|tarifa/.test(gl)) expectedCls = 'Expense';
+  const cls = String(flAccount.classification || '');
+  if (expectedCls && cls && cls !== expectedCls) {
+    return fail(`Classificação divergente: esperado ${expectedCls}, mas '${flAccount.name}' é ${cls}.`);
+  }
+  checks.push(`classe ${cls || '?'} = ${expectedCls || 'n/a'} OK`);
+
+  // 2) Separação de contas (trust accounting): o banco tem que ser o do papel da transação.
+  const expLast4 = FL_BANK_LAST4[bankAccountKey];
+  const bankDigits = String(bankAccount.acctNum || bankAccount.name || '').replace(/\D/g, '');
+  if (expLast4 && bankDigits && bankDigits.indexOf(expLast4) < 0) {
+    return fail(`Conta bancária não corresponde ao papel (${bankAccountKey} deve terminar em ${expLast4}).`);
+  }
+  checks.push(`banco ${bankAccountKey} (final ${expLast4 || '?'}) OK`);
+
+  // 3) Anti co-mingling: aluguel (trust money) NUNCA como receita na Operating.
+  if (bankAccountKey === 'OPERATING_TRUST' && /rent|aluguel/.test(gl) && amount >= 0) {
+    return fail('Co-mingling proibido: aluguel (trust money) não pode entrar como receita na conta Operating.');
+  }
+  checks.push('sem co-mingling');
+
+  // 4) Direção contábil: entrada = Deposit, saída = Purchase.
+  const isIn = amount >= 0;
+  if (isIn && plan.entryType !== 'deposit') return fail('Entrada de caixa deve ser Deposit.');
+  if (!isIn && plan.entryType !== 'purchase') return fail('Saída de caixa deve ser Purchase.');
+  checks.push('direção contábil OK');
+
+  // 5) Só grava alta confiança.
+  if (!plan.autoApply) return fail('Confiança insuficiente para lançamento automático — revisar.');
+  checks.push('alta confiança');
+
+  return { ok: true, checks };
+}
