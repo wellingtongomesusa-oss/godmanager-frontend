@@ -7894,7 +7894,7 @@ async function gmTrustStatementRender(){
  var host=document.getElementById('trust-statement-cards');
  if(!host)return;
  host.innerHTML='<div style="grid-column:1/-1;color:var(--ink3);font-size:13px;padding:24px;text-align:center">Carregando saldos…</div>';
- var balances={},flows={},secHeld=null;
+ var balances={},flows={},secHeld=null,secReserve=null,secBreak=null;
  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
  try{
   var res=await fetch('/api/bank-accounts/balances'+q,{credentials:'include',cache:'no-store'});
@@ -7904,7 +7904,7 @@ async function gmTrustStatementRender(){
  try{
   var rf=await fetch('/api/bank-accounts/statement-flows'+q,{credentials:'include',cache:'no-store'});
   var jf=await rf.json().catch(function(){return null;});
-  if(jf&&jf.ok){flows=jf.flows||{};if(jf.securityDepositHeld!=null)secHeld=Number(jf.securityDepositHeld);}
+  if(jf&&jf.ok){flows=jf.flows||{};if(jf.securityDepositHeld!=null)secHeld=Number(jf.securityDepositHeld);if(jf.securityReserveHeld!=null)secReserve=Number(jf.securityReserveHeld);if(jf.securityDepositBreakdown)secBreak=jf.securityDepositBreakdown;}
  }catch(e){console.warn('gmTrustStatementRender flows',e);}
  var canEdit=(typeof gmCanEditBankAccounts==='function')?gmCanEditBankAccounts():false;
  var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
@@ -7937,6 +7937,10 @@ async function gmTrustStatementRender(){
    }else{
     divHtml='<div style="margin-top:12px;padding:7px 11px;border-radius:8px;background:#e6f4ec;border:1px solid #b7e0c6;color:#2a6e4e;font-size:11px">✓ Bate com a caução dos contratos ('+money(secHeld)+').</div>';
    }
+   var extra='';
+   if(secBreak){extra+='<div style="font-size:10px;color:var(--ink3);margin-top:4px">Contratos gerados: '+money(secBreak.fromAgreements||0)+' · Importados (AppFolio): '+money(secBreak.fromImported||0)+'</div>';}
+   if(secReserve!=null&&secReserve>0){extra+='<div style="font-size:10px;color:var(--ink3);margin-top:2px">Reserva de segurança (contratos): '+money(secReserve)+'</div>';}
+   divHtml+=extra;
   }
   return '<div style="border:1px solid var(--border);border-radius:14px;background:var(--paper);padding:22px 24px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">'
    +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+a.color+'"></div>'

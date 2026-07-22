@@ -65,13 +65,40 @@ export async function GET(req: Request) {
     }
 
     // Caução dos contratos (o que DEVERIA estar na conta Security Deposit).
-    const dep = await prisma.lease.aggregate({
-      _sum: { securityDeposit: true },
-      where: { clientId: scope.clientId, status: { in: [LeaseStatus.ACTIVE, LeaseStatus.FUTURE] } },
+    // Fonte de verdade: contratos AUTORADOS no GodManager (LeaseAgreement ACTIVE), com depósito e reserva.
+    // Complementa com o Lease IMPORTADO (AppFolio) só para imóveis SEM LeaseAgreement ativo — evita
+    // contagem dupla do mesmo depósito.
+    const agreements = await prisma.leaseAgreement.findMany({
+      where: { clientId: scope.clientId, status: 'ACTIVE' },
+      select: { propertyId: true, securityDeposit: true, securityReserve: true },
     });
-    const securityDepositHeld = dep._sum.securityDeposit != null ? round2(Number(dep._sum.securityDeposit)) : 0;
+    let agreementDeposit = 0;
+    let reserveHeld = 0;
+    const coveredProps = new Set<string>();
+    for (const a of agreements) {
+      agreementDeposit += Number(a.securityDeposit || 0);
+      reserveHeld += Number(a.securityReserve || 0);
+      if (a.propertyId) coveredProps.add(a.propertyId);
+    }
+    const importedLeases = await prisma.lease.findMany({
+      where: { clientId: scope.clientId, status: { in: [LeaseStatus.ACTIVE, LeaseStatus.FUTURE] } },
+      select: { propertyId: true, securityDeposit: true },
+    });
+    let importedDeposit = 0;
+    for (const l of importedLeases) {
+      if (l.propertyId && coveredProps.has(l.propertyId)) continue; // já coberto por um contrato autorado
+      importedDeposit += Number(l.securityDeposit || 0);
+    }
+    const securityDepositHeld = round2(agreementDeposit + importedDeposit);
+    const securityReserveHeld = round2(reserveHeld);
 
-    return NextResponse.json({ ok: true, flows, securityDepositHeld });
+    return NextResponse.json({
+      ok: true,
+      flows,
+      securityDepositHeld,
+      securityReserveHeld,
+      securityDepositBreakdown: { fromAgreements: round2(agreementDeposit), fromImported: round2(importedDeposit) },
+    });
   } catch (e) {
     console.error('[GET /api/bank-accounts/statement-flows]', e instanceof Error ? e.message : e);
     return NextResponse.json({ ok: false, error: 'Falha ao carregar os fluxos.' }, { status: 500 });
