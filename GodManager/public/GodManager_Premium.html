@@ -15412,6 +15412,44 @@ window.gmRecebConfirm=async function(propertyId,propertyLabel,confirmed){
   gmRecebRender();
  }catch(e){alert('Erro de rede.');}
 };
+window.gmRecebActiveClientId=function(){try{var ac=(typeof getActiveClient==='function')?getActiveClient():null;return (ac&&ac.id)?String(ac.id):'';}catch(e){return '';}};
+window.gmRecebReceiptView=function(propertyKey){
+ var mEl=document.getElementById('receb-month');var month=(mEl&&mEl.value)||'';
+ var acId=gmRecebActiveClientId();
+ var url='/api/rent-receipts/receipt?propertyKey='+encodeURIComponent(propertyKey||'')+'&month='+encodeURIComponent(month)+(acId?('&clientId='+encodeURIComponent(acId)):'');
+ window.open(url,'_blank');
+};
+window.gmRecebReceiptUpload=function(propertyId,propertyLabel){
+ var inp=document.getElementById('receb-receipt-file');if(!inp)return;
+ var mEl=document.getElementById('receb-month');var month=(mEl&&mEl.value)||'';
+ inp.value='';
+ inp.onchange=async function(){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var st=document.getElementById('receb-status');if(st)st.textContent='Enviando recibo…';
+  try{
+   var fd=new FormData();fd.append('file',f);fd.append('periodMonth',month);fd.append('propertyLabel',propertyLabel||'');
+   if(propertyId)fd.append('propertyId',propertyId);
+   var acId=gmRecebActiveClientId();if(acId)fd.append('clientId',acId);
+   var res=await fetch('/api/rent-receipts/receipt',{method:'POST',credentials:'include',body:fd});
+   var j=await res.json().catch(function(){return{};});
+   if(!res.ok||!j.ok){alert((j&&j.error)||('Erro '+res.status));if(st)st.textContent='';return;}
+   gmRecebRender();
+  }catch(e){alert('Erro de rede.');if(st)st.textContent='';}
+ };
+ inp.click();
+};
+window.gmRecebRobot=async function(){
+ var mEl=document.getElementById('receb-month');var month=(mEl&&mEl.value)||'';
+ if(!confirm('Rodar o robô do AppFolio para buscar comprovantes de '+month+' e anexar nas casas?'))return;
+ var st=document.getElementById('receb-status');if(st)st.textContent='Robô rodando…';
+ try{
+  var acId=gmRecebActiveClientId();
+  var res=await fetch('/api/rent-receipts/appfolio-robot',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({month:month,clientId:acId||undefined})});
+  var j=await res.json().catch(function(){return{};});
+  if(res.ok&&j.ok){alert('Robô: '+(j.attached||0)+' recibo(s) anexado(s)'+(j.note?('\n'+j.note):''));gmRecebRender();return;}
+  alert((j&&j.error)||('Erro '+res.status));if(st)st.textContent='';
+ }catch(e){alert('Erro de rede.');if(st)st.textContent='';}
+};
 // #63 Relatório final de pagamento (owner payout): linhas exatas + CSV + aprovar/pagar + statement.
 window.__gmPayReport={rows:[],ym:''};
 window.gmPayReportBuildRows=function(){
