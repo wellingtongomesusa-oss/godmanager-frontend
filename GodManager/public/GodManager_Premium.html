@@ -15385,7 +15385,14 @@ window.gmGlMatrixRender=async function(){
     var chips='';
     if(recv>0)chips+='<span title="Recebido" style="display:inline-block;padding:1px 5px;border-radius:4px;background:#fde68a;color:#7c5310;font-family:JetBrains Mono,monospace;font-size:10px">'+m0(recv)+'</span>';
     if(paid>0)chips+=(chips?' ':'')+'<span title="Pago ao owner" style="display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(42,110,78,.9);color:#fff;font-family:JetBrains Mono,monospace;font-size:10px">'+m0(paid)+'</span>';
-    tr+='<td style="padding:4px 6px;text-align:center;white-space:nowrap;border-left:1px solid var(--border);border-bottom:1px solid var(--border);'+heat(exp,paid)+'">'+(chips||'<span style="color:var(--ink3)">—</span>')+'</td>';
+    var firstBadge='',firstBorder='';
+    if(r.firstRule&&r.firstRule.month===mm){
+     var fr=r.firstRule;
+     var ttl='1º aluguel — Manager Prop 80% ('+m0(fr.mpShare)+') / Owner 20% ('+m0(fr.ownerShare)+')'+(fr.deposit>0?(' · depósito retido '+m0(fr.deposit)+' · reserva '+m0(fr.reserve)):' · sem depósito no contrato');
+     firstBadge='<div title="'+ttl.replace(/"/g,'&quot;')+'" style="margin-top:2px;font-size:8px;font-weight:700;color:#6d28d9">1º · MP80/Own20'+(fr.deposit>0?' −dep':'')+'</div>';
+     firstBorder='box-shadow:inset 3px 0 0 #6d28d9;';
+    }
+    tr+='<td style="padding:4px 6px;text-align:center;white-space:nowrap;border-left:1px solid var(--border);border-bottom:1px solid var(--border);'+firstBorder+heat(exp,paid)+'">'+(chips||'<span style="color:var(--ink3)">—</span>')+firstBadge+'</td>';
    });
    var net=Number(r.net)||0;var exp=Number(r.expected)||0;
    var rel=exp>0?Math.abs(net)/exp:(net!==0?1:0);

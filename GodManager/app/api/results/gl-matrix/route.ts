@@ -84,6 +84,21 @@ export async function GET(req: Request) {
     }
     const effPct = (raw: number) => (!Number.isFinite(raw) || raw < 0 || raw > 30 ? 8 : raw);
 
+    // Depósito/reserva do contrato (LeaseAgreement) por imóvel — para a regra do 1º aluguel.
+    const depositByProp = new Map<string, { deposit: number; reserve: number }>();
+    if (ids.length) {
+      const las = await prisma.leaseAgreement.findMany({
+        where: { clientId: scope.clientId, propertyId: { in: ids } },
+        orderBy: { leaseNumber: 'desc' },
+        select: { propertyId: true, securityDeposit: true, securityReserve: true },
+      });
+      for (const la of las) {
+        if (la.propertyId && !depositByProp.has(la.propertyId)) {
+          depositByProp.set(la.propertyId, { deposit: Number(la.securityDeposit), reserve: Number(la.securityReserve) });
+        }
+      }
+    }
+
     const months = [...monthsSet].sort();
 
     const outRows = [...rows.values()]
@@ -107,6 +122,27 @@ export async function GET(req: Request) {
           const c = cells[months[i]];
           if (c && c.received > 0) { rent = c.received; break; }
         }
+        // Regra do 1º aluguel: MP fica com 80% e repassa 20%; do 1º recebimento retira o depósito
+        // de segurança e informa a reserva. firstRentMonth = 1º mês (asc) com recebimento > 0.
+        let firstRentMonth: string | null = null;
+        let firstRent = 0;
+        for (const m of months) {
+          const c = cells[m];
+          if (c && c.received > 0) { firstRentMonth = m; firstRent = c.received; break; }
+        }
+        const dep = r.propertyId ? depositByProp.get(r.propertyId) : undefined;
+        const firstRule = firstRentMonth
+          ? {
+              month: firstRentMonth,
+              firstRent: round2(firstRent),
+              ownerShare: round2(firstRent * 0.2), // owner recebe 20%
+              mpShare: round2(firstRent * 0.8), // Manager Prop fica com 80%
+              deposit: round2(dep?.deposit ?? 0),
+              reserve: round2(dep?.reserve ?? 0),
+              // saldo do 1º recebimento após reter o depósito de segurança.
+              netAfterDeposit: round2(firstRent - (dep?.deposit ?? 0)),
+            }
+          : null;
         return {
           propertyId: r.propertyId,
           code: r.code,
@@ -115,6 +151,7 @@ export async function GET(req: Request) {
           matched: !!r.propertyId,
           regPct: reg,
           rent,
+          firstRule,
           cells,
           received: round2(r.received),
           paid: round2(r.paid),
