@@ -153,7 +153,7 @@ export function HouseDetailModal({
           {secBtn('Contas a Pagar', false, 'ltownerpay')}
           {secBtn('Pay/Receipt', false, 'renovations')}
           <span className="mx-1 h-5 w-px bg-slate-300" />
-          {tabBtn('receipts', 'Recebimentos')}
+          {tabBtn('receipts', 'Aluguéis')}
           {tabBtn('payout', 'Repasse')}
           {tabBtn('contract', 'Contrato')}
           {tabBtn('docs', 'Documentos')}
