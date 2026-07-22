@@ -186,10 +186,6 @@ export function ContractsAdmin() {
         <FileText className="h-6 w-6 text-[#22558c]" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Contratos</h1>
-          <p className="text-sm text-slate-500">
-            Suba o contrato de cada casa (PDF, DOC ou DOCX). Fica salvo na casa e vinculado ao
-            inquilino atual.
-          </p>
         </div>
       </div>
 
