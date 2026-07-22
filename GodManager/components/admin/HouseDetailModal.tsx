@@ -66,9 +66,9 @@ export function HouseDetailModal({
       fd.append('file', f);
       const r = await fetch(`/api/properties/${encodeURIComponent(propertyId)}/contract`, { method: 'POST', credentials: 'include', body: fd });
       const d = await r.json().catch(() => ({}));
-      setDocMsg(r.ok && d.ok ? 'Documento enviado e salvo nesta casa.' : (d.error || `Erro ${r.status}`));
+      setDocMsg(r.ok && d.ok ? t('hd_doc_uploaded_ok','Documento enviado e salvo nesta casa.') : (d.error || `Erro ${r.status}`));
     } catch (e) {
-      setDocMsg(e instanceof Error ? e.message : 'Falha no upload.');
+      setDocMsg(e instanceof Error ? e.message : t('hd_upload_fail','Falha no upload.'));
     } finally {
       setDocBusy(false);
       if (docFileRef.current) docFileRef.current.value = '';
@@ -88,7 +88,7 @@ export function HouseDetailModal({
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${titles[kind]}</title><style>body{font-family:Inter,Arial,sans-serif;color:#1a1a1c;max-width:760px;margin:40px auto;padding:0 24px;line-height:1.6;font-size:14px}h1{font-size:20px;border-bottom:2px solid #c47b28;padding-bottom:8px}.company{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#c47b28;font-weight:700}.sig{margin-top:60px;display:flex;gap:40px}.sig div{flex:1;border-top:1px solid #1a1a1c;padding-top:6px;font-size:12px;color:#4a4540}@media print{body{margin:0}}</style></head><body><div class="company">Manager Prop LLC · godmanager.com</div><h1>${titles[kind]}</h1>${bodies[kind]}<div class="sig"><div>Owner / Signatário</div><div>Manager Prop LLC</div></div><p style="margin-top:24px;font-size:11px;color:#8a8580">Documento gerado pelo GodManager. Revise com seu advogado antes de assinar.</p></body></html>`;
     const w = window.open('', '_blank');
     if (w) { w.document.write(html); w.document.close(); w.focus(); }
-    else setDocMsg('Permita popups para gerar o documento.');
+    else setDocMsg(t('hd_popup_block','Permita popups para gerar o documento.'));
   }
 
   const loadWa = useCallback(async () => {
@@ -273,24 +273,24 @@ export function HouseDetailModal({
         </div>
 
         <div className="px-1 py-2 text-xs text-slate-500">
-          <b className="text-sm text-slate-800">{address}</b> · {code} · Inquilino: {tenantName || '—'} {row?.owner ? `· Owner: ${row.owner}` : ''}
+          <b className="text-sm text-slate-800">{address}</b> · {code} · {t('hd_tenant','Inquilino')}: {tenantName || '—'} {row?.owner ? `· ${t('col_owner','Owner')}: ${row.owner}` : ''}
         </div>
 
         <div className="flex-1 overflow-auto px-1 py-2">
           {loading ? (
-            <div className="py-10 text-center text-slate-400">Carregando…</div>
+            <div className="py-10 text-center text-slate-400">{t('receb_loading','Carregando…')}</div>
           ) : (tab === 'receipts' || tab === 'payout') ? (
             <>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase text-slate-500">
-                    <th className="px-3 py-2">Mês</th>
+                    <th className="px-3 py-2">{t('receb_month','Mês')}</th>
                     {tab === 'receipts' ? (
-                      <th className="px-3 py-2 text-right">Recebido (GL 4100)</th>
+                      <th className="px-3 py-2 text-right">{t('hd_received_gl','Recebido (GL 4100)')}</th>
                     ) : (
                       <>
-                        <th className="px-3 py-2 text-right">Repasse esperado</th>
-                        <th className="px-3 py-2 text-right">Pago ao owner</th>
+                        <th className="px-3 py-2 text-right">{t('hd_expected_payout','Repasse esperado')}</th>
+                        <th className="px-3 py-2 text-right">{t('glm_paid_owner','Pago ao owner')}</th>
                       </>
                     )}
                   </tr>
@@ -314,12 +314,12 @@ export function HouseDetailModal({
                   })}
                   {monthsWith.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-3 py-8 text-center text-slate-400">Sem lançamentos no GL deste ano.</td>
+                      <td colSpan={3} className="px-3 py-8 text-center text-slate-400">{t('hd_no_gl_year','Sem lançamentos no GL deste ano.')}</td>
                     </tr>
                   )}
                 </tbody>
               </table>
-              <p className="mt-2 text-xs text-slate-400">Fonte: General Ledger (AppFolio).</p>
+              <p className="mt-2 text-xs text-slate-400">{t('hd_source_gl','Fonte: General Ledger (AppFolio).')}</p>
             </>
           ) : tab === 'contract' ? (
             <div className="py-4">
@@ -338,9 +338,9 @@ export function HouseDetailModal({
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-                  Ainda não há contrato FL para esta casa.
+                  {t('hd_no_contract','Ainda não há contrato FL para esta casa.')}
                   <button onClick={onOpenLeasesTab} className="ml-2 rounded-lg bg-[#22558c] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
-                    + Criar contrato na aba Leases
+                    {t('hd_create_contract','+ Criar contrato na aba Leases')}
                   </button>
                 </div>
               )}
@@ -349,59 +349,59 @@ export function HouseDetailModal({
             <div className="py-4">
               <input ref={docFileRef} type="file" accept=".pdf,.doc,.docx,image/png,image/jpeg" className="hidden" onChange={(e) => void docUpload(e.target.files?.[0] || null)} />
               <div className="mb-5">
-                <div className="mb-2 text-sm font-semibold text-slate-700">Enviar documento (upload)</div>
+                <div className="mb-2 text-sm font-semibold text-slate-700">{t('hd_upload_doc_title','Enviar documento (upload)')}</div>
                 <button onClick={() => docFileRef.current?.click()} disabled={docBusy} className="rounded-lg bg-[#22558c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1c4675] disabled:opacity-60">
-                  {docBusy ? 'Enviando…' : 'Enviar documento'}
+                  {docBusy ? t('hd_sending','Enviando…') : t('hd_send_doc','Enviar documento')}
                 </button>
-                <p className="mt-1 text-xs text-slate-400">PDF, DOC, DOCX ou imagem — fica salvo nesta casa ({code}).</p>
+                <p className="mt-1 text-xs text-slate-400">{t('hd_upload_note','PDF, DOC, DOCX ou imagem — fica salvo nesta casa')} ({code}).</p>
                 {docMsg && <p className="mt-2 text-xs font-medium text-slate-600">{docMsg}</p>}
               </div>
               <div className="border-t border-slate-100 pt-4">
-                <div className="mb-2 text-sm font-semibold text-slate-700">Gerar contrato / documento</div>
+                <div className="mb-2 text-sm font-semibold text-slate-700">{t('hd_gen_doc_title','Gerar contrato / documento')}</div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
                     className="rounded-lg bg-[#2a6e4e] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
                   >
-                    Gerar contrato de locação (Lease FL)
+                    {t('hd_gen_lease','Gerar contrato de locação (Lease FL)')}
                   </button>
-                  <button onClick={() => genDoc('keys')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Entrega de chaves</button>
-                  <button onClick={() => genDoc('listing')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Autorização de listing</button>
-                  <button onClick={() => genDoc('mgmt')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Contrato de administração</button>
+                  <button onClick={() => genDoc('keys')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">{t('hd_doc_keys','Entrega de chaves')}</button>
+                  <button onClick={() => genDoc('listing')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">{t('hd_doc_listing','Autorização de listing')}</button>
+                  <button onClick={() => genDoc('mgmt')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">{t('hd_doc_mgmt','Contrato de administração')}</button>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">O contrato de locação (Lease FL) é criado na aba Leases com número único vinculado a esta casa. Os demais abrem um modelo imprimível com os dados da casa.</p>
+                <p className="mt-2 text-xs text-slate-400">{t('hd_gen_note','O contrato de locação (Lease FL) é criado na aba Leases com número único vinculado a esta casa. Os demais abrem um modelo imprimível com os dados da casa.')}</p>
               </div>
             </div>
           ) : tab === 'graphs' ? (
             <div className="py-4">
-              <div className="mb-3 text-sm text-slate-600">Abra os gráficos desta casa em popup:</div>
+              <div className="mb-3 text-sm text-slate-600">{t('hd_open_graphs','Abra os gráficos desta casa em popup:')}</div>
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => setGraphOpen('received')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Recebido por mês</button>
-                <button onClick={() => setGraphOpen('payout')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Repasse (esperado × pago)</button>
-                <button onClick={() => setGraphOpen('compare')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Recebido × Pago</button>
+                <button onClick={() => setGraphOpen('received')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">{t('hd_g_received_month','Recebido por mês')}</button>
+                <button onClick={() => setGraphOpen('payout')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">{t('hd_g_payout','Repasse (esperado × pago)')}</button>
+                <button onClick={() => setGraphOpen('compare')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">{t('hd_g_compare','Recebido × Pago')}</button>
               </div>
-              {monthsWith.length === 0 && <p className="mt-3 text-xs text-slate-400">Sem dados do GL para gerar gráficos.</p>}
+              {monthsWith.length === 0 && <p className="mt-3 text-xs text-slate-400">{t('hd_no_gl_charts','Sem dados do GL para gerar gráficos.')}</p>}
             </div>
           ) : tab === 'whatsapp' ? (
             <div className="py-2">
-              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Adicionar conversa de WhatsApp</div>
+              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">{t('hd_wa_add','Adicionar conversa de WhatsApp')}</div>
               <textarea
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#22558c]"
                 rows={4}
-                placeholder="Cole aqui a conversa exportada do WhatsApp desta casa…"
+                placeholder={t('hd_wa_ph','Cole aqui a conversa exportada do WhatsApp desta casa…')}
                 value={waText}
                 onChange={(e) => setWaText(e.target.value)}
               />
               <div className="mt-2 flex justify-end">
                 <button onClick={waSubmit} disabled={waBusy || !waText.trim()} className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
-                  {waBusy ? 'Salvando…' : 'Adicionar ao histórico'}
+                  {waBusy ? t('hd_saving','Salvando…') : t('hd_wa_add_btn','Adicionar ao histórico')}
                 </button>
               </div>
               <div className="mt-4 space-y-2">
                 {waList === null ? (
-                  <div className="py-6 text-center text-slate-400">Carregando…</div>
+                  <div className="py-6 text-center text-slate-400">{t('receb_loading','Carregando…')}</div>
                 ) : waList.length === 0 ? (
-                  <div className="py-6 text-center text-slate-400">Nenhuma conversa registrada para esta casa.</div>
+                  <div className="py-6 text-center text-slate-400">{t('hd_wa_none','Nenhuma conversa registrada para esta casa.')}</div>
                 ) : (
                   waList.map((w) => (
                     <div key={w.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -429,9 +429,9 @@ export function HouseDetailModal({
           ) : tab === 'vendors' ? (
             <div className="py-2">
               {jobsLoading ? (
-                <div className="py-8 text-center text-slate-400">Carregando…</div>
+                <div className="py-8 text-center text-slate-400">{t('receb_loading','Carregando…')}</div>
               ) : !jobs || jobs.filter((j) => (j.vendorName || '').trim()).length === 0 ? (
-                <div className="py-8 text-center text-slate-400">Nenhum vendor atendeu esta casa ainda.</div>
+                <div className="py-8 text-center text-slate-400">{t('hd_v_none','Nenhum vendor atendeu esta casa ainda.')}</div>
               ) : (
                 <div className="space-y-3">
                   {(() => {
@@ -441,7 +441,7 @@ export function HouseDetailModal({
                       <div key={n} className="overflow-hidden rounded-lg border border-slate-200">
                         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
                           <b className="text-sm text-slate-800">{n}</b>
-                          <span className="text-xs text-slate-500">{js.length} atendimento(s)</span>
+                          <span className="text-xs text-slate-500">{js.length} {t('hd_v_services','atendimento(s)')}</span>
                         </div>
                         <table className="w-full text-sm">
                           <tbody>
@@ -463,9 +463,9 @@ export function HouseDetailModal({
           ) : tab === 'logs' ? (
             <div className="py-2">
               {logsLoading ? (
-                <div className="py-8 text-center text-slate-400">Carregando…</div>
+                <div className="py-8 text-center text-slate-400">{t('receb_loading','Carregando…')}</div>
               ) : !logs || logs.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">Nenhum registro no histórico desta casa.</div>
+                <div className="py-8 text-center text-slate-400">{t('hd_logs_none','Nenhum registro no histórico desta casa.')}</div>
               ) : (
                 <div className="space-y-2">
                   {logs.slice().reverse().map((l) => (
@@ -481,21 +481,21 @@ export function HouseDetailModal({
             <div className="py-6 text-sm">
               {lease && lease.status === 'TERMINATED' ? (
                 <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-800">
-                  Contrato {lease.contractCode || `#${lease.leaseNumber}`} rescindido — move-out/terminação registrada.
+                  {t('hd_evic_contract','Contrato')} {lease.contractCode || `#${lease.leaseNumber}`} {t('hd_evic_terminated_post','rescindido — move-out/terminação registrada.')}
                 </div>
               ) : (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-600">
-                  Nenhum despejo (eviction) ou rescisão registrada para esta casa.
+                  {t('hd_evic_none','Nenhum despejo (eviction) ou rescisão registrada para esta casa.')}
                 </div>
               )}
-              <p className="mt-3 text-xs text-slate-400">O histórico de despejo é alimentado pelas rescisões de contrato (aba Rescisão) e registros de move-out. Ações formais de eviction podem ser anotadas nos Logs.</p>
+              <p className="mt-3 text-xs text-slate-400">{t('hd_evic_note','O histórico de despejo é alimentado pelas rescisões de contrato (aba Rescisão) e registros de move-out. Ações formais de eviction podem ser anotadas nos Logs.')}</p>
             </div>
           ) : (
             <div>
               {jobsLoading ? (
-                <div className="py-8 text-center text-slate-400">Carregando chamados…</div>
+                <div className="py-8 text-center text-slate-400">{t('hd_jobs_loading','Carregando chamados…')}</div>
               ) : !jobs || jobs.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">Nenhum chamado (job) registrado para esta casa.</div>
+                <div className="py-8 text-center text-slate-400">{t('hd_jobs_none','Nenhum chamado (job) registrado para esta casa.')}</div>
               ) : (
                 <>
                   {(() => {
@@ -511,7 +511,7 @@ export function HouseDetailModal({
                     );
                     return vendors.length ? (
                       <div className="mb-3">
-                        <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Vendors que atenderam</div>
+                        <div className="mb-1 text-xs font-semibold uppercase text-slate-500">{t('hd_vendors_served','Vendors que atenderam')}</div>
                         <div className="flex flex-wrap gap-1.5">
                           {vendors.map(([n, d]) => (
                             <span key={n} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
@@ -525,11 +525,11 @@ export function HouseDetailModal({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase text-slate-500">
-                        <th className="px-3 py-2">Data</th>
-                        <th className="px-3 py-2">Tipo</th>
-                        <th className="px-3 py-2">Vendor</th>
-                        <th className="px-3 py-2">Status</th>
-                        <th className="px-3 py-2 text-right">Valor</th>
+                        <th className="px-3 py-2">{t('hd_th_date','Data')}</th>
+                        <th className="px-3 py-2">{t('hd_th_type','Tipo')}</th>
+                        <th className="px-3 py-2">{t('op_th_vendor','Vendor')}</th>
+                        <th className="px-3 py-2">{t('col_status','Status')}</th>
+                        <th className="px-3 py-2 text-right">{t('hd_th_amount','Valor')}</th>
                       </tr>
                     </thead>
                     <tbody>
