@@ -1,7 +1,7 @@
-import { ContractsAdmin } from '@/components/admin/ContractsAdmin';
+import { ContractsHub } from '@/components/admin/ContractsHub';
 
 export const dynamic = 'force-dynamic';
 
 export default function AdminContractsPage() {
-  return <ContractsAdmin />;
+  return <ContractsHub />;
 }
