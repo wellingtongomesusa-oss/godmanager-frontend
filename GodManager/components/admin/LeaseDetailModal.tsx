@@ -19,6 +19,8 @@ type LeaseDetail = {
   startDate: string | null;
   endDate: string | null;
   attorneySentAt: string | null;
+  qbInvoiceUrl: string | null;
+  qbInvoiceId: string | null;
   leaseForm: LeaseForm | null;
   property?: { code: string | null; address: string | null; ownerName: string | null };
   tenant?: { name: string | null; email: string | null };
@@ -41,6 +43,24 @@ export function LeaseDetailModal({ leaseId, clientId, onClose, onSaved }: { leas
   const [resc, setResc] = useState<{ securityDeposit: number; securityReserve: number; totalDeducted: number; depositBalance: number; moveOutDate: string | null; status: string; deductions: { id: string; description: string; amount: number }[] } | null>(null);
   const [dedDesc, setDedDesc] = useState('');
   const [dedAmount, setDedAmount] = useState('');
+  const [leaseFee, setLeaseFee] = useState('');
+  const [invBusy, setInvBusy] = useState(false);
+
+  async function genInvoice() {
+    const fee = Number(leaseFee);
+    if (!(fee > 0)) { setMsg('Informe o valor do lease fee.'); return; }
+    setInvBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch(`/api/lease-agreements/${encodeURIComponent(leaseId)}/qb-invoice`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaseFee: fee }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) { setMsg('Invoice gerada no QuickBooks.'); await load(); }
+      else setMsg(j.error || `Erro ${r.status}`);
+    } catch { setMsg('Erro de rede.'); } finally { setInvBusy(false); }
+  }
 
   const loadResc = useCallback(async () => {
     const r = await fetch(`/api/lease-agreements/${encodeURIComponent(leaseId)}/rescind${qs}`, { credentials: 'include', cache: 'no-store' });
@@ -252,6 +272,26 @@ export function LeaseDetailModal({ leaseId, clientId, onClose, onSaved }: { leas
               </div>
 
               {tab === 'form' && (<>
+              <div className="mb-4 rounded-lg border border-slate-200 p-3">
+                <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Invoice QuickBooks (lease fee)</div>
+                {lease?.qbInvoiceUrl ? (
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-green-700">✔ Invoice gerada.</span>
+                    <a href={lease.qbInvoiceUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[#22558c] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1c4675]">Abrir link de pagamento →</a>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="w-32">
+                      <label className={lbl}>Lease fee ($)</label>
+                      <input className={inp} type="number" value={leaseFee} onChange={(e) => setLeaseFee(e.target.value)} placeholder="Ex.: 250" />
+                    </div>
+                    <button onClick={genInvoice} disabled={invBusy} className="rounded-lg bg-[#22558c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1c4675] disabled:opacity-50">
+                      {invBusy ? 'Gerando…' : 'Gerar invoice no QuickBooks'}
+                    </button>
+                    <span className="text-xs text-slate-400">Precisa do QuickBooks conectado.</span>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div>
                   <label className={lbl}>New / Renewal</label>
