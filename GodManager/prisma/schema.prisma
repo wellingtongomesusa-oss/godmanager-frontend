@@ -1758,9 +1758,10 @@ model LeaseAgreement {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  client   Client   @relation("LeaseAgreement_clientId", fields: [clientId], references: [id], onDelete: Cascade)
-  property Property @relation("LeaseAgreement_propertyId", fields: [propertyId], references: [id], onDelete: Restrict)
-  tenant   Tenant?  @relation("LeaseAgreement_tenantId", fields: [tenantId], references: [id], onDelete: SetNull)
+  client            Client                  @relation("LeaseAgreement_clientId", fields: [clientId], references: [id], onDelete: Cascade)
+  property          Property                @relation("LeaseAgreement_propertyId", fields: [propertyId], references: [id], onDelete: Restrict)
+  tenant            Tenant?                 @relation("LeaseAgreement_tenantId", fields: [tenantId], references: [id], onDelete: SetNull)
+  depositDeductions LeaseDepositDeduction[] @relation("LeaseDepositDeduction_lease")
 
   @@unique([clientId, leaseNumber])
   @@index([clientId, status])
@@ -1768,6 +1769,22 @@ model LeaseAgreement {
   @@index([propertyId])
   @@index([tenantId])
   @@map("lease_agreements")
+}
+
+/// Dedução do depósito de segurança na rescisão (cada custo abate do saldo do depósito).
+model LeaseDepositDeduction {
+  id              String   @id @default(cuid())
+  clientId        String
+  leaseId         String
+  description     String   @db.VarChar(300)
+  amount          Decimal  @db.Decimal(12, 2)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  lease LeaseAgreement @relation("LeaseDepositDeduction_lease", fields: [leaseId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, leaseId])
+  @@map("lease_deposit_deductions")
 }
 
 model TrialInvite {

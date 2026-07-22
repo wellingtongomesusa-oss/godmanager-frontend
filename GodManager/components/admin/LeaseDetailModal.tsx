@@ -37,7 +37,39 @@ export function LeaseDetailModal({ leaseId, clientId, onClose, onSaved }: { leas
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [tab, setTab] = useState<'form' | 'receipts' | 'payout' | 'docs' | 'jobs'>('form');
+  const [tab, setTab] = useState<'form' | 'receipts' | 'payout' | 'docs' | 'jobs' | 'rescind'>('form');
+  const [resc, setResc] = useState<{ securityDeposit: number; securityReserve: number; totalDeducted: number; depositBalance: number; moveOutDate: string | null; status: string; deductions: { id: string; description: string; amount: number }[] } | null>(null);
+  const [dedDesc, setDedDesc] = useState('');
+  const [dedAmount, setDedAmount] = useState('');
+
+  const loadResc = useCallback(async () => {
+    const r = await fetch(`/api/lease-agreements/${encodeURIComponent(leaseId)}/rescind${qs}`, { credentials: 'include', cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (j?.ok) setResc(j);
+  }, [leaseId, qs]);
+
+  useEffect(() => {
+    if (tab === 'rescind' && !resc) void loadResc();
+  }, [tab, resc, loadResc]);
+
+  async function rescAction(body: Record<string, unknown>) {
+    setSaving(true);
+    try {
+      const r = await fetch(`/api/lease-agreements/${encodeURIComponent(leaseId)}/rescind`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        await loadResc();
+        onSaved?.();
+      } else setMsg(j.error || `Erro ${r.status}`);
+    } finally {
+      setSaving(false);
+    }
+  }
   const [propRow, setPropRow] = useState<{ months: string[]; cells: Record<string, { received: number; paid: number; expected: number }>; rent: number; owner: string } | null>(null);
   const [propLoading, setPropLoading] = useState(false);
 
@@ -208,7 +240,7 @@ export function LeaseDetailModal({ leaseId, clientId, onClose, onSaved }: { leas
               </div>
 
               <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
-                {([['form', 'Formulário'], ['receipts', 'Recebimentos'], ['payout', 'Repasse'], ['docs', 'Documentos'], ['jobs', 'Chamados']] as const).map(([k, label]) => (
+                {([['form', 'Formulário'], ['receipts', 'Recebimentos'], ['payout', 'Repasse'], ['docs', 'Documentos'], ['jobs', 'Chamados'], ['rescind', 'Rescisão']] as const).map(([k, label]) => (
                   <button
                     key={k}
                     onClick={() => setTab(k)}
@@ -318,7 +350,103 @@ export function LeaseDetailModal({ leaseId, clientId, onClose, onSaved }: { leas
               )}
               {tab === 'jobs' && (
                 <div className="py-6 text-sm text-slate-500">
-                  Chamados desta propriedade aparecem aqui — em breve (Fase 6): lista dos jobs abertos da casa + histórico, vendors que atenderam e logs.
+                  Chamados desta propriedade aparecem no detalhe por casa (menu Contratos → clique na casa → aba Chamados).
+                </div>
+              )}
+
+              {tab === 'rescind' && (
+                <div>
+                  {!resc ? (
+                    <div className="py-8 text-center text-slate-400">Carregando…</div>
+                  ) : (
+                    <>
+                      {resc.moveOutDate && (
+                        <div className="mb-3 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">
+                          Contrato rescindido — move-out em {resc.moveOutDate.slice(0, 10)}.
+                        </div>
+                      )}
+                      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="text-xs text-slate-500">Depósito de segurança</div>
+                          <div className="font-mono text-lg font-bold">{money(resc.securityDeposit)}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="text-xs text-slate-500">Reserva de segurança</div>
+                          <div className="font-mono text-lg font-bold">{money(resc.securityReserve)}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="text-xs text-slate-500">Deduzido</div>
+                          <div className="font-mono text-lg font-bold text-red-700">{money(resc.totalDeducted)}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="text-xs text-slate-500">Saldo do depósito</div>
+                          <div className={`font-mono text-lg font-bold ${resc.depositBalance < 0 ? 'text-red-700' : 'text-green-700'}`}>{money(resc.depositBalance)}</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-3 text-sm font-semibold text-slate-700">Custos que a casa teve (abatem do depósito)</div>
+                      <table className="mb-3 w-full text-sm">
+                        <tbody>
+                          {resc.deductions.map((d) => (
+                            <tr key={d.id} className="border-b border-slate-100">
+                              <td className="px-2 py-2">{d.description}</td>
+                              <td className="px-2 py-2 text-right font-mono text-red-700">{money(d.amount)}</td>
+                              <td className="px-2 py-2 text-right">
+                                {!resc.moveOutDate && (
+                                  <button onClick={() => rescAction({ action: 'remove', deductionId: d.id })} className="text-xs text-slate-400 hover:text-red-600">remover</button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {resc.deductions.length === 0 && (
+                            <tr><td className="px-2 py-3 text-center text-slate-400" colSpan={3}>Nenhum custo lançado.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+
+                      {!resc.moveOutDate && (
+                        <>
+                          <div className="mb-4 flex flex-wrap items-end gap-2">
+                            <div className="flex-1 min-w-[180px]">
+                              <label className={lbl}>Descrição do custo</label>
+                              <input className={inp} value={dedDesc} onChange={(e) => setDedDesc(e.target.value)} placeholder="Ex.: Pintura, limpeza, reparo…" />
+                            </div>
+                            <div className="w-28">
+                              <label className={lbl}>Valor ($)</label>
+                              <input className={inp} type="number" value={dedAmount} onChange={(e) => setDedAmount(e.target.value)} />
+                            </div>
+                            <button
+                              onClick={() => {
+                                const a = Number(dedAmount);
+                                if (!dedDesc.trim() || !(a > 0)) return;
+                                void rescAction({ action: 'add', description: dedDesc.trim(), amount: a });
+                                setDedDesc('');
+                                setDedAmount('');
+                              }}
+                              disabled={saving}
+                              className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                            >
+                              + Adicionar custo
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
+                            <button
+                              onClick={() => {
+                                const d = prompt('Confirmar rescisão. Data de move-out (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+                                if (!d) return;
+                                if (!confirm('Rescindir o contrato e registrar o move-out? Esta ação encerra o contrato.')) return;
+                                void rescAction({ action: 'confirm', moveOutDate: d });
+                              }}
+                              disabled={saving}
+                              className="rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                            >
+                              Confirmar rescisão (move-out)
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </>
