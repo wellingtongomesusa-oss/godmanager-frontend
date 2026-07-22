@@ -77,7 +77,7 @@ export function HouseDetailModal({
 
   // Gera um documento imprimível (administração, listing, recibo de chaves) com os dados da casa.
   function genDoc(kind: 'mgmt' | 'listing' | 'keys') {
-    const titles: Record<string, string> = { mgmt: 'Property Management Agreement', listing: 'Exclusive Listing Agreement', keys: 'Recibo de Entrega de Chaves' };
+    const titles: Record<string, string> = { mgmt: 'Contrato de Administração / Property Management Agreement', listing: 'Autorização de Listing / Exclusive Listing Agreement', keys: 'Entrega de Chaves / Keys Handover Receipt' };
     const owner = row?.owner || '________________________';
     const rent = lease?.monthlyRent ? `$${lease.monthlyRent}` : '________';
     const bodies: Record<string, string> = {
@@ -329,9 +329,9 @@ export function HouseDetailModal({
                   >
                     Gerar contrato de locação (Lease FL)
                   </button>
+                  <button onClick={() => genDoc('keys')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Entrega de chaves</button>
+                  <button onClick={() => genDoc('listing')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Autorização de listing</button>
                   <button onClick={() => genDoc('mgmt')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Contrato de administração</button>
-                  <button onClick={() => genDoc('listing')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Listing Agreement</button>
-                  <button onClick={() => genDoc('keys')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Recibo de chaves</button>
                 </div>
                 <p className="mt-2 text-xs text-slate-400">O contrato de locação (Lease FL) é criado na aba Leases com número único vinculado a esta casa. Os demais abrem um modelo imprimível com os dados da casa.</p>
               </div>
