@@ -1505,7 +1505,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="ss" onclick="gmContractsHubOpen()" id="nav-contracts">Contratos</div>
  <div class="ss" onclick="nav('leases-history')" id="nav-leases-history" data-i18n="nav_leases_history">Lease history</div>
  <div class="ss" onclick="nav('properties')" id="nav-properties" data-i18n="ranking_properties">Ranking Properties</div>
- <div class="ss" onclick="nav('renovations')" id="nav-renovations" data-i18n="renovations">Renovations</div>
+ <div class="ss" onclick="nav('renovations')" id="nav-renovations">Pay/Receipt</div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="expenses">
@@ -2383,7 +2383,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 </div>
 
 <div class="page" id="page-renovations">
- <div class="ph"><div class="pt">Recebido × Pago ao Owner — <span id="glm-title-year">2026</span></div><div class="ps">Matriz por casa e mês: aluguel <b style="color:#b45309">recebido</b> e <b style="color:#2a6e4e">pago ao owner</b>. Verde = pago bate com recebido − mgm fee; diferenças em mapa de calor. Total = a pagar (+) ou a receber de volta (−).</div></div>
+ <div class="ph"><div class="pt">Pay/Receipt — <span id="glm-title-year">2026</span></div><div class="ps">Matriz por casa e mês: aluguel <b style="color:#b45309">recebido</b> e <b style="color:#2a6e4e">pago ao owner</b>. Verde = pago bate com recebido − mgm fee; diferenças em mapa de calor. Total = a pagar (+) ou a receber de volta (−). 1º aluguel: Manager Prop 80% / owner 20%, menos depósito de segurança + reserva.</div></div>
  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
   <button onclick="gmGlMatrixRender()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Atualizar</button>
   <label style="font-size:11px;color:var(--ink2)">Ano <select id="glm-year" onchange="gmGlMatrixRender()" style="padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--sand);color:var(--ink);font-size:12px"><option value="2026">2026</option><option value="2025">2025</option><option value="2027">2027</option></select></label>
@@ -15304,6 +15304,7 @@ window.gmGlMatrixRender=async function(){
    var h='<tr>';
    h+='<th style="'+thBase+';left:0;z-index:3;text-align:left;width:220px;min-width:220px;max-width:220px">Propriedade</th>';
    h+='<th style="'+thBase+';z-index:2;text-align:left;min-width:130px">Owner</th>';
+   h+='<th style="'+thBase+';z-index:2;text-align:right;min-width:90px;border-left:1px solid var(--border)" title="Aluguel da casa (recebido do mês mais recente)">Aluguel</th>';
    months.forEach(function(mm){h+='<th style="'+thBase+';z-index:2;min-width:120px;border-left:1px solid var(--border)">'+esc(mlabel(mm))+'</th>';});
    h+='<th style="'+thBase+';z-index:2;min-width:120px;border-left:2px solid var(--border)">Total a pagar/receber</th>';
    h+='</tr>';head.innerHTML=h;
@@ -15314,6 +15315,7 @@ window.gmGlMatrixRender=async function(){
    var tr='<tr>';
    tr+='<td style="padding:6px 8px;'+stickyName+'"><div style="font-weight:600;color:var(--ink);white-space:normal;word-break:break-word">'+esc(r.name||'—')+'</div><div style="font-size:10px;color:var(--ink3);font-family:JetBrains Mono,monospace">'+esc(r.code||'')+(r.matched?'':' · sem casa')+'</div></td>';
    tr+='<td style="padding:6px 8px;min-width:130px;color:var(--ink2)">'+esc(r.owner||'—')+'</td>';
+   tr+='<td style="padding:6px 8px;min-width:90px;text-align:right;font-family:JetBrains Mono,monospace;color:var(--ink);border-left:1px solid var(--border)">'+((Number(r.rent)||0)>0?m2(r.rent):'—')+'</td>';
    months.forEach(function(mm){
     var c=(r.cells&&r.cells[mm])||null;
     if(!c){tr+='<td style="border-left:1px solid var(--border);border-bottom:1px solid var(--border)"></td>';return;}

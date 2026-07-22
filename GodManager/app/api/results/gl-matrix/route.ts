@@ -101,6 +101,12 @@ export async function GET(req: Request) {
           };
         }
         const expectedTotal = round2(r.received * (1 - reg / 100));
+        // "Aluguel" da casa: recebido do mês mais recente com recebimento > 0 (proxy do aluguel mensal).
+        let rent = 0;
+        for (let i = months.length - 1; i >= 0; i--) {
+          const c = cells[months[i]];
+          if (c && c.received > 0) { rent = c.received; break; }
+        }
         return {
           propertyId: r.propertyId,
           code: r.code,
@@ -108,6 +114,7 @@ export async function GET(req: Request) {
           owner: r.owner,
           matched: !!r.propertyId,
           regPct: reg,
+          rent,
           cells,
           received: round2(r.received),
           paid: round2(r.paid),
