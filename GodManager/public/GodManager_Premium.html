@@ -6556,8 +6556,8 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
     </select>
     <input id="rec-month" type="month" style="padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)">
     <button type="button" onclick="gmRecLoad()" style="padding:8px 16px;background:var(--blue,#22558c);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Carregar</button>
-    <input type="file" id="rec-chase-file" accept="application/pdf,.pdf" style="display:none" onchange="if(typeof gmRecImportChase==='function')gmRecImportChase(this)">
-    <button type="button" onclick="document.getElementById('rec-chase-file').click()" title="Sobe o PDF consolidado do Chase e preenche o saldo inicial/final das 3 contas do mês" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">&#8593; Importar extrato Chase (PDF)</button>
+    <input type="file" id="rec-chase-file" accept="application/pdf,.pdf" multiple style="display:none" onchange="if(typeof gmRecImportChase==='function')gmRecImportChase(this)">
+    <button type="button" onclick="document.getElementById('rec-chase-file').click()" title="Selecione 1 ou VÁRIOS PDFs do Chase — cada um detecta o mês sozinho e é importado em sequência" style="padding:8px 16px;background:#2a6e4e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">&#8593; Importar extratos Chase (vários meses)</button>
     <button type="button" onclick="gmQbRobotOpen()" title="Robô: prévia de conciliação no QuickBooks (categoriza as transações do banco)" style="padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Conciliar QuickBooks</button>
     <button type="button" onclick="gmQbReconHelp()" aria-label="Como conciliar no QuickBooks" title="Como conciliar no QuickBooks" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);background:var(--sand);color:var(--ink2);font-size:14px;font-weight:700;cursor:pointer;line-height:1">&#8505;</button>
    </div>
@@ -9432,31 +9432,34 @@ window.gmQbCopyLink=gmQbCopyLink;
 // ===== #7 — Conciliação bancária =====
 window.__gmRec=null;
 // Importa o PDF consolidado do Chase → preenche saldo inicial/final das contas do mês (via unpdf no servidor).
+// Importa UM ou VÁRIOS PDFs do Chase de uma vez. Cada PDF detecta o mês sozinho (parser).
 window.gmRecImportChase=async function(input){
- var f=input&&input.files&&input.files[0];if(!f)return;
+ var files=(input&&input.files)?Array.prototype.slice.call(input.files):[];
+ if(!files.length)return;
  var box=document.getElementById('rec-chase-import');
- if(box){box.style.display='block';box.innerHTML='Lendo o PDF do Chase… (pode levar alguns segundos)';}
- try{
-  var fd=new FormData();fd.append('file',f);
-  var cid='';if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)cid=p.clientId;}
-  if(cid)fd.append('clientId',cid);
-  var res=await fetch('/api/reconciliation/import-chase',{method:'POST',credentials:'include',body:fd});
-  var j=await res.json().catch(function(){return{};});
-  input.value='';
-  if(!res.ok||!j.ok){if(box)box.innerHTML='<span style="color:#b83030">'+String((j&&j.error)||('Erro '+res.status))+'</span>';return;}
-  var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
-  var money=function(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
-  var html='<b>Extrato '+esc(j.periodMonth)+'</b> ('+esc(j.periodStart)+' → '+esc(j.periodEnd)+') — ';
-  if(j.imported&&j.imported.length){
-   html+='<span style="color:#2a6e4e;font-weight:600">'+j.imported.length+' conta(s) importada(s)</span>: ';
-   html+=j.imported.map(function(i){return esc(i.bankAccountKey)+' (…'+esc(i.last4)+') fim '+money(i.ending);}).join(' · ');
-  }else{html+='<span style="color:#b45309">nenhuma conta importada</span>';}
-  if(j.unmapped&&j.unmapped.length)html+='<br><span style="color:#b45309">Sem vínculo (mapeie em "Vincular contas do Chase"): '+j.unmapped.map(function(u){return '…'+esc(u.last4);}).join(', ')+'</span>';
-  if(j.unbalanced&&j.unbalanced.length)html+='<br><span style="color:#b83030">Saldo divergente (não importada): '+j.unbalanced.map(function(u){return '…'+esc(u.last4)+' dif '+money(u.diff);}).join(', ')+'</span>';
-  if(box)box.innerHTML=html;
-  var mEl=document.getElementById('rec-month');if(mEl&&j.periodMonth)mEl.value=j.periodMonth;
-  if(typeof gmRecLoad==='function')gmRecLoad();
- }catch(e){if(box)box.innerHTML='<span style="color:#b83030">Erro de rede ao importar.</span>';}
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var cid='';if(typeof gmBankAccountsClientPayload==='function'){var p=gmBankAccountsClientPayload();if(p&&p.clientId)cid=p.clientId;}
+ var lines=[];var okCount=0;var lastMonth='';
+ for(var i=0;i<files.length;i++){
+  var f=files[i];
+  if(box){box.style.display='block';box.innerHTML='Importando '+(i+1)+'/'+files.length+': <b>'+esc(f.name)+'</b>… (lendo PDF, pode levar alguns segundos)'+(lines.length?('<br>'+lines.join('<br>')):'');}
+  try{
+   var fd=new FormData();fd.append('file',f);if(cid)fd.append('clientId',cid);
+   var res=await fetch('/api/reconciliation/import-chase',{method:'POST',credentials:'include',body:fd});
+   var j=await res.json().catch(function(){return{};});
+   if(!res.ok||!j.ok){lines.push('<span style="color:#b83030">✗ '+esc(f.name)+': '+esc(String((j&&j.error)||('Erro '+res.status)))+'</span>');continue;}
+   var nAcc=(j.imported&&j.imported.length)||0;
+   var warn='';
+   if(j.unbalanced&&j.unbalanced.length)warn+=' <span style="color:#b83030">(saldo divergente: '+j.unbalanced.map(function(u){return '…'+esc(u.last4);}).join(',')+')</span>';
+   if(j.unmapped&&j.unmapped.length)warn+=' <span style="color:#b45309">(sem vínculo: '+j.unmapped.map(function(u){return '…'+esc(u.last4);}).join(',')+')</span>';
+   lines.push('<span style="color:#2a6e4e">✓ '+esc(f.name)+' → <b>'+esc(j.periodMonth||'?')+'</b> · '+nAcc+' conta(s)</span>'+warn);
+   if(nAcc>0){okCount++;if(j.periodMonth)lastMonth=j.periodMonth;}
+  }catch(e){lines.push('<span style="color:#b83030">✗ '+esc(f.name)+': erro de rede</span>');}
+ }
+ input.value='';
+ if(box)box.innerHTML='<b>'+okCount+'/'+files.length+' extrato(s) importado(s)</b><br>'+lines.join('<br>');
+ var mEl=document.getElementById('rec-month');if(mEl&&lastMonth)mEl.value=lastMonth;
+ if(typeof gmRecLoad==='function'&&/^\d{4}-\d{2}$/.test(lastMonth))gmRecLoad();
 };
 function gmRecFmt(v){var x=Number(v);if(!isFinite(x))x=0;return (x<0?'-$':'$')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function gmRecQuery(){return (typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';}
@@ -9538,8 +9541,10 @@ window.gmQbReconHelp=function(){
   +'</div></div>';
  document.body.appendChild(ov);
 };
+window.gmQbRobotSetMonth=function(m){window.__gmQbRobotMonthSel=(m||'');gmQbRobotOpen();};
 window.gmQbRobotOpen=async function(){
- var month=(document.getElementById('rec-month')&&document.getElementById('rec-month').value)||'';
+ // Mês do robô: usa o seletor do próprio modal (default = TODOS os meses importados).
+ var month=(typeof window.__gmQbRobotMonthSel==='string')?window.__gmQbRobotMonthSel:'';
  var qs=gmQbReconClientQs();var url='/api/quickbooks/reconcile-robot?'+(qs?(qs+'&'):'')+'month='+encodeURIComponent(month);
  var ov=document.getElementById('gm-qbrobot-ov');if(ov)ov.remove();
  ov=document.createElement('div');ov.id='gm-qbrobot-ov';
@@ -9559,7 +9564,7 @@ window.gmQbRobotOpen=async function(){
   var connMsg=j.connected?'<span style="color:#2a6e4e">QuickBooks conectado</span>':'<span style="color:#b45309">QuickBooks não conectado</span>';
   var applyMsg=j.applyEnabled?'':'<div style="font-size:11px;color:var(--ink3);margin-top:6px">Escrita automática no QBO desativada (QBO_RECONCILE_ENABLED). Use a prévia como checklist. <a href="javascript:void(0)" onclick="gmQbReconHelp()" style="color:var(--amber);text-decoration:underline">Como fazer</a></div>';
   ov.innerHTML='<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:960px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
-   +'<div style="padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:16px;font-weight:700;color:var(--ink)">Conciliação QuickBooks — prévia'+(j.month?(' · '+esc(j.month)):'')+'</div><div style="font-size:11px;margin-top:3px">'+connMsg+' · '+j.pending+' a conciliar · <b style="color:#2a6e4e">'+(j.autoApplyCount||0)+' auto-aplicáveis (alta confiança)</b> · <b style="color:#b45309">'+(j.reviewCount||0)+' para revisar</b> · <b style="color:#22558c">'+(j.mappedCount||0)+' com conta QBO</b> · <b style="color:#7c3aed">'+(j.reconciledCount||0)+' conciliadas</b>'+((j.compliantCount!=null)?(' · <b style="color:#2a6e4e">'+(j.compliantCount||0)+' conforme FL</b>'+((j.blockedCount||0)>0?(' · <b style="color:#b83030">'+j.blockedCount+' bloqueadas</b>'):'')):'')+(j.accountsError?' <span style="color:#b83030">(plano de contas nao lido)</span>':'')+'</div></div><button onclick="document.getElementById(\'gm-qbrobot-ov\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div>'
+   +'<div style="padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:16px;font-weight:700;color:var(--ink)">Conciliação QuickBooks — prévia'+(j.month?(' · '+esc(j.month)):'')+'</div><div style="font-size:11px;margin-top:3px">'+connMsg+' · '+j.pending+' a conciliar · <b style="color:#2a6e4e">'+(j.autoApplyCount||0)+' auto-aplicáveis (alta confiança)</b> · <b style="color:#b45309">'+(j.reviewCount||0)+' para revisar</b> · <b style="color:#22558c">'+(j.mappedCount||0)+' com conta QBO</b> · <b style="color:#7c3aed">'+(j.reconciledCount||0)+' conciliadas</b>'+((j.compliantCount!=null)?(' · <b style="color:#2a6e4e">'+(j.compliantCount||0)+' conforme FL</b>'+((j.blockedCount||0)>0?(' · <b style="color:#b83030">'+j.blockedCount+' bloqueadas</b>'):'')):'')+(j.accountsError?' <span style="color:#b83030">(plano de contas nao lido)</span>':'')+'</div></div><div style="display:flex;align-items:center;gap:6px"><input type="month" id="gm-qbrobot-month" value="'+esc(j.month||'')+'" onchange="gmQbRobotSetMonth(this.value)" title="Filtrar por mês do extrato" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px"><button onclick="gmQbRobotSetMonth(\'\')" title="Ver todas as pendências (todos os meses importados)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:'+((j.month)?'var(--sand)':'#1a1a1c')+';color:'+((j.month)?'var(--ink2)':'#fff')+';font-size:11px;font-weight:600;cursor:pointer">Todos os meses</button></div><button onclick="document.getElementById(\'gm-qbrobot-ov\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div>'
    +'<div style="padding:8px 22px 0"><div style="height:8px;background:var(--cream);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+(j.progressPct||0)+'%;background:linear-gradient(90deg,#2a6e4e,#7c3aed);border-radius:99px;transition:width .3s"></div></div><div style="font-size:10px;color:var(--ink3);margin-top:3px">'+(j.reconciledCount||0)+' conciliadas · '+j.pending+' pendentes · <b>'+(j.progressPct||0)+'% concluído</b></div></div>'
    +'<div style="padding:10px 22px">'+chips+'</div>'
    +'<div style="padding:0 22px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream);position:sticky;top:0"><th style="padding:7px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)" title="Marcar/desmarcar todas as visíveis"><input type="checkbox" onclick="var cs=document.querySelectorAll(\'.gm-qbrec-chk\');for(var i=0;i<cs.length;i++)cs[i].checked=this.checked;"></th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th><th style="padding:7px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Valor</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Plano (regras FL)</th><th style="padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta no QuickBooks</th><th style="padding:7px 8px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Confiança</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
