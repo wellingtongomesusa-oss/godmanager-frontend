@@ -4111,9 +4111,22 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
    <button type="button" onclick="gmTrustSwapAccounts()" style="padding:7px 14px;border:none;border-radius:6px;background:var(--blue,#22558c);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Trocar</button>
    <span style="font-size:11px;color:var(--ink3)">Use se uma conta estiver classificada no tipo errado (troca os saldos das duas).</span>
   </div>
+  <!-- Transações por tipo (cards menores) + busca -->
+  <div style="margin-top:24px">
+   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">Transações do mês</div>
+    <select id="trust-txn-account" onchange="gmTrustTxnRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"><option value="">Todas as contas</option><option value="TRUST_CHASE">Trust (Chase)</option><option value="OPERATING_TRUST">Operating</option><option value="DEPOSIT_SECURITY">Security Deposit</option></select>
+    <select id="trust-txn-month" onchange="gmTrustTxnRender()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink)"></select>
+    <input id="trust-txn-search" oninput="gmTrustTxnFilter()" placeholder="Buscar transação (descrição, tipo, conta)…" style="padding:6px 12px;border:1px solid var(--border2);border-radius:6px;font-size:12px;background:var(--sand);color:var(--ink);width:280px">
+    <span id="trust-txn-status" style="font-size:11px;color:var(--ink3)"></span>
+   </div>
+   <div id="trust-txn-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
+   <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper)"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)"><th style="padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Data</th><th style="padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Conta</th><th style="padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--ink3)">Descrição</th><th style="padding:7px 10px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--ink3)">Tipo</th><th style="padding:7px 10px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--ink3)">Valor</th></tr></thead><tbody id="trust-txn-list"><tr><td colspan="5" style="padding:16px;color:var(--ink3)">Selecione uma conta/mês.</td></tr></tbody></table></div>
+  </div>
+
   <div id="trust-statement-docs-wrap" style="margin-top:22px;display:none">
    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-    <div style="font-size:13px;font-weight:700;color:var(--ink)">Extratos (PDF)</div>
+    <div style="font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:10px">Extratos (PDF) <input id="trust-docs-search" oninput="gmTrustStatementFilter()" placeholder="Filtrar extratos…" style="padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px;background:var(--sand);color:var(--ink);width:160px"></div>
     <div id="trust-statement-upload-wrap" style="display:none;align-items:center;gap:8px">
      <input type="month" id="trust-statement-upload-month" value="2026-07" title="Mês (usado só se o nome do arquivo não indicar)" style="padding:6px 9px;border:1px solid var(--border2);border-radius:7px;background:var(--sand);color:var(--ink);font-size:12px">
      <input type="file" id="trust-statement-upload-file" accept="application/pdf,.pdf" multiple style="display:none" onchange="gmStatementUploadTrigger()">
@@ -7959,6 +7972,7 @@ async function gmTrustStatementRender(){
  var remapBox=document.getElementById('trust-remap-box');
  if(remapBox)remapBox.style.display=canEdit?'flex':'none';
  if(typeof gmTrustLoadStatements==='function')void gmTrustLoadStatements();
+ if(typeof gmTrustTxnRender==='function')void gmTrustTxnRender();
  if(typeof gmRentReceiptsLoad==='function')void gmRentReceiptsLoad();
  if(typeof gmPnlLoad==='function')void gmPnlLoad();
 }
@@ -7990,6 +8004,71 @@ async function gmTrustLoadStatements(){
  }catch(e){console.warn('gmTrustLoadStatements',e);wrap.style.display='none';}
 }
 window.gmTrustLoadStatements=gmTrustLoadStatements;
+// Transações da Contas Trust: cards por tipo + busca + gráfico de evolução.
+window.__gmTrustTxn=null;
+window.gmTrustTxnRender=async function(){
+ var host=document.getElementById('trust-txn-cards');if(!host)return;
+ var acc=(document.getElementById('trust-txn-account')||{}).value||'';
+ var mel=document.getElementById('trust-txn-month');var month=(mel&&mel.value)||'';
+ var st=document.getElementById('trust-txn-status');if(st)st.textContent='Carregando…';
+ try{
+  var q=(typeof gmBankAccountsClientQuery==='function')?gmBankAccountsClientQuery():'';
+  var sep=q?'&':'?';
+  var url='/api/bank-accounts/txn-summary'+q+sep+'account='+encodeURIComponent(acc)+'&month='+encodeURIComponent(month);
+  var res=await fetch(url,{credentials:'include',cache:'no-store'});
+  var j=await res.json().catch(function(){return{};});
+  if(!res.ok||!j.ok){if(st)st.textContent=(j&&j.error)||('Erro '+res.status);return;}
+  window.__gmTrustTxn=j;
+  if(mel&&(mel.options.length===0||mel.getAttribute('data-acc')!==acc)){
+   mel.setAttribute('data-acc',acc);
+   mel.innerHTML=(j.months||[]).map(function(m){return '<option value="'+m+'"'+(m===j.month?' selected':'')+'>'+m+'</option>';}).join('');
+  }
+  var money=(typeof gmTrustFmtMoney==='function')?gmTrustFmtMoney:function(n){return '$'+Number(n||0).toFixed(2);};
+  var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+  host.innerHTML=(j.cards||[]).map(function(c){
+   return '<div style="border:1px solid var(--border);border-radius:10px;background:var(--paper);padding:10px 12px"><div style="font-size:11px;font-weight:700;color:var(--ink)">'+esc(c.type)+' <span style="font-weight:400;color:var(--ink3)">('+c.count+')</span></div><div style="font-size:12px;font-family:JetBrains Mono,monospace;color:#2a6e4e;margin-top:3px">+ '+money(c.in)+'</div><div style="font-size:12px;font-family:JetBrains Mono,monospace;color:#b83030">− '+money(c.out)+'</div><a href="javascript:void(0)" onclick="gmTrustTxnGraph(\''+esc(c.type)+'\')" style="font-size:10px;color:var(--amber);text-decoration:underline;cursor:pointer">📈 Gráfico</a></div>';
+  }).join('')||'<div style="color:var(--ink3);font-size:12px;grid-column:1/-1">Sem transações. Importe o extrato Chase na Conciliação.</div>';
+  gmTrustTxnRenderList();
+  if(st)st.textContent=(j.transactionCount||0)+' transações · entradas '+money(j.totals.entradas)+' · saídas '+money(j.totals.saidas);
+ }catch(e){if(st)st.textContent='Erro de rede.';}
+};
+window.gmTrustTxnRenderList=function(){
+ var body=document.getElementById('trust-txn-list');if(!body)return;
+ var j=window.__gmTrustTxn;if(!j){return;}
+ var money=(typeof gmTrustFmtMoney==='function')?gmTrustFmtMoney:function(n){return '$'+Number(n||0).toFixed(2);};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var qs=(document.getElementById('trust-txn-search')&&document.getElementById('trust-txn-search').value||'').toLowerCase().trim();
+ var accMap={TRUST_CHASE:'Trust',OPERATING_TRUST:'Operating',DEPOSIT_SECURITY:'Security Dep'};
+ var rows=(j.transactions||[]).filter(function(t){return !qs||(String(t.description)+' '+t.type+' '+t.account).toLowerCase().indexOf(qs)>=0;});
+ body.innerHTML=rows.map(function(t){var neg=(Number(t.amount)||0)<0;return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-family:JetBrains Mono,monospace">'+esc(t.date)+'</td><td style="padding:5px 10px;font-size:10px;color:var(--ink3)">'+esc(accMap[t.account]||t.account)+'</td><td style="padding:5px 10px">'+esc(t.description)+'</td><td style="padding:5px 10px;text-align:center"><span style="font-size:9px;padding:1px 6px;border-radius:8px;background:var(--cream);color:var(--ink2)">'+esc(t.type)+'</span></td><td style="padding:5px 10px;text-align:right;font-family:JetBrains Mono,monospace;color:'+(neg?'#b83030':'#2a6e4e')+'">'+money(t.amount)+'</td></tr>';}).join('')||'<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--ink3)">Nenhuma transação.</td></tr>';
+};
+window.gmTrustTxnFilter=function(){gmTrustTxnRenderList();};
+window.gmTrustTxnGraph=function(type){
+ var j=window.__gmTrustTxn;if(!j)return;
+ var series=(type&&j.trendByType&&j.trendByType[type])?j.trendByType[type]:(j.trend||[]);
+ var money=(typeof gmTrustFmtMoney==='function')?gmTrustFmtMoney:function(n){return '$'+Number(n||0).toFixed(2);};
+ var esc=function(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var max=1;series.forEach(function(p){max=Math.max(max,p.in||0,p.out||0);});
+ var W=Math.max(360,series.length*70),H=200,pad=28;
+ var bw=series.length?((W-pad*2)/series.length):0;
+ var bars='';series.forEach(function(p,i){
+  var x=pad+i*bw;var hi=(p.in/max)*(H-pad*2);var ho=(p.out/max)*(H-pad*2);
+  bars+='<rect x="'+(x+bw*0.15)+'" y="'+(H-pad-hi)+'" width="'+(bw*0.3)+'" height="'+hi+'" fill="#2a6e4e"><title>'+esc(p.month)+' entrada '+money(p.in)+'</title></rect>';
+  bars+='<rect x="'+(x+bw*0.55)+'" y="'+(H-pad-ho)+'" width="'+(bw*0.3)+'" height="'+ho+'" fill="#b83030"><title>'+esc(p.month)+' saída '+money(p.out)+'</title></rect>';
+  bars+='<text x="'+(x+bw*0.5)+'" y="'+(H-pad+12)+'" font-size="8" text-anchor="middle" fill="#999">'+esc(String(p.month).slice(2))+'</text>';
+ });
+ var ov=document.getElementById('gm-trusttxn-graph');if(ov)ov.remove();
+ ov=document.createElement('div');ov.id='gm-trusttxn-graph';
+ ov.style.cssText='position:fixed;inset:0;background:rgba(20,16,10,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+ ov.onclick=function(e){if(e.target===ov)ov.remove();};
+ ov.innerHTML='<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:760px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.3)"><div style="padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:700;color:var(--ink)">Evolução — '+(type?esc(type):'Total')+' <span style="font-size:11px;color:var(--ink3)">(verde entrada · vermelho saída)</span></div><button onclick="document.getElementById(\'gm-trusttxn-graph\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">×</button></div><div style="padding:18px 22px;overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:'+Math.min(W,700)+'px;height:auto">'+bars+'</svg></div></div>';
+ document.body.appendChild(ov);
+};
+window.gmTrustStatementFilter=function(){
+ var q=(document.getElementById('trust-docs-search')&&document.getElementById('trust-docs-search').value||'').toLowerCase().trim();
+ var host=document.getElementById('trust-statement-docs');if(!host)return;
+ var rows=host.children;for(var i=0;i<rows.length;i++){var t=(rows[i].textContent||'').toLowerCase();rows[i].style.display=(!q||t.indexOf(q)>=0)?'':'none';}
+};
 function gmStatementUploadTrigger(){
  var fileEl=document.getElementById('trust-statement-upload-file');
  if(!fileEl||!fileEl.files||!fileEl.files.length)return;
