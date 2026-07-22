@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 type Cell = { received: number; paid: number; expected: number };
 type MatrixRow = { propertyId: string; owner: string; rent: number; months: string[]; cells: Record<string, Cell> };
@@ -53,6 +53,43 @@ export function HouseDetailModal({
   const [waList, setWaList] = useState<{ id: string; createdAt: string; label?: string | null; participants?: string[]; messageCount?: number; overview?: unknown; transcript?: { d?: string; s?: string; t?: string }[] }[] | null>(null);
   const [waText, setWaText] = useState('');
   const [waBusy, setWaBusy] = useState(false);
+  const docFileRef = useRef<HTMLInputElement>(null);
+  const [docBusy, setDocBusy] = useState(false);
+  const [docMsg, setDocMsg] = useState('');
+
+  async function docUpload(f: File | null) {
+    if (!f) return;
+    setDocBusy(true);
+    setDocMsg('');
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const r = await fetch(`/api/properties/${encodeURIComponent(propertyId)}/contract`, { method: 'POST', credentials: 'include', body: fd });
+      const d = await r.json().catch(() => ({}));
+      setDocMsg(r.ok && d.ok ? 'Documento enviado e salvo nesta casa.' : (d.error || `Erro ${r.status}`));
+    } catch (e) {
+      setDocMsg(e instanceof Error ? e.message : 'Falha no upload.');
+    } finally {
+      setDocBusy(false);
+      if (docFileRef.current) docFileRef.current.value = '';
+    }
+  }
+
+  // Gera um documento imprimível (administração, listing, recibo de chaves) com os dados da casa.
+  function genDoc(kind: 'mgmt' | 'listing' | 'keys') {
+    const titles: Record<string, string> = { mgmt: 'Property Management Agreement', listing: 'Exclusive Listing Agreement', keys: 'Recibo de Entrega de Chaves' };
+    const owner = row?.owner || '________________________';
+    const rent = lease?.monthlyRent ? `$${lease.monthlyRent}` : '________';
+    const bodies: Record<string, string> = {
+      mgmt: `<p>This Property Management Agreement is entered into between <b>Manager Prop LLC</b> ("Manager") and <b>${owner}</b> ("Owner") for the property located at <b>${address}</b> (${code}).</p><p>The Manager is authorized to manage, lease, collect rent, coordinate maintenance and disburse net proceeds to the Owner, in accordance with Florida Statutes Chapter 475 and FREC trust-accounting rules. Management fee as agreed. Monthly rent reference: ${rent}.</p>`,
+      listing: `<p><b>Manager Prop LLC</b> is granted the exclusive right to list and market the property at <b>${address}</b> (${code}), owned by <b>${owner}</b>, for lease. Reference monthly rent: ${rent}.</p><p>This agreement authorizes advertising, showings and tenant screening in accordance with Florida law and Fair Housing requirements.</p>`,
+      keys: `<p>Property: <b>${address}</b> (${code}).</p><p>Owner: <b>${owner}</b> · Tenant: <b>${tenantName || '________________'}</b>.</p><p>The undersigned acknowledges receipt of the keys/access devices for the above property on the date below.</p><table style="width:100%;border-collapse:collapse;margin-top:10px"><tr><td style="border:1px solid #ccc;padding:8px">Front door keys</td><td style="border:1px solid #ccc;padding:8px">Qty: ____</td></tr><tr><td style="border:1px solid #ccc;padding:8px">Mailbox / gate / remotes</td><td style="border:1px solid #ccc;padding:8px">Qty: ____</td></tr></table>`,
+    };
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${titles[kind]}</title><style>body{font-family:Inter,Arial,sans-serif;color:#1a1a1c;max-width:760px;margin:40px auto;padding:0 24px;line-height:1.6;font-size:14px}h1{font-size:20px;border-bottom:2px solid #c47b28;padding-bottom:8px}.company{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#c47b28;font-weight:700}.sig{margin-top:60px;display:flex;gap:40px}.sig div{flex:1;border-top:1px solid #1a1a1c;padding-top:6px;font-size:12px;color:#4a4540}@media print{body{margin:0}}</style></head><body><div class="company">Manager Prop LLC · godmanager.com</div><h1>${titles[kind]}</h1>${bodies[kind]}<div class="sig"><div>Owner / Signatário</div><div>Manager Prop LLC</div></div><p style="margin-top:24px;font-size:11px;color:#8a8580">Documento gerado pelo GodManager. Revise com seu advogado antes de assinar.</p></body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); w.focus(); }
+    else setDocMsg('Permita popups para gerar o documento.');
+  }
 
   const loadWa = useCallback(async () => {
     try {
@@ -273,8 +310,31 @@ export function HouseDetailModal({
               )}
             </div>
           ) : tab === 'docs' ? (
-            <div className="py-6 text-sm text-slate-500">
-              Suba o arquivo do contrato desta casa pela lista (botão <b>Upload</b>). Geração automática de documentos (chaves, listing, administração) vem na próxima fase.
+            <div className="py-4">
+              <input ref={docFileRef} type="file" accept=".pdf,.doc,.docx,image/png,image/jpeg" className="hidden" onChange={(e) => void docUpload(e.target.files?.[0] || null)} />
+              <div className="mb-5">
+                <div className="mb-2 text-sm font-semibold text-slate-700">Enviar documento (upload)</div>
+                <button onClick={() => docFileRef.current?.click()} disabled={docBusy} className="rounded-lg bg-[#22558c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1c4675] disabled:opacity-60">
+                  {docBusy ? 'Enviando…' : 'Enviar documento'}
+                </button>
+                <p className="mt-1 text-xs text-slate-400">PDF, DOC, DOCX ou imagem — fica salvo nesta casa ({code}).</p>
+                {docMsg && <p className="mt-2 text-xs font-medium text-slate-600">{docMsg}</p>}
+              </div>
+              <div className="border-t border-slate-100 pt-4">
+                <div className="mb-2 text-sm font-semibold text-slate-700">Gerar contrato / documento</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => { const p = window.parent as unknown as { gmContratosGoto?: (t: string) => void }; p.gmContratosGoto ? p.gmContratosGoto('leases') : undefined; }}
+                    className="rounded-lg bg-[#2a6e4e] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                  >
+                    Gerar contrato de locação (Lease FL)
+                  </button>
+                  <button onClick={() => genDoc('mgmt')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Contrato de administração</button>
+                  <button onClick={() => genDoc('listing')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Listing Agreement</button>
+                  <button onClick={() => genDoc('keys')} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#22558c] hover:bg-slate-50">Recibo de chaves</button>
+                </div>
+                <p className="mt-2 text-xs text-slate-400">O contrato de locação (Lease FL) é criado na aba Leases com número único vinculado a esta casa. Os demais abrem um modelo imprimível com os dados da casa.</p>
+              </div>
             </div>
           ) : tab === 'graphs' ? (
             <div className="py-4">
