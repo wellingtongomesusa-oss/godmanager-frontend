@@ -31,17 +31,19 @@ export interface FlReconcilePlan {
 }
 
 const RX = {
-  utility: /\b(teco|toho|duke|fpl|kua|oucc|ferc|water|sewer|electric|utility|utilit|garbage|waste|spectrum|comcast|frontier|at&t|centurylink)\b/i,
-  hoa: /\b(hoa|home ?owners|association|condo|master assoc)\b/i,
-  insurance: /\b(insurance|geico|state ?farm|allstate|progressive|flood|nfip|citizens|universal prop)\b/i,
-  bankFee: /\b(service charge|monthly fee|maintenance fee|nsf|overdraft|wire fee|analysis charge|returned item)\b/i,
-  transfer: /\b(online transfer|transfer to|transfer from|book transfer|xfer|internal transfer|to checking|to savings)\b/i,
+  utility: /\b(teco|toho|duke|fpl|fp&l|kua|oucc|ferc|water|sewer|electric|utility|utilit|garbage|waste|trash|republic services|waste mgmt|waste management|spectrum|comcast|xfinity|frontier|at&t|centurylink|ouc|orlando utilit|lakeland electric|peoples gas|withlacoochee|seco energy|sumter electric|clay electric)\b/i,
+  hoa: /\b(hoa|home ?owners|association|condo|master assoc|community assoc|property owners assoc|\bpoa\b)\b/i,
+  insurance: /\b(insurance|geico|state ?farm|allstate|progressive|flood|nfip|citizens|universal prop|tower hill|heritage prop|federated|liberty mutual|nationwide|farmers ins)\b/i,
+  bankFee: /\b(service charge|monthly fee|maintenance fee|nsf|overdraft|wire fee|analysis charge|returned item|stop payment|counter check|atm fee)\b/i,
+  transfer: /\b(online transfer|transfer to|transfer from|book transfer|xfer|internal transfer|to checking|to savings|between accounts)\b/i,
   securityVendor: /\b(a ?l ?security|adt|alarm|security)\b/i,
-  maintenance: /\b(plumb|hvac|a\/c|air cond|repair|handyman|clean|lawn|landscap|pool|pest|roof|paint|appliance|home depot|lowe'?s)\b/i,
-  mgmtFee: /\b(management fee|mgmt fee|mgmt|admin fee)\b/i,
+  maintenance: /\b(plumb|hvac|a\/c|air cond|repair|handyman|clean|maid|lawn|landscap|irrigation|sprinkler|pool|spa service|pest|termite|roof|paint|drywall|floor|carpet|tile|gutter|fence|pressure wash|tree service|junk removal|appliance|home depot|lowe'?s|ace hardware|sherwin)\b/i,
+  mgmtFee: /\b(management fee|mgmt fee|mgmt|admin fee|placement fee)\b/i,
   ownerDist: /\b(owner|distribution|payout|repasse|disburs)\b/i,
-  rentIn: /\b(rent|zelle|deposit|receipt|payment received|appfolio|cozy|rentpayment|ach credit)\b/i,
-  payrollTax: /\b(irs|dor|payroll|tax|941|940|dept of revenue)\b/i,
+  rentIn: /\b(rent|zelle|web pmts?|\bppd\b|deposit|receipt|payment received|appfolio|buildium|cozy|rentpayment|rent ?manager|venmo|cash ?app|ach credit|tenant)\b/i,
+  propertyTax: /\b(tax collector|county tax|property appraiser|prop(erty)? tax|real estate tax|ad valorem|non-?ad valorem)\b/i,
+  mortgage: /\b(mortgage|loan ?pmt|loan payment|loandepot|rocket mortgage|freedom mtg|mr cooper|home loan|escrow disbursement)\b/i,
+  payrollTax: /\b(irs|dor|payroll|941|940|dept of revenue|department of revenue|unemployment|reemployment tax)\b/i,
 };
 
 /**
@@ -107,6 +109,12 @@ export function flReconcilePlan(description: string, amount: number, bankAccount
   }
   if (RX.insurance.test(d)) {
     return { category: 'Seguro', glAccount: '6xxx Insurance (Expense)', entryType: 'purchase', direction: 'out', rule: 'Seguro: despesa; owner-billable se for do imóvel do proprietário.', confidence: 'medium', autoApply: false };
+  }
+  if (RX.propertyTax.test(d)) {
+    return { category: 'Property tax (owner-billable)', glAccount: '6xxx Property Taxes (Expense) — normalmente owner-billable', entryType: 'purchase', direction: 'out', rule: 'Imposto predial do imóvel: despesa; em geral repassável/faturável ao owner. Revisar antes de conciliar.', confidence: 'medium', autoApply: false };
+  }
+  if (RX.mortgage.test(d)) {
+    return { category: 'Mortgage / financiamento', glAccount: '2xxx Mortgage Payable + 6xxx Interest — separar principal/juros', entryType: 'purchase', direction: 'out', rule: 'Pagamento de financiamento: parte principal (passivo) e parte juros (despesa) — não conciliar automaticamente, exige split manual.', confidence: 'low', autoApply: false };
   }
   if (RX.payrollTax.test(d)) {
     return { category: 'Imposto/folha', glAccount: '2xxx Payroll/Tax Liabilities', entryType: 'purchase', direction: dir, rule: 'IRS/DOR/folha: passivo/imposto da empresa, conta Operating.', confidence: 'medium', autoApply: false };

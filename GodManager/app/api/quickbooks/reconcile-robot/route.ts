@@ -115,6 +115,29 @@ export async function GET(req: Request) {
     const compliantCount = rows.filter((r) => r.compliance && r.compliance.ok).length;
     const blockedCount = rows.filter((r) => r.compliance && !r.compliance.ok).length;
 
+    // Detalhamento dos bloqueios por MOTIVO — checklist do que falta mapear para ir de bloqueadas → 0.
+    // Cada linha bloqueada tem exatamente 1 motivo (flValidateEntry retorna no 1º check que falha).
+    const blockedReasons: Record<string, { label: string; count: number; amount: number }> = {};
+    const bumpBlocked = (key: string, label: string, amt: number) => {
+      if (!blockedReasons[key]) blockedReasons[key] = { label, count: 0, amount: 0 };
+      blockedReasons[key].count += 1;
+      blockedReasons[key].amount = round2(blockedReasons[key].amount + Math.abs(amt));
+    };
+    for (const r of rows) {
+      if (!r.compliance || r.compliance.ok) continue;
+      const reason = String(r.compliance.reason || '');
+      let key = 'other';
+      let label = reason || 'Outro motivo';
+      if (/conta cont[aá]bil fl n[aã]o mapeada/i.test(reason)) { key = 'no_gl'; label = 'Sem conta contábil mapeada (categoria → conta do QBO)'; }
+      else if (/conta banc[aá]ria n[aã]o mapeada/i.test(reason)) { key = 'no_bank'; label = 'Sem conta bancária mapeada (6352/7236/7509 → banco no QBO)'; }
+      else if (/n[aã]o corresponde ao papel/i.test(reason)) { key = 'bank_role'; label = 'Banco não corresponde ao papel da transação'; }
+      else if (/classifica[cç][aã]o divergente/i.test(reason)) { key = 'class_mismatch'; label = 'Classe da conta divergente (Liability/Revenue/Expense)'; }
+      else if (/co-?mingling/i.test(reason)) { key = 'comingling'; label = 'Co-mingling: aluguel como receita na Operating'; }
+      else if (/deve ser (deposit|purchase)/i.test(reason)) { key = 'direction'; label = 'Direção contábil (Deposit/Purchase)'; }
+      else if (/confian[cç]a insuficiente/i.test(reason)) { key = 'low_confidence'; label = 'Baixa confiança — revisar manualmente'; }
+      bumpBlocked(key, label, r.amount);
+    }
+
     const byType: Record<string, { count: number; amount: number }> = {};
     for (const r of rows) {
       const k = r.plan.category;
@@ -145,6 +168,7 @@ export async function GET(req: Request) {
       progressPct,
       compliantCount,
       blockedCount,
+      blockedReasons,
       byType,
       accountMap,
       mappedCount,
