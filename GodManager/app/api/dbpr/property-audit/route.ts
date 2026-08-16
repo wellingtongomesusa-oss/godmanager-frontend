@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
+import { coaLookup } from '@/lib/appfolioCoa';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,18 +41,34 @@ type Cat =
   | 'mgmt_fee' | 'expense'
   | 'owner_dist' | 'security_deposit' | 'cash' | 'other';
 
-/** Categoriza um GL pelo accountCode (o Chart of Accounts do AppFolio é a autoridade do NOME). */
+/**
+ * Categoriza um GL pelo accountCode usando a COA autoritativa do AppFolio (lib/appfolioCoa).
+ * Códigos específicos primeiro; senão pelo Account Type da COA; fallback por prefixo se o código
+ * não estiver na COA (aí a transação também é marcada como UNKNOWN GL na resposta).
+ * Importante (corrige heurística antiga): 2200 = Prepaid Rent (Liability, NÃO caução/receita);
+ * 18xx = CapEx/Asset (fora do resultado operacional); só 2101–2105 são security deposit.
+ */
 function glCategory(code: string): Cat {
   const c = String(code || '').trim();
   if (c === '4100') return 'rent';
   if (c === '4220') return 'delinquency';
   if (c === '4460') return 'late_fee';
   if (c === '4860') return 'renewal';
-  if (/^4/.test(c)) return 'other_revenue';
   if (c === '6111') return 'mgmt_fee';
-  if (/^6/.test(c)) return 'expense';
   if (c === '3250') return 'owner_dist';
-  if (/^21/.test(c)) return 'security_deposit';
+  const coa = coaLookup(c);
+  if (coa) {
+    const t = coa.type;
+    if (t === 'Income') return 'other_revenue';
+    if (t === 'Expense') return 'expense';
+    if (t === 'Liability') return /^210[1-5]$/.test(c) ? 'security_deposit' : 'other';
+    if (t === 'Cash') return 'cash';
+    return 'other'; // Capital (3xxx), Asset/CapEx (18xx) — fora do net operacional
+  }
+  // Fallback: código fora da COA (será sinalizado como UNKNOWN GL)
+  if (/^4/.test(c)) return 'other_revenue';
+  if (/^6/.test(c)) return 'expense';
+  if (/^210[1-5]$/.test(c)) return 'security_deposit';
   if (/^1/.test(c)) return 'cash';
   return 'other';
 }
@@ -191,16 +208,20 @@ export async function GET(req: Request) {
     // ---------- Drill-down do mês: transações + quebra por GL ----------
     let transactions: unknown[] | undefined;
     let categories: unknown[] | undefined;
+    let unknownGlCount = 0;
     if (year && month) {
       const ym = `${year}-${month}`;
       const monthRows = entries.filter((e) => e.entryDate.toISOString().slice(0, 7) === ym);
       transactions = monthRows.map((e) => {
-        const cat = glCategory(e.accountCode || '');
+        const code = e.accountCode || '';
+        const cat = glCategory(code);
+        const coa = coaLookup(code);
         const d = num(e.debit), c = num(e.credit);
         return {
           id: e.id,
           date: e.entryDate.toISOString().slice(0, 10),
-          glCode: e.accountCode || '', glName: e.account || '', category: cat,
+          glCode: code, glName: coa ? coa.name : (e.account || ''), accountType: coa ? coa.type : null,
+          category: cat, unknownGl: !coa && !!code,
           type: e.entryType, payee: e.payee || '', reference: e.reference || '',
           description: e.description || '',
           debit: d || null, credit: c || null, balance: e.balance != null ? num(e.balance) : null,
@@ -208,11 +229,14 @@ export async function GET(req: Request) {
           sourceFile: fileById.get(e.glImportId) || '', sourceRef: e.txnHash,
         };
       });
-      const catAgg = new Map<string, { glCode: string; glName: string; category: Cat; amount: number; count: number }>();
+      unknownGlCount = (transactions as Array<{ unknownGl?: boolean }>).filter((t) => t.unknownGl).length;
+      const catAgg = new Map<string, { glCode: string; glName: string; accountType: string | null; category: Cat; amount: number; count: number }>();
       for (const e of monthRows) {
-        const cat = glCategory(e.accountCode || '');
-        const key = e.accountCode || '(sem GL)';
-        const g = catAgg.get(key) || { glCode: e.accountCode || '', glName: e.account || '', category: cat, amount: 0, count: 0 };
+        const code = e.accountCode || '';
+        const cat = glCategory(code);
+        const coa = coaLookup(code);
+        const key = code || '(sem GL)';
+        const g = catAgg.get(key) || { glCode: code, glName: coa ? coa.name : (e.account || ''), accountType: coa ? coa.type : null, category: cat, amount: 0, count: 0 };
         g.amount += signedAmount(cat, num(e.debit), num(e.credit));
         g.count += 1;
         catAgg.set(key, g);
@@ -223,7 +247,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true, mode: 'property', property: { key: property },
       header, years: [...yearsSet].sort(), months,
-      ...(transactions ? { month: `${year}-${month}`, transactions, categories } : {}),
+      ...(transactions ? { month: `${year}-${month}`, transactions, categories, unknownGlCount } : {}),
     });
   } catch (e) {
     console.error('[GET /api/dbpr/property-audit]', e instanceof Error ? e.message : e);
