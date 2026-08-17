@@ -91,8 +91,14 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const scope = await resolveBankAccountClientScope(user, url.searchParams.get('clientId'));
-    if (!scope.ok) return NextResponse.json({ ok: false, error: scope.error }, { status: scope.status });
-    const clientId = scope.clientId;
+    let clientId = scope.ok ? scope.clientId : '';
+    // super_admin sem empresa selecionada: cai no cliente que TEM General Ledger importado
+    // (a lista de Expenses resolve pela sessão; aqui damos o mesmo resultado prático).
+    if (!clientId && String(user.role || '').toLowerCase() === 'super_admin') {
+      const anyGl = await prisma.gLImport.findFirst({ orderBy: { uploadedAt: 'desc' }, select: { clientId: true } });
+      if (anyGl) clientId = anyGl.clientId;
+    }
+    if (!clientId) return NextResponse.json({ ok: false, error: scope.ok ? 'Sem cliente resolvível.' : scope.error }, { status: scope.ok ? 400 : scope.status });
 
     const property = (url.searchParams.get('property') || '').trim();
     const year = /^\d{4}$/.test(url.searchParams.get('year') || '') ? url.searchParams.get('year') : '';

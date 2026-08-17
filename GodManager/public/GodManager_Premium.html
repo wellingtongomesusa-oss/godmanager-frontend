@@ -21881,7 +21881,8 @@ window.ltExpAppendAppSheet=async function(){
    +'<td colspan="20" style="padding:8px 12px;color:var(--ink3);font-size:10px">'+originNote+'</td>'
    +'</tr>';
  }).join('');
- tb.insertAdjacentHTML('beforeend', html);
+ var hdr='<tr class="lt-exp-appsheet-row" data-status="APPSHEET" style="background:#d6e4f5"><td colspan="20" style="padding:7px 12px;font-size:11px;font-weight:700;color:#22558c">'+vis.length+' visita(s) de campo — AppSheet'+(mSel?(' · '+mSel):' · todos os meses')+' (informativo, nao sao despesas do GodManager)</td></tr>';
+ tb.insertAdjacentHTML('afterbegin', hdr+html);
 };
 
 window.gmAppSheetCsv=async function(){

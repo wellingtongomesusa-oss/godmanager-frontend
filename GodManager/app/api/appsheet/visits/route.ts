@@ -18,9 +18,19 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const scope = await resolveBankAccountClientScope(user, url.searchParams.get('clientId'));
-    if (!scope.ok) return NextResponse.json({ ok: true, visits: [], count: 0, source: null, updatedAt: null });
+    let clientId = scope.ok ? scope.clientId : '';
+    // super_admin sem cliente ativo explícito: usa a base AppSheet existente mais recente
+    // (a lista de Expenses resolve o cliente pela sessão; aqui damos o mesmo resultado prático).
+    if (!clientId && String(user.role || '').toLowerCase() === 'super_admin') {
+      const any = await prisma.appSetting.findFirst({
+        where: { key: { startsWith: 'appsheet:visits:' } },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (any) clientId = any.key.replace('appsheet:visits:', '');
+    }
+    if (!clientId) return NextResponse.json({ ok: true, visits: [], count: 0, source: null, updatedAt: null });
 
-    const row = await prisma.appSetting.findUnique({ where: { key: appSheetVisitsKey(scope.clientId) } });
+    const row = await prisma.appSetting.findUnique({ where: { key: appSheetVisitsKey(clientId) } });
     const payload = (row?.value as unknown as AppSheetVisitsPayload | undefined) || null;
     let visits = payload?.visits || [];
 
