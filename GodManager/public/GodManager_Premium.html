@@ -7138,6 +7138,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
       <div style="font-size:12px;color:var(--ink3);margin-top:2px" data-i18n="dbpr_subtitle">AppFolio Financial Audit &middot; revisão de transações por propriedade &rarr; mês &rarr; GL (fonte: General Ledger AppFolio)</div>
     </div>
   </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button onclick="if(typeof gmDbprCsvList==='function')gmDbprCsvList()" title="Baixar a lista de propriedades do Audit Center em CSV" style="padding:8px 14px;background:#2a6e4e;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">↓ Baixar CSV (propriedades)</button></div>
   <input id="dbpr-search" placeholder="Buscar propriedade por endereço..." oninput="if(typeof gmDbprFilter==='function')gmDbprFilter()" style="width:100%;max-width:420px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;font-size:13px;margin-bottom:14px">
   <div id="dbpr-list"></div>
   <div id="dbpr-detail" style="display:none"></div>
@@ -21885,6 +21886,16 @@ window.ltExpAppendAppSheet=async function(){
  tb.insertAdjacentHTML('afterbegin', hdr+html);
 };
 
+window.gmDbprCsvList=function(){
+ var list=window.__dbprAll||[];
+ if(!list.length){alert('Nenhuma propriedade carregada. Selecione a empresa e aguarde carregar.');return;}
+ var C=window.gmDbprCsvCell||function(x){var v=String(x==null?'':x);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';};
+ var head=['Propriedade','Receita','Despesas','Net','Transacoes','Primeira Data','Ultima Data'];
+ var lines=[head.map(C).join(',')];
+ list.forEach(function(p){lines.push([p.address,p.revenue,p.expenses,p.net,p.txnCount,p.first,p.last].map(C).join(','));});
+ var blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AuditCenter_Propriedades.csv';document.body.appendChild(a);a.click();a.remove();
+};
 window.gmAppSheetCsv=async function(){
  var mSel=(document.getElementById('lt-exp-filter-month')||{}).value||'';
  var acId='';try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null;acId=_ac&&_ac.id?_ac.id:'';}catch(e){}
