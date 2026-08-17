@@ -3657,7 +3657,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="lt-exp-migrate-local-btn" onclick="if(typeof ltExpMigrateLocalToDb==='function')ltExpMigrateLocalToDb();" style="display:none;padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Migrar dados locais → Banco</button>
  <button type="button" id="lt-exp-vfree-btn" onclick="if(typeof ltOpenVendorFreeExpense==='function')ltOpenVendorFreeExpense();" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:1px solid var(--amber-bd);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">+Vendor</button>
  <button onclick="ltOpenNewExpense()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Despesa</button>
- <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button>
+ <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button> <button id="lt-exp-appsheet-csv" onclick="if(typeof gmAppSheetCsv==='function')gmAppSheetCsv()" title="Baixar as visitas de campo do AppSheet (organizado, respeita o filtro de mês)" style="padding:8px 14px;background:transparent;color:#22558c;border:1px solid #22558c;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ CSV AppSheet</button>
  </div>
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
@@ -21882,6 +21882,23 @@ window.ltExpAppendAppSheet=async function(){
    +'</tr>';
  }).join('');
  tb.insertAdjacentHTML('beforeend', html);
+};
+
+window.gmAppSheetCsv=async function(){
+ var mSel=(document.getElementById('lt-exp-filter-month')||{}).value||'';
+ var acId='';try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null;acId=_ac&&_ac.id?_ac.id:'';}catch(e){}
+ var qp=[];if(mSel)qp.push('month='+encodeURIComponent(mSel));if(acId)qp.push('clientId='+encodeURIComponent(acId));
+ var url='/api/appsheet/visits'+(qp.length?('?'+qp.join('&')):'');
+ var j;try{var r=await fetch(url,{credentials:'include',cache:'no-store'});j=await r.json();}catch(e){alert('Erro ao buscar as visitas do AppSheet.');return;}
+ var vis=(j&&j.visits)||[];
+ if(!vis.length){alert('Nenhuma visita do AppSheet'+(mSel?(' em '+mSel):' (todos os meses)')+'.');return;}
+ vis.sort(function(a,b){return String(a.date||'').localeCompare(String(b.date||''))||String(a.propertyName||'').localeCompare(String(b.propertyName||''));});
+ function C(x){var s=String(x==null?'':x);if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+ var head=['Data','Mes','Propriedade','Endereco','Cidade','Estado','Tipo de Imovel','Proprietario','Tecnico','Horas','Notas','GPS','ID (AppSheet)','Origem'];
+ var lines=[head.map(C).join(',')];
+ vis.forEach(function(v){lines.push([v.date,v.month,v.propertyName,v.address,v.city,v.state,v.buildingType,v.owner,v.member,v.hours,v.notes,v.gps,v.sourceId,'AppSheet'].map(C).join(','));});
+ var blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AppSheet_Visitas'+(mSel?('_'+mSel):'_todos')+'.csv';document.body.appendChild(a);a.click();a.remove();
 };
 
 function ltExpRowNormPmStatus(r){
