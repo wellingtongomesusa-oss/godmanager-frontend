@@ -75,7 +75,11 @@ export const MENU_ACCESS_SECTIONS: MenuAccessSectionDef[] = [
   },
   {
     sectionKey: 'results',
-    itemKeys: ['results', 'results-upload', 'bookkeeping', 'gaap-results', 'dbpr-audit'],
+    itemKeys: ['results', 'results-upload', 'bookkeeping', 'gaap-results'],
+  },
+  {
+    sectionKey: 'dbpr',
+    itemKeys: ['dbpr-audit'],
   },
   {
     sectionKey: 'ai-assistant',

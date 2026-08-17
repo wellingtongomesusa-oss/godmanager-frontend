@@ -1589,12 +1589,18 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <div class="sb-sec-body">
  <div class="ss" onclick="nav('results')" id="nav-results" style="padding-left:16px"><span data-i18n="results_dashboard">Results Dashboard</span></div>
  <div class="ss" onclick="nav('gl-study')" id="nav-gl-study" style="padding-left:16px"><span>Estudo GL (Aluguéis × MGM)</span></div>
- <div class="ss sb-ix-ic" onclick="nav('dbpr-audit')" id="nav-dbpr-audit" style="padding-left:16px" title="Audit Center — auditoria financeira sobre o General Ledger do AppFolio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg><span>Audit Center</span></div>
+ 
  <div class="ss" onclick="nav('correlations')" id="nav-correlations" style="padding-left:16px"><span>Correlações &amp; Padrões</span></div>
  <div class="ss" onclick="gmInvestModalOpen()" id="nav-invest" style="padding-left:16px"><span>Invest Home</span></div>
  <div class="ss" onclick="nav('results-upload')" id="nav-results-upload" style="padding-left:16px"><span data-i18n="upload_reports">Upload Reports</span></div>
  <div class="ss sb-ix-ic" onclick="nav('bookkeeping')" id="nav-bookkeeping" style="padding-left:16px" title="Bookkeeping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span data-i18n="nav_bookkeeping">Bookkeeping</span></div>
  <div class="ss" onclick="window.open('/gaap.html','_blank','noopener')" id="nav-gaap-results" style="padding-left:16px"><span data-i18n="gaap">GAAP</span></div>
+ </div>
+ </div>
+ <div class="sb-sec sb-sec-collapsible" data-sb-sec="dbpr">
+ <div class="sb-sec-head" role="button" tabindex="0" aria-expanded="true"><span class="sb-sec-lbl" data-i18n="nav_sidebar_dbpr">DBPR · AUDITORIA</span><span class="sb-sec-chev" aria-hidden="true">▾</span></div>
+ <div class="sb-sec-body">
+ <div class="ss sb-ix-ic" onclick="nav('dbpr-audit')" id="nav-dbpr-audit" style="padding-left:16px" title="Audit Center — auditoria financeira sobre o General Ledger do AppFolio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg><span data-i18n="dbpr_audit_center">Audit Center</span></div>
  </div>
  </div>
  <div class="sb-sec sb-sec-collapsible" data-sb-sec="ai-assistant" id="wrap-nav-bookkeeping-ai" style="display:none">
@@ -7128,14 +7134,14 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
 <div class="page" id="page-dbpr-audit">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
     <div>
-      <div style="font-size:20px;font-weight:800;color:var(--ink)">Audit Center</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:2px">AppFolio Financial Audit &middot; revisão de transações por propriedade &rarr; mês &rarr; GL (fonte: General Ledger AppFolio)</div>
+      <div style="font-size:20px;font-weight:800;color:var(--ink)" data-i18n="dbpr_title">Audit Center</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:2px" data-i18n="dbpr_subtitle">AppFolio Financial Audit &middot; revisão de transações por propriedade &rarr; mês &rarr; GL (fonte: General Ledger AppFolio)</div>
     </div>
   </div>
   <input id="dbpr-search" placeholder="Buscar propriedade por endereço..." oninput="if(typeof gmDbprFilter==='function')gmDbprFilter()" style="width:100%;max-width:420px;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;font-size:13px;margin-bottom:14px">
   <div id="dbpr-list"></div>
   <div id="dbpr-detail" style="display:none"></div>
-  <div style="margin-top:22px;font-size:10px;color:var(--ink3);border-top:1px solid var(--border);padding-top:10px">Ferramenta interna de auditoria e análise financeira gerada a partir dos dados exportados do AppFolio. Não é certificação legal de conformidade regulatória.</div>
+  <div style="margin-top:22px;font-size:10px;color:var(--ink3);border-top:1px solid var(--border);padding-top:10px" data-i18n="dbpr_disclaimer">Ferramenta interna de auditoria e análise financeira gerada a partir dos dados exportados do AppFolio. Não é certificação legal de conformidade regulatória.</div>
 </div>
 <div class="page" id="page-gl-study">
  <div class="ph"><div class="pt">Estudo do GL — Aluguéis × MGM fee</div><div class="ps">Aluguel recebido (4100), management fee (6111) e repasse ao owner (3250), por mês e por casa. Fonte: General Ledger do AppFolio importado.</div></div>
@@ -21852,7 +21858,7 @@ window.ltExpAppendAppSheet=async function(){
  var badge='<span style="display:inline-block;background:#22558c;color:#fff;font-size:9px;font-weight:800;letter-spacing:.6px;padding:2px 7px;border-radius:10px;text-transform:uppercase">AppSheet</span>';
  var sep='<span style="color:var(--ink3)">·</span>';
  var html=vis.map(function(v){
-  var prop=esc(v.propertyName||v.address||'—'); var who=esc(v.member||'—'); var note=esc(v.notes||'Visita de campo');
+  var prop=esc(v.propertyName||v.address||'—'); var who=esc(v.member||'—'); var note=esc(v.notes||(typeof t==='function'?t('appsheet_field_visit'):'Visita de campo'));
   var hrs=(v.hours?(Number(v.hours).toFixed(2)+'h'):''); var loc=esc((v.city||'')+(v.state?(', '+v.state):''));
   return '<tr class="lt-exp-appsheet-row" style="background:#eef4fb;border-left:3px solid #22558c">'
    +'<td colspan="20" style="padding:9px 12px;font-size:12px;color:var(--ink2)">'
@@ -21863,7 +21869,7 @@ window.ltExpAppendAppSheet=async function(){
    +sep+'<span title="Tecnico">&#128119; '+who+'</span>'
    +(hrs?(sep+'<span title="Horas">&#9201; '+hrs+'</span>'):'')
    +'</div>'
-   +'<div style="margin-top:3px;color:var(--ink3);font-size:11px">'+note+' <span style="opacity:.7">&middot; origem AppSheet (informativo, nao e despesa)</span></div>'
+   +'<div style="margin-top:3px;color:var(--ink3);font-size:11px">'+note+' <span style="opacity:.7">&middot; '+(typeof t==='function'?t('appsheet_origin_note'):'origem AppSheet (informativo, nao e despesa)')+'</span></div>'
    +'</td></tr>';
  }).join('');
  tb.insertAdjacentHTML('beforeend', html);
