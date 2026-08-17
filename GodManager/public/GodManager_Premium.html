@@ -21830,7 +21830,44 @@ async function ltExpFetchPm(){
 async function ltExpRenderWithPm(){
  await ltExpFetchPm();
  if(typeof ltExpRender==='function')ltExpRender();
+ if(typeof ltExpAppendAppSheet==='function'){try{await ltExpAppendAppSheet();}catch(_as){}}
 }
+
+
+/* ===== Integração AppSheet → Expenses (informativo, read-only) ===== */
+window.ltExpAppendAppSheet=async function(){
+ var tb=document.getElementById('lt-exp-tbody'); if(!tb) return;
+ Array.prototype.slice.call(tb.querySelectorAll('tr.lt-exp-appsheet-row')).forEach(function(x){x.remove();});
+ var mSel=(document.getElementById('lt-exp-filter-month')||{}).value||'';
+ var term=((document.getElementById('lt-exp-search')||{}).value||'').toLowerCase();
+ var acId=''; try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null; acId=_ac&&_ac.id?_ac.id:'';}catch(e){}
+ var qp=[]; if(mSel)qp.push('month='+encodeURIComponent(mSel)); if(acId)qp.push('clientId='+encodeURIComponent(acId));
+ var url='/api/appsheet/visits'+(qp.length?('?'+qp.join('&')):'');
+ var j; try{var r=await fetch(url,{credentials:'include',cache:'no-store'}); j=await r.json();}catch(e){return;}
+ if(!j||!j.ok||!Array.isArray(j.visits)||!j.visits.length) return;
+ var esc=function(x){return String(x==null?'':x).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});};
+ var vis=j.visits.filter(function(v){ if(!term)return true; return (String(v.propertyName||'')+' '+String(v.member||'')+' '+String(v.notes||'')+' '+String(v.owner||'')).toLowerCase().indexOf(term)>=0; });
+ if(!vis.length) return;
+ vis.sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+ var badge='<span style="display:inline-block;background:#22558c;color:#fff;font-size:9px;font-weight:800;letter-spacing:.6px;padding:2px 7px;border-radius:10px;text-transform:uppercase">AppSheet</span>';
+ var sep='<span style="color:var(--ink3)">·</span>';
+ var html=vis.map(function(v){
+  var prop=esc(v.propertyName||v.address||'—'); var who=esc(v.member||'—'); var note=esc(v.notes||'Visita de campo');
+  var hrs=(v.hours?(Number(v.hours).toFixed(2)+'h'):''); var loc=esc((v.city||'')+(v.state?(', '+v.state):''));
+  return '<tr class="lt-exp-appsheet-row" style="background:#eef4fb;border-left:3px solid #22558c">'
+   +'<td colspan="20" style="padding:9px 12px;font-size:12px;color:var(--ink2)">'
+   +'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">'+badge
+   +'<span style="font-family:JetBrains Mono,monospace;color:var(--ink3)">'+esc(v.date||'')+'</span>'
+   +'<b style="color:var(--ink)">'+prop+'</b>'
+   +(loc?('<span style="color:var(--ink3)">'+loc+'</span>'):'')
+   +sep+'<span title="Tecnico">&#128119; '+who+'</span>'
+   +(hrs?(sep+'<span title="Horas">&#9201; '+hrs+'</span>'):'')
+   +'</div>'
+   +'<div style="margin-top:3px;color:var(--ink3);font-size:11px">'+note+' <span style="opacity:.7">&middot; origem AppSheet (informativo, nao e despesa)</span></div>'
+   +'</td></tr>';
+ }).join('');
+ tb.insertAdjacentHTML('beforeend', html);
+};
 
 function ltExpRowNormPmStatus(r){
  var isPm=!!r._isPm;
