@@ -3,11 +3,8 @@ import { getCurrentUserFromSession } from '@/lib/authServer';
 import { resolveBankAccountClientScope } from '@/lib/bankAccountBalancesScope';
 import { getR2Client, getR2Bucket } from '@/lib/r2';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import * as archiverNS from 'archiver';
+import { ZipArchive } from 'archiver';
 import { Readable } from 'stream';
-
-// archiver é um módulo CommonJS cujo export é a própria função (sem default export nos tipos v8).
-const createArchive = archiverNS as unknown as (format: string, options?: Record<string, unknown>) => import('archiver').Archiver;
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,7 +84,7 @@ export async function GET(req: Request) {
       ].map(csvCell).join(','));
     }
 
-    const archive = createArchive('zip', { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on('error', (err: Error) => console.error('[export-zip archiver]', err?.message || err));
 
     // Monta o ZIP em segundo plano; a resposta é o stream (streaming com backpressure).
