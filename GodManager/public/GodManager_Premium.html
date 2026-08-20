@@ -3657,7 +3657,7 @@ try{if(localStorage.getItem('gm_dashboard_values_hidden')==='1'){document.body.c
  <button type="button" id="lt-exp-migrate-local-btn" onclick="if(typeof ltExpMigrateLocalToDb==='function')ltExpMigrateLocalToDb();" style="display:none;padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Migrar dados locais → Banco</button>
  <button type="button" id="lt-exp-vfree-btn" onclick="if(typeof ltOpenVendorFreeExpense==='function')ltOpenVendorFreeExpense();" style="display:none;padding:8px 16px;background:var(--amber);color:#fff;border:1px solid var(--amber-bd);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(201,169,110,.25)">+Vendor</button>
  <button onclick="ltOpenNewExpense()" style="padding:8px 16px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Nova Despesa</button>
- <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button> <button id="lt-exp-appsheet-csv" onclick="if(typeof gmAppSheetCsv==='function')gmAppSheetCsv()" title="Baixar as visitas de campo do AppSheet (organizado, respeita o filtro de mês)" style="padding:8px 14px;background:transparent;color:#22558c;border:1px solid #22558c;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ CSV AppSheet</button>
+ <button onclick="ltExpExportCSV()" style="padding:8px 14px;background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ Exportar CSV</button> <button id="lt-exp-appsheet-csv" onclick="if(typeof gmAppSheetCsv==='function')gmAppSheetCsv()" title="Baixar as visitas de campo do AppSheet (organizado, respeita o filtro de mês)" style="padding:8px 14px;background:transparent;color:#22558c;border:1px solid #22558c;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">↓ CSV AppSheet</button> <button id="lt-exp-zip" onclick="if(typeof gmExportExpensesZip==='function')gmExportExpensesZip()" title="Baixar um ZIP com todas as despesas: fotos, vídeos e descrição, organizado por casa e Work Order" style="padding:8px 14px;background:#7c3aed;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">↓ Exportar ZIP (fotos)</button>
  </div>
  </div>
  <div class="gm-kpis-shell gm-kpis-shell--hint" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden">
@@ -21895,6 +21895,15 @@ window.gmDbprCsvList=function(){
  list.forEach(function(p){lines.push([p.address,p.revenue,p.expenses,p.net,p.txnCount,p.first,p.last].map(C).join(','));});
  var blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AuditCenter_Propriedades.csv';document.body.appendChild(a);a.click();a.remove();
+};
+window.gmExportExpensesZip=function(){
+ var acId='';try{var _ac=(typeof getActiveClient==='function')?getActiveClient():null;acId=_ac&&_ac.id?_ac.id:'';}catch(e){}
+ var mSel=(document.getElementById('lt-exp-filter-month')||{}).value||'';
+ var qp=[];if(acId)qp.push('clientId='+encodeURIComponent(acId));if(mSel)qp.push('month='+encodeURIComponent(mSel));
+ var url='/api/pm/expenses/export-zip'+(qp.length?('?'+qp.join('&')):'');
+ var msg=mSel?('Gerar o ZIP das despesas de '+mSel+' (fotos + videos + descricao)?'):('Gerar o ZIP de TODAS as despesas (fotos + videos + descricao)? Pode levar 1-2 min e alguns MB.');
+ if(!confirm(msg+'\n\nO download vai comecar. Nao feche a aba ate terminar.'))return;
+ window.location.href=url;
 };
 window.gmAppSheetCsv=async function(){
  var mSel=(document.getElementById('lt-exp-filter-month')||{}).value||'';
